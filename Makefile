@@ -23,10 +23,12 @@ examples: release
 	./target/release/examples/geometry_bounds3_unit_cube
 	./target/release/examples/geometry_length
 	./target/release/examples/geometry_length_squared
-	./target/release/examples/geometry_matrix4x4_identity
 	./target/release/examples/geometry_normal3_null
 	./target/release/examples/geometry_point2_origin
 	./target/release/examples/geometry_point3_origin
 	./target/release/examples/geometry_ray_creation
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
+	./target/release/examples/transform_matrix4x4_identity
+	./target/release/examples/transform_matrix4x4_new
+	./target/release/examples/transform_transform_identity

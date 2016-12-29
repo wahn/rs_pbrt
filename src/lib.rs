@@ -171,7 +171,43 @@
 //! use pbrt::Matrix4x4;
 //!
 //! fn main() {
-//!     let identity: Matrix4x4 = Matrix4x4::new();
+//!     let identity: Matrix4x4 = Matrix4x4::default();
+//!     let m: Matrix4x4 = Matrix4x4::new(0.0,
+//!                                       0.1,
+//!                                       0.2,
+//!                                       0.3,
+//!                                       1.0,
+//!                                       1.1,
+//!                                       1.2,
+//!                                       1.3,
+//!                                       2.0,
+//!                                       2.1,
+//!                                       2.2,
+//!                                       2.3,
+//!                                       3.0,
+//!                                       3.1,
+//!                                       3.2,
+//!                                       3.3);
+//!
+//!     println!("identity matrix = {:?}", identity);
+//!     println!("m = {:?}", m);
+//! }
+//! ```
+//!
+//! ## Transformations
+//!
+//! In general a transformation is a mapping from points to points and
+//! from vectors to vectors. When a new **Transform** is created, it
+//! defaults to the *identity transformation* - the transformation
+//! that maps each point and each vector to itself.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::Transform;
+//!
+//! fn main() {
+//!     let identity: Transform = Transform::new();
 //!
 //!     println!("identity matrix = {:?}", identity);
 //! }
@@ -180,8 +216,12 @@
 extern crate num;
 
 use std::ops::{Add, Mul};
+use std::default::Default;
 
 pub type Float = f64;
+
+// see geometry.h
+
 pub type Point3f = Point3<Float>;
 pub type Vector3f = Vector3<Float>;
 
@@ -289,18 +329,62 @@ pub struct Ray {
     pub d: Vector3f,
 }
 
+// see transform.h
+
 #[derive(Debug)]
 pub struct Matrix4x4 {
     pub m: [[Float; 4]; 4],
 }
 
-impl Matrix4x4 {
-    pub fn new() -> Matrix4x4 {
+impl Default for Matrix4x4 {
+    fn default() -> Matrix4x4 {
         Matrix4x4 {
             m: [[1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
                 [0.0, 0.0, 0.0, 1.0]],
+        }
+    }
+}
+
+impl Matrix4x4 {
+    pub fn new(t00: Float,
+               t01: Float,
+               t02: Float,
+               t03: Float,
+               t10: Float,
+               t11: Float,
+               t12: Float,
+               t13: Float,
+               t20: Float,
+               t21: Float,
+               t22: Float,
+               t23: Float,
+               t30: Float,
+               t31: Float,
+               t32: Float,
+               t33: Float)
+               -> Matrix4x4 {
+        Matrix4x4 {
+            m: [[t00, t01, t02, t03],
+                [t10, t11, t12, t13],
+                [t20, t21, t22, t23],
+                [t30, t31, t32, t33]],
+        }
+    }
+}
+
+#[derive(Debug)]
+pub struct Transform {
+    pub m: Matrix4x4,
+    pub m_inv: Matrix4x4,
+}
+
+impl Transform {
+    pub fn new() -> Transform {
+        Transform {
+            m: Matrix4x4::default(),
+            m_inv: Matrix4x4::default(),
         }
     }
 }
