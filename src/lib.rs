@@ -229,6 +229,28 @@
 //!     println!("t = {:?}", t);
 //! }
 //! ```
+//!
+//! ## Translations
+//!
+//! One of the simplest transformations is the translation
+//! transformation. Translations only affect points, leaving vectors
+//! unchanged.
+//!
+//! ```rust
+//! extern crate pbrt;
+//! 
+//! use pbrt::{Transform, Vector3f};
+//! 
+//! fn main() {
+//!     let t: Transform = Transform::translate(Vector3f {
+//!         x: -1.25,
+//!         y: 3.5,
+//!         z: 7.875,
+//!     });
+//! 
+//!     println!("t = {:?}", t);
+//! }
+//! ```
 
 extern crate num;
 
@@ -546,6 +568,42 @@ impl Transform {
                                                      t31,
                                                      t32,
                                                      t33)),
+        }
+    }
+    pub fn translate(delta: Vector3f) -> Transform {
+        Transform {
+            m: Matrix4x4::new(1.0,
+                              0.0,
+                              0.0,
+                              delta.x,
+                              0.0,
+                              1.0,
+                              0.0,
+                              delta.y,
+                              0.0,
+                              0.0,
+                              1.0,
+                              delta.z,
+                              0.0,
+                              0.0,
+                              0.0,
+                              1.0),
+            m_inv: Matrix4x4::new(1.0,
+                                  0.0,
+                                  0.0,
+                                  -delta.x,
+                                  0.0,
+                                  1.0,
+                                  0.0,
+                                  -delta.y,
+                                  0.0,
+                                  0.0,
+                                  1.0,
+                                  -delta.z,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  1.0),
         }
     }
 }

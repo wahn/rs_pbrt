@@ -33,3 +33,4 @@ examples: release
 	./target/release/examples/transform_matrix4x4_new
 	./target/release/examples/transform_transform_identity
 	./target/release/examples/transform_transform_new
+	./target/release/examples/transform_transform_translate
