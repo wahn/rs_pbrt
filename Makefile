@@ -31,6 +31,12 @@ examples: release
 	./target/release/examples/geometry_vector3_null
 	./target/release/examples/transform_matrix4x4_identity
 	./target/release/examples/transform_matrix4x4_new
+	./target/release/examples/transform_matrix4x4_transpose
 	./target/release/examples/transform_transform_identity
 	./target/release/examples/transform_transform_new
+	./target/release/examples/transform_transform_rotate
+	./target/release/examples/transform_transform_rotate_x
+	./target/release/examples/transform_transform_rotate_y
+	./target/release/examples/transform_transform_rotate_z
+	./target/release/examples/transform_transform_scale
 	./target/release/examples/transform_transform_translate

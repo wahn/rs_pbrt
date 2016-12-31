@@ -230,7 +230,7 @@
 //! }
 //! ```
 //!
-//! ## Translations
+//! ### Translations
 //!
 //! One of the simplest transformations is the translation
 //! transformation. Translations only affect points, leaving vectors
@@ -238,26 +238,103 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::{Transform, Vector3f};
-//! 
+//!
 //! fn main() {
 //!     let t: Transform = Transform::translate(Vector3f {
 //!         x: -1.25,
 //!         y: 3.5,
 //!         z: 7.875,
 //!     });
-//! 
+//!
 //!     println!("t = {:?}", t);
+//! }
+//! ```
+//!
+//! ### Scaling
+//!
+//! Another basic transformations is the scale transformation. We can
+//! differentiate between **uniform** scaling, where all three scale
+//! factors have the same value, and **nonuniform** scaling, where
+//! they may have different values.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::Transform;
+//!
+//! fn main() {
+//!     let t: Transform = Transform::scale(2.0, -8.0, 1.0);
+//!
+//!     println!("t = {:?}", t);
+//! }
+//! ```
+//!
+//! ### X, Y, And Z Axis Rotations
+//!
+//! Another useful type of transformation is the rotation
+//! transformation.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{Float, Transform};
+//!
+//! fn main() {
+//!     let theta_x: Float = 30.0;
+//!     let theta_y: Float = 45.0;
+//!     let theta_z: Float = 60.0;
+//!     let t_x: Transform = Transform::rotate_x(theta_x);
+//!     let t_y: Transform = Transform::rotate_y(theta_y);
+//!     let t_z: Transform = Transform::rotate_z(theta_z);
+//!
+//!     println!("Transform::rotate_x({}) = {:?}", theta_x, t_x);
+//!     println!("Transform::rotate_y({}) = {:?}", theta_y, t_y);
+//!     println!("Transform::rotate_z({}) = {:?}", theta_z, t_z);
+//! }
+//! ```
+//!
+//! ### Rotation Around an Arbitrary Axis
+//!
+//! We also provide a routine to compute the transformation that
+//! represents rotation around an arbitrary axis.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{Float, Transform, Vector3f};
+//!
+//! fn main() {
+//!     let theta: Float = 30.0;
+//!     let axis = Vector3f {
+//!         x: 1.0,
+//!         y: 2.0,
+//!         z: 3.0,
+//!     };
+//!     let t: Transform = Transform::rotate(theta, axis);
+//!
+//!     println!("Transform::rotate({}, {:?}) = {:?}", theta, axis, t);
 //! }
 //! ```
 
 extern crate num;
 
-use std::ops::{Add, Mul};
+use std::ops::{Add, Mul, Div};
 use std::default::Default;
+use std::f64::consts::PI;
 
 pub type Float = f64;
+
+// see pbrt.h
+
+pub fn radians(deg: Float) -> Float {
+    (PI / 180.0) * deg
+}
+
+pub fn degrees(rad: Float) -> Float {
+    (180.0 / PI) * rad
+}
 
 // see geometry.h
 
@@ -289,11 +366,26 @@ pub fn vec2_dot<T>(v1: Vector2<T>, v2: Vector2<T>) -> T
     v1.x * v2.x + v1.y * v2.y
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Vector3<T> {
     pub x: T,
     pub y: T,
     pub z: T,
+}
+
+impl<T> Div<T> for Vector3<T>
+    where T: Copy + Div<T, Output = T>
+{
+    type Output = Vector3<T>;
+    fn div(self, rhs: T) -> Vector3<T>
+        where T: Copy + Div<T, Output = T>
+    {
+        Vector3::<T> {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
+    }
 }
 
 impl<T> Vector3<T> {
@@ -313,6 +405,12 @@ pub fn vec3_dot<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
     where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
 {
     v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
+}
+
+pub fn normalize<T>(v: Vector3<T>) -> Vector3<T>
+    where T: num::Float + Copy + Div<T, Output = T>
+{
+    v / v.length()
 }
 
 #[derive(Debug)]
@@ -370,7 +468,7 @@ pub struct Ray {
 
 // see transform.h
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Matrix4x4 {
     pub m: [[Float; 4]; 4],
 }
@@ -409,6 +507,14 @@ impl Matrix4x4 {
                 [t10, t11, t12, t13],
                 [t20, t21, t22, t23],
                 [t30, t31, t32, t33]],
+        }
+    }
+    pub fn transpose(m: Matrix4x4) -> Matrix4x4 {
+        Matrix4x4 {
+            m: [[m.m[0][0], m.m[1][0], m.m[2][0], m.m[3][0]],
+                [m.m[0][1], m.m[1][1], m.m[2][1], m.m[3][1]],
+                [m.m[0][2], m.m[1][2], m.m[2][2], m.m[3][2]],
+                [m.m[0][3], m.m[1][3], m.m[2][3], m.m[3][3]]],
         }
     }
     pub fn inverse(m: Matrix4x4) -> Matrix4x4 {
@@ -604,6 +710,139 @@ impl Transform {
                                   0.0,
                                   0.0,
                                   1.0),
+        }
+    }
+    pub fn scale(x: Float, y: Float, z: Float) -> Transform {
+        Transform {
+            m: Matrix4x4::new(x,
+                              0.0,
+                              0.0,
+                              0.0,
+                              0.0,
+                              y,
+                              0.0,
+                              0.0,
+                              0.0,
+                              0.0,
+                              z,
+                              0.0,
+                              0.0,
+                              0.0,
+                              0.0,
+                              1.0),
+            m_inv: Matrix4x4::new(1.0 / x,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  1.0 / y,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  1.0 / z,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  0.0,
+                                  1.0),
+        }
+    }
+    pub fn rotate_x(theta: Float) -> Transform {
+        let sin_theta: Float = radians(theta).sin();
+        let cos_theta: Float = radians(theta).cos();
+        let m = Matrix4x4::new(1.0,
+                               0.0,
+                               0.0,
+                               0.0,
+                               0.0,
+                               cos_theta,
+                               -sin_theta,
+                               0.0,
+                               0.0,
+                               sin_theta,
+                               cos_theta,
+                               0.0,
+                               0.0,
+                               0.0,
+                               0.0,
+                               1.0);
+        Transform {
+            m: m,
+            m_inv: Matrix4x4::transpose(m),
+        }
+    }
+    pub fn rotate_y(theta: Float) -> Transform {
+        let sin_theta: Float = radians(theta).sin();
+        let cos_theta: Float = radians(theta).cos();
+        let m = Matrix4x4::new(cos_theta,
+                               0.0,
+                               sin_theta,
+                               0.0,
+                               0.0,
+                               1.0,
+                               0.0,
+                               0.0,
+                               -sin_theta,
+                               0.0,
+                               cos_theta,
+                               0.0,
+                               0.0,
+                               0.0,
+                               0.0,
+                               1.0);
+        Transform {
+            m: m,
+            m_inv: Matrix4x4::transpose(m),
+        }
+    }
+    pub fn rotate_z(theta: Float) -> Transform {
+        let sin_theta: Float = radians(theta).sin();
+        let cos_theta: Float = radians(theta).cos();
+        let m = Matrix4x4::new(cos_theta,
+                               -sin_theta,
+                               0.0,
+                               0.0,
+                               sin_theta,
+                               cos_theta,
+                               0.0,
+                               0.0,
+                               0.0,
+                               0.0,
+                               1.0,
+                               0.0,
+                               0.0,
+                               0.0,
+                               0.0,
+                               1.0);
+        Transform {
+            m: m,
+            m_inv: Matrix4x4::transpose(m),
+        }
+    }
+    pub fn rotate(theta: Float, axis: Vector3f) -> Transform {
+        let a: Vector3f = normalize(axis);
+        let sin_theta: Float = radians(theta).sin();
+        let cos_theta: Float = radians(theta).cos();
+        let mut m = Matrix4x4::default();
+        // compute rotation of first basis vector
+        m.m[0][0] = a.x * a.x + (1.0 - a.x * a.x) * cos_theta;
+        m.m[0][1] = a.x * a.y * (1.0 - cos_theta) - a.z * sin_theta;
+        m.m[0][2] = a.x * a.z * (1.0 - cos_theta) + a.y * sin_theta;
+        m.m[0][3] = 0.0;
+        // compute rotations of second basis vectors
+        m.m[1][0] = a.x * a.y * (1.0 - cos_theta) + a.z * sin_theta;
+        m.m[1][1] = a.y * a.y + (1.0 - a.y * a.y) * cos_theta;
+        m.m[1][2] = a.y * a.z * (1.0 - cos_theta) - a.x * sin_theta;
+        m.m[1][3] = 0.0;
+        // compute rotations of third basis vectors
+        m.m[2][0] = a.x * a.z * (1.0 - cos_theta) - a.y * sin_theta;
+        m.m[2][1] = a.y * a.z * (1.0 - cos_theta) + a.x * sin_theta;
+        m.m[2][2] = a.z * a.z + (1.0 - a.z * a.z) * cos_theta;
+        m.m[2][3] = 0.0;
+        Transform {
+            m: m,
+            m_inv: Matrix4x4::transpose(m),
         }
     }
 }
