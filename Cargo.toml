@@ -6,3 +6,4 @@ authors = ["Jan Walter <jan@janwalter.com>"]
 [dependencies]
 
 num="*"
+num_cpus = "1.0"

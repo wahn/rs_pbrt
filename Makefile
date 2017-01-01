@@ -29,6 +29,7 @@ examples: release
 	./target/release/examples/geometry_ray_creation
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
+	./target/release/examples/pbrt
 	./target/release/examples/transform_matrix4x4_identity
 	./target/release/examples/transform_matrix4x4_new
 	./target/release/examples/transform_matrix4x4_transpose
