@@ -317,6 +317,58 @@
 //!     println!("Transform::rotate({}, {:?}) = {:?}", theta, axis, t);
 //! }
 //! ```
+//!
+//! ## Shapes
+//!
+//! Careful abstraction of geometric shapes in a ray tracer is a key
+//! component of a clean system design, and shapes are the ideal
+//! candidate for an object-oriented approach. All geometric
+//! primitives implement a common interface, and the rest of the
+//! renderer can use this interface without needing any details about
+//! the underlying shape. This makes it possible to separate the
+//! geometric and the shading subsystem of pbrt.
+//!
+//! ### Spheres
+//!
+//! Spheres are a special case of a general type of surfaces called
+//! quadrics. They are the simplest type of curved surfaces that is
+//! useful to a ray tracer and are a good starting point for general
+//! ray intersection routines.
+//!
+//! ```rust
+//! extern crate pbrt;
+//! 
+//! use pbrt::Sphere;
+//! 
+//! fn main() {
+//!     let default_sphere: Sphere = Sphere::default();
+//!     let sphere: Sphere = Sphere::new(2.0, -0.5, 0.75, 270.0);
+//! 
+//!     println!("default sphere = {:?}", default_sphere);
+//!     println!("sphere = {:?}", sphere);
+//! }
+//! ```
+//!
+//! ### Cones
+//!
+//! TODO
+//!
+//! ### Disks
+//!
+//! TODO
+//!
+//! ### Cylinders
+//!
+//! TODO
+//!
+//! ### Hyperboloids
+//!
+//! TODO
+//!
+//! ### Paraboloids
+//!
+//! TODO
+//!
 
 extern crate num;
 
@@ -327,6 +379,20 @@ use std::f64::consts::PI;
 pub type Float = f64;
 
 // see pbrt.h
+
+pub fn clamp<T>(val: T, low: T, high: T) -> T
+    where T: PartialOrd
+{
+    let r: T;
+    if val < low {
+        r = low;
+    } else if val > high {
+        r = high;
+    } else {
+        r = val;
+    }
+    r
+}
 
 pub fn radians(deg: Float) -> Float {
     (PI / 180.0) * deg
@@ -843,6 +909,44 @@ impl Transform {
         Transform {
             m: m,
             m_inv: Matrix4x4::transpose(m),
+        }
+    }
+}
+
+// see sphere.h
+
+#[derive(Debug)]
+pub struct Sphere {
+    radius: Float,
+    z_min: Float,
+    z_max: Float,
+    theta_min: Float,
+    theta_max: Float,
+    phi_max: Float,
+}
+
+impl Default for Sphere {
+    fn default() -> Sphere {
+        Sphere {
+            radius: 1.0,
+            z_min: -1.0,
+            z_max: 1.0,
+            theta_min: (-1.0 as Float).acos(),
+            theta_max: (1.0 as Float).acos(),
+            phi_max: 360.0,
+        }
+    }
+}
+
+impl Sphere {
+    pub fn new(radius: Float, z_min: Float, z_max: Float, phi_max: Float) -> Sphere {
+        Sphere {
+            radius: radius,
+            z_min: clamp(z_min.min(z_max), -radius, radius),
+            z_max: clamp(z_min.max(z_max), -radius, radius),
+            theta_min: clamp(z_min.min(z_max) / radius, -1.0, 1.0).acos(),
+            theta_max: clamp(z_min.max(z_max) / radius, -1.0, 1.0).acos(),
+            phi_max: phi_max,
         }
     }
 }
