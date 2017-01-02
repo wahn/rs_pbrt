@@ -318,6 +318,48 @@
 //! }
 //! ```
 //!
+//! ### The Look-At Transformation
+//!
+//! The *look-at* transformation is particularly useful for placing a
+//! camera in the scene. The caller specifies the desired position of
+//! the camera, a point the camera is looking at, and an "up" vector
+//! that orients the camera along the viewing direction implied by the
+//! first two parameters. All of these values are given in world space
+//! coordinates. The look-at construction then gives a transformation
+//! between camera space and world space.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{Point3f, Transform, Vector3f};
+//!
+//! fn main() {
+//!     // LookAt 2 2 5  0 -.4 0  0 1 0 (see spheres-differentials-texfilt.pbrt)
+//!     let pos = Point3f {
+//!         x: 2.0,
+//!         y: 2.0,
+//!         z: 5.0,
+//!     };
+//!     let look = Point3f {
+//!         x: 0.0,
+//!         y: -0.4,
+//!         z: 0.0,
+//!     };
+//!     let up = Vector3f {
+//!         x: 0.0,
+//!         y: 1.0,
+//!         z: 0.0,
+//!     };
+//!     let t: Transform = Transform::look_at(pos, look, up);
+//!
+//!     println!("Transform::look_at({:?}, {:?}, {:?}) = {:?}",
+//!              pos,
+//!              look,
+//!              up,
+//!              t);
+//! }
+//! ```
+//!
 //! ## Shapes
 //!
 //! Careful abstraction of geometric shapes in a ray tracer is a key
@@ -337,13 +379,13 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::Sphere;
-//! 
+//!
 //! fn main() {
 //!     let default_sphere: Sphere = Sphere::default();
 //!     let sphere: Sphere = Sphere::new(2.0, -0.5, 0.75, 270.0);
-//! 
+//!
 //!     println!("default sphere = {:?}", default_sphere);
 //!     println!("sphere = {:?}", sphere);
 //! }
@@ -372,7 +414,7 @@
 
 extern crate num;
 
-use std::ops::{Add, Mul, Div};
+use std::ops::{Add, Sub, Mul, Div};
 use std::default::Default;
 use std::f64::consts::PI;
 
@@ -407,7 +449,7 @@ pub fn degrees(rad: Float) -> Float {
 pub type Point3f = Point3<Float>;
 pub type Vector3f = Vector3<Float>;
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Vector2<T> {
     pub x: T,
     pub y: T,
@@ -473,26 +515,57 @@ pub fn vec3_dot<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
     v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
 
+pub fn vec3_cross<T>(v1: Vector3<T>, v2: Vector3<T>) -> Vector3<T>
+    where T: Copy + Sub<T, Output = T> + Mul<T, Output = T>
+{
+    let v1x: T = v1.x;
+    let v1y: T = v1.y;
+    let v1z: T = v1.z;
+    let v2x: T = v2.x;
+    let v2y: T = v2.y;
+    let v2z: T = v2.z;
+    Vector3::<T> {
+        x: (v1y * v2z) - (v1z * v2y),
+        y: (v1z * v2x) - (v1x * v2z),
+        z: (v1x * v2y) - (v1y * v2x),
+    }
+}
+
 pub fn normalize<T>(v: Vector3<T>) -> Vector3<T>
     where T: num::Float + Copy + Div<T, Output = T>
 {
     v / v.length()
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Point2<T> {
     pub x: T,
     pub y: T,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Point3<T> {
     pub x: T,
     pub y: T,
     pub z: T,
 }
 
-#[derive(Debug)]
+impl<T> Sub<Point3<T>> for Point3<T>
+    where T: Sub<T, Output = T>
+{
+    type Output = Vector3<T>;
+    fn sub(self, rhs: Point3<T>) -> Vector3<T>
+        where T: Sub<T, Output = T>
+    {
+        Vector3::<T> {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
+#[derive(Debug,Copy,Clone)]
 pub struct Normal3<T> {
     pub x: T,
     pub y: T,
@@ -512,19 +585,19 @@ impl<T> Normal3<T> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Bounds2<T> {
     pub p_min: Point2<T>,
     pub p_max: Point2<T>,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Bounds3<T> {
     pub p_min: Point3<T>,
     pub p_max: Point3<T>,
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Ray {
     /// origin
     pub o: Point3f,
@@ -674,7 +747,7 @@ impl Matrix4x4 {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Transform {
     pub m: Matrix4x4,
     pub m_inv: Matrix4x4,
@@ -911,11 +984,52 @@ impl Transform {
             m_inv: Matrix4x4::transpose(m),
         }
     }
+    pub fn look_at(pos: Point3f, look: Point3f, up: Vector3f) -> Transform {
+        let mut camera_to_world = Matrix4x4::default();
+        // initialize fourth column of viewing matrix
+        camera_to_world.m[0][3] = pos.x;
+        camera_to_world.m[1][3] = pos.y;
+        camera_to_world.m[2][3] = pos.z;
+        camera_to_world.m[3][3] = 1.0;
+        // initialize first three columns of viewing matrix
+        let dir: Vector3f = normalize(look - pos);
+        if vec3_cross(normalize(up), dir).length() == 0.0 {
+            println!("\"up\" vector ({}, {}, {}) and viewing direction ({}, {}, {}) passed to \
+                      LookAt are pointing in the same direction.  Using the identity \
+                      transformation.",
+                     up.x,
+                     up.y,
+                     up.z,
+                     dir.x,
+                     dir.y,
+                     dir.z);
+            Transform::default()
+        } else {
+            let left: Vector3f = normalize(vec3_cross(normalize(up), dir));
+            let new_up: Vector3f = vec3_cross(dir, left);
+            camera_to_world.m[0][0] = left.x;
+            camera_to_world.m[1][0] = left.y;
+            camera_to_world.m[2][0] = left.z;
+            camera_to_world.m[3][0] = 0.0;
+            camera_to_world.m[0][1] = new_up.x;
+            camera_to_world.m[1][1] = new_up.y;
+            camera_to_world.m[2][1] = new_up.z;
+            camera_to_world.m[3][1] = 0.0;
+            camera_to_world.m[0][2] = dir.x;
+            camera_to_world.m[1][2] = dir.y;
+            camera_to_world.m[2][2] = dir.z;
+            camera_to_world.m[3][2] = 0.0;
+            Transform {
+                m: Matrix4x4::inverse(camera_to_world),
+                m_inv: camera_to_world,
+            }
+        }
+    }
 }
 
 // see sphere.h
 
-#[derive(Debug)]
+#[derive(Debug,Copy,Clone)]
 pub struct Sphere {
     radius: Float,
     z_min: Float,
