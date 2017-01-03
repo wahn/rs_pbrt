@@ -360,6 +360,24 @@
 //! }
 //! ```
 //!
+//! ## Quaternions
+//!
+//! Quaternions were originally invented by Sir William Hamilton in
+//! 1843 as a generalization of complex numbers (2 dimensions) to four
+//! dimensions.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::Quaternion;
+//!
+//! fn main() {
+//!     let default_quaternion: Quaternion = Quaternion::default();
+//!
+//!     println!("default quaternion = {:?}", default_quaternion);
+//! }
+//! ```
+//!
 //! ## Shapes
 //!
 //! Careful abstraction of geometric shapes in a ray tracer is a key
@@ -446,6 +464,7 @@ pub fn degrees(rad: Float) -> Float {
 
 // see geometry.h
 
+pub type Point2f = Point2<Float>;
 pub type Point3f = Point3<Float>;
 pub type Vector3f = Vector3<Float>;
 
@@ -474,7 +493,7 @@ pub fn vec2_dot<T>(v1: Vector2<T>, v2: Vector2<T>) -> T
     v1.x * v2.x + v1.y * v2.y
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct Vector3<T> {
     pub x: T,
     pub y: T,
@@ -1027,6 +1046,23 @@ impl Transform {
     }
 }
 
+// see quaternion.h
+
+#[derive(Debug,Copy,Clone)]
+pub struct Quaternion {
+    pub v: Vector3f,
+    pub w: Float,
+}
+
+impl Default for Quaternion {
+    fn default() -> Quaternion {
+        Quaternion {
+            v: Vector3f::default(),
+            w: 1.0,
+        }
+    }
+}
+
 // see sphere.h
 
 #[derive(Debug,Copy,Clone)]
@@ -1063,4 +1099,27 @@ impl Sphere {
             phi_max: phi_max,
         }
     }
+}
+
+// see perspective.h
+
+#[derive(Debug,Copy,Clone)]
+pub struct PerspectiveCamera {
+    // inherited from Camera (see camera.h)
+    // TODO: AnimatedTransform CameraToWorld;
+    pub shutter_open: Float,
+    pub shutter_close: Float,
+    // TODO: Film *film;
+    // TODO: const Medium *medium;
+    // inherited from ProjectiveCamera (see camera.h)
+    camera_to_screen: Transform,
+    raster_to_camera: Transform,
+    screen_to_raster: Transform,
+    raster_to_screen: Transform,
+    lens_radius: Float,
+    focal_distance: Float,
+    // private data (see perspective.h)
+    dx_camera: Vector3f,
+    dy_camera: Vector3f,
+    a: Float,
 }

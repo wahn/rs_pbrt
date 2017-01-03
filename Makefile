@@ -30,6 +30,7 @@ examples: release
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
 	./target/release/examples/pbrt
+	./target/release/examples/quaternion_default
 	./target/release/examples/shapes_sphere_default
 	./target/release/examples/shapes_sphere_new
 	./target/release/examples/transform_matrix4x4_identity
