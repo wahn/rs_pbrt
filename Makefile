@@ -19,6 +19,7 @@ release:
 	cargo test --release
 
 examples: release
+	./target/release/examples/api_make_camera
 	./target/release/examples/geometry_bounds2_unit_cube
 	./target/release/examples/geometry_bounds3_unit_cube
 	./target/release/examples/geometry_length
