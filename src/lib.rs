@@ -466,7 +466,9 @@ pub fn degrees(rad: Float) -> Float {
 
 pub type Point2f = Point2<Float>;
 pub type Point3f = Point3<Float>;
+pub type Vector2f = Vector2<Float>;
 pub type Vector3f = Vector3<Float>;
+pub type Normal3f = Normal3<Float>;
 
 #[derive(Debug,Copy,Clone)]
 pub struct Vector2<T> {
@@ -2134,4 +2136,54 @@ pub struct PerspectiveCamera {
     dx_camera: Vector3f,
     dy_camera: Vector3f,
     a: Float,
+}
+
+// see paramset.h
+
+pub struct ParamSetItem<T> {
+    pub name: String,
+    pub values: Vec<T>,
+    pub n_values: usize,
+    pub looked_up: bool, // false
+}
+
+pub struct ParamSet {
+    bools: Vec<ParamSetItem<bool>>,
+    ints: Vec<ParamSetItem<i64>>,
+    floats: Vec<ParamSetItem<Float>>,
+    point2fs: Vec<ParamSetItem<Point2f>>,
+    vector2fs: Vec<ParamSetItem<Vector2f>>,
+    point3fs: Vec<ParamSetItem<Point3f>>,
+    vector3fs: Vec<ParamSetItem<Vector3f>>,
+    normals: Vec<ParamSetItem<Normal3f>>,
+    // TODO: std::vector<std::shared_ptr<ParamSetItem<Spectrum>>> spectra;
+    strings: Vec<ParamSetItem<String>>,
+    textures: Vec<ParamSetItem<String>>,
+    // TODO: static std::map<std::string, Spectrum> cachedSpectra;
+}
+
+// see api.cpp
+
+pub struct RenderOptions {
+    transform_start_time: Float,
+    transform_end_time: Float,
+    filter_name: String,
+    filter_params: ParamSet,
+    film_name: String, // "box"
+    film_params: ParamSet,
+    sampler_name: String, // "halton";
+    sampler_params: ParamSet,
+    accelerator_name: String, // "bvh";
+    accelerator_params: ParamSet,
+    integrator_name: String, // "path";
+    integrator_params: ParamSet,
+    camera_name: String, // "perspective";
+    camera_params: ParamSet,
+    // TODO: TransformSet CameraToWorld;
+    // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
+    // TODO: std::vector<std::shared_ptr<Light>> lights;
+    // TODO: std::vector<std::shared_ptr<Primitive>> primitives;
+    // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
+    // TODO: std::vector<std::shared_ptr<Primitive>> *currentInstance = nullptr;
+    have_scattering_media: bool, // false
 }
