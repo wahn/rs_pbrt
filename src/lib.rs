@@ -541,7 +541,7 @@ pub type Vector2f = Vector2<Float>;
 pub type Vector3f = Vector3<Float>;
 pub type Normal3f = Normal3<Float>;
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct Vector2<T> {
     pub x: T,
     pub y: T,
@@ -670,13 +670,13 @@ pub fn vec3_normalize<T>(v: Vector3<T>) -> Vector3<T>
     v / v.length()
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct Point2<T> {
     pub x: T,
     pub y: T,
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct Point3<T> {
     pub x: T,
     pub y: T,
@@ -698,7 +698,7 @@ impl<T> Sub<Point3<T>> for Point3<T>
     }
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct Normal3<T> {
     pub x: T,
     pub y: T,
@@ -723,19 +723,19 @@ pub type Bounds2i = Bounds2<i32>;
 pub type Bounds3f = Bounds3<Float>;
 pub type Bounds3i = Bounds3<i32>;
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct Bounds2<T> {
     pub p_min: Point2<T>,
     pub p_max: Point2<T>,
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct Bounds3<T> {
     pub p_min: Point3<T>,
     pub p_max: Point3<T>,
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct Ray {
     /// origin
     pub o: Point3f,
@@ -911,6 +911,16 @@ impl Default for Transform {
     }
 }
 
+impl Mul for Transform {
+    type Output = Transform;
+    fn mul(self, rhs: Transform) -> Transform {
+        Transform {
+            m: mtx_mul(self.m, rhs.m),
+            m_inv: mtx_mul(rhs.m_inv, self.m_inv),
+        }
+    }
+}
+
 impl Transform {
     pub fn new(t00: Float,
                t01: Float,
@@ -962,6 +972,12 @@ impl Transform {
                                                      t31,
                                                      t32,
                                                      t33)),
+        }
+    }
+    pub fn inverse(t: Transform) -> Transform {
+        Transform {
+            m: t.m_inv,
+            m_inv: t.m,
         }
     }
     pub fn translate(delta: Vector3f) -> Transform {
@@ -2193,7 +2209,7 @@ impl Sphere {
 
 // see box.h
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct BoxFilter {
     pub radius: Vector2f,
     pub inv_radius: Vector2f,
@@ -2201,7 +2217,7 @@ pub struct BoxFilter {
 
 // see film.h
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Default,Clone)]
 pub struct Film {
     pub full_resolution: Point2i,
     pub diagonal: Float,
@@ -2212,13 +2228,13 @@ pub struct Film {
 
 // see perspective.h
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Default,Clone)]
 pub struct PerspectiveCamera {
     // inherited from Camera (see camera.h)
-    // TODO: AnimatedTransform CameraToWorld;
+    pub camera_to_world: AnimatedTransform,
     pub shutter_open: Float,
     pub shutter_close: Float,
-    // TODO: Film *film;
+    pub film: Film,
     // TODO: const Medium *medium;
     // inherited from ProjectiveCamera (see camera.h)
     camera_to_screen: Transform,
@@ -2228,9 +2244,66 @@ pub struct PerspectiveCamera {
     lens_radius: Float,
     focal_distance: Float,
     // private data (see perspective.h)
-    dx_camera: Vector3f,
-    dy_camera: Vector3f,
-    a: Float,
+    // dx_camera: Vector3f,
+    // dy_camera: Vector3f,
+    // a: Float,
+}
+
+impl PerspectiveCamera {
+    pub fn new(camera_to_world: AnimatedTransform,
+               camera_to_screen: Transform,
+               screen_window: Bounds2f,
+               shutter_open: Float,
+               shutter_close: Float,
+               lens_radius: Float,
+               focal_distance: Float,
+               fov: Float,
+               film: Film /* const Medium *medium */)
+               -> PerspectiveCamera {
+        // see perspective.cpp
+        // compute differential changes in origin for perspective camera rays
+        // let dxCamera = (RasterToCamera(Point3f(1, 0, 0)) - RasterToCamera(Point3f(0, 0, 0)));
+        // let dyCamera = (RasterToCamera(Point3f(0, 1, 0)) - RasterToCamera(Point3f(0, 0, 0)));
+        // compute image plane bounds at $z=1$ for _PerspectiveCamera_
+        // Point2i res = film->fullResolution;
+        // Point3f pMin = RasterToCamera(Point3f(0, 0, 0));
+        // Point3f pMax = RasterToCamera(Point3f(res.x, res.y, 0));
+        // pMin /= pMin.z;
+        // pMax /= pMax.z;
+        // A = std::abs((pMax.x - pMin.x) * (pMax.y - pMin.y));
+        // see camera.h
+        // compute projective camera screen transformations
+        let scale1 = Transform::scale(film.full_resolution.x as Float,
+                                      film.full_resolution.y as Float,
+                                      1.0);
+        let scale2 = Transform::scale(1.0 / (screen_window.p_max.x - screen_window.p_min.x),
+                                      1.0 / (screen_window.p_min.y - screen_window.p_max.y),
+                                      1.0);
+        let translate = Transform::translate(Vector3f {
+            x: -screen_window.p_min.x,
+            y: -screen_window.p_max.y,
+            z: 0.0,
+        });
+        let screen_to_raster = scale1 * scale2 * translate;
+        let raster_to_screen = Transform::inverse(screen_to_raster);
+        let raster_to_camera = Transform::inverse(camera_to_screen) * raster_to_screen;
+
+        PerspectiveCamera {
+            camera_to_world: camera_to_world,
+            shutter_open: shutter_open,
+            shutter_close: shutter_close,
+            film: film,
+            camera_to_screen: camera_to_screen,
+            raster_to_camera: raster_to_camera,
+            screen_to_raster: screen_to_raster,
+            raster_to_screen: raster_to_screen,
+            lens_radius: lens_radius,
+            focal_distance: focal_distance,
+            // dx_camera: dx_camera,
+            // dy_camera: dy_camera,
+            // a: a,
+        }
+    }
 }
 
 // see paramset.h
@@ -2274,7 +2347,7 @@ pub struct RenderOptions {
     integrator_params: ParamSet,
     camera_name: String, // "perspective";
     camera_params: ParamSet,
-    // TODO: TransformSet CameraToWorld;
+    // TODO: TransformSet camera_to_world;
     // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
     // TODO: std::vector<std::shared_ptr<Light>> lights;
     // TODO: std::vector<std::shared_ptr<Primitive>> primitives;
