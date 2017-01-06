@@ -429,7 +429,6 @@
 //!
 //! TODO
 //!
-//!
 //! ## Filters
 //!
 //! ### Box Filter
@@ -457,6 +456,46 @@
 //!     };
 //!
 //!     println!("box_filter = {:?}", box_filter);
+//! }
+//! ```
+//! ## Film
+//!
+//! The type of film or sensor in a camera has a dramatic effect on
+//! the way that incident light is transformed into colors in an
+//! image. In **pbrt**, the **Film** class models the sensing device
+//! in the simulated camera. After the radiance is found for each
+//! camera ray, the **Film** implementation determines the sample's
+//! contribution to the pixel around the point on the film plane where
+//! the camera ray began and updates its representation of the
+//! image. When the main rendering loop exits, the **Film** writes the
+//! final image to file.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{Bounds2i, BoxFilter, Film, Point2i, Vector2f};
+//! use std::string::String;
+//!
+//! fn main() {
+//!     // see film.cpp CreateFilm()
+//!     let film = Film {
+//!         full_resolution: Point2i { x: 1280, y: 720 },
+//!         diagonal: 35.0,
+//!         filter: BoxFilter {
+//!             radius: Vector2f { x: 0.5, y: 0.5 },
+//!             inv_radius: Vector2f {
+//!                 x: 1.0 / 0.5,
+//!                 y: 1.0 / 0.5,
+//!             },
+//!         },
+//!         filename: String::from("pbrt.exr"),
+//!         cropped_pixel_bounds: Bounds2i {
+//!             p_min: Point2i { x: 0, y: 0 },
+//!             p_max: Point2i { x: 1280, y: 720 },
+//!         },
+//!     };
+//!
+//!     println!("film = {:?}", film);
 //! }
 //! ```
 
@@ -495,7 +534,9 @@ pub fn degrees(rad: Float) -> Float {
 // see geometry.h
 
 pub type Point2f = Point2<Float>;
+pub type Point2i = Point2<i32>;
 pub type Point3f = Point3<Float>;
+pub type Point3i = Point3<i32>;
 pub type Vector2f = Vector2<Float>;
 pub type Vector3f = Vector3<Float>;
 pub type Normal3f = Normal3<Float>;
@@ -676,6 +717,11 @@ impl<T> Normal3<T> {
         self.length_squared().sqrt()
     }
 }
+
+pub type Bounds2f = Bounds2<Float>;
+pub type Bounds2i = Bounds2<i32>;
+pub type Bounds3f = Bounds3<Float>;
+pub type Bounds3i = Bounds3<i32>;
 
 #[derive(Debug,Copy,Clone)]
 pub struct Bounds2<T> {
@@ -2151,6 +2197,17 @@ impl Sphere {
 pub struct BoxFilter {
     pub radius: Vector2f,
     pub inv_radius: Vector2f,
+}
+
+// see film.h
+
+#[derive(Debug,Clone)]
+pub struct Film {
+    pub full_resolution: Point2i,
+    pub diagonal: Float,
+    pub filter: BoxFilter, // TODO: Filter
+    pub filename: String,
+    pub cropped_pixel_bounds: Bounds2i,
 }
 
 // see perspective.h
