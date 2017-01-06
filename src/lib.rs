@@ -429,6 +429,36 @@
 //!
 //! TODO
 //!
+//!
+//! ## Filters
+//!
+//! ### Box Filter
+//!
+//! One of the most commonly used filters in graphics is the box
+//! filter. The box filter equally weights all samples within a square
+//! region of the image. Although computational efficient, it's just
+//! about the worst filter possible.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{BoxFilter, Float, Vector2f};
+//!
+//! fn main() {
+//!     // see box.cpp CreateBoxFilter()
+//!     let xw: Float = 0.5;
+//!     let yw: Float = 0.5;
+//!     let box_filter = BoxFilter {
+//!         radius: Vector2f { x: xw, y: yw },
+//!         inv_radius: Vector2f {
+//!             x: 1.0 / xw,
+//!             y: 1.0 / yw,
+//!         },
+//!     };
+//!
+//!     println!("box_filter = {:?}", box_filter);
+//! }
+//! ```
 
 extern crate num;
 
@@ -2113,6 +2143,14 @@ impl Sphere {
             phi_max: phi_max,
         }
     }
+}
+
+// see box.h
+
+#[derive(Debug,Copy,Clone)]
+pub struct BoxFilter {
+    pub radius: Vector2f,
+    pub inv_radius: Vector2f,
 }
 
 // see perspective.h
