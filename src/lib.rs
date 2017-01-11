@@ -1211,6 +1211,35 @@ impl Transform {
             }
         }
     }
+    pub fn perspective(fov: Float, n: Float, f: Float) -> Transform {
+        // perform projective divide for perspective projection
+        let persp = Matrix4x4::new(1.0,
+                                   0.0,
+                                   0.0,
+                                   0.0,
+                                   0.0,
+                                   1.0,
+                                   0.0,
+                                   0.0,
+                                   0.0,
+                                   0.0,
+                                   f / (f - n),
+                                   -f * n / (f - n),
+                                   0.0,
+                                   0.0,
+                                   1.0,
+                                   0.0);
+        // scale canonical perspective view to specified field of view
+        // Float invTanAng = 1 / std::tan(Radians(fov) / 2);
+        let inv_tan_ang: Float = 1.0 / (radians(fov) / 2.0).tan();
+        // return Scale(invTanAng, invTanAng, 1) * Transform(persp);
+        let scale: Transform = Transform::scale(inv_tan_ang, inv_tan_ang, 1.0);
+        let persp_trans: Transform = Transform {
+            m: persp,
+            m_inv: Matrix4x4::inverse(persp),
+        };
+        scale * persp_trans
+    }
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -2226,6 +2255,14 @@ impl Sphere {
             phi_max: phi_max,
         }
     }
+}
+
+// see zerotwosequence.h
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct ZeroTwoSequenceSampler {
+    pub samples_per_pixel: i64,
+    pub n_sampled_dimensions: i64,
 }
 
 // see box.h

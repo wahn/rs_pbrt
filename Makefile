@@ -21,6 +21,7 @@ release:
 examples: release
 	./target/release/examples/api_make_camera
 	./target/release/examples/api_pbrt_world_end
+	./target/release/examples/cameras_create_perspective_camera
 	./target/release/examples/film_create_film
 	./target/release/examples/filters_create_box_filter
 	./target/release/examples/geometry_bounds2_unit_cube
