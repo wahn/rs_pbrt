@@ -498,6 +498,27 @@
 //!     println!("film = {:?}", film);
 //! }
 //! ```
+//!
+//! ## Direct Lighting
+//!
+//! The **DirectLightingIntegrator** accounts only for direct lighting
+//! - light that has traveled directly from a light source to the
+//! point being shaded - and ignores indirect illumination from
+//! objects that are not themselfes emissive, except for basic
+//! specular reflection and transmission effects.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::DirectLightingIntegrator;
+//!
+//! fn main() {
+//!     // see directlighting.cpp CreateDirectLightingIntegrator()
+//!     let integrator = DirectLightingIntegrator::default();
+//!
+//!     println!("integrator = {:?}", integrator);
+//! }
+//! ```
 
 extern crate num;
 
@@ -2302,6 +2323,42 @@ impl PerspectiveCamera {
             // dx_camera: dx_camera,
             // dy_camera: dy_camera,
             // a: a,
+        }
+    }
+}
+
+// see directlighting.h
+
+#[derive(Debug,Clone)]
+pub enum LightStrategy {
+    UniformSampleAll,
+    UniformSampleOne,
+}
+
+#[derive(Debug,Clone)]
+pub struct DirectLightingIntegrator {
+    // inherited from SamplerIntegrator (see integrator.h)
+    camera: PerspectiveCamera, // std::shared_ptr<const Camera> camera;
+    // TODO: std::shared_ptr<Sampler> sampler;
+    pixel_bounds: Bounds2i,
+    // see directlighting.h
+    // TODO: const LightStrategy strategy;
+    strategy: LightStrategy,
+    max_depth: i64,
+    n_light_samples: Vec<i64>,
+}
+
+impl Default for DirectLightingIntegrator {
+    fn default() -> DirectLightingIntegrator {
+        DirectLightingIntegrator {
+            camera: PerspectiveCamera::default(),
+            pixel_bounds: Bounds2i {
+                p_min: Point2i { x: 0, y: 0 },
+                p_max: Point2i { x: 1280, y: 720 },
+            },
+            strategy: LightStrategy::UniformSampleAll,
+            max_depth: 5,
+            n_light_samples: Vec::new(),
         }
     }
 }

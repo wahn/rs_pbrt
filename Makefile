@@ -33,6 +33,7 @@ examples: release
 	./target/release/examples/geometry_ray_creation
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
+	./target/release/examples/integrators_create_direct_lighting_integrator
 	./target/release/examples/pbrt
 	./target/release/examples/quaternion_default
 	./target/release/examples/shapes_sphere_default
