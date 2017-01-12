@@ -552,6 +552,32 @@ pub fn degrees(rad: Float) -> Float {
     (180.0 / PI) * rad
 }
 
+pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -> bool {
+    // find quadratic discriminant
+    let discrim: f64 = (b as f64) * (b as f64) - 4.0 * (a as f64) * (c as f64);
+    if discrim < 0.0 {
+        false
+    } else {
+        let rootDiscrim: f64 = discrim.sqrt();
+        // compute quadratic _t_ values
+        let mut q: f64 = 0.0;
+        if b < 0.0 {
+            q = -0.5 * (b - rootDiscrim);
+        } else {
+            q = -0.5 * (b + rootDiscrim);
+        }
+        *t0 = q / a;
+        *t1 = c / q;
+        if *t0 > *t1 {
+            // std::swap(*t0, *t1);
+            let swap = *t0;
+            *t0 = *t1;
+            *t1 = swap;
+        }
+        true
+    }
+}
+
 // see geometry.h
 
 pub type Point2f = Point2<Float>;
@@ -1230,9 +1256,7 @@ impl Transform {
                                    1.0,
                                    0.0);
         // scale canonical perspective view to specified field of view
-        // Float invTanAng = 1 / std::tan(Radians(fov) / 2);
         let inv_tan_ang: Float = 1.0 / (radians(fov) / 2.0).tan();
-        // return Scale(invTanAng, invTanAng, 1) * Transform(persp);
         let scale: Transform = Transform::scale(inv_tan_ang, inv_tan_ang, 1.0);
         let persp_trans: Transform = Transform {
             m: persp,

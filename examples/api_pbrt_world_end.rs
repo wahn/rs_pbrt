@@ -31,5 +31,7 @@ fn main() {
         },
     };
     // TODO: std::unique_ptr<Scene> scene(renderOptions->MakeScene());
-    // ...
+    // MakeAccelerator()
+    // CreateBVHAccelerator()
+    
 }
