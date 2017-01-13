@@ -398,11 +398,17 @@
 //! ```rust
 //! extern crate pbrt;
 //!
-//! use pbrt::Sphere;
+//! use pbrt::{Sphere, Transform, Vector3f};
 //!
 //! fn main() {
 //!     let default_sphere: Sphere = Sphere::default();
-//!     let sphere: Sphere = Sphere::new(2.0, -0.5, 0.75, 270.0);
+//!     let translate: Transform = Transform::translate(Vector3f {
+//!         x: -1.3,
+//!         y: 0.0,
+//!         z: 0.0,
+//!     });
+//!     let inverse: Transform = Transform::inverse(translate);
+//!     let sphere: Sphere = Sphere::new(translate, inverse, false, false, 2.0, -0.5, 0.75, 270.0);
 //!
 //!     println!("default sphere = {:?}", default_sphere);
 //!     println!("sphere = {:?}", sphere);
@@ -2253,11 +2259,22 @@ pub struct Sphere {
     theta_min: Float,
     theta_max: Float,
     phi_max: Float,
+    // derived from class Shape (see shape.h)
+    object_to_world: Transform,
+    world_to_object: Transform,
+    reverse_orientation: bool,
+    transform_swaps_handedness: bool,
 }
 
 impl Default for Sphere {
     fn default() -> Sphere {
         Sphere {
+            // Shape
+            object_to_world: Transform::default(),
+            world_to_object: Transform::default(),
+            reverse_orientation: false,
+            transform_swaps_handedness: false,
+            // Sphere
             radius: 1.0,
             z_min: -1.0,
             z_max: 1.0,
@@ -2269,8 +2286,21 @@ impl Default for Sphere {
 }
 
 impl Sphere {
-    pub fn new(radius: Float, z_min: Float, z_max: Float, phi_max: Float) -> Sphere {
+    pub fn new(object_to_world: Transform,
+               world_to_object: Transform,
+               reverse_orientation: bool,
+               transform_swaps_handedness: bool,
+               radius: Float,
+               z_min: Float,
+               z_max: Float,
+               phi_max: Float) -> Sphere {
         Sphere {
+            // Shape
+            object_to_world: object_to_world,
+            world_to_object: world_to_object,
+            reverse_orientation: reverse_orientation,
+            transform_swaps_handedness: transform_swaps_handedness,
+            // Sphere
             radius: radius,
             z_min: clamp(z_min.min(z_max), -radius, radius),
             z_max: clamp(z_min.max(z_max), -radius, radius),
@@ -2278,6 +2308,15 @@ impl Sphere {
             theta_max: clamp(z_min.max(z_max) / radius, -1.0, 1.0).acos(),
             phi_max: phi_max,
         }
+    }
+    pub fn intersect(&self, r: &Ray, t_hit: &mut Float
+                     // , SurfaceInteraction *isect, bool testAlphaTexture
+    ) -> bool {
+        // transform _Ray_ to object space
+        // Vector3f oErr, dErr;
+        // Ray ray = (*WorldToObject)(r, &oErr, &dErr);
+        // WORK
+        true
     }
 }
 
