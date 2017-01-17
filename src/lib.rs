@@ -536,6 +536,13 @@ pub type Float = f64;
 
 // see pbrt.h
 
+const MACHINE_EPSILON: Float = std::f64::EPSILON * 0.5;
+
+pub fn gamma(n: i32) -> Float
+{
+    (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
+}
+
 pub fn clamp<T>(val: T, low: T, high: T) -> T
     where T: PartialOrd
 {
@@ -1269,6 +1276,44 @@ impl Transform {
             m_inv: Matrix4x4::inverse(persp),
         };
         scale * persp_trans
+    }
+    pub fn transform_point_with_error(&self,
+                                      p: Point3<Float>,
+                                      p_error: &mut Vector3<Float>)
+                                      -> Point3<Float> {
+        let x: Float = p.x;
+        let y: Float = p.y;
+        let z: Float = p.z;
+        // compute transformed coordinates from point _pt_
+        let xp: Float = self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z +
+                        self.m.m[0][3];
+        let yp: Float = self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z +
+                        self.m.m[1][3];
+        let zp: Float = self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z +
+                        self.m.m[2][3];
+        let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
+                        self.m.m[3][3];
+        // compute absolute error for transformed point
+        let x_abs_sum: Float = self.m.m[0][0].abs() * x + self.m.m[0][1].abs() * y +
+                               self.m.m[0][2].abs() * z +
+                               self.m.m[0][3].abs();
+        let y_abs_sum: Float = self.m.m[1][0].abs() * x + self.m.m[1][1].abs() * y +
+                               self.m.m[1][2].abs() * z +
+                               self.m.m[1][3].abs();
+        let z_abs_sum: Float = self.m.m[2][0].abs() * x + self.m.m[2][1].abs() * y +
+                               self.m.m[2][2].abs() * z +
+                               self.m.m[2][3].abs();
+        *p_error = Vector3::<Float> {
+            x: x_abs_sum,
+            y: y_abs_sum,
+            z: z_abs_sum,
+        } * gamma(3i32);
+        assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
+        if wp == 1. {
+            Point3::<Float>{ x: xp, y: yp, z: zp }
+        } else {
+            Point3::<Float>{ x: xp / wp, y: yp / wp, z: zp / wp, }
+        }
     }
 }
 
@@ -2293,7 +2338,8 @@ impl Sphere {
                radius: Float,
                z_min: Float,
                z_max: Float,
-               phi_max: Float) -> Sphere {
+               phi_max: Float)
+               -> Sphere {
         Sphere {
             // Shape
             object_to_world: object_to_world,
@@ -2309,9 +2355,25 @@ impl Sphere {
             phi_max: phi_max,
         }
     }
-    pub fn intersect(&self, r: &Ray, t_hit: &mut Float
-                     // , SurfaceInteraction *isect, bool testAlphaTexture
-    ) -> bool {
+    pub fn object_bound(&self) -> Bounds3f {
+        Bounds3f {
+            p_min: Point3f {
+                x: -self.radius,
+                y: -self.radius,
+                z: self.z_min,
+            },
+            p_max: Point3f {
+                x: self.radius,
+                y: self.radius,
+                z: self.z_max,
+            },
+        }
+    }
+
+    pub fn intersect(&self,
+                     r: &Ray,
+                     t_hit: &mut Float /* , SurfaceInteraction *isect, bool testAlphaTexture */)
+                     -> bool {
         // transform _Ray_ to object space
         // Vector3f oErr, dErr;
         // Ray ray = (*WorldToObject)(r, &oErr, &dErr);
