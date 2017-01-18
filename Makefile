@@ -47,9 +47,11 @@ examples: release
 	./target/release/examples/transform_transform_look_at
 	./target/release/examples/transform_transform_new
 	./target/release/examples/transform_transform_point_with_error
+	./target/release/examples/transform_transform_ray_with_error
 	./target/release/examples/transform_transform_rotate
 	./target/release/examples/transform_transform_rotate_x
 	./target/release/examples/transform_transform_rotate_y
 	./target/release/examples/transform_transform_rotate_z
 	./target/release/examples/transform_transform_scale
 	./target/release/examples/transform_transform_translate
+	./target/release/examples/transform_transform_vector_with_error

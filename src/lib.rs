@@ -528,7 +528,7 @@
 
 extern crate num;
 
-use std::ops::{Add, Sub, Mul, Div, Neg};
+use std::ops::{Add, AddAssign, Sub, Mul, Div, Neg};
 use std::default::Default;
 use std::f64::consts::PI;
 
@@ -690,6 +690,15 @@ impl<T> Neg for Vector3<T>
 }
 
 impl<T> Vector3<T> {
+    pub fn abs(&self) -> Vector3<T>
+        where T: num::Float
+    {
+        Vector3::<T> {
+            x: self.x.abs(),
+            y: self.y.abs(),
+            z: self.z.abs(),
+        }
+    }
     pub fn length_squared(&self) -> T
         where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
     {
@@ -743,12 +752,22 @@ pub struct Point3<T> {
     pub z: T,
 }
 
+impl<T> AddAssign<Vector3<T>> for Point3<T>
+    where T: AddAssign
+{
+    fn add_assign(&mut self, rhs: Vector3<T>)
+    {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
 impl<T> Sub<Point3<T>> for Point3<T>
     where T: Sub<T, Output = T>
 {
     type Output = Vector3<T>;
     fn sub(self, rhs: Point3<T>) -> Vector3<T>
-        where T: Sub<T, Output = T>
     {
         Vector3::<T> {
             x: self.x - rhs.x,
@@ -1310,10 +1329,55 @@ impl Transform {
         } * gamma(3i32);
         assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
         if wp == 1. {
-            Point3::<Float>{ x: xp, y: yp, z: zp }
+            Point3::<Float> {
+                x: xp,
+                y: yp,
+                z: zp,
+            }
         } else {
-            Point3::<Float>{ x: xp / wp, y: yp / wp, z: zp / wp, }
+            Point3::<Float> {
+                x: xp / wp,
+                y: yp / wp,
+                z: zp / wp,
+            }
         }
+    }
+    pub fn transform_vector_with_error(&self,
+                                       v: Vector3<Float>,
+                                       abs_error: &mut Vector3<Float>)
+                                       -> Vector3<Float> {
+        let x: Float = v.x;
+        let y: Float = v.y;
+        let z: Float = v.z;
+        let gamma: Float = gamma(3i32);
+        abs_error.x = gamma *
+                      ((self.m.m[0][0] * v.x).abs() + (self.m.m[0][1] * v.y).abs() +
+                       (self.m.m[0][2] * v.z).abs());
+        abs_error.y = gamma *
+                      ((self.m.m[1][0] * v.x).abs() + (self.m.m[1][1] * v.y).abs() +
+                       (self.m.m[1][2] * v.z).abs());
+        abs_error.z = gamma *
+                      ((self.m.m[2][0] * v.x).abs() + (self.m.m[2][1] * v.y).abs() +
+                       (self.m.m[2][2] * v.z).abs());
+        Vector3::<Float> {
+            x: self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z,
+            y: self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z,
+            z: self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z,
+        }
+    }
+    pub fn transform_ray_with_error(&self,
+                                    r: Ray,
+                                    o_error: &mut Vector3<Float>,
+                                    d_error: &mut Vector3<Float>)
+                                    -> Ray {
+        let mut o: Point3f = self.transform_point_with_error(r.o, o_error);
+        let d: Vector3f = self.transform_vector_with_error(r.d, d_error);
+        let length_squared: Float = d.length_squared();
+        if length_squared > 0.0 {
+            let dt: Float = vec3_dot(d.abs(), *o_error) / length_squared;
+            o += d * dt;
+        }
+        Ray { o: o, d: d }
     }
 }
 
