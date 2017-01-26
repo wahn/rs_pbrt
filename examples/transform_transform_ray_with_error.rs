@@ -21,11 +21,11 @@ fn main() {
     let r: Ray = Ray { o: o, d: d };
     let mut o_error: Vector3f = Vector3f::default();
     let mut d_error: Vector3f = Vector3f::default();
-    let tr: Ray = t.transform_ray_with_error(r, &mut o_error, &mut d_error);
+    let tr: Ray = t.transform_ray_with_error(&r, &mut o_error, &mut d_error);
 
     println!("t = {:?}", t);
     println!("r = {:?}", r);
-    println!("tp = transform_point_with_error(r, {:?}, {:?}) = {:?}",
+    println!("tr = transform_ray_with_error(r, {:?}, {:?}) = {:?}",
              o_error,
              d_error,
              tr);

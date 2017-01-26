@@ -1366,7 +1366,7 @@ impl Transform {
         }
     }
     pub fn transform_ray_with_error(&self,
-                                    r: Ray,
+                                    r: &Ray,
                                     o_error: &mut Vector3<Float>,
                                     d_error: &mut Vector3<Float>)
                                     -> Ray {
@@ -2433,16 +2433,23 @@ impl Sphere {
             },
         }
     }
-
     pub fn intersect(&self,
                      r: &Ray,
                      t_hit: &mut Float /* , SurfaceInteraction *isect, bool testAlphaTexture */)
                      -> bool {
         // transform _Ray_ to object space
         // Vector3f oErr, dErr;
+        let mut o_error: Vector3f = Vector3f::default();
+        let mut d_error: Vector3f = Vector3f::default();
         // Ray ray = (*WorldToObject)(r, &oErr, &dErr);
+        let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_error, &mut d_error);
         // WORK
-        true
+        // TMP
+        println!("world_to_object = {:?}", self.world_to_object);
+        println!("ray = {:?}", ray);
+        *t_hit = -1.0_f64;
+        // TMP
+        false
     }
 }
 
