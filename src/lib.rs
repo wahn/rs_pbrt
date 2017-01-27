@@ -538,6 +538,70 @@ pub type Float = f64;
 
 const MACHINE_EPSILON: Float = std::f64::EPSILON * 0.5;
 
+pub fn float_to_bits(f: f32) -> u32 {
+    // uint64_t ui;
+    // memcpy(&ui, &f, sizeof(double));
+    // return ui;
+    let mut rui: u32 = 0;
+    unsafe {
+        let ui: u32 = std::mem::transmute_copy(&f);
+        rui = ui;
+    }
+    rui
+}
+
+pub fn bits_to_float(ui: u32) -> f32 {
+    // float f;
+    // memcpy(&f, &ui, sizeof(uint32_t));
+    // return f;
+    let mut rf: f32 = 0.0;
+    unsafe {
+        let f: f32 = std::mem::transmute_copy(&ui);
+        rf = f;
+    }
+    rf
+}
+
+pub fn next_float_up(v: f32) -> f32 {
+    if v.is_infinite() && v > 0.0 {
+        v
+    } else {
+        let new_v: f32;
+        if v == -0.0 {
+            new_v = 0.0;
+        } else {
+            new_v = v;
+        }
+        let mut ui: u32 = float_to_bits(v);
+        if new_v > 0.0 {
+            ui += 1;
+        } else {
+            ui -= 1;
+        }
+        bits_to_float(ui)
+    }
+}
+
+pub fn next_float_down(v: f32) -> f32 {
+    if v.is_infinite() && v < 0.0 {
+        v
+    } else {
+        let new_v: f32;
+        if v == 0.0 {
+            new_v = -0.0;
+        } else {
+            new_v = v;
+        }
+        let mut ui: u32 = float_to_bits(v);
+        if new_v > 0.0 {
+            ui -= 1;
+        } else {
+            ui += 1;
+        }
+        bits_to_float(ui)
+    }
+}
+
 pub fn gamma(n: i32) -> Float
 {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
@@ -588,6 +652,33 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
             *t1 = swap;
         }
         true
+    }
+}
+
+// see efloat.h
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct EFloat {
+    v: f32,
+    low: f32,
+    high: f32,
+}
+
+impl EFloat {
+    pub fn new(v: f32, err: f32) -> EFloat {
+        if err == 0.0 {
+            EFloat {
+                v: v,
+                low: v,
+                high: v,
+            }
+        } else {
+            EFloat {
+                v: v,
+                low: next_float_down(v - err),
+                high: next_float_up(v + err),
+            }
+        }
     }
 }
 
@@ -2438,11 +2529,18 @@ impl Sphere {
                      t_hit: &mut Float /* , SurfaceInteraction *isect, bool testAlphaTexture */)
                      -> bool {
         // transform _Ray_ to object space
-        // Vector3f oErr, dErr;
         let mut o_error: Vector3f = Vector3f::default();
         let mut d_error: Vector3f = Vector3f::default();
-        // Ray ray = (*WorldToObject)(r, &oErr, &dErr);
         let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_error, &mut d_error);
+
+        // compute quadratic sphere coefficients
+
+        // initialize _EFloat_ ray coordinate values
+        // EFloat ox(ray.o.x, oErr.x), oy(ray.o.y, oErr.y), oz(ray.o.z, oErr.z);
+        // EFloat dx(ray.d.x, dErr.x), dy(ray.d.y, dErr.y), dz(ray.d.z, dErr.z);
+        // EFloat a = dx * dx + dy * dy + dz * dz;
+        // EFloat b = 2 * (dx * ox + dy * oy + dz * oz);
+        // EFloat c = ox * ox + oy * oy + oz * oz - EFloat(radius) * EFloat(radius);
         // WORK
         // TMP
         println!("world_to_object = {:?}", self.world_to_object);

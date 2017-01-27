@@ -22,6 +22,8 @@ examples: release
 	./target/release/examples/api_make_camera
 	./target/release/examples/api_pbrt_world_end
 	./target/release/examples/cameras_create_perspective_camera
+	./target/release/examples/core_next_float_down
+	./target/release/examples/core_next_float_up
 	./target/release/examples/core_quadratic
 	./target/release/examples/film_create_film
 	./target/release/examples/filters_create_box_filter
