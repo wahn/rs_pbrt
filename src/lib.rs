@@ -680,6 +680,63 @@ impl EFloat {
             }
         }
     }
+    pub fn lower_bound(&self) -> f32 {
+        self.low
+    }
+    pub fn upper_bound(&self) -> f32 {
+        self.high
+    }
+}
+
+impl Add for EFloat {
+    type Output = EFloat;
+    fn add(self, rhs: EFloat) -> EFloat {
+        let prod: [f32; 4] = [self.lower_bound() * rhs.lower_bound(),
+                              self.upper_bound() * rhs.lower_bound(),
+                              self.lower_bound() * rhs.upper_bound(),
+                              self.upper_bound() * rhs.upper_bound()];
+        // TODO: r.Check();
+        EFloat {
+            v: self.v + rhs.v,
+            low: next_float_down(self.lower_bound() + rhs.lower_bound()),
+            high: next_float_up(self.upper_bound() + rhs.upper_bound()),
+        }
+    }
+}
+
+impl Sub for EFloat {
+    type Output = EFloat;
+    fn sub(self, rhs: EFloat) -> EFloat {
+        // TODO: r.Check();
+        EFloat {
+            v: self.v - rhs.v,
+            low: next_float_down(self.lower_bound() - rhs.upper_bound()),
+            high: next_float_up(self.upper_bound() - rhs.lower_bound()),
+        }
+    }
+}
+
+impl Mul for EFloat {
+    type Output = EFloat;
+    fn mul(self, rhs: EFloat) -> EFloat {
+        let prod: [f32; 4] = [self.lower_bound() * rhs.lower_bound(),
+                              self.upper_bound() * rhs.lower_bound(),
+                              self.lower_bound() * rhs.upper_bound(),
+                              self.upper_bound() * rhs.upper_bound()];
+        // TODO: r.Check();
+        EFloat {
+            v: self.v * rhs.v,
+            low: next_float_down(prod[0].min(prod[1]).min(prod[2].min(prod[3]))),
+            high: next_float_up(prod[0].max(prod[1]).max(prod[2].max(prod[3]))),
+        }
+    }
+}
+
+impl Mul<f32> for EFloat {
+    type Output = EFloat;
+    fn mul(self, rhs: f32) -> EFloat {
+        EFloat::new(rhs, 0.0) * self
+    }
 }
 
 // see geometry.h
@@ -2529,18 +2586,23 @@ impl Sphere {
                      t_hit: &mut Float /* , SurfaceInteraction *isect, bool testAlphaTexture */)
                      -> bool {
         // transform _Ray_ to object space
-        let mut o_error: Vector3f = Vector3f::default();
-        let mut d_error: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_error, &mut d_error);
+        let mut o_err: Vector3f = Vector3f::default();
+        let mut d_err: Vector3f = Vector3f::default();
+        let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute quadratic sphere coefficients
 
         // initialize _EFloat_ ray coordinate values
-        // EFloat ox(ray.o.x, oErr.x), oy(ray.o.y, oErr.y), oz(ray.o.z, oErr.z);
-        // EFloat dx(ray.d.x, dErr.x), dy(ray.d.y, dErr.y), dz(ray.d.z, dErr.z);
-        // EFloat a = dx * dx + dy * dy + dz * dz;
-        // EFloat b = 2 * (dx * ox + dy * oy + dz * oz);
-        // EFloat c = ox * ox + oy * oy + oz * oz - EFloat(radius) * EFloat(radius);
+        let ox = EFloat::new(ray.o.x as f32, o_err.x as f32);
+        let oy = EFloat::new(ray.o.y as f32, o_err.y as f32);
+        let oz = EFloat::new(ray.o.z as f32, o_err.z as f32);
+        let dx = EFloat::new(ray.d.x as f32, d_err.x as f32);
+        let dy = EFloat::new(ray.d.y as f32, d_err.y as f32);
+        let dz = EFloat::new(ray.d.z as f32, d_err.z as f32);
+        let a: EFloat = dx * dx + dy * dy + dz * dz;
+        let b: EFloat = (dx * ox + dy * oy + dz * oz) * 2.0f32;
+        let c: EFloat = ox * ox + oy * oy + oz * oz -
+                        EFloat::new(self.radius as f32, 0.0) * EFloat::new(self.radius as f32, 0.0);
         // WORK
         // TMP
         println!("world_to_object = {:?}", self.world_to_object);
