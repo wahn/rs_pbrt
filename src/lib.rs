@@ -111,6 +111,7 @@
 //!     let ray = Ray {
 //!         o: origin,
 //!         d: direction,
+//!         t_max: std::f64::INFINITY,
 //!     };
 //!
 //!     println!("{:?}", ray);
@@ -528,7 +529,8 @@
 
 extern crate num;
 
-use std::ops::{Add, AddAssign, Sub, Mul, Div, Neg};
+use std::cmp::PartialEq;
+use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, Neg};
 use std::default::Default;
 use std::f64::consts::PI;
 
@@ -635,13 +637,13 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
     if discrim < 0.0 {
         false
     } else {
-        let rootDiscrim: f64 = discrim.sqrt();
+        let root_discrim: f64 = discrim.sqrt();
         // compute quadratic _t_ values
         let mut q: f64 = 0.0;
         if b < 0.0 {
-            q = -0.5 * (b - rootDiscrim);
+            q = -0.5 * (b - root_discrim);
         } else {
-            q = -0.5 * (b + rootDiscrim);
+            q = -0.5 * (b + root_discrim);
         }
         *t0 = q / a;
         *t1 = c / q;
@@ -666,7 +668,7 @@ pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &m
         let float_root_discrim: EFloat = EFloat::new(root_discrim as f32,
                                                      MACHINE_EPSILON as f32 * root_discrim as f32);
         // compute quadratic _t_ values
-        let mut q: EFloat;
+        let q: EFloat;
         if b.v < 0.0f32 {
             q = (b - float_root_discrim) * -0.5f32;
         } else {
@@ -714,13 +716,15 @@ impl EFloat {
     }
 }
 
+impl PartialEq for EFloat {
+    fn eq(&self, rhs: &EFloat) -> bool {
+        self.v == rhs.v
+    }
+}
+
 impl Add for EFloat {
     type Output = EFloat;
     fn add(self, rhs: EFloat) -> EFloat {
-        let prod: [f32; 4] = [self.lower_bound() * rhs.lower_bound(),
-                              self.upper_bound() * rhs.lower_bound(),
-                              self.lower_bound() * rhs.upper_bound(),
-                              self.upper_bound() * rhs.upper_bound()];
         // TODO: r.Check();
         EFloat {
             v: self.v + rhs.v,
@@ -831,6 +835,19 @@ pub struct Vector3<T> {
     pub x: T,
     pub y: T,
     pub z: T,
+}
+
+impl<T> Add for Vector3<T>
+    where T: Copy + Add<T, Output = T>
+{
+    type Output = Vector3<T>;
+    fn add(self, rhs: Vector3<T>) -> Vector3<T> {
+        Vector3::<T> {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
 }
 
 impl<T> Sub for Vector3<T>
@@ -952,6 +969,21 @@ pub struct Point3<T> {
     pub z: T,
 }
 
+impl<T> Add<Vector3<T>> for Point3<T>
+    where T: Add<T, Output = T>
+{
+    type Output = Point3<T>;
+    fn add(self, rhs: Vector3<T>) -> Point3<T>
+    {
+        // TODO: DCHECK(!v.HasNaNs());
+        Point3::<T> {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
 impl<T> AddAssign<Vector3<T>> for Point3<T>
     where T: AddAssign
 {
@@ -975,6 +1007,23 @@ impl<T> Sub<Point3<T>> for Point3<T>
             z: self.z - rhs.z,
         }
     }
+}
+
+impl<T> MulAssign<T> for Point3<T>
+    where T: Copy + MulAssign
+{
+    fn mul_assign(&mut self, rhs: T)
+    {
+        self.x *= rhs;
+        self.y *= rhs;
+        self.z *= rhs;
+    }
+}
+
+pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
+    where T: num::Float + Sub<T, Output = T>
+{
+    (p1 - p2).length()
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -1020,6 +1069,15 @@ pub struct Ray {
     pub o: Point3f,
     /// direction
     pub d: Vector3f,
+    /// limits the ray to a segment along its infinite extent
+    pub t_max: Float,
+}
+
+impl Ray {
+    // Point3f operator()(Float t) const { return o + d * t; }
+    fn position(&self, t: Float) -> Point3f {
+        self.o + self.d * t
+    }
 }
 
 // see transform.h
@@ -1577,7 +1635,7 @@ impl Transform {
             let dt: Float = vec3_dot(d.abs(), *o_error) / length_squared;
             o += d * dt;
         }
-        Ray { o: o, d: d }
+        Ray { o: o, d: d, t_max: r.t_max, }
     }
 }
 
@@ -2660,16 +2718,130 @@ impl Sphere {
         let mut t0: EFloat = EFloat::default();
         let mut t1: EFloat = EFloat::default();
         if !quadratic_efloat(a, b, c, &mut t0, &mut t1) {
-            false
-        } else {
-            // WORK
-            // TMP
-            println!("world_to_object = {:?}", self.world_to_object);
-            println!("ray = {:?}", ray);
-            *t_hit = -1.0_f64;
-            // TMP
-            false
+            return false;
         }
+        // check quadric shape _t0_ and _t1_ for nearest intersection
+        if t0.upper_bound() > ray.t_max as f32 || t1.lower_bound() <= 0.0f32 {
+            return false;
+        }
+        let mut t_shape_hit: EFloat = t0;
+        if t_shape_hit.lower_bound() <= 0.0f32 {
+            t_shape_hit = t1;
+            if t_shape_hit.upper_bound() > ray.t_max as f32 {
+                return false;
+            }
+        }
+        // compute sphere hit position and $\phi$
+        let mut p_hit: Point3f = ray.position(t_shape_hit.v as f64);
+        // refine sphere intersection point
+        p_hit *= self.radius / pnt3_distance(p_hit, Point3f::default());
+        if p_hit.x == 0.0 && p_hit.y == 0.0 {
+            p_hit.x = 1e-5_f64 * self.radius;
+        }
+        let mut phi: Float = p_hit.y.atan2(p_hit.x);
+        if phi < 0.0 {
+            phi += 2.0_f64 * PI;
+        }
+        // test sphere intersection against clipping parameters
+        if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
+           (self.z_max < self.radius && p_hit.z > self.z_max) || phi > self.phi_max {
+            if t_shape_hit == t1 {
+                return false;
+            }
+            if t1.upper_bound() > ray.t_max as f32 {
+                return false;
+            }
+            t_shape_hit = t1;
+            // compute sphere hit position and $\phi$
+            p_hit = ray.position(t_shape_hit.v as f64);
+
+            // refine sphere intersection point
+            p_hit *= self.radius / pnt3_distance(p_hit, Point3f::default());
+            if p_hit.x == 0.0 && p_hit.y == 0.0 {
+                p_hit.x = 1e-5_f64 * self.radius;
+            }
+            phi = p_hit.y.atan2(p_hit.x);
+            if phi < 0.0 {
+                phi += 2.0_f64 * PI;
+            }
+            if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
+               (self.z_max < self.radius && p_hit.z > self.z_max) ||
+               phi > self.phi_max {
+                return false;
+            }
+        }
+        // find parametric representation of sphere hit
+        let u: Float = phi / self.phi_max;
+        let theta: Float = clamp(p_hit.z / self.radius, -1.0, 1.0).acos();
+        let v: Float = (theta - self.theta_min) / (self.theta_max - self.theta_min);
+        // compute sphere $\dpdu$ and $\dpdv$
+        let z_radius: Float = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
+        let inv_z_radius: Float = 1.0 / z_radius;
+        let cos_phi: Float = p_hit.x * inv_z_radius;
+        let sin_phi: Float = p_hit.y * inv_z_radius;
+        let dpdu: Vector3f = Vector3f {
+            x: -self.phi_max * p_hit.y,
+            y: self.phi_max * p_hit.x,
+            z: 0.0,
+        };
+        let dpdv: Vector3f = Vector3f {
+            x: p_hit.z * cos_phi,
+            y: p_hit.z * sin_phi,
+            z: -self.radius * theta.sin(),
+        } * (self.theta_max - self.theta_min);
+        // compute sphere $\dndu$ and $\dndv$
+        let d2_p_duu: Vector3f = Vector3f {
+            x: p_hit.x,
+            y: p_hit.y,
+            z: 0.0,
+        } * -self.phi_max * self.phi_max;
+        let d2_p_duv: Vector3f = Vector3f {
+            x: -sin_phi,
+            y: cos_phi,
+            z: 0.0,
+        } * (self.theta_max - self.theta_min) * p_hit.z *
+                               self.phi_max;
+        let d2_p_dvv: Vector3f = Vector3f {
+            x: p_hit.x,
+            y: p_hit.y,
+            z: p_hit.z,
+        } * -(self.theta_max - self.theta_min) *
+                               (self.theta_max - self.theta_min);
+        // compute coefficients for fundamental forms
+        let ec: Float = vec3_dot(dpdu, dpdu);
+        let fc: Float = vec3_dot(dpdu, dpdv);
+        let gc: Float = vec3_dot(dpdv, dpdv);
+        let nc: Vector3f = vec3_normalize(vec3_cross(dpdu, dpdv));
+        let el: Float = vec3_dot(nc, d2_p_duu);
+        let fl: Float = vec3_dot(nc, d2_p_duv);
+        let gl: Float = vec3_dot(nc, d2_p_dvv);
+        // compute $\dndu$ and $\dndv$ from fundamental form coefficients
+        let inv_egf2: Float = 1.0 / (ec * gc - fc * fc);
+        let dndu = dpdu * (fl * fc - el * gc) * inv_egf2 + dpdv * (el * fc - fl * ec) * inv_egf2;
+        let dndu = Normal3f {
+            x: dndu.x,
+            y: dndu.y,
+            z: dndu.z,
+        };
+        let dndv = dpdu * (gl * fc - fl * gc) * inv_egf2 + dpdv * (fl * fc - gl * ec) * inv_egf2;
+        let dndv = Normal3f {
+            x: dndv.x,
+            y: dndv.y,
+            z: dndv.z,
+        };
+        // compute error bounds for sphere intersection
+        let p_error: Vector3f = Vector3f {
+                x: p_hit.x,
+                y: p_hit.y,
+                z: p_hit.z,
+            }
+            .abs() * gamma(5_i32);
+        // TODO: initialize _SurfaceInteraction_ from parametric information
+        // *isect = (*ObjectToWorld)(SurfaceInteraction(pHit, p_error, Point2f(u, v),
+        //                                              -ray.d, dpdu, dpdv, dndu, dndv,
+        //                                              ray.time, this));
+        *t_hit = t_shape_hit.v as f64;
+        true
     }
 }
 

@@ -18,7 +18,11 @@ fn main() {
         y: -0.164096087,
         z: -0.984571517,
     };
-    let r: Ray = Ray { o: o, d: d };
+    let r: Ray = Ray {
+        o: o,
+        d: d,
+        t_max: std::f64::INFINITY,
+    };
     let mut o_error: Vector3f = Vector3f::default();
     let mut d_error: Vector3f = Vector3f::default();
     let tr: Ray = t.transform_ray_with_error(&r, &mut o_error, &mut d_error);

@@ -16,6 +16,7 @@ fn main() {
     let ray = Ray {
         o: origin,
         d: direction,
+        t_max: std::f64::INFINITY,
     };
 
     println!("{:?}", ray);
