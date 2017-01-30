@@ -657,6 +657,32 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
 
 // see efloat.h
 
+pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &mut EFloat) -> bool {
+    let discrim: f64 = b.v as f64 * b.v as f64 - 4.0f64 * a.v as f64 * c.v as f64;
+    if discrim < 0.0 {
+        false
+    } else {
+        let root_discrim: f64 = discrim.sqrt();
+        let float_root_discrim: EFloat = EFloat::new(root_discrim as f32,
+                                                     MACHINE_EPSILON as f32 * root_discrim as f32);
+        // compute quadratic _t_ values
+        let mut q: EFloat;
+        if b.v < 0.0f32 {
+            q = (b - float_root_discrim) * -0.5f32;
+        } else {
+            q = (b + float_root_discrim) * -0.5f32;
+        }
+        *t0 = q / a;
+        *t1 = c / q;
+        if (*t0).v > (*t1).v {
+            let swap: EFloat = *t0;
+            *t0 = *t1;
+            *t1 = swap;
+        }
+        true
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct EFloat {
     v: f32,
@@ -736,6 +762,32 @@ impl Mul<f32> for EFloat {
     type Output = EFloat;
     fn mul(self, rhs: f32) -> EFloat {
         EFloat::new(rhs, 0.0) * self
+    }
+}
+
+impl Div for EFloat {
+    type Output = EFloat;
+    fn div(self, rhs: EFloat) -> EFloat {
+        let div: [f32; 4] = [self.lower_bound() / rhs.lower_bound(),
+                             self.upper_bound() / rhs.lower_bound(),
+                             self.lower_bound() / rhs.upper_bound(),
+                             self.upper_bound() / rhs.upper_bound()];
+        // TODO: r.Check();
+        if rhs.low < 0.0 && rhs.high > 0.0 {
+            // the interval we're dividing by straddles zero, so just
+            // return an interval of everything
+            EFloat {
+                v: self.v / rhs.v,
+                low: -std::f32::INFINITY,
+                high: std::f32::INFINITY,
+            }
+        } else {
+            EFloat {
+                v: self.v / rhs.v,
+                low: next_float_down(div[0].min(div[1]).min(div[2].min(div[3]))),
+                high: next_float_up(div[0].max(div[1]).max(div[2].max(div[3]))),
+            }
+        }
     }
 }
 
@@ -2603,13 +2655,21 @@ impl Sphere {
         let b: EFloat = (dx * ox + dy * oy + dz * oz) * 2.0f32;
         let c: EFloat = ox * ox + oy * oy + oz * oz -
                         EFloat::new(self.radius as f32, 0.0) * EFloat::new(self.radius as f32, 0.0);
-        // WORK
-        // TMP
-        println!("world_to_object = {:?}", self.world_to_object);
-        println!("ray = {:?}", ray);
-        *t_hit = -1.0_f64;
-        // TMP
-        false
+
+        // solve quadratic equation for _t_ values
+        let mut t0: EFloat = EFloat::default();
+        let mut t1: EFloat = EFloat::default();
+        if !quadratic_efloat(a, b, c, &mut t0, &mut t1) {
+            false
+        } else {
+            // WORK
+            // TMP
+            println!("world_to_object = {:?}", self.world_to_object);
+            println!("ray = {:?}", ray);
+            *t_hit = -1.0_f64;
+            // TMP
+            false
+        }
     }
 }
 
