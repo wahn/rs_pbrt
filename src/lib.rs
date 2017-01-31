@@ -416,6 +416,15 @@
 //! }
 //! ```
 //!
+//! ### Triangle Meshes
+//!
+//! While a natural representation would be to have a **Triangle**
+//! shape implementation where each triangle stored the positions of
+//! its three vertices, a more memory-efficient representation is to
+//! separately store entire triangle meshes with an array of vertex
+//! positions where each individual triangle just stores three offsets
+//! into this array for its three vertices.
+//!
 //! ### Cones
 //!
 //! TODO
@@ -2843,6 +2852,50 @@ impl Sphere {
         *t_hit = t_shape_hit.v as f64;
         true
     }
+}
+
+// see triangle.h
+
+#[derive(Debug,Clone)]
+pub struct TriangleMesh {
+    pub n_triangles: usize,
+    pub vertex_indices: Vec<usize>,
+    pub n_vertices: usize,
+    pub p: Vec<Point3f>,
+    // derived from class Shape (see shape.h)
+    object_to_world: Transform,
+    world_to_object: Transform,
+    reverse_orientation: bool,
+    transform_swaps_handedness: bool,
+}
+
+impl TriangleMesh {
+    pub fn new(object_to_world: Transform,
+               world_to_object: Transform,
+               reverse_orientation: bool,
+               transform_swaps_handedness: bool,
+               n_triangles: usize,
+               vertex_indices: Vec<usize>,
+               n_vertices: usize,
+               p: Vec<Point3f>)
+               -> TriangleMesh {
+        TriangleMesh {
+            // Shape
+            object_to_world: object_to_world,
+            world_to_object: world_to_object,
+            reverse_orientation: reverse_orientation,
+            transform_swaps_handedness: transform_swaps_handedness,
+            // TriangleMesh
+            n_triangles: n_triangles,
+            vertex_indices: vertex_indices,
+            n_vertices: n_vertices,
+            p: p,
+        }
+    }
+}
+
+#[derive(Debug,Copy,Clone)]
+pub struct Triangle {
 }
 
 // see zerotwosequence.h

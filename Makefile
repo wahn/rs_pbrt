@@ -43,6 +43,7 @@ examples: release
 	./target/release/examples/shapes_sphere_default
 	./target/release/examples/shapes_sphere_intersect
 	./target/release/examples/shapes_sphere_new
+	./target/release/examples/shapes_triangle_create_triangle_mesh
 	./target/release/examples/transform_matrix4x4_identity
 	./target/release/examples/transform_matrix4x4_new
 	./target/release/examples/transform_matrix4x4_transpose
