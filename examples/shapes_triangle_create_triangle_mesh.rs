@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Point3f, Transform, TriangleMesh, Vector3f};
+use pbrt::{Point2f, Point3f, Transform, TriangleMesh, Vector3f};
 
 fn main() {
     let translate: Transform = Transform::translate(Vector3f {
@@ -32,6 +32,12 @@ fn main() {
                                    y: -1.0,
                                    z: 400.0,
                                }];
+    let s: Vec<Vector3f> = Vec::new();
+    let n: Vec<Vector3f> = Vec::new();
+    let uv: Vec<Point2f> = vec![Point2f { x: 0.0, y: 0.0 },
+                                Point2f { x: 1.0, y: 0.0 },
+                                Point2f { x: 0.0, y: 1.0 },
+                                Point2f { x: 1.0, y: 1.0 }];
     let triangle_mesh: TriangleMesh = TriangleMesh::new(translate,
                                                         inverse,
                                                         false,
@@ -39,7 +45,10 @@ fn main() {
                                                         n_triangles,
                                                         vertex_indices,
                                                         n_vertices,
-                                                        p);
+                                                        p,
+                                                        s,
+                                                        n,
+                                                        uv);
 
     println!("translate = {:?}", translate);
     println!("inverse = {:?}", inverse);

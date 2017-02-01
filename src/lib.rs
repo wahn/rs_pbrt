@@ -2858,10 +2858,21 @@ impl Sphere {
 
 #[derive(Debug,Clone)]
 pub struct TriangleMesh {
+    /// the total number of triangles in the mesh
     pub n_triangles: usize,
+    /// vector of vertex indices
     pub vertex_indices: Vec<usize>,
+    /// the total number of vertices in the mesh
     pub n_vertices: usize,
+    /// vector of *n_vertices* vertex positions
     pub p: Vec<Point3f>,
+    /// an optional vector of normal vectors (can be empty)
+    pub n: Vec<Vector3f>,
+    /// an optional vector of tangent vectors (can be empty)
+    pub s: Vec<Vector3f>,
+    /// an optional vector of paramtric (u, v) values (texture coordinates)
+    pub uv: Vec<Point2f>,
+    // TODO: std::shared_ptr<Texture<Float>> alphaMask, shadowAlphaMask;
     // derived from class Shape (see shape.h)
     object_to_world: Transform,
     world_to_object: Transform,
@@ -2877,7 +2888,10 @@ impl TriangleMesh {
                n_triangles: usize,
                vertex_indices: Vec<usize>,
                n_vertices: usize,
-               p: Vec<Point3f>)
+               p: Vec<Point3f>,
+               s: Vec<Vector3f>,
+               n: Vec<Vector3f>,
+               uv: Vec<Point2f>)
                -> TriangleMesh {
         TriangleMesh {
             // Shape
@@ -2890,6 +2904,9 @@ impl TriangleMesh {
             vertex_indices: vertex_indices,
             n_vertices: n_vertices,
             p: p,
+            n: n,
+            s: s,
+            uv: uv,
         }
     }
 }
