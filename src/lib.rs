@@ -425,6 +425,66 @@
 //! positions where each individual triangle just stores three offsets
 //! into this array for its three vertices.
 //!
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{Point2f, Point3f, Transform, TriangleMesh, Vector3f};
+//!
+//! fn main() {
+//!     let translate: Transform = Transform::translate(Vector3f {
+//!         x: 0.25,
+//!         y: 0.0,
+//!         z: 0.0,
+//!     });
+//!     let inverse: Transform = Transform::inverse(translate);
+//!     let n_triangles: usize = 2;
+//!     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
+//!     let n_vertices: usize = 4;
+//!     let p: Vec<Point3f> = vec![Point3f {
+//!                                    x: -100.0,
+//!                                    y: -1.0,
+//!                                    z: -100.0,
+//!                                },
+//!                                Point3f {
+//!                                    x: 400.0,
+//!                                    y: -1.0,
+//!                                    z: -100.0,
+//!                                },
+//!                                Point3f {
+//!                                    x: 400.0,
+//!                                    y: -1.0,
+//!                                    z: 400.0,
+//!                                },
+//!                                Point3f {
+//!                                    x: -100.0,
+//!                                    y: -1.0,
+//!                                    z: 400.0,
+//!                                }];
+//!     let s: Vec<Vector3f> = Vec::new();
+//!     let n: Vec<Vector3f> = Vec::new();
+//!     let uv: Vec<Point2f> = vec![Point2f { x: 0.0, y: 0.0 },
+//!                                 Point2f { x: 1.0, y: 0.0 },
+//!                                 Point2f { x: 0.0, y: 1.0 },
+//!                                 Point2f { x: 1.0, y: 1.0 }];
+//!     let triangle_mesh: TriangleMesh = TriangleMesh::new(translate,
+//!                                                         inverse,
+//!                                                         false,
+//!                                                         false,
+//!                                                         n_triangles,
+//!                                                         vertex_indices,
+//!                                                         n_vertices,
+//!                                                         p,
+//!                                                         s,
+//!                                                         n,
+//!                                                         uv);
+//!
+//!     println!("translate = {:?}", translate);
+//!     println!("inverse = {:?}", inverse);
+//!     println!("triangle_mesh = {:?}", triangle_mesh);
+//! }
+//! ```
+//!
 //! ### Cones
 //!
 //! TODO
@@ -965,6 +1025,38 @@ pub fn vec3_normalize<T>(v: Vector3<T>) -> Vector3<T>
     v / v.length()
 }
 
+pub fn vec3_max_dimension<T>(v: Vector3<T>) -> usize
+    where T: std::cmp::PartialOrd
+{
+    if v.x > v.y {
+        if v.x > v.z {
+            0_usize
+        } else {
+            2_usize
+        }
+    } else {
+        if v.y > v.z {
+            1_usize
+        } else {
+            2_usize
+        }
+    }
+}
+
+pub fn vec3_permute<T>(v: Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T>
+    where T: Copy
+{
+    let v3: Vec<T> = vec![v.x, v.y, v.z];
+    let xp: T = v3[x];
+    let yp: T = v3[y];
+    let zp: T = v3[z];
+    Vector3::<T> {
+        x: xp,
+        y: yp,
+        z: zp,
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Point2<T> {
     pub x: T,
@@ -1018,6 +1110,20 @@ impl<T> Sub<Point3<T>> for Point3<T>
     }
 }
 
+impl<T> Sub<Vector3<T>> for Point3<T>
+    where T: Sub<T, Output = T>
+{
+    type Output = Point3<T>;
+    fn sub(self, rhs: Vector3<T>) -> Point3<T>
+    {
+        Point3::<T> {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+
 impl<T> MulAssign<T> for Point3<T>
     where T: Copy + MulAssign
 {
@@ -1026,6 +1132,20 @@ impl<T> MulAssign<T> for Point3<T>
         self.x *= rhs;
         self.y *= rhs;
         self.z *= rhs;
+    }
+}
+
+pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
+    where T: Copy
+{
+    let v3: Vec<T> = vec![v.x, v.y, v.z];
+    let xp: T = v3[x];
+    let yp: T = v3[y];
+    let zp: T = v3[z];
+    Point3::<T> {
+        x: xp,
+        y: yp,
+        z: zp,
     }
 }
 
@@ -2913,6 +3033,68 @@ impl TriangleMesh {
 
 #[derive(Debug,Copy,Clone)]
 pub struct Triangle {
+}
+
+impl Triangle {
+    pub fn intersect(&self,
+                     ray: &Ray,
+                     t_hit: &mut Float /* , SurfaceInteraction *isect, bool testAlphaTexture */)
+                     -> bool {
+        // get triangle vertices in _p0_, _p1_, and _p2_
+        // TODO: const Point3f &p0 = mesh->p[v[0]];
+        let p0: Point3f = Point3f {
+            x: -99.75,
+            y: -1.0,
+            z: -100.0,
+        };
+        // TODO: const Point3f &p1 = mesh->p[v[1]];
+        let p1: Point3f = Point3f {
+            x: -99.75,
+            y: -1.0,
+            z: 400.0,
+        };
+        // TODO: const Point3f &p2 = mesh->p[v[2]];
+        let p2: Point3f = Point3f {
+            x: 400.25,
+            y: -1.0,
+            z: 400.0,
+        };
+        // translate vertices based on ray origin
+        let mut p0t: Point3f = p0 -
+                               Vector3f {
+            x: ray.o.x,
+            y: ray.o.y,
+            z: ray.o.z,
+        };
+        let mut p1t: Point3f = p1 -
+                               Vector3f {
+            x: ray.o.x,
+            y: ray.o.y,
+            z: ray.o.z,
+        };
+        let mut p2t: Point3f = p2 -
+                               Vector3f {
+            x: ray.o.x,
+            y: ray.o.y,
+            z: ray.o.z,
+        };
+        // permute components of triangle vertices and ray direction
+        let kz: usize = vec3_max_dimension(ray.d.abs());
+        let mut kx: usize = kz + 1;
+        if kx == 3 {
+            kx = 0;
+        }
+        let mut ky: usize = kx + 1;
+        if ky == 3 {
+            ky = 0;
+        }
+        let d: Vector3f = vec3_permute(ray.d, kx, ky, kz);
+        p0t = pnt3_permute(p0t, kx, ky, kz);
+        p1t = pnt3_permute(p1t, kx, ky, kz);
+        p2t = pnt3_permute(p2t, kx, ky, kz);
+        // WORK
+        false
+    }
 }
 
 // see zerotwosequence.h
