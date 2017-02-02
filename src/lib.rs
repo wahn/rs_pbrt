@@ -602,6 +602,7 @@ use std::cmp::PartialEq;
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, Neg};
 use std::default::Default;
 use std::f64::consts::PI;
+use std::mem;
 
 pub type Float = f64;
 
@@ -1025,6 +1026,12 @@ pub fn vec3_normalize<T>(v: Vector3<T>) -> Vector3<T>
     v / v.length()
 }
 
+pub fn vec3_max_component<T>(v: Vector3<T>) -> T
+    where T: num::Float
+{
+    v.x.max(v.y.max(v.z))
+}
+
 pub fn vec3_max_dimension<T>(v: Vector3<T>) -> usize
     where T: std::cmp::PartialOrd
 {
@@ -1057,10 +1064,42 @@ pub fn vec3_permute<T>(v: Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T
     }
 }
 
+pub fn vec3_coordinate_system<T>(v1: &Vector3<T>, v2: &mut Vector3<T>, v3: &mut Vector3<T>)
+    where T: num::Float
+{
+    if v1.x.abs() > v1.y.abs() {
+        *v2 = Vector3::<T> {
+            x: -v1.z,
+            y: num::Zero::zero(),
+            z: v1.x,
+        } / (v1.x * v1.x + v1.z * v1.z).sqrt();
+    } else {
+        *v2 = Vector3::<T> {
+            x: num::Zero::zero(),
+            y: v1.z,
+            z: -v1.y,
+        } / (v1.y * v1.y + v1.z * v1.z).sqrt();
+    }
+    *v3 = vec3_cross(*v1, *v2);
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Point2<T> {
     pub x: T,
     pub y: T,
+}
+
+impl<T> Sub<Point2<T>> for Point2<T>
+    where T: Sub<T, Output = T>
+{
+    type Output = Vector2<T>;
+    fn sub(self, rhs: Point2<T>) -> Vector2<T>
+    {
+        Vector2::<T> {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -3092,8 +3131,128 @@ impl Triangle {
         p0t = pnt3_permute(p0t, kx, ky, kz);
         p1t = pnt3_permute(p1t, kx, ky, kz);
         p2t = pnt3_permute(p2t, kx, ky, kz);
+        // apply shear transformation to translated vertex positions
+        let Sx: Float = -d.x / d.z;
+        let Sy: Float = -d.y / d.z;
+        let Sz: Float = 1.0 / d.z;
+        p0t.x += Sx * p0t.z;
+        p0t.y += Sy * p0t.z;
+        p1t.x += Sx * p1t.z;
+        p1t.y += Sy * p1t.z;
+        p2t.x += Sx * p2t.z;
+        p2t.y += Sy * p2t.z;
+        // compute edge function coefficients _e0_, _e1_, and _e2_
+        let e0: Float = p1t.x * p2t.y - p1t.y * p2t.x;
+        let e1: Float = p2t.x * p0t.y - p2t.y * p0t.x;
+        let e2: Float = p0t.x * p1t.y - p0t.y * p1t.x;
+        // TODO: fall back to double precision test at triangle edges
+        if mem::size_of::<Float>() == mem::size_of::<f32>() {
+            println!("[Triangle::intersect()]: TODO fall back to double precision test at \
+                      triangle edges");
+        }
+        // if (sizeof(Float) == sizeof(float) &&
+        //     (e0 == 0.0f || e1 == 0.0f || e2 == 0.0f)) {
+        //     double p2txp1ty = (double)p2t.x * (double)p1t.y;
+        //     double p2typ1tx = (double)p2t.y * (double)p1t.x;
+        //     e0 = (float)(p2typ1tx - p2txp1ty);
+        //     double p0txp2ty = (double)p0t.x * (double)p2t.y;
+        //     double p0typ2tx = (double)p0t.y * (double)p2t.x;
+        //     e1 = (float)(p0typ2tx - p0txp2ty);
+        //     double p1txp0ty = (double)p1t.x * (double)p0t.y;
+        //     double p1typ0tx = (double)p1t.y * (double)p0t.x;
+        //     e2 = (float)(p1typ0tx - p1txp0ty);
+        // }
+        // perform triangle edge and determinant tests
+        if (e0 < 0.0 || e1 < 0.0 || e2 < 0.0) && (e0 > 0.0 || e1 > 0.0 || e2 > 0.0) {
+            return false;
+        }
+        let det: Float = e0 + e1 + e2;
+        if det == 0.0 {
+            return false;
+        }
+        // compute scaled hit distance to triangle and test against ray $t$ range
+        p0t.z *= Sz;
+        p1t.z *= Sz;
+        p2t.z *= Sz;
+        let tScaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
+        if det < 0.0 && (tScaled >= 0.0 || tScaled < ray.t_max * det) {
+            return false;
+        } else if det > 0.0 && (tScaled <= 0.0 || tScaled > ray.t_max * det) {
+            return false;
+        }
+        // compute barycentric coordinates and $t$ value for triangle intersection
+        let invDet: Float = 1.0 / det;
+        let b0: Float = e0 * invDet;
+        let b1: Float = e1 * invDet;
+        let b2: Float = e2 * invDet;
+        let t: Float = tScaled * invDet;
+
+        // ensure that computed triangle $t$ is conservatively greater than zero
+
+        // compute $\delta_z$ term for triangle $t$ error bounds
+        let maxZt: Float = vec3_max_component(Vector3f {
+                x: p0t.z,
+                y: p1t.z,
+                z: p2t.z,
+            }
+            .abs());
+        let deltaZ: Float = gamma(3_i32) * maxZt;
+        // compute $\delta_x$ and $\delta_y$ terms for triangle $t$ error bounds
+        let maxXt: Float = vec3_max_component(Vector3f {
+                x: p0t.x,
+                y: p1t.x,
+                z: p2t.x,
+            }
+            .abs());
+        let maxYt: Float = vec3_max_component(Vector3f {
+                x: p0t.y,
+                y: p1t.y,
+                z: p2t.y,
+            }
+            .abs());
+        let deltaX: Float = gamma(5) * (maxXt + maxZt);
+        let deltaY: Float = gamma(5) * (maxYt + maxZt);
+        // compute $\delta_e$ term for triangle $t$ error bounds
+        let deltaE: Float = 2.0 * (gamma(2) * maxXt * maxYt + deltaY * maxXt + deltaX * maxYt);
+        // compute $\delta_t$ term for triangle $t$ error bounds and check _t_
+        let maxE: Float = vec3_max_component(Vector3f {
+                x: e0,
+                y: e1,
+                z: e2,
+            }
+            .abs());
+        let deltaT: Float = 3.0 * (gamma(3) * maxE * maxZt + deltaE * maxZt + deltaZ * maxE) *
+                            invDet.abs();
+        if t <= deltaT {
+            return false;
+        }
+        // compute triangle partial derivatives
+        let uv: [Point2f; 3] =
+            [Point2f { x: 0.0, y: 0.0 }, Point2f { x: 0.0, y: 1.0 }, Point2f { x: 1.0, y: 0.0 }];
+        // TODO: GetUVs(uv);
+        // compute deltas for triangle partial derivatives
+        let duv02: Vector2f = uv[0] - uv[2];
+        let duv12: Vector2f = uv[1] - uv[2];
+        let dp02: Vector3f = p0 - p2;
+        let dp12: Vector3f = p1 - p2;
+        let determinant: Float = duv02.x * duv12.y - duv02.y * duv12.x;
+        let degenerateUV: bool = determinant.abs() < 1e-8 as Float;
+        // Vector3f dpdu, dpdv;
+        let mut dpdu: Vector3f = Vector3f::default();
+        let mut dpdv: Vector3f = Vector3f::default();
+        if !degenerateUV {
+            let invdet: Float = 1.0 / determinant;
+            dpdu = (dp02 * duv12.y - dp12 * duv02.y) * invdet;
+            dpdv = (dp02 * -duv12.x + dp12 * duv02.x) * invdet;
+        }
+        if degenerateUV || vec3_cross(dpdu, dpdv).length_squared() == 0.0 {
+            // handle zero determinant for triangle partial derivative matrix
+            vec3_coordinate_system(&vec3_normalize(vec3_cross(p2 - p0, p1 - p0)),
+                                   &mut dpdu,
+                                   &mut dpdv);
+        }
         // WORK
-        false
+        true
     }
 }
 
