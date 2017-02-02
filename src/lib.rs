@@ -610,6 +610,11 @@ pub type Float = f64;
 
 const MACHINE_EPSILON: Float = std::f64::EPSILON * 0.5;
 
+/// Use **unsafe**
+/// [std::mem::transmute_copy][transmute_copy]
+/// to convert *f32* to *u32*.
+///
+/// [transmute_copy]: https://doc.rust-lang.org/std/mem/fn.transmute_copy.html
 pub fn float_to_bits(f: f32) -> u32 {
     // uint64_t ui;
     // memcpy(&ui, &f, sizeof(double));
@@ -622,6 +627,11 @@ pub fn float_to_bits(f: f32) -> u32 {
     rui
 }
 
+/// Use **unsafe**
+/// [std::mem::transmute_copy][transmute_copy]
+/// to convert *u32* to *f32*.
+///
+/// [transmute_copy]: https://doc.rust-lang.org/std/mem/fn.transmute_copy.html
 pub fn bits_to_float(ui: u32) -> f32 {
     // float f;
     // memcpy(&f, &ui, sizeof(uint32_t));
@@ -634,6 +644,8 @@ pub fn bits_to_float(ui: u32) -> f32 {
     rf
 }
 
+/// Bump a floating-point value up to the next greater representable
+/// floating-point value.
 pub fn next_float_up(v: f32) -> f32 {
     if v.is_infinite() && v > 0.0 {
         v
@@ -654,6 +666,8 @@ pub fn next_float_up(v: f32) -> f32 {
     }
 }
 
+/// Bump a floating-point value down to the next smaller representable
+/// floating-point value.
 pub fn next_float_down(v: f32) -> f32 {
     if v.is_infinite() && v < 0.0 {
         v
@@ -674,11 +688,14 @@ pub fn next_float_down(v: f32) -> f32 {
     }
 }
 
+/// Error propagation.
 pub fn gamma(n: i32) -> Float
 {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
 }
 
+
+/// Clamp the given value *val* to lie between the values *low* and *high*.
 pub fn clamp<T>(val: T, low: T, high: T) -> T
     where T: PartialOrd
 {
@@ -693,14 +710,17 @@ pub fn clamp<T>(val: T, low: T, high: T) -> T
     r
 }
 
+/// Convert from angles expressed in degrees to radians.
 pub fn radians(deg: Float) -> Float {
     (PI / 180.0) * deg
 }
 
+/// Convert from angles expressed in radians to degrees.
 pub fn degrees(rad: Float) -> Float {
     (180.0 / PI) * rad
 }
 
+/// Find solution(s) of the quadratic equation at^2 + bt + c = 0.
 pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -> bool {
     // find quadratic discriminant
     let discrim: f64 = (b as f64) * (b as f64) - 4.0 * (a as f64) * (c as f64);
@@ -729,6 +749,8 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
 
 // see efloat.h
 
+/// Find solution(s) of the quadratic equation at^2 + bt + c = 0 using
+/// *EFloat* instead of *Float* for error bounds.
 pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &mut EFloat) -> bool {
     let discrim: f64 = b.v as f64 * b.v as f64 - 4.0f64 * a.v as f64 * c.v as f64;
     if discrim < 0.0 {
@@ -894,6 +916,10 @@ impl<T> Vector2<T> {
     }
 }
 
+/// Product of the Euclidean magnitudes of the two vectors and the
+/// cosine of the angle between them. A return value of zero means
+/// both vectors are orthogonal, a value if one means they are
+/// codirectional.
 pub fn vec2_dot<T>(v1: Vector2<T>, v2: Vector2<T>) -> T
     where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
 {
@@ -998,12 +1024,18 @@ impl<T> Vector3<T> {
     }
 }
 
+/// Product of the Euclidean magnitudes of the two vectors and the
+/// cosine of the angle between them. A return value of zero means
+/// both vectors are orthogonal, a value if one means they are
+/// codirectional.
 pub fn vec3_dot<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
     where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
 {
     v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
 
+/// Given two vectors in 3D, the cross product is a vector that is
+/// perpendicular to both of them.
 pub fn vec3_cross<T>(v1: Vector3<T>, v2: Vector3<T>) -> Vector3<T>
     where T: Copy + Sub<T, Output = T> + Mul<T, Output = T>
 {
@@ -1020,18 +1052,22 @@ pub fn vec3_cross<T>(v1: Vector3<T>, v2: Vector3<T>) -> Vector3<T>
     }
 }
 
+/// Compute a new vector pointing in the same direction but with unit
+/// length.
 pub fn vec3_normalize<T>(v: Vector3<T>) -> Vector3<T>
     where T: num::Float + Copy + Div<T, Output = T>
 {
     v / v.length()
 }
 
+/// Return the largest coordinate value.
 pub fn vec3_max_component<T>(v: Vector3<T>) -> T
     where T: num::Float
 {
     v.x.max(v.y.max(v.z))
 }
 
+/// Return the index of the component with the largest value.
 pub fn vec3_max_dimension<T>(v: Vector3<T>) -> usize
     where T: std::cmp::PartialOrd
 {
@@ -1050,6 +1086,8 @@ pub fn vec3_max_dimension<T>(v: Vector3<T>) -> usize
     }
 }
 
+/// Permute the coordinate values according to the povided
+/// permutation.
 pub fn vec3_permute<T>(v: Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T>
     where T: Copy
 {
@@ -1064,6 +1102,7 @@ pub fn vec3_permute<T>(v: Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T
     }
 }
 
+/// Construct a local coordinate system given only a single 3D vector.
 pub fn vec3_coordinate_system<T>(v1: &Vector3<T>, v2: &mut Vector3<T>, v3: &mut Vector3<T>)
     where T: num::Float
 {
@@ -1174,6 +1213,8 @@ impl<T> MulAssign<T> for Point3<T>
     }
 }
 
+/// Permute the coordinate values according to the povided
+/// permutation.
 pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
     where T: Copy
 {
@@ -1188,6 +1229,8 @@ pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
     }
 }
 
+/// The distance between two points is the length of the vector
+/// between them.
 pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
     where T: num::Float + Sub<T, Output = T>
 {
@@ -1390,6 +1433,7 @@ impl Matrix4x4 {
     }
 }
 
+/// The product of two matrices.
 pub fn mtx_mul(m1: Matrix4x4, m2: Matrix4x4) -> Matrix4x4 {
     let mut r: Matrix4x4 = Matrix4x4::default();
     for i in 0..4 {
@@ -2776,10 +2820,12 @@ impl Quaternion {
     }
 }
 
+/// The inner product of two quaterions.
 pub fn quat_dot(q1: Quaternion, q2: Quaternion) -> Float {
     vec3_dot(q1.v, q2.v) + q1.w * q2.w
 }
 
+/// A quaternion can be normalized by dividing by its length.
 pub fn quat_normalize(q: Quaternion) -> Quaternion {
     q / quat_dot(q, q)
 }
