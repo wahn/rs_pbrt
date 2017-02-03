@@ -1128,6 +1128,20 @@ pub struct Point2<T> {
     pub y: T,
 }
 
+impl<T> Add<Point2<T>> for Point2<T>
+    where T: Add<T, Output = T>
+{
+    type Output = Point2<T>;
+    fn add(self, rhs: Point2<T>) -> Point2<T>
+    {
+        // TODO: DCHECK(!v.HasNaNs());
+        Point2::<T> {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
 impl<T> Sub<Point2<T>> for Point2<T>
     where T: Sub<T, Output = T>
 {
@@ -1141,11 +1155,40 @@ impl<T> Sub<Point2<T>> for Point2<T>
     }
 }
 
+impl<T> Mul<T> for Point2<T>
+    where T: Copy + Mul<T, Output = T>
+{
+    type Output = Point2<T>;
+    fn mul(self, rhs: T) -> Point2<T>
+        where T: Copy + Mul<T, Output = T>
+    {
+        Point2::<T> {
+            x: self.x * rhs,
+            y: self.y * rhs,
+        }
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Point3<T> {
     pub x: T,
     pub y: T,
     pub z: T,
+}
+
+impl<T> Add<Point3<T>> for Point3<T>
+    where T: Add<T, Output = T>
+{
+    type Output = Point3<T>;
+    fn add(self, rhs: Point3<T>) -> Point3<T>
+    {
+        // TODO: DCHECK(!v.HasNaNs());
+        Point3::<T> {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
 }
 
 impl<T> Add<Vector3<T>> for Point3<T>
@@ -1198,6 +1241,21 @@ impl<T> Sub<Vector3<T>> for Point3<T>
             x: self.x - rhs.x,
             y: self.y - rhs.y,
             z: self.z - rhs.z,
+        }
+    }
+}
+
+impl<T> Mul<T> for Point3<T>
+    where T: Copy + Mul<T, Output = T>
+{
+    type Output = Point3<T>;
+    fn mul(self, rhs: T) -> Point3<T>
+        where T: Copy + Mul<T, Output = T>
+    {
+        Point3::<T> {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
         }
     }
 }
@@ -3134,7 +3192,7 @@ impl Triangle {
         };
         // TODO: const Point3f &p1 = mesh->p[v[1]];
         let p1: Point3f = Point3f {
-            x: -99.75,
+            x: 400.25,
             y: -1.0,
             z: 400.0,
         };
@@ -3142,7 +3200,7 @@ impl Triangle {
         let p2: Point3f = Point3f {
             x: 400.25,
             y: -1.0,
-            z: 400.0,
+            z: -100.0,
         };
         // translate vertices based on ray origin
         let mut p0t: Point3f = p0 -
@@ -3297,7 +3355,32 @@ impl Triangle {
                                    &mut dpdu,
                                    &mut dpdv);
         }
+        // compute error bounds for triangle intersection
+        let xAbsSum: Float = (b0 * p0.x).abs() + (b1 * p1.x).abs() + (b2 * p2.x).abs();
+        let yAbsSum: Float = (b0 * p0.y).abs() + (b1 * p1.y).abs() + (b2 * p2.y).abs();
+        let zAbsSum: Float = (b0 * p0.z).abs() + (b1 * p1.z).abs() + (b2 * p2.z).abs();
+        let pError: Vector3f = Vector3f {
+            x: xAbsSum,
+            y: yAbsSum,
+            z: zAbsSum,
+        } * gamma(7);
+        // interpolate $(u,v)$ parametric coordinates and hit point
+        let pHit: Point3f = p0 * b0 + p1 * b1 + p2 * b2;
+        let uvHit: Point2f = uv[0] * b0  + uv[1] * b1 + uv[2] * b2;
+        // TODO: test intersection against alpha texture, if present
+        // if (testAlphaTexture && mesh->alphaMask) {
+        //     SurfaceInteraction isectLocal(pHit, Vector3f(0, 0, 0), uvHit, -ray.d,
+        //                                   dpdu, dpdv, Normal3f(0, 0, 0),
+        //                                   Normal3f(0, 0, 0), ray.time, this);
+        //     if (mesh->alphaMask->Evaluate(isectLocal) == 0) return false;
+        // }
+        // TODO: fill in _SurfaceInteraction_ from triangle hit
+        // *isect = SurfaceInteraction(pHit, pError, uvHit, -ray.d, dpdu, dpdv,
+        //                             Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time,
+        //                             this);
         // WORK
+        *t_hit = t;
+        // TODO: ++nHits;
         true
     }
 }
