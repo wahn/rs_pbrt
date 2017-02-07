@@ -603,6 +603,7 @@ use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, Neg};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
+use std::rc::Rc;
 
 pub type Float = f64;
 
@@ -3204,11 +3205,21 @@ impl TriangleMesh {
     }
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug,Clone)]
 pub struct Triangle {
+    mesh: Rc<TriangleMesh>,
 }
 
 impl Triangle {
+    pub fn new(object_to_world: Transform,
+               world_to_object: Transform,
+               reverse_orientation: bool,
+               mesh: Rc<TriangleMesh>,
+               tri_number: usize) -> Triangle {
+        Triangle {
+            mesh: mesh,
+        }
+    }
     pub fn intersect(&self,
                      ray: &Ray,
                      t_hit: &mut Float /* , SurfaceInteraction *isect, bool testAlphaTexture */)
