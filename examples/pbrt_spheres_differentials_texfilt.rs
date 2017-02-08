@@ -1,7 +1,7 @@
 extern crate pbrt;
 
 use pbrt::{Point2f, Point3f, Transform, Triangle, TriangleMesh, Vector3f};
-use std::rc::Rc;
+use std::sync::Arc;
 
 fn main() {
     // pbrt::MakeShapes
@@ -62,17 +62,17 @@ fn main() {
     println!("p_ws = {:?}", p_ws);
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Vector3f> = Vec::new();
-    let triangle_mesh: Rc<TriangleMesh> = Rc::new(TriangleMesh::new(object_to_world,
-                                                                    world_to_object,
-                                                                    false,
-                                                                    false,
-                                                                    n_triangles,
-                                                                    vertex_indices,
-                                                                    n_vertices,
-                                                                    p_ws, // in world space
-                                                                    s, // empty
-                                                                    n, // empty
-                                                                    uv));
+    let triangle_mesh: Arc<TriangleMesh> = Arc::new(TriangleMesh::new(object_to_world,
+                                                                      world_to_object,
+                                                                      false,
+                                                                      false,
+                                                                      n_triangles,
+                                                                      vertex_indices,
+                                                                      n_vertices,
+                                                                      p_ws, // in world space
+                                                                      s, // empty
+                                                                      n, // empty
+                                                                      uv));
     let mut tris: Vec<Triangle> = Vec::new();
     for i in 0..n_triangles {
         tris.push(Triangle::new(object_to_world,

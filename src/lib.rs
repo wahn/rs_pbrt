@@ -603,7 +603,7 @@ use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, Neg};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub type Float = f64;
 
@@ -3207,14 +3207,14 @@ impl TriangleMesh {
 
 #[derive(Debug,Clone)]
 pub struct Triangle {
-    mesh: Rc<TriangleMesh>,
+    mesh: Arc<TriangleMesh>,
 }
 
 impl Triangle {
     pub fn new(object_to_world: Transform,
                world_to_object: Transform,
                reverse_orientation: bool,
-               mesh: Rc<TriangleMesh>,
+               mesh: Arc<TriangleMesh>,
                tri_number: usize) -> Triangle {
         Triangle {
             mesh: mesh,

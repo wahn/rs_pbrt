@@ -1,7 +1,7 @@
 extern crate pbrt;
 
 use pbrt::{Float, Point2f, Point3f, Transform, Ray, Triangle, TriangleMesh, Vector3f};
-use std::rc::Rc;
+use std::sync::Arc;
 
 fn main() {
     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
@@ -43,17 +43,17 @@ fn main() {
     }
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Vector3f> = Vec::new();
-    let triangle_mesh: Rc<TriangleMesh> = Rc::new(TriangleMesh::new(object_to_world,
-                                                                    world_to_object,
-                                                                    false,
-                                                                    false,
-                                                                    n_triangles,
-                                                                    vertex_indices,
-                                                                    n_vertices,
-                                                                    p_ws, // in world space
-                                                                    s, // empty
-                                                                    n, // empty
-                                                                    uv));
+    let triangle_mesh: Arc<TriangleMesh> = Arc::new(TriangleMesh::new(object_to_world,
+                                                                      world_to_object,
+                                                                      false,
+                                                                      false,
+                                                                      n_triangles,
+                                                                      vertex_indices,
+                                                                      n_vertices,
+                                                                      p_ws, // in world space
+                                                                      s, // empty
+                                                                      n, // empty
+                                                                      uv));
     let mut tris: Vec<Triangle> = Vec::new();
     for i in 0..n_triangles {
         tris.push(Triangle::new(object_to_world,
@@ -90,7 +90,7 @@ fn main() {
     let d: Vector3f = Vector3f {
         x: 0.0997664928,
         y: -0.139622703,
-        z: -0.985166073
+        z: -0.985166073,
     };
     let r: Ray = Ray {
         o: o,
