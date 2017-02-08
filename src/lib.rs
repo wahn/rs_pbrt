@@ -3215,7 +3215,8 @@ impl<'a> Triangle<'a> {
                world_to_object: Transform,
                reverse_orientation: bool,
                mesh: &'a TriangleMesh,
-               tri_number: usize) -> Triangle<'a> {
+               tri_number: usize)
+               -> Triangle<'a> {
         Triangle {
             mesh: mesh,
             id: tri_number,
@@ -3408,7 +3409,7 @@ impl<'a> Triangle<'a> {
         } * gamma(7);
         // interpolate $(u,v)$ parametric coordinates and hit point
         let pHit: Point3f = p0 * b0 + p1 * b1 + p2 * b2;
-        let uvHit: Point2f = uv[0] * b0  + uv[1] * b1 + uv[2] * b2;
+        let uvHit: Point2f = uv[0] * b0 + uv[1] * b1 + uv[2] * b2;
         // TODO: test intersection against alpha texture, if present
         // if (testAlphaTexture && mesh->alphaMask) {
         //     SurfaceInteraction isectLocal(pHit, Vector3f(0, 0, 0), uvHit, -ray.d,
@@ -3425,18 +3426,14 @@ impl<'a> Triangle<'a> {
         // TODO: ++nHits;
         true
     }
-    pub fn get_uvs(&self) -> Vec<Point2f> {
-        let mut uv: Vec<Point2f> = Vec::new();
+    pub fn get_uvs(&self) -> [Point2f; 3] {
         if self.mesh.uv.is_empty() {
-            uv.push(Point2f { x: 0.0, y: 0.0 });
-            uv.push(Point2f { x: 1.0, y: 0.0 });
-            uv.push(Point2f { x: 1.0, y: 1.0 });
+            [Point2f { x: 0.0, y: 0.0 }, Point2f { x: 1.0, y: 0.0 }, Point2f { x: 1.0, y: 1.0 }]
         } else {
-            uv.push(self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 0]]);
-            uv.push(self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 1]]);
-            uv.push(self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 2]]);
+            [self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 0]],
+             self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 1]],
+             self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 2]]]
         }
-        uv
     }
 }
 
