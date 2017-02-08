@@ -603,7 +603,6 @@ use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, Neg};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
-use std::sync::Arc;
 
 pub type Float = f64;
 
@@ -3205,19 +3204,21 @@ impl TriangleMesh {
     }
 }
 
-#[derive(Debug,Clone)]
-pub struct Triangle {
-    mesh: Arc<TriangleMesh>,
+#[derive(Debug,Copy,Clone)]
+pub struct Triangle<'a> {
+    mesh: &'a TriangleMesh,
+    id: usize,
 }
 
-impl Triangle {
+impl<'a> Triangle<'a> {
     pub fn new(object_to_world: Transform,
                world_to_object: Transform,
                reverse_orientation: bool,
-               mesh: Arc<TriangleMesh>,
-               tri_number: usize) -> Triangle {
+               mesh: &'a TriangleMesh,
+               tri_number: usize) -> Triangle<'a> {
         Triangle {
             mesh: mesh,
+            id: tri_number,
         }
     }
     pub fn intersect(&self,
@@ -3423,6 +3424,19 @@ impl Triangle {
         *t_hit = t;
         // TODO: ++nHits;
         true
+    }
+    pub fn get_uvs(&self) -> Vec<Point2f> {
+        let mut uv: Vec<Point2f> = Vec::new();
+        if self.mesh.uv.is_empty() {
+            uv.push(Point2f { x: 0.0, y: 0.0 });
+            uv.push(Point2f { x: 1.0, y: 0.0 });
+            uv.push(Point2f { x: 1.0, y: 1.0 });
+        } else {
+            uv.push(self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 0]]);
+            uv.push(self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 1]]);
+            uv.push(self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 2]]);
+        }
+        uv
     }
 }
 
