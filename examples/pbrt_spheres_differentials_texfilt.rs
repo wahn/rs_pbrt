@@ -1,6 +1,8 @@
 extern crate pbrt;
 
-use pbrt::{Float, Point2f, Point3f, Sphere, Transform, Triangle, TriangleMesh, Vector3f};
+use pbrt::{Bounds2f, BoxFilter, Film, Float, Point2f, Point2i, Point3f, Sphere, Transform,
+           Triangle, TriangleMesh, Vector2f, Vector3f};
+use std::string::String;
 
 fn main() {
     // pbrt::MakeShapes
@@ -10,7 +12,6 @@ fn main() {
     // Shape "trianglemesh"  "integer indices" [0 2 1 0 3 2 ]
     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
     let n_triangles: usize = vertex_indices.len() / 3;
-    println!("n_triangles = {:?}", n_triangles);
     // "point P" [-100 -1 -100 400 -1 -100 400 -1 400 -100 -1 400 ]
     let p: Vec<Point3f> = vec![Point3f {
                                    x: -100.0,
@@ -45,8 +46,6 @@ fn main() {
         z: 0.0,
     });
     let world_to_object: Transform = Transform::inverse(object_to_world);
-    println!("object_to_world = {:?}", object_to_world);
-    println!("world_to_object = {:?}", world_to_object);
     // reverseOrientation = false
     // p graphicsState.floatTextures
     // $7 = std::map with 0 elements
@@ -54,11 +53,9 @@ fn main() {
     // transform mesh vertices to world space
     let mut p_ws: Vec<Point3f> = Vec::new();
     let n_vertices: usize = p.len();
-    println!("n_vertices = {:?}", n_vertices);
     for i in 0..n_vertices {
         p_ws.push(object_to_world.transform_point(p[i]));
     }
-    println!("p_ws = {:?}", p_ws);
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Vector3f> = Vec::new();
     let triangle_mesh: TriangleMesh = TriangleMesh::new(object_to_world,
@@ -72,11 +69,12 @@ fn main() {
                                                         s, // empty
                                                         n, // empty
                                                         uv);
+    println!("triangle_mesh = {:?}", triangle_mesh);
     let mut tris: Vec<Triangle> = Vec::new();
     for i in 0..n_triangles {
         tris.push(Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, i));
     }
-    println!("tris = {:?}", tris);
+    println!("vertex_indices = {:?}", triangle_mesh.vertex_indices);
     for i in 0..n_triangles {
         let uv = tris[i].get_uvs();
         println!("uvs[{:?}] = {:?}", i, uv);
@@ -91,8 +89,6 @@ fn main() {
         z: 0.0,
     });
     let world_to_object: Transform = Transform::inverse(object_to_world);
-    println!("object_to_world = {:?}", object_to_world);
-    println!("world_to_object = {:?}", world_to_object);
 
     // Shape "sphere"
     let radius: Float = 1.0;
@@ -119,8 +115,6 @@ fn main() {
         z: 0.0,
     });
     let world_to_object: Transform = Transform::inverse(object_to_world);
-    println!("object_to_world = {:?}", object_to_world);
-    println!("world_to_object = {:?}", world_to_object);
 
     // Shape "sphere"
     let sphere2: Sphere = Sphere::new(object_to_world,
@@ -132,4 +126,34 @@ fn main() {
                                       z_max,
                                       phi_max);
     println!("sphere2 = {:?}", sphere2);
+
+    // pbrtWorldEnd
+
+    // RenderOptions::MakeIntegrator
+    let xw: Float = 0.5;
+    let yw: Float = 0.5;
+    let box_filter = BoxFilter {
+        radius: Vector2f { x: xw, y: yw },
+        inv_radius: Vector2f {
+            x: 1.0 / xw,
+            y: 1.0 / yw,
+        },
+    };
+    let filename: String = String::from("spheres-differentials-texfilt.exr");
+    let xres = 1000;
+    let yres = 500;
+    let crop: Bounds2f = Bounds2f {
+        p_min: Point2f { x: 0.0, y: 0.0 },
+        p_max: Point2f { x: 1.0, y: 1.0 },
+    };
+    println!("crop = {:?}", crop);
+    let film: Film = Film::new(Point2i { x: xres, y: yres },
+                               crop,
+                               box_filter,
+                               35.0,
+                               filename,
+                               1.0,
+                               std::f64::INFINITY);
+
+    println!("film = {:?}", film);
 }

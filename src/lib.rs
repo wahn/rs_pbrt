@@ -549,27 +549,27 @@
 //! ```rust
 //! extern crate pbrt;
 //!
-//! use pbrt::{Bounds2i, BoxFilter, Film, Point2i, Vector2f};
+//! use pbrt::{Bounds2f, BoxFilter, Film, Point2f, Point2i, Vector2f};
 //! use std::string::String;
 //!
 //! fn main() {
 //!     // see film.cpp CreateFilm()
-//!     let film = Film {
-//!         full_resolution: Point2i { x: 1280, y: 720 },
-//!         diagonal: 35.0,
-//!         filter: BoxFilter {
-//!             radius: Vector2f { x: 0.5, y: 0.5 },
-//!             inv_radius: Vector2f {
-//!                 x: 1.0 / 0.5,
-//!                 y: 1.0 / 0.5,
-//!             },
-//!         },
-//!         filename: String::from("pbrt.exr"),
-//!         cropped_pixel_bounds: Bounds2i {
-//!             p_min: Point2i { x: 0, y: 0 },
-//!             p_max: Point2i { x: 1280, y: 720 },
-//!         },
-//!     };
+//!     let film: Film = Film::new(Point2i { x: 1280, y: 720 },
+//!                                Bounds2f {
+//!                                    p_min: Point2f { x: 0.0, y: 0.0 },
+//!                                    p_max: Point2f { x: 1.0, y: 1.0 },
+//!                                },
+//!                                BoxFilter {
+//!                                    radius: Vector2f { x: 0.5, y: 0.5 },
+//!                                    inv_radius: Vector2f {
+//!                                        x: 1.0 / 0.5,
+//!                                        y: 1.0 / 0.5,
+//!                                    },
+//!                                },
+//!                                35.0,
+//!                                String::from("pbrt.exr"),
+//!                                1.0,
+//!                                std::f64::INFINITY);
 //!
 //!     println!("film = {:?}", film);
 //! }
@@ -3457,11 +3457,48 @@ pub struct BoxFilter {
 
 #[derive(Debug,Default,Clone)]
 pub struct Film {
+    // Film Public Data
     pub full_resolution: Point2i,
     pub diagonal: Float,
     pub filter: BoxFilter, // TODO: Filter
     pub filename: String,
     pub cropped_pixel_bounds: Bounds2i,
+    // Film Private Data
+    scale: Float,
+    max_sample_luminance: Float,
+}
+
+impl Film {
+    pub fn new(resolution: Point2i,
+               crop_window: Bounds2f,
+               filt: BoxFilter,
+               diagonal: Float,
+               filename: String,
+               scale: Float,
+               max_sample_luminance: Float)
+               -> Film {
+        let cropped_pixel_bounds: Bounds2i = Bounds2i {
+            p_min: Point2i {
+                x: (resolution.x as Float * crop_window.p_min.x).ceil() as i32,
+                y: (resolution.y as Float * crop_window.p_min.y).ceil() as i32,
+            },
+            p_max: Point2i {
+                x: (resolution.x as Float * crop_window.p_max.x).ceil() as i32,
+                y: (resolution.y as Float * crop_window.p_max.y).ceil() as i32,
+            },
+        };
+        // TODO: allocate film image storage
+        // TODO: precompute filter weight table
+        Film {
+            full_resolution: resolution,
+            diagonal: diagonal * 0.001,
+            filter: filt,
+            filename: filename,
+            cropped_pixel_bounds: cropped_pixel_bounds,
+            scale: scale,
+            max_sample_luminance: max_sample_luminance,
+        }
+    }
 }
 
 // see perspective.h
