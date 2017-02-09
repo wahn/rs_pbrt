@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Point2f, Point3f, Transform, Triangle, TriangleMesh, Vector3f};
+use pbrt::{Float, Point2f, Point3f, Sphere, Transform, Triangle, TriangleMesh, Vector3f};
 
 fn main() {
     // pbrt::MakeShapes
@@ -84,9 +84,52 @@ fn main() {
 
     // sphere
 
+    // Translate -1.3 0 0
+    let object_to_world: Transform = Transform::translate(Vector3f {
+        x: -1.3,
+        y: 0.0,
+        z: 0.0,
+    });
+    let world_to_object: Transform = Transform::inverse(object_to_world);
+    println!("object_to_world = {:?}", object_to_world);
+    println!("world_to_object = {:?}", world_to_object);
+
     // Shape "sphere"
+    let radius: Float = 1.0;
+    let z_min: Float = -1.0;
+    let z_max: Float = 1.0;
+    let phi_max: Float = 360.0;
+    let sphere1: Sphere = Sphere::new(object_to_world,
+                                      world_to_object,
+                                      false,
+                                      false,
+                                      radius,
+                                      z_min,
+                                      z_max,
+                                      phi_max);
+    println!("sphere1 = {:?}", sphere1);
 
     // sphere
 
+    // Translate 2.6 0 0 (not protected by Attribute[Begin|End])
+    let object_to_world: Transform = object_to_world *
+                                     Transform::translate(Vector3f {
+        x: 2.6,
+        y: 0.0,
+        z: 0.0,
+    });
+    let world_to_object: Transform = Transform::inverse(object_to_world);
+    println!("object_to_world = {:?}", object_to_world);
+    println!("world_to_object = {:?}", world_to_object);
+
     // Shape "sphere"
+    let sphere2: Sphere = Sphere::new(object_to_world,
+                                      world_to_object,
+                                      false,
+                                      false,
+                                      radius,
+                                      z_min,
+                                      z_max,
+                                      phi_max);
+    println!("sphere2 = {:?}", sphere2);
 }
