@@ -599,7 +599,7 @@
 extern crate num;
 
 use std::cmp::PartialEq;
-use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, Neg};
+use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
@@ -1268,6 +1268,17 @@ impl<T> MulAssign<T> for Point3<T>
         self.x *= rhs;
         self.y *= rhs;
         self.z *= rhs;
+    }
+}
+
+impl<T> DivAssign<T> for Point3<T>
+    where T: Copy + DivAssign
+{
+    fn div_assign(&mut self, rhs: T)
+    {
+        self.x /= rhs;
+        self.y /= rhs;
+        self.z /= rhs;
     }
 }
 
@@ -3519,9 +3530,9 @@ pub struct PerspectiveCamera {
     lens_radius: Float,
     focal_distance: Float,
     // private data (see perspective.h)
-    // dx_camera: Vector3f,
-    // dy_camera: Vector3f,
-    // a: Float,
+    dx_camera: Vector3f,
+    dy_camera: Vector3f,
+    a: Float,
 }
 
 impl PerspectiveCamera {
@@ -3535,17 +3546,6 @@ impl PerspectiveCamera {
                fov: Float,
                film: Film /* const Medium *medium */)
                -> PerspectiveCamera {
-        // see perspective.cpp
-        // compute differential changes in origin for perspective camera rays
-        // let dxCamera = (RasterToCamera(Point3f(1, 0, 0)) - RasterToCamera(Point3f(0, 0, 0)));
-        // let dyCamera = (RasterToCamera(Point3f(0, 1, 0)) - RasterToCamera(Point3f(0, 0, 0)));
-        // compute image plane bounds at $z=1$ for _PerspectiveCamera_
-        // Point2i res = film->fullResolution;
-        // Point3f pMin = RasterToCamera(Point3f(0, 0, 0));
-        // Point3f pMax = RasterToCamera(Point3f(res.x, res.y, 0));
-        // pMin /= pMin.z;
-        // pMax /= pMax.z;
-        // A = std::abs((pMax.x - pMin.x) * (pMax.y - pMin.y));
         // see camera.h
         // compute projective camera screen transformations
         let scale1 = Transform::scale(film.full_resolution.x as Float,
@@ -3562,6 +3562,42 @@ impl PerspectiveCamera {
         let screen_to_raster = scale1 * scale2 * translate;
         let raster_to_screen = Transform::inverse(screen_to_raster);
         let raster_to_camera = Transform::inverse(camera_to_screen) * raster_to_screen;
+        // see perspective.cpp
+        // compute differential changes in origin for perspective camera rays
+        let dx_camera: Vector3f = raster_to_camera.transform_point(Point3f {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        }) - raster_to_camera.transform_point(Point3f {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        let dy_camera: Vector3f = raster_to_camera.transform_point(Point3f {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        }) - raster_to_camera.transform_point(Point3f {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        // compute image plane bounds at $z=1$ for _PerspectiveCamera_
+        let res: Point2i = film.full_resolution;
+        let mut p_min: Point3f = raster_to_camera.transform_point(Point3f {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        // Point3f p_max = RasterToCamera(Point3f(res.x, res.y, 0));
+        let mut p_max: Point3f = raster_to_camera.transform_point(Point3f {
+            x: res.x as Float,
+            y: res.y as Float,
+            z: 0.0,
+        });
+        p_min /= p_min.z;
+        p_max /= p_max.z;
+        let a: Float = ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs();
 
         PerspectiveCamera {
             camera_to_world: camera_to_world,
@@ -3574,9 +3610,9 @@ impl PerspectiveCamera {
             raster_to_screen: raster_to_screen,
             lens_radius: lens_radius,
             focal_distance: focal_distance,
-            // dx_camera: dx_camera,
-            // dy_camera: dy_camera,
-            // a: a,
+            dx_camera: dx_camera,
+            dy_camera: dy_camera,
+            a: a,
         }
     }
 }

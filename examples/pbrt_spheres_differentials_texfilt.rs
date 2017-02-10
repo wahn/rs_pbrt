@@ -1,7 +1,7 @@
 extern crate pbrt;
 
-use pbrt::{Bounds2f, BoxFilter, Film, Float, Point2f, Point2i, Point3f, Sphere, Transform,
-           Triangle, TriangleMesh, Vector2f, Vector3f};
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, Film, Float, PerspectiveCamera, Point2f,
+           Point2i, Point3f, Sphere, Transform, Triangle, TriangleMesh, Vector2f, Vector3f};
 use std::string::String;
 
 fn main() {
@@ -139,6 +139,9 @@ fn main() {
             y: 1.0 / yw,
         },
     };
+    // (gdb) p *film->filter
+    // radius = {x = 0.5, y = 0.5}
+    // invRadius = {x = 2, y = 2}
     let filename: String = String::from("spheres-differentials-texfilt.exr");
     let xres = 1000;
     let yres = 500;
@@ -154,6 +157,72 @@ fn main() {
                                filename,
                                1.0,
                                std::f64::INFINITY);
-
+    // TODO: pixels (see gdb output below)
+    // (gdb) p *film
+    // fullResolution = {x = 1000, y = 500},
+    // diagonal = 0.0350000001
+    // filter = std::unique_ptr<pbrt::Filter> containing 0x10a6080
+    // filename = "spheres-differentials-texfilt.exr"
+    // croppedPixelBounds = {pMin = {x = 0, y = 0}, pMax = {x = 1000, y = 500}}
+    // pixels = std::unique_ptr<pbrt::Film::Pixel> ...
+    // scale = 1
+    // maxSampleLuminance = inf
     println!("film = {:?}", film);
+    // pbrt::MakeCamera
+    let pos = Point3f {
+        x: 2.0,
+        y: 2.0,
+        z: 5.0,
+    };
+    let look = Point3f {
+        x: 0.0,
+        y: -0.4,
+        z: 0.0,
+    };
+    let up = Vector3f {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    };
+    let t: Transform = Transform::look_at(pos, look, up);
+    let it: Transform = Transform {
+        m: t.m_inv.clone(),
+        m_inv: t.m.clone(),
+    };
+    let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
+    println!("animated_cam_to_world = {:?}", animated_cam_to_world);
+    // pbrt::CreatePerspectiveCamera
+    let shutteropen: Float = 0.0;
+    let shutterclose: Float = 1.0;
+    let lensradius: Float = 0.0;
+    let focaldistance: Float = 1e6;
+    let frame: Float = xres as Float / yres as Float;
+    println!("frame = {:?}", frame);
+    let mut screen: Bounds2f = Bounds2f::default();
+    if frame > 1.0 {
+        screen.p_min.x = -frame;
+        screen.p_max.x = frame;
+        screen.p_min.y = -1.0;
+        screen.p_max.y = 1.0;
+    } else {
+        screen.p_min.x = -1.0;
+        screen.p_max.x = 1.0;
+        screen.p_min.y = -1.0 / frame;
+        screen.p_max.y = 1.0 / frame;
+    }
+    println!("screen = {:?}", screen);
+    let fov: Float = 30.0;
+    let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
+    println!("camera_to_screen = {:?}", camera_to_screen);
+    let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
+                                                                       camera_to_screen,
+                                                                       screen,
+                                                                       shutteropen,
+                                                                       shutterclose,
+                                                                       lensradius,
+                                                                       focaldistance,
+                                                                       fov,
+                                                                       film /* ,
+                                                                             * medium */);
+    println!("perspective_camera = {:?}", perspective_camera);
 }
