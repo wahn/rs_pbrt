@@ -1,7 +1,7 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, Film, Float, PerspectiveCamera,
-           Point2i, Point2f, Point3f, Transform, Vector2f, Vector3f};
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, Film, Float, PerspectiveCamera, Point2i,
+           Point2f, Point3f, Transform, Vector2f, Vector3f};
 
 fn main() {
     // see  perspective.cpp CreatePerspectiveCamera()

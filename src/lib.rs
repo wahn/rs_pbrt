@@ -379,6 +379,16 @@
 //! }
 //! ```
 //!
+//! ## Surface Interaction
+//!
+//! The geometry of a particular point on a surface is represented by
+//! a **SurfaceInteraction**. Having this abstraction lets most of the
+//! system work with points on surfaces without needing to consider
+//! the particular type of geometric shape the points lie on; the
+//! **SurfaceInteraction** abstraction supplies enough information
+//! about the surface point to allow the shading and geometric
+//! operations in the rest of **pbrt** to be implemented generically.
+//!
 //! ## Shapes
 //!
 //! Careful abstraction of geometric shapes in a ray tracer is a key
@@ -619,7 +629,7 @@ pub fn float_to_bits(f: f32) -> u32 {
     // uint64_t ui;
     // memcpy(&ui, &f, sizeof(double));
     // return ui;
-    let mut rui: u32 = 0;
+    let rui: u32;
     unsafe {
         let ui: u32 = std::mem::transmute_copy(&f);
         rui = ui;
@@ -636,7 +646,7 @@ pub fn bits_to_float(ui: u32) -> f32 {
     // float f;
     // memcpy(&f, &ui, sizeof(uint32_t));
     // return f;
-    let mut rf: f32 = 0.0;
+    let rf: f32;
     unsafe {
         let f: f32 = std::mem::transmute_copy(&ui);
         rf = f;
@@ -729,7 +739,7 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
     } else {
         let root_discrim: f64 = discrim.sqrt();
         // compute quadratic _t_ values
-        let mut q: f64 = 0.0;
+        let q: f64;
         if b < 0.0 {
             q = -0.5 * (b - root_discrim);
         } else {
@@ -2929,6 +2939,51 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
     q / quat_dot(q, q)
 }
 
+// see interaction.h
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct SurfaceInteraction {
+    // Interaction Public Data
+    // Point3f p;
+    // Float time;
+    // Vector3f pError;
+    // Vector3f wo;
+    // Normal3f n;
+    // MediumInterface mediumInterface;
+    // SurfaceInteraction Public Data
+    // Point2f uv;
+    // Vector3f dpdu, dpdv;
+    // Normal3f dndu, dndv;
+    // const Shape *shape = nullptr;
+    // struct {
+    //     Normal3f n;
+    //     Vector3f dpdu, dpdv;
+    //     Normal3f dndu, dndv;
+    // } shading;
+    // const Primitive *primitive = nullptr;
+    // BSDF *bsdf = nullptr;
+    // BSSRDF *bssrdf = nullptr;
+    // mutable Vector3f dpdx, dpdy;
+    // mutable Float dudx = 0, dvdx = 0, dudy = 0, dvdy = 0;
+}
+
+impl SurfaceInteraction {
+    pub fn new(p: &Point3f,
+               p_error: &Vector3f,
+               uv: &Point2f,
+               wo: &Vector3f,
+               dpdu: &Vector3f,
+               dpdv: &Vector3f,
+               dndu: &Normal3f,
+               dndv: &Normal3f,
+               time: Float /* ,
+                            * sh: &Shape */)
+               -> SurfaceInteraction {
+        SurfaceInteraction {
+        }
+    }
+}
+
 // see sphere.h
 
 #[derive(Debug,Copy,Clone)]
@@ -3006,7 +3061,8 @@ impl Sphere {
     }
     pub fn intersect(&self,
                      r: &Ray,
-                     t_hit: &mut Float /* , SurfaceInteraction *isect, bool testAlphaTexture */)
+                     t_hit: &mut Float,
+                     isect: &mut SurfaceInteraction  /* , bool testAlphaTexture */)
                      -> bool {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
@@ -3235,7 +3291,8 @@ impl<'a> Triangle<'a> {
     }
     pub fn intersect(&self,
                      ray: &Ray,
-                     t_hit: &mut Float /* , SurfaceInteraction *isect, bool testAlphaTexture */)
+                     t_hit: &mut Float,
+                     isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
                      -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
         // TODO: const Point3f &p0 = mesh->p[v[0]];
