@@ -112,6 +112,7 @@
 //!         o: origin,
 //!         d: direction,
 //!         t_max: std::f64::INFINITY,
+//!         time: 0.0,
 //!     };
 //!
 //!     println!("{:?}", ray);
@@ -1361,6 +1362,8 @@ pub struct Ray {
     pub d: Vector3f,
     /// limits the ray to a segment along its infinite extent
     pub t_max: Float,
+    /// used for animations
+    pub time: Float,
 }
 
 impl Ray {
@@ -1845,9 +1848,7 @@ impl Transform {
         };
         scale * persp_trans
     }
-    pub fn transform_point(&self,
-                           p: Point3<Float>)
-                           -> Point3<Float> {
+    pub fn transform_point(&self, p: Point3<Float>) -> Point3<Float> {
         let x: Float = p.x;
         let y: Float = p.y;
         let z: Float = p.z;
@@ -1956,7 +1957,12 @@ impl Transform {
             let dt: Float = vec3_dot(d.abs(), *o_error) / length_squared;
             o += d * dt;
         }
-        Ray { o: o, d: d, t_max: r.t_max, }
+        Ray {
+            o: o,
+            d: d,
+            t_max: r.t_max,
+            time: 0.0,
+        }
     }
 }
 
@@ -2944,16 +2950,18 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 #[derive(Debug,Default,Copy,Clone)]
 pub struct SurfaceInteraction {
     // Interaction Public Data
-    // Point3f p;
-    // Float time;
-    // Vector3f pError;
-    // Vector3f wo;
-    // Normal3f n;
-    // MediumInterface mediumInterface;
+    p: Point3f,
+    time: Float,
+    p_error: Vector3f,
+    wo: Vector3f,
+    n: Normal3f,
+    // TODO: MediumInterface mediumInterface;
     // SurfaceInteraction Public Data
-    // Point2f uv;
-    // Vector3f dpdu, dpdv;
-    // Normal3f dndu, dndv;
+    uv: Point2f,
+    dpdu: Vector3f,
+    dpdv: Vector3f,
+    dndu: Normal3f,
+    dndv: Normal3f,
     // const Shape *shape = nullptr;
     // struct {
     //     Normal3f n;
@@ -2968,18 +2976,34 @@ pub struct SurfaceInteraction {
 }
 
 impl SurfaceInteraction {
-    pub fn new(p: &Point3f,
-               p_error: &Vector3f,
-               uv: &Point2f,
-               wo: &Vector3f,
-               dpdu: &Vector3f,
-               dpdv: &Vector3f,
-               dndu: &Normal3f,
-               dndv: &Normal3f,
+    pub fn new(p: Point3f,
+               p_error: Vector3f,
+               uv: Point2f,
+               wo: Vector3f,
+               dpdu: Vector3f,
+               dpdv: Vector3f,
+               dndu: Normal3f,
+               dndv: Normal3f,
                time: Float /* ,
                             * sh: &Shape */)
                -> SurfaceInteraction {
+        let nv: Vector3f = vec3_normalize(vec3_cross(dpdu, dpdv));
+        let n: Normal3f = Normal3f {
+            x: nv.x,
+            y: nv.y,
+            z: nv.z,
+        };
         SurfaceInteraction {
+            p: p,
+            time: time,
+            p_error: p_error,
+            wo: wo,
+            n: n,
+            uv: uv,
+            dpdu: dpdu,
+            dpdv: dpdv,
+            dndu: dndu,
+            dndv: dndv,
         }
     }
 }
@@ -3062,7 +3086,7 @@ impl Sphere {
     pub fn intersect(&self,
                      r: &Ray,
                      t_hit: &mut Float,
-                     isect: &mut SurfaceInteraction  /* , bool testAlphaTexture */)
+                     isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
                      -> bool {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
@@ -3169,13 +3193,13 @@ impl Sphere {
             y: cos_phi,
             z: 0.0,
         } * (self.theta_max - self.theta_min) * p_hit.z *
-                               self.phi_max;
+                                 self.phi_max;
         let d2_p_dvv: Vector3f = Vector3f {
             x: p_hit.x,
             y: p_hit.y,
             z: p_hit.z,
         } * -(self.theta_max - self.theta_min) *
-                               (self.theta_max - self.theta_min);
+                                 (self.theta_max - self.theta_min);
         // compute coefficients for fundamental forms
         let ec: Float = vec3_dot(dpdu, dpdu);
         let fc: Float = vec3_dot(dpdu, dpdv);
@@ -3205,10 +3229,22 @@ impl Sphere {
                 z: p_hit.z,
             }
             .abs() * gamma(5_i32);
-        // TODO: initialize _SurfaceInteraction_ from parametric information
+        // initialize _SurfaceInteraction_ from parametric information
         // *isect = (*ObjectToWorld)(SurfaceInteraction(pHit, p_error, Point2f(u, v),
         //                                              -ray.d, dpdu, dpdv, dndu, dndv,
         //                                              ray.time, this));
+        let uv_hit: Point2f = Point2f { x: u, y: v };
+        let wo: Vector3f = -ray.d;
+        let si: SurfaceInteraction =
+            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
+        println!("isect = {:?}", isect); // TMP
+        isect.p = si.p;
+        isect.time = si.time;
+        isect.p_error = si.p_error;
+        isect.wo = si.wo;
+        isect.n = si.n;
+        isect.uv = si.uv;
+        println!("isect = {:?}", isect); // TMP
         *t_hit = t_shape_hit.v as f64;
         true
     }
@@ -3275,6 +3311,11 @@ impl TriangleMesh {
 pub struct Triangle<'a> {
     mesh: &'a TriangleMesh,
     id: usize,
+    // derived from class Shape (see shape.h)
+    object_to_world: Transform,
+    world_to_object: Transform,
+    reverse_orientation: bool,
+    transform_swaps_handedness: bool,
 }
 
 impl<'a> Triangle<'a> {
@@ -3287,6 +3328,10 @@ impl<'a> Triangle<'a> {
         Triangle {
             mesh: mesh,
             id: tri_number,
+            object_to_world: object_to_world,
+            world_to_object: world_to_object,
+            reverse_orientation: reverse_orientation,
+            transform_swaps_handedness: false,
         }
     }
     pub fn intersect(&self,
@@ -3295,24 +3340,9 @@ impl<'a> Triangle<'a> {
                      isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
                      -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
-        // TODO: const Point3f &p0 = mesh->p[v[0]];
-        let p0: Point3f = Point3f {
-            x: -99.75,
-            y: -1.0,
-            z: -100.0,
-        };
-        // TODO: const Point3f &p1 = mesh->p[v[1]];
-        let p1: Point3f = Point3f {
-            x: 400.25,
-            y: -1.0,
-            z: 400.0,
-        };
-        // TODO: const Point3f &p2 = mesh->p[v[2]];
-        let p2: Point3f = Point3f {
-            x: 400.25,
-            y: -1.0,
-            z: -100.0,
-        };
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         // translate vertices based on ray origin
         let mut p0t: Point3f = p0 -
                                Vector3f {
@@ -3347,15 +3377,15 @@ impl<'a> Triangle<'a> {
         p1t = pnt3_permute(p1t, kx, ky, kz);
         p2t = pnt3_permute(p2t, kx, ky, kz);
         // apply shear transformation to translated vertex positions
-        let Sx: Float = -d.x / d.z;
-        let Sy: Float = -d.y / d.z;
-        let Sz: Float = 1.0 / d.z;
-        p0t.x += Sx * p0t.z;
-        p0t.y += Sy * p0t.z;
-        p1t.x += Sx * p1t.z;
-        p1t.y += Sy * p1t.z;
-        p2t.x += Sx * p2t.z;
-        p2t.y += Sy * p2t.z;
+        let sx: Float = -d.x / d.z;
+        let sy: Float = -d.y / d.z;
+        let sz: Float = 1.0 / d.z;
+        p0t.x += sx * p0t.z;
+        p0t.y += sy * p0t.z;
+        p1t.x += sx * p1t.z;
+        p1t.y += sy * p1t.z;
+        p2t.x += sx * p2t.z;
+        p2t.y += sy * p2t.z;
         // compute edge function coefficients _e0_, _e1_, and _e2_
         let e0: Float = p1t.x * p2t.y - p1t.y * p2t.x;
         let e1: Float = p2t.x * p0t.y - p2t.y * p0t.x;
@@ -3386,109 +3416,118 @@ impl<'a> Triangle<'a> {
             return false;
         }
         // compute scaled hit distance to triangle and test against ray $t$ range
-        p0t.z *= Sz;
-        p1t.z *= Sz;
-        p2t.z *= Sz;
-        let tScaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-        if det < 0.0 && (tScaled >= 0.0 || tScaled < ray.t_max * det) {
+        p0t.z *= sz;
+        p1t.z *= sz;
+        p2t.z *= sz;
+        let t_scaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
+        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max * det) {
             return false;
-        } else if det > 0.0 && (tScaled <= 0.0 || tScaled > ray.t_max * det) {
+        } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max * det) {
             return false;
         }
         // compute barycentric coordinates and $t$ value for triangle intersection
-        let invDet: Float = 1.0 / det;
-        let b0: Float = e0 * invDet;
-        let b1: Float = e1 * invDet;
-        let b2: Float = e2 * invDet;
-        let t: Float = tScaled * invDet;
+        let inv_det: Float = 1.0 / det;
+        let b0: Float = e0 * inv_det;
+        let b1: Float = e1 * inv_det;
+        let b2: Float = e2 * inv_det;
+        let t: Float = t_scaled * inv_det;
 
         // ensure that computed triangle $t$ is conservatively greater than zero
 
         // compute $\delta_z$ term for triangle $t$ error bounds
-        let maxZt: Float = vec3_max_component(Vector3f {
+        let max_zt: Float = vec3_max_component(Vector3f {
                 x: p0t.z,
                 y: p1t.z,
                 z: p2t.z,
             }
             .abs());
-        let deltaZ: Float = gamma(3_i32) * maxZt;
+        let delta_z: Float = gamma(3_i32) * max_zt;
         // compute $\delta_x$ and $\delta_y$ terms for triangle $t$ error bounds
-        let maxXt: Float = vec3_max_component(Vector3f {
+        let max_xt: Float = vec3_max_component(Vector3f {
                 x: p0t.x,
                 y: p1t.x,
                 z: p2t.x,
             }
             .abs());
-        let maxYt: Float = vec3_max_component(Vector3f {
+        let max_yt: Float = vec3_max_component(Vector3f {
                 x: p0t.y,
                 y: p1t.y,
                 z: p2t.y,
             }
             .abs());
-        let deltaX: Float = gamma(5) * (maxXt + maxZt);
-        let deltaY: Float = gamma(5) * (maxYt + maxZt);
+        let delta_x: Float = gamma(5) * (max_xt + max_zt);
+        let delta_y: Float = gamma(5) * (max_yt + max_zt);
         // compute $\delta_e$ term for triangle $t$ error bounds
-        let deltaE: Float = 2.0 * (gamma(2) * maxXt * maxYt + deltaY * maxXt + deltaX * maxYt);
+        let delta_e: Float = 2.0 *
+                             (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
         // compute $\delta_t$ term for triangle $t$ error bounds and check _t_
-        let maxE: Float = vec3_max_component(Vector3f {
+        let max_e: Float = vec3_max_component(Vector3f {
                 x: e0,
                 y: e1,
                 z: e2,
             }
             .abs());
-        let deltaT: Float = 3.0 * (gamma(3) * maxE * maxZt + deltaE * maxZt + deltaZ * maxE) *
-                            invDet.abs();
-        if t <= deltaT {
+        let delta_t: Float =
+            3.0 * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
+        if t <= delta_t {
             return false;
         }
         // compute triangle partial derivatives
-        let uv: [Point2f; 3] =
-            [Point2f { x: 0.0, y: 0.0 }, Point2f { x: 0.0, y: 1.0 }, Point2f { x: 1.0, y: 0.0 }];
-        // TODO: GetUVs(uv);
+        let uv: [Point2f; 3] = self.get_uvs();
         // compute deltas for triangle partial derivatives
         let duv02: Vector2f = uv[0] - uv[2];
         let duv12: Vector2f = uv[1] - uv[2];
         let dp02: Vector3f = p0 - p2;
         let dp12: Vector3f = p1 - p2;
         let determinant: Float = duv02.x * duv12.y - duv02.y * duv12.x;
-        let degenerateUV: bool = determinant.abs() < 1e-8 as Float;
+        let degenerate_uv: bool = determinant.abs() < 1e-8 as Float;
         // Vector3f dpdu, dpdv;
         let mut dpdu: Vector3f = Vector3f::default();
         let mut dpdv: Vector3f = Vector3f::default();
-        if !degenerateUV {
+        if !degenerate_uv {
             let invdet: Float = 1.0 / determinant;
             dpdu = (dp02 * duv12.y - dp12 * duv02.y) * invdet;
             dpdv = (dp02 * -duv12.x + dp12 * duv02.x) * invdet;
         }
-        if degenerateUV || vec3_cross(dpdu, dpdv).length_squared() == 0.0 {
+        if degenerate_uv || vec3_cross(dpdu, dpdv).length_squared() == 0.0 {
             // handle zero determinant for triangle partial derivative matrix
             vec3_coordinate_system(&vec3_normalize(vec3_cross(p2 - p0, p1 - p0)),
                                    &mut dpdu,
                                    &mut dpdv);
         }
         // compute error bounds for triangle intersection
-        let xAbsSum: Float = (b0 * p0.x).abs() + (b1 * p1.x).abs() + (b2 * p2.x).abs();
-        let yAbsSum: Float = (b0 * p0.y).abs() + (b1 * p1.y).abs() + (b2 * p2.y).abs();
-        let zAbsSum: Float = (b0 * p0.z).abs() + (b1 * p1.z).abs() + (b2 * p2.z).abs();
-        let pError: Vector3f = Vector3f {
-            x: xAbsSum,
-            y: yAbsSum,
-            z: zAbsSum,
+        let x_abs_sum: Float = (b0 * p0.x).abs() + (b1 * p1.x).abs() + (b2 * p2.x).abs();
+        let y_abs_sum: Float = (b0 * p0.y).abs() + (b1 * p1.y).abs() + (b2 * p2.y).abs();
+        let z_abs_sum: Float = (b0 * p0.z).abs() + (b1 * p1.z).abs() + (b2 * p2.z).abs();
+        let p_error: Vector3f = Vector3f {
+            x: x_abs_sum,
+            y: y_abs_sum,
+            z: z_abs_sum,
         } * gamma(7);
         // interpolate $(u,v)$ parametric coordinates and hit point
-        let pHit: Point3f = p0 * b0 + p1 * b1 + p2 * b2;
-        let uvHit: Point2f = uv[0] * b0 + uv[1] * b1 + uv[2] * b2;
+        let p_hit: Point3f = p0 * b0 + p1 * b1 + p2 * b2;
+        let uv_hit: Point2f = uv[0] * b0 + uv[1] * b1 + uv[2] * b2;
         // TODO: test intersection against alpha texture, if present
         // if (testAlphaTexture && mesh->alphaMask) {
-        //     SurfaceInteraction isectLocal(pHit, Vector3f(0, 0, 0), uvHit, -ray.d,
+        //     SurfaceInteraction isectLocal(p_hit, Vector3f(0, 0, 0), uv_hit, -ray.d,
         //                                   dpdu, dpdv, Normal3f(0, 0, 0),
         //                                   Normal3f(0, 0, 0), ray.time, this);
         //     if (mesh->alphaMask->Evaluate(isectLocal) == 0) return false;
         // }
-        // TODO: fill in _SurfaceInteraction_ from triangle hit
-        // *isect = SurfaceInteraction(pHit, pError, uvHit, -ray.d, dpdu, dpdv,
-        //                             Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time,
-        //                             this);
+        // fill in _SurfaceInteraction_ from triangle hit
+        let dndu: Normal3f = Normal3f::default();
+        let dndv: Normal3f = Normal3f::default();
+        let wo: Vector3f = -ray.d;
+        let si: SurfaceInteraction =
+            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
+        println!("isect = {:?}", isect); // TMP
+        isect.p = si.p;
+        isect.time = si.time;
+        isect.p_error = si.p_error;
+        isect.wo = si.wo;
+        isect.n = si.n;
+        isect.uv = si.uv;
+        println!("isect = {:?}", isect); // TMP
         // WORK
         *t_hit = t;
         // TODO: ++nHits;

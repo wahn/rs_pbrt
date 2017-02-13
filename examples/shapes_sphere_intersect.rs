@@ -37,6 +37,7 @@ fn main() {
         o: o,
         d: d,
         t_max: 17.7973537,
+        time: 0.0,
     };
     let mut t_hit: Float = 0.0;
     let mut isect: SurfaceInteraction = SurfaceInteraction::default();

@@ -17,6 +17,7 @@ fn main() {
         o: origin,
         d: direction,
         t_max: std::f64::INFINITY,
+        time: 0.0,
     };
 
     println!("{:?}", ray);
