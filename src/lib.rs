@@ -3565,11 +3565,18 @@ pub struct BoxFilter {
 #[derive(Debug,Default,Clone)]
 pub struct Film {
     // Film Public Data
+
+    /// The overall resolution of the image in pixels
     pub full_resolution: Point2i,
+    /// The length of the diagonal of the film's physical area (specified in mm, stored in meters)
     pub diagonal: Float,
+    /// A filter function
     pub filter: BoxFilter, // TODO: Filter
+    /// The filename of the output image
     pub filename: String,
+    /// A crop window that may specify a subset of the image to render
     pub cropped_pixel_bounds: Bounds2i,
+
     // Film Private Data
     scale: Float,
     max_sample_luminance: Float,
