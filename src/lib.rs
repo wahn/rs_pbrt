@@ -898,6 +898,13 @@ impl Div for EFloat {
     }
 }
 
+// parallel.h
+
+#[derive(Debug,Default,Copy,Clone)]
+struct AtomicFloat {
+    bits: u32,
+}
+
 // see geometry.h
 
 pub type Point2f = Point2<Float>;
@@ -3562,6 +3569,14 @@ pub struct BoxFilter {
 
 // see film.h
 
+#[derive(Debug,Default,Copy,Clone)]
+pub struct Pixel {
+    xyz: [Float; 3],
+    filter_weight_sum: Float,
+    splat_xyz: [AtomicFloat; 3],
+    pad: Float,
+}
+
 #[derive(Debug,Default,Clone)]
 pub struct Film {
     // Film Public Data
@@ -3732,7 +3747,7 @@ pub enum LightStrategy {
 pub struct DirectLightingIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     camera: PerspectiveCamera, // std::shared_ptr<const Camera> camera;
-    // TODO: std::shared_ptr<Sampler> sampler;
+    sampler: ZeroTwoSequenceSampler, // std::shared_ptr<Sampler> sampler;
     pixel_bounds: Bounds2i,
     // see directlighting.h
     // TODO: const LightStrategy strategy;
@@ -3749,8 +3764,27 @@ impl Default for DirectLightingIntegrator {
                 p_min: Point2i { x: 0, y: 0 },
                 p_max: Point2i { x: 1280, y: 720 },
             },
+            sampler: ZeroTwoSequenceSampler::default(),
             strategy: LightStrategy::UniformSampleAll,
             max_depth: 5,
+            n_light_samples: Vec::new(),
+        }
+    }
+}
+
+impl DirectLightingIntegrator {
+    pub fn new(strategy: LightStrategy,
+               max_depth: i64,
+               camera: PerspectiveCamera,
+               sampler: ZeroTwoSequenceSampler,
+               pixel_bounds: Bounds2i)
+               -> DirectLightingIntegrator {
+        DirectLightingIntegrator {
+            camera: camera,
+            sampler: sampler,
+            pixel_bounds: pixel_bounds,
+            strategy: strategy,
+            max_depth: max_depth,
             n_light_samples: Vec::new(),
         }
     }

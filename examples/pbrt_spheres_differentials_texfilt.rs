@@ -1,7 +1,8 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, Film, Float, PerspectiveCamera, Point2f,
-           Point2i, Point3f, Sphere, Transform, Triangle, TriangleMesh, Vector2f, Vector3f};
+use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, DirectLightingIntegrator, Film,
+           Float, LightStrategy, PerspectiveCamera, Point2f, Point2i, Point3f, Sphere, Transform,
+           Triangle, TriangleMesh, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 use std::string::String;
 
 fn main() {
@@ -225,4 +226,22 @@ fn main() {
                                                                        film /* ,
                                                                              * medium */);
     println!("perspective_camera = {:?}", perspective_camera);
+    // pbrt::MakeSampler
+    let sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
+        samples_per_pixel: 1,
+        n_sampled_dimensions: 4,
+    };
+    let pixel_bounds: Bounds2i = Bounds2i {
+        p_min: Point2i { x: 0, y: 0 },
+        p_max: Point2i { x: xres, y: yres },
+    };
+    let integrator: DirectLightingIntegrator =
+        DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
+                                      10,
+                                      perspective_camera,
+                                      sampler,
+                                      pixel_bounds);
+    println!("integrator = {:?}", integrator);
+    // pbrt::RenderOptions::MakeScene
+    ///let accelerator = 
 }
