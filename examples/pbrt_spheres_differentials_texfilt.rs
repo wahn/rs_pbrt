@@ -243,5 +243,5 @@ fn main() {
                                       pixel_bounds);
     println!("integrator = {:?}", integrator);
     // pbrt::RenderOptions::MakeScene
-    ///let accelerator = 
+    // TODO: let accelerator = 
 }
