@@ -1362,7 +1362,7 @@ pub struct Bounds3<T> {
 }
 
 impl<T> Bounds3<T> {
-    fn new(p1: Point3<T>, p2: Point3<T>) -> Bounds3<T>
+    pub fn new(p1: Point3<T>, p2: Point3<T>) -> Bounds3<T>
         where T: num::Float
     {
         let p_min: Point3<T> = Point3::<T> {
