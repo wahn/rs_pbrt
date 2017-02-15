@@ -1361,6 +1361,49 @@ pub struct Bounds3<T> {
     pub p_max: Point3<T>,
 }
 
+impl<T> Bounds3<T> {
+    fn new(p1: Point3<T>, p2: Point3<T>) -> Bounds3<T>
+        where T: num::Float
+    {
+        let p_min: Point3<T> = Point3::<T> {
+            x: p1.x.min(p2.x),
+            y: p1.y.min(p2.y),
+            z: p1.z.min(p2.z),
+        };
+        let p_max: Point3<T> = Point3::<T> {
+            x: p1.x.max(p2.x),
+            y: p1.y.max(p2.y),
+            z: p1.z.max(p2.z),
+        };
+        Bounds3::<T> {
+            p_min: p_min,
+            p_max: p_max,
+        }
+    }
+}
+
+/// Given a bounding box and a point, the **bnd3_union_pnt3()**
+/// function returns a new bounding box that encompasses that point as
+/// well as the original box.
+pub fn bnd3_union_pnt3<T>(b: Bounds3<T>, p: Point3<T>) -> Bounds3<T>
+    where T: num::Float
+{
+    let p_min: Point3<T> = Point3::<T> {
+        x: b.p_min.x.min(p.x),
+        y: b.p_min.y.min(p.y),
+        z: b.p_min.z.min(p.z),
+    };
+    let p_max: Point3<T> = Point3::<T> {
+        x: b.p_max.x.max(p.x),
+        y: b.p_max.y.max(p.y),
+        z: b.p_max.z.max(p.z),
+    };
+    Bounds3::<T> {
+        p_min: p_min,
+        p_max: p_max,
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Ray {
     /// origin
@@ -3340,6 +3383,20 @@ impl<'a> Triangle<'a> {
             reverse_orientation: reverse_orientation,
             transform_swaps_handedness: false,
         }
+    }
+    pub fn object_bound(&self) -> Bounds3f {
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
+        bnd3_union_pnt3(Bounds3f::new(self.world_to_object.transform_point(p0),
+                                      self.world_to_object.transform_point(p1)),
+                        self.world_to_object.transform_point(p2))
+    }
+    pub fn world_bound(&self)  -> Bounds3f {
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
+        bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
     }
     pub fn intersect(&self,
                      ray: &Ray,
