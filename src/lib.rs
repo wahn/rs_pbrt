@@ -1926,6 +1926,61 @@ impl Transform {
             }
         }
     }
+    pub fn transform_bounds(&self, b: Bounds3f) -> Bounds3f {
+        let m: Transform = *self;
+        let p: Point3f = self.transform_point(Point3f {
+            x: b.p_min.x,
+            y: b.p_min.y,
+            z: b.p_min.z,
+        });
+        let mut ret: Bounds3f = Bounds3f {
+            p_min: p,
+            p_max: p,
+        };
+        ret = bnd3_union_pnt3(ret,
+                              m.transform_point(Point3f {
+                                  x: b.p_max.x,
+                                  y: b.p_min.y,
+                                  z: b.p_min.z,
+                              }));
+        ret = bnd3_union_pnt3(ret,
+                              m.transform_point(Point3f {
+                                  x: b.p_min.x,
+                                  y: b.p_max.y,
+                                  z: b.p_min.z,
+                              }));
+        ret = bnd3_union_pnt3(ret,
+                              m.transform_point(Point3f {
+                                  x: b.p_min.x,
+                                  y: b.p_min.y,
+                                  z: b.p_max.z,
+                              }));
+        ret = bnd3_union_pnt3(ret,
+                              m.transform_point(Point3f {
+                                  x: b.p_min.x,
+                                  y: b.p_max.y,
+                                  z: b.p_max.z,
+                              }));
+        ret = bnd3_union_pnt3(ret,
+                              m.transform_point(Point3f {
+                                  x: b.p_max.x,
+                                  y: b.p_max.y,
+                                  z: b.p_min.z,
+                              }));
+        ret = bnd3_union_pnt3(ret,
+                              m.transform_point(Point3f {
+                                  x: b.p_max.x,
+                                  y: b.p_min.y,
+                                  z: b.p_max.z,
+                              }));
+        ret = bnd3_union_pnt3(ret,
+                              m.transform_point(Point3f {
+                                  x: b.p_max.x,
+                                  y: b.p_max.y,
+                                  z: b.p_max.z,
+                              }));
+        ret
+    }
     pub fn transform_point_with_error(&self,
                                       p: Point3<Float>,
                                       p_error: &mut Vector3<Float>)
@@ -3132,6 +3187,10 @@ impl Sphere {
                 z: self.z_max,
             },
         }
+    }
+    pub fn world_bound(&self) -> Bounds3f {
+        // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
+        self.object_to_world.transform_bounds(self.object_bound())
     }
     pub fn intersect(&self,
                      r: &Ray,
