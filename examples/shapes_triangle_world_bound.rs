@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Bounds3f, Point2f, Point3f, Transform, Triangle, TriangleMesh, Vector3f};
+use pbrt::{Bounds3f, Point2f, Point3f, Primitive, Transform, Triangle, TriangleMesh, Vector3f};
 
 fn main() {
     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
@@ -64,7 +64,7 @@ fn main() {
     println!("p0 = {:?}", p0);
     println!("p1 = {:?}", p1);
     println!("p2 = {:?}", p2);
-    let world_bound: Bounds3f = tris[1].world_bound();
+    let world_bound: Bounds3f = tris[1].world_bound(); // Primitive
     println!("tris[1].world_bound() = {:?}", world_bound);
     println!("tris[1] = {:?}", tris[1]);
     let p0: Point3f = triangle_mesh.p[triangle_mesh.vertex_indices[3]];
@@ -73,6 +73,6 @@ fn main() {
     println!("p0 = {:?}", p0);
     println!("p1 = {:?}", p1);
     println!("p2 = {:?}", p2);
-    let world_bound: Bounds3f = tris[1].world_bound();
+    let world_bound: Bounds3f = tris[1].world_bound(); // Primitive
     println!("tris[1].world_bound() = {:?}", world_bound);
 }

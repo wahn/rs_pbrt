@@ -44,6 +44,7 @@ examples: release
 	./target/release/examples/shapes_sphere_default
 	./target/release/examples/shapes_sphere_intersect
 	./target/release/examples/shapes_sphere_new
+	./target/release/examples/shapes_sphere_world_bound
 	./target/release/examples/shapes_triangle_create_triangle_mesh
 	./target/release/examples/shapes_triangle_intersect
 	./target/release/examples/shapes_triangle_world_bound

@@ -3113,6 +3113,17 @@ impl SurfaceInteraction {
     }
 }
 
+// see primitive.h
+
+pub trait Primitive {
+    fn world_bound(&self) -> Bounds3f;
+    fn intersect(&self,
+                 r: &Ray,
+                 t_hit: &mut Float,
+                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                 -> bool;
+}
+
 // see sphere.h
 
 #[derive(Debug,Copy,Clone)]
@@ -3188,11 +3199,14 @@ impl Sphere {
             },
         }
     }
-    pub fn world_bound(&self) -> Bounds3f {
+}
+
+impl Primitive for Sphere {
+    fn world_bound(&self) -> Bounds3f {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(self.object_bound())
     }
-    pub fn intersect(&self,
+    fn intersect(&self,
                      r: &Ray,
                      t_hit: &mut Float,
                      isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
@@ -3451,13 +3465,25 @@ impl<'a> Triangle<'a> {
                                       self.world_to_object.transform_point(p1)),
                         self.world_to_object.transform_point(p2))
     }
-    pub fn world_bound(&self)  -> Bounds3f {
+    pub fn get_uvs(&self) -> [Point2f; 3] {
+        if self.mesh.uv.is_empty() {
+            [Point2f { x: 0.0, y: 0.0 }, Point2f { x: 1.0, y: 0.0 }, Point2f { x: 1.0, y: 1.0 }]
+        } else {
+            [self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 0]],
+             self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 1]],
+             self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 2]]]
+        }
+    }
+}
+
+impl<'a> Primitive for Triangle<'a> {
+    fn world_bound(&self) -> Bounds3f {
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
     }
-    pub fn intersect(&self,
+    fn intersect(&self,
                      ray: &Ray,
                      t_hit: &mut Float,
                      isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
@@ -3655,15 +3681,6 @@ impl<'a> Triangle<'a> {
         *t_hit = t;
         // TODO: ++nHits;
         true
-    }
-    pub fn get_uvs(&self) -> [Point2f; 3] {
-        if self.mesh.uv.is_empty() {
-            [Point2f { x: 0.0, y: 0.0 }, Point2f { x: 1.0, y: 0.0 }, Point2f { x: 1.0, y: 1.0 }]
-        } else {
-            [self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 0]],
-             self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 1]],
-             self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 2]]]
-        }
     }
 }
 
