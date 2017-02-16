@@ -3608,6 +3608,32 @@ impl<'a> Triangle<'a> {
     }
 }
 
+// see bvh.h
+
+#[derive(Debug,Clone)]
+pub enum SplitMethod {
+    SAH,
+    HLBVH,
+    Middle,
+    EqualCounts,
+}
+
+#[derive(Debug,Clone)]
+pub struct BVHAccel {
+    max_prims_in_node: i32,
+    split_method: SplitMethod,
+    // TODO: std::vector<std::shared_ptr<Primitive>> primitives;
+}
+
+impl Default for BVHAccel {
+    fn default() -> BVHAccel {
+        BVHAccel {
+            max_prims_in_node: 1,
+            split_method: SplitMethod::SAH,
+        }
+    }
+}
+
 // see zerotwosequence.h
 
 #[derive(Debug,Default,Copy,Clone)]
