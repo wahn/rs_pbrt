@@ -3710,6 +3710,25 @@ impl Default for BVHAccel {
     }
 }
 
+impl BVHAccel {
+    pub fn new(p: Vec<Box<Primitive>>,
+               max_prims_in_node: i32,
+               split_method: SplitMethod) -> BVHAccel {
+        let bvh = BVHAccel {
+            max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
+            split_method: split_method,
+            primitives: p,
+        };
+        let num_prims = bvh.primitives.len();
+        // TODO: std::vector<BVHPrimitiveInfo> primitiveInfo(primitives.size());
+        for i in 0..num_prims {
+            let world_bound = bvh.primitives[i].world_bound();
+            println!("bvh.primitives[{}].world_bound() = {:?}", i, world_bound);
+        }
+        bvh
+    }
+}
+
 // see zerotwosequence.h
 
 #[derive(Debug,Default,Copy,Clone)]

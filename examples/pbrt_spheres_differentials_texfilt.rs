@@ -1,8 +1,9 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, DirectLightingIntegrator, Film,
-           Float, LightStrategy, PerspectiveCamera, Point2f, Point2i, Point3f, Sphere, Transform,
-           Triangle, TriangleMesh, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLightingIntegrator,
+           Film, Float, LightStrategy, PerspectiveCamera, Point2f, Point2i, Point3f, Primitive,
+           Sphere, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
+           ZeroTwoSequenceSampler};
 use std::string::String;
 
 fn main() {
@@ -71,16 +72,19 @@ fn main() {
                                                         n, // empty
                                                         uv);
     println!("triangle_mesh = {:?}", triangle_mesh);
-    let mut tris: Vec<Triangle> = Vec::new();
-    for i in 0..n_triangles {
-        tris.push(Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, i));
-    }
+    let mut primitives: Vec<Box<Primitive>> = Vec::new();
+    let triangle1: Triangle =
+        Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, 0);
+    let triangle2: Triangle =
+        Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, 1);
     println!("vertex_indices = {:?}", triangle_mesh.vertex_indices);
-    for i in 0..n_triangles {
-        let uv = tris[i].get_uvs();
-        println!("uvs[{:?}] = {:?}", i, uv);
-    }
-
+    let uv = triangle1.get_uvs();
+    println!("uvs[{:?}] = {:?}", 0, uv);
+    let uv = triangle2.get_uvs();
+    println!("uvs[{:?}] = {:?}", 1, uv);
+    //primitives.push(Box::new(triangle1));
+    //primitives.push(Box::new(triangle2));
+    
     // sphere
 
     // Translate -1.3 0 0
@@ -105,6 +109,7 @@ fn main() {
                                       z_max,
                                       phi_max);
     println!("sphere1 = {:?}", sphere1);
+    primitives.push(Box::new(sphere1));
 
     // sphere
 
@@ -127,6 +132,7 @@ fn main() {
                                       z_max,
                                       phi_max);
     println!("sphere2 = {:?}", sphere2);
+    primitives.push(Box::new(sphere2));
 
     // pbrtWorldEnd
 
@@ -243,5 +249,5 @@ fn main() {
                                       pixel_bounds);
     println!("integrator = {:?}", integrator);
     // pbrt::RenderOptions::MakeScene
-    // TODO: let accelerator = 
+    let accelerator: BVHAccel = BVHAccel::new(primitives, 4, SplitMethod::SAH);
 }
