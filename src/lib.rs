@@ -3694,11 +3694,10 @@ pub enum SplitMethod {
     EqualCounts,
 }
 
-#[derive(Debug,Clone)]
 pub struct BVHAccel {
     max_prims_in_node: i32,
     split_method: SplitMethod,
-    // TODO: std::vector<std::shared_ptr<Primitive>> primitives;
+    primitives: Vec<Box<Primitive>>,
 }
 
 impl Default for BVHAccel {
@@ -3706,6 +3705,7 @@ impl Default for BVHAccel {
         BVHAccel {
             max_prims_in_node: 1,
             split_method: SplitMethod::SAH,
+            primitives: Vec::new(),
         }
     }
 }
