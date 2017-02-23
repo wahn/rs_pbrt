@@ -9,3 +9,7 @@ http://www.pbrt.org
 Current **Rust** documentation:
 
 https://www.janwalter.org/doc/rust/pbrt/index.html
+
+If you look for a more complete Rust implementation:
+
+https://bitbucket.org/abusch/rustracer
