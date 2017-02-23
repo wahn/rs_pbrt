@@ -700,8 +700,7 @@ pub fn next_float_down(v: f32) -> f32 {
 }
 
 /// Error propagation.
-pub fn gamma(n: i32) -> Float
-{
+pub fn gamma(n: i32) -> Float {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
 }
 
@@ -1150,8 +1149,7 @@ impl<T> Add<Point2<T>> for Point2<T>
     where T: Add<T, Output = T>
 {
     type Output = Point2<T>;
-    fn add(self, rhs: Point2<T>) -> Point2<T>
-    {
+    fn add(self, rhs: Point2<T>) -> Point2<T> {
         // TODO: DCHECK(!v.HasNaNs());
         Point2::<T> {
             x: self.x + rhs.x,
@@ -1164,8 +1162,7 @@ impl<T> Sub<Point2<T>> for Point2<T>
     where T: Sub<T, Output = T>
 {
     type Output = Vector2<T>;
-    fn sub(self, rhs: Point2<T>) -> Vector2<T>
-    {
+    fn sub(self, rhs: Point2<T>) -> Vector2<T> {
         Vector2::<T> {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
@@ -1198,8 +1195,7 @@ impl<T> Add<Point3<T>> for Point3<T>
     where T: Add<T, Output = T>
 {
     type Output = Point3<T>;
-    fn add(self, rhs: Point3<T>) -> Point3<T>
-    {
+    fn add(self, rhs: Point3<T>) -> Point3<T> {
         // TODO: DCHECK(!v.HasNaNs());
         Point3::<T> {
             x: self.x + rhs.x,
@@ -1213,8 +1209,7 @@ impl<T> Add<Vector3<T>> for Point3<T>
     where T: Add<T, Output = T>
 {
     type Output = Point3<T>;
-    fn add(self, rhs: Vector3<T>) -> Point3<T>
-    {
+    fn add(self, rhs: Vector3<T>) -> Point3<T> {
         // TODO: DCHECK(!v.HasNaNs());
         Point3::<T> {
             x: self.x + rhs.x,
@@ -1227,8 +1222,7 @@ impl<T> Add<Vector3<T>> for Point3<T>
 impl<T> AddAssign<Vector3<T>> for Point3<T>
     where T: AddAssign
 {
-    fn add_assign(&mut self, rhs: Vector3<T>)
-    {
+    fn add_assign(&mut self, rhs: Vector3<T>) {
         self.x += rhs.x;
         self.y += rhs.y;
         self.z += rhs.z;
@@ -1239,8 +1233,7 @@ impl<T> Sub<Point3<T>> for Point3<T>
     where T: Sub<T, Output = T>
 {
     type Output = Vector3<T>;
-    fn sub(self, rhs: Point3<T>) -> Vector3<T>
-    {
+    fn sub(self, rhs: Point3<T>) -> Vector3<T> {
         Vector3::<T> {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
@@ -1253,8 +1246,7 @@ impl<T> Sub<Vector3<T>> for Point3<T>
     where T: Sub<T, Output = T>
 {
     type Output = Point3<T>;
-    fn sub(self, rhs: Vector3<T>) -> Point3<T>
-    {
+    fn sub(self, rhs: Vector3<T>) -> Point3<T> {
         Point3::<T> {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
@@ -1281,8 +1273,7 @@ impl<T> Mul<T> for Point3<T>
 impl<T> MulAssign<T> for Point3<T>
     where T: Copy + MulAssign
 {
-    fn mul_assign(&mut self, rhs: T)
-    {
+    fn mul_assign(&mut self, rhs: T) {
         self.x *= rhs;
         self.y *= rhs;
         self.z *= rhs;
@@ -1292,8 +1283,7 @@ impl<T> MulAssign<T> for Point3<T>
 impl<T> DivAssign<T> for Point3<T>
     where T: Copy + DivAssign
 {
-    fn div_assign(&mut self, rhs: T)
-    {
+    fn div_assign(&mut self, rhs: T) {
         self.x /= rhs;
         self.y /= rhs;
         self.z /= rhs;
@@ -3066,18 +3056,17 @@ pub struct SurfaceInteraction {
     dpdu: Vector3f,
     dpdv: Vector3f,
     dndu: Normal3f,
-    dndv: Normal3f,
-    // const Shape *shape = nullptr;
-    // struct {
-    //     Normal3f n;
-    //     Vector3f dpdu, dpdv;
-    //     Normal3f dndu, dndv;
-    // } shading;
-    // const Primitive *primitive = nullptr;
-    // BSDF *bsdf = nullptr;
-    // BSSRDF *bssrdf = nullptr;
-    // mutable Vector3f dpdx, dpdy;
-    // mutable Float dudx = 0, dvdx = 0, dudy = 0, dvdy = 0;
+    dndv: Normal3f, /* const Shape *shape = nullptr;
+                     * struct {
+                     *     Normal3f n;
+                     *     Vector3f dpdu, dpdv;
+                     *     Normal3f dndu, dndv;
+                     * } shading;
+                     * const Primitive *primitive = nullptr;
+                     * BSDF *bsdf = nullptr;
+                     * BSSRDF *bssrdf = nullptr;
+                     * mutable Vector3f dpdx, dpdy;
+                     * mutable Float dudx = 0, dvdx = 0, dudy = 0, dvdy = 0; */
 }
 
 impl SurfaceInteraction {
@@ -3207,10 +3196,10 @@ impl Primitive for Sphere {
         self.object_to_world.transform_bounds(self.object_bound())
     }
     fn intersect(&self,
-                     r: &Ray,
-                     t_hit: &mut Float,
-                     isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                     -> bool {
+                 r: &Ray,
+                 t_hit: &mut Float,
+                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                 -> bool {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
@@ -3484,10 +3473,10 @@ impl<'a> Primitive for Triangle<'a> {
         bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
     }
     fn intersect(&self,
-                     ray: &Ray,
-                     t_hit: &mut Float,
-                     isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                     -> bool {
+                 ray: &Ray,
+                 t_hit: &mut Float,
+                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                 -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
@@ -3703,7 +3692,8 @@ pub struct BVHAccel<'a> {
 impl<'a> BVHAccel<'a> {
     pub fn new(p: Vec<Box<Primitive + 'a>>,
                max_prims_in_node: i32,
-               split_method: SplitMethod) -> BVHAccel<'a> {
+               split_method: SplitMethod)
+               -> BVHAccel<'a> {
         let bvh = BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
             split_method: split_method,
@@ -3748,7 +3738,6 @@ pub struct Pixel {
 #[derive(Debug,Default,Clone)]
 pub struct Film {
     // Film Public Data
-
     /// The overall resolution of the image in pixels
     pub full_resolution: Point2i,
     /// The length of the diagonal of the film's physical area (specified in mm, stored in meters)
@@ -3854,7 +3843,8 @@ impl PerspectiveCamera {
             x: 1.0,
             y: 0.0,
             z: 0.0,
-        }) - raster_to_camera.transform_point(Point3f {
+        }) -
+                                  raster_to_camera.transform_point(Point3f {
             x: 0.0,
             y: 0.0,
             z: 0.0,
@@ -3863,7 +3853,8 @@ impl PerspectiveCamera {
             x: 0.0,
             y: 1.0,
             z: 0.0,
-        }) - raster_to_camera.transform_point(Point3f {
+        }) -
+                                  raster_to_camera.transform_point(Point3f {
             x: 0.0,
             y: 0.0,
             z: 0.0,
@@ -3978,8 +3969,7 @@ pub struct ParamSet {
     normals: Vec<ParamSetItem<Normal3f>>,
     // TODO: std::vector<std::shared_ptr<ParamSetItem<Spectrum>>> spectra;
     strings: Vec<ParamSetItem<String>>,
-    textures: Vec<ParamSetItem<String>>,
-    // TODO: static std::map<std::string, Spectrum> cachedSpectra;
+    textures: Vec<ParamSetItem<String>>, // TODO: static std::map<std::string, Spectrum> cachedSpectra;
 }
 
 // see api.cpp
