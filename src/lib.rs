@@ -3694,26 +3694,16 @@ pub enum SplitMethod {
     EqualCounts,
 }
 
-pub struct BVHAccel {
+pub struct BVHAccel<'a> {
     max_prims_in_node: i32,
     split_method: SplitMethod,
-    primitives: Vec<Box<Primitive>>,
+    primitives: Vec<Box<Primitive + 'a>>,
 }
 
-impl Default for BVHAccel {
-    fn default() -> BVHAccel {
-        BVHAccel {
-            max_prims_in_node: 1,
-            split_method: SplitMethod::SAH,
-            primitives: Vec::new(),
-        }
-    }
-}
-
-impl BVHAccel {
-    pub fn new(p: Vec<Box<Primitive>>,
+impl<'a> BVHAccel<'a> {
+    pub fn new(p: Vec<Box<Primitive + 'a>>,
                max_prims_in_node: i32,
-               split_method: SplitMethod) -> BVHAccel {
+               split_method: SplitMethod) -> BVHAccel<'a> {
         let bvh = BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
             split_method: split_method,

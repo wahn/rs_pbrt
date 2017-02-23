@@ -82,8 +82,8 @@ fn main() {
     println!("uvs[{:?}] = {:?}", 0, uv);
     let uv = triangle2.get_uvs();
     println!("uvs[{:?}] = {:?}", 1, uv);
-    //primitives.push(Box::new(triangle1));
-    //primitives.push(Box::new(triangle2));
+    primitives.push(Box::new(triangle1));
+    primitives.push(Box::new(triangle2));
     
     // sphere
 
