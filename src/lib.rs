@@ -3683,6 +3683,23 @@ pub enum SplitMethod {
     EqualCounts,
 }
 
+#[derive(Debug,Default,Copy,Clone)]
+pub struct BVHPrimitiveInfo {
+    primitive_number: usize,
+    bounds: Bounds3f,
+    centroid: Point3f,
+}
+
+impl BVHPrimitiveInfo {
+    pub fn new(primitive_number: usize, bounds: Bounds3f) -> BVHPrimitiveInfo {
+        BVHPrimitiveInfo {
+            primitive_number: primitive_number,
+            bounds: bounds,
+            centroid: bounds.p_min * 0.5 + bounds.p_max * 0.5,
+        }
+    }
+}
+
 pub struct BVHAccel<'a> {
     max_prims_in_node: i32,
     split_method: SplitMethod,
@@ -3701,9 +3718,11 @@ impl<'a> BVHAccel<'a> {
         };
         let num_prims = bvh.primitives.len();
         // TODO: std::vector<BVHPrimitiveInfo> primitiveInfo(primitives.size());
+        let mut primitive_info = vec![BVHPrimitiveInfo::default(); num_prims];
         for i in 0..num_prims {
             let world_bound = bvh.primitives[i].world_bound();
-            println!("bvh.primitives[{}].world_bound() = {:?}", i, world_bound);
+            primitive_info[i] = BVHPrimitiveInfo::new(i, world_bound);
+            println!("primitive_info[{}] = {:?}", i, primitive_info[i]);
         }
         bvh
     }
