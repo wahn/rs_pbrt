@@ -795,7 +795,7 @@ pub struct EFloat {
 }
 
 impl EFloat {
-    pub fn new(v: f32, err: f32) -> EFloat {
+    pub fn new(v: f32, err: f32) -> Self {
         if err == 0.0 {
             EFloat {
                 v: v,
@@ -1352,7 +1352,7 @@ pub struct Bounds3<T> {
 }
 
 impl<T> Bounds3<T> {
-    pub fn new(p1: Point3<T>, p2: Point3<T>) -> Bounds3<T>
+    pub fn new(p1: Point3<T>, p2: Point3<T>) -> Self
         where T: num::Float
     {
         let p_min: Point3<T> = Point3::<T> {
@@ -1448,7 +1448,7 @@ impl Matrix4x4 {
                t31: Float,
                t32: Float,
                t33: Float)
-               -> Matrix4x4 {
+               -> Self {
         Matrix4x4 {
             m: [[t00, t01, t02, t03],
                 [t10, t11, t12, t13],
@@ -1609,7 +1609,7 @@ impl Transform {
                t31: Float,
                t32: Float,
                t33: Float)
-               -> Transform {
+               -> Self {
         Transform {
             m: Matrix4x4::new(t00,
                               t01,
@@ -2092,7 +2092,7 @@ impl AnimatedTransform {
                start_time: Float,
                end_transform: &Transform,
                end_time: Float)
-               -> AnimatedTransform {
+               -> Self {
         let mut at: AnimatedTransform = AnimatedTransform::default();
         at.start_transform = start_transform.clone();
         at.end_transform = end_transform.clone();
@@ -2979,7 +2979,7 @@ impl Neg for Quaternion {
 }
 
 impl Quaternion {
-    pub fn new(t: Transform) -> Quaternion {
+    pub fn new(t: Transform) -> Self {
         let m: Matrix4x4 = t.m.clone();
         let trace: Float = m.m[0][0] + m.m[1][1] + m.m[2][2];
         // if (trace > 0.f) {
@@ -3080,7 +3080,7 @@ impl SurfaceInteraction {
                dndv: Normal3f,
                time: Float /* ,
                             * sh: &Shape */)
-               -> SurfaceInteraction {
+               -> Self {
         let nv: Vector3f = vec3_normalize(vec3_cross(dpdu, dpdv));
         let n: Normal3f = Normal3f {
             x: nv.x,
@@ -3158,7 +3158,7 @@ impl Sphere {
                z_min: Float,
                z_max: Float,
                phi_max: Float)
-               -> Sphere {
+               -> Self {
         Sphere {
             // Shape
             object_to_world: object_to_world,
@@ -3400,7 +3400,7 @@ impl TriangleMesh {
                s: Vec<Vector3f>,
                n: Vec<Vector3f>,
                uv: Vec<Point2f>)
-               -> TriangleMesh {
+               -> Self {
         TriangleMesh {
             // Shape
             object_to_world: object_to_world,
@@ -3436,7 +3436,7 @@ impl<'a> Triangle<'a> {
                reverse_orientation: bool,
                mesh: &'a TriangleMesh,
                tri_number: usize)
-               -> Triangle<'a> {
+               -> Self {
         Triangle {
             mesh: mesh,
             id: tri_number,
@@ -3691,7 +3691,7 @@ pub struct BVHPrimitiveInfo {
 }
 
 impl BVHPrimitiveInfo {
-    pub fn new(primitive_number: usize, bounds: Bounds3f) -> BVHPrimitiveInfo {
+    pub fn new(primitive_number: usize, bounds: Bounds3f) -> Self {
         BVHPrimitiveInfo {
             primitive_number: primitive_number,
             bounds: bounds,
@@ -3710,7 +3710,7 @@ impl<'a> BVHAccel<'a> {
     pub fn new(p: Vec<Box<Primitive + 'a>>,
                max_prims_in_node: i32,
                split_method: SplitMethod)
-               -> BVHAccel<'a> {
+               -> Self {
         let bvh = BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
             split_method: split_method,
@@ -3781,7 +3781,7 @@ impl Film {
                filename: String,
                scale: Float,
                max_sample_luminance: Float)
-               -> Film {
+               -> Self {
         let cropped_pixel_bounds: Bounds2i = Bounds2i {
             p_min: Point2i {
                 x: (resolution.x as Float * crop_window.p_min.x).ceil() as i32,
@@ -3839,7 +3839,7 @@ impl PerspectiveCamera {
                focal_distance: Float,
                fov: Float,
                film: Film /* const Medium *medium */)
-               -> PerspectiveCamera {
+               -> Self {
         // see camera.h
         // compute projective camera screen transformations
         let scale1 = Transform::scale(film.full_resolution.x as Float,
@@ -3956,7 +3956,7 @@ impl DirectLightingIntegrator {
                camera: PerspectiveCamera,
                sampler: ZeroTwoSequenceSampler,
                pixel_bounds: Bounds2i)
-               -> DirectLightingIntegrator {
+               -> Self {
         DirectLightingIntegrator {
             camera: camera,
             sampler: sampler,
