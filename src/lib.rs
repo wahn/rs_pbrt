@@ -1394,6 +1394,27 @@ pub fn bnd3_union_pnt3<T>(b: Bounds3<T>, p: Point3<T>) -> Bounds3<T>
     }
 }
 
+/// Construct a new box that bounds the space encompassed by two other
+/// bounding boxes.
+pub fn bnd3_union_bnd3<T>(b1: Bounds3<T>, b2: Bounds3<T>) -> Bounds3<T>
+    where T: num::Float
+{
+    let p_min: Point3<T> = Point3::<T> {
+        x: b1.p_min.x.min(b2.p_min.x),
+        y: b1.p_min.y.min(b2.p_min.y),
+        z: b1.p_min.z.min(b2.p_min.z),
+    };
+    let p_max: Point3<T> = Point3::<T> {
+        x: b1.p_max.x.max(b2.p_max.x),
+        y: b1.p_max.y.max(b2.p_max.y),
+        z: b1.p_max.z.max(b2.p_max.z),
+    };
+    Bounds3::<T> {
+        p_min: p_min,
+        p_max: p_max,
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Ray {
     /// origin
@@ -3700,15 +3721,39 @@ impl BVHPrimitiveInfo {
     }
 }
 
+enum BVHLink {
+    Empty,
+    More(Box<BVHBuildNode>),
+}
+
+pub struct BVHBuildNode {
+    bounds: Bounds3f,
+    child1: BVHLink,
+    child2: BVHLink,
+    split_axis: u32,
+    first_prim_offset: u32,
+    n_primitives: u32,
+}
+
+impl BVHBuildNode {
+    pub fn init_leaf(&mut self, first: u32, n: u32, b: &Bounds3f) {
+        self.first_prim_offset = first;
+        self.n_primitives = n;
+        self.bounds = *b;
+        self.child1 = BVHLink::Empty;
+        self.child2 = BVHLink::Empty;
+    }
+}
+
 pub struct BVHAccel<'a> {
-    max_prims_in_node: i32,
+    max_prims_in_node: u32,
     split_method: SplitMethod,
     primitives: Vec<Box<Primitive + 'a>>,
 }
 
 impl<'a> BVHAccel<'a> {
     pub fn new(p: Vec<Box<Primitive + 'a>>,
-               max_prims_in_node: i32,
+               max_prims_in_node: u32,
                split_method: SplitMethod)
                -> Self {
         let bvh = BVHAccel {
@@ -3724,7 +3769,33 @@ impl<'a> BVHAccel<'a> {
             primitive_info[i] = BVHPrimitiveInfo::new(i, world_bound);
             println!("primitive_info[{}] = {:?}", i, primitive_info[i]);
         }
+        // TODO: if (splitMethod == SplitMethod::HLBVH)
+        let mut total_nodes: usize = 0;
+        let root = BVHAccel::recursive_build(/* arena, */
+                                             primitive_info,
+                                             0,
+                                             num_prims,
+                                             &mut total_nodes);
         bvh
+    }
+    pub fn recursive_build(/* arena, */
+                           primitive_info: Vec<BVHPrimitiveInfo>,
+                           start: usize,
+                           end: usize,
+                           total_nodes: &mut usize) {
+        // compute bounds of all primitives in BVH node
+        let mut bounds: Bounds3f = Bounds3f::default();
+        for i in start..end {
+            bounds = bnd3_union_bnd3(bounds, primitive_info[i].bounds);
+        }
+        let n_primitives: usize = end - start;
+        if n_primitives == 1 {
+            // create leaf _BVHBuildNode_
+            // WORK
+        } else {
+            // compute bound of primitive centroids, choose split dimension _dim_
+            // WORK
+        }
     }
 }
 
