@@ -3735,6 +3735,19 @@ pub struct BVHBuildNode {
     n_primitives: u32,
 }
 
+impl Default for BVHBuildNode {
+    fn default() -> BVHBuildNode {
+        BVHBuildNode {
+            bounds: Bounds3f::default(),
+            child1: BVHLink::Empty,
+            child2: BVHLink::Empty,
+            split_axis: 0_u32,
+            first_prim_offset: 0_u32,
+            n_primitives: 0_u32,
+        }
+    }
+}
+
 impl BVHBuildNode {
     pub fn init_leaf(&mut self, first: u32, n: u32, b: &Bounds3f) {
         self.first_prim_offset = first;
@@ -3783,6 +3796,7 @@ impl<'a> BVHAccel<'a> {
                            start: usize,
                            end: usize,
                            total_nodes: &mut usize) {
+        let mut node: BVHBuildNode = BVHBuildNode::default();
         // compute bounds of all primitives in BVH node
         let mut bounds: Bounds3f = Bounds3f::default();
         for i in start..end {
