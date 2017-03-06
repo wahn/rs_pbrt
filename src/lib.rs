@@ -1370,6 +1370,24 @@ impl<T> Bounds3<T> {
             p_max: p_max,
         }
     }
+    pub fn diagonal(&self) -> Vector3<T>
+        where T: Copy + Sub<T, Output = T>
+    {
+        let v: Vector3<T> = self.p_max - self.p_min;
+        v
+    }
+    pub fn maximum_extent(&self) -> u8
+        where T: Copy + std::cmp::PartialOrd + Sub<T, Output = T>
+    {
+        let d: Vector3<T> = self.diagonal();
+        if d.x > d.y && d.x > d.z {
+            0_u8
+        } else if d.y > d.z {
+            1_u8
+        } else {
+            2_u8
+        }
+    }
 }
 
 /// Given a bounding box and a point, the **bnd3_union_pnt3()**
@@ -3730,9 +3748,9 @@ pub struct BVHBuildNode {
     bounds: Bounds3f,
     child1: BVHLink,
     child2: BVHLink,
-    split_axis: u32,
-    first_prim_offset: u32,
-    n_primitives: u32,
+    split_axis: usize,
+    first_prim_offset: usize,
+    n_primitives: usize,
 }
 
 impl Default for BVHBuildNode {
@@ -3741,15 +3759,15 @@ impl Default for BVHBuildNode {
             bounds: Bounds3f::default(),
             child1: BVHLink::Empty,
             child2: BVHLink::Empty,
-            split_axis: 0_u32,
-            first_prim_offset: 0_u32,
-            n_primitives: 0_u32,
+            split_axis: 0_usize,
+            first_prim_offset: 0_usize,
+            n_primitives: 0_usize,
         }
     }
 }
 
 impl BVHBuildNode {
-    pub fn init_leaf(&mut self, first: u32, n: u32, b: &Bounds3f) {
+    pub fn init_leaf(&mut self, first: usize, n: usize, b: &Bounds3f) {
         self.first_prim_offset = first;
         self.n_primitives = n;
         self.bounds = *b;
@@ -3759,14 +3777,14 @@ impl BVHBuildNode {
 }
 
 pub struct BVHAccel<'a> {
-    max_prims_in_node: u32,
+    max_prims_in_node: usize,
     split_method: SplitMethod,
     primitives: Vec<Box<Primitive + 'a>>,
 }
 
 impl<'a> BVHAccel<'a> {
     pub fn new(p: Vec<Box<Primitive + 'a>>,
-               max_prims_in_node: u32,
+               max_prims_in_node: usize,
                split_method: SplitMethod)
                -> Self {
         let bvh = BVHAccel {
@@ -3796,7 +3814,8 @@ impl<'a> BVHAccel<'a> {
                            start: usize,
                            end: usize,
                            total_nodes: &mut usize) {
-        let mut node: BVHBuildNode = BVHBuildNode::default();
+        let mut ordered_prims: Vec<Box<Primitive + 'a>> = Vec::new();
+        let mut node: Box<BVHBuildNode> = Box::new(BVHBuildNode::default());
         // compute bounds of all primitives in BVH node
         let mut bounds: Bounds3f = Bounds3f::default();
         for i in start..end {
@@ -3805,9 +3824,20 @@ impl<'a> BVHAccel<'a> {
         let n_primitives: usize = end - start;
         if n_primitives == 1 {
             // create leaf _BVHBuildNode_
-            // WORK
+            let first_prim_offset: usize = ordered_prims.len();
+            for i in start..end {
+                let prim_num: usize = primitive_info[i].primitive_number;
+                // TODO: What is primitives here? ordered_prims.push(primitives[prim_num]);
+            }
+            node.init_leaf(first_prim_offset, n_primitives, &bounds);
+            // TODO: return node;
         } else {
             // compute bound of primitive centroids, choose split dimension _dim_
+            let mut centroid_bounds: Bounds3f = Bounds3f::default();
+            for i in start..end {
+                centroid_bounds = bnd3_union_pnt3(centroid_bounds, primitive_info[i].centroid);
+            }
+            let dim: u8 = centroid_bounds.maximum_extent();
             // WORK
         }
     }
