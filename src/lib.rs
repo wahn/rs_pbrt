@@ -610,7 +610,7 @@
 extern crate num;
 
 use std::cmp::PartialEq;
-use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg};
+use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
@@ -1290,6 +1290,19 @@ impl<T> DivAssign<T> for Point3<T>
     }
 }
 
+impl<T> Index<u8> for Point3<T>
+{
+    type Output = T;
+    fn index(&self, index: u8) -> &T {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Check failed: i >= 0 && i <= 2"),
+        }
+    }
+}
+
 /// Permute the coordinate values according to the povided
 /// permutation.
 pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
@@ -1373,8 +1386,7 @@ impl<T> Bounds3<T> {
     pub fn diagonal(&self) -> Vector3<T>
         where T: Copy + Sub<T, Output = T>
     {
-        let v: Vector3<T> = self.p_max - self.p_min;
-        v
+        self.p_max - self.p_min
     }
     pub fn maximum_extent(&self) -> u8
         where T: Copy + std::cmp::PartialOrd + Sub<T, Output = T>
@@ -3838,6 +3850,12 @@ impl<'a> BVHAccel<'a> {
                 centroid_bounds = bnd3_union_pnt3(centroid_bounds, primitive_info[i].centroid);
             }
             let dim: u8 = centroid_bounds.maximum_extent();
+            println!("centroid_bounds = {:?}", centroid_bounds);
+            // partition primitives into two sets and build children
+            let mid: usize = (start + end) / 2_usize;
+            if centroid_bounds.p_max[dim] == centroid_bounds.p_min[dim] {
+            } else {
+            }
             // WORK
         }
     }
