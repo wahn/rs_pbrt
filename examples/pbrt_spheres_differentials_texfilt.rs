@@ -101,7 +101,6 @@ impl<'s> Scene<'s> {
                                                        &mesh,
                                                        id);
                 triangles.push(triangle);
-                // primitives.push(&triangle);
             }
         }
         Scene {

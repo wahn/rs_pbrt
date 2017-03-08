@@ -1400,6 +1400,21 @@ impl<T> Bounds3<T> {
             2_u8
         }
     }
+    pub fn offset(&self, p: Point3<T>) -> Vector3<T>
+        where T: Copy + std::cmp::PartialOrd + Sub<T, Output = T> + DivAssign<T>
+    {
+        let mut o: Vector3<T> = p - self.p_min;
+        if self.p_max.x > self.p_min.x {
+            o.x /= (self.p_max.x - self.p_min.x);
+        }
+        if self.p_max.y > self.p_min.y {
+            o.y /= (self.p_max.y - self.p_min.y);
+        }
+        if self.p_max.z > self.p_min.z {
+            o.z /= (self.p_max.z - self.p_min.z);
+        }
+        o
+    }
 }
 
 /// Given a bounding box and a point, the **bnd3_union_pnt3()**
@@ -3788,6 +3803,12 @@ impl BVHBuildNode {
     }
 }
 
+#[derive(Debug,Default,Copy,Clone)]
+struct BucketInfo {
+    count: usize,
+    bounds: Bounds3f,
+}
+
 pub struct BVHAccel<'a> {
     max_prims_in_node: usize,
     split_method: SplitMethod,
@@ -3854,7 +3875,7 @@ impl<'a> BVHAccel<'a> {
             let dim: u8 = centroid_bounds.maximum_extent();
             println!("centroid_bounds = {:?}", centroid_bounds);
             // partition primitives into two sets and build children
-            let mid: usize = (start + end) / 2_usize;
+            let mut mid: usize = (start + end) / 2_usize;
             if centroid_bounds.p_max[dim] == centroid_bounds.p_min[dim] {
                 // TODO
             } else {
@@ -3862,10 +3883,35 @@ impl<'a> BVHAccel<'a> {
                 match bvh.split_method {
                     SplitMethod::Middle => { /* TODO */ },
                     SplitMethod::EqualCounts => { /* TODO */ },
-                    SplitMethod::SAH | SplitMethod::HLBVH => { /* TODO */ },
+                    SplitMethod::SAH | SplitMethod::HLBVH => {
+                        if n_primitives <= 2 {
+                            mid = (start + end) / 2;
+                            // TODO
+                        } else {
+                            let n_buckets: usize = 12;
+                            let mut buckets: [BucketInfo; 12] = [BucketInfo::default(); 12];
+                            // initialize _BucketInfo_ for SAH partition buckets
+                            for i in start..end {
+                                // int b = nBuckets *
+                                //     centroid_bounds.offset(
+                                //         primitiveInfo[i].centroid)[dim];
+                                println!("primitive_info[{}].centroid = {:?}", i, primitive_info[i].centroid);
+                                println!("centroid_bounds.offset({:?}) = {:?}",
+                                         primitive_info[i].centroid,
+                                         centroid_bounds.offset(primitive_info[i].centroid));
+                                // if (b == nBuckets) b = nBuckets - 1;
+                                // CHECK_GE(b, 0);
+                                // CHECK_LT(b, nBuckets);
+                                // buckets[b].count++;
+                                // buckets[b].bounds =
+                                //     Union(buckets[b].bounds, primitiveInfo[i].bounds);
+                            }
+                            println!("buckets = {:?}", buckets);
+                            // WORK
+                        }
+                    },
                 }
             }
-            // WORK
         }
     }
 }
