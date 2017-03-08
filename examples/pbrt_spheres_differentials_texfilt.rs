@@ -87,7 +87,7 @@ impl<'s> Scene<'s> {
     fn new(scene: &'s SceneDescription) -> Scene<'s> {
         let mut primitives: Vec<&Primitive> = Vec::new();
         let mut triangles: Vec<Triangle> = Vec::new();
-        // meshes
+        // spheres
         for sphere in &scene.spheres {
             primitives.push(sphere);
         }
@@ -103,10 +103,6 @@ impl<'s> Scene<'s> {
                 triangles.push(triangle);
                 // primitives.push(&triangle);
             }
-        }
-        // triangles from above
-        for triangle in &triangles {
-            // primitives.push(triangle as &'s Primitive);
         }
         Scene {
             primitives: primitives,
@@ -352,7 +348,11 @@ fn main() {
     println!("##############");
     println!("integrator = {:?}", integrator);
     // TMP: process SceneDescription before handing primitives to BVHAccel
-    let scene: Scene = Scene::new(&scene_description);
+    let mut scene: Scene = Scene::new(&scene_description);
+    // add triangles created above (not meshes)
+    for triangle in &scene.triangles {
+        scene.primitives.push(triangle);
+    }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
     let accelerator: BVHAccel = BVHAccel::new(scene.primitives, 4, SplitMethod::SAH);
