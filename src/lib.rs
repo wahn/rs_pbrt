@@ -3433,10 +3433,10 @@ pub struct TriangleMesh {
     pub uv: Vec<Point2f>,
     // TODO: std::shared_ptr<Texture<Float>> alphaMask, shadowAlphaMask;
     // derived from class Shape (see shape.h)
-    object_to_world: Transform,
-    world_to_object: Transform,
+    pub object_to_world: Transform, // TODO: not pub?
+    pub world_to_object: Transform, // TODO: not pub?
     reverse_orientation: bool,
-    transform_swaps_handedness: bool,
+    pub transform_swaps_handedness: bool, // TODO: not pub?
 }
 
 impl TriangleMesh {
@@ -3791,11 +3791,11 @@ impl BVHBuildNode {
 pub struct BVHAccel<'a> {
     max_prims_in_node: usize,
     split_method: SplitMethod,
-    primitives: Vec<Box<Primitive + 'a>>,
+    primitives: Vec<&'a Primitive>,
 }
 
 impl<'a> BVHAccel<'a> {
-    pub fn new(p: Vec<Box<Primitive + 'a>>,
+    pub fn new(p: Vec<&'a Primitive>,
                max_prims_in_node: usize,
                split_method: SplitMethod)
                -> Self {
@@ -3814,14 +3814,16 @@ impl<'a> BVHAccel<'a> {
         }
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut total_nodes: usize = 0;
-        let root = BVHAccel::recursive_build(/* arena, */
+        let root = BVHAccel::recursive_build(&bvh, // instead of self
+                                             /* arena, */
                                              primitive_info,
                                              0,
                                              num_prims,
                                              &mut total_nodes);
         bvh
     }
-    pub fn recursive_build(/* arena, */
+    pub fn recursive_build(bvh: &BVHAccel,
+                           /* arena, */
                            primitive_info: Vec<BVHPrimitiveInfo>,
                            start: usize,
                            end: usize,
@@ -3854,7 +3856,14 @@ impl<'a> BVHAccel<'a> {
             // partition primitives into two sets and build children
             let mid: usize = (start + end) / 2_usize;
             if centroid_bounds.p_max[dim] == centroid_bounds.p_min[dim] {
+                // TODO
             } else {
+                // partition primitives based on _splitMethod_
+                match bvh.split_method {
+                    SplitMethod::Middle => { /* TODO */ },
+                    SplitMethod::EqualCounts => { /* TODO */ },
+                    SplitMethod::SAH | SplitMethod::HLBVH => { /* TODO */ },
+                }
             }
             // WORK
         }

@@ -6,6 +6,116 @@ use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLig
            ZeroTwoSequenceSampler};
 use std::string::String;
 
+struct SceneDescription {
+    meshes: Vec<TriangleMesh>,
+    spheres: Vec<Sphere>,
+}
+
+struct SceneDescriptionBuilder {
+    meshes: Vec<TriangleMesh>,
+    spheres: Vec<Sphere>,
+}
+
+impl SceneDescriptionBuilder {
+    fn new() -> SceneDescriptionBuilder {
+        SceneDescriptionBuilder {
+            meshes: Vec::new(),
+            spheres: Vec::new(),
+        }
+    }
+    fn add_mesh(&mut self,
+                object_to_world: Transform,
+                world_to_object: Transform,
+                n_triangles: usize,
+                vertex_indices: Vec<usize>,
+                n_vertices: usize,
+                p_ws: Vec<Point3f>,
+                s: Vec<Vector3f>,
+                n: Vec<Vector3f>,
+                uv: Vec<Point2f>)
+                -> &mut SceneDescriptionBuilder {
+        let triangle_mesh: TriangleMesh = TriangleMesh::new(object_to_world,
+                                                            world_to_object,
+                                                            false,
+                                                            false,
+                                                            n_triangles,
+                                                            vertex_indices,
+                                                            n_vertices,
+                                                            p_ws, // in world space
+                                                            s, // empty
+                                                            n, // empty
+                                                            uv);
+        println!("triangle_mesh = {:?}", triangle_mesh);
+        println!("vertex_indices = {:?}", triangle_mesh.vertex_indices);
+        self.meshes.push(triangle_mesh);
+        self
+    }
+    fn add_sphere(&mut self,
+                  object_to_world: Transform,
+                  world_to_object: Transform,
+                  radius: Float,
+                  z_min: Float,
+                  z_max: Float,
+                  phi_max: Float)
+                  -> &mut SceneDescriptionBuilder {
+        let sphere: Sphere = Sphere::new(object_to_world,
+                                         world_to_object,
+                                         false,
+                                         false,
+                                         radius,
+                                         z_min,
+                                         z_max,
+                                         phi_max);
+        println!("sphere = {:?}", sphere);
+        self.spheres.push(sphere);
+        self
+    }
+    fn finalize(&self) -> SceneDescription {
+        SceneDescription {
+            meshes: self.meshes.to_vec(),
+            spheres: self.spheres.to_vec(),
+        }
+    }
+}
+
+struct Scene<'scene> {
+    primitives: Vec<&'scene Primitive>,
+    triangles: Vec<Triangle<'scene>>,
+}
+
+impl<'s> Scene<'s> {
+    fn new(scene: &'s SceneDescription) -> Scene<'s> {
+        let mut primitives: Vec<&Primitive> = Vec::new();
+        let mut triangles: Vec<Triangle> = Vec::new();
+        // meshes
+        for sphere in &scene.spheres {
+            primitives.push(sphere);
+        }
+        // meshes
+        for mesh in &scene.meshes {
+            // create individual triangles
+            for id in 0..mesh.n_triangles {
+                let triangle: Triangle = Triangle::new(mesh.object_to_world,
+                                                       mesh.world_to_object,
+                                                       mesh.transform_swaps_handedness,
+                                                       &mesh,
+                                                       id);
+                triangles.push(triangle);
+                // primitives.push(&triangle);
+            }
+        }
+        // triangles from above
+        for triangle in &triangles {
+            // primitives.push(triangle as &'s Primitive);
+        }
+        Scene {
+            primitives: primitives,
+            triangles: triangles,
+        }
+    }
+}
+
+
 fn main() {
     // pbrt::MakeShapes
 
@@ -60,31 +170,20 @@ fn main() {
     }
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Vector3f> = Vec::new();
-    let triangle_mesh: TriangleMesh = TriangleMesh::new(object_to_world,
-                                                        world_to_object,
-                                                        false,
-                                                        false,
-                                                        n_triangles,
-                                                        vertex_indices,
-                                                        n_vertices,
-                                                        p_ws, // in world space
-                                                        s, // empty
-                                                        n, // empty
-                                                        uv);
-    println!("triangle_mesh = {:?}", triangle_mesh);
-    let mut primitives: Vec<Box<Primitive>> = Vec::new();
-    let triangle1: Triangle =
-        Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, 0);
-    let triangle2: Triangle =
-        Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, 1);
-    println!("vertex_indices = {:?}", triangle_mesh.vertex_indices);
-    let uv = triangle1.get_uvs();
-    println!("uvs[{:?}] = {:?}", 0, uv);
-    let uv = triangle2.get_uvs();
-    println!("uvs[{:?}] = {:?}", 1, uv);
-    primitives.push(Box::new(triangle1));
-    primitives.push(Box::new(triangle2));
-    
+    let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
+    println!("########");
+    println!("# mesh #");
+    println!("########");
+    builder.add_mesh(object_to_world,
+                     world_to_object,
+                     n_triangles,
+                     vertex_indices,
+                     n_vertices,
+                     p_ws, // in world space
+                     s, // empty
+                     n, // empty
+                     uv);
+
     // sphere
 
     // Translate -1.3 0 0
@@ -100,16 +199,15 @@ fn main() {
     let z_min: Float = -1.0;
     let z_max: Float = 1.0;
     let phi_max: Float = 360.0;
-    let sphere1: Sphere = Sphere::new(object_to_world,
-                                      world_to_object,
-                                      false,
-                                      false,
-                                      radius,
-                                      z_min,
-                                      z_max,
-                                      phi_max);
-    println!("sphere1 = {:?}", sphere1);
-    primitives.push(Box::new(sphere1));
+    println!("############");
+    println!("# sphere 1 #");
+    println!("############");
+    builder.add_sphere(object_to_world,
+                       world_to_object,
+                       radius,
+                       z_min,
+                       z_max,
+                       phi_max);
 
     // sphere
 
@@ -123,16 +221,17 @@ fn main() {
     let world_to_object: Transform = Transform::inverse(object_to_world);
 
     // Shape "sphere"
-    let sphere2: Sphere = Sphere::new(object_to_world,
-                                      world_to_object,
-                                      false,
-                                      false,
-                                      radius,
-                                      z_min,
-                                      z_max,
-                                      phi_max);
-    println!("sphere2 = {:?}", sphere2);
-    primitives.push(Box::new(sphere2));
+    println!("############");
+    println!("# sphere 2 #");
+    println!("############");
+    builder.add_sphere(object_to_world,
+                       world_to_object,
+                       radius,
+                       z_min,
+                       z_max,
+                       phi_max);
+
+    let scene_description: SceneDescription = builder.finalize();
 
     // pbrtWorldEnd
 
@@ -156,7 +255,6 @@ fn main() {
         p_min: Point2f { x: 0.0, y: 0.0 },
         p_max: Point2f { x: 1.0, y: 1.0 },
     };
-    println!("crop = {:?}", crop);
     let film: Film = Film::new(Point2i { x: xres, y: yres },
                                crop,
                                box_filter,
@@ -174,6 +272,9 @@ fn main() {
     // pixels = std::unique_ptr<pbrt::Film::Pixel> ...
     // scale = 1
     // maxSampleLuminance = inf
+    println!("########");
+    println!("# film #");
+    println!("########");
     println!("film = {:?}", film);
     // pbrt::MakeCamera
     let pos = Point3f {
@@ -197,14 +298,12 @@ fn main() {
         m_inv: t.m.clone(),
     };
     let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
-    println!("animated_cam_to_world = {:?}", animated_cam_to_world);
     // pbrt::CreatePerspectiveCamera
     let shutteropen: Float = 0.0;
     let shutterclose: Float = 1.0;
     let lensradius: Float = 0.0;
     let focaldistance: Float = 1e6;
     let frame: Float = xres as Float / yres as Float;
-    println!("frame = {:?}", frame);
     let mut screen: Bounds2f = Bounds2f::default();
     if frame > 1.0 {
         screen.p_min.x = -frame;
@@ -217,10 +316,8 @@ fn main() {
         screen.p_min.y = -1.0 / frame;
         screen.p_max.y = 1.0 / frame;
     }
-    println!("screen = {:?}", screen);
     let fov: Float = 30.0;
     let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
-    println!("camera_to_screen = {:?}", camera_to_screen);
     let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
                                                                        camera_to_screen,
                                                                        screen,
@@ -231,6 +328,9 @@ fn main() {
                                                                        fov,
                                                                        film /* ,
                                                                              * medium */);
+    println!("##########");
+    println!("# camera #");
+    println!("##########");
     println!("perspective_camera = {:?}", perspective_camera);
     // pbrt::MakeSampler
     let sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
@@ -247,7 +347,13 @@ fn main() {
                                       perspective_camera,
                                       sampler,
                                       pixel_bounds);
+    println!("##############");
+    println!("# integrator #");
+    println!("##############");
     println!("integrator = {:?}", integrator);
+    // TMP: process SceneDescription before handing primitives to BVHAccel
+    let scene: Scene = Scene::new(&scene_description);
+    // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
-    let accelerator: BVHAccel = BVHAccel::new(primitives, 4, SplitMethod::SAH);
+    let accelerator: BVHAccel = BVHAccel::new(scene.primitives, 4, SplitMethod::SAH);
 }
