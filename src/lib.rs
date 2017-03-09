@@ -1371,10 +1371,28 @@ pub struct Bounds2<T> {
     pub p_max: Point2<T>,
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug,Copy,Clone)]
 pub struct Bounds3<T> {
     pub p_min: Point3<T>,
     pub p_max: Point3<T>,
+}
+
+impl Default for Bounds3f {
+    fn default() -> Bounds3f {
+        let min_num: Float = std::f64::MIN;
+        let max_num: Float = std::f64::MAX;
+        Bounds3f {
+            p_min: Point3f {
+                x: max_num,
+                y: max_num,
+                z: max_num,
+            }, p_max: Point3f {
+                x: min_num,
+                y: min_num,
+                z: min_num,
+            },
+        }
+    }
 }
 
 impl<T> Bounds3<T> {
@@ -1400,6 +1418,14 @@ impl<T> Bounds3<T> {
         where T: Copy + Sub<T, Output = T>
     {
         self.p_max - self.p_min
+    }
+    pub fn surface_area(&self) -> T
+        where T: Copy + Add<T, Output = T> + Sub<T, Output = T> + Mul<T, Output = T>
+    {
+        let d: Vector3<T> = self.diagonal();
+        // 2 * (d.x * d.y + d.x * d.z + d.y * d.z)
+        let r: T = d.x * d.y + d.x * d.z + d.y * d.z;
+        r + r // avoid '2 *'
     }
     pub fn maximum_extent(&self) -> u8
         where T: Copy + std::cmp::PartialOrd + Sub<T, Output = T>
@@ -1446,10 +1472,7 @@ pub fn bnd3_union_pnt3<T>(b: Bounds3<T>, p: Point3<T>) -> Bounds3<T>
         y: b.p_max.y.max(p.y),
         z: b.p_max.z.max(p.z),
     };
-    Bounds3::<T> {
-        p_min: p_min,
-        p_max: p_max,
-    }
+    Bounds3::new(p_min, p_max)
 }
 
 /// Construct a new box that bounds the space encompassed by two other
@@ -1467,10 +1490,7 @@ pub fn bnd3_union_bnd3<T>(b1: Bounds3<T>, b2: Bounds3<T>) -> Bounds3<T>
         y: b1.p_max.y.max(b2.p_max.y),
         z: b1.p_max.z.max(b2.p_max.z),
     };
-    Bounds3::<T> {
-        p_min: p_min,
-        p_max: p_max,
-    }
+    Bounds3::new(p_min, p_max)
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -3816,10 +3836,19 @@ impl BVHBuildNode {
     }
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug,Copy,Clone)]
 struct BucketInfo {
     count: usize,
     bounds: Bounds3f,
+}
+
+impl Default for BucketInfo {
+    fn default() -> BucketInfo {
+        BucketInfo {
+            count: 0_usize,
+            bounds: Bounds3f::default(),
+        }
+    }
 }
 
 pub struct BVHAccel<'a> {
@@ -3918,11 +3947,36 @@ impl<'a> BVHAccel<'a> {
                                 buckets[b].bounds = bnd3_union_bnd3(buckets[b].bounds,
                                                                     primitive_info[i].bounds);
                             }
+                            // TMP
                             for i in 0..n_buckets {
                                 if buckets[i].count > 0 {
                                     println!("buckets[{}] = {:?}", i, buckets[i]);
                                 }
                             }
+                            // TMP
+                            // compute costs for splitting after each bucket
+                            let mut cost: [Float; 11] = [0.0; 11];
+                            for i in 0..(n_buckets - 1) {
+                                let mut b0: Bounds3f = Bounds3f::default();
+                                let mut b1: Bounds3f = Bounds3f::default();
+                                let mut count0: usize = 0;
+                                let mut count1: usize = 0;
+                                for j in 0..(i + 1) {
+                                    b0 = bnd3_union_bnd3(b0, buckets[j].bounds);
+                                    count0 += buckets[j].count;
+                               }
+                                for j in (i + 1)..n_buckets {
+                                    b1 = bnd3_union_bnd3(b1, buckets[j].bounds);
+                                    count1 += buckets[j].count;
+                                }
+                                cost[i] = 1.0 +
+                                          (count0 as Float * b0.surface_area() +
+                                           count1 as Float * b1.surface_area()) /
+                                          bounds.surface_area();
+                            }
+                            // TMP
+                            println!("cost = {:?}", cost);
+                            // TMP
                             // WORK
                         }
                     }
