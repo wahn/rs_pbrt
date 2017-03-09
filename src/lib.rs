@@ -1041,6 +1041,19 @@ impl<T> Vector3<T> {
     }
 }
 
+impl<T> Index<u8> for Vector3<T>
+{
+    type Output = T;
+    fn index(&self, index: u8) -> &T {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Check failed: i >= 0 && i <= 2"),
+        }
+    }
+}
+
 /// Product of the Euclidean magnitudes of the two vectors and the
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
@@ -3816,10 +3829,7 @@ pub struct BVHAccel<'a> {
 }
 
 impl<'a> BVHAccel<'a> {
-    pub fn new(p: Vec<&'a Primitive>,
-               max_prims_in_node: usize,
-               split_method: SplitMethod)
-               -> Self {
+    pub fn new(p: Vec<&'a Primitive>, max_prims_in_node: usize, split_method: SplitMethod) -> Self {
         let bvh = BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
             split_method: split_method,
@@ -3836,7 +3846,7 @@ impl<'a> BVHAccel<'a> {
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut total_nodes: usize = 0;
         let root = BVHAccel::recursive_build(&bvh, // instead of self
-                                             /* arena, */
+                                             // arena,
                                              primitive_info,
                                              0,
                                              num_prims,
@@ -3844,7 +3854,7 @@ impl<'a> BVHAccel<'a> {
         bvh
     }
     pub fn recursive_build(bvh: &BVHAccel,
-                           /* arena, */
+                           // arena,
                            primitive_info: Vec<BVHPrimitiveInfo>,
                            start: usize,
                            end: usize,
@@ -3881,8 +3891,12 @@ impl<'a> BVHAccel<'a> {
             } else {
                 // partition primitives based on _splitMethod_
                 match bvh.split_method {
-                    SplitMethod::Middle => { /* TODO */ },
-                    SplitMethod::EqualCounts => { /* TODO */ },
+                    SplitMethod::Middle => {
+                        // TODO
+                    }
+                    SplitMethod::EqualCounts => {
+                        // TODO
+                    }
                     SplitMethod::SAH | SplitMethod::HLBVH => {
                         if n_primitives <= 2 {
                             mid = (start + end) / 2;
@@ -3892,24 +3906,26 @@ impl<'a> BVHAccel<'a> {
                             let mut buckets: [BucketInfo; 12] = [BucketInfo::default(); 12];
                             // initialize _BucketInfo_ for SAH partition buckets
                             for i in start..end {
-                                // int b = nBuckets *
-                                //     centroid_bounds.offset(
-                                //         primitiveInfo[i].centroid)[dim];
-                                println!("primitive_info[{}].centroid = {:?}", i, primitive_info[i].centroid);
-                                println!("centroid_bounds.offset({:?}) = {:?}",
-                                         primitive_info[i].centroid,
-                                         centroid_bounds.offset(primitive_info[i].centroid));
-                                // if (b == nBuckets) b = nBuckets - 1;
-                                // CHECK_GE(b, 0);
-                                // CHECK_LT(b, nBuckets);
-                                // buckets[b].count++;
-                                // buckets[b].bounds =
-                                //     Union(buckets[b].bounds, primitiveInfo[i].bounds);
+                                let mut b: usize = n_buckets *
+                                    centroid_bounds.offset(primitive_info[i].centroid)[dim]
+                                    as usize;
+                                if b == n_buckets {
+                                    b = n_buckets - 1;
+                                }
+                                assert!(b >= 0_usize, "b >= 0");
+                                assert!(b < n_buckets, "b < {}", n_buckets);
+                                buckets[b].count += 1;
+                                buckets[b].bounds = bnd3_union_bnd3(buckets[b].bounds,
+                                                                    primitive_info[i].bounds);
                             }
-                            println!("buckets = {:?}", buckets);
+                            for i in 0..n_buckets {
+                                if buckets[i].count > 0 {
+                                    println!("buckets[{}] = {:?}", i, buckets[i]);
+                                }
+                            }
                             // WORK
                         }
-                    },
+                    }
                 }
             }
         }
