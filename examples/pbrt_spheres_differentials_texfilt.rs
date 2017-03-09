@@ -70,10 +70,10 @@ impl SceneDescriptionBuilder {
         self.spheres.push(sphere);
         self
     }
-    fn finalize(&self) -> SceneDescription {
+    fn finalize(self) -> SceneDescription {
         SceneDescription {
-            meshes: self.meshes.to_vec(),
-            spheres: self.spheres.to_vec(),
+            meshes: self.meshes,
+            spheres: self.spheres,
         }
     }
 }
