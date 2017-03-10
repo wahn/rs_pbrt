@@ -81,15 +81,17 @@ impl SceneDescriptionBuilder {
 struct Scene<'scene> {
     primitives: Vec<&'scene Primitive>,
     triangles: Vec<Triangle<'scene>>,
+    spheres: Vec<Sphere>,
 }
 
 impl<'s> Scene<'s> {
     fn new(scene: &'s SceneDescription) -> Scene<'s> {
         let mut primitives: Vec<&Primitive> = Vec::new();
         let mut triangles: Vec<Triangle> = Vec::new();
+        let mut spheres: Vec<Sphere> = Vec::new();
         // spheres
         for sphere in &scene.spheres {
-            primitives.push(sphere);
+            spheres.push(*sphere);
         }
         // meshes
         for mesh in &scene.meshes {
@@ -106,6 +108,7 @@ impl<'s> Scene<'s> {
         Scene {
             primitives: primitives,
             triangles: triangles,
+            spheres: spheres,
         }
     }
 }
@@ -351,6 +354,9 @@ fn main() {
     // add triangles created above (not meshes)
     for triangle in &scene.triangles {
         scene.primitives.push(triangle);
+    }
+    for sphere in &scene.spheres {
+        scene.primitives.push(sphere);
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
