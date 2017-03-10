@@ -1377,11 +1377,13 @@ pub struct Bounds3<T> {
     pub p_max: Point3<T>,
 }
 
-impl Default for Bounds3f {
-    fn default() -> Bounds3f {
+// work around bug
+// https://github.com/rust-lang/rust/issues/40395
+impl Default for /* Bounds3f */ Bounds3<f64> {
+    fn default() -> /* Bounds3f */ Bounds3<f64> {
         let min_num: Float = std::f64::MIN;
         let max_num: Float = std::f64::MAX;
-        Bounds3f {
+        /* Bounds3f */ Bounds3::<f64> {
             p_min: Point3f {
                 x: max_num,
                 y: max_num,
@@ -3977,6 +3979,41 @@ impl<'a> BVHAccel<'a> {
                             // TMP
                             println!("cost = {:?}", cost);
                             // TMP
+                            // find bucket to split at that minimizes SAH metric
+                            let mut min_cost: Float = cost[0];
+                            let mut min_cost_split_bucket: usize = 0;
+                            for i in 0..(n_buckets - 1) {
+                                if cost[i] < min_cost {
+                                    min_cost = cost[i];
+                                    min_cost_split_bucket = i;
+                                }
+                            }
+                            // either create leaf or split primitives
+                            // at selected SAH bucket
+                            let leaf_cost: Float = n_primitives as Float;
+                            if (n_primitives > bvh.max_prims_in_node || min_cost < leaf_cost) {
+                                //         BVHPrimitiveInfo *pmid = std::partition(
+                                //             &primitiveInfo[start], &primitiveInfo[end - 1] + 1,
+                                //             [=](const BVHPrimitiveInfo &pi) {
+                                //                 int b = nBuckets *
+                                //                         centroidBounds.Offset(pi.centroid)[dim];
+                                //                 if (b == nBuckets) b = nBuckets - 1;
+                                //                 CHECK_GE(b, 0);
+                                //                 CHECK_LT(b, nBuckets);
+                                //                 return b <= minCostSplitBucket;
+                                //             });
+                                //         mid = pmid - &primitiveInfo[0];
+                            } else {
+                                //         // Create leaf _BVHBuildNode_
+                                //         int firstPrimOffset = orderedPrims.size();
+                                //         for (int i = start; i < end; ++i) {
+                                //             int primNum = primitiveInfo[i].primitiveNumber;
+                                //             orderedPrims.push_back(primitives[primNum]);
+                                //         }
+                                //         node->InitLeaf(firstPrimOffset, n_primitives, bounds);
+                                //         return node;
+                                //     }
+                            }
                             // WORK
                         }
                     }
