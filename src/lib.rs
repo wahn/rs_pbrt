@@ -3813,7 +3813,7 @@ pub struct BVHBuildNode {
     bounds: Bounds3f,
     child1: BVHLink,
     child2: BVHLink,
-    split_axis: usize,
+    split_axis: u8,
     first_prim_offset: usize,
     n_primitives: usize,
 }
@@ -3824,7 +3824,7 @@ impl Default for BVHBuildNode {
             bounds: Bounds3f::default(),
             child1: BVHLink::Empty,
             child2: BVHLink::Empty,
-            split_axis: 0_usize,
+            split_axis: 0_u8,
             first_prim_offset: 0_usize,
             n_primitives: 0_usize,
         }
@@ -3839,7 +3839,7 @@ impl BVHBuildNode {
         self.child1 = BVHLink::Empty;
         self.child2 = BVHLink::Empty;
     }
-    pub fn init_interior(&mut self, axis: usize, c0: Box<BVHBuildNode>, c1: Box<BVHBuildNode>) {
+    pub fn init_interior(&mut self, axis: u8, c0: Box<BVHBuildNode>, c1: Box<BVHBuildNode>) {
         self.n_primitives = 0;
         self.bounds = bnd3_union_bnd3(c0.bounds, c1.bounds);
         self.child1 = BVHLink::More(c0);
@@ -3863,18 +3863,31 @@ impl Default for BucketInfo {
     }
 }
 
+#[derive(Debug,Copy,Clone)]
+struct LinearBVHNode {
+    bounds: Bounds3f,
+    // in C++ a union { int primitivesOffset;     // leaf
+    //                  int secondChildOffset; }; // interior
+    offset: usize,
+    n_primitives: usize,
+    axis: u8,
+    // TODO? pad
+}
+
 pub struct BVHAccel<'a> {
     max_prims_in_node: usize,
     split_method: SplitMethod,
     primitives: Vec<&'a Primitive>,
+    nodes: Vec<LinearBVHNode>,
 }
 
 impl<'a> BVHAccel<'a> {
     pub fn new(p: Vec<&'a Primitive>, max_prims_in_node: usize, split_method: SplitMethod) -> Self {
         let bvh = Arc::new(BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
-            split_method: split_method,
+            split_method: split_method.clone(),
             primitives: p,
+            nodes: Vec::new(),
         });
         let num_prims = bvh.primitives.len();
         let mut primitive_info = vec![BVHPrimitiveInfo::default(); num_prims];
@@ -3893,10 +3906,22 @@ impl<'a> BVHAccel<'a> {
                                              num_prims,
                                              &mut total_nodes,
                                              &mut ordered_prims);
+        println!("ordered_prims.len() = {:?}", ordered_prims.len());
+        // flatten first
+        let mut nodes = Vec::with_capacity(total_nodes);
+        BVHAccel::flatten_bvh_tree(&root, &mut nodes);
+        assert!(nodes.len() == total_nodes);
+        // primitives.swap(orderedPrims);
+        let bvh_ordered_prims = Arc::new(BVHAccel {
+            max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
+            split_method: split_method.clone(),
+            primitives: ordered_prims,
+            nodes: nodes,
+        });
+        println!("total_nodes = {}", total_nodes);
         for i in 0..num_prims {
             println!("primitive_info[{}] = {:?}", i, primitive_info[i]);
         }
-        println!("ordered_prims.len() = {:?}", ordered_prims.len());
         println!("root.bounds = {:?}", root.bounds);
         println!("root.split_axis = {:?}", root.split_axis);
         println!("root.first_prim_offset = {:?}", root.first_prim_offset);
@@ -3933,7 +3958,7 @@ impl<'a> BVHAccel<'a> {
         println!("grandchild2.split_axis = {:?}", grandchild2.split_axis);
         println!("grandchild2.first_prim_offset = {:?}", grandchild2.first_prim_offset);
         println!("grandchild2.n_primitives = {:?}", grandchild2.n_primitives);
-        let unwrapped = Arc::try_unwrap(bvh);
+        let unwrapped = Arc::try_unwrap(bvh_ordered_prims);
         unwrapped.ok().unwrap()
     }
     pub fn recursive_build(bvh: Arc<BVHAccel<'a>>,
@@ -3946,6 +3971,7 @@ impl<'a> BVHAccel<'a> {
                            -> Box<BVHBuildNode> {
         assert_ne!(start, end);
         let mut node: Box<BVHBuildNode> = Box::new(BVHBuildNode::default());
+        *total_nodes += 1_usize;
         // compute bounds of all primitives in BVH node
         let mut bounds: Bounds3f = Bounds3f::default();
         for i in start..end {
@@ -4076,7 +4102,7 @@ impl<'a> BVHAccel<'a> {
                         }
                     }
                 }
-                node.init_interior(dim as usize,
+                node.init_interior(dim,
                                    BVHAccel::recursive_build(bvh.clone(),
                                                              primitive_info,
                                                              start,
@@ -4092,6 +4118,38 @@ impl<'a> BVHAccel<'a> {
             }
         }
         return node;
+    }
+    fn flatten_bvh_tree(node: &Box<BVHBuildNode>, nodes: &mut Vec<LinearBVHNode>) -> usize {
+        let offset = nodes.len();
+        if node.n_primitives > 0 {
+            // leaf
+            let linear_node = LinearBVHNode {
+                bounds: node.bounds,
+                offset: node.first_prim_offset,
+                n_primitives: node.n_primitives,
+                axis: 0_u8,
+            };
+            nodes.push(linear_node);
+        } else {
+            // interior
+            let child1 = match node.clone().child1 {
+                BVHLink::More(c) => c,
+                _ => Box::new(BVHBuildNode::default()),
+            };
+            let child2 = match node.clone().child2 {
+                BVHLink::More(c) => c,
+                _ => Box::new(BVHBuildNode::default()),
+            };
+            BVHAccel::flatten_bvh_tree(&child1, nodes);
+            let linear_node = LinearBVHNode {
+                bounds: node.bounds,
+                offset: BVHAccel::flatten_bvh_tree(&child2, nodes),
+                n_primitives: 0_usize,
+                axis: node.split_axis,
+            };
+            nodes.push(linear_node);
+        }
+        offset
     }
 }
 
