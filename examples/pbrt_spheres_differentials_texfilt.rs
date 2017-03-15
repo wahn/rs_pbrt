@@ -361,4 +361,10 @@ fn main() {
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
     let accelerator: BVHAccel = BVHAccel::new(scene.primitives, 4, SplitMethod::SAH);
+    println!("###############");
+    println!("# accelerator #");
+    println!("###############");
+    for node in accelerator.nodes {
+        println!("node = {:?}", node);
+    }
 }
