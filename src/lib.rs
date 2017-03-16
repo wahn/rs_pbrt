@@ -3877,7 +3877,7 @@ pub struct LinearBVHNode {
 pub struct BVHAccel<'a> {
     max_prims_in_node: usize,
     split_method: SplitMethod,
-    primitives: Vec<&'a Primitive>,
+    pub primitives: Vec<&'a Primitive>,
     pub nodes: Vec<LinearBVHNode>,
 }
 
@@ -3943,6 +3943,7 @@ impl<'a> BVHAccel<'a> {
             for i in start..end {
                 let prim_num: usize = primitive_info[i].primitive_number;
                 ordered_prims.push(bvh.primitives[prim_num]);
+                println!("prim_num = {}", prim_num);
             }
             node.init_leaf(first_prim_offset, n_primitives, &bounds);
             return node;
@@ -3961,6 +3962,7 @@ impl<'a> BVHAccel<'a> {
                 for i in start..end {
                     let prim_num: usize = primitive_info[i].primitive_number;
                     ordered_prims.push(bvh.primitives[prim_num]);
+                    println!("prim_num = {}", prim_num);
                 }
                 node.init_leaf(first_prim_offset, n_primitives, &bounds);
                 return node;
@@ -4054,6 +4056,7 @@ impl<'a> BVHAccel<'a> {
                                 for i in start..end {
                                     let prim_num: usize = primitive_info[i].primitive_number;
                                     ordered_prims.push(bvh.primitives[prim_num]);
+                                    println!("prim_num = {}", prim_num);
                                 }
                                 node.init_leaf(first_prim_offset, n_primitives, &bounds);
                                 return node;

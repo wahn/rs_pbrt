@@ -367,4 +367,7 @@ fn main() {
     for node in accelerator.nodes {
         println!("node = {:?}", node);
     }
+    for primitive in accelerator.primitives {
+        println!("primitive[{:?}]", primitive.world_bound());
+    }
 }
