@@ -3979,7 +3979,10 @@ impl<'a> BVHAccel<'a> {
                         if n_primitives <= 2 {
                             mid = (start + end) / 2;
                             if start != end - 1 {
-                                primitive_info.swap(start, end - 1);
+                                if primitive_info[end - 1].centroid[dim] <
+                                    primitive_info[start].centroid[dim] {
+                                        primitive_info.swap(start, end - 1);
+                                }
                             }
                         } else {
                             // allocate _BucketInfo_ for SAH partition buckets
@@ -4064,19 +4067,22 @@ impl<'a> BVHAccel<'a> {
                         }
                     }
                 }
+                // make sure we get result for c1 before c0
+                let c1 = BVHAccel::recursive_build(bvh.clone(),
+                                                   primitive_info,
+                                                   mid,
+                                                   end,
+                                                   total_nodes,
+                                                   ordered_prims);
+                let c0 = BVHAccel::recursive_build(bvh.clone(),
+                                                   primitive_info,
+                                                   start,
+                                                   mid,
+                                                   total_nodes,
+                                                   ordered_prims);
                 node.init_interior(dim,
-                                   BVHAccel::recursive_build(bvh.clone(),
-                                                             primitive_info,
-                                                             start,
-                                                             mid,
-                                                             total_nodes,
-                                                             ordered_prims),
-                                   BVHAccel::recursive_build(bvh.clone(),
-                                                             primitive_info,
-                                                             mid,
-                                                             end,
-                                                             total_nodes,
-                                                             ordered_prims));
+                                   c0,
+                                   c1);
             }
         }
         return node;
