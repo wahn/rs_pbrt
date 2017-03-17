@@ -1,5 +1,19 @@
 //! # pbrt
 //!
+//! [Rust][rust] crate to implement at least parts of the [PBRT
+//! book][book]'s C++ code. You can find a copy of the current code
+//! [here][repo].
+//!
+//! [rust]: https://www.rust-lang.org/en-US
+//! [book]: http://www.pbrt.org
+//! [repo]: https://github.com/wahn/rs_pbrt
+//!
+//! ## Scene
+//!
+//! As the scene file is parsed, objects are created that represent
+//! the lights and geometric primitives in the scene. These are all
+//! stored in the **Scene** object.
+//!
 //! ## Vectors
 //!
 //! **pbrt** provides both 2D and 3D **vector** classes. Both are
@@ -617,6 +631,14 @@ use std::mem;
 use std::sync::Arc;
 
 pub type Float = f64;
+
+// see scene.h
+
+#[derive(Copy,Clone)]
+pub struct Scene<'a> {
+    aggregate: &'a BVHAccel<'a>, // TODO: Primitive,
+    world_bound: Bounds3f,
+}
 
 // see pbrt.h
 
@@ -3874,6 +3896,7 @@ pub struct LinearBVHNode {
     // TODO? pad
 }
 
+// BVHAccel -> Aggregate -> Primitive
 pub struct BVHAccel<'a> {
     max_prims_in_node: usize,
     split_method: SplitMethod,
@@ -3919,6 +3942,13 @@ impl<'a> BVHAccel<'a> {
         });
         let unwrapped = Arc::try_unwrap(bvh_ordered_prims);
         unwrapped.ok().unwrap()
+    }
+    pub fn world_bound(&self) -> Bounds3f {
+        if self.nodes.len() > 0 {
+            self.nodes[0].bounds
+        } else {
+            Bounds3f::default()
+        }
     }
     pub fn recursive_build(bvh: Arc<BVHAccel<'a>>,
                            // arena,
@@ -4119,6 +4149,21 @@ impl<'a> BVHAccel<'a> {
             nodes[my_offset] = linear_node;
         }
         my_offset
+    }
+}
+
+impl<'a> Primitive for BVHAccel<'a> {
+    fn world_bound(&self) -> Bounds3f {
+        // WORK
+        Bounds3f::default()
+    }
+    fn intersect(&self,
+                 r: &Ray,
+                 t_hit: &mut Float,
+                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                 -> bool {
+        // WORK
+        false
     }
 }
 
