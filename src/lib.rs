@@ -600,6 +600,18 @@
 //! }
 //! ```
 //!
+//! ## Light Sources
+//!
+//! ### Point Lights
+//!
+//! TODO
+//!
+//! ### Distant Lights
+//!
+//! A distant light, also known as directional light, describes an
+//! emitter that deposits illumination from the same direction at
+//! every point in space.
+//!
 //! ## Direct Lighting
 //!
 //! The **DirectLightingIntegrator** accounts only for direct lighting
@@ -634,8 +646,9 @@ pub type Float = f64;
 
 // see scene.h
 
-#[derive(Copy,Clone)]
+#[derive(Clone)]
 pub struct Scene<'a> {
+    pub lights: Vec<DistantLight>, // TODO: Light
     aggregate: &'a BVHAccel<'a>, // TODO: Primitive,
     world_bound: Bounds3f,
 }
@@ -644,6 +657,7 @@ impl<'a> Scene<'a> {
     pub fn new(aggregate: &'a BVHAccel<'a>) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
         Scene {
+            lights: Vec::new(),
             aggregate: aggregate,
             world_bound: world_bound,
         }
@@ -651,6 +665,8 @@ impl<'a> Scene<'a> {
 }
 
 // see pbrt.h
+
+pub type Spectrum = RGBSpectrum;
 
 const MACHINE_EPSILON: Float = std::f64::EPSILON * 0.5;
 
@@ -761,6 +777,28 @@ pub fn radians(deg: Float) -> Float {
 /// Convert from angles expressed in radians to degrees.
 pub fn degrees(rad: Float) -> Float {
     (180.0 / PI) * rad
+}
+
+/// Round an integer up to the next higher (or equal) power of 2.
+pub fn round_up_pow2_32(v: &mut i32) -> i32 {
+    *v -= 1_i32;
+    *v |= *v >> 1;
+    *v |= *v >> 2;
+    *v |= *v >> 4;
+    *v |= *v >> 8;
+    *v |= *v >> 16;
+    *v + 1
+}
+
+/// Round an integer up to the next higher (or equal) power of 2.
+pub fn round_up_pow2_64(v: &mut i64) -> i64 {
+    *v -= 1_i64;
+    *v |= *v >> 1;
+    *v |= *v >> 2;
+    *v |= *v >> 4;
+    *v |= *v >> 8;
+    *v |= *v >> 16;
+    *v + 1
 }
 
 /// Find solution(s) of the quadratic equation at^2 + bt + c = 0.
@@ -3807,6 +3845,13 @@ impl<'a> Primitive for Triangle<'a> {
     }
 }
 
+// see spectrum.h
+
+#[derive(Debug,Clone)]
+pub struct RGBSpectrum {
+    c: Vec<Float>, // TODO: Float c[nSpectrumSamples];
+}
+
 // see bvh.h
 
 #[derive(Debug,Clone)]
@@ -4185,6 +4230,13 @@ pub struct ZeroTwoSequenceSampler {
     pub n_sampled_dimensions: i64,
 }
 
+impl ZeroTwoSequenceSampler {
+    pub fn round_count(&self, count: i32) -> i32 {
+        let mut mut_count: i32 = count;
+        round_up_pow2_32(&mut mut_count)
+    }
+}
+
 // see box.h
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -4362,9 +4414,25 @@ impl PerspectiveCamera {
     }
 }
 
-// see directlighting.h
+// see distant.h
 
 #[derive(Debug,Clone)]
+pub struct DistantLight {
+    // private data (see distant.h)
+    l: Spectrum,
+    w_light: Vector3f,
+    world_center: Point3f,
+    world_radius: Float,
+    // derived from class Light (see light.h)
+    // TODO: const int flags;
+    n_samples: i32, // const?
+    // TODO: const MediumInterface mediumInterface;
+    // TODO: const Transform LightToWorld, WorldToLight;
+}
+
+// see directlighting.h
+
+#[derive(Debug,Clone,PartialEq)]
 pub enum LightStrategy {
     UniformSampleAll,
     UniformSampleOne,
@@ -4380,7 +4448,7 @@ pub struct DirectLightingIntegrator {
     // TODO: const LightStrategy strategy;
     strategy: LightStrategy,
     max_depth: i64,
-    n_light_samples: Vec<i64>,
+    n_light_samples: Vec<i32>,
 }
 
 impl Default for DirectLightingIntegrator {
@@ -4413,6 +4481,22 @@ impl DirectLightingIntegrator {
             strategy: strategy,
             max_depth: max_depth,
             n_light_samples: Vec::new(),
+        }
+    }
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+        if self.strategy == LightStrategy::UniformSampleAll {
+            // compute number of samples to use for each light
+            for li in 0..scene.lights.len() {
+                let ref light = scene.lights[li];
+                self.n_light_samples.push(sampler.round_count(light.n_samples));
+            }
+            // TODO: request samples for sampling all lights
+            // for (int i = 0; i < maxDepth; ++i) {
+            //     for (size_t j = 0; j < scene.lights.size(); ++j) {
+            //         sampler.Request2DArray(nLightSamples[j]);
+            //         sampler.Request2DArray(nLightSamples[j]);
+            //     }
+            // }
         }
     }
 }
