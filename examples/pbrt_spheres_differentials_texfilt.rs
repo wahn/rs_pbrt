@@ -1,9 +1,9 @@
 extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLightingIntegrator,
-           Film, Float, LightStrategy, PerspectiveCamera, Point2f, Point2i, Point3f, Primitive,
-           Sphere, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
-           ZeroTwoSequenceSampler};
+           DistantLight, Film, Float, LightStrategy, PerspectiveCamera, Point2f, Point2i, Point3f,
+           Primitive, Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f,
+           Vector3f, ZeroTwoSequenceSampler};
 use std::string::String;
 
 struct SceneDescription {
@@ -115,6 +115,24 @@ impl<'s> Scene<'s> {
 
 
 fn main() {
+    // pbrt::MakeLight
+    let l: Spectrum = Spectrum::new(3.141593);
+    let sc: Spectrum = Spectrum::new(1.0);
+    let from: Point3f = Point3f {
+        x: 0.0,
+        y: 10.0,
+        z: 0.0,
+    };
+    let to: Point3f = Point3f {
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
+    };
+    let dir: Vector3f = from - to;
+    let light_to_world: Transform = Transform::default();
+    let lsc: Spectrum = l * sc;
+    let light: DistantLight = DistantLight::new(&light_to_world, &lsc, &dir);
+
     // pbrt::MakeShapes
 
     // trianglemesh

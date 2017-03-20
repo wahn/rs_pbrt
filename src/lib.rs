@@ -612,6 +612,32 @@
 //! emitter that deposits illumination from the same direction at
 //! every point in space.
 //!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{DistantLight, Point3f, Spectrum, Transform, Vector3f};
+//!
+//! fn main() {
+//!     let l: Spectrum = Spectrum::new(3.141593);
+//!     let sc: Spectrum = Spectrum::new(1.0);
+//!     let from: Point3f = Point3f {
+//!         x: 0.0,
+//!         y: 10.0,
+//!         z: 0.0,
+//!     };
+//!     let to: Point3f = Point3f {
+//!         x: 0.0,
+//!         y: 0.0,
+//!         z: 0.0,
+//!     };
+//!     let dir: Vector3f = from - to;
+//!     let light_to_world: Transform = Transform::default();
+//!     let lsc: Spectrum = l * sc;
+//!     let distant_light: DistantLight = DistantLight::new(&light_to_world, &lsc, &dir);
+//!     println!("distant_light = {:?}", distant_light);
+//! }
+//! ```
+//!
 //! ## Direct Lighting
 //!
 //! The **DirectLightingIntegrator** accounts only for direct lighting
@@ -2064,7 +2090,6 @@ impl Transform {
         let x: Float = p.x;
         let y: Float = p.y;
         let z: Float = p.z;
-        // compute transformed coordinates from point _pt_
         let xp: Float = self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z +
                         self.m.m[0][3];
         let yp: Float = self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z +
@@ -2086,6 +2111,16 @@ impl Transform {
                 y: yp / wp,
                 z: zp / wp,
             }
+        }
+    }
+    pub fn transform_vector(&self, v: Vector3<Float>) -> Vector3<Float> {
+        let x: Float = v.x;
+        let y: Float = v.y;
+        let z: Float = v.z;
+        Vector3::<Float> {
+            x: self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z,
+            y: self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z,
+            z: self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z,
         }
     }
     pub fn transform_bounds(&self, b: Bounds3f) -> Bounds3f {
@@ -3847,9 +3882,24 @@ impl<'a> Primitive for Triangle<'a> {
 
 // see spectrum.h
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Default,Copy,Clone)]
 pub struct RGBSpectrum {
-    c: Vec<Float>, // TODO: Float c[nSpectrumSamples];
+    c: [Float; 3],
+}
+
+impl Mul for RGBSpectrum {
+    type Output = RGBSpectrum;
+    fn mul(self, rhs: RGBSpectrum) -> RGBSpectrum {
+        RGBSpectrum { c: [self.c[0] * rhs.c[0], self.c[1] * rhs.c[1], self.c[2] * rhs.c[2]] }
+    }
+}
+
+impl RGBSpectrum {
+    pub fn new(v: Float) -> Self {
+        let n_spectrum_samples = 3; // RGB
+        RGBSpectrum { c: [v, v, v] }
+        // TODO: DCHECK(!HasNaNs());
+    }
 }
 
 // see bvh.h
@@ -4439,6 +4489,18 @@ pub struct DistantLight {
     n_samples: i32, // const?
     // TODO: const MediumInterface mediumInterface;
     // TODO: const Transform LightToWorld, WorldToLight;
+}
+
+impl DistantLight {
+    pub fn new(light_to_world: &Transform, l: &Spectrum, w_light: &Vector3f) -> Self {
+        DistantLight {
+            l: *l,
+            w_light: vec3_normalize(light_to_world.transform_vector(*w_light)),
+            world_center: Point3f::default(),
+            world_radius: 0.0,
+            n_samples: 1_i32,
+        }
+    }
 }
 
 // see directlighting.h

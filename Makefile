@@ -39,6 +39,7 @@ examples: release
 	./target/release/examples/geometry_vector3_null
 	./target/release/examples/integrators_create_direct_lighting_integrator
 	./target/release/examples/pbrt
+	./target/release/examples/lights_distant_light_new
 	./target/release/examples/pbrt_spheres_differentials_texfilt
 	./target/release/examples/quaternion_default
 	./target/release/examples/shapes_sphere_default
