@@ -3295,7 +3295,7 @@ pub struct Sphere {
     theta_min: Float,
     theta_max: Float,
     phi_max: Float,
-    // derived from class Shape (see shape.h)
+    // inherited from class Shape (see shape.h)
     object_to_world: Transform,
     world_to_object: Transform,
     reverse_orientation: bool,
@@ -3553,7 +3553,7 @@ pub struct TriangleMesh {
     /// an optional vector of paramtric (u, v) values (texture coordinates)
     pub uv: Vec<Point2f>,
     // TODO: std::shared_ptr<Texture<Float>> alphaMask, shadowAlphaMask;
-    // derived from class Shape (see shape.h)
+    // inherited from class Shape (see shape.h)
     pub object_to_world: Transform, // TODO: not pub?
     pub world_to_object: Transform, // TODO: not pub?
     reverse_orientation: bool,
@@ -3595,7 +3595,7 @@ impl TriangleMesh {
 pub struct Triangle<'a> {
     mesh: &'a TriangleMesh,
     id: usize,
-    // derived from class Shape (see shape.h)
+    // inherited from class Shape (see shape.h)
     object_to_world: Transform,
     world_to_object: Transform,
     reverse_orientation: bool,
@@ -4224,16 +4224,27 @@ impl<'a> Primitive for BVHAccel<'a> {
 
 // see zerotwosequence.h
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug,Default,Clone)]
 pub struct ZeroTwoSequenceSampler {
     pub samples_per_pixel: i64,
     pub n_sampled_dimensions: i64,
+    // inherited from class Sampler (see sampler.h)
+    pub samples_2d_array_sizes: Vec<i32>, // TODO: not pub?
+    pub samples_2d_array: Vec<Point2f>, // TODO: not pub?
 }
 
 impl ZeroTwoSequenceSampler {
     pub fn round_count(&self, count: i32) -> i32 {
         let mut mut_count: i32 = count;
         round_up_pow2_32(&mut mut_count)
+    }
+    // sampler Interface
+    pub fn request_2d_array(&mut self, n: i32) {
+        assert_eq!(self.round_count(n), n);
+        self.samples_2d_array_sizes.push(n);
+        let size: usize = (n * self.samples_per_pixel as i32) as usize;
+        let mut additional_points: Vec<Point2f> = vec![Point2f::default(); size];
+        self.samples_2d_array.append(&mut additional_points);
     }
 }
 
@@ -4423,7 +4434,7 @@ pub struct DistantLight {
     w_light: Vector3f,
     world_center: Point3f,
     world_radius: Float,
-    // derived from class Light (see light.h)
+    // inherited from class Light (see light.h)
     // TODO: const int flags;
     n_samples: i32, // const?
     // TODO: const MediumInterface mediumInterface;
@@ -4490,13 +4501,13 @@ impl DirectLightingIntegrator {
                 let ref light = scene.lights[li];
                 self.n_light_samples.push(sampler.round_count(light.n_samples));
             }
-            // TODO: request samples for sampling all lights
-            // for (int i = 0; i < maxDepth; ++i) {
-            //     for (size_t j = 0; j < scene.lights.size(); ++j) {
-            //         sampler.Request2DArray(nLightSamples[j]);
-            //         sampler.Request2DArray(nLightSamples[j]);
-            //     }
-            // }
+            // request samples for sampling all lights
+            for i in 0..self.max_depth {
+                for j in 0..scene.lights.len() {
+                    sampler.request_2d_array(self.n_light_samples[j]);
+                    sampler.request_2d_array(self.n_light_samples[j]);
+                }
+            }
         }
     }
 }

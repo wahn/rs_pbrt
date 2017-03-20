@@ -334,6 +334,8 @@ fn main() {
     let sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
         samples_per_pixel: 1,
         n_sampled_dimensions: 4,
+        samples_2d_array_sizes: Vec::new(),
+        samples_2d_array: Vec::new(),
     };
     let pixel_bounds: Bounds2i = Bounds2i {
         p_min: Point2i { x: 0, y: 0 },
