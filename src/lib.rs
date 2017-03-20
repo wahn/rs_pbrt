@@ -640,6 +640,16 @@ pub struct Scene<'a> {
     world_bound: Bounds3f,
 }
 
+impl<'a> Scene<'a> {
+    pub fn new(aggregate: &'a BVHAccel<'a>) -> Self {
+        let world_bound: Bounds3f = aggregate.world_bound();
+        Scene {
+            aggregate: aggregate,
+            world_bound: world_bound,
+        }
+    }
+}
+
 // see pbrt.h
 
 const MACHINE_EPSILON: Float = std::f64::EPSILON * 0.5;
