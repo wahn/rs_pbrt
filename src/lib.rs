@@ -4582,6 +4582,13 @@ impl DistantLight {
             n_samples: 1_i32,
         }
     }
+    /// Some of the **DistanceLight** methods need to know the bounds
+    /// of the scene. Because lights are created before the scene
+    /// geometry, these bounds aren't available when the
+    /// **DistanceLight** constructor runs. Therefore,
+    /// **DistanceLight** implements the optional *preprocess()*
+    /// method to get the bound. This method is called at the end of
+    /// the **Scene** constructor.
     pub fn preprocess(&mut self, scene: &Scene) {
         Bounds3f::bounding_sphere(scene.world_bound(),
                                   &mut self.world_center,
