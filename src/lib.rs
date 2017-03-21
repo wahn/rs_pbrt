@@ -4148,7 +4148,6 @@ impl<'a> BVHAccel<'a> {
             for i in start..end {
                 let prim_num: usize = primitive_info[i].primitive_number;
                 ordered_prims.push(bvh.primitives[prim_num]);
-                println!("prim_num = {}", prim_num);
             }
             node.init_leaf(first_prim_offset, n_primitives, &bounds);
             return node;
@@ -4167,7 +4166,6 @@ impl<'a> BVHAccel<'a> {
                 for i in start..end {
                     let prim_num: usize = primitive_info[i].primitive_number;
                     ordered_prims.push(bvh.primitives[prim_num]);
-                    println!("prim_num = {}", prim_num);
                 }
                 node.init_leaf(first_prim_offset, n_primitives, &bounds);
                 return node;
@@ -4264,7 +4262,6 @@ impl<'a> BVHAccel<'a> {
                                 for i in start..end {
                                     let prim_num: usize = primitive_info[i].primitive_number;
                                     ordered_prims.push(bvh.primitives[prim_num]);
-                                    println!("prim_num = {}", prim_num);
                                 }
                                 node.init_leaf(first_prim_offset, n_primitives, &bounds);
                                 return node;
@@ -4435,6 +4432,9 @@ impl Film {
             scale: scale,
             max_sample_luminance: max_sample_luminance,
         }
+    }
+    pub fn get_sample_bounds(&self) -> Bounds2i {
+        Bounds2i::default()
     }
 }
 
@@ -4649,21 +4649,26 @@ impl DirectLightingIntegrator {
             n_light_samples: Vec::new(),
         }
     }
-    fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+    pub fn preprocess(&mut self, scene: &Scene) { // , sampler: &mut ZeroTwoSequenceSampler
         if self.strategy == LightStrategy::UniformSampleAll {
             // compute number of samples to use for each light
             for li in 0..scene.lights.len() {
                 let ref light = scene.lights[li];
-                self.n_light_samples.push(sampler.round_count(light.n_samples));
+                self.n_light_samples.push(self.sampler.round_count(light.n_samples));
             }
             // request samples for sampling all lights
             for i in 0..self.max_depth {
                 for j in 0..scene.lights.len() {
-                    sampler.request_2d_array(self.n_light_samples[j]);
-                    sampler.request_2d_array(self.n_light_samples[j]);
+                    self.sampler.request_2d_array(self.n_light_samples[j]);
+                    self.sampler.request_2d_array(self.n_light_samples[j]);
                 }
             }
         }
+    }
+    pub fn render(&mut self, scene: &Scene) {
+        // SamplerIntegrator::Render (integrator.cpp)
+        self.preprocess(scene); // , &mut self.sampler
+        let sample_bounds: Bounds2i = self.camera.film.get_sample_bounds();
     }
 }
 

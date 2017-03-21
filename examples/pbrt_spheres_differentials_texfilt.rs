@@ -2,18 +2,20 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLightingIntegrator,
            DistantLight, Film, Float, LightStrategy, PerspectiveCamera, Point2f, Point2i, Point3f,
-           Primitive, Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f,
-           Vector3f, ZeroTwoSequenceSampler};
+           Primitive, Scene, Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh,
+           Vector2f, Vector3f, ZeroTwoSequenceSampler};
 use std::string::String;
 
 struct SceneDescription {
     meshes: Vec<TriangleMesh>,
     spheres: Vec<Sphere>,
+    lights: Vec<DistantLight>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<TriangleMesh>,
     spheres: Vec<Sphere>,
+    lights: Vec<DistantLight>,
 }
 
 impl SceneDescriptionBuilder {
@@ -21,7 +23,18 @@ impl SceneDescriptionBuilder {
         SceneDescriptionBuilder {
             meshes: Vec::new(),
             spheres: Vec::new(),
+            lights: Vec::new(),
         }
+    }
+    fn add_light(&mut self,
+                 light_to_world: &Transform,
+                 l: &Spectrum,
+                 w_light: &Vector3f)
+                 -> &mut SceneDescriptionBuilder {
+        let distant_light: DistantLight = DistantLight::new(light_to_world, &l, &w_light);
+        println!("distant_light = {:?}", distant_light);
+        self.lights.push(distant_light);
+        self
     }
     fn add_mesh(&mut self,
                 object_to_world: Transform,
@@ -74,21 +87,24 @@ impl SceneDescriptionBuilder {
         SceneDescription {
             meshes: self.meshes,
             spheres: self.spheres,
+            lights: self.lights,
         }
     }
 }
 
-struct Scene<'scene> {
+struct RenderOptions<'scene> {
     primitives: Vec<&'scene Primitive>,
     triangles: Vec<Triangle<'scene>>,
     spheres: Vec<Sphere>,
+    lights: Vec<DistantLight>,
 }
 
-impl<'s> Scene<'s> {
-    fn new(scene: &'s SceneDescription) -> Scene<'s> {
+impl<'s> RenderOptions<'s> {
+    fn new(scene: &'s SceneDescription) -> RenderOptions<'s> {
         let mut primitives: Vec<&Primitive> = Vec::new();
         let mut triangles: Vec<Triangle> = Vec::new();
         let mut spheres: Vec<Sphere> = Vec::new();
+        let mut lights: Vec<DistantLight> = Vec::new();
         // spheres
         for sphere in &scene.spheres {
             spheres.push(*sphere);
@@ -105,16 +121,18 @@ impl<'s> Scene<'s> {
                 triangles.push(triangle);
             }
         }
-        Scene {
+        RenderOptions {
             primitives: primitives,
             triangles: triangles,
             spheres: spheres,
+            lights: lights,
         }
     }
 }
 
 
 fn main() {
+    let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     // pbrt::MakeLight
     let l: Spectrum = Spectrum::new(3.141593);
     let sc: Spectrum = Spectrum::new(1.0);
@@ -131,7 +149,7 @@ fn main() {
     let dir: Vector3f = from - to;
     let light_to_world: Transform = Transform::default();
     let lsc: Spectrum = l * sc;
-    let light: DistantLight = DistantLight::new(&light_to_world, &lsc, &dir);
+    builder.add_light(&light_to_world, &lsc, &dir);
 
     // pbrt::MakeShapes
 
@@ -186,7 +204,6 @@ fn main() {
     }
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Vector3f> = Vec::new();
-    let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     println!("########");
     println!("# mesh #");
     println!("########");
@@ -359,7 +376,7 @@ fn main() {
         p_min: Point2i { x: 0, y: 0 },
         p_max: Point2i { x: xres, y: yres },
     };
-    let integrator: DirectLightingIntegrator =
+    let mut integrator: DirectLightingIntegrator =
         DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
                                       10,
                                       perspective_camera,
@@ -370,24 +387,21 @@ fn main() {
     println!("##############");
     println!("integrator = {:?}", integrator);
     // TMP: process SceneDescription before handing primitives to BVHAccel
-    let mut scene: Scene = Scene::new(&scene_description);
+    let mut render_options: RenderOptions = RenderOptions::new(&scene_description);
     // add triangles created above (not meshes)
-    for triangle in &scene.triangles {
-        scene.primitives.push(triangle);
+    for triangle in &render_options.triangles {
+        render_options.primitives.push(triangle);
     }
-    for sphere in &scene.spheres {
-        scene.primitives.push(sphere);
+    for sphere in &render_options.spheres {
+        render_options.primitives.push(sphere);
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
-    let accelerator: BVHAccel = BVHAccel::new(scene.primitives, 4, SplitMethod::SAH);
+    let accelerator: BVHAccel = BVHAccel::new(render_options.primitives, 4, SplitMethod::SAH);
     println!("###############");
     println!("# accelerator #");
     println!("###############");
-    for node in accelerator.nodes {
-        println!("node = {:?}", node);
-    }
-    for primitive in accelerator.primitives {
-        println!("primitive[{:?}]", primitive.world_bound());
-    }
+    // SamplerIntegrator::Render (integrator.cpp)
+    let scene: Scene = Scene::new(&accelerator, render_options.lights);
+    integrator.render(&scene);
 }
