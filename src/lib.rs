@@ -675,18 +675,39 @@ pub type Float = f64;
 #[derive(Clone)]
 pub struct Scene<'a> {
     pub lights: Vec<DistantLight>, // TODO: Light
+    pub infinite_lights: Vec<DistantLight>, // TODO: Light
     aggregate: &'a BVHAccel<'a>, // TODO: Primitive,
     world_bound: Bounds3f,
 }
 
 impl<'a> Scene<'a> {
-    pub fn new(aggregate: &'a BVHAccel<'a>) -> Self {
+    pub fn new(aggregate: &'a BVHAccel<'a>, lights: Vec<DistantLight>) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
-        Scene {
+        let scene: Scene = Scene {
             lights: Vec::new(),
+            infinite_lights: Vec::new(),
+            aggregate: aggregate,
+            world_bound: world_bound,
+        };
+        let mut changed_lights = Vec::new();
+        let mut infinite_lights = Vec::new();
+        for mut light in lights {
+            light.preprocess(&scene);
+            changed_lights.push(light);
+            let check: i32 = light.flags & LightFlags::Infinite as i32;
+            if check == LightFlags::Infinite as i32 {
+                infinite_lights.push(light);
+            }
+        }
+        Scene {
+            lights: changed_lights,
+            infinite_lights: infinite_lights,
             aggregate: aggregate,
             world_bound: world_bound,
         }
+    }
+    pub fn world_bound(&self) -> &Bounds3f {
+        &self.world_bound
     }
 }
 
@@ -1390,6 +1411,21 @@ impl<T> MulAssign<T> for Point3<T>
     }
 }
 
+impl<T> Div<T> for Point3<T>
+    where T: Copy + Div<T, Output = T>
+{
+    type Output = Point3<T>;
+    fn div(self, rhs: T) -> Point3<T>
+        where T: Copy + Div<T, Output = T>
+    {
+        Point3::<T> {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
+    }
+}
+
 impl<T> DivAssign<T> for Point3<T>
     where T: Copy + DivAssign
 {
@@ -1553,7 +1589,35 @@ impl<T> Bounds3<T> {
         }
         o
     }
+    pub fn bounding_sphere(b: &Bounds3f, center: &mut Point3f, radius: &mut Float) {
+        let p_min: Point3f = b.p_min as Point3f;
+        let p_max: Point3f = b.p_max as Point3f;
+        let sum: Point3f = p_min + p_max;
+        *center = sum / 2.0;
+        let center_copy: Point3f = *center as Point3f;
+        let is_inside: bool = pnt3_inside_bnd3(center_copy, *b);
+        if is_inside {
+            *radius = pnt3_distance(center_copy, p_max);
+        } else {
+            *radius = 0.0;
+        }
+    }
 }
+
+// /// Minimum squared distance from point to box; returns zero if point
+// /// is inside.
+// pub fn pnt3_distance_squared_bnd3(p: Point3f, b: Bounds3f) -> Float {
+//     let dx: Float = (b.p_min.x - p.x).max(num::Zero::zero()).max(p.x - b.p_max.x);
+//     let dy: Float = (b.p_min.y - p.y).max(num::Zero::zero()).max(p.y - b.p_max.y);
+//     let dz: Float = (b.p_min.z - p.z).max(num::Zero::zero()).max(p.z - b.p_max.z);
+//     dx * dx + dy * dy + dz * dz
+// }
+
+// /// Minimum distance from point to box; returns zero if point is
+// /// inside.
+// pub fn pnt3_distance_bnd3(p: Point3f, b: Bounds3f) -> Float {
+//     pnt3_distance_squared_bnd3(p, b).sqrt()
+// }
 
 /// Given a bounding box and a point, the **bnd3_union_pnt3()**
 /// function returns a new bounding box that encompasses that point as
@@ -1590,6 +1654,12 @@ pub fn bnd3_union_bnd3<T>(b1: Bounds3<T>, b2: Bounds3<T>) -> Bounds3<T>
         z: b1.p_max.z.max(b2.p_max.z),
     };
     Bounds3::new(p_min, p_max)
+}
+
+/// Determine if a given point is inside the bounding box.
+pub fn pnt3_inside_bnd3(p: Point3f, b: Bounds3f) -> bool {
+    p.x >= b.p_min.x && p.x <= b.p_max.x && p.y >= b.p_min.y && p.y <= b.p_max.y &&
+    p.z >= b.p_min.z && p.z <= b.p_max.z
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -4475,9 +4545,19 @@ impl PerspectiveCamera {
     }
 }
 
+// see light.h
+
+#[repr(i32)]
+pub enum LightFlags {
+    DeltaPosition = 1,
+    DeltaDirection = 2,
+    Area = 4,
+    Infinite = 8
+}
+
 // see distant.h
 
-#[derive(Debug,Clone)]
+#[derive(Debug,Copy,Clone)]
 pub struct DistantLight {
     // private data (see distant.h)
     l: Spectrum,
@@ -4485,7 +4565,7 @@ pub struct DistantLight {
     world_center: Point3f,
     world_radius: Float,
     // inherited from class Light (see light.h)
-    // TODO: const int flags;
+    flags: i32,
     n_samples: i32, // const?
     // TODO: const MediumInterface mediumInterface;
     // TODO: const Transform LightToWorld, WorldToLight;
@@ -4498,8 +4578,14 @@ impl DistantLight {
             w_light: vec3_normalize(light_to_world.transform_vector(*w_light)),
             world_center: Point3f::default(),
             world_radius: 0.0,
+            flags: LightFlags::DeltaDirection as i32,
             n_samples: 1_i32,
         }
+    }
+    pub fn preprocess(&mut self, scene: &Scene) {
+        Bounds3f::bounding_sphere(scene.world_bound(),
+                                  &mut self.world_center,
+                                  &mut self.world_radius);
     }
 }
 
