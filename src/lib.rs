@@ -4527,7 +4527,7 @@ impl Film {
         let c: Point2f = pnt2_ceil(Point2f {
             x: self.cropped_pixel_bounds.p_max.x as Float,
             y: self.cropped_pixel_bounds.p_max.y as Float,
-        } + Vector2f { x: 0.5, y: 0.5 } + self.filter.radius);
+        } - Vector2f { x: 0.5, y: 0.5 } + self.filter.radius);
         let float_bounds: Bounds2f = Bounds2f::new(f, c);
         Bounds2i {
             p_min: Point2i {
