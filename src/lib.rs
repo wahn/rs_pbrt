@@ -1289,12 +1289,37 @@ impl<T> Add<Point2<T>> for Point2<T>
     }
 }
 
+impl<T> Add<Vector2<T>> for Point2<T>
+    where T: Add<T, Output = T>
+{
+    type Output = Point2<T>;
+    fn add(self, rhs: Vector2<T>) -> Point2<T> {
+        // TODO: DCHECK(!v.HasNaNs());
+        Point2::<T> {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
 impl<T> Sub<Point2<T>> for Point2<T>
     where T: Sub<T, Output = T>
 {
     type Output = Vector2<T>;
     fn sub(self, rhs: Point2<T>) -> Vector2<T> {
         Vector2::<T> {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
+impl<T> Sub<Vector2<T>> for Point2<T>
+    where T: Sub<T, Output = T>
+{
+    type Output = Point2<T>;
+    fn sub(self, rhs: Vector2<T>) -> Point2<T> {
+        Point2::<T> {
             x: self.x - rhs.x,
             y: self.y - rhs.y,
         }
@@ -1312,6 +1337,26 @@ impl<T> Mul<T> for Point2<T>
             x: self.x * rhs,
             y: self.y * rhs,
         }
+    }
+}
+
+/// Apply floor operation component-wise.
+pub fn pnt2_floor<T>(p: Point2<T>) -> Point2<T>
+    where T: num::Float
+{
+    Point2 {
+        x: p.x.floor(),
+        y: p.y.floor(),
+    }
+}
+
+/// Apply ceil operation component-wise.
+pub fn pnt2_ceil<T>(p: Point2<T>) -> Point2<T>
+    where T: num::Float
+{
+    Point2 {
+        x: p.x.ceil(),
+        y: p.y.ceil(),
     }
 }
 
@@ -1465,6 +1510,28 @@ pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
     }
 }
 
+/// Apply floor operation component-wise.
+pub fn pnt3_floor<T>(p: Point3<T>) -> Point3<T>
+    where T: num::Float
+{
+    Point3 {
+        x: p.x.floor(),
+        y: p.y.floor(),
+        z: p.z.floor(),
+    }
+}
+
+/// Apply ceil operation component-wise.
+pub fn pnt3_ceil<T>(p: Point3<T>) -> Point3<T>
+    where T: num::Float
+{
+    Point3 {
+        x: p.x.ceil(),
+        y: p.y.ceil(),
+        z: p.z.ceil(),
+    }
+}
+
 /// The distance between two points is the length of the vector
 /// between them.
 pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
@@ -1502,6 +1569,25 @@ pub type Bounds3i = Bounds3<i32>;
 pub struct Bounds2<T> {
     pub p_min: Point2<T>,
     pub p_max: Point2<T>,
+}
+
+impl<T> Bounds2<T> {
+    pub fn new(p1: Point2<T>, p2: Point2<T>) -> Self
+        where T: num::Float
+    {
+        let p_min: Point2<T> = Point2::<T> {
+            x: p1.x.min(p2.x),
+            y: p1.y.min(p2.y),
+        };
+        let p_max: Point2<T> = Point2::<T> {
+            x: p1.x.max(p2.x),
+            y: p1.y.max(p2.y),
+        };
+        Bounds2::<T> {
+            p_min: p_min,
+            p_max: p_max,
+        }
+    }
 }
 
 #[derive(Debug,Copy,Clone)]
@@ -4434,7 +4520,25 @@ impl Film {
         }
     }
     pub fn get_sample_bounds(&self) -> Bounds2i {
-        Bounds2i::default()
+        let f: Point2f = pnt2_floor(Point2f {
+            x: self.cropped_pixel_bounds.p_min.x as Float,
+            y: self.cropped_pixel_bounds.p_min.y as Float,
+        } + Vector2f { x: 0.5, y: 0.5 } - self.filter.radius);
+        let c: Point2f = pnt2_ceil(Point2f {
+            x: self.cropped_pixel_bounds.p_max.x as Float,
+            y: self.cropped_pixel_bounds.p_max.y as Float,
+        } + Vector2f { x: 0.5, y: 0.5 } + self.filter.radius);
+        let float_bounds: Bounds2f = Bounds2f::new(f, c);
+        Bounds2i {
+            p_min: Point2i {
+                x: float_bounds.p_min.x as i32,
+                y: float_bounds.p_min.y as i32,
+            },
+            p_max: Point2i {
+                x: float_bounds.p_max.x as i32,
+                y: float_bounds.p_max.y as i32,
+            },
+        }
     }
 }
 
@@ -4669,6 +4773,7 @@ impl DirectLightingIntegrator {
         // SamplerIntegrator::Render (integrator.cpp)
         self.preprocess(scene); // , &mut self.sampler
         let sample_bounds: Bounds2i = self.camera.film.get_sample_bounds();
+        println!("sample_bounds = {:?}", sample_bounds);
     }
 }
 
