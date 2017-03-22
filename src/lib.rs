@@ -1029,7 +1029,9 @@ pub type Point2i = Point2<i32>;
 pub type Point3f = Point3<Float>;
 pub type Point3i = Point3<i32>;
 pub type Vector2f = Vector2<Float>;
+pub type Vector2i = Vector2<i32>;
 pub type Vector3f = Vector3<Float>;
+pub type Vector3i = Vector3<i32>;
 pub type Normal3f = Normal3<Float>;
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -1587,6 +1589,11 @@ impl<T> Bounds2<T> {
             p_min: p_min,
             p_max: p_max,
         }
+    }
+    pub fn diagonal(&self) -> Vector2<T>
+        where T: Copy + Sub<T, Output = T>
+    {
+        self.p_max - self.p_min
     }
 }
 
@@ -4753,7 +4760,8 @@ impl DirectLightingIntegrator {
             n_light_samples: Vec::new(),
         }
     }
-    pub fn preprocess(&mut self, scene: &Scene) { // , sampler: &mut ZeroTwoSequenceSampler
+    pub fn preprocess(&mut self, scene: &Scene) {
+        // , sampler: &mut ZeroTwoSequenceSampler
         if self.strategy == LightStrategy::UniformSampleAll {
             // compute number of samples to use for each light
             for li in 0..scene.lights.len() {
@@ -4774,6 +4782,14 @@ impl DirectLightingIntegrator {
         self.preprocess(scene); // , &mut self.sampler
         let sample_bounds: Bounds2i = self.camera.film.get_sample_bounds();
         println!("sample_bounds = {:?}", sample_bounds);
+        let sample_extent: Vector2i = sample_bounds.diagonal();
+        println!("sample_extent = {:?}", sample_extent);
+        let tile_size: i32 = 16;
+        let x: i32 = (sample_extent.x + tile_size - 1) / tile_size;
+        let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
+        let n_tiles: Point2i = Point2i { x: x, y: y };
+        println!("n_tiles = {:?}", n_tiles);
+        // WORK
     }
 }
 
