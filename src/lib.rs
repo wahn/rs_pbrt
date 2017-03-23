@@ -1578,15 +1578,15 @@ pub struct Bounds2<T> {
 
 impl<T> Bounds2<T> {
     pub fn new(p1: Point2<T>, p2: Point2<T>) -> Self
-        where T: num::Float
+        where T: Copy + Ord
     {
         let p_min: Point2<T> = Point2::<T> {
-            x: p1.x.min(p2.x),
-            y: p1.y.min(p2.y),
+            x: std::cmp::min(p1.x, p2.x),
+            y: std::cmp::min(p1.y, p2.y),
         };
         let p_max: Point2<T> = Point2::<T> {
-            x: p1.x.max(p2.x),
-            y: p1.y.max(p2.y),
+            x: std::cmp::max(p1.x, p2.x),
+            y: std::cmp::max(p1.y, p2.y),
         };
         Bounds2::<T> {
             p_min: p_min,
@@ -4472,11 +4472,28 @@ pub struct BoxFilter {
 // see film.h
 
 #[derive(Debug,Default,Copy,Clone)]
-pub struct Pixel {
+struct Pixel {
     xyz: [Float; 3],
     filter_weight_sum: Float,
     splat_xyz: [AtomicFloat; 3],
     pad: Float,
+}
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct FilmTilePixel {
+    contrib_sum: Spectrum,
+    filter_weight_sum: Float,
+}
+
+#[derive(Debug,Default,Clone)]
+pub struct FilmTile {
+    pixel_bounds: Bounds2i,
+    filter_radius: Vector2f,
+    inv_filter_radius: Vector2f,
+    filter_table: Float,
+    filter_table_size: usize,
+    pixels: Vec<FilmTilePixel>,
+    maxSampleLuminance: Float,
 }
 
 #[derive(Debug,Default,Clone)]
@@ -4538,7 +4555,7 @@ impl Film {
             x: self.cropped_pixel_bounds.p_max.x as Float,
             y: self.cropped_pixel_bounds.p_max.y as Float,
         } - Vector2f { x: 0.5, y: 0.5 } + self.filter.radius);
-        let float_bounds: Bounds2f = Bounds2f::new(f, c);
+        let float_bounds: Bounds2f = Bounds2f { p_min: f, p_max: c, };
         Bounds2i {
             p_min: Point2i {
                 x: float_bounds.p_min.x as i32,
@@ -4549,6 +4566,10 @@ impl Film {
                 y: float_bounds.p_max.y as i32,
             },
         }
+    }
+    pub fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile {
+        // WORK
+        FilmTile::default()
     }
 }
 
@@ -4792,6 +4813,8 @@ impl DirectLightingIntegrator {
         let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
         let n_tiles: Point2i = Point2i { x: x, y: y };
         println!("n_tiles = {:?}", n_tiles);
+        // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
+        println!("Rendering");
         // TMP
         // tx = transmitter/sender
         // rx = receiver
@@ -4811,7 +4834,32 @@ impl DirectLightingIntegrator {
             println!("({}, {})", x, y);
         }
         // TMP
-        // WORK
+        {
+            // no parallelism
+            for y in 0..n_tiles.y {
+                for x in 0..n_tiles.x {
+                    let tile: Point2i = Point2i { x: x, y: y, };
+                    // TODO: should be done multi-threaded !!!
+                    println!("{:?}", tile);
+                    let seed: i32 = tile.y * n_tiles.x + tile.x;
+                    println!("seed = {:?}", seed);
+                    let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
+                    let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
+                    let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
+                    let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
+                    let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0, },
+                                                              Point2i { x: x1, y: y1, });
+                    println!("Starting image tile {:?}", tile_bounds);
+                    // std::unique_ptr<FilmTile> filmTile =
+                    //     camera->film->GetFilmTile(tileBounds);
+                    let film_tile = self.camera.film.get_film_tile(tile_bounds);
+                    // WORK
+                }
+            }
+            // TODO: reporter.Done();
+        }
+        println!("Rendering finished");
+        // TODO: camera->film->WriteImage();
     }
 }
 
