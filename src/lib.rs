@@ -660,13 +660,16 @@
 //! ```
 
 extern crate num;
+extern crate num_cpus;
 
 use std::cmp::PartialEq;
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
+use std::thread;
+use std::sync::mpsc;
 
 pub type Float = f64;
 
@@ -4789,6 +4792,25 @@ impl DirectLightingIntegrator {
         let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
         let n_tiles: Point2i = Point2i { x: x, y: y };
         println!("n_tiles = {:?}", n_tiles);
+        // TMP
+        // tx = transmitter/sender
+        // rx = receiver
+        let (tx, rx) = mpsc::channel();
+        let num_cores: usize = num_cpus::get();
+        for i in 0..num_cores {
+            let tx = tx.clone();
+            thread::spawn(move || {
+                let x = i;
+                let y = i * i;
+                let answer = (x, y);
+                tx.send(answer).unwrap();
+            });
+        }
+        for _ in 0..num_cores {
+            let (x, y) = rx.recv().unwrap();
+            println!("({}, {})", x, y);
+        }
+        // TMP
         // WORK
     }
 }
