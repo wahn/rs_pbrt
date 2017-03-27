@@ -1600,6 +1600,20 @@ impl<T> Bounds2<T> {
     }
 }
 
+/// The intersection of two bounding boxes can be found by computing
+/// the maximum of their two respective minimum coordinates and the
+/// minimum of their maximum coordinates.
+pub fn bnd2_intersect_bnd2<T>(b1: Bounds2<T>, b2: Bounds2<T>) -> Bounds2<T>
+    where T: Copy + Ord
+{
+    Bounds2::<T> {
+        p_min: Point2::<T> { x: std::cmp::max(b1.p_min.x, b2.p_min.x),
+                             y: std::cmp::max(b1.p_min.y, b2.p_min.y), },
+        p_max: Point2::<T> { x: std::cmp::min(b1.p_max.x, b2.p_max.x),
+                             y: std::cmp::min(b1.p_max.y, b2.p_max.y), },
+    }
+}
+
 #[derive(Debug,Copy,Clone)]
 pub struct Bounds3<T> {
     pub p_min: Point3<T>,
@@ -4471,6 +4485,8 @@ pub struct BoxFilter {
 
 // see film.h
 
+static FILTER_TABLE_WIDTH: usize = 16;
+
 #[derive(Debug,Default,Copy,Clone)]
 struct Pixel {
     xyz: [Float; 3],
@@ -4493,7 +4509,28 @@ pub struct FilmTile {
     filter_table: Float,
     filter_table_size: usize,
     pixels: Vec<FilmTilePixel>,
-    maxSampleLuminance: Float,
+    max_sample_luminance: Float,
+}
+
+impl FilmTile {
+    pub fn new(pixel_bounds: Bounds2i,
+               filter_radius: Vector2f,
+               filter_table: Float,
+               filter_table_size: usize,
+               max_sample_luminance: Float)
+               -> Self {
+        FilmTile {
+            pixel_bounds: pixel_bounds,
+            filter_radius: filter_radius,
+            inv_filter_radius: Vector2f { x: 1.0 / filter_radius.x,
+                                          y: 1.0 / filter_radius.y, },
+            filter_table: filter_table,
+            filter_table_size: filter_table_size,
+            // TODO: pixels = std::vector<FilmTilePixel>(std::max(0, pixelBounds.Area()));
+            pixels: Vec::new(),
+            max_sample_luminance: max_sample_luminance,
+        }
+    }
 }
 
 #[derive(Debug,Default,Clone)]
@@ -4555,7 +4592,10 @@ impl Film {
             x: self.cropped_pixel_bounds.p_max.x as Float,
             y: self.cropped_pixel_bounds.p_max.y as Float,
         } - Vector2f { x: 0.5, y: 0.5 } + self.filter.radius);
-        let float_bounds: Bounds2f = Bounds2f { p_min: f, p_max: c, };
+        let float_bounds: Bounds2f = Bounds2f {
+            p_min: f,
+            p_max: c,
+        };
         Bounds2i {
             p_min: Point2i {
                 x: float_bounds.p_min.x as i32,
@@ -4568,8 +4608,37 @@ impl Film {
         }
     }
     pub fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile {
-        // WORK
+        // bound image pixels that samples in _sample_bounds_ contribute to
+        let half_pixel: Vector2f = Vector2f { x: 0.5, y: 0.5 };
+        let float_bounds: Bounds2f = Bounds2f {
+            p_min: Point2f {
+                x: sample_bounds.p_min.x as Float,
+                y: sample_bounds.p_min.y as Float,
+            },
+            p_max: Point2f {
+                x: sample_bounds.p_max.x as Float,
+                y: sample_bounds.p_max.y as Float,
+            },
+        };
+        let p_min: Point2f = float_bounds.p_min - half_pixel - self.filter.radius;
+        let p0: Point2i = Point2i {
+            x: p_min.x.ceil() as i32,
+            y: p_min.y.ceil() as i32,
+        };
+        let p_max: Point2f = float_bounds.p_max - half_pixel + self.filter.radius;
+        let p1: Point2i = Point2i {
+            x: p_max.x.floor() as i32,
+            y: p_max.x.floor() as i32,
+        } + Point2i { x: 1, y: 1 };
+        let tile_pixel_bounds: Bounds2i = bnd2_intersect_bnd2(Bounds2i {
+                                                                  p_min: p0,
+                                                                  p_max: p1,
+                                                              },
+                                                              self.cropped_pixel_bounds);
         FilmTile::default()
+        // FilmTile::new(tile_pixel_bounds, self.filter.radius, filter_table, filter_table_size,
+        //     pixels: Vec<FilmTilePixel>,
+        //     maxSampleLuminance: Float,
     }
 }
 
