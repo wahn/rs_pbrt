@@ -1558,6 +1558,42 @@ impl<T> Bounds2<T> {
     }
 }
 
+pub struct Bounds2Iterator<'a> {
+    p: Point2i,
+    bounds: &'a Bounds2i,
+}
+
+impl<'a> Iterator for Bounds2Iterator<'a> {
+    type Item = Point2i;
+
+    fn next(&mut self) -> Option<Point2i> {
+        self.p.x += 1;
+        if self.p.x == self.bounds.p_max.x {
+            self.p.x = self.bounds.p_min.x;
+            self.p.y += 1;
+        }
+        if self.p.y == self.bounds.p_max.y {
+            None
+        } else {
+            Some(self.p)
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a Bounds2i {
+    type Item = Point2i;
+    type IntoIter = Bounds2Iterator<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Bounds2Iterator {
+            // need to start 1 before p_min.x as next() will be called
+            // to get the first element
+            p: Point2i { x: self.p_min.x - 1, y: self.p_min.y },
+            bounds: self,
+        }
+    }
+}
+
 /// The intersection of two bounding boxes can be found by computing
 /// the maximum of their two respective minimum coordinates and the
 /// minimum of their maximum coordinates.
@@ -4869,19 +4905,17 @@ impl DirectLightingIntegrator {
                 for x in 0..n_tiles.x {
                     let tile: Point2i = Point2i { x: x, y: y, };
                     // TODO: should be done multi-threaded !!!
-                    println!("{:?}", tile);
                     let seed: i32 = tile.y * n_tiles.x + tile.x;
-                    println!("seed = {:?}", seed);
+                    let tile_sampler = self.sampler.clone();
                     let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                     let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                     let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
                     let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
                     let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0, },
                                                               Point2i { x: x1, y: y1, });
-                    println!("Starting image tile {:?}", tile_bounds);
-                    // std::unique_ptr<FilmTile> filmTile =
-                    //     camera->film->GetFilmTile(tileBounds);
                     let film_tile = self.camera.film.get_film_tile(tile_bounds);
+                    for p in &tile_bounds {
+                    }
                     // WORK
                 }
             }
