@@ -571,35 +571,6 @@
 //! image. When the main rendering loop exits, the **Film** writes the
 //! final image to file.
 //!
-//! ```rust
-//! extern crate pbrt;
-//!
-//! use pbrt::{Bounds2f, BoxFilter, Film, Point2f, Point2i, Vector2f};
-//! use std::string::String;
-//!
-//! fn main() {
-//!     // see film.cpp CreateFilm()
-//!     let film: Film = Film::new(Point2i { x: 1280, y: 720 },
-//!                                Bounds2f {
-//!                                    p_min: Point2f { x: 0.0, y: 0.0 },
-//!                                    p_max: Point2f { x: 1.0, y: 1.0 },
-//!                                },
-//!                                BoxFilter {
-//!                                    radius: Vector2f { x: 0.5, y: 0.5 },
-//!                                    inv_radius: Vector2f {
-//!                                        x: 1.0 / 0.5,
-//!                                        y: 1.0 / 0.5,
-//!                                    },
-//!                                },
-//!                                35.0,
-//!                                String::from("pbrt.exr"),
-//!                                1.0,
-//!                                std::f64::INFINITY);
-//!
-//!     println!("film = {:?}", film);
-//! }
-//! ```
-//!
 //! ## Light Sources
 //!
 //! ### Point Lights
@@ -645,19 +616,6 @@
 //! point being shaded - and ignores indirect illumination from
 //! objects that are not themselfes emissive, except for basic
 //! specular reflection and transmission effects.
-//!
-//! ```rust
-//! extern crate pbrt;
-//!
-//! use pbrt::DirectLightingIntegrator;
-//!
-//! fn main() {
-//!     // see directlighting.cpp CreateDirectLightingIntegrator()
-//!     let integrator = DirectLightingIntegrator::default();
-//!
-//!     println!("integrator = {:?}", integrator);
-//! }
-//! ```
 
 extern crate num;
 extern crate num_cpus;
@@ -4483,9 +4441,15 @@ pub struct BoxFilter {
     pub inv_radius: Vector2f,
 }
 
+impl BoxFilter {
+    pub fn evaluate(&self, p: Point2f) -> Float {
+        1.0
+    }
+}
+
 // see film.h
 
-static FILTER_TABLE_WIDTH: usize = 16;
+const FILTER_TABLE_WIDTH: usize = 16;
 
 #[derive(Debug,Default,Copy,Clone)]
 struct Pixel {
@@ -4501,21 +4465,20 @@ pub struct FilmTilePixel {
     filter_weight_sum: Float,
 }
 
-#[derive(Debug,Default,Clone)]
-pub struct FilmTile {
+pub struct FilmTile<'a> {
     pixel_bounds: Bounds2i,
     filter_radius: Vector2f,
     inv_filter_radius: Vector2f,
-    filter_table: Float,
+    filter_table: &'a[Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
     filter_table_size: usize,
     pixels: Vec<FilmTilePixel>,
     max_sample_luminance: Float,
 }
 
-impl FilmTile {
+impl<'a> FilmTile<'a> {
     pub fn new(pixel_bounds: Bounds2i,
                filter_radius: Vector2f,
-               filter_table: Float,
+               filter_table: &'a[Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
                filter_table_size: usize,
                max_sample_luminance: Float)
                -> Self {
@@ -4533,7 +4496,6 @@ impl FilmTile {
     }
 }
 
-#[derive(Debug,Default,Clone)]
 pub struct Film {
     // Film Public Data
     /// The overall resolution of the image in pixels
@@ -4548,6 +4510,7 @@ pub struct Film {
     pub cropped_pixel_bounds: Bounds2i,
 
     // Film Private Data
+    filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
     scale: Float,
     max_sample_luminance: Float,
 }
@@ -4572,13 +4535,27 @@ impl Film {
             },
         };
         // TODO: allocate film image storage
-        // TODO: precompute filter weight table
+        // precompute filter weight table
+        let mut filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH] =
+            [0.0; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH];
+        let mut offset: usize = 0;
+        for y in 0..FILTER_TABLE_WIDTH {
+            for x in 0..FILTER_TABLE_WIDTH {
+                let p: Point2f = Point2f {
+                    x: (x as Float + 0.5) * filt.radius.x / FILTER_TABLE_WIDTH as Float,
+                    y: (y as Float + 0.5) * filt.radius.y / FILTER_TABLE_WIDTH as Float,
+                };
+                filter_table[offset] = filt.evaluate(p);
+                offset += 1;
+            }
+        }
         Film {
             full_resolution: resolution,
             diagonal: diagonal * 0.001,
             filter: filt,
             filename: filename,
             cropped_pixel_bounds: cropped_pixel_bounds,
+            filter_table: filter_table,
             scale: scale,
             max_sample_luminance: max_sample_luminance,
         }
@@ -4635,16 +4612,16 @@ impl Film {
                                                                   p_max: p1,
                                                               },
                                                               self.cropped_pixel_bounds);
-        FilmTile::default()
-        // FilmTile::new(tile_pixel_bounds, self.filter.radius, filter_table, filter_table_size,
-        //     pixels: Vec<FilmTilePixel>,
-        //     maxSampleLuminance: Float,
+        FilmTile::new(tile_pixel_bounds,
+                      self.filter.radius,
+                      &self.filter_table,
+                      FILTER_TABLE_WIDTH,
+                      self.max_sample_luminance)
     }
 }
 
 // see perspective.h
 
-#[derive(Debug,Default,Clone)]
 pub struct PerspectiveCamera {
     // inherited from Camera (see camera.h)
     pub camera_to_world: AnimatedTransform,
@@ -4808,7 +4785,6 @@ pub enum LightStrategy {
     UniformSampleOne,
 }
 
-#[derive(Debug,Clone)]
 pub struct DirectLightingIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     camera: PerspectiveCamera, // std::shared_ptr<const Camera> camera;
@@ -4819,22 +4795,6 @@ pub struct DirectLightingIntegrator {
     strategy: LightStrategy,
     max_depth: i64,
     n_light_samples: Vec<i32>,
-}
-
-impl Default for DirectLightingIntegrator {
-    fn default() -> DirectLightingIntegrator {
-        DirectLightingIntegrator {
-            camera: PerspectiveCamera::default(),
-            pixel_bounds: Bounds2i {
-                p_min: Point2i { x: 0, y: 0 },
-                p_max: Point2i { x: 1280, y: 720 },
-            },
-            sampler: ZeroTwoSequenceSampler::default(),
-            strategy: LightStrategy::UniformSampleAll,
-            max_depth: 5,
-            n_light_samples: Vec::new(),
-        }
-    }
 }
 
 impl DirectLightingIntegrator {

@@ -305,10 +305,6 @@ fn main() {
     // pixels = std::unique_ptr<pbrt::Film::Pixel> ...
     // scale = 1
     // maxSampleLuminance = inf
-    println!("########");
-    println!("# film #");
-    println!("########");
-    println!("film = {:?}", film);
     // pbrt::MakeCamera
     let pos = Point3f {
         x: 2.0,
@@ -361,10 +357,6 @@ fn main() {
                                                                        fov,
                                                                        film /* ,
                                                                              * medium */);
-    println!("##########");
-    println!("# camera #");
-    println!("##########");
-    println!("perspective_camera = {:?}", perspective_camera);
     // pbrt::MakeSampler
     let sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
         samples_per_pixel: 1,
@@ -382,10 +374,6 @@ fn main() {
                                       perspective_camera,
                                       sampler,
                                       pixel_bounds);
-    println!("##############");
-    println!("# integrator #");
-    println!("##############");
-    println!("integrator = {:?}", integrator);
     // TMP: process SceneDescription before handing primitives to BVHAccel
     let mut render_options: RenderOptions = RenderOptions::new(&scene_description);
     // add triangles created above (not meshes)

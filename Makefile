@@ -21,11 +21,9 @@ release:
 examples: release
 	./target/release/examples/api_make_camera
 	./target/release/examples/api_pbrt_world_end
-	./target/release/examples/cameras_create_perspective_camera
 	./target/release/examples/core_next_float_down
 	./target/release/examples/core_next_float_up
 	./target/release/examples/core_quadratic
-	./target/release/examples/film_create_film
 	./target/release/examples/filters_create_box_filter
 	./target/release/examples/geometry_bounds2_unit_cube
 	./target/release/examples/geometry_bounds3_unit_cube
@@ -37,7 +35,6 @@ examples: release
 	./target/release/examples/geometry_ray_creation
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
-	./target/release/examples/integrators_create_direct_lighting_integrator
 	./target/release/examples/pbrt
 	./target/release/examples/lights_distant_light_new
 	./target/release/examples/pbrt_spheres_differentials_texfilt
