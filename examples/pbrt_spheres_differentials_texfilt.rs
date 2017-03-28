@@ -2,8 +2,8 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLightingIntegrator,
            DistantLight, Film, Float, LightStrategy, PerspectiveCamera, Point2f, Point2i, Point3f,
-           Primitive, Scene, Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh,
-           Vector2f, Vector3f, ZeroTwoSequenceSampler};
+           Primitive, Rng, Scene, Spectrum, Sphere, SplitMethod, Transform, Triangle,
+           TriangleMesh, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 use std::string::String;
 
 struct SceneDescription {
@@ -361,7 +361,14 @@ fn main() {
     let sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
         samples_per_pixel: 1,
         n_sampled_dimensions: 4,
+        samples_1d: Vec::new(),
+        samples_2d: Vec::new(),
+        current_1D_dimension: 0,
+        current_2D_dimension: 0,
+        rng: Rng::default(),
+        samples_1d_array_sizes: Vec::new(),
         samples_2d_array_sizes: Vec::new(),
+        samples_1d_array: Vec::new(),
         samples_2d_array: Vec::new(),
     };
     let pixel_bounds: Bounds2i = Bounds2i {
