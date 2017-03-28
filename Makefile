@@ -24,6 +24,7 @@ examples: release
 	./target/release/examples/core_next_float_down
 	./target/release/examples/core_next_float_up
 	./target/release/examples/core_quadratic
+	./target/release/examples/core_rng_set_sequence.rs
 	./target/release/examples/filters_create_box_filter
 	./target/release/examples/geometry_bounds2_unit_cube
 	./target/release/examples/geometry_bounds3_unit_cube

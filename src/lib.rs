@@ -4919,7 +4919,7 @@ impl DirectLightingIntegrator {
                     let tile: Point2i = Point2i { x: x, y: y, };
                     // TODO: should be done multi-threaded !!!
                     let seed: i32 = tile.y * n_tiles.x + tile.x;
-                    let tile_sampler = self.sampler.clone();
+                    let tile_sampler = self.sampler.clone(); // TODO: sampler->Clone(seed);
                     let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                     let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                     let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
@@ -4990,9 +4990,37 @@ pub struct RenderOptions {
 
 // see rng.h
 
+const PCG32_MULT: u64 = 0x5851f42d4c957f2d;
+const PCG32_DEFAULT_STATE: u64 = 0x853c49e6748fea9b;
+const PCG32_DEFAULT_STREAM: u64 = 0xda3e39cb94b95bdb;
+
 /// Random number generator
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Rng {
     state: u64,
     inc: u64,
+}
+
+impl Rng {
+    pub fn new() -> Self {
+        Rng {
+            state: PCG32_DEFAULT_STATE,
+            inc: PCG32_DEFAULT_STREAM,
+        }
+    }
+    pub fn set_sequence(&mut self, initseq: u64) {
+        self.state = 0_u64;
+        self.inc = (initseq << 1) | 1;
+        self.uniform_uint32();
+        self.state += PCG32_DEFAULT_STATE;
+        self.uniform_uint32();
+    }
+    pub fn uniform_uint32(&mut self) -> u32 {
+        let mut oldstate: u64 = self.state;
+        self.state = oldstate * PCG32_MULT + self.inc;
+        let xorshifted: u32 = ((oldstate >> 18 ^ oldstate) >> 27) as u32;
+        let rot: u32 = (oldstate >> 59) as u32;
+        // bitwise not in Rust is ! (not the ~ operator like in C)
+        (xorshifted >> rot) | (xorshifted << ((!rot + 1u32) & 31))
+    }
 }
