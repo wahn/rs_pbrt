@@ -4449,12 +4449,25 @@ impl<'a> Primitive for BVHAccel<'a> {
 pub struct ZeroTwoSequenceSampler {
     pub samples_per_pixel: i64,
     pub n_sampled_dimensions: i64,
+    // inherited from class PixelSampler (see sampler.h)
+    pub samples_1d: Vec<Float>, // TODO: not pub?
+    pub samples_2d: Vec<Point2f>, // TODO: not pub?
+    pub current_1D_dimension: i32, // TODO: not pub?
+    pub current_2D_dimension: i32, // TODO: not pub?
+    pub rng: Rng, // TODO: not pub?
     // inherited from class Sampler (see sampler.h)
+    pub samples_1d_array_sizes: Vec<i32>, // TODO: not pub?
     pub samples_2d_array_sizes: Vec<i32>, // TODO: not pub?
+    pub samples_1d_array: Vec<Float>, // TODO: not pub?
     pub samples_2d_array: Vec<Point2f>, // TODO: not pub?
 }
 
 impl ZeroTwoSequenceSampler {
+    pub fn start_pixel(&self, p: Point2i) {
+        // TODO: ProfilePhase _(Prof::StartPixel);
+        for sample in &self.samples_1d {
+        }
+    }
     pub fn round_count(&self, count: i32) -> i32 {
         let mut mut_count: i32 = count;
         round_up_pow2_32(&mut mut_count)
@@ -4915,8 +4928,8 @@ impl DirectLightingIntegrator {
                                                               Point2i { x: x1, y: y1, });
                     let film_tile = self.camera.film.get_film_tile(tile_bounds);
                     for p in &tile_bounds {
+                        // WORK
                     }
-                    // WORK
                 }
             }
             // TODO: reporter.Done();
@@ -4973,4 +4986,13 @@ pub struct RenderOptions {
     // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
     // TODO: std::vector<std::shared_ptr<Primitive>> *currentInstance = nullptr;
     have_scattering_media: bool, // false
+}
+
+// see rng.h
+
+/// Random number generator
+#[derive(Debug,Default,Copy,Clone)]
+pub struct Rng {
+    state: u64,
+    inc: u64,
 }
