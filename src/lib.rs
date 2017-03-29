@@ -4445,6 +4445,8 @@ impl<'a> Primitive for BVHAccel<'a> {
 
 // see sampling.h
 
+/// Randomly permute an array of *count* sample values, each of which
+/// has *n_dimensions* dimensions.
 pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) {
     for i in 0..count {
         let other: i32 = i + rng.uniform_uint32_bounded((count - i) as u32) as i32;
@@ -4531,6 +4533,9 @@ impl ZeroTwoSequenceSampler {
 
 // see lowdiscrepancy.h
 
+/// Takes a generator matrix *c*, a number of samples to generate *n*,
+/// and stores the corresponding samples in memory at the location
+/// pointed to by *p*.
 pub fn gray_code_sample(c: [u32; 32], n: u32, scramble: u32, p: &mut [Float]) {
     let mut v: u32 = scramble;
     for i in 0..n as usize {
@@ -4540,6 +4545,8 @@ pub fn gray_code_sample(c: [u32; 32], n: u32, scramble: u32, p: &mut [Float]) {
     }
 }
 
+/// Generates a number of scrambled 1D sample values using the Gray
+/// code-based sampling machinery.
 pub fn van_der_corput(n_samples_per_pixel_sample: i32,
                       n_pixel_samples: i32,
                       samples: &mut [Float],
