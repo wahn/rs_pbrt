@@ -4443,6 +4443,18 @@ impl<'a> Primitive for BVHAccel<'a> {
     }
 }
 
+// see sampling.h
+
+pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) {
+    for i in 0..count {
+        let other: i32 = i + rng.uniform_uint32_bounded((count - i) as u32) as i32;
+        for j in 0..n_dimensions {
+            samp.swap((n_dimensions * i + j) as usize,
+                      (n_dimensions * other + j) as usize);
+        }
+    }
+}
+
 // see zerotwosequence.h
 
 #[derive(Debug)]
@@ -4450,8 +4462,8 @@ pub struct ZeroTwoSequenceSampler {
     pub samples_per_pixel: i64,
     pub n_sampled_dimensions: i64,
     // inherited from class PixelSampler (see sampler.h)
-    pub samples_1d: Vec<Float>, // TODO: not pub?
-    pub samples_2d: Vec<Point2f>, // TODO: not pub?
+    pub samples_1d: Vec<Vec<Float>>, // TODO: not pub?
+    pub samples_2d: Vec<Vec<Point2f>>, // TODO: not pub?
     pub current_1D_dimension: i32, // TODO: not pub?
     pub current_2D_dimension: i32, // TODO: not pub?
     pub rng: Rng, // TODO: not pub?
@@ -4478,20 +4490,25 @@ impl Default for ZeroTwoSequenceSampler {
             samples_2d_array: Vec::new(),
         };
         for i in 0..lds.n_sampled_dimensions {
-            let mut additional_1d: Vec<Float> = vec![0.0; lds.samples_per_pixel as usize];
-            let mut additional_2d: Vec<Point2f> = vec![Point2f::default(); lds.samples_per_pixel as usize];
-            lds.samples_1d.append(&mut additional_1d);
-            lds.samples_2d.append(&mut additional_2d);
+            let additional_1d: Vec<Float> = vec![0.0; lds.samples_per_pixel as usize];
+            let additional_2d: Vec<Point2f> = vec![Point2f::default(); lds.samples_per_pixel as usize];
+            lds.samples_1d.push(additional_1d);
+            lds.samples_2d.push(additional_2d);
         }
         lds
     }
 }
 
 impl ZeroTwoSequenceSampler {
-    pub fn start_pixel(&self, p: Point2i) {
+    pub fn start_pixel(&mut self, p: Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
-        for sample in &self.samples_1d {
+        for samples in &mut self.samples_1d {
+            van_der_corput(1,
+                           self.samples_per_pixel as i32,
+                           samples, // self.samples_1d[i][0]
+                           &mut self.rng);
         }
+        // WORK
     }
     pub fn clone(&self, seed: i32) -> Self {
         let mut lds: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
@@ -4510,6 +4527,43 @@ impl ZeroTwoSequenceSampler {
         let mut additional_points: Vec<Point2f> = vec![Point2f::default(); size];
         self.samples_2d_array.append(&mut additional_points);
     }
+}
+
+// see lowdiscrepancy.h
+
+pub fn gray_code_sample(c: [u32; 32], n: u32, scramble: u32, p: &mut [Float]) {
+    let mut v: u32 = scramble;
+    for i in 0..n as usize {
+        // 1/2^32
+        p[i] = (v as Float * 2.3283064365386963e-10 as Float).min(ONE_MINUS_EPSILON);
+        v ^= c[(i + 1).trailing_zeros() as usize];
+    }
+}
+
+pub fn van_der_corput(n_samples_per_pixel_sample: i32,
+                      n_pixel_samples: i32,
+                      samples: &mut [Float],
+                      rng: &mut Rng) {
+    let scramble: u32 = rng.uniform_uint32();
+    /// println!("scramble = {:?}", scramble);
+    let c_van_der_corput: [u32; 32] = [0x80000000, 0x40000000, 0x20000000, 0x10000000, 0x8000000,
+                                       0x4000000, 0x2000000, 0x1000000, 0x800000, 0x400000,
+                                       0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000,
+                                       0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100,
+                                       0x80, 0x40, 0x20, 0x10, 0x8, 0x4, 0x2, 0x1];
+    let total_samples: i32 = n_samples_per_pixel_sample * n_pixel_samples;
+    gray_code_sample(c_van_der_corput, total_samples as u32, scramble, samples);
+    // randomly shuffle 1D sample points
+    for i in 0..n_pixel_samples as usize {
+        shuffle(&mut samples[(i * n_samples_per_pixel_sample as usize)..],
+                n_samples_per_pixel_sample,
+                1,
+                rng);
+    }
+    shuffle(&mut samples[..],
+            n_pixel_samples,
+            n_samples_per_pixel_sample,
+            rng);
 }
 
 // see box.h
@@ -4949,7 +5003,7 @@ impl DirectLightingIntegrator {
                     let tile: Point2i = Point2i { x: x, y: y, };
                     // TODO: should be done multi-threaded !!!
                     let seed: i32 = tile.y * n_tiles.x + tile.x;
-                    let tile_sampler = self.sampler.clone(seed);
+                    let mut tile_sampler = self.sampler.clone(seed);
                     let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                     let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                     let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
@@ -4957,7 +5011,8 @@ impl DirectLightingIntegrator {
                     let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0, },
                                                               Point2i { x: x1, y: y1, });
                     let film_tile = self.camera.film.get_film_tile(tile_bounds);
-                    for p in &tile_bounds {
+                    for pixel in &tile_bounds {
+                        tile_sampler.start_pixel(pixel);
                         // WORK
                     }
                 }
@@ -5020,9 +5075,10 @@ pub struct RenderOptions {
 
 // see rng.h
 
-const PCG32_MULT: u64 = 0x5851f42d4c957f2d;
+const ONE_MINUS_EPSILON: Float = 0.99999994;
 const PCG32_DEFAULT_STATE: u64 = 0x853c49e6748fea9b;
 const PCG32_DEFAULT_STREAM: u64 = 0xda3e39cb94b95bdb;
+const PCG32_MULT: u64 = 0x5851f42d4c957f2d;
 
 /// Random number generator
 #[derive(Debug,Default,Copy,Clone)]
@@ -5052,5 +5108,15 @@ impl Rng {
         let rot: u32 = (oldstate >> 59) as u32;
         // bitwise not in Rust is ! (not the ~ operator like in C)
         (xorshifted >> rot) | (xorshifted << ((!rot + 1u32) & 31))
+    }
+    pub fn uniform_uint32_bounded(&mut self, b: u32) -> u32 {
+        // bitwise not in Rust is ! (not the ~ operator like in C)
+        let threshold = (!b + 1) & b;
+        loop {
+            let r = self.uniform_uint32();
+            if r >= threshold {
+                return r % b;
+            }
+        }
     }
 }
