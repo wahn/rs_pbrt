@@ -1793,7 +1793,7 @@ pub struct Matrix4x4 {
 }
 
 impl Default for Matrix4x4 {
-    fn default() -> Matrix4x4 {
+    fn default() -> Self {
         Matrix4x4 {
             m: [[1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
@@ -1946,7 +1946,7 @@ pub struct Transform {
 }
 
 impl Default for Transform {
-    fn default() -> Transform {
+    fn default() -> Self {
         Transform {
             m: Matrix4x4::default(),
             m_inv: Matrix4x4::default(),
@@ -3311,7 +3311,7 @@ pub struct Quaternion {
 }
 
 impl Default for Quaternion {
-    fn default() -> Quaternion {
+    fn default() -> Self {
         Quaternion {
             v: Vector3f::default(),
             w: 1.0,
@@ -3512,7 +3512,7 @@ pub struct Sphere {
 }
 
 impl Default for Sphere {
-    fn default() -> Sphere {
+    fn default() -> Self {
         Sphere {
             // Shape
             object_to_world: Transform::default(),
@@ -4120,7 +4120,7 @@ pub struct BVHBuildNode {
 }
 
 impl Default for BVHBuildNode {
-    fn default() -> BVHBuildNode {
+    fn default() -> Self {
         BVHBuildNode {
             bounds: Bounds3f::default(),
             child1: BVHLink::Empty,
@@ -4156,7 +4156,7 @@ struct BucketInfo {
 }
 
 impl Default for BucketInfo {
-    fn default() -> BucketInfo {
+    fn default() -> Self {
         BucketInfo {
             count: 0_usize,
             bounds: Bounds3f::default(),
@@ -4445,7 +4445,7 @@ impl<'a> Primitive for BVHAccel<'a> {
 
 // see zerotwosequence.h
 
-#[derive(Debug,Default,Clone)]
+#[derive(Debug)]
 pub struct ZeroTwoSequenceSampler {
     pub samples_per_pixel: i64,
     pub n_sampled_dimensions: i64,
@@ -4462,11 +4462,41 @@ pub struct ZeroTwoSequenceSampler {
     pub samples_2d_array: Vec<Point2f>, // TODO: not pub?
 }
 
+impl Default for ZeroTwoSequenceSampler {
+    fn default() -> Self {
+        let mut lds: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
+            samples_per_pixel: 1_i64,
+            n_sampled_dimensions: 4_i64,
+            samples_1d: Vec::new(),
+            samples_2d: Vec::new(),
+            current_1D_dimension: 0_i32,
+            current_2D_dimension: 0_i32,
+            rng: Rng::default(),
+            samples_1d_array_sizes: Vec::new(),
+            samples_2d_array_sizes: Vec::new(),
+            samples_1d_array: Vec::new(),
+            samples_2d_array: Vec::new(),
+        };
+        for i in 0..lds.n_sampled_dimensions {
+            let mut additional_1d: Vec<Float> = vec![0.0; lds.samples_per_pixel as usize];
+            let mut additional_2d: Vec<Point2f> = vec![Point2f::default(); lds.samples_per_pixel as usize];
+            lds.samples_1d.append(&mut additional_1d);
+            lds.samples_2d.append(&mut additional_2d);
+        }
+        lds
+    }
+}
+
 impl ZeroTwoSequenceSampler {
     pub fn start_pixel(&self, p: Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         for sample in &self.samples_1d {
         }
+    }
+    pub fn clone(&self, seed: i32) -> Self {
+        let mut lds: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
+        lds.rng.set_sequence(seed as u64);
+        lds
     }
     pub fn round_count(&self, count: i32) -> i32 {
         let mut mut_count: i32 = count;
@@ -4919,7 +4949,7 @@ impl DirectLightingIntegrator {
                     let tile: Point2i = Point2i { x: x, y: y, };
                     // TODO: should be done multi-threaded !!!
                     let seed: i32 = tile.y * n_tiles.x + tile.x;
-                    let tile_sampler = self.sampler.clone(); // TODO: sampler->Clone(seed);
+                    let tile_sampler = self.sampler.clone(seed);
                     let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                     let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                     let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
