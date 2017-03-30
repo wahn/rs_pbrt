@@ -1323,6 +1323,13 @@ pub fn pnt2_ceil<T>(p: Point2<T>) -> Point2<T>
     }
 }
 
+/// Is a 2D point inside a 2D bound?
+pub fn pnt2_inside_exclusive<T>(pt: Point2<T>, b: Bounds2<T>) -> bool
+    where T: PartialOrd
+{
+    pt.x >= b.p_min.x && pt.x < b.p_max.x && pt.y >= b.p_min.y && pt.y < b.p_max.y
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Point3<T> {
     pub x: T,
@@ -4466,8 +4473,8 @@ pub struct ZeroTwoSequenceSampler {
     // inherited from class PixelSampler (see sampler.h)
     pub samples_1d: Vec<Vec<Float>>, // TODO: not pub?
     pub samples_2d: Vec<Vec<Point2f>>, // TODO: not pub?
-    pub current_1D_dimension: i32, // TODO: not pub?
-    pub current_2D_dimension: i32, // TODO: not pub?
+    pub current_1d_dimension: i32, // TODO: not pub?
+    pub current_2d_dimension: i32, // TODO: not pub?
     pub rng: Rng, // TODO: not pub?
     // inherited from class Sampler (see sampler.h)
     pub current_pixel: Point2i, // TODO: not pub?
@@ -4487,8 +4494,8 @@ impl Default for ZeroTwoSequenceSampler {
             n_sampled_dimensions: 4_i64,
             samples_1d: Vec::new(),
             samples_2d: Vec::new(),
-            current_1D_dimension: 0_i32,
-            current_2D_dimension: 0_i32,
+            current_1d_dimension: 0_i32,
+            current_2d_dimension: 0_i32,
             rng: Rng::default(),
             current_pixel: Point2i::default(),
             current_pixel_sample_index: 0_i64,
@@ -4510,6 +4517,16 @@ impl Default for ZeroTwoSequenceSampler {
 }
 
 impl ZeroTwoSequenceSampler {
+    pub fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
+        let mut cs: CameraSample = CameraSample::default();
+        cs.p_film = Point2f {
+            x: p_raster.x as Float,
+            y: p_raster.y as Float,
+        } + self.get_2d();
+        cs.time = self.get_1d();
+        cs.p_lens = self.get_2d();
+        cs
+    }
     pub fn start_pixel(&mut self, p: Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         // generate 1D and 2D pixel sample components using $(0,2)$-sequence
@@ -4555,6 +4572,52 @@ impl ZeroTwoSequenceSampler {
     pub fn round_count(&self, count: i32) -> i32 {
         let mut mut_count: i32 = count;
         round_up_pow2_32(&mut mut_count)
+    }
+    // PixelSampler public methods
+    pub fn start_next_sample(&mut self) -> bool {
+        self.current_1d_dimension = 0_i32;
+        self.current_2d_dimension = 0_i32;
+        // Sampler::StartNextSample()
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
+        self.current_pixel_sample_index += 1_i64;
+        self.current_pixel_sample_index < self.samples_per_pixel
+    }
+    pub fn get_1d(&mut self) -> Float {
+        // TODO: ProfilePhase _(Prof::GetSample);
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
+                "current_pixel_sample_index = {}, samples_per_pixel = {}",
+                self.current_pixel_sample_index,
+                self.samples_per_pixel);
+        if self.current_1d_dimension < self.samples_1d.len() as i32 {
+            let sample: Float = self.samples_1d[self.current_2d_dimension
+                                                as usize][self.current_pixel_sample_index
+                                                          as usize];
+            self.current_1d_dimension += 1;
+            sample
+        } else {
+            self.rng.uniform_float()
+        }
+    }
+    pub fn get_2d(&mut self) -> Point2f {
+        // TODO: ProfilePhase _(Prof::GetSample);
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
+                "current_pixel_sample_index = {}, samples_per_pixel = {}",
+                self.current_pixel_sample_index,
+                self.samples_per_pixel);
+        if self.current_2d_dimension < self.samples_2d.len() as i32 {
+            let sample: Point2f = self.samples_2d[self.current_2d_dimension
+                                                  as usize][self.current_pixel_sample_index
+                                                            as usize];
+            self.current_2d_dimension += 1;
+            sample
+        } else {
+            Point2f {
+                x: self.rng.uniform_float(),
+                y: self.rng.uniform_float(),
+            }
+        }
     }
     // sampler Interface
     pub fn request_2d_array(&mut self, n: i32) {
@@ -4873,6 +4936,15 @@ impl Film {
     }
 }
 
+// see camera.h
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct CameraSample {
+    pub p_film: Point2f,
+    pub p_lens: Point2f,
+    pub time: Float,
+}
+
 // see perspective.h
 
 pub struct PerspectiveCamera {
@@ -5133,6 +5205,15 @@ impl DirectLightingIntegrator {
                     let film_tile = self.camera.film.get_film_tile(tile_bounds);
                     for pixel in &tile_bounds {
                         tile_sampler.start_pixel(pixel);
+                        if pnt2_inside_exclusive(pixel, self.pixel_bounds) {
+                            continue;
+                        }
+                        let mut done: bool = false;
+                        while !done {
+                            let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
+                            // WORK
+                            done = tile_sampler.start_next_sample();
+                        }
                         // WORK
                     }
                 }
@@ -5238,5 +5319,8 @@ impl Rng {
                 return r % b;
             }
         }
+    }
+    pub fn uniform_float(&mut self) -> Float {
+        (self.uniform_uint32() as Float * 2.3283064365386963e-10 as Float).min(ONE_MINUS_EPSILON)
     }
 }
