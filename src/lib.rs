@@ -127,11 +127,22 @@
 //!         d: direction,
 //!         t_max: std::f64::INFINITY,
 //!         time: 0.0,
+//!         differential: None,
 //!     };
 //!
 //!     println!("{:?}", ray);
 //! }
 //! ```
+//!
+//! ### RayDifferentials
+//!
+//! **RayDifferential** is a subclass of **Ray** that contains
+//! additional information about two auxiliary rays. These extra rays
+//! represent camera rays offset by one sample in the *x* and *y*
+//! direction from the main ray on the film plane. By determining the
+//! area that these three rays project to on an object being shaded,
+//! the **Texture** can estimate an area to average over for proper
+//! antialiasing.
 //!
 //! ## Bounding Boxes
 //!
@@ -1783,6 +1794,8 @@ pub struct Ray {
     pub t_max: Float,
     /// used for animations
     pub time: Float,
+    /// in C++: 'class RayDifferential : public Ray'
+    pub differential: Option<RayDifferential>,
 }
 
 impl Ray {
@@ -1790,6 +1803,14 @@ impl Ray {
     fn position(&self, t: Float) -> Point3f {
         self.o + self.d * t
     }
+}
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct RayDifferential {
+    pub rx_origin: Point3f,
+    pub ry_origin: Point3f,
+    pub rx_direction: Vector3f,
+    pub ry_direction: Vector3f,
 }
 
 // see transform.h
@@ -2445,6 +2466,7 @@ impl Transform {
             d: d,
             t_max: r.t_max,
             time: 0.0,
+            differential: None,
         }
     }
 }
@@ -5048,6 +5070,40 @@ impl PerspectiveCamera {
             dy_camera: dy_camera,
             a: a,
         }
+    }
+    pub fn generate_ray_differential(&self,
+                                     sample: &CameraSample,
+                                     ray: &mut Ray)
+                                     -> Float {
+        // TODO: ProfilePhase prof(Prof::GenerateCameraRay);
+        // compute raster and camera sample positions
+        let p_film: Point3f = Point3f {
+            x: sample.p_film.x,
+            y: sample.p_film.y,
+            z: 0.0,
+        };
+        let p_camera: Point3f = self.raster_to_camera.transform_point(p_film);
+        let dir: Vector3f = vec3_normalize(Vector3f { x: p_camera.x,
+                                                      y: p_camera.y,
+                                                      z: p_camera.z, });
+        // TODO: modify ray for depth of field
+        // TODO: if (lensRadius > 0) { ... } else {
+        let diff: RayDifferential = RayDifferential {
+            rx_origin: ray.o,
+            ry_origin: ray.o,
+            rx_direction: vec3_normalize(Vector3f { x: p_camera.x,
+                                                    y: p_camera.y,
+                                                    z: p_camera.z, } + self.dx_camera),
+            ry_direction: vec3_normalize(Vector3f { x: p_camera.x,
+                                                    y: p_camera.y,
+                                                    z: p_camera.z, } + self.dy_camera),
+        };
+        // TODO: ray.time = lerp(sample.time, self.shutter_open, self.shutter_close);
+        // TODO: ray->medium = medium;
+        // TODO: *ray = CameraToWorld(*ray);
+        // ray->hasDifferentials = true;
+        ray.differential = Some(diff);
+        1.0
     }
 }
 

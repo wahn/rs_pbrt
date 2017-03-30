@@ -23,6 +23,7 @@ fn main() {
         d: d,
         t_max: std::f64::INFINITY,
         time: 0.0,
+        differential: None,
     };
     let mut o_error: Vector3f = Vector3f::default();
     let mut d_error: Vector3f = Vector3f::default();

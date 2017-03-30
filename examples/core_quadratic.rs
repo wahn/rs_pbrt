@@ -18,6 +18,7 @@ fn main() {
         },
         t_max: std::f64::INFINITY,
         time: 0.0,
+        differential: None,
     };
     let ox = ray.o.x;
     let oy = ray.o.y;
@@ -64,6 +65,7 @@ fn main() {
         },
         t_max: std::f64::INFINITY,
         time: 0.0,
+        differential: None,
     };
     let ox = ray.o.x;
     let oy = ray.o.y;

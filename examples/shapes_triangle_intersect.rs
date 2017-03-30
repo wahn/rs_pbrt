@@ -75,6 +75,7 @@ fn main() {
         d: d,
         t_max: std::f64::INFINITY,
         time: 0.0,
+        differential: None,
     };
     let mut t_hit: Float = 0.0;
     let mut isect: SurfaceInteraction = SurfaceInteraction::default();
@@ -95,6 +96,7 @@ fn main() {
         d: d,
         t_max: std::f64::INFINITY,
         time: 0.0,
+        differential: None,
     };
     let mut t_hit: Float = 0.0;
     let did_ray_interesect: bool = triangle.intersect(&r, &mut t_hit, &mut isect); // Primitive

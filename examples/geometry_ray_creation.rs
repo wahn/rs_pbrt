@@ -18,6 +18,7 @@ fn main() {
         d: direction,
         t_max: std::f64::INFINITY,
         time: 0.0,
+        differential: None,
     };
 
     println!("{:?}", ray);
