@@ -366,10 +366,14 @@ fn main() {
         current_1D_dimension: 0,
         current_2D_dimension: 0,
         rng: Rng::default(),
+        current_pixel: Point2i::default(),
+        current_pixel_sample_index: 0_i64,
         samples_1d_array_sizes: Vec::new(),
         samples_2d_array_sizes: Vec::new(),
         samples_1d_array: Vec::new(),
         samples_2d_array: Vec::new(),
+        array_1d_offset: 0_usize,
+        array_2d_offset: 0_usize,
     };
     let pixel_bounds: Bounds2i = Bounds2i {
         p_min: Point2i { x: 0, y: 0 },
