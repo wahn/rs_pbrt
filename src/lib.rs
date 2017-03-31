@@ -685,6 +685,14 @@ impl<'a> Scene<'a> {
     pub fn world_bound(&self) -> &Bounds3f {
         &self.world_bound
     }
+    fn intersect(&self,
+                 ray: &Ray,
+                 isect: &mut SurfaceInteraction)
+                 -> bool {
+        // TODO: ++nIntersectionTests;
+        assert_ne!(ray.d, Vector3f { x: 0.0, y: 0.0, z: 0.0, });
+        self.aggregate.intersect(ray, isect)
+    }
 }
 
 // see pbrt.h
@@ -1039,7 +1047,7 @@ pub fn vec2_dot<T>(v1: Vector2<T>, v2: Vector2<T>) -> T
     v1.x * v2.x + v1.y * v2.y
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug,Default,Copy,Clone,PartialEq)]
 pub struct Vector3<T> {
     pub x: T,
     pub y: T,
@@ -4271,6 +4279,13 @@ impl<'a> BVHAccel<'a> {
             Bounds3f::default()
         }
     }
+    fn intersect(&self,
+                 ray: &Ray,
+                 isect: &mut SurfaceInteraction)
+                 -> bool {
+        // WORK
+        false
+    }
     pub fn recursive_build(bvh: Arc<BVHAccel<'a>>,
                            // arena,
                            primitive_info: &mut Vec<BVHPrimitiveInfo>,
@@ -4467,21 +4482,6 @@ impl<'a> BVHAccel<'a> {
             nodes[my_offset] = linear_node;
         }
         my_offset
-    }
-}
-
-impl<'a> Primitive for BVHAccel<'a> {
-    fn world_bound(&self) -> Bounds3f {
-        // WORK
-        Bounds3f::default()
-    }
-    fn intersect(&self,
-                 r: &Ray,
-                 t_hit: &mut Float,
-                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                 -> bool {
-        // WORK
-        false
     }
 }
 
@@ -5315,8 +5315,15 @@ impl DirectLightingIntegrator {
 
 impl SamplerIntegrator for DirectLightingIntegrator {
     fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler, depth: i32) -> Spectrum {
+        // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
+        let mut l: Spectrum = Spectrum::new(0.0 as Float);
+        // find closest ray intersection or return background radiance
+        let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+        if !scene.intersect(ray, &mut isect) {
+            println!("return background radiance");
+        }
         // WORK
-        Spectrum::default()
+        l
     }
 }
 
