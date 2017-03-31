@@ -685,12 +685,13 @@ impl<'a> Scene<'a> {
     pub fn world_bound(&self) -> &Bounds3f {
         &self.world_bound
     }
-    fn intersect(&self,
+    pub fn intersect(&self,
                  ray: &Ray,
                  isect: &mut SurfaceInteraction)
                  -> bool {
         // TODO: ++nIntersectionTests;
         assert_ne!(ray.d, Vector3f { x: 0.0, y: 0.0, z: 0.0, });
+        println!("Scene::intersect()");
         self.aggregate.intersect(ray, isect)
     }
 }
@@ -1734,6 +1735,52 @@ impl<T> Bounds3<T> {
             *radius = pnt3_distance(center_copy, p_max);
         } else {
             *radius = 0.0;
+        }
+    }
+}
+
+impl Bounds3<Float> {
+    pub fn intersect_p(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: [u8; 3]) -> bool {
+        // check for ray intersection against $x$ and $y$ slabs
+        let mut t_min: Float = (self[dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
+        let mut t_max: Float = (self[1_u8 - dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
+        let mut ty_min: Float = (self[dir_is_neg[1]].y - ray.o.y) * inv_dir.y;
+        let mut ty_max: Float = (self[1_u8 - dir_is_neg[1]].y - ray.o.y) * inv_dir.y;
+        // update _t_max_ and _ty_max_ to ensure robust bounds intersection
+        t_max *= 1.0 + 2.0 * gamma(3_i32);
+        ty_max *= 1.0 + 2.0 * gamma(3_i32);
+        if t_min > ty_max || ty_min > t_max { return false; }
+        if ty_min > t_min {
+            t_min = ty_min;
+        }
+        if ty_max < t_max {
+            t_max = ty_max;
+        }
+        // check for ray intersection against $z$ slab
+        let mut tz_min: Float = (self[dir_is_neg[2]].z - ray.o.z) * inv_dir.z;
+        let mut tz_max: Float = (self[1_u8 - dir_is_neg[2]].z - ray.o.z) * inv_dir.z;
+        // update _tz_max_ to ensure robust bounds intersection
+        tz_max *= 1.0 + 2.0 * gamma(3_i32);
+        if t_min > tz_max || tz_min > t_max { return false; }
+        if tz_min > t_min {
+            t_min = tz_min;
+        }
+        if tz_max < t_max {
+            t_max = tz_max;
+        }
+        (t_min < ray.t_max) && (t_max > 0.0)
+    }
+}
+
+impl<T> Index<u8> for Bounds3<T>
+{
+    type Output = Point3<T>;
+
+    fn index(&self, i: u8) -> &Point3<T> {
+        match i {
+            0 => &self.p_min,
+            1 => &self.p_max,
+            _ => panic!("Invalid index!"),
         }
     }
 }
@@ -4279,10 +4326,29 @@ impl<'a> BVHAccel<'a> {
             Bounds3f::default()
         }
     }
-    fn intersect(&self,
+    pub fn intersect(&self,
                  ray: &Ray,
                  isect: &mut SurfaceInteraction)
-                 -> bool {
+                     -> bool {
+        if self.nodes.len() == 0 { return false; }
+        // TODO: ProfilePhase p(Prof::AccelIntersect);
+        let hit: bool = false;
+        let inv_dir: Vector3f = Vector3f { x: 1.0 / ray.d.x,
+                                           y: 1.0 / ray.d.y,
+                                           z: 1.0 / ray.d.z, };
+        let dir_is_neg: [u8; 3] = [ (inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8 ];
+        println!("dir_is_neg = {:?}", dir_is_neg);
+        // follow ray through BVH nodes to find primitive intersections
+        let to_visit_offset: u32 = 0;
+        let current_node_index: u32 = 0;
+        let nodes_to_visit: [u32; 64];
+        // TODO: while (true) {
+        for i in 0..10 {
+            let node: LinearBVHNode = self.nodes[current_node_index as usize];
+            println!("node = {:?}", node);
+            // check ray against BVH node
+            println!("intersects? {}", node.bounds.intersect_p(ray, &inv_dir, dir_is_neg));
+        }
         // WORK
         false
     }
@@ -5099,6 +5165,11 @@ impl PerspectiveCamera {
         let dir: Vector3f = vec3_normalize(Vector3f { x: p_camera.x,
                                                       y: p_camera.y,
                                                       z: p_camera.z, });
+        // *ray = RayDifferential(Point3f(0, 0, 0), dir);
+        ray.o = Point3f::default();
+        ray.d = dir;
+        ray.t_max = std::f64::INFINITY;
+        ray.time = 0.0;
         // TODO: modify ray for depth of field
         // TODO: if (lensRadius > 0) { ... } else {
         let diff: RayDifferential = RayDifferential {
@@ -5281,7 +5352,7 @@ impl DirectLightingIntegrator {
                     let film_tile = self.camera.film.get_film_tile(tile_bounds);
                     for pixel in &tile_bounds {
                         tile_sampler.start_pixel(pixel);
-                        if pnt2_inside_exclusive(pixel, self.pixel_bounds) {
+                        if !pnt2_inside_exclusive(pixel, self.pixel_bounds) {
                             continue;
                         }
                         let mut done: bool = false;
@@ -5292,6 +5363,8 @@ impl DirectLightingIntegrator {
                             let mut ray: Ray = Ray::default();
                             let mut ray_weight: Float = self.camera.generate_ray_differential(&camera_sample,
                                                                                               &mut ray);
+                            println!("ray_weight = {}", ray_weight);
+                            println!("ray = {:?}", ray);
                             ray.scale_differentials(1.0 as Float / tile_sampler.samples_per_pixel as Float);
                             // TODO: ++nCameraRays;
                             // evaluate radiance along camera ray
