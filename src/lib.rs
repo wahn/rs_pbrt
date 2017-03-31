@@ -640,7 +640,7 @@ use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::thread;
 use std::sync::mpsc;
 
@@ -5171,6 +5171,13 @@ impl DistantLight {
     }
 }
 
+// see integrator.h
+
+pub trait SamplerIntegrator {
+    // TODO: use Sampler trait
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler, depth: i32) -> Spectrum;
+}
+
 // see directlighting.h
 
 #[derive(Debug,Clone,PartialEq)]
@@ -5279,10 +5286,19 @@ impl DirectLightingIntegrator {
                         }
                         let mut done: bool = false;
                         while !done {
+                            // initialize _CameraSample_ for current sample
                             let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
+                            // generate camera ray for current sample
                             let mut ray: Ray = Ray::default();
-                            self.camera.generate_ray_differential(&camera_sample, &mut ray);
+                            let mut ray_weight: Float = self.camera.generate_ray_differential(&camera_sample,
+                                                                                              &mut ray);
                             ray.scale_differentials(1.0 as Float / tile_sampler.samples_per_pixel as Float);
+                            // TODO: ++nCameraRays;
+                            // evaluate radiance along camera ray
+                            let mut l: Spectrum = Spectrum::new(0.0 as Float);
+                            if ray_weight > 0.0 {
+                                l = self.li(&mut ray, scene, &mut tile_sampler, 0_i32);
+                            }
                             // WORK
                             done = tile_sampler.start_next_sample();
                         }
@@ -5294,6 +5310,13 @@ impl DirectLightingIntegrator {
         }
         println!("Rendering finished");
         // TODO: camera->film->WriteImage();
+    }
+}
+
+impl SamplerIntegrator for DirectLightingIntegrator {
+    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler, depth: i32) -> Spectrum {
+        // WORK
+        Spectrum::default()
     }
 }
 
