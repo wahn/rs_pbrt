@@ -140,9 +140,13 @@
 //! additional information about two auxiliary rays. These extra rays
 //! represent camera rays offset by one sample in the *x* and *y*
 //! direction from the main ray on the film plane. By determining the
-//! area that these three rays project to on an object being shaded,
-//! the **Texture** can estimate an area to average over for proper
+//! area that these three rays project on an object being shaded, the
+//! **Texture** can estimate an area to average over for proper
 //! antialiasing.
+//!
+//! In Rust we don't have inheritance, therefore we use an
+//! **Option<RayDifferential>** in the **Ray** struct, which means the
+//! additional information can be present (or not).
 //!
 //! ## Bounding Boxes
 //!
@@ -1802,6 +1806,15 @@ impl Ray {
     // Point3f operator()(Float t) const { return o + d * t; }
     fn position(&self, t: Float) -> Point3f {
         self.o + self.d * t
+    }
+    // from class RayDifferential
+    pub fn scale_differentials(&mut self, s: Float) {
+        if let Some(d) = self.differential.iter_mut().next() {
+            d.rx_origin = self.o + (d.rx_origin - self.o) * s;
+            d.ry_origin = self.o + (d.ry_origin - self.o) * s;
+            d.rx_direction = self.d + (d.rx_direction - self.d) * s;
+            d.ry_direction = self.d + (d.ry_direction - self.d) * s;
+        }
     }
 }
 
@@ -5267,6 +5280,9 @@ impl DirectLightingIntegrator {
                         let mut done: bool = false;
                         while !done {
                             let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
+                            let mut ray: Ray = Ray::default();
+                            self.camera.generate_ray_differential(&camera_sample, &mut ray);
+                            ray.scale_differentials(1.0 as Float / tile_sampler.samples_per_pixel as Float);
                             // WORK
                             done = tile_sampler.start_next_sample();
                         }
