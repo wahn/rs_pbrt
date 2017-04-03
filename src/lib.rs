@@ -686,7 +686,7 @@ impl<'a> Scene<'a> {
         &self.world_bound
     }
     pub fn intersect(&self,
-                 ray: &Ray,
+                 ray: &mut Ray,
                  isect: &mut SurfaceInteraction)
                  -> bool {
         // TODO: ++nIntersectionTests;
@@ -4327,30 +4327,60 @@ impl<'a> BVHAccel<'a> {
         }
     }
     pub fn intersect(&self,
-                 ray: &Ray,
+                 ray: &mut Ray,
                  isect: &mut SurfaceInteraction)
                      -> bool {
         if self.nodes.len() == 0 { return false; }
         // TODO: ProfilePhase p(Prof::AccelIntersect);
-        let hit: bool = false;
+        let mut hit: bool = false;
         let inv_dir: Vector3f = Vector3f { x: 1.0 / ray.d.x,
                                            y: 1.0 / ray.d.y,
                                            z: 1.0 / ray.d.z, };
         let dir_is_neg: [u8; 3] = [ (inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8 ];
-        println!("dir_is_neg = {:?}", dir_is_neg);
         // follow ray through BVH nodes to find primitive intersections
-        let to_visit_offset: u32 = 0;
-        let current_node_index: u32 = 0;
-        let nodes_to_visit: [u32; 64];
-        // TODO: while (true) {
-        for i in 0..10 {
+        let mut to_visit_offset: u32 = 0;
+        let mut current_node_index: u32 = 0;
+        let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
+        loop {
             let node: LinearBVHNode = self.nodes[current_node_index as usize];
-            println!("node = {:?}", node);
             // check ray against BVH node
-            println!("intersects? {}", node.bounds.intersect_p(ray, &inv_dir, dir_is_neg));
+            let mut intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
+            if intersects {
+                if node.n_primitives > 0 {
+                    // intersect ray with primitives in leaf BVH node
+                    for i in 0..node.n_primitives {
+                        // see primitive.h GeometricPrimitive::Intersect() ...
+                        let mut t_hit: Float = 0.0;
+                        intersects = self.primitives[node.offset + i].intersect(ray, &mut t_hit, isect);
+                        if intersects {
+                            // TODO: CHECK_GE(...) and medium stuff in GeometricPrimitive::Intersect()
+                            ray.t_max = t_hit;
+                            hit = true;
+                        }
+                    }
+                    if to_visit_offset == 0_u32 { break; }
+                    to_visit_offset -= 1_u32;
+                    current_node_index = nodes_to_visit[to_visit_offset as usize];
+                } else {
+                    // put far BVH node on _nodesToVisit_ stack,
+                    // advance to near node
+                    if dir_is_neg[node.axis as usize] == 1_u8 {
+                        to_visit_offset += 1_u32;
+                        nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
+                        current_node_index = node.offset as u32;
+                    } else {
+                        to_visit_offset += 1_u32;
+                        nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
+                        current_node_index += 1_u32;
+                    }
+                }
+            } else {
+                if to_visit_offset == 0_u32 { break; }
+                to_visit_offset -= 1_u32;
+                current_node_index = nodes_to_visit[to_visit_offset as usize];
+            }
         }
-        // WORK
-        false
+        hit
     }
     pub fn recursive_build(bvh: Arc<BVHAccel<'a>>,
                            // arena,
@@ -5363,8 +5393,6 @@ impl DirectLightingIntegrator {
                             let mut ray: Ray = Ray::default();
                             let mut ray_weight: Float = self.camera.generate_ray_differential(&camera_sample,
                                                                                               &mut ray);
-                            println!("ray_weight = {}", ray_weight);
-                            println!("ray = {:?}", ray);
                             ray.scale_differentials(1.0 as Float / tile_sampler.samples_per_pixel as Float);
                             // TODO: ++nCameraRays;
                             // evaluate radiance along camera ray
