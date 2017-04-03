@@ -691,7 +691,6 @@ impl<'a> Scene<'a> {
                  -> bool {
         // TODO: ++nIntersectionTests;
         assert_ne!(ray.d, Vector3f { x: 0.0, y: 0.0, z: 0.0, });
-        println!("Scene::intersect()");
         self.aggregate.intersect(ray, isect)
     }
 }
@@ -3827,14 +3826,12 @@ impl Primitive for Sphere {
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
-        println!("isect = {:?}", isect); // TMP
         isect.p = si.p;
         isect.time = si.time;
         isect.p_error = si.p_error;
         isect.wo = si.wo;
         isect.n = si.n;
         isect.uv = si.uv;
-        println!("isect = {:?}", isect); // TMP
         *t_hit = t_shape_hit.v as f64;
         true
     }
@@ -4136,15 +4133,12 @@ impl<'a> Primitive for Triangle<'a> {
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
-        println!("isect = {:?}", isect); // TMP
         isect.p = si.p;
         isect.time = si.time;
         isect.p_error = si.p_error;
         isect.wo = si.wo;
         isect.n = si.n;
         isect.uv = si.uv;
-        println!("isect = {:?}", isect); // TMP
-        // WORK
         *t_hit = t;
         // TODO: ++nHits;
         true
@@ -4689,8 +4683,8 @@ impl ZeroTwoSequenceSampler {
                      &mut self.rng);
         }
         // PixelSampler::StartPixel(p);
-        let current_pixel = p;
-        let current_pixel_sample_index = 0_i64;
+        self.current_pixel = p;
+        self.current_pixel_sample_index = 0_i64;
         // reset array offsets for next pixel sample
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;
@@ -4794,7 +4788,6 @@ pub fn van_der_corput(n_samples_per_pixel_sample: i32,
                       samples: &mut [Float],
                       rng: &mut Rng) {
     let scramble: u32 = rng.uniform_uint32();
-    /// println!("scramble = {:?}", scramble);
     let c_van_der_corput: [u32; 32] = [0x80000000, 0x40000000, 0x20000000, 0x10000000, 0x8000000,
                                        0x4000000, 0x2000000, 0x1000000, 0x800000, 0x400000,
                                        0x200000, 0x100000, 0x80000, 0x40000, 0x20000, 0x10000,
@@ -5401,7 +5394,7 @@ impl DirectLightingIntegrator {
                                 l = self.li(&mut ray, scene, &mut tile_sampler, 0_i32);
                             }
                             // WORK
-                            done = tile_sampler.start_next_sample();
+                            done = !tile_sampler.start_next_sample();
                         }
                         // WORK
                     }
@@ -5421,7 +5414,6 @@ impl SamplerIntegrator for DirectLightingIntegrator {
         // find closest ray intersection or return background radiance
         let mut isect: SurfaceInteraction = SurfaceInteraction::default();
         if !scene.intersect(ray, &mut isect) {
-            println!("return background radiance");
         }
         // WORK
         l
