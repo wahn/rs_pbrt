@@ -105,6 +105,10 @@ impl<'s> RenderOptions<'s> {
         let mut triangles: Vec<Triangle> = Vec::new();
         let mut spheres: Vec<Sphere> = Vec::new();
         let mut lights: Vec<DistantLight> = Vec::new();
+        // lights
+        for light in &scene.lights {
+            lights.push(*light);
+        }
         // spheres
         for sphere in &scene.spheres {
             spheres.push(*sphere);

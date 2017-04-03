@@ -4152,6 +4152,15 @@ pub struct RGBSpectrum {
     c: [Float; 3],
 }
 
+impl AddAssign for RGBSpectrum {
+    fn add_assign(&mut self, rhs: RGBSpectrum) {
+        // TODO: DCHECK(!s2.HasNaNs());
+        self.c[0] += rhs.c[0];
+        self.c[1] += rhs.c[1];
+        self.c[2] += rhs.c[2];
+    }
+}
+
 impl Mul for RGBSpectrum {
     type Output = RGBSpectrum;
     fn mul(self, rhs: RGBSpectrum) -> RGBSpectrum {
@@ -5263,6 +5272,11 @@ impl DistantLight {
                                   &mut self.world_center,
                                   &mut self.world_radius);
     }
+    /// Default implementation returns no emitted radiance for a ray
+    /// that escapes the scene bounds.
+    pub fn le(&self, ray: &mut Ray) -> Spectrum {
+        Spectrum::new(0.0 as Float)
+    }
 }
 
 // see integrator.h
@@ -5414,6 +5428,9 @@ impl SamplerIntegrator for DirectLightingIntegrator {
         // find closest ray intersection or return background radiance
         let mut isect: SurfaceInteraction = SurfaceInteraction::default();
         if !scene.intersect(ray, &mut isect) {
+            for light in &scene.lights {
+                l += light.le(ray);
+            }
         }
         // WORK
         l
