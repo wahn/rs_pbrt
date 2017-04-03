@@ -4365,12 +4365,12 @@ impl<'a> BVHAccel<'a> {
                     // put far BVH node on _nodesToVisit_ stack,
                     // advance to near node
                     if dir_is_neg[node.axis as usize] == 1_u8 {
-                        to_visit_offset += 1_u32;
                         nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
+                        to_visit_offset += 1_u32;
                         current_node_index = node.offset as u32;
                     } else {
-                        to_visit_offset += 1_u32;
                         nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
+                        to_visit_offset += 1_u32;
                         current_node_index += 1_u32;
                     }
                 }
