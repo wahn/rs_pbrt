@@ -3692,11 +3692,11 @@ impl SurfaceInteraction {
                                               [self.dpdu[dim[1]], self.dpdv[dim[1]]]];
                     let bx: [Float; 2] = [px[dim[0]] - self.p[dim[0]], px[dim[1]] - self.p[dim[1]]];
                     let by: [Float; 2] = [py[dim[0]] - self.p[dim[0]], py[dim[1]] - self.p[dim[1]]];
-                    if (!solve_linear_system_2x2(a, bx, &mut self.dudx, &mut self.dvdx)) {
+                    if !solve_linear_system_2x2(a, bx, &mut self.dudx, &mut self.dvdx) {
                         self.dudx = 0.0 as Float;
                         self.dvdx = 0.0 as Float;
                     }
-                    if (!solve_linear_system_2x2(a, by, &mut self.dudy, &mut self.dvdy)) {
+                    if !solve_linear_system_2x2(a, by, &mut self.dudy, &mut self.dvdy) {
                         self.dudy = 0.0 as Float;
                         self.dvdy = 0.0 as Float;
                     }
@@ -5354,6 +5354,76 @@ impl PerspectiveCamera {
         // ray->hasDifferentials = true;
         ray.differential = Some(diff);
         1.0
+    }
+}
+
+// see material.h
+
+pub trait Material {
+    fn compute_scattering_functions(&self,
+                                    si: &mut SurfaceInteraction,
+                                    // TODO: MemoryArena &arena,
+                                    mode: TransportMode,
+                                    allow_multiple_lobes: bool);
+}
+
+// see matte.h
+
+/// Describes a purely diffuse surface.
+pub struct MatteMaterial {
+    pub kd: Spectrum,
+    pub sigma: Float,
+    // TODO: bump_map
+}
+
+impl Material for MatteMaterial {
+    fn compute_scattering_functions(&self,
+                                    si: &mut SurfaceInteraction,
+                                    // TODO: MemoryArena &arena,
+                                    mode: TransportMode,
+                                    allow_multiple_lobes: bool) {
+        // WORK
+    }
+}
+
+// see glass.h
+
+/// Perfect or glossy specular reflection and transmission, weighted
+/// by Fresnel terms for accurate angular-dependent variation.
+pub struct GlassMaterial {
+    pub kr: Spectrum,
+    pub kt: Spectrum,
+    pub u_roughness: Float,
+    pub v_roughness: Float,
+    pub index: Float,
+    // TODO: bump_map
+}
+
+impl Material for GlassMaterial {
+    fn compute_scattering_functions(&self,
+                                    si: &mut SurfaceInteraction,
+                                    // TODO: MemoryArena &arena,
+                                    mode: TransportMode,
+                                    allow_multiple_lobes: bool) {
+        // WORK
+    }
+}
+
+// see mirror.h
+
+/// A simple mirror, modeled with perfect specular reflection.
+pub struct MirrorMaterial {
+    pub kr: Spectrum,
+    // TODO: bump_map
+}
+
+impl Material for MirrorMaterial {
+    fn compute_scattering_functions(&self,
+                                    si: &mut SurfaceInteraction,
+                                    // TODO: MemoryArena &arena,
+                                    mode: TransportMode,
+                                    allow_multiple_lobes: bool) {
+        // WORK
     }
 }
 
