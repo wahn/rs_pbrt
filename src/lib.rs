@@ -1158,6 +1158,26 @@ impl<T> Index<u8> for Vector3<T>
     }
 }
 
+impl<T> From<Point3<T>> for Vector3<T> {
+    fn from(p: Point3<T>) -> Self {
+        Vector3::<T> {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+        }
+    }
+}
+
+impl<T> From<Normal3<T>> for Vector3<T> {
+    fn from(n: Normal3<T>) -> Self {
+        Vector3::<T> {
+            x: n.x,
+            y: n.y,
+            z: n.z,
+        }
+    }
+}
+
 /// Product of the Euclidean magnitudes of the two vectors and the
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
@@ -2020,6 +2040,26 @@ impl Matrix4x4 {
         }
         minv
     }
+}
+
+// see transform.cpp
+
+/// Finds the closed-form solution of a 2x2 linear system.
+pub fn solve_linear_system_2x2(a: [[Float; 2]; 2],
+                               b: [Float; 2],
+                               x0: &mut Float,
+                               x1: &mut Float)
+                               -> bool {
+    let det: Float = a[0][0] * a[1][1] - a[0][1] * a[1][0];
+    if det.abs() < 1e-10 as Float {
+        return false;
+    }
+    *x0 = (a[1][1] * b[0] - a[0][1] * b[1]) / det;
+    *x1 = (a[0][0] * b[1] - a[1][0] * b[0]) / det;
+    if (*x0).is_nan() || (*x1).is_nan() {
+        return false;
+    }
+    true
 }
 
 /// The product of two matrices.
@@ -3541,9 +3581,13 @@ pub struct SurfaceInteraction {
                      * } shading;
                      * const Primitive *primitive = nullptr;
                      * BSDF *bsdf = nullptr;
-                     * BSSRDF *bssrdf = nullptr;
-                     * mutable Vector3f dpdx, dpdy;
-                     * mutable Float dudx = 0, dvdx = 0, dudy = 0, dvdy = 0; */
+                     * BSSRDF *bssrdf = nullptr; */
+    dpdx: Vector3f,
+    dpdy: Vector3f,
+    dudx: Float,
+    dvdx: Float,
+    dudy: Float,
+    dvdy: Float,
 }
 
 impl SurfaceInteraction {
@@ -3575,11 +3619,97 @@ impl SurfaceInteraction {
             dpdv: dpdv,
             dndu: dndu,
             dndv: dndv,
+            dpdx: Vector3f::default(),
+            dpdy: Vector3f::default(),
+            dudx: 0.0 as Float,
+            dvdx: 0.0 as Float,
+            dudy: 0.0 as Float,
+            dvdy: 0.0 as Float,
         }
     }
-    pub fn compute_scattering_functions(&self, ray: &Ray, // arena, 
+    pub fn compute_scattering_functions(&mut self,
+                                        ray: &Ray, // arena,
                                         allow_multiple_lobes: bool,
                                         mode: TransportMode) {
+        self.compute_differentials(ray);
+        // primitive->ComputeScatteringFunctions(this, arena, mode, allowMultipleLobes);
+    }
+    pub fn compute_differentials(&mut self, ray: &Ray) {
+        if let Some(ref diff) = ray.differential {
+            // estimate screen space change in $\pt{}$ and $(u,v)$
+
+            // compute auxiliary intersection points with plane
+            let d: Float = vec3_dot(Vector3f::from(self.n),
+                                    Vector3f {
+                                        x: self.p.x,
+                                        y: self.p.y,
+                                        z: self.p.z,
+                                    });
+            let tx: Float = -(vec3_dot(Vector3f::from(self.n), Vector3f::from(diff.rx_origin)) -
+                              d) /
+                            vec3_dot(Vector3f::from(self.n), diff.rx_direction);
+            if tx.is_nan() {
+                self.dudx = 0.0 as Float;
+                self.dvdx = 0.0 as Float;
+                self.dudy = 0.0 as Float;
+                self.dvdy = 0.0 as Float;
+                self.dpdx = Vector3f::default();
+                self.dpdy = Vector3f::default();
+            } else {
+                let px: Point3f = diff.rx_origin + diff.rx_direction * tx;
+                let ty: Float = -(vec3_dot(Vector3f::from(self.n), Vector3f::from(diff.ry_origin)) -
+                                  d) /
+                                vec3_dot(Vector3f::from(self.n), diff.ry_direction);
+                if ty.is_nan() {
+                    self.dudx = 0.0 as Float;
+                    self.dvdx = 0.0 as Float;
+                    self.dudy = 0.0 as Float;
+                    self.dvdy = 0.0 as Float;
+                    self.dpdx = Vector3f::default();
+                    self.dpdy = Vector3f::default();
+                } else {
+                    let py: Point3f = diff.ry_origin + diff.ry_direction * ty;
+                    self.dpdx = px - self.p;
+                    self.dpdy = py - self.p;
+
+                    // compute $(u,v)$ offsets at auxiliary points
+
+                    // choose two dimensions to use for ray offset computation
+                    let mut dim: [u8; 2] = [0_u8; 2];
+                    if self.n.x.abs() > self.n.y.abs() && self.n.x.abs() > self.n.z.abs() {
+                        dim[0] = 1;
+                        dim[1] = 2;
+                    } else if self.n.y.abs() > self.n.z.abs() {
+                        dim[0] = 0;
+                        dim[1] = 2;
+                    } else {
+                        dim[0] = 0;
+                        dim[1] = 1;
+                    }
+
+                    // initialize _a_, _bx_, and _by_ matrices for offset computation
+                    let a: [[Float; 2]; 2] = [[self.dpdu[dim[0]], self.dpdv[dim[0]]],
+                                              [self.dpdu[dim[1]], self.dpdv[dim[1]]]];
+                    let bx: [Float; 2] = [px[dim[0]] - self.p[dim[0]], px[dim[1]] - self.p[dim[1]]];
+                    let by: [Float; 2] = [py[dim[0]] - self.p[dim[0]], py[dim[1]] - self.p[dim[1]]];
+                    if (!solve_linear_system_2x2(a, bx, &mut self.dudx, &mut self.dvdx)) {
+                        self.dudx = 0.0 as Float;
+                        self.dvdx = 0.0 as Float;
+                    }
+                    if (!solve_linear_system_2x2(a, by, &mut self.dudy, &mut self.dvdy)) {
+                        self.dudy = 0.0 as Float;
+                        self.dvdy = 0.0 as Float;
+                    }
+                }
+            }
+        } else {
+            self.dudx = 0.0 as Float;
+            self.dvdx = 0.0 as Float;
+            self.dudy = 0.0 as Float;
+            self.dvdy = 0.0 as Float;
+            self.dpdx = Vector3f::default();
+            self.dpdy = Vector3f::default();
+        }
     }
 }
 
