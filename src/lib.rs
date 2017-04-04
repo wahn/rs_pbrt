@@ -3577,6 +3577,10 @@ impl SurfaceInteraction {
             dndv: dndv,
         }
     }
+    pub fn compute_scattering_functions(&self, ray: &Ray, // arena, 
+                                        allow_multiple_lobes: bool,
+                                        mode: TransportMode) {
+    }
 }
 
 // see primitive.h
@@ -5432,6 +5436,9 @@ impl SamplerIntegrator for DirectLightingIntegrator {
                 l += light.le(ray);
             }
         }
+        // compute scattering functions for surface interaction
+        let mode: TransportMode = TransportMode::Radiance;
+        isect.compute_scattering_functions(ray, false, mode);
         // WORK
         l
     }
@@ -5535,4 +5542,14 @@ impl Rng {
     pub fn uniform_float(&mut self) -> Float {
         (self.uniform_uint32() as Float * 2.3283064365386963e-10 as Float).min(ONE_MINUS_EPSILON)
     }
+}
+
+// see material.h
+
+/// Is used to inform non-symetric BSDFs about the transported
+/// quantity so that they can correctly switch between the adjoint and
+/// non-adjoint forms.
+pub enum TransportMode {
+    Radiance,
+    Importance,
 }
