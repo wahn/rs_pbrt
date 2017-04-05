@@ -3561,38 +3561,39 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 
 // see interaction.h
 
-#[derive(Debug,Default,Copy,Clone)]
-pub struct SurfaceInteraction {
+#[derive(Default,Copy,Clone)]
+pub struct SurfaceInteraction<'a> {
     // Interaction Public Data
-    p: Point3f,
-    time: Float,
-    p_error: Vector3f,
-    wo: Vector3f,
-    n: Normal3f,
+    pub p: Point3f,
+    pub time: Float,
+    pub p_error: Vector3f,
+    pub wo: Vector3f,
+    pub n: Normal3f,
     // TODO: MediumInterface mediumInterface;
     // SurfaceInteraction Public Data
-    uv: Point2f,
-    dpdu: Vector3f,
-    dpdv: Vector3f,
-    dndu: Normal3f,
-    dndv: Normal3f, /* const Shape *shape = nullptr;
-                     * struct {
-                     *     Normal3f n;
-                     *     Vector3f dpdu, dpdv;
-                     *     Normal3f dndu, dndv;
-                     * } shading;
-                     * const Primitive *primitive = nullptr;
-                     * BSDF *bsdf = nullptr;
-                     * BSSRDF *bssrdf = nullptr; */
-    dpdx: Vector3f,
-    dpdy: Vector3f,
-    dudx: Float,
-    dvdx: Float,
-    dudy: Float,
-    dvdy: Float,
+    pub uv: Point2f,
+    pub dpdu: Vector3f,
+    pub dpdv: Vector3f,
+    pub dndu: Normal3f,
+    pub dndv: Normal3f, /* const Shape *shape = nullptr;
+                         * struct {
+                         *     Normal3f n;
+                         *     Vector3f dpdu, dpdv;
+                         *     Normal3f dndu, dndv;
+                         * } shading;
+                         * const Primitive *primitive = nullptr;
+                         * BSDF *bsdf = nullptr;
+                         * BSSRDF *bssrdf = nullptr; */
+    pub dpdx: Vector3f,
+    pub dpdy: Vector3f,
+    pub dudx: Float,
+    pub dvdx: Float,
+    pub dudy: Float,
+    pub dvdy: Float,
+    pub primitive: Option<&'a Primitive>,
 }
 
-impl SurfaceInteraction {
+impl<'a> SurfaceInteraction<'a> {
     pub fn new(p: Point3f,
                p_error: Vector3f,
                uv: Point2f,
@@ -3627,6 +3628,7 @@ impl SurfaceInteraction {
             dvdx: 0.0 as Float,
             dudy: 0.0 as Float,
             dvdy: 0.0 as Float,
+            primitive: None,
         }
     }
     pub fn compute_scattering_functions(&mut self,
@@ -3635,8 +3637,9 @@ impl SurfaceInteraction {
                                         allow_multiple_lobes: bool,
                                         mode: TransportMode) {
         self.compute_differentials(ray);
-        // primitive->ComputeScatteringFunctions(this, arena, mode, allowMultipleLobes);
-        // WORK
+        if let Some(primitive) = self.primitive {
+            primitive.compute_scattering_functions(self, arena, mode, allow_multiple_lobes);
+        }
     }
     pub fn compute_differentials(&mut self, ray: &Ray) {
         if let Some(ref diff) = ray.differential {
@@ -3716,7 +3719,6 @@ impl SurfaceInteraction {
         }
     }
 }
-
 // see primitive.h
 
 pub trait Primitive {
@@ -3726,6 +3728,11 @@ pub trait Primitive {
                  t_hit: &mut Float,
                  isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
                  -> bool;
+    fn compute_scattering_functions(&self,
+                                    isect: &mut SurfaceInteraction,
+                                    arena: &mut Arena,
+                                    mode: TransportMode,
+                                    allow_multiple_lobes: bool);
 }
 
 // see sphere.h
@@ -3972,6 +3979,13 @@ impl Primitive for Sphere {
         isect.uv = si.uv;
         *t_hit = t_shape_hit.v as f64;
         true
+    }
+    fn compute_scattering_functions(&self,
+                                    isect: &mut SurfaceInteraction,
+                                    arena: &mut Arena,
+                                    mode: TransportMode,
+                                    allow_multiple_lobes: bool) {
+        // WORK
     }
 }
 
@@ -4280,6 +4294,13 @@ impl<'a> Primitive for Triangle<'a> {
         *t_hit = t;
         // TODO: ++nHits;
         true
+    }
+    fn compute_scattering_functions(&self,
+                                    isect: &mut SurfaceInteraction,
+                                    arena: &mut Arena,
+                                    mode: TransportMode,
+                                    allow_multiple_lobes: bool) {
+        // WORK
     }
 }
 
