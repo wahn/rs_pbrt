@@ -634,6 +634,7 @@
 
 extern crate num;
 extern crate num_cpus;
+extern crate copy_arena;
 
 use std::cmp::PartialEq;
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index};
@@ -643,6 +644,7 @@ use std::mem;
 use std::sync::Arc;
 use std::thread;
 use std::sync::mpsc;
+use copy_arena::{Arena, Allocator};
 
 pub type Float = f64;
 
@@ -3628,11 +3630,13 @@ impl SurfaceInteraction {
         }
     }
     pub fn compute_scattering_functions(&mut self,
-                                        ray: &Ray, // arena,
+                                        ray: &Ray,
+                                        arena: &mut Arena,
                                         allow_multiple_lobes: bool,
                                         mode: TransportMode) {
         self.compute_differentials(ray);
         // primitive->ComputeScatteringFunctions(this, arena, mode, allowMultipleLobes);
+        // WORK
     }
     pub fn compute_differentials(&mut self, ray: &Ray) {
         if let Some(ref diff) = ray.differential {
@@ -5389,6 +5393,11 @@ impl Material for MatteMaterial {
                                     // TODO: MemoryArena &arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
+        // perform bump mapping with _bumpMap_, if present
+        // TODO: if (bumpMap) Bump(bumpMap, si);
+
+        // evaluate textures for _MatteMaterial_ material and allocate BRDF
+        // si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
         // WORK
     }
 }
@@ -5494,7 +5503,13 @@ impl DistantLight {
 
 pub trait SamplerIntegrator {
     // TODO: use Sampler trait
-    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler, depth: i32) -> Spectrum;
+    fn li(&self,
+          ray: &mut Ray,
+          scene: &Scene,
+          sampler: &mut ZeroTwoSequenceSampler,
+          arena: &mut Arena,
+          depth: i32)
+          -> Spectrum;
 }
 
 // see directlighting.h
@@ -5605,6 +5620,9 @@ impl DirectLightingIntegrator {
                         }
                         let mut done: bool = false;
                         while !done {
+                            // let's use the copy_arena crate instead of pbrt's MemoryArena
+                            let mut arena: Arena = Arena::with_capacity(262144); // 256kB
+
                             // initialize _CameraSample_ for current sample
                             let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
                             // generate camera ray for current sample
@@ -5616,11 +5634,12 @@ impl DirectLightingIntegrator {
                             // evaluate radiance along camera ray
                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
                             if ray_weight > 0.0 {
-                                l = self.li(&mut ray, scene, &mut tile_sampler, 0_i32);
+                                l = self.li(&mut ray, scene, &mut tile_sampler, &mut arena, 0_i32);
                             }
                             // WORK
                             done = !tile_sampler.start_next_sample();
-                        }
+                            println!("arena.capacity() = {:?}", arena.capacity());
+                        } // arena is dropped here !
                         // WORK
                     }
                 }
@@ -5633,7 +5652,13 @@ impl DirectLightingIntegrator {
 }
 
 impl SamplerIntegrator for DirectLightingIntegrator {
-    fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler, depth: i32) -> Spectrum {
+    fn li(&self,
+          ray: &mut Ray,
+          scene: &Scene,
+          sampler: &mut ZeroTwoSequenceSampler,
+          arena: &mut Arena,
+          depth: i32)
+          -> Spectrum {
         // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
         let mut l: Spectrum = Spectrum::new(0.0 as Float);
         // find closest ray intersection or return background radiance
@@ -5645,7 +5670,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
         }
         // compute scattering functions for surface interaction
         let mode: TransportMode = TransportMode::Radiance;
-        isect.compute_scattering_functions(ray, false, mode);
+        isect.compute_scattering_functions(ray, arena, false, mode);
         // WORK
         l
     }

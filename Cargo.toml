@@ -7,3 +7,4 @@ authors = ["Jan Walter <jan@janwalter.com>"]
 
 num="*"
 num_cpus = "1.0"
+copy_arena = "0.1.1"
