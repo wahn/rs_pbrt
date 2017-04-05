@@ -22,7 +22,7 @@ fn main() {
                                      z_max,
                                      phi_max);
     let world_bound: Bounds3f = sphere.world_bound(); // Primitive
-    println!("sphere() = {:?}", sphere);
+    // println!("sphere() = {:?}", sphere);
     println!("world_bound() = {:?}", world_bound);
     let translate: Transform = Transform::translate(Vector3f {
         x: 1.3,
@@ -39,6 +39,6 @@ fn main() {
                                      z_max,
                                      phi_max);
     let world_bound: Bounds3f = sphere.world_bound(); // Primitive
-    println!("sphere() = {:?}", sphere);
+    // println!("sphere() = {:?}", sphere);
     println!("world_bound() = {:?}", world_bound);
 }

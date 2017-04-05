@@ -79,7 +79,7 @@ impl SceneDescriptionBuilder {
                                          z_min,
                                          z_max,
                                          phi_max);
-        println!("sphere = {:?}", sphere);
+        // println!("sphere = {:?}", sphere);
         self.spheres.push(sphere);
         self
     }
@@ -111,7 +111,7 @@ impl<'s> RenderOptions<'s> {
         }
         // spheres
         for sphere in &scene.spheres {
-            spheres.push(*sphere);
+            spheres.push(sphere.clone());
         }
         // meshes
         for mesh in &scene.meshes {

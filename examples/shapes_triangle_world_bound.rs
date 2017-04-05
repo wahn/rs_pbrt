@@ -57,7 +57,7 @@ fn main() {
     for i in 0..n_triangles {
         tris.push(Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, i));
     }
-    println!("tris[0] = {:?}", tris[0]);
+    // println!("tris[0] = {:?}", tris[0]);
     let p0: Point3f = triangle_mesh.p[triangle_mesh.vertex_indices[0]];
     let p1: Point3f = triangle_mesh.p[triangle_mesh.vertex_indices[1]];
     let p2: Point3f = triangle_mesh.p[triangle_mesh.vertex_indices[2]];
@@ -66,7 +66,7 @@ fn main() {
     println!("p2 = {:?}", p2);
     let world_bound: Bounds3f = tris[1].world_bound(); // Primitive
     println!("tris[1].world_bound() = {:?}", world_bound);
-    println!("tris[1] = {:?}", tris[1]);
+    // println!("tris[1] = {:?}", tris[1]);
     let p0: Point3f = triangle_mesh.p[triangle_mesh.vertex_indices[3]];
     let p1: Point3f = triangle_mesh.p[triangle_mesh.vertex_indices[4]];
     let p2: Point3f = triangle_mesh.p[triangle_mesh.vertex_indices[5]];

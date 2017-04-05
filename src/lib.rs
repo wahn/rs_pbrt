@@ -436,26 +436,6 @@
 //! useful to a ray tracer and are a good starting point for general
 //! ray intersection routines.
 //!
-//! ```rust
-//! extern crate pbrt;
-//!
-//! use pbrt::{Sphere, Transform, Vector3f};
-//!
-//! fn main() {
-//!     let default_sphere: Sphere = Sphere::default();
-//!     let translate: Transform = Transform::translate(Vector3f {
-//!         x: -1.3,
-//!         y: 0.0,
-//!         z: 0.0,
-//!     });
-//!     let inverse: Transform = Transform::inverse(translate);
-//!     let sphere: Sphere = Sphere::new(translate, inverse, false, false, 2.0, -0.5, 0.75, 270.0);
-//!
-//!     println!("default sphere = {:?}", default_sphere);
-//!     println!("sphere = {:?}", sphere);
-//! }
-//! ```
-//!
 //! ### Triangle Meshes
 //!
 //! While a natural representation would be to have a **Triangle**
@@ -3728,16 +3708,21 @@ pub trait Primitive {
                  t_hit: &mut Float,
                  isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
                  -> bool;
+    fn get_material(&self) -> Option<Arc<Material + Send + Sync>>;
     fn compute_scattering_functions(&self,
                                     isect: &mut SurfaceInteraction,
                                     arena: &mut Arena,
                                     mode: TransportMode,
-                                    allow_multiple_lobes: bool);
+                                    allow_multiple_lobes: bool) {
+        if let Some(ref material) = self.get_material() {
+            material.compute_scattering_functions(isect, arena, mode, allow_multiple_lobes);
+        }
+    }
 }
 
 // see sphere.h
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Clone)]
 pub struct Sphere {
     radius: Float,
     z_min: Float,
@@ -3750,6 +3735,7 @@ pub struct Sphere {
     world_to_object: Transform,
     reverse_orientation: bool,
     transform_swaps_handedness: bool,
+    pub material: Option<Arc<Material + Send + Sync>>,
 }
 
 impl Default for Sphere {
@@ -3767,6 +3753,7 @@ impl Default for Sphere {
             theta_min: (-1.0 as Float).acos(),
             theta_max: (1.0 as Float).acos(),
             phi_max: 360.0,
+            material: None,
         }
     }
 }
@@ -3794,6 +3781,7 @@ impl Sphere {
             theta_min: clamp(z_min.min(z_max) / radius, -1.0, 1.0).acos(),
             theta_max: clamp(z_min.max(z_max) / radius, -1.0, 1.0).acos(),
             phi_max: phi_max,
+            material: None,
         }
     }
     pub fn object_bound(&self) -> Bounds3f {
@@ -3980,12 +3968,8 @@ impl Primitive for Sphere {
         *t_hit = t_shape_hit.v as f64;
         true
     }
-    fn compute_scattering_functions(&self,
-                                    isect: &mut SurfaceInteraction,
-                                    arena: &mut Arena,
-                                    mode: TransportMode,
-                                    allow_multiple_lobes: bool) {
-        // WORK
+    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
+        self.material.clone()
     }
 }
 
@@ -4046,7 +4030,7 @@ impl TriangleMesh {
     }
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Clone)]
 pub struct Triangle<'a> {
     mesh: &'a TriangleMesh,
     id: usize,
@@ -4055,6 +4039,7 @@ pub struct Triangle<'a> {
     world_to_object: Transform,
     reverse_orientation: bool,
     transform_swaps_handedness: bool,
+    pub material: Option<Arc<Material + Send + Sync>>,
 }
 
 impl<'a> Triangle<'a> {
@@ -4071,6 +4056,7 @@ impl<'a> Triangle<'a> {
             world_to_object: world_to_object,
             reverse_orientation: reverse_orientation,
             transform_swaps_handedness: false,
+            material: None,
         }
     }
     pub fn object_bound(&self) -> Bounds3f {
@@ -4295,12 +4281,8 @@ impl<'a> Primitive for Triangle<'a> {
         // TODO: ++nHits;
         true
     }
-    fn compute_scattering_functions(&self,
-                                    isect: &mut SurfaceInteraction,
-                                    arena: &mut Arena,
-                                    mode: TransportMode,
-                                    allow_multiple_lobes: bool) {
-        // WORK
+    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
+        self.material.clone()
     }
 }
 
@@ -5394,7 +5376,7 @@ pub trait Material {
     /// member variables.
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
-                                    // TODO: MemoryArena &arena,
+                                    arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool);
 }
@@ -5411,7 +5393,7 @@ pub struct MatteMaterial {
 impl Material for MatteMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
-                                    // TODO: MemoryArena &arena,
+                                    arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         // perform bump mapping with _bumpMap_, if present
@@ -5439,7 +5421,7 @@ pub struct GlassMaterial {
 impl Material for GlassMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
-                                    // TODO: MemoryArena &arena,
+                                    arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         // WORK
@@ -5457,7 +5439,7 @@ pub struct MirrorMaterial {
 impl Material for MirrorMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
-                                    // TODO: MemoryArena &arena,
+                                    arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         // WORK

@@ -40,9 +40,7 @@ examples: release
 	./target/release/examples/lights_distant_light_new
 	./target/release/examples/pbrt_spheres_differentials_texfilt
 	./target/release/examples/quaternion_default
-	./target/release/examples/shapes_sphere_default
 	./target/release/examples/shapes_sphere_intersect
-	./target/release/examples/shapes_sphere_new
 	./target/release/examples/shapes_sphere_world_bound
 	./target/release/examples/shapes_triangle_create_triangle_mesh
 	./target/release/examples/shapes_triangle_intersect
