@@ -3542,7 +3542,7 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 // see interaction.h
 
 #[derive(Debug,Default,Copy,Clone)]
-struct Interaction {
+pub struct Interaction {
 }
 
 #[derive(Default,Copy,Clone)]
@@ -3708,11 +3708,11 @@ impl<'a> SurfaceInteraction<'a> {
 
 pub trait Shape {
     fn object_bound(&self) -> Bounds3f;
-    fn intersect_hit(&self,
-                     r: &Ray,
-                     t_hit: &mut Float,
-                     isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                     -> bool;
+    fn intersect(&self,
+                 r: &Ray,
+                 t_hit: &mut Float,
+                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                 -> bool;
 }
 
 // see primitive.h
@@ -3818,7 +3818,10 @@ impl Sphere {
             material: None,
         }
     }
-    pub fn object_bound(&self) -> Bounds3f {
+}
+
+impl Shape for Sphere {
+    fn object_bound(&self) -> Bounds3f {
         Bounds3f {
             p_min: Point3f {
                 x: -self.radius,
@@ -3832,11 +3835,11 @@ impl Sphere {
             },
         }
     }
-    pub fn intersect_hit(&self,
-                         r: &Ray,
-                         t_hit: &mut Float,
-                         isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                         -> bool {
+    fn intersect(&self,
+                 r: &Ray,
+                 t_hit: &mut Float,
+                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                 -> bool {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
@@ -4093,14 +4096,6 @@ impl<'a> Triangle<'a> {
             material: None,
         }
     }
-    pub fn object_bound(&self) -> Bounds3f {
-        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
-        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
-        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
-        bnd3_union_pnt3(Bounds3f::new(self.world_to_object.transform_point(p0),
-                                      self.world_to_object.transform_point(p1)),
-                        self.world_to_object.transform_point(p2))
-    }
     pub fn get_uvs(&self) -> [Point2f; 3] {
         if self.mesh.uv.is_empty() {
             [Point2f { x: 0.0, y: 0.0 }, Point2f { x: 1.0, y: 0.0 }, Point2f { x: 1.0, y: 1.0 }]
@@ -4110,11 +4105,22 @@ impl<'a> Triangle<'a> {
              self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 2]]]
         }
     }
-    pub fn intersect_hit(&self,
-                         ray: &Ray,
-                         t_hit: &mut Float,
-                         isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                         -> bool {
+}
+
+impl<'a> Shape for Triangle<'a> {
+    fn object_bound(&self) -> Bounds3f {
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
+        bnd3_union_pnt3(Bounds3f::new(self.world_to_object.transform_point(p0),
+                                      self.world_to_object.transform_point(p1)),
+                        self.world_to_object.transform_point(p2))
+    }
+    fn intersect(&self,
+                 ray: &Ray,
+                 t_hit: &mut Float,
+                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                 -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
