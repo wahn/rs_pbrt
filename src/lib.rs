@@ -3541,6 +3541,10 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 
 // see interaction.h
 
+#[derive(Debug,Default,Copy,Clone)]
+struct Interaction {
+}
+
 #[derive(Default,Copy,Clone)]
 pub struct SurfaceInteraction<'a> {
     // Interaction Public Data
@@ -3699,15 +3703,29 @@ impl<'a> SurfaceInteraction<'a> {
         }
     }
 }
+
+// see shape.h
+
+pub trait Shape {
+    fn object_bound(&self) -> Bounds3f;
+    fn intersect_hit(&self,
+                     r: &Ray,
+                     t_hit: &mut Float,
+                     isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                     -> bool;
+}
+
 // see primitive.h
 
 pub trait Primitive {
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self,
                  r: &Ray,
-                 t_hit: &mut Float,
-                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                 -> bool;
+                 isect: &mut SurfaceInteraction)
+                 -> bool {
+        false
+    }
+    // TODO: fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>>;
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>>;
     fn compute_scattering_functions(&self,
                                     isect: &mut SurfaceInteraction,
@@ -3716,6 +3734,22 @@ pub trait Primitive {
                                     allow_multiple_lobes: bool) {
         if let Some(ref material) = self.get_material() {
             material.compute_scattering_functions(isect, arena, mode, allow_multiple_lobes);
+        }
+    }
+}
+
+pub struct GeometricPrimitive {
+    pub shape: Option<Arc<Shape>>,
+    pub material: Option<Arc<Material>>,
+    // TODO: pub area_light: Option<Arc<AreaLight>>,
+    // TODO: pub medium_interface: Option<Arc<MediumInterface>>,
+}
+
+impl GeometricPrimitive {
+    pub fn new() -> Self {
+        GeometricPrimitive {
+            shape: None,
+            material: None,
         }
     }
 }
@@ -3798,18 +3832,11 @@ impl Sphere {
             },
         }
     }
-}
-
-impl Primitive for Sphere {
-    fn world_bound(&self) -> Bounds3f {
-        // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
-        self.object_to_world.transform_bounds(self.object_bound())
-    }
-    fn intersect(&self,
-                 r: &Ray,
-                 t_hit: &mut Float,
-                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                 -> bool {
+    pub fn intersect_hit(&self,
+                         r: &Ray,
+                         t_hit: &mut Float,
+                         isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                         -> bool {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
@@ -3968,6 +3995,13 @@ impl Primitive for Sphere {
         *t_hit = t_shape_hit.v as f64;
         true
     }
+}
+
+impl Primitive for Sphere {
+    fn world_bound(&self) -> Bounds3f {
+        // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
+        self.object_to_world.transform_bounds(self.object_bound())
+    }
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
         self.material.clone()
     }
@@ -4076,20 +4110,11 @@ impl<'a> Triangle<'a> {
              self.mesh.uv[self.mesh.vertex_indices[self.id * 3 + 2]]]
         }
     }
-}
-
-impl<'a> Primitive for Triangle<'a> {
-    fn world_bound(&self) -> Bounds3f {
-        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
-        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
-        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
-        bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
-    }
-    fn intersect(&self,
-                 ray: &Ray,
-                 t_hit: &mut Float,
-                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                 -> bool {
+    pub fn intersect_hit(&self,
+                         ray: &Ray,
+                         t_hit: &mut Float,
+                         isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
+                         -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
@@ -4280,6 +4305,15 @@ impl<'a> Primitive for Triangle<'a> {
         *t_hit = t;
         // TODO: ++nHits;
         true
+    }
+}
+
+impl<'a> Primitive for Triangle<'a> {
+    fn world_bound(&self) -> Bounds3f {
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
+        bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
     }
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
         self.material.clone()
@@ -4494,11 +4528,9 @@ impl<'a> BVHAccel<'a> {
                     // intersect ray with primitives in leaf BVH node
                     for i in 0..node.n_primitives {
                         // see primitive.h GeometricPrimitive::Intersect() ...
-                        let mut t_hit: Float = 0.0;
-                        intersects = self.primitives[node.offset + i].intersect(ray, &mut t_hit, isect);
+                        intersects = self.primitives[node.offset + i].intersect(ray, isect);
                         if intersects {
                             // TODO: CHECK_GE(...) and medium stuff in GeometricPrimitive::Intersect()
-                            ray.t_max = t_hit;
                             hit = true;
                         }
                     }
@@ -5501,6 +5533,27 @@ impl DistantLight {
         Spectrum::new(0.0 as Float)
     }
 }
+
+// see light.h
+
+// pub trait AreaLight {
+//     fn l(intr: &mut Interaction, w: Vector3f) -> Spectrum {
+//         // TODO
+//         Spectrum::new(0.0 as Float)
+//     }
+// }
+
+// see diffuse.h
+
+// pub struct DiffuseAreaLight {
+// }
+
+// impl AreaLight for DiffuseAreaLight {
+//     fn l(intr: &mut Interaction, w: Vector3f) -> Spectrum {
+//         // TODO
+//         Spectrum::new(0.0 as Float)
+//     }
+// }
 
 // see integrator.h
 

@@ -1,7 +1,7 @@
 extern crate pbrt;
 
-use pbrt::{Float, Point2f, Point3f, Primitive, Transform, Ray, SurfaceInteraction, Triangle,
-           TriangleMesh, Vector3f};
+use pbrt::{Float, Point2f, Point3f, Transform, Ray, SurfaceInteraction, Triangle, TriangleMesh,
+           Vector3f};
 
 fn main() {
     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
@@ -79,7 +79,7 @@ fn main() {
     };
     let mut t_hit: Float = 0.0;
     let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-    let did_ray_interesect: bool = triangle.intersect(&r, &mut t_hit, &mut isect); // Primitive
+    let did_ray_interesect: bool = triangle.intersect_hit(&r, &mut t_hit, &mut isect); // Primitive
 
     println!("r = {:?}", r);
     println!("sphere.intersect(r, {:?}) = {:?}",
@@ -99,7 +99,7 @@ fn main() {
         differential: None,
     };
     let mut t_hit: Float = 0.0;
-    let did_ray_interesect: bool = triangle.intersect(&r, &mut t_hit, &mut isect); // Primitive
+    let did_ray_interesect: bool = triangle.intersect_hit(&r, &mut t_hit, &mut isect); // Primitive
 
     println!("r = {:?}", r);
     println!("sphere.intersect(r, {:?}) = {:?}",
