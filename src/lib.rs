@@ -4355,6 +4355,17 @@ impl RGBSpectrum {
         RGBSpectrum { c: [v, v, v] }
         // TODO: DCHECK(!HasNaNs());
     }
+    pub fn y(&self) -> Float {
+        let y_weight: [Float; 3] = [0.212671, 0.715160, 0.072169];
+        y_weight[0] * self.c[0] + y_weight[1] * self.c[1] + y_weight[2] * self.c[2]
+    }
+    // from CoefficientSpectrum
+    pub fn has_nans(&self) -> bool {
+        for i in 0..3 {
+            if self.c[i].is_nan() { return true; }
+        }
+        false
+    }
 }
 
 impl AddAssign for RGBSpectrum {
@@ -4956,6 +4967,9 @@ impl ZeroTwoSequenceSampler {
         let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
         self.samples_2d_array.push(additional_points);
     }
+    pub fn current_sample_number(&self) -> i64 {
+        self.current_pixel_sample_index
+    }
 }
 
 // see lowdiscrepancy.h
@@ -5418,6 +5432,26 @@ impl PerspectiveCamera {
     }
 }
 
+// see reflection.h
+
+const MAX_BXDFS: usize = 8;
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct Bsdf {
+    pub eta: Float,
+    /// shading normal
+    pub ns: Normal3f,
+    /// geometric normal
+    pub ng: Normal3f,
+    pub ss: Vector3f,
+    pub ts: Vector3f,
+    pub bxdfs: [Bxdf; MAX_BXDFS],
+}
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct Bxdf {
+}
+
 // see material.h
 
 /// **Material** defines the interface that material implementations
@@ -5454,7 +5488,9 @@ impl Material for MatteMaterial {
         // TODO: if (bumpMap) Bump(bumpMap, si);
 
         // evaluate textures for _MatteMaterial_ material and allocate BRDF
+        let mut allocator = arena.allocator();
         // si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
+        let bsdf: &mut Bsdf = allocator.alloc(Bsdf::default());
         // WORK
     }
 }
@@ -5680,7 +5716,7 @@ impl DirectLightingIntegrator {
             // no parallelism
             for y in 0..n_tiles.y {
                 for x in 0..n_tiles.x {
-                    let tile: Point2i = Point2i { x: x, y: y, };
+                    let tile: Point2i = Point2i { x: x, y: y };
                     // TODO: should be done multi-threaded !!!
                     let seed: i32 = tile.y * n_tiles.x + tile.x;
                     let mut tile_sampler = self.sampler.clone(seed);
@@ -5688,8 +5724,8 @@ impl DirectLightingIntegrator {
                     let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                     let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
                     let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
-                    let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0, },
-                                                              Point2i { x: x1, y: y1, });
+                    let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
+                                                              Point2i { x: x1, y: y1 });
                     let film_tile = self.camera.film.get_film_tile(tile_bounds);
                     for pixel in &tile_bounds {
                         tile_sampler.start_pixel(pixel);
@@ -5705,18 +5741,43 @@ impl DirectLightingIntegrator {
                             let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
                             // generate camera ray for current sample
                             let mut ray: Ray = Ray::default();
-                            let mut ray_weight: Float = self.camera.generate_ray_differential(&camera_sample,
-                                                                                              &mut ray);
-                            ray.scale_differentials(1.0 as Float / tile_sampler.samples_per_pixel as Float);
+                            let mut ray_weight: Float = self.camera
+                                .generate_ray_differential(&camera_sample, &mut ray);
+                            ray.scale_differentials(1.0 as Float /
+                                                    tile_sampler.samples_per_pixel as Float);
                             // TODO: ++nCameraRays;
                             // evaluate radiance along camera ray
                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
+                            let y: Float = l.y();
                             if ray_weight > 0.0 {
                                 l = self.li(&mut ray, scene, &mut tile_sampler, &mut arena, 0_i32);
                             }
-                            // WORK
+                            if l.has_nans() {
+                                println!("Not-a-number radiance value returned for pixel ({:?}, \
+                                          {:?}), sample {:?}. Setting to black.",
+                                         pixel.x,
+                                         pixel.y,
+                                         tile_sampler.current_sample_number());
+                                l = Spectrum::new(0.0);
+                            } else if y < -10.0e-5 as Float {
+                                println!("Negative luminance value, {:?}, returned for pixel \
+                                          ({:?}, {:?}), sample {:?}. Setting to black.",
+                                         y,
+                                         pixel.x,
+                                         pixel.y,
+                                         tile_sampler.current_sample_number());
+                                l = Spectrum::new(0.0);
+                            } else if y.is_infinite() {
+                                println!("Infinite luminance value returned for pixel ({:?}, \
+                                          {:?}), sample {:?}. Setting to black.",
+                                         pixel.x,
+                                         pixel.y,
+                                         tile_sampler.current_sample_number());
+                                l = Spectrum::new(0.0);
+                            }
+                            // add camera ray's contribution to image
+                            // TODO: filmTile->AddSample(cameraSample.pFilm, L, rayWeight);
                             done = !tile_sampler.start_next_sample();
-                            println!("arena.capacity() = {:?}", arena.capacity());
                         } // arena is dropped here !
                         // WORK
                     }
@@ -5745,6 +5806,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             for light in &scene.lights {
                 l += light.le(ray);
             }
+            return l;
         }
         // compute scattering functions for surface interaction
         let mode: TransportMode = TransportMode::Radiance;
