@@ -1,7 +1,8 @@
 extern crate pbrt;
 
-use pbrt::{Float, Point2f, Point3f, Transform, Ray, Shape, SurfaceInteraction, Triangle, TriangleMesh,
-           Vector3f};
+use pbrt::{Float, Point2f, Point3f, Transform, Ray, Shape, SurfaceInteraction, Triangle,
+           TriangleMesh, Vector3f};
+use std::sync::Arc;
 
 fn main() {
     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
@@ -43,23 +44,28 @@ fn main() {
     }
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Vector3f> = Vec::new();
-    let triangle_mesh: TriangleMesh = TriangleMesh::new(object_to_world,
-                                                        world_to_object,
-                                                        false,
-                                                        false,
-                                                        n_triangles,
-                                                        vertex_indices,
-                                                        n_vertices,
-                                                        p_ws, // in world space
-                                                        s, // empty
-                                                        n, // empty
-                                                        uv);
-    let mut tris: Vec<Triangle> = Vec::new();
+    let triangle_mesh = Arc::new(TriangleMesh::new(object_to_world,
+                                                   world_to_object,
+                                                   false,
+                                                   false,
+                                                   n_triangles,
+                                                   vertex_indices,
+                                                   n_vertices,
+                                                   p_ws, // in world space
+                                                   s, // empty
+                                                   n, // empty
+                                                   uv));
+    let mut tris: Vec<Arc<Triangle>> = Vec::new();
     for i in 0..n_triangles {
-        tris.push(Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, i));
+        let triangle = Arc::new(Triangle::new(object_to_world,
+                                              world_to_object,
+                                              false,
+                                              triangle_mesh.clone(),
+                                              i));
+        tris.push(triangle);
     }
     // first ray
-    let ref triangle: Triangle = tris[0];
+    let ref triangle = tris[0];
     let o: Point3f = Point3f {
         x: 2.0,
         y: 1.99999988,
@@ -79,7 +85,8 @@ fn main() {
     };
     let mut t_hit: Float = 0.0;
     let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-    let did_ray_interesect: bool = <Triangle as Shape>::intersect(&triangle, &r, &mut t_hit, &mut isect); // Primitive
+    let did_ray_interesect: bool =
+        <Triangle as Shape>::intersect(&triangle, &r, &mut t_hit, &mut isect); // Primitive
 
     println!("r = {:?}", r);
     println!("sphere.intersect(r, {:?}) = {:?}",
@@ -99,7 +106,8 @@ fn main() {
         differential: None,
     };
     let mut t_hit: Float = 0.0;
-    let did_ray_interesect: bool = <Triangle as Shape>::intersect(&triangle, &r, &mut t_hit, &mut isect); // Primitive
+    let did_ray_interesect: bool =
+        <Triangle as Shape>::intersect(&triangle, &r, &mut t_hit, &mut isect); // Primitive
 
     println!("r = {:?}", r);
     println!("sphere.intersect(r, {:?}) = {:?}",

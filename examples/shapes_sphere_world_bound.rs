@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Bounds3f, Float, Primitive, Sphere, Transform, Vector3f};
+use pbrt::{Bounds3f, Float, Shape, Sphere, Transform, Vector3f};
 
 fn main() {
     let radius: Float = 1.0;

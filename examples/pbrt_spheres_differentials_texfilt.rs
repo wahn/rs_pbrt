@@ -1,20 +1,22 @@
 extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLightingIntegrator,
-           DistantLight, Film, Float, LightStrategy, PerspectiveCamera, Point2f, Point2i, Point3f,
-           Primitive, Rng, Scene, Spectrum, Sphere, SplitMethod, Transform, Triangle,
-           TriangleMesh, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+           DistantLight, Film, Float, GeometricPrimitive, LightStrategy, MatteMaterial,
+           PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Rng, Scene, Shape, Spectrum,
+           Sphere, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
+           ZeroTwoSequenceSampler};
 use std::string::String;
+use std::sync::Arc;
 
 struct SceneDescription {
-    meshes: Vec<TriangleMesh>,
-    spheres: Vec<Sphere>,
+    meshes: Vec<Arc<TriangleMesh>>,
+    spheres: Vec<Arc<Sphere>>,
     lights: Vec<DistantLight>,
 }
 
 struct SceneDescriptionBuilder {
-    meshes: Vec<TriangleMesh>,
-    spheres: Vec<Sphere>,
+    meshes: Vec<Arc<TriangleMesh>>,
+    spheres: Vec<Arc<Sphere>>,
     lights: Vec<DistantLight>,
 }
 
@@ -47,17 +49,17 @@ impl SceneDescriptionBuilder {
                 n: Vec<Vector3f>,
                 uv: Vec<Point2f>)
                 -> &mut SceneDescriptionBuilder {
-        let triangle_mesh: TriangleMesh = TriangleMesh::new(object_to_world,
-                                                            world_to_object,
-                                                            false,
-                                                            false,
-                                                            n_triangles,
-                                                            vertex_indices,
-                                                            n_vertices,
-                                                            p_ws, // in world space
-                                                            s, // empty
-                                                            n, // empty
-                                                            uv);
+        let triangle_mesh = Arc::new(TriangleMesh::new(object_to_world,
+                                                       world_to_object,
+                                                       false,
+                                                       false,
+                                                       n_triangles,
+                                                       vertex_indices,
+                                                       n_vertices,
+                                                       p_ws, // in world space
+                                                       s, // empty
+                                                       n, // empty
+                                                       uv));
         println!("triangle_mesh = {:?}", triangle_mesh);
         println!("vertex_indices = {:?}", triangle_mesh.vertex_indices);
         self.meshes.push(triangle_mesh);
@@ -71,14 +73,14 @@ impl SceneDescriptionBuilder {
                   z_max: Float,
                   phi_max: Float)
                   -> &mut SceneDescriptionBuilder {
-        let sphere: Sphere = Sphere::new(object_to_world,
-                                         world_to_object,
-                                         false,
-                                         false,
-                                         radius,
-                                         z_min,
-                                         z_max,
-                                         phi_max);
+        let sphere = Arc::new(Sphere::new(object_to_world,
+                                          world_to_object,
+                                          false,
+                                          false,
+                                          radius,
+                                          z_min,
+                                          z_max,
+                                          phi_max));
         // println!("sphere = {:?}", sphere);
         self.spheres.push(sphere);
         self
@@ -92,36 +94,36 @@ impl SceneDescriptionBuilder {
     }
 }
 
-struct RenderOptions<'scene> {
-    primitives: Vec<&'scene Primitive>,
-    triangles: Vec<Triangle<'scene>>,
-    spheres: Vec<Sphere>,
+struct RenderOptions {
+    primitives: Vec<Arc<Primitive>>,
+    triangles: Vec<Arc<Triangle>>,
+    spheres: Vec<Arc<Sphere>>,
     lights: Vec<DistantLight>,
 }
 
-impl<'s> RenderOptions<'s> {
-    fn new(scene: &'s SceneDescription) -> RenderOptions<'s> {
-        let mut primitives: Vec<&Primitive> = Vec::new();
-        let mut triangles: Vec<Triangle> = Vec::new();
-        let mut spheres: Vec<Sphere> = Vec::new();
+impl RenderOptions {
+    fn new(scene: SceneDescription) -> RenderOptions {
+        let mut primitives: Vec<Arc<Primitive>> = Vec::new();
+        let mut triangles: Vec<Arc<Triangle>> = Vec::new();
+        let mut spheres: Vec<Arc<Sphere>> = Vec::new();
         let mut lights: Vec<DistantLight> = Vec::new();
         // lights
         for light in &scene.lights {
             lights.push(*light);
         }
         // spheres
-        for sphere in &scene.spheres {
-            spheres.push(sphere.clone());
+        for sphere in scene.spheres {
+            spheres.push(sphere);
         }
         // meshes
-        for mesh in &scene.meshes {
+        for mesh in scene.meshes {
             // create individual triangles
             for id in 0..mesh.n_triangles {
-                let triangle: Triangle = Triangle::new(mesh.object_to_world,
-                                                       mesh.world_to_object,
-                                                       mesh.transform_swaps_handedness,
-                                                       &mesh,
-                                                       id);
+                let triangle = Arc::new(Triangle::new(mesh.object_to_world,
+                                                      mesh.world_to_object,
+                                                      mesh.transform_swaps_handedness,
+                                                      mesh.clone(),
+                                                      id));
                 triangles.push(triangle);
             }
         }
@@ -390,21 +392,27 @@ fn main() {
                                       sampler,
                                       pixel_bounds);
     // TMP: process SceneDescription before handing primitives to BVHAccel
-    let mut render_options: RenderOptions = RenderOptions::new(&scene_description);
+    let mut render_options: RenderOptions = RenderOptions::new(scene_description);
     // add triangles created above (not meshes)
-    for triangle in &render_options.triangles {
-        render_options.primitives.push(triangle);
+    let matte = Arc::new(MatteMaterial {
+        kd: Spectrum::new(0.5),
+        sigma: 0.0,
+    });
+    for triangle in render_options.triangles {
+        let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
+        render_options.primitives.push(geo_prim.clone());
     }
-    for sphere in &render_options.spheres {
-        render_options.primitives.push(sphere);
+    for sphere in render_options.spheres {
+        let geo_prim = Arc::new(GeometricPrimitive::new(sphere, matte.clone()));
+        render_options.primitives.push(geo_prim.clone());
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
-    let accelerator: BVHAccel = BVHAccel::new(render_options.primitives, 4, SplitMethod::SAH);
+    let accelerator = Arc::new(BVHAccel::new(render_options.primitives, 4, SplitMethod::SAH));
     println!("###############");
     println!("# accelerator #");
     println!("###############");
     // SamplerIntegrator::Render (integrator.cpp)
-    let scene: Scene = Scene::new(&accelerator, render_options.lights);
+    let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
     integrator.render(&scene);
 }

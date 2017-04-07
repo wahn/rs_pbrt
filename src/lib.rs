@@ -631,20 +631,20 @@ pub type Float = f64;
 // see scene.h
 
 #[derive(Clone)]
-pub struct Scene<'a> {
+pub struct Scene {
     pub lights: Vec<DistantLight>, // TODO: Light
     pub infinite_lights: Vec<DistantLight>, // TODO: Light
-    aggregate: &'a BVHAccel<'a>, // TODO: Primitive,
+    aggregate: Arc<BVHAccel>, // TODO: Primitive,
     world_bound: Bounds3f,
 }
 
-impl<'a> Scene<'a> {
-    pub fn new(aggregate: &'a BVHAccel<'a>, lights: Vec<DistantLight>) -> Self {
+impl Scene {
+    pub fn new(aggregate: Arc<BVHAccel>, lights: Vec<DistantLight>) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
         let scene: Scene = Scene {
             lights: Vec::new(),
             infinite_lights: Vec::new(),
-            aggregate: aggregate,
+            aggregate: aggregate.clone(),
             world_bound: world_bound,
         };
         let mut changed_lights = Vec::new();
@@ -3708,11 +3708,17 @@ impl<'a> SurfaceInteraction<'a> {
 
 pub trait Shape {
     fn object_bound(&self) -> Bounds3f;
+    fn world_bound(&self) -> Bounds3f;
     fn intersect(&self,
                  r: &Ray,
                  t_hit: &mut Float,
                  isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
                  -> bool;
+    // TODO: fn intersect_p(&self,
+    //                r: &Ray /* , bool testAlphaTexture */)
+    //              -> bool;
+    // TODO: virtual Float Area() const = 0;
+    // TODO: virtual Interaction Sample(const Point2f &u, Float *pdf) const = 0;
 }
 
 // see primitive.h
@@ -3725,6 +3731,11 @@ pub trait Primitive {
                  -> bool {
         false
     }
+    // TODO: fn intersect_p(&self,
+    //              r: &Ray)
+    //              -> bool {
+    //     false
+    // }
     // TODO: fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>>;
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>>;
     fn compute_scattering_functions(&self,
@@ -3739,17 +3750,34 @@ pub trait Primitive {
 }
 
 pub struct GeometricPrimitive {
-    pub shape: Option<Arc<Shape>>,
-    pub material: Option<Arc<Material>>,
+    pub shape: Option<Arc<Shape + Send + Sync>>,
+    pub material: Option<Arc<Material + Send + Sync>>,
     // TODO: pub area_light: Option<Arc<AreaLight>>,
     // TODO: pub medium_interface: Option<Arc<MediumInterface>>,
 }
 
 impl GeometricPrimitive {
-    pub fn new() -> Self {
+    pub fn new(shape: Arc<Shape + Send + Sync>, material: Arc<Material + Send + Sync>) -> Self {
         GeometricPrimitive {
-            shape: None,
-            material: None,
+            shape: Some(shape),
+            material: Some(material),
+        }
+    }
+}
+
+impl Primitive for GeometricPrimitive {
+    fn world_bound(&self) -> Bounds3f {
+        let mut bound: Bounds3f = Bounds3f::default();
+        if let Some(ref shape) = self.shape {
+            bound = shape.object_bound(); // TODO: world_bound()
+        }
+        bound
+    }
+    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
+        if let Some(ref material) = self.material {
+            Some(material.clone())
+        } else {
+            None
         }
     }
 }
@@ -3834,6 +3862,10 @@ impl Shape for Sphere {
                 z: self.z_max,
             },
         }
+    }
+    fn world_bound(&self) -> Bounds3f {
+        // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
+        self.object_to_world.transform_bounds(self.object_bound())
     }
     fn intersect(&self,
                  r: &Ray,
@@ -4000,16 +4032,6 @@ impl Shape for Sphere {
     }
 }
 
-impl Primitive for Sphere {
-    fn world_bound(&self) -> Bounds3f {
-        // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
-        self.object_to_world.transform_bounds(self.object_bound())
-    }
-    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
-        self.material.clone()
-    }
-}
-
 // see triangle.h
 
 #[derive(Debug,Clone)]
@@ -4068,8 +4090,8 @@ impl TriangleMesh {
 }
 
 #[derive(Clone)]
-pub struct Triangle<'a> {
-    mesh: &'a TriangleMesh,
+pub struct Triangle {
+    mesh: Arc<TriangleMesh>,
     id: usize,
     // inherited from class Shape (see shape.h)
     object_to_world: Transform,
@@ -4079,11 +4101,11 @@ pub struct Triangle<'a> {
     pub material: Option<Arc<Material + Send + Sync>>,
 }
 
-impl<'a> Triangle<'a> {
+impl Triangle {
     pub fn new(object_to_world: Transform,
                world_to_object: Transform,
                reverse_orientation: bool,
-               mesh: &'a TriangleMesh,
+               mesh: Arc<TriangleMesh>,
                tri_number: usize)
                -> Self {
         Triangle {
@@ -4107,7 +4129,7 @@ impl<'a> Triangle<'a> {
     }
 }
 
-impl<'a> Shape for Triangle<'a> {
+impl Shape for Triangle {
     fn object_bound(&self) -> Bounds3f {
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
@@ -4115,6 +4137,12 @@ impl<'a> Shape for Triangle<'a> {
         bnd3_union_pnt3(Bounds3f::new(self.world_to_object.transform_point(p0),
                                       self.world_to_object.transform_point(p1)),
                         self.world_to_object.transform_point(p2))
+    }
+    fn world_bound(&self) -> Bounds3f {
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
+        bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
     }
     fn intersect(&self,
                  ray: &Ray,
@@ -4314,23 +4342,19 @@ impl<'a> Shape for Triangle<'a> {
     }
 }
 
-impl<'a> Primitive for Triangle<'a> {
-    fn world_bound(&self) -> Bounds3f {
-        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
-        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
-        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
-        bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
-    }
-    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
-        self.material.clone()
-    }
-}
-
 // see spectrum.h
 
 #[derive(Debug,Default,Copy,Clone)]
 pub struct RGBSpectrum {
     c: [Float; 3],
+}
+
+impl RGBSpectrum {
+    pub fn new(v: Float) -> Self {
+        let n_spectrum_samples = 3; // RGB
+        RGBSpectrum { c: [v, v, v] }
+        // TODO: DCHECK(!HasNaNs());
+    }
 }
 
 impl AddAssign for RGBSpectrum {
@@ -4346,14 +4370,6 @@ impl Mul for RGBSpectrum {
     type Output = RGBSpectrum;
     fn mul(self, rhs: RGBSpectrum) -> RGBSpectrum {
         RGBSpectrum { c: [self.c[0] * rhs.c[0], self.c[1] * rhs.c[1], self.c[2] * rhs.c[2]] }
-    }
-}
-
-impl RGBSpectrum {
-    pub fn new(v: Float) -> Self {
-        let n_spectrum_samples = 3; // RGB
-        RGBSpectrum { c: [v, v, v] }
-        // TODO: DCHECK(!HasNaNs());
     }
 }
 
@@ -4457,15 +4473,15 @@ pub struct LinearBVHNode {
 }
 
 // BVHAccel -> Aggregate -> Primitive
-pub struct BVHAccel<'a> {
+pub struct BVHAccel {
     max_prims_in_node: usize,
     split_method: SplitMethod,
-    pub primitives: Vec<&'a Primitive>,
+    pub primitives: Vec<Arc<Primitive>>,
     pub nodes: Vec<LinearBVHNode>,
 }
 
-impl<'a> BVHAccel<'a> {
-    pub fn new(p: Vec<&'a Primitive>, max_prims_in_node: usize, split_method: SplitMethod) -> Self {
+impl BVHAccel {
+    pub fn new(p: Vec<Arc<Primitive>>, max_prims_in_node: usize, split_method: SplitMethod) -> Self {
         let bvh = Arc::new(BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
             split_method: split_method.clone(),
@@ -4480,7 +4496,7 @@ impl<'a> BVHAccel<'a> {
         }
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut total_nodes: usize = 0;
-        let mut ordered_prims: Vec<&'a Primitive> = Vec::with_capacity(num_prims);
+        let mut ordered_prims: Vec<Arc<Primitive>> = Vec::with_capacity(num_prims);
         let root = BVHAccel::recursive_build(bvh.clone(), // instead of self
                                              // arena,
                                              &mut primitive_info,
@@ -4564,13 +4580,13 @@ impl<'a> BVHAccel<'a> {
         }
         hit
     }
-    pub fn recursive_build(bvh: Arc<BVHAccel<'a>>,
+    pub fn recursive_build(bvh: Arc<BVHAccel>,
                            // arena,
                            primitive_info: &mut Vec<BVHPrimitiveInfo>,
                            start: usize,
                            end: usize,
                            total_nodes: &mut usize,
-                           ordered_prims: &mut Vec<&'a Primitive>)
+                           ordered_prims: &mut Vec<Arc<Primitive>>)
                            -> Box<BVHBuildNode> {
         assert_ne!(start, end);
         let mut node: Box<BVHBuildNode> = Box::new(BVHBuildNode::default());
@@ -4586,7 +4602,7 @@ impl<'a> BVHAccel<'a> {
             let first_prim_offset: usize = ordered_prims.len();
             for i in start..end {
                 let prim_num: usize = primitive_info[i].primitive_number;
-                ordered_prims.push(bvh.primitives[prim_num]);
+                ordered_prims.push(bvh.primitives[prim_num].clone());
             }
             node.init_leaf(first_prim_offset, n_primitives, &bounds);
             return node;
@@ -4604,7 +4620,7 @@ impl<'a> BVHAccel<'a> {
                 let first_prim_offset: usize = ordered_prims.len();
                 for i in start..end {
                     let prim_num: usize = primitive_info[i].primitive_number;
-                    ordered_prims.push(bvh.primitives[prim_num]);
+                    ordered_prims.push(bvh.primitives[prim_num].clone());
                 }
                 node.init_leaf(first_prim_offset, n_primitives, &bounds);
                 return node;
@@ -4700,7 +4716,7 @@ impl<'a> BVHAccel<'a> {
                                 let first_prim_offset: usize = ordered_prims.len();
                                 for i in start..end {
                                     let prim_num: usize = primitive_info[i].primitive_number;
-                                    ordered_prims.push(bvh.primitives[prim_num]);
+                                    ordered_prims.push(bvh.primitives[prim_num].clone());
                                 }
                                 node.init_leaf(first_prim_offset, n_primitives, &bounds);
                                 return node;

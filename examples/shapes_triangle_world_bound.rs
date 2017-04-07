@@ -1,6 +1,7 @@
 extern crate pbrt;
 
-use pbrt::{Bounds3f, Point2f, Point3f, Primitive, Transform, Triangle, TriangleMesh, Vector3f};
+use pbrt::{Bounds3f, Point2f, Point3f, Shape, Transform, Triangle, TriangleMesh, Vector3f};
+use std::sync::Arc;
 
 fn main() {
     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
@@ -42,20 +43,25 @@ fn main() {
     }
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Vector3f> = Vec::new();
-    let triangle_mesh: TriangleMesh = TriangleMesh::new(object_to_world,
-                                                        world_to_object,
-                                                        false,
-                                                        false,
-                                                        n_triangles,
-                                                        vertex_indices,
-                                                        n_vertices,
-                                                        p_ws, // in world space
-                                                        s, // empty
-                                                        n, // empty
-                                                        uv);
-    let mut tris: Vec<Triangle> = Vec::new();
+    let triangle_mesh = Arc::new(TriangleMesh::new(object_to_world,
+                                                   world_to_object,
+                                                   false,
+                                                   false,
+                                                   n_triangles,
+                                                   vertex_indices,
+                                                   n_vertices,
+                                                   p_ws, // in world space
+                                                   s, // empty
+                                                   n, // empty
+                                                   uv));
+    let mut tris: Vec<Arc<Triangle>> = Vec::new();
     for i in 0..n_triangles {
-        tris.push(Triangle::new(object_to_world, world_to_object, false, &triangle_mesh, i));
+        let triangle = Arc::new(Triangle::new(object_to_world,
+                                              world_to_object,
+                                              false,
+                                              triangle_mesh.clone(),
+                                              i));
+        tris.push(triangle);
     }
     // println!("tris[0] = {:?}", tris[0]);
     let p0: Point3f = triangle_mesh.p[triangle_mesh.vertex_indices[0]];
