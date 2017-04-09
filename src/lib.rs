@@ -652,8 +652,8 @@ impl Scene {
         for mut light in lights {
             light.preprocess(&scene);
             changed_lights.push(light);
-            let check: i32 = light.flags & LightFlags::Infinite as i32;
-            if check == LightFlags::Infinite as i32 {
+            let check: u8 = light.flags & LightFlags::Infinite as u8;
+            if check == LightFlags::Infinite as u8 {
                 infinite_lights.push(light);
             }
         }
@@ -3545,7 +3545,7 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 pub struct Interaction {
 }
 
-#[derive(Default,Copy,Clone)]
+#[derive(Default,Clone)]
 pub struct SurfaceInteraction<'a> {
     // Interaction Public Data
     pub p: Point3f,
@@ -3575,6 +3575,7 @@ pub struct SurfaceInteraction<'a> {
     pub dudy: Float,
     pub dvdy: Float,
     pub primitive: Option<&'a Primitive>,
+    pub bsdf: Option<Arc<Bsdf>>,
 }
 
 impl<'a> SurfaceInteraction<'a> {
@@ -3613,6 +3614,7 @@ impl<'a> SurfaceInteraction<'a> {
             dudy: 0.0 as Float,
             dvdy: 0.0 as Float,
             primitive: None,
+            bsdf: None,
         }
     }
     pub fn compute_scattering_functions(&mut self,
@@ -3746,6 +3748,7 @@ pub trait Primitive {
         if let Some(ref material) = self.get_material() {
             material.compute_scattering_functions(isect, arena, mode, allow_multiple_lobes);
         }
+        // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
     }
 }
 
@@ -5445,11 +5448,34 @@ pub struct Bsdf {
     pub ng: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub bxdfs: [Bxdf; MAX_BXDFS],
+    // TODO: pub bxdfs: [Bxdf; MAX_BXDFS],
+    pub bxdfs: [LambertianReflection; MAX_BXDFS],
+}
+
+#[repr(u8)]
+pub enum BxdfType {
+    BSDF_REFLECTION = 1,
+    BSDF_TRANSMISSION = 2,
+    BSDF_DIFFUSE = 4,
+    BSDF_GLOSSY = 8,
+    BSDF_SPECULAR = 16,
+    BSDF_ALL = 31,
+}
+
+pub trait Bxdf {
+    fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum;
 }
 
 #[derive(Debug,Default,Copy,Clone)]
-pub struct Bxdf {
+pub struct LambertianReflection {
+    pub r: Spectrum,
+}
+
+impl Bxdf for LambertianReflection {
+    fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
 }
 
 // see material.h
@@ -5491,7 +5517,18 @@ impl Material for MatteMaterial {
         let mut allocator = arena.allocator();
         // si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
         let bsdf: &mut Bsdf = allocator.alloc(Bsdf::default());
-        // WORK
+        // TODO: Spectrum r = Kd->Evaluate(*si).Clamp();
+        // TODO: Float sig = Clamp(sigma->Evaluate(*si), 0, 90);
+        let sig = self.sigma;
+        // TODO: if (!r.IsBlack()) {
+        if sig == 0.0 {
+            // si->bsdf->Add(ARENA_ALLOC(arena, LambertianReflection)(r));
+            let bxdf: &mut LambertianReflection = allocator.alloc(LambertianReflection::default());
+            // si.bsdf.add(bxdf);
+        } else {
+            // TODO: si->bsdf->Add(ARENA_ALLOC(arena, OrenNayar)(r, sig));
+        }
+        // }
     }
 }
 
@@ -5538,7 +5575,7 @@ impl Material for MirrorMaterial {
 
 // see light.h
 
-#[repr(i32)]
+#[repr(u8)]
 pub enum LightFlags {
     DeltaPosition = 1,
     DeltaDirection = 2,
@@ -5556,7 +5593,7 @@ pub struct DistantLight {
     world_center: Point3f,
     world_radius: Float,
     // inherited from class Light (see light.h)
-    flags: i32,
+    flags: u8,
     n_samples: i32, // const?
     // TODO: const MediumInterface mediumInterface;
     // TODO: const Transform LightToWorld, WorldToLight;
@@ -5569,7 +5606,7 @@ impl DistantLight {
             w_light: vec3_normalize(light_to_world.transform_vector(*w_light)),
             world_center: Point3f::default(),
             world_radius: 0.0,
-            flags: LightFlags::DeltaDirection as i32,
+            flags: LightFlags::DeltaDirection as u8,
             n_samples: 1_i32,
         }
     }
