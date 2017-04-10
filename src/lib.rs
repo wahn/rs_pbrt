@@ -614,7 +614,7 @@
 
 extern crate num;
 extern crate num_cpus;
-extern crate copy_arena;
+//extern crate copy_arena;
 
 use std::cmp::PartialEq;
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index};
@@ -624,7 +624,7 @@ use std::mem;
 use std::sync::Arc;
 use std::thread;
 use std::sync::mpsc;
-use copy_arena::{Arena, Allocator};
+//use copy_arena::{Arena, Allocator};
 
 pub type Float = f64;
 
@@ -3619,12 +3619,15 @@ impl<'a> SurfaceInteraction<'a> {
     }
     pub fn compute_scattering_functions(&mut self,
                                         ray: &Ray,
-                                        arena: &mut Arena,
+                                        // arena: &mut Arena,
                                         allow_multiple_lobes: bool,
                                         mode: TransportMode) {
+        println!("SurfaceInteraction::compute_scattering_functions()");
         self.compute_differentials(ray);
         if let Some(primitive) = self.primitive {
-            primitive.compute_scattering_functions(self, arena, mode, allow_multiple_lobes);
+            println!("TODO: SurfaceInteraction::primitive");
+            primitive.compute_scattering_functions(self, // arena, 
+                                                   mode, allow_multiple_lobes);
         }
     }
     pub fn compute_differentials(&mut self, ray: &Ray) {
@@ -3728,11 +3731,9 @@ pub trait Shape {
 pub trait Primitive {
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self,
-                 r: &Ray,
+                 r: &mut Ray,
                  isect: &mut SurfaceInteraction)
-                 -> bool {
-        false
-    }
+                 -> bool;
     // TODO: fn intersect_p(&self,
     //              r: &Ray)
     //              -> bool {
@@ -3742,11 +3743,13 @@ pub trait Primitive {
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>>;
     fn compute_scattering_functions(&self,
                                     isect: &mut SurfaceInteraction,
-                                    arena: &mut Arena,
+                                    // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
+        println!("Primitive::compute_scattering_functions()");
         if let Some(ref material) = self.get_material() {
-            material.compute_scattering_functions(isect, arena, mode, allow_multiple_lobes);
+            material.compute_scattering_functions(isect, // arena, 
+                                                  mode, allow_multiple_lobes);
         }
         // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
     }
@@ -3775,6 +3778,20 @@ impl Primitive for GeometricPrimitive {
             bound = shape.object_bound(); // TODO: world_bound()
         }
         bound
+    }
+    fn intersect(&self,
+                 r: &mut Ray,
+                 isect: &mut SurfaceInteraction)
+                 -> bool {
+        let mut t_hit: Float = 0.0 as Float;
+        if let Some(ref shape) = self.shape {
+            if !shape.intersect(r, &mut t_hit, isect) { return false; }
+            r.t_max = t_hit;
+            // TODO: isect->primitive = this;
+            // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
+            // TODO: deal with mediumInterface
+        }
+        true
     }
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
         if let Some(ref material) = self.material {
@@ -5448,8 +5465,19 @@ pub struct Bsdf {
     pub ng: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
+    pub n_bxdfs: u8,
     // TODO: pub bxdfs: [Bxdf; MAX_BXDFS],
     pub bxdfs: [LambertianReflection; MAX_BXDFS],
+}
+
+impl Bsdf {
+    pub fn add(&self, l: Option<Arc<LambertianReflection>>) {
+        assert!((self.n_bxdfs as usize) < MAX_BXDFS, "{} needs to be smaller than {}",
+                self.n_bxdfs, MAX_BXDFS);
+        println!("Bsdf::add()");
+        if let Some(ref lambertian_reflection) = l {
+        }
+    }
 }
 
 #[repr(u8)]
@@ -5464,6 +5492,7 @@ pub enum BxdfType {
 
 pub trait Bxdf {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum;
+    fn get_type(&self) -> u8;
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -5475,6 +5504,9 @@ impl Bxdf for LambertianReflection {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
         // WORK
         Spectrum::default()
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BSDF_DIFFUSE as u8 | BxdfType::BSDF_REFLECTION as u8
     }
 }
 
@@ -5488,6 +5520,9 @@ impl Bxdf for OrenNayar {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
         // WORK
         Spectrum::default()
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BSDF_DIFFUSE as u8 | BxdfType::BSDF_REFLECTION as u8
     }
 }
 
@@ -5503,7 +5538,7 @@ pub trait Material {
     /// member variables.
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
-                                    arena: &mut Arena,
+                                    // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool);
 }
@@ -5520,23 +5555,29 @@ pub struct MatteMaterial {
 impl Material for MatteMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
-                                    arena: &mut Arena,
+                                    // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         // perform bump mapping with _bumpMap_, if present
         // TODO: if (bumpMap) Bump(bumpMap, si);
 
         // evaluate textures for _MatteMaterial_ material and allocate BRDF
-        let mut allocator = arena.allocator();
+        //let mut allocator = arena.allocator();
         // si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
-        let bsdf: &mut Bsdf = allocator.alloc(Bsdf::default());
+        let bsdf = Arc::new(Bsdf::default());
+        si.bsdf = Some(bsdf);
+        // let bsdf: &mut Bsdf = allocator.alloc(Bsdf::default());
         // TODO: Spectrum r = Kd->Evaluate(*si).Clamp();
         // TODO: Float sig = Clamp(sigma->Evaluate(*si), 0, 90);
         let sig = self.sigma;
         // TODO: if (!r.IsBlack()) {
         if sig == 0.0 {
             // si->bsdf->Add(ARENA_ALLOC(arena, LambertianReflection)(r));
-            let bxdf: &mut LambertianReflection = allocator.alloc(LambertianReflection::default());
+            // let bxdf: &mut LambertianReflection = allocator.alloc(LambertianReflection::default());
+            if let Some(ref bsdf) = si.bsdf {
+                bsdf.add(Some(Arc::new(LambertianReflection::default())));
+            }
+            // WORK
             // si.bsdf.add(bxdf);
         } else {
             // si->bsdf->Add(ARENA_ALLOC(arena, OrenNayar)(r, sig));
@@ -5563,7 +5604,7 @@ pub struct GlassMaterial {
 impl Material for GlassMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
-                                    arena: &mut Arena,
+                                    // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         // WORK
@@ -5581,7 +5622,7 @@ pub struct MirrorMaterial {
 impl Material for MirrorMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
-                                    arena: &mut Arena,
+                                    // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         // WORK
@@ -5673,7 +5714,7 @@ pub trait SamplerIntegrator {
           ray: &mut Ray,
           scene: &Scene,
           sampler: &mut ZeroTwoSequenceSampler,
-          arena: &mut Arena,
+          // arena: &mut Arena,
           depth: i32)
           -> Spectrum;
 }
@@ -5787,7 +5828,7 @@ impl DirectLightingIntegrator {
                         let mut done: bool = false;
                         while !done {
                             // let's use the copy_arena crate instead of pbrt's MemoryArena
-                            let mut arena: Arena = Arena::with_capacity(262144); // 256kB
+                            // let mut arena: Arena = Arena::with_capacity(262144); // 256kB
 
                             // initialize _CameraSample_ for current sample
                             let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
@@ -5802,7 +5843,8 @@ impl DirectLightingIntegrator {
                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
                             let y: Float = l.y();
                             if ray_weight > 0.0 {
-                                l = self.li(&mut ray, scene, &mut tile_sampler, &mut arena, 0_i32);
+                                l = self.li(&mut ray, scene, &mut tile_sampler, // &mut arena, 
+                                            0_i32);
                             }
                             if l.has_nans() {
                                 println!("Not-a-number radiance value returned for pixel ({:?}, \
@@ -5847,7 +5889,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
           ray: &mut Ray,
           scene: &Scene,
           sampler: &mut ZeroTwoSequenceSampler,
-          arena: &mut Arena,
+          // arena: &mut Arena,
           depth: i32)
           -> Spectrum {
         // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
@@ -5862,7 +5904,8 @@ impl SamplerIntegrator for DirectLightingIntegrator {
         }
         // compute scattering functions for surface interaction
         let mode: TransportMode = TransportMode::Radiance;
-        isect.compute_scattering_functions(ray, arena, false, mode);
+        isect.compute_scattering_functions(ray, // arena, 
+                                           false, mode);
         // WORK
         l
     }
