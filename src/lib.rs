@@ -5478,6 +5478,19 @@ impl Bxdf for LambertianReflection {
     }
 }
 
+pub struct OrenNayar {
+    pub r: Spectrum,
+    pub a: Float,
+    pub b: Float,
+}
+
+impl Bxdf for OrenNayar {
+    fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+}
+
 // see material.h
 
 /// **Material** defines the interface that material implementations
@@ -5526,7 +5539,9 @@ impl Material for MatteMaterial {
             let bxdf: &mut LambertianReflection = allocator.alloc(LambertianReflection::default());
             // si.bsdf.add(bxdf);
         } else {
-            // TODO: si->bsdf->Add(ARENA_ALLOC(arena, OrenNayar)(r, sig));
+            // si->bsdf->Add(ARENA_ALLOC(arena, OrenNayar)(r, sig));
+            // let bxdf: &mut OrenNayar = allocator.alloc(OrenNayar::default());
+            // si.bsdf.add(bxdf);
         }
         // }
     }
