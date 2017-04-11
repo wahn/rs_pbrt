@@ -1554,6 +1554,17 @@ impl<T> Normal3<T> {
     }
 }
 
+impl<T> From<Vector3<T>> for Normal3<T> {
+    fn from(v: Vector3<T>) -> Self {
+        // TODO: DCHECK(!v.HasNaNs());
+        Normal3::<T> {
+            x: v.x,
+            y: v.y,
+            z: v.z,
+        }
+    }
+}
+
 pub type Bounds2f = Bounds2<Float>;
 pub type Bounds2i = Bounds2<i32>;
 pub type Bounds3f = Bounds3<Float>;
@@ -3544,6 +3555,14 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 pub struct Interaction {
 }
 
+#[derive(Debug,Default,Copy,Clone)]
+pub struct Shading {
+    pub n: Vector3f,
+    pub dpdu: Vector3f,
+    pub dpdv: Vector3f,
+    pub dndu: Vector3f,
+    pub dndv: Vector3f,
+}
 #[derive(Default,Clone)]
 pub struct SurfaceInteraction<'a> {
     // Interaction Public Data
@@ -3574,6 +3593,7 @@ pub struct SurfaceInteraction<'a> {
     pub dudy: Float,
     pub dvdy: Float,
     pub primitive: Option<&'a GeometricPrimitive>,
+    pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
 }
 
@@ -3613,6 +3633,7 @@ impl<'a> SurfaceInteraction<'a> {
             dudy: 0.0 as Float,
             dvdy: 0.0 as Float,
             primitive: None,
+            shading: Shading::default(),
             bsdf: None,
         }
     }
@@ -3621,10 +3642,8 @@ impl<'a> SurfaceInteraction<'a> {
                                         // arena: &mut Arena,
                                         allow_multiple_lobes: bool,
                                         mode: TransportMode) {
-        println!("SurfaceInteraction::compute_scattering_functions()");
         self.compute_differentials(ray);
         if let Some(primitive) = self.primitive {
-            println!("TODO: SurfaceInteraction::primitive");
             primitive.compute_scattering_functions(self, // arena, 
                                                    mode, allow_multiple_lobes);
         }
@@ -3740,7 +3759,6 @@ pub trait Primitive {
                                     // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
-        println!("Primitive::compute_scattering_functions()");
         if let Some(ref material) = self.get_material() {
             material.compute_scattering_functions(isect, // arena, 
                                                   mode, allow_multiple_lobes);
@@ -5422,9 +5440,6 @@ impl PerspectiveCamera {
 
 // see reflection.h
 
-const MAX_BXDFS: usize = 8;
-
-#[derive(Debug,Default,Copy,Clone)]
 pub struct Bsdf {
     pub eta: Float,
     /// shading normal
@@ -5433,17 +5448,19 @@ pub struct Bsdf {
     pub ng: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub n_bxdfs: u8,
-    // TODO: pub bxdfs: [Bxdf; MAX_BXDFS],
-    pub bxdfs: [LambertianReflection; MAX_BXDFS],
+    pub bxdfs: Vec<Box<Bxdf + Sync + Send>>,
 }
 
 impl Bsdf {
-    pub fn add(&self, l: Option<Arc<LambertianReflection>>) {
-        assert!((self.n_bxdfs as usize) < MAX_BXDFS, "{} needs to be smaller than {}",
-                self.n_bxdfs, MAX_BXDFS);
-        println!("Bsdf::add()");
-        if let Some(ref lambertian_reflection) = l {
+    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Box<Bxdf + Sync + Send>>) -> Bsdf {
+        let ss = vec3_normalize(si.dpdu);
+        Bsdf {
+            eta: eta,
+            ns: Normal3::from(si.shading.n),
+            ng: si.n,
+            ss: ss,
+            ts: vec3_cross(si.shading.n, ss),
+            bxdfs: bxdfs,
         }
     }
 }
@@ -5468,6 +5485,14 @@ pub struct LambertianReflection {
     pub r: Spectrum,
 }
 
+impl LambertianReflection {
+    pub fn new(r: Spectrum) -> Self {
+        LambertianReflection {
+            r: r,
+        }
+    }
+}
+
 impl Bxdf for LambertianReflection {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
         // WORK
@@ -5482,6 +5507,18 @@ pub struct OrenNayar {
     pub r: Spectrum,
     pub a: Float,
     pub b: Float,
+}
+
+impl OrenNayar {
+    pub fn new(r: Spectrum, sigma: Float) -> Self {
+        let sigma = radians(sigma);
+        let sigma2: Float = sigma * sigma;
+        OrenNayar {
+            r: r,
+            a: 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33))),
+            b: 0.45 * sigma2 / (sigma2 + 0.09),
+        }
+    }
 }
 
 impl Bxdf for OrenNayar {
@@ -5520,39 +5557,26 @@ pub struct MatteMaterial {
     // TODO: bump_map
 }
 
+impl MatteMaterial {
+    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+        let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let r: Spectrum = Spectrum::new(0.5 as Float); // TODO: self.kd.evaluate(si);
+        if self.sigma == 0.0 {
+            bxdfs.push(Box::new(LambertianReflection::new(r)));
+        } else {
+            bxdfs.push(Box::new(OrenNayar::new(r, self.sigma)));
+        }
+        Bsdf::new(si, 1.5, bxdfs)
+    }
+}
+
 impl Material for MatteMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
                                     // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
-        // perform bump mapping with _bumpMap_, if present
-        // TODO: if (bumpMap) Bump(bumpMap, si);
-
-        // evaluate textures for _MatteMaterial_ material and allocate BRDF
-        //let mut allocator = arena.allocator();
-        // si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
-        let bsdf = Arc::new(Bsdf::default());
-        si.bsdf = Some(bsdf);
-        // let bsdf: &mut Bsdf = allocator.alloc(Bsdf::default());
-        // TODO: Spectrum r = Kd->Evaluate(*si).Clamp();
-        // TODO: Float sig = Clamp(sigma->Evaluate(*si), 0, 90);
-        let sig = self.sigma;
-        // TODO: if (!r.IsBlack()) {
-        if sig == 0.0 {
-            // si->bsdf->Add(ARENA_ALLOC(arena, LambertianReflection)(r));
-            // let bxdf: &mut LambertianReflection = allocator.alloc(LambertianReflection::default());
-            if let Some(ref bsdf) = si.bsdf {
-                bsdf.add(Some(Arc::new(LambertianReflection::default())));
-            }
-            // WORK
-            // si.bsdf.add(bxdf);
-        } else {
-            // si->bsdf->Add(ARENA_ALLOC(arena, OrenNayar)(r, sig));
-            // let bxdf: &mut OrenNayar = allocator.alloc(OrenNayar::default());
-            // si.bsdf.add(bxdf);
-        }
-        // }
+        si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }
 
