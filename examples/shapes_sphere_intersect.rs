@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Float, Point3f, Ray, Shape, Sphere, SurfaceInteraction, Transform, Vector3f};
+use pbrt::{Float, Point3f, Ray, Shape, Sphere, Transform, Vector3f};
 
 fn main() {
     // see CreateSphereShape() in sphere.cpp
@@ -40,13 +40,9 @@ fn main() {
         time: 0.0,
         differential: None,
     };
-    let mut t_hit: Float = 0.0;
-    let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-    let did_ray_interesect: bool = Shape::intersect(&sphere, &r, &mut t_hit, &mut isect); // Primitive
-
     println!("translate = {:?}", translate);
     println!("r = {:?}", r);
-    println!("sphere.intersect(r, {:?}) = {:?}",
-             t_hit,
-             did_ray_interesect);
+    if let Some((isect, t_hit)) = Shape::intersect(&sphere, &r) {
+        println!("sphere.intersect(r) = (isect, {:?})", t_hit);
+    }
 }

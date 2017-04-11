@@ -668,12 +668,11 @@ impl Scene {
         &self.world_bound
     }
     pub fn intersect(&self,
-                 ray: &mut Ray,
-                 isect: &mut SurfaceInteraction)
-                 -> bool {
+                 ray: &mut Ray)
+                 -> Option<SurfaceInteraction> {
         // TODO: ++nIntersectionTests;
         assert_ne!(ray.d, Vector3f { x: 0.0, y: 0.0, z: 0.0, });
-        self.aggregate.intersect(ray, isect)
+        self.aggregate.intersect(ray)
     }
 }
 
@@ -3574,7 +3573,7 @@ pub struct SurfaceInteraction<'a> {
     pub dvdx: Float,
     pub dudy: Float,
     pub dvdy: Float,
-    pub primitive: Option<&'a Primitive>,
+    pub primitive: Option<&'a GeometricPrimitive>,
     pub bsdf: Option<Arc<Bsdf>>,
 }
 
@@ -3715,10 +3714,8 @@ pub trait Shape {
     fn object_bound(&self) -> Bounds3f;
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self,
-                 r: &Ray,
-                 t_hit: &mut Float,
-                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                 -> bool;
+                 r: &Ray)
+                 -> Option<(SurfaceInteraction, Float)>;
     // TODO: fn intersect_p(&self,
     //                r: &Ray /* , bool testAlphaTexture */)
     //              -> bool;
@@ -3730,10 +3727,7 @@ pub trait Shape {
 
 pub trait Primitive {
     fn world_bound(&self) -> Bounds3f;
-    fn intersect(&self,
-                 r: &mut Ray,
-                 isect: &mut SurfaceInteraction)
-                 -> bool;
+    fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction>;
     // TODO: fn intersect_p(&self,
     //              r: &Ray)
     //              -> bool {
@@ -3756,7 +3750,7 @@ pub trait Primitive {
 }
 
 pub struct GeometricPrimitive {
-    pub shape: Option<Arc<Shape + Send + Sync>>,
+    pub shape: Arc<Shape + Send + Sync>,
     pub material: Option<Arc<Material + Send + Sync>>,
     // TODO: pub area_light: Option<Arc<AreaLight>>,
     // TODO: pub medium_interface: Option<Arc<MediumInterface>>,
@@ -3765,7 +3759,7 @@ pub struct GeometricPrimitive {
 impl GeometricPrimitive {
     pub fn new(shape: Arc<Shape + Send + Sync>, material: Arc<Material + Send + Sync>) -> Self {
         GeometricPrimitive {
-            shape: Some(shape),
+            shape: shape,
             material: Some(material),
         }
     }
@@ -3773,25 +3767,14 @@ impl GeometricPrimitive {
 
 impl Primitive for GeometricPrimitive {
     fn world_bound(&self) -> Bounds3f {
-        let mut bound: Bounds3f = Bounds3f::default();
-        if let Some(ref shape) = self.shape {
-            bound = shape.object_bound(); // TODO: world_bound()
-        }
-        bound
+        self.shape.world_bound()
     }
-    fn intersect(&self,
-                 r: &mut Ray,
-                 isect: &mut SurfaceInteraction)
-                 -> bool {
-        let mut t_hit: Float = 0.0 as Float;
-        if let Some(ref shape) = self.shape {
-            if !shape.intersect(r, &mut t_hit, isect) { return false; }
-            r.t_max = t_hit;
-            // TODO: isect->primitive = this;
-            // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
-            // TODO: deal with mediumInterface
-        }
-        true
+    fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+        self.shape.intersect(ray).map(|(mut isect, t_hit)| {
+            isect.primitive = Some(self);
+            ray.t_max = t_hit;
+            isect
+        })
     }
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
         if let Some(ref material) = self.material {
@@ -3888,10 +3871,8 @@ impl Shape for Sphere {
         self.object_to_world.transform_bounds(self.object_bound())
     }
     fn intersect(&self,
-                 r: &Ray,
-                 t_hit: &mut Float,
-                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                 -> bool {
+                 r: &Ray)
+                 -> Option<(SurfaceInteraction, Float)> {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
@@ -3915,17 +3896,17 @@ impl Shape for Sphere {
         let mut t0: EFloat = EFloat::default();
         let mut t1: EFloat = EFloat::default();
         if !quadratic_efloat(a, b, c, &mut t0, &mut t1) {
-            return false;
+            return None;
         }
         // check quadric shape _t0_ and _t1_ for nearest intersection
         if t0.upper_bound() > ray.t_max as f32 || t1.lower_bound() <= 0.0f32 {
-            return false;
+            return None;
         }
         let mut t_shape_hit: EFloat = t0;
         if t_shape_hit.lower_bound() <= 0.0f32 {
             t_shape_hit = t1;
             if t_shape_hit.upper_bound() > ray.t_max as f32 {
-                return false;
+                return None;
             }
         }
         // compute sphere hit position and $\phi$
@@ -3943,10 +3924,10 @@ impl Shape for Sphere {
         if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
            (self.z_max < self.radius && p_hit.z > self.z_max) || phi > self.phi_max {
             if t_shape_hit == t1 {
-                return false;
+                return None;
             }
             if t1.upper_bound() > ray.t_max as f32 {
-                return false;
+                return None;
             }
             t_shape_hit = t1;
             // compute sphere hit position and $\phi$
@@ -3964,7 +3945,7 @@ impl Shape for Sphere {
             if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
                (self.z_max < self.radius && p_hit.z > self.z_max) ||
                phi > self.phi_max {
-                return false;
+                return None;
             }
         }
         // find parametric representation of sphere hit
@@ -4041,14 +4022,7 @@ impl Shape for Sphere {
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
-        isect.p = si.p;
-        isect.time = si.time;
-        isect.p_error = si.p_error;
-        isect.wo = si.wo;
-        isect.n = si.n;
-        isect.uv = si.uv;
-        *t_hit = t_shape_hit.v as f64;
-        true
+        Some((si, t_shape_hit.v as Float))
     }
 }
 
@@ -4165,10 +4139,8 @@ impl Shape for Triangle {
         bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
     }
     fn intersect(&self,
-                 ray: &Ray,
-                 t_hit: &mut Float,
-                 isect: &mut SurfaceInteraction /* , bool testAlphaTexture */)
-                 -> bool {
+                 ray: &Ray)
+                 -> Option<(SurfaceInteraction, Float)> {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
@@ -4239,11 +4211,11 @@ impl Shape for Triangle {
         // }
         // perform triangle edge and determinant tests
         if (e0 < 0.0 || e1 < 0.0 || e2 < 0.0) && (e0 > 0.0 || e1 > 0.0 || e2 > 0.0) {
-            return false;
+            return None;
         }
         let det: Float = e0 + e1 + e2;
         if det == 0.0 {
-            return false;
+            return None;
         }
         // compute scaled hit distance to triangle and test against ray $t$ range
         p0t.z *= sz;
@@ -4251,9 +4223,9 @@ impl Shape for Triangle {
         p2t.z *= sz;
         let t_scaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
         if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max * det) {
-            return false;
+            return None;
         } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max * det) {
-            return false;
+            return None;
         }
         // compute barycentric coordinates and $t$ value for triangle intersection
         let inv_det: Float = 1.0 / det;
@@ -4300,7 +4272,7 @@ impl Shape for Triangle {
         let delta_t: Float =
             3.0 * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
         if t <= delta_t {
-            return false;
+            return None;
         }
         // compute triangle partial derivatives
         let uv: [Point2f; 3] = self.get_uvs();
@@ -4350,15 +4322,7 @@ impl Shape for Triangle {
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
-        isect.p = si.p;
-        isect.time = si.time;
-        isect.p_error = si.p_error;
-        isect.wo = si.wo;
-        isect.n = si.n;
-        isect.uv = si.uv;
-        *t_hit = t;
-        // TODO: ++nHits;
-        true
+        Some((si, t as Float))
     }
 }
 
@@ -4558,10 +4522,9 @@ impl BVHAccel {
         }
     }
     pub fn intersect(&self,
-                 ray: &mut Ray,
-                 isect: &mut SurfaceInteraction)
-                     -> bool {
-        if self.nodes.len() == 0 { return false; }
+                     ray: &mut Ray)
+                     -> Option<SurfaceInteraction> {
+        if self.nodes.len() == 0 { return None; }
         // TODO: ProfilePhase p(Prof::AccelIntersect);
         let mut hit: bool = false;
         let inv_dir: Vector3f = Vector3f { x: 1.0 / ray.d.x,
@@ -4572,6 +4535,7 @@ impl BVHAccel {
         let mut to_visit_offset: u32 = 0;
         let mut current_node_index: u32 = 0;
         let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
+        let mut si: SurfaceInteraction = SurfaceInteraction::default();
         loop {
             let node: LinearBVHNode = self.nodes[current_node_index as usize];
             // check ray against BVH node
@@ -4581,9 +4545,9 @@ impl BVHAccel {
                     // intersect ray with primitives in leaf BVH node
                     for i in 0..node.n_primitives {
                         // see primitive.h GeometricPrimitive::Intersect() ...
-                        intersects = self.primitives[node.offset + i].intersect(ray, isect);
-                        if intersects {
+                        if let Some(isect) = self.primitives[node.offset + i].intersect(ray) {
                             // TODO: CHECK_GE(...) and medium stuff in GeometricPrimitive::Intersect()
+                            si = isect;
                             hit = true;
                         }
                     }
@@ -4609,7 +4573,11 @@ impl BVHAccel {
                 current_node_index = nodes_to_visit[to_visit_offset as usize];
             }
         }
-        hit
+        if hit {
+            Some(si)
+        } else {
+            None
+        }
     }
     pub fn recursive_build(bvh: Arc<BVHAccel>,
                            // arena,
@@ -5895,19 +5863,19 @@ impl SamplerIntegrator for DirectLightingIntegrator {
         // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
         let mut l: Spectrum = Spectrum::new(0.0 as Float);
         // find closest ray intersection or return background radiance
-        let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-        if !scene.intersect(ray, &mut isect) {
+        if let Some(mut isect) = scene.intersect(ray) {
+            // compute scattering functions for surface interaction
+            let mode: TransportMode = TransportMode::Radiance;
+            isect.compute_scattering_functions(ray, // arena, 
+                                               false, mode);
+            // WORK
+            l
+        } else {
             for light in &scene.lights {
                 l += light.le(ray);
             }
-            return l;
+            l
         }
-        // compute scattering functions for surface interaction
-        let mode: TransportMode = TransportMode::Radiance;
-        isect.compute_scattering_functions(ray, // arena, 
-                                           false, mode);
-        // WORK
-        l
     }
 }
 

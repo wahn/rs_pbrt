@@ -1,7 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Float, Point2f, Point3f, Transform, Ray, Shape, SurfaceInteraction, Triangle,
-           TriangleMesh, Vector3f};
+use pbrt::{Point2f, Point3f, Transform, Ray, Shape, Triangle, TriangleMesh, Vector3f};
 use std::sync::Arc;
 
 fn main() {
@@ -83,15 +82,11 @@ fn main() {
         time: 0.0,
         differential: None,
     };
-    let mut t_hit: Float = 0.0;
-    let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-    let did_ray_interesect: bool =
-        <Triangle as Shape>::intersect(&triangle, &r, &mut t_hit, &mut isect); // Primitive
-
     println!("r = {:?}", r);
-    println!("sphere.intersect(r, {:?}) = {:?}",
-             t_hit,
-             did_ray_interesect);
+    if let Some((isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
+        println!("triangle.intersect(r) = (isect, {:?})", t_hit);
+    }
+
     // second ray (same origin)
     let d: Vector3f = Vector3f {
         x: 0.0997664928,
@@ -105,12 +100,8 @@ fn main() {
         time: 0.0,
         differential: None,
     };
-    let mut t_hit: Float = 0.0;
-    let did_ray_interesect: bool =
-        <Triangle as Shape>::intersect(&triangle, &r, &mut t_hit, &mut isect); // Primitive
-
     println!("r = {:?}", r);
-    println!("sphere.intersect(r, {:?}) = {:?}",
-             t_hit,
-             did_ray_interesect);
+    if let Some((isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
+        println!("triangle.intersect(r) = (isect, {:?})", t_hit);
+    }
 }
