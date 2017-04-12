@@ -3725,6 +3725,12 @@ impl<'a> SurfaceInteraction<'a> {
             self.dpdy = Vector3f::default();
         }
     }
+    pub fn le(&self, w: Vector3f) -> Spectrum {
+        if let Some(primitive) = self.primitive {
+            // WORK
+        }
+        Spectrum::default()
+    }
 }
 
 // see shape.h
@@ -3770,7 +3776,7 @@ pub trait Primitive {
 pub struct GeometricPrimitive {
     pub shape: Arc<Shape + Send + Sync>,
     pub material: Option<Arc<Material + Send + Sync>>,
-    // TODO: pub area_light: Option<Arc<AreaLight>>,
+    // TODO: pub area_light: Option<Arc<AreaLight + Send + Sync>>,
     // TODO: pub medium_interface: Option<Arc<MediumInterface>>,
 }
 
@@ -3801,6 +3807,13 @@ impl Primitive for GeometricPrimitive {
             None
         }
     }
+    // fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
+    //     if let Some(ref area_light) = self.area_light {
+    //         Some(area_light.clone())
+    //     } else {
+    //         None
+    //     }
+    // }
 }
 
 // see sphere.h
@@ -5892,6 +5905,10 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             let mode: TransportMode = TransportMode::Radiance;
             isect.compute_scattering_functions(ray, // arena, 
                                                false, mode);
+            // if (!isect.bsdf)
+            //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
+            let wo: Vector3f = isect.wo;
+            l += isect.le(wo);
             // WORK
             l
         } else {
