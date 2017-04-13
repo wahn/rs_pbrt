@@ -1554,6 +1554,21 @@ impl<T> Normal3<T> {
     }
 }
 
+impl<T> PartialEq for Normal3<T>
+    where T: std::cmp::PartialOrd
+{
+    fn eq(&self, rhs: &Normal3<T>) -> bool {
+        if self.x == rhs.x && self.y == rhs.y && self.z == rhs.z {
+            true
+        } else {
+            false
+        }
+    }
+    fn ne(&self, rhs: &Normal3<T>) -> bool {
+        !self.eq(rhs)
+    }
+}
+
 impl<T> From<Vector3<T>> for Normal3<T> {
     fn from(v: Vector3<T>) -> Self {
         // TODO: DCHECK(!v.HasNaNs());
@@ -3739,6 +3754,13 @@ impl<'a> SurfaceInteraction<'a> {
         }
         Spectrum::default()
     }
+    // inherited from Interaction
+    pub fn is_surface_interaction(&self) -> bool {
+        self.n != Normal3f::default()
+    }
+    pub fn is_medium_interaction(&self) -> bool {
+        !self.is_surface_interaction()
+    }
 }
 
 // see shape.h
@@ -4383,6 +4405,12 @@ impl RGBSpectrum {
         y_weight[0] * self.c[0] + y_weight[1] * self.c[1] + y_weight[2] * self.c[2]
     }
     // from CoefficientSpectrum
+    pub fn is_black(&self) -> bool {
+        for i in 0..3 {
+            if self.c[i] != 0.0 as Float { return false; }
+        }
+        true
+    }
     pub fn has_nans(&self) -> bool {
         for i in 0..3 {
             if self.c[i].is_nan() { return true; }
@@ -5742,10 +5770,12 @@ pub enum LightFlags {
     Infinite = 8
 }
 
+/// A closure - an object that encapsulates a small amount of data and
+/// some computation that is yet to be done.
 #[derive(Debug,Default,Copy,Clone)]
 pub struct VisibilityTester {
-    p0: Interaction,
-    p1: Interaction,
+    pub p0: Interaction, // TODO: private
+    pub p1: Interaction, // TODO: private
 }
 
 // see distant.h
@@ -5869,17 +5899,19 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
         let light = scene.lights[j];
         let n_samples = n_light_samples[j];
         let u_light_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
-        println!("u_light_array = {:?}", u_light_array);
         let u_scattering_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
-        println!("u_scattering_array = {:?}", u_scattering_array);
         if u_light_array.is_empty() || u_scattering_array.is_empty() {
-            // TODO
             // use a single sample for illumination from _light_
-            // Point2f uLight = sampler.Get2D();
-            // Point2f uScattering = sampler.Get2D();
-            // L += EstimateDirect(it, uScattering, *light, uLight, scene, sampler,
-            //                     arena, handleMedia);
-            // WORK
+            let u_light: Point2f = sampler.get_2d();
+            let u_scattering: Point2f = sampler.get_2d();
+            l += estimate_direct(it,
+                                 &u_scattering,
+                                 &light,
+                                 &u_light,
+                                 scene,
+                                 sampler, // arena,
+                                 handle_media,
+                                 false);
         } else {
             // estimate direct lighting using sample arrays
             let mut ld: Spectrum = Spectrum::new(0.0);
@@ -5920,8 +5952,22 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     let mut light_pdf: Float = 0.0 as Float;
     let mut visibility: VisibilityTester = VisibilityTester::default();
     let li: Spectrum = light.sample_li(it, u_light, &mut wi, &mut light_pdf, &mut visibility);
-    // WORK
-    Spectrum::default()
+    println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi: {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
+    if light_pdf > 0.0 as Float && !li.is_black() {
+        // compute BSDF or phase function's value for light sample
+        let mut f: Spectrum = Spectrum::new(0.0);
+        if it.is_surface_interaction() {
+            // evaluate BSDF for light sampling strategy
+            // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
+            // f = isect.bsdf->f(isect.wo, wi, bsdfFlags) *
+            //     AbsDot(wi, isect.shading.n);
+            // scatteringPdf = isect.bsdf->Pdf(isect.wo, wi, bsdfFlags);
+            // VLOG(2) << "  surf f*dot :" << f << ", scatteringPdf: " << scatteringPdf;
+        }
+        // WORK
+    }
+    // TODO: if (!IsDeltaLight(light.flags)) { ... }
+    ld
 }
 
 // see directlighting.h
