@@ -3727,6 +3727,8 @@ impl<'a> SurfaceInteraction<'a> {
     }
     pub fn le(&self, w: Vector3f) -> Spectrum {
         if let Some(primitive) = self.primitive {
+            // TODO: const AreaLight *area = primitive->GetAreaLight();
+            // TODO: return area ? area->L(*this, w) : Spectrum(0.f);
             // WORK
         }
         Spectrum::default()
@@ -4924,7 +4926,69 @@ impl ZeroTwoSequenceSampler {
         self.array_2d_offset = 0_usize;
     }
     pub fn clone(&self, seed: i32) -> Self {
-        let mut lds: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
+        // copy self.samples_1d
+        let mut samples_1d: Vec<Vec<Float>> = Vec::new();
+        for vec in &self.samples_1d {
+            let mut inner: Vec<Float> = Vec::new();
+            for f in vec {
+                inner.push(*f);
+            }
+            samples_1d.push(inner);
+        }
+        // copy self.samples_2d
+        let mut samples_2d: Vec<Vec<Point2f>> = Vec::new();
+        for vec in &self.samples_2d {
+            let mut inner: Vec<Point2f> = Vec::new();
+            for p in vec {
+                inner.push(*p);
+            }
+            samples_2d.push(inner);
+        }
+        // copy self.samples_1d_array_sizes
+        let mut samples_1d_array_sizes: Vec<i32> = Vec::new();
+        for i in &self.samples_1d_array_sizes {
+            samples_1d_array_sizes.push(*i);
+        }
+        // copy self.samples_2d_array_sizes
+        let mut samples_2d_array_sizes: Vec<i32> = Vec::new();
+        for i in &self.samples_2d_array_sizes {
+            samples_2d_array_sizes.push(*i);
+        }
+        // copy self.samples_1d_array
+        let mut samples_1d_array: Vec<Vec<Float>> = Vec::new();
+        for vec in &self.samples_1d_array {
+            let mut inner: Vec<Float> = Vec::new();
+            for f in vec {
+                inner.push(*f);
+            }
+            samples_1d_array.push(inner);
+        }
+        // copy self.samples_2d_array
+        let mut samples_2d_array: Vec<Vec<Point2f>> = Vec::new();
+        for vec in &self.samples_2d_array {
+            let mut inner: Vec<Point2f> = Vec::new();
+            for p in vec {
+                inner.push(*p);
+            }
+            samples_2d_array.push(inner);
+        }
+        let mut lds: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
+            samples_per_pixel: self.samples_per_pixel,
+            n_sampled_dimensions: self.n_sampled_dimensions,
+            samples_1d: samples_1d,
+            samples_2d: samples_2d,
+            current_1d_dimension: self.current_1d_dimension,
+            current_2d_dimension: self.current_2d_dimension,
+            rng: self.rng,
+            current_pixel: self.current_pixel,
+            current_pixel_sample_index: self.current_pixel_sample_index,
+            samples_1d_array_sizes: samples_1d_array_sizes,
+            samples_2d_array_sizes: samples_2d_array_sizes,
+            samples_1d_array: samples_1d_array,
+            samples_2d_array: samples_2d_array,
+            array_1d_offset: self.array_1d_offset,
+            array_2d_offset: self.array_2d_offset,
+        };
         lds.rng.set_sequence(seed as u64);
         lds
     }
@@ -4978,13 +5042,30 @@ impl ZeroTwoSequenceSampler {
             }
         }
     }
-    // sampler Interface
+    // inherited from class Sampler (see sampler.h)
     pub fn request_2d_array(&mut self, n: i32) {
         assert_eq!(self.round_count(n), n);
         self.samples_2d_array_sizes.push(n);
         let size: usize = (n * self.samples_per_pixel as i32) as usize;
         let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
         self.samples_2d_array.push(additional_points);
+    }
+    pub fn get_2d_array(&mut self, n: i32) -> Vec<Point2f> {
+        let mut samples: Vec<Point2f> = Vec::new();
+        if self.array_2d_offset == self.samples_2d_array.len() {
+            return samples;
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
+                "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+                self.current_pixel_sample_index, self.samples_per_pixel);
+        // TODO: let index: usize = self.current_pixel_sample_index as usize * n as usize;
+        // TODO: samples = self.samples_2d_array[self.array_2d_offset][index];
+        for sample in &self.samples_2d_array[self.array_2d_offset] {
+            samples.push(*sample);
+        }
+        self.array_2d_offset += 1;
+        samples
     }
     pub fn current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index
@@ -5724,6 +5805,24 @@ pub trait SamplerIntegrator {
           -> Spectrum;
 }
 
+// see integrator.cpp
+
+pub fn uniform_sample_all_lights(scene: &Scene,
+                                 sampler: &mut ZeroTwoSequenceSampler,
+                                 n_light_samples: &Vec<i32>) -> Spectrum {
+    // TODO: ProfilePhase p(Prof::DirectLighting);
+    let l: Spectrum = Spectrum::new(0.0);
+    for j in 0..scene.lights.len() {
+        // accumulate contribution of _j_th light to _L_
+        let light = scene.lights[j];
+        let n_samples = n_light_samples[j];
+        let u_light_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
+        println!("u_light_array = {:?}", u_light_array);
+        // WORK
+    }
+    Spectrum::default()
+}
+
 // see directlighting.h
 
 #[derive(Debug,Clone,PartialEq)]
@@ -5738,7 +5837,6 @@ pub struct DirectLightingIntegrator {
     sampler: ZeroTwoSequenceSampler, // std::shared_ptr<Sampler> sampler;
     pixel_bounds: Bounds2i,
     // see directlighting.h
-    // TODO: const LightStrategy strategy;
     strategy: LightStrategy,
     max_depth: i64,
     n_light_samples: Vec<i32>,
@@ -5909,6 +6007,15 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
             let wo: Vector3f = isect.wo;
             l += isect.le(wo);
+            if scene.lights.len() > 0 {
+                // compute direct lighting for _DirectLightingIntegrator_ integrator
+                if self.strategy == LightStrategy::UniformSampleAll {
+                    l += uniform_sample_all_lights(scene, sampler, &self.n_light_samples);
+                } else {
+                    // TODO: l += uniform_sample_one_light();
+                }
+            } else {
+            }
             // WORK
             l
         } else {
