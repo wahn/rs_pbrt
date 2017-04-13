@@ -4401,6 +4401,17 @@ impl Mul for RGBSpectrum {
     }
 }
 
+impl Div<Float> for RGBSpectrum {
+    type Output = RGBSpectrum;
+    fn div(self, rhs: Float) -> RGBSpectrum {
+        assert_ne!(rhs, 0.0 as Float);
+        assert!(!rhs.is_nan(), "rhs is NaN");
+        let ret: RGBSpectrum = RGBSpectrum { c: [self.c[0] / rhs, self.c[1] / rhs, self.c[2] / rhs] };
+        assert!(!ret.has_nans());
+        ret
+    }
+}
+
 // see bvh.h
 
 #[derive(Debug,Clone)]
@@ -5807,19 +5818,59 @@ pub trait SamplerIntegrator {
 
 // see integrator.cpp
 
-pub fn uniform_sample_all_lights(scene: &Scene,
+/// Most basic direct lighting strategy.
+pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
+                                 scene: &Scene,
                                  sampler: &mut ZeroTwoSequenceSampler,
-                                 n_light_samples: &Vec<i32>) -> Spectrum {
+                                 n_light_samples: &Vec<i32>,
+                                 handle_media: bool) -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
-    let l: Spectrum = Spectrum::new(0.0);
+    let mut l: Spectrum = Spectrum::new(0.0);
     for j in 0..scene.lights.len() {
         // accumulate contribution of _j_th light to _L_
         let light = scene.lights[j];
         let n_samples = n_light_samples[j];
         let u_light_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
         println!("u_light_array = {:?}", u_light_array);
-        // WORK
+        let u_scattering_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
+        println!("u_scattering_array = {:?}", u_scattering_array);
+        if u_light_array.is_empty() || u_scattering_array.is_empty() {
+            // TODO
+            // use a single sample for illumination from _light_
+            // Point2f uLight = sampler.Get2D();
+            // Point2f uScattering = sampler.Get2D();
+            // L += EstimateDirect(it, uScattering, *light, uLight, scene, sampler,
+            //                     arena, handleMedia);
+            // WORK
+        } else {
+            // estimate direct lighting using sample arrays
+            let mut ld: Spectrum = Spectrum::new(0.0);
+            for k in 0..n_samples {
+                ld += estimate_direct(it,
+                                      &u_scattering_array[k as usize],
+                                      &light,
+                                      &u_light_array[k as usize],
+                                      scene,
+                                      sampler, // arena,
+                                      handle_media,
+                                      false);
+            }
+            l += ld / n_samples as Float;
+        }
     }
+    l
+}
+
+/// Computes a direct lighting estimate for a single light source sample.
+pub fn estimate_direct(it: &SurfaceInteraction,
+                       u_scattering: &Point2f,
+                       light: &DistantLight,
+                       u_light: &Point2f,
+                       scene: &Scene,
+                       sampler: &mut ZeroTwoSequenceSampler,
+                       // TODO: arena
+                       handle_media: bool,
+                       specular: bool) -> Spectrum {
     Spectrum::default()
 }
 
@@ -6010,7 +6061,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             if scene.lights.len() > 0 {
                 // compute direct lighting for _DirectLightingIntegrator_ integrator
                 if self.strategy == LightStrategy::UniformSampleAll {
-                    l += uniform_sample_all_lights(scene, sampler, &self.n_light_samples);
+                    l += uniform_sample_all_lights(&isect, scene, sampler, &self.n_light_samples, false);
                 } else {
                     // TODO: l += uniform_sample_one_light();
                 }
