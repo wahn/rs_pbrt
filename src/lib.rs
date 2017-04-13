@@ -3553,6 +3553,12 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Interaction {
+    pub p: Point3f,
+    pub time: Float,
+    // pub p_error: Vector3f,
+    // pub wo: Vector3f,
+    // pub n: Normal3f,
+    // TODO: MediumInterface mediumInterface;
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -5736,6 +5742,12 @@ pub enum LightFlags {
     Infinite = 8
 }
 
+#[derive(Debug,Default,Copy,Clone)]
+pub struct VisibilityTester {
+    p0: Interaction,
+    p1: Interaction,
+}
+
 // see distant.h
 
 #[derive(Debug,Copy,Clone)]
@@ -5774,6 +5786,32 @@ impl DistantLight {
         Bounds3f::bounding_sphere(scene.world_bound(),
                                   &mut self.world_center,
                                   &mut self.world_radius);
+    }
+    /// Returns the radiance arriving at a point at a certain time due
+    /// to the light, assuming there are no occluding objects between
+    /// them.
+    pub fn sample_li(&self,
+                     iref: &SurfaceInteraction,
+                     u: &Point2f,
+                     wi: &mut Vector3f,
+                     pdf: &mut Float,
+                     vis: &mut VisibilityTester)
+                     -> Spectrum {
+        // TODO: ProfilePhase _(Prof::LightSample);
+        *wi = self.w_light;
+        *pdf = 1.0 as Float;
+        let p_outside: Point3f = iref.p + self.w_light * (2.0 as Float * self.world_radius);
+        *vis = VisibilityTester {
+            p0: Interaction {
+                p: iref.p,
+                time: iref.time,
+            },
+            p1: Interaction {
+                p: p_outside,
+                time: iref.time, // mediumInterface,
+            },
+        };
+        self.l
     }
     /// Default implementation returns no emitted radiance for a ray
     /// that escapes the scene bounds.
@@ -5871,6 +5909,18 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                        // TODO: arena
                        handle_media: bool,
                        specular: bool) -> Spectrum {
+    let mut bsdf_flags: u8 = BxdfType::BSDF_ALL as u8;
+    if !specular {
+        // bitwise not in Rust is ! (not the ~ operator like in C)
+        bsdf_flags = BxdfType::BSDF_ALL as u8 & !(BxdfType::BSDF_SPECULAR as u8);
+    }
+    let mut ld: Spectrum = Spectrum::new(0.0);
+    // sample light source with multiple importance sampling
+    let mut wi: Vector3f = Vector3f::default();
+    let mut light_pdf: Float = 0.0 as Float;
+    let mut visibility: VisibilityTester = VisibilityTester::default();
+    let li: Spectrum = light.sample_li(it, u_light, &mut wi, &mut light_pdf, &mut visibility);
+    // WORK
     Spectrum::default()
 }
 
