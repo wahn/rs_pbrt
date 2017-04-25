@@ -5602,6 +5602,10 @@ impl Bsdf {
             bxdfs: bxdfs,
         }
     }
+    pub fn f(&self, wo_w: &Vector3f, wi_w: &Vector3f, flags: BxdfType) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
 }
 
 #[repr(u8)]
@@ -5952,19 +5956,22 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     let mut light_pdf: Float = 0.0 as Float;
     let mut visibility: VisibilityTester = VisibilityTester::default();
     let li: Spectrum = light.sample_li(it, u_light, &mut wi, &mut light_pdf, &mut visibility);
-    println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi: {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
+    // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi: {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
     if light_pdf > 0.0 as Float && !li.is_black() {
         // compute BSDF or phase function's value for light sample
         let mut f: Spectrum = Spectrum::new(0.0);
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
             // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
-            // f = isect.bsdf->f(isect.wo, wi, bsdfFlags) *
-            //     AbsDot(wi, isect.shading.n);
+            if let Some(ref bsdf) = it.bsdf {
+                // f = isect.bsdf->f(isect.wo, wi, bsdfFlags) *
+                //     AbsDot(wi, isect.shading.n);
+                
+                // WORK
+            }
             // scatteringPdf = isect.bsdf->Pdf(isect.wo, wi, bsdfFlags);
             // VLOG(2) << "  surf f*dot :" << f << ", scatteringPdf: " << scatteringPdf;
         }
-        // WORK
     }
     // TODO: if (!IsDeltaLight(light.flags)) { ... }
     ld
