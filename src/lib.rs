@@ -5602,7 +5602,17 @@ impl Bsdf {
             bxdfs: bxdfs,
         }
     }
-    pub fn f(&self, wo_w: &Vector3f, wi_w: &Vector3f, flags: BxdfType) -> Spectrum {
+    pub fn world_to_local(&self, v: Vector3f) -> Vector3f {
+        Vector3f {
+            x: vec3_dot(v, self.ss),
+            y: vec3_dot(v, self.ts),
+            z: vec3_dot(v, Vector3f::from(self.ns)),
+        }
+    }
+    pub fn f(&self, wo_w: Vector3f, wi_w: Vector3f, flags: BxdfType) -> Spectrum {
+        // TODO: ProfilePhase pp(Prof::BSDFEvaluation);
+        let wi: Vector3f = self.world_to_local(wi_w);
+        let wo: Vector3f = self.world_to_local(wo_w);
         // WORK
         Spectrum::default()
     }
