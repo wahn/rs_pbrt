@@ -5609,12 +5609,27 @@ impl Bsdf {
             z: vec3_dot(v, Vector3f::from(self.ns)),
         }
     }
-    pub fn f(&self, wo_w: Vector3f, wi_w: Vector3f, flags: BxdfType) -> Spectrum {
+    pub fn f(&self, wo_w: Vector3f, wi_w: Vector3f, flags: u8) -> Spectrum {
         // TODO: ProfilePhase pp(Prof::BSDFEvaluation);
         let wi: Vector3f = self.world_to_local(wi_w);
         let wo: Vector3f = self.world_to_local(wo_w);
-        // WORK
-        Spectrum::default()
+        if wo.z == 0.0 as Float {
+            return Spectrum::new(0.0 as Float);
+        }
+        let reflect: bool = (vec3_dot(wi_w, Vector3f::from(self.ng)) *
+                             vec3_dot(wo_w, Vector3f::from(self.ng))) >
+                            0.0 as Float;
+        let mut f: Spectrum = Spectrum::new(0.0 as Float);
+        let mut n_bxdfs: usize = self.bxdfs.len();
+        for i in 0..n_bxdfs {
+            if self.bxdfs[i].matches_flags(flags) &&
+               ((reflect && (self.bxdfs[i].get_type() & BxdfType::BSDF_REFLECTION as u8 > 0_u8)) ||
+                (!reflect &&
+                 (self.bxdfs[i].get_type() & BxdfType::BSDF_TRANSMISSION as u8 > 0_u8))) {
+                f += self.bxdfs[i].f(wo, wi);
+            }
+        }
+        f
     }
 }
 
@@ -5629,6 +5644,9 @@ pub enum BxdfType {
 }
 
 pub trait Bxdf {
+    fn matches_flags(&self, t: u8) -> bool {
+        self.get_type() & t == self.get_type()
+    }
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum;
     fn get_type(&self) -> u8;
 }
