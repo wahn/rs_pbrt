@@ -1169,6 +1169,13 @@ pub fn vec3_dot<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
     v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
 
+/// Computes the absolute value of the dot product.
+pub fn vec3_abs_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
+    where T: num::Float
+{
+    vec3_dot(v1, v2).abs()
+}
+
 /// Given two vectors in 3D, the cross product is a vector that is
 /// perpendicular to both of them.
 pub fn vec3_cross<T>(v1: Vector3<T>, v2: Vector3<T>) -> Vector3<T>
@@ -3584,6 +3591,7 @@ pub struct Shading {
     pub dndu: Vector3f,
     pub dndv: Vector3f,
 }
+
 #[derive(Default,Clone)]
 pub struct SurfaceInteraction<'a> {
     // Interaction Public Data
@@ -5992,14 +6000,15 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             // evaluate BSDF for light sampling strategy
             // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
             if let Some(ref bsdf) = it.bsdf {
-                // f = isect.bsdf->f(isect.wo, wi, bsdfFlags) *
-                //     AbsDot(wi, isect.shading.n);
-                
+                f = bsdf.f(it.wo, wi, bsdf_flags) * Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
                 // WORK
+                // scatteringPdf = isect.bsdf->Pdf(isect.wo, wi, bsdfFlags);
+                // VLOG(2) << "  surf f*dot :" << f << ", scatteringPdf: " << scatteringPdf;
             }
-            // scatteringPdf = isect.bsdf->Pdf(isect.wo, wi, bsdfFlags);
-            // VLOG(2) << "  surf f*dot :" << f << ", scatteringPdf: " << scatteringPdf;
+        } else {
+            // evaluate phase function for light sampling strategy
         }
+        // TODO: if (!f.IsBlack()) { ... }
     }
     // TODO: if (!IsDeltaLight(light.flags)) { ... }
     ld
