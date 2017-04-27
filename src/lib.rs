@@ -5639,6 +5639,32 @@ impl Bsdf {
         }
         f
     }
+    pub fn pdf(&self, wo_world: Vector3f, wi_world: Vector3f, bsdf_flags: u8) -> Float {
+        // TODO: ProfilePhase pp(Prof::BSDFPdf);
+        let n_bxdfs: usize = self.bxdfs.len();
+        if n_bxdfs == 0 {
+            return 0.0 as Float;
+        }
+        let wo: Vector3f = self.world_to_local(wo_world);
+        let wi: Vector3f = self.world_to_local(wi_world);
+        if wo.z == 0.0 as Float {
+            return 0.0 as Float;
+        }
+        let mut pdf: Float = 0.0 as Float;
+        let mut matching_comps: u8 = 0;
+        for i in 0..n_bxdfs {
+            if self.bxdfs[i].matches_flags(bsdf_flags) {
+                matching_comps += 1;
+                pdf += self.bxdfs[i].pdf(wo, wi);
+            }
+        }
+        let mut v: Float = 0.0 as Float;
+        if matching_comps > 0 {
+            v = pdf / matching_comps as Float;
+        }
+        v
+    }
+
 }
 
 #[repr(u8)]
@@ -5656,6 +5682,7 @@ pub trait Bxdf {
         self.get_type() & t == self.get_type()
     }
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum;
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float;
     fn get_type(&self) -> u8;
 }
 
@@ -5676,6 +5703,10 @@ impl Bxdf for LambertianReflection {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
         // WORK
         Spectrum::default()
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        // WORK
+        0.0 as Float
     }
     fn get_type(&self) -> u8 {
         BxdfType::BSDF_DIFFUSE as u8 | BxdfType::BSDF_REFLECTION as u8
@@ -5704,6 +5735,10 @@ impl Bxdf for OrenNayar {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
         // WORK
         Spectrum::default()
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        // WORK
+        0.0 as Float
     }
     fn get_type(&self) -> u8 {
         BxdfType::BSDF_DIFFUSE as u8 | BxdfType::BSDF_REFLECTION as u8
@@ -6003,6 +6038,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                 f = bsdf.f(it.wo, wi, bsdf_flags) * Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
                 // WORK
                 // scatteringPdf = isect.bsdf->Pdf(isect.wo, wi, bsdfFlags);
+                let scattering_pdf: Float = bsdf.pdf(it.wo, wi, bsdf_flags);
                 // VLOG(2) << "  surf f*dot :" << f << ", scatteringPdf: " << scatteringPdf;
             }
         } else {
