@@ -681,6 +681,7 @@ impl Scene {
 pub type Spectrum = RGBSpectrum;
 
 const MACHINE_EPSILON: Float = std::f64::EPSILON * 0.5;
+const INV_PI: Float = 0.31830988618379067154;
 
 /// Use **unsafe**
 /// [std::mem::transmute_copy][transmute_copy]
@@ -2446,6 +2447,26 @@ impl Transform {
             z: self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z,
         }
     }
+    pub fn transform_ray(&self, r: &mut Ray) {
+        // Ray tr = (*this)(Ray(r));
+        let mut o_error: Vector3f = Vector3f::default();
+        let o: Point3f = self.transform_point_with_error(r.o, & mut o_error);
+        let tr: Ray = Ray {
+            o: o,
+            d: r.d,
+            t_max: r.t_max,
+            time: r.time,
+            differential: None,
+        };
+        // WORK
+        // RayDifferential ret(tr.o, tr.d, tr.tMax, tr.time, tr.medium);
+        // ret.hasDifferentials = r.hasDifferentials;
+        // ret.rxOrigin = (*this)(r.rxOrigin);
+        // ret.ryOrigin = (*this)(r.ryOrigin);
+        // ret.rxDirection = (*this)(r.rxDirection);
+        // ret.ryDirection = (*this)(r.ryDirection);
+        // return ret;
+    }
     pub fn transform_bounds(&self, b: Bounds3f) -> Bounds3f {
         let m: Transform = *self;
         let p: Point3f = self.transform_point(Point3f {
@@ -3450,6 +3471,13 @@ impl AnimatedTransform {
         // compute scale _S_ using rotation and original matrix
         *s = mtx_mul(Matrix4x4::inverse(r), *m);
     }
+    pub fn transform_ray(&self, r: &mut Ray) {
+        // if !self.actually_animated || self.r.time <= self.start_time {
+        // } else if ...
+        // TODO: above
+        self.start_transform.transform_ray(r)
+        // WORK
+    }
 }
 
 // see quaternion.h
@@ -3673,7 +3701,7 @@ impl<'a> SurfaceInteraction<'a> {
                                         mode: TransportMode) {
         self.compute_differentials(ray);
         if let Some(primitive) = self.primitive {
-            primitive.compute_scattering_functions(self, // arena, 
+            primitive.compute_scattering_functions(self, // arena,
                                                    mode, allow_multiple_lobes);
         }
     }
@@ -3804,7 +3832,7 @@ pub trait Primitive {
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         if let Some(ref material) = self.get_material() {
-            material.compute_scattering_functions(isect, // arena, 
+            material.compute_scattering_functions(isect, // arena,
                                                   mode, allow_multiple_lobes);
         }
         // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
@@ -5555,15 +5583,19 @@ impl PerspectiveCamera {
             y: sample.p_film.y,
             z: 0.0,
         };
+        println!("p_film = {:?}", p_film);
         let p_camera: Point3f = self.raster_to_camera.transform_point(p_film);
+        println!("p_camera = {:?}", p_camera);
         let dir: Vector3f = vec3_normalize(Vector3f { x: p_camera.x,
                                                       y: p_camera.y,
                                                       z: p_camera.z, });
+        println!("dir = {:?}", dir);
         // *ray = RayDifferential(Point3f(0, 0, 0), dir);
         ray.o = Point3f::default();
         ray.d = dir;
         ray.t_max = std::f64::INFINITY;
         ray.time = 0.0;
+        println!("ray = {:?}", ray);
         // TODO: modify ray for depth of field
         // TODO: if (lensRadius > 0) { ... } else {
         let diff: RayDifferential = RayDifferential {
@@ -5576,11 +5608,13 @@ impl PerspectiveCamera {
                                                     y: p_camera.y,
                                                     z: p_camera.z, } + self.dy_camera),
         };
+        println!("diff = {:?}", diff);
         // TODO: ray.time = lerp(sample.time, self.shutter_open, self.shutter_close);
         // TODO: ray->medium = medium;
         // TODO: *ray = CameraToWorld(*ray);
         // ray->hasDifferentials = true;
         ray.differential = Some(diff);
+        self.camera_to_world.transform_ray(ray);
         1.0
     }
 }
@@ -5682,7 +5716,13 @@ pub trait Bxdf {
         self.get_type() & t == self.get_type()
     }
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum;
-    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float;
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0 as Float
+        }
+    }
     fn get_type(&self) -> u8;
 }
 
@@ -5701,12 +5741,7 @@ impl LambertianReflection {
 
 impl Bxdf for LambertianReflection {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
-        // WORK
-        Spectrum::default()
-    }
-    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
-        // WORK
-        0.0 as Float
+        self.r * Spectrum::new(INV_PI)
     }
     fn get_type(&self) -> u8 {
         BxdfType::BSDF_DIFFUSE as u8 | BxdfType::BSDF_REFLECTION as u8
@@ -5733,16 +5768,71 @@ impl OrenNayar {
 
 impl Bxdf for OrenNayar {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
-        // WORK
-        Spectrum::default()
-    }
-    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
-        // WORK
-        0.0 as Float
+        let sin_theta_i: Float = sin_theta(wi);
+        let sin_theta_o: Float = sin_theta(wo);
+        // compute cosine term of Oren-Nayar model
+        let mut max_cos: Float = 0.0 as Float;
+        if sin_theta_i > 1.0e-4 && sin_theta_o > 1.0e-4 {
+            let sin_phi_i: Float = sin_phi(wi);
+            let cos_phi_i: Float = cos_phi(wi);
+            let sin_phi_o: Float = sin_phi(wo);
+            let cos_phi_o: Float = cos_phi(wo);
+            let d_cos: Float = cos_phi_i * cos_phi_o + sin_phi_i * sin_phi_o;
+            max_cos = d_cos.max(0.0 as Float);
+        }
+        // compute sine and tangent terms of Oren-Nayar model
+        let mut sin_alpha: Float = 0.0;
+        let mut tan_beta: Float = 0.0;
+        if abs_cos_theta(wi) > abs_cos_theta(wo) {
+            sin_alpha = sin_theta_o;
+            tan_beta = sin_theta_i / abs_cos_theta(wi);
+        } else {
+            sin_alpha = sin_theta_i;
+            tan_beta = sin_theta_o / abs_cos_theta(wo);
+        }
+        self.r * Spectrum::new(INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta))
     }
     fn get_type(&self) -> u8 {
         BxdfType::BSDF_DIFFUSE as u8 | BxdfType::BSDF_REFLECTION as u8
     }
+}
+
+pub fn cos_2_theta(w: Vector3f) -> Float {
+    w.z * w.z
+}
+
+pub fn abs_cos_theta(w: Vector3f) -> Float {
+    w.z.abs()
+}
+
+pub fn sin_2_theta(w: Vector3f) -> Float {
+    (0.0 as Float).max(1.0 as Float - cos_2_theta(w))
+}
+
+pub fn sin_theta(w: Vector3f) -> Float {
+    sin_2_theta(w).sqrt()
+}
+
+pub fn cos_phi(w: Vector3f) -> Float {
+    let sin_theta: Float = sin_theta(w);
+    if sin_theta == 0.0 as Float {
+        1.0 as Float
+    } else {
+        clamp(w.y / sin_theta, -1.0, 1.0)
+    }
+}
+
+pub fn sin_phi(w: Vector3f) -> Float {
+    let sin_theta: Float = sin_theta(w);
+    if sin_theta == 0.0 as Float {
+        0.0 as Float
+    } else {
+        clamp(w.y / sin_theta, -1.0, 1.0)
+    }
+}
+
+pub fn vec3_same_hemisphere_vec3(w: Vector3f, wp: Vector3f) -> bool {
+    w.z * wp.z > 0.0 as Float
 }
 
 // see material.h
@@ -6033,13 +6123,13 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         let mut f: Spectrum = Spectrum::new(0.0);
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
-            // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
             if let Some(ref bsdf) = it.bsdf {
                 f = bsdf.f(it.wo, wi, bsdf_flags) * Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
-                // WORK
-                // scatteringPdf = isect.bsdf->Pdf(isect.wo, wi, bsdfFlags);
                 let scattering_pdf: Float = bsdf.pdf(it.wo, wi, bsdf_flags);
-                // VLOG(2) << "  surf f*dot :" << f << ", scatteringPdf: " << scatteringPdf;
+                println!("it.wo = {:?}", it.wo);
+                println!("wi = {:?}", wi);
+                println!("bsdf_flags = {:?}", bsdf_flags);
+                println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
         } else {
             // evaluate phase function for light sampling strategy
@@ -6173,7 +6263,7 @@ impl DirectLightingIntegrator {
                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
                             let y: Float = l.y();
                             if ray_weight > 0.0 {
-                                l = self.li(&mut ray, scene, &mut tile_sampler, // &mut arena, 
+                                l = self.li(&mut ray, scene, &mut tile_sampler, // &mut arena,
                                             0_i32);
                             }
                             if l.has_nans() {
@@ -6228,7 +6318,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
         if let Some(mut isect) = scene.intersect(ray) {
             // compute scattering functions for surface interaction
             let mode: TransportMode = TransportMode::Radiance;
-            isect.compute_scattering_functions(ray, // arena, 
+            isect.compute_scattering_functions(ray, // arena,
                                                false, mode);
             // if (!isect.bsdf)
             //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
@@ -6237,6 +6327,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             if scene.lights.len() > 0 {
                 // compute direct lighting for _DirectLightingIntegrator_ integrator
                 if self.strategy == LightStrategy::UniformSampleAll {
+                    println!("ray = {:?}", ray);
                     l += uniform_sample_all_lights(&isect, scene, sampler, &self.n_light_samples, false);
                 } else {
                     // TODO: l += uniform_sample_one_light();

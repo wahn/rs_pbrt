@@ -21,6 +21,7 @@ release:
 examples: release
 	./target/release/examples/api_make_camera
 	./target/release/examples/api_pbrt_world_end
+	./target/release/examples/cameras_perspective_generate_ray_differential
 	./target/release/examples/core_next_float_down
 	./target/release/examples/core_next_float_up
 	./target/release/examples/core_quadratic
