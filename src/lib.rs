@@ -3682,6 +3682,14 @@ impl<'a> SurfaceInteraction<'a> {
             y: nv.y,
             z: nv.z,
         };
+        // initialize shading geometry from true geometry
+        let shading: Shading = Shading {
+            n: Vector3f::from(n),
+            dpdu: Vector3f::from(dpdu),
+            dpdv: Vector3f::from(dpdv),
+            dndu: Vector3f::from(dndu),
+            dndv: Vector3f::from(dndv),
+        };
         SurfaceInteraction {
             p: p,
             time: time,
@@ -3700,7 +3708,7 @@ impl<'a> SurfaceInteraction<'a> {
             dudy: 0.0 as Float,
             dvdy: 0.0 as Float,
             primitive: None,
-            shading: Shading::default(),
+            shading: shading,
             bsdf: None,
         }
     }
@@ -5639,7 +5647,7 @@ pub struct Bsdf {
 
 impl Bsdf {
     pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Box<Bxdf + Sync + Send>>) -> Bsdf {
-        let ss = vec3_normalize(si.dpdu);
+        let ss = vec3_normalize(si.shading.dpdu);
         Bsdf {
             eta: eta,
             ns: Normal3::from(si.shading.n),
@@ -6131,9 +6139,6 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             if let Some(ref bsdf) = it.bsdf {
                 f = bsdf.f(it.wo, wi, bsdf_flags) * Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
                 let scattering_pdf: Float = bsdf.pdf(it.wo, wi, bsdf_flags);
-                println!("it.wo = {:?}", it.wo);
-                println!("wi = {:?}", wi);
-                println!("bsdf_flags = {:?}", bsdf_flags);
                 println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
         } else {
@@ -6332,7 +6337,6 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             if scene.lights.len() > 0 {
                 // compute direct lighting for _DirectLightingIntegrator_ integrator
                 if self.strategy == LightStrategy::UniformSampleAll {
-                    println!("ray = {:?}", ray);
                     l += uniform_sample_all_lights(&isect, scene, sampler, &self.n_light_samples, false);
                 } else {
                     // TODO: l += uniform_sample_one_light();
