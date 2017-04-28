@@ -2450,22 +2450,33 @@ impl Transform {
     pub fn transform_ray(&self, r: &mut Ray) {
         // Ray tr = (*this)(Ray(r));
         let mut o_error: Vector3f = Vector3f::default();
-        let o: Point3f = self.transform_point_with_error(r.o, & mut o_error);
-        let tr: Ray = Ray {
-            o: o,
-            d: r.d,
-            t_max: r.t_max,
-            time: r.time,
-            differential: None,
-        };
-        // WORK
-        // RayDifferential ret(tr.o, tr.d, tr.tMax, tr.time, tr.medium);
-        // ret.hasDifferentials = r.hasDifferentials;
-        // ret.rxOrigin = (*this)(r.rxOrigin);
-        // ret.ryOrigin = (*this)(r.ryOrigin);
-        // ret.rxDirection = (*this)(r.rxDirection);
-        // ret.ryDirection = (*this)(r.ryDirection);
-        // return ret;
+        let mut o: Point3f = self.transform_point_with_error(r.o, & mut o_error);
+        let d: Vector3f = self.transform_vector(r.d);
+        let length_squared: Float = d.length_squared();
+        let mut t_max: Float = r.t_max;
+        if length_squared > 0.0 as Float {
+            let dt: Float = vec3_dot(d.abs(), o_error) / length_squared;
+            o += d * dt;
+            t_max -= dt;
+        }
+        r.o = o;
+        r.d = d;
+        r.t_max = t_max;
+        if let Some(mut d) = r.differential {
+            // RayDifferential ret(tr.o, tr.d, tr.tMax, tr.time, tr.medium);
+            // ret.hasDifferentials = r.hasDifferentials;
+            let diff: RayDifferential = RayDifferential {
+                // ret.rxOrigin = (*this)(r.rxOrigin);
+                rx_origin: self.transform_point(d.rx_origin),
+                // ret.ryOrigin = (*this)(r.ryOrigin);
+                ry_origin: self.transform_point(d.ry_origin),
+                // ret.rxDirection = (*this)(r.rxDirection);
+                rx_direction: self.transform_vector(d.rx_direction),
+                // ret.ryDirection = (*this)(r.ryDirection);
+                ry_direction: self.transform_vector(d.ry_direction),
+            };
+            r.differential = Some(diff);
+        }
     }
     pub fn transform_bounds(&self, b: Bounds3f) -> Bounds3f {
         let m: Transform = *self;
@@ -3476,7 +3487,6 @@ impl AnimatedTransform {
         // } else if ...
         // TODO: above
         self.start_transform.transform_ray(r)
-        // WORK
     }
 }
 
@@ -5583,19 +5593,15 @@ impl PerspectiveCamera {
             y: sample.p_film.y,
             z: 0.0,
         };
-        println!("p_film = {:?}", p_film);
         let p_camera: Point3f = self.raster_to_camera.transform_point(p_film);
-        println!("p_camera = {:?}", p_camera);
         let dir: Vector3f = vec3_normalize(Vector3f { x: p_camera.x,
                                                       y: p_camera.y,
                                                       z: p_camera.z, });
-        println!("dir = {:?}", dir);
         // *ray = RayDifferential(Point3f(0, 0, 0), dir);
         ray.o = Point3f::default();
         ray.d = dir;
         ray.t_max = std::f64::INFINITY;
         ray.time = 0.0;
-        println!("ray = {:?}", ray);
         // TODO: modify ray for depth of field
         // TODO: if (lensRadius > 0) { ... } else {
         let diff: RayDifferential = RayDifferential {
@@ -5608,7 +5614,6 @@ impl PerspectiveCamera {
                                                     y: p_camera.y,
                                                     z: p_camera.z, } + self.dy_camera),
         };
-        println!("diff = {:?}", diff);
         // TODO: ray.time = lerp(sample.time, self.shutter_open, self.shutter_close);
         // TODO: ray->medium = medium;
         // TODO: *ray = CameraToWorld(*ray);
