@@ -1542,6 +1542,33 @@ pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
     (p1 - p2).length()
 }
 
+pub fn pnt3_offset_ray_origin(p: Point3f,
+                              p_error: Vector3f,
+                              n: Normal3f,
+                              w: Vector3f) -> Point3f {
+    //     Float d = Dot(Abs(n), pError);
+    let d: Float = nrm_dot_vec3(nrm_abs(n), p_error);
+// #ifdef PBRT_FLOAT_AS_DOUBLE
+//     // We have tons of precision; for now bump up the offset a bunch just
+//     // to be extra sure that we start on the right side of the surface
+//     // (In case of any bugs in the epsilons code...)
+//     d *= 1024.;
+// #endif
+//     Vector3f offset = d * Vector3f(n);
+//     if (Dot(w, n) < 0) offset = -offset;
+//     Point3f po = p + offset;
+//     // Round offset point _po_ away from _p_
+//     for (int i = 0; i < 3; ++i) {
+//         if (offset[i] > 0)
+//             po[i] = NextFloatUp(po[i]);
+//         else if (offset[i] < 0)
+//             po[i] = NextFloatDown(po[i]);
+//     }
+//     return po;
+    // WORK
+    Point3f::default()
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Normal3<T> {
     pub x: T,
@@ -1585,6 +1612,23 @@ impl<T> From<Vector3<T>> for Normal3<T> {
             y: v.y,
             z: v.z,
         }
+    }
+}
+
+pub fn nrm_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
+    where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+{
+    // TODO: DCHECK(!n1.HasNaNs() && !v2.HasNaNs());
+    n1.x * v2.x + n1.y * v2.y + n1.z * v2.z
+}
+
+pub fn nrm_abs<T>(n: Normal3<T>) -> Normal3<T>
+    where T: num::Float
+{
+    Normal3::<T> {
+        x: n.x.abs(),
+        y: n.y.abs(),
+        z: n.z.abs(),
     }
 }
 
@@ -3615,10 +3659,18 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 pub struct Interaction {
     pub p: Point3f,
     pub time: Float,
-    // pub p_error: Vector3f,
-    // pub wo: Vector3f,
-    // pub n: Normal3f,
+    pub p_error: Vector3f,
+    pub wo: Vector3f,
+    pub n: Normal3f,
     // TODO: MediumInterface mediumInterface;
+}
+
+impl Interaction {
+    pub fn spawn_ray_to(&self, it: Interaction) -> Ray {
+        let origin: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, it.p - self.p);
+        // WORK
+        Ray::default()
+    }
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -5956,6 +6008,14 @@ pub struct VisibilityTester {
     pub p1: Interaction, // TODO: private
 }
 
+impl VisibilityTester {
+    fn unoccluded(&self, scene: &Scene) -> bool {
+        // TODO: !scene.intersect_p(self.p0.spawn_ray_to(self.p1))
+        // WORK
+        false
+    }
+}
+
 // see distant.h
 
 #[derive(Debug,Copy,Clone)]
@@ -6013,10 +6073,16 @@ impl DistantLight {
             p0: Interaction {
                 p: iref.p,
                 time: iref.time,
+                p_error: Vector3f::default(),
+                wo: Vector3f::default(),
+                n: Normal3f::default(),
             },
             p1: Interaction {
                 p: p_outside,
-                time: iref.time, // mediumInterface,
+                time: iref.time,
+                p_error: Vector3f::default(),
+                wo: Vector3f::default(),
+                n: Normal3f::default(),
             },
         };
         self.l
@@ -6129,7 +6195,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     let mut wi: Vector3f = Vector3f::default();
     let mut light_pdf: Float = 0.0 as Float;
     let mut visibility: VisibilityTester = VisibilityTester::default();
-    let li: Spectrum = light.sample_li(it, u_light, &mut wi, &mut light_pdf, &mut visibility);
+    let mut li: Spectrum = light.sample_li(it, u_light, &mut wi, &mut light_pdf, &mut visibility);
     // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi: {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
     if light_pdf > 0.0 as Float && !li.is_black() {
         // compute BSDF or phase function's value for light sample
@@ -6143,8 +6209,23 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             }
         } else {
             // evaluate phase function for light sampling strategy
+            // TODO
         }
-        // TODO: if (!f.IsBlack()) { ... }
+        if !f.is_black() {
+            // compute effect of visibility for light source sample
+            if handle_media {
+                // TODO: li *= tr(scene, sampler);
+                // TODO: VLOG(2) << "  after Tr, Li: " << Li;
+            } else {
+                if !visibility.unoccluded(scene) {
+                    println!("  shadow ray blocked");
+                    li = Spectrum::new(0.0 as Float);
+                    // WORK
+                } else {
+                    println!("  shadow ray unoccluded"); 
+                }
+            }
+        }
     }
     // TODO: if (!IsDeltaLight(light.flags)) { ... }
     ld
