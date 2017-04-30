@@ -614,7 +614,7 @@
 
 extern crate num;
 extern crate num_cpus;
-//extern crate copy_arena;
+// extern crate copy_arena;
 
 use std::cmp::PartialEq;
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index};
@@ -624,7 +624,7 @@ use std::mem;
 use std::sync::Arc;
 use std::thread;
 use std::sync::mpsc;
-//use copy_arena::{Arena, Allocator};
+// use copy_arena::{Arena, Allocator};
 
 pub type Float = f64;
 
@@ -667,11 +667,14 @@ impl Scene {
     pub fn world_bound(&self) -> &Bounds3f {
         &self.world_bound
     }
-    pub fn intersect(&self,
-                 ray: &mut Ray)
-                 -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         // TODO: ++nIntersectionTests;
-        assert_ne!(ray.d, Vector3f { x: 0.0, y: 0.0, z: 0.0, });
+        assert_ne!(ray.d,
+                   Vector3f {
+                       x: 0.0,
+                       y: 0.0,
+                       z: 0.0,
+                   });
         self.aggregate.intersect(ray)
     }
 }
@@ -1127,8 +1130,7 @@ impl<T> Vector3<T> {
     }
 }
 
-impl<T> Index<u8> for Vector3<T>
-{
+impl<T> Index<u8> for Vector3<T> {
     type Output = T;
     fn index(&self, index: u8) -> &T {
         match index {
@@ -1164,17 +1166,28 @@ impl<T> From<Normal3<T>> for Vector3<T> {
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
 /// codirectional.
-pub fn vec3_dot<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
+pub fn vec3_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
     where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
 {
     v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
 
+/// Product of the Euclidean magnitudes of a vector (and a normal) and
+/// the cosine of the angle between them. A return value of zero means
+/// both are orthogonal, a value if one means they are codirectional.
+pub fn vec3_dot_nrm<T>(v1: Normal3<T>, n2: Vector3<T>) -> T
+    where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+{
+    // DCHECK(!v1.HasNaNs() && !n2.HasNaNs());
+    return v1.x * n2.x + v1.y * n2.y + v1.z * n2.z;
+}
+
+
 /// Computes the absolute value of the dot product.
 pub fn vec3_abs_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
     where T: num::Float
 {
-    vec3_dot(v1, v2).abs()
+    vec3_dot_vec3(v1, v2).abs()
 }
 
 /// Given two vectors in 3D, the cross product is a vector that is
@@ -1483,8 +1496,7 @@ impl<T> DivAssign<T> for Point3<T>
     }
 }
 
-impl<T> Index<u8> for Point3<T>
-{
+impl<T> Index<u8> for Point3<T> {
     type Output = T;
     fn index(&self, index: u8) -> &T {
         match index {
@@ -1542,29 +1554,27 @@ pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
     (p1 - p2).length()
 }
 
-pub fn pnt3_offset_ray_origin(p: Point3f,
-                              p_error: Vector3f,
-                              n: Normal3f,
-                              w: Vector3f) -> Point3f {
+pub fn pnt3_offset_ray_origin(p: Point3f, p_error: Vector3f, n: Normal3f, w: Vector3f) -> Point3f {
     //     Float d = Dot(Abs(n), pError);
     let d: Float = nrm_dot_vec3(nrm_abs(n), p_error);
-// #ifdef PBRT_FLOAT_AS_DOUBLE
-//     // We have tons of precision; for now bump up the offset a bunch just
-//     // to be extra sure that we start on the right side of the surface
-//     // (In case of any bugs in the epsilons code...)
-//     d *= 1024.;
-// #endif
-//     Vector3f offset = d * Vector3f(n);
-//     if (Dot(w, n) < 0) offset = -offset;
-//     Point3f po = p + offset;
-//     // Round offset point _po_ away from _p_
-//     for (int i = 0; i < 3; ++i) {
-//         if (offset[i] > 0)
-//             po[i] = NextFloatUp(po[i]);
-//         else if (offset[i] < 0)
-//             po[i] = NextFloatDown(po[i]);
-//     }
-//     return po;
+    // #ifdef PBRT_FLOAT_AS_DOUBLE
+    //     // We have tons of precision; for now bump up the offset a bunch just
+    //     // to be extra sure that we start on the right side of the surface
+    //     // (In case of any bugs in the epsilons code...)
+    //     d *= 1024.;
+    // #endif
+    //     Vector3f offset = d * Vector3f(n);
+    let offset: Vector3f = Vector3f::from(n) * d;
+    //     if (Dot(w, n) < 0) offset = -offset;
+    //     Point3f po = p + offset;
+    //     // Round offset point _po_ away from _p_
+    //     for (int i = 0; i < 3; ++i) {
+    //         if (offset[i] > 0)
+    //             po[i] = NextFloatUp(po[i]);
+    //         else if (offset[i] < 0)
+    //             po[i] = NextFloatDown(po[i]);
+    //     }
+    //     return po;
     // WORK
     Point3f::default()
 }
@@ -1615,6 +1625,9 @@ impl<T> From<Vector3<T>> for Normal3<T> {
     }
 }
 
+/// Product of the Euclidean magnitudes of a normal (and a vector) and
+/// the cosine of the angle between them. A return value of zero means
+/// both are orthogonal, a value if one means they are codirectional.
 pub fn nrm_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
     where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
 {
@@ -1697,7 +1710,10 @@ impl<'a> IntoIterator for &'a Bounds2i {
         Bounds2Iterator {
             // need to start 1 before p_min.x as next() will be called
             // to get the first element
-            p: Point2i { x: self.p_min.x - 1, y: self.p_min.y },
+            p: Point2i {
+                x: self.p_min.x - 1,
+                y: self.p_min.y,
+            },
             bounds: self,
         }
     }
@@ -1710,10 +1726,14 @@ pub fn bnd2_intersect_bnd2<T>(b1: Bounds2<T>, b2: Bounds2<T>) -> Bounds2<T>
     where T: Copy + Ord
 {
     Bounds2::<T> {
-        p_min: Point2::<T> { x: std::cmp::max(b1.p_min.x, b2.p_min.x),
-                             y: std::cmp::max(b1.p_min.y, b2.p_min.y), },
-        p_max: Point2::<T> { x: std::cmp::min(b1.p_max.x, b2.p_max.x),
-                             y: std::cmp::min(b1.p_max.y, b2.p_max.y), },
+        p_min: Point2::<T> {
+            x: std::cmp::max(b1.p_min.x, b2.p_min.x),
+            y: std::cmp::max(b1.p_min.y, b2.p_min.y),
+        },
+        p_max: Point2::<T> {
+            x: std::cmp::min(b1.p_max.x, b2.p_max.x),
+            y: std::cmp::min(b1.p_max.y, b2.p_max.y),
+        },
     }
 }
 
@@ -1725,16 +1745,18 @@ pub struct Bounds3<T> {
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl Default for /* Bounds3f */ Bounds3<f64> {
-    fn default() -> /* Bounds3f */ Bounds3<f64> {
+impl Default for Bounds3<f64> {
+    fn default() -> Bounds3<f64> {
         let min_num: Float = std::f64::MIN;
         let max_num: Float = std::f64::MAX;
-        /* Bounds3f */ Bounds3::<f64> {
+        // Bounds3f
+        Bounds3::<f64> {
             p_min: Point3f {
                 x: max_num,
                 y: max_num,
                 z: max_num,
-            }, p_max: Point3f {
+            },
+            p_max: Point3f {
                 x: min_num,
                 y: min_num,
                 z: min_num,
@@ -1827,7 +1849,9 @@ impl Bounds3<Float> {
         // update _t_max_ and _ty_max_ to ensure robust bounds intersection
         t_max *= 1.0 + 2.0 * gamma(3_i32);
         ty_max *= 1.0 + 2.0 * gamma(3_i32);
-        if t_min > ty_max || ty_min > t_max { return false; }
+        if t_min > ty_max || ty_min > t_max {
+            return false;
+        }
         if ty_min > t_min {
             t_min = ty_min;
         }
@@ -1839,7 +1863,9 @@ impl Bounds3<Float> {
         let mut tz_max: Float = (self[1_u8 - dir_is_neg[2]].z - ray.o.z) * inv_dir.z;
         // update _tz_max_ to ensure robust bounds intersection
         tz_max *= 1.0 + 2.0 * gamma(3_i32);
-        if t_min > tz_max || tz_min > t_max { return false; }
+        if t_min > tz_max || tz_min > t_max {
+            return false;
+        }
         if tz_min > t_min {
             t_min = tz_min;
         }
@@ -1850,8 +1876,7 @@ impl Bounds3<Float> {
     }
 }
 
-impl<T> Index<u8> for Bounds3<T>
-{
+impl<T> Index<u8> for Bounds3<T> {
     type Output = Point3<T>;
 
     fn index(&self, i: u8) -> &Point3<T> {
@@ -2494,12 +2519,12 @@ impl Transform {
     pub fn transform_ray(&self, r: &mut Ray) {
         // Ray tr = (*this)(Ray(r));
         let mut o_error: Vector3f = Vector3f::default();
-        let mut o: Point3f = self.transform_point_with_error(r.o, & mut o_error);
+        let mut o: Point3f = self.transform_point_with_error(r.o, &mut o_error);
         let d: Vector3f = self.transform_vector(r.d);
         let length_squared: Float = d.length_squared();
         let mut t_max: Float = r.t_max;
         if length_squared > 0.0 as Float {
-            let dt: Float = vec3_dot(d.abs(), o_error) / length_squared;
+            let dt: Float = vec3_dot_vec3(d.abs(), o_error) / length_squared;
             o += d * dt;
             t_max -= dt;
         }
@@ -2655,7 +2680,7 @@ impl Transform {
         let d: Vector3f = self.transform_vector_with_error(r.d, d_error);
         let length_squared: Float = d.length_squared();
         if length_squared > 0.0 {
-            let dt: Float = vec3_dot(d.abs(), *o_error) / length_squared;
+            let dt: Float = vec3_dot_vec3(d.abs(), *o_error) / length_squared;
             o += d * dt;
         }
         Ray {
@@ -3645,7 +3670,7 @@ impl Quaternion {
 
 /// The inner product of two quaterions.
 pub fn quat_dot(q1: Quaternion, q2: Quaternion) -> Float {
-    vec3_dot(q1.v, q2.v) + q1.w * q2.w
+    vec3_dot_vec3(q1.v, q2.v) + q1.w * q2.w
 }
 
 /// A quaternion can be normalized by dividing by its length.
@@ -3661,8 +3686,7 @@ pub struct Interaction {
     pub time: Float,
     pub p_error: Vector3f,
     pub wo: Vector3f,
-    pub n: Normal3f,
-    // TODO: MediumInterface mediumInterface;
+    pub n: Normal3f, // TODO: MediumInterface mediumInterface;
 }
 
 impl Interaction {
@@ -3771,8 +3795,7 @@ impl<'a> SurfaceInteraction<'a> {
                                         mode: TransportMode) {
         self.compute_differentials(ray);
         if let Some(primitive) = self.primitive {
-            primitive.compute_scattering_functions(self, // arena,
-                                                   mode, allow_multiple_lobes);
+            primitive.compute_scattering_functions(self /* arena, */, mode, allow_multiple_lobes);
         }
     }
     pub fn compute_differentials(&mut self, ray: &Ray) {
@@ -3780,15 +3803,15 @@ impl<'a> SurfaceInteraction<'a> {
             // estimate screen space change in $\pt{}$ and $(u,v)$
 
             // compute auxiliary intersection points with plane
-            let d: Float = vec3_dot(Vector3f::from(self.n),
-                                    Vector3f {
-                                        x: self.p.x,
-                                        y: self.p.y,
-                                        z: self.p.z,
-                                    });
-            let tx: Float = -(vec3_dot(Vector3f::from(self.n), Vector3f::from(diff.rx_origin)) -
-                              d) /
-                            vec3_dot(Vector3f::from(self.n), diff.rx_direction);
+            let d: Float = vec3_dot_vec3(Vector3f::from(self.n),
+                                         Vector3f {
+                                             x: self.p.x,
+                                             y: self.p.y,
+                                             z: self.p.z,
+                                         });
+            let tx: Float =
+                -(vec3_dot_vec3(Vector3f::from(self.n), Vector3f::from(diff.rx_origin)) - d) /
+                vec3_dot_vec3(Vector3f::from(self.n), diff.rx_direction);
             if tx.is_nan() {
                 self.dudx = 0.0 as Float;
                 self.dvdx = 0.0 as Float;
@@ -3798,9 +3821,9 @@ impl<'a> SurfaceInteraction<'a> {
                 self.dpdy = Vector3f::default();
             } else {
                 let px: Point3f = diff.rx_origin + diff.rx_direction * tx;
-                let ty: Float = -(vec3_dot(Vector3f::from(self.n), Vector3f::from(diff.ry_origin)) -
-                                  d) /
-                                vec3_dot(Vector3f::from(self.n), diff.ry_direction);
+                let ty: Float =
+                    -(vec3_dot_vec3(Vector3f::from(self.n), Vector3f::from(diff.ry_origin)) - d) /
+                    vec3_dot_vec3(Vector3f::from(self.n), diff.ry_direction);
                 if ty.is_nan() {
                     self.dudx = 0.0 as Float;
                     self.dvdx = 0.0 as Float;
@@ -3874,9 +3897,7 @@ impl<'a> SurfaceInteraction<'a> {
 pub trait Shape {
     fn object_bound(&self) -> Bounds3f;
     fn world_bound(&self) -> Bounds3f;
-    fn intersect(&self,
-                 r: &Ray)
-                 -> Option<(SurfaceInteraction, Float)>;
+    fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)>;
     // TODO: fn intersect_p(&self,
     //                r: &Ray /* , bool testAlphaTexture */)
     //              -> bool;
@@ -3902,8 +3923,7 @@ pub trait Primitive {
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         if let Some(ref material) = self.get_material() {
-            material.compute_scattering_functions(isect, // arena,
-                                                  mode, allow_multiple_lobes);
+            material.compute_scattering_functions(isect /* arena, */, mode, allow_multiple_lobes);
         }
         // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
     }
@@ -3912,8 +3932,6 @@ pub trait Primitive {
 pub struct GeometricPrimitive {
     pub shape: Arc<Shape + Send + Sync>,
     pub material: Option<Arc<Material + Send + Sync>>,
-    // TODO: pub area_light: Option<Arc<AreaLight + Send + Sync>>,
-    // TODO: pub medium_interface: Option<Arc<MediumInterface>>,
 }
 
 impl GeometricPrimitive {
@@ -4037,9 +4055,7 @@ impl Shape for Sphere {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(self.object_bound())
     }
-    fn intersect(&self,
-                 r: &Ray)
-                 -> Option<(SurfaceInteraction, Float)> {
+    fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
@@ -4153,13 +4169,13 @@ impl Shape for Sphere {
         } * -(self.theta_max - self.theta_min) *
                                  (self.theta_max - self.theta_min);
         // compute coefficients for fundamental forms
-        let ec: Float = vec3_dot(dpdu, dpdu);
-        let fc: Float = vec3_dot(dpdu, dpdv);
-        let gc: Float = vec3_dot(dpdv, dpdv);
+        let ec: Float = vec3_dot_vec3(dpdu, dpdu);
+        let fc: Float = vec3_dot_vec3(dpdu, dpdv);
+        let gc: Float = vec3_dot_vec3(dpdv, dpdv);
         let nc: Vector3f = vec3_normalize(vec3_cross(dpdu, dpdv));
-        let el: Float = vec3_dot(nc, d2_p_duu);
-        let fl: Float = vec3_dot(nc, d2_p_duv);
-        let gl: Float = vec3_dot(nc, d2_p_dvv);
+        let el: Float = vec3_dot_vec3(nc, d2_p_duu);
+        let fl: Float = vec3_dot_vec3(nc, d2_p_duv);
+        let gl: Float = vec3_dot_vec3(nc, d2_p_dvv);
         // compute $\dndu$ and $\dndv$ from fundamental form coefficients
         let inv_egf2: Float = 1.0 / (ec * gc - fc * fc);
         let dndu = dpdu * (fl * fc - el * gc) * inv_egf2 + dpdv * (el * fc - fl * ec) * inv_egf2;
@@ -4305,9 +4321,7 @@ impl Shape for Triangle {
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         bnd3_union_pnt3(Bounds3f::new(p0, p1), p2)
     }
-    fn intersect(&self,
-                 ray: &Ray)
-                 -> Option<(SurfaceInteraction, Float)> {
+    fn intersect(&self, ray: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
@@ -4513,13 +4527,17 @@ impl RGBSpectrum {
     // from CoefficientSpectrum
     pub fn is_black(&self) -> bool {
         for i in 0..3 {
-            if self.c[i] != 0.0 as Float { return false; }
+            if self.c[i] != 0.0 as Float {
+                return false;
+            }
         }
         true
     }
     pub fn has_nans(&self) -> bool {
         for i in 0..3 {
-            if self.c[i].is_nan() { return true; }
+            if self.c[i].is_nan() {
+                return true;
+            }
         }
         false
     }
@@ -4546,7 +4564,8 @@ impl Div<Float> for RGBSpectrum {
     fn div(self, rhs: Float) -> RGBSpectrum {
         assert_ne!(rhs, 0.0 as Float);
         assert!(!rhs.is_nan(), "rhs is NaN");
-        let ret: RGBSpectrum = RGBSpectrum { c: [self.c[0] / rhs, self.c[1] / rhs, self.c[2] / rhs] };
+        let ret: RGBSpectrum =
+            RGBSpectrum { c: [self.c[0] / rhs, self.c[1] / rhs, self.c[2] / rhs] };
         assert!(!ret.has_nans());
         ret
     }
@@ -4647,8 +4666,7 @@ pub struct LinearBVHNode {
     //                  int secondChildOffset; }; // interior
     offset: usize,
     n_primitives: usize,
-    axis: u8,
-    // TODO? pad
+    axis: u8, // TODO? pad
 }
 
 // BVHAccel -> Aggregate -> Primitive
@@ -4660,7 +4678,10 @@ pub struct BVHAccel {
 }
 
 impl BVHAccel {
-    pub fn new(p: Vec<Arc<Primitive>>, max_prims_in_node: usize, split_method: SplitMethod) -> Self {
+    pub fn new(p: Vec<Arc<Primitive>>,
+               max_prims_in_node: usize,
+               split_method: SplitMethod)
+               -> Self {
         let bvh = Arc::new(BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
             split_method: split_method.clone(),
@@ -4705,16 +4726,19 @@ impl BVHAccel {
             Bounds3f::default()
         }
     }
-    pub fn intersect(&self,
-                     ray: &mut Ray)
-                     -> Option<SurfaceInteraction> {
-        if self.nodes.len() == 0 { return None; }
+    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+        if self.nodes.len() == 0 {
+            return None;
+        }
         // TODO: ProfilePhase p(Prof::AccelIntersect);
         let mut hit: bool = false;
-        let inv_dir: Vector3f = Vector3f { x: 1.0 / ray.d.x,
-                                           y: 1.0 / ray.d.y,
-                                           z: 1.0 / ray.d.z, };
-        let dir_is_neg: [u8; 3] = [ (inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8 ];
+        let inv_dir: Vector3f = Vector3f {
+            x: 1.0 / ray.d.x,
+            y: 1.0 / ray.d.y,
+            z: 1.0 / ray.d.z,
+        };
+        let dir_is_neg: [u8; 3] =
+            [(inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8];
         // follow ray through BVH nodes to find primitive intersections
         let mut to_visit_offset: u32 = 0;
         let mut current_node_index: u32 = 0;
@@ -4730,12 +4754,14 @@ impl BVHAccel {
                     for i in 0..node.n_primitives {
                         // see primitive.h GeometricPrimitive::Intersect() ...
                         if let Some(isect) = self.primitives[node.offset + i].intersect(ray) {
-                            // TODO: CHECK_GE(...) and medium stuff in GeometricPrimitive::Intersect()
+                            // TODO: CHECK_GE(...)
                             si = isect;
                             hit = true;
                         }
                     }
-                    if to_visit_offset == 0_u32 { break; }
+                    if to_visit_offset == 0_u32 {
+                        break;
+                    }
                     to_visit_offset -= 1_u32;
                     current_node_index = nodes_to_visit[to_visit_offset as usize];
                 } else {
@@ -4752,7 +4778,9 @@ impl BVHAccel {
                     }
                 }
             } else {
-                if to_visit_offset == 0_u32 { break; }
+                if to_visit_offset == 0_u32 {
+                    break;
+                }
                 to_visit_offset -= 1_u32;
                 current_node_index = nodes_to_visit[to_visit_offset as usize];
             }
@@ -4821,8 +4849,8 @@ impl BVHAccel {
                             mid = (start + end) / 2;
                             if start != end - 1 {
                                 if primitive_info[end - 1].centroid[dim] <
-                                    primitive_info[start].centroid[dim] {
-                                        primitive_info.swap(start, end - 1);
+                                   primitive_info[start].centroid[dim] {
+                                    primitive_info.swap(start, end - 1);
                                 }
                             }
                         } else {
@@ -4891,8 +4919,10 @@ impl BVHAccel {
                                 if combined.len() == primitive_info.len() {
                                     primitive_info.copy_from_slice(combined.as_slice());
                                 } else {
-                                    println!("TODO: combined.len() != primitive_info.len(); {} != {}",
-                                    combined.len(), primitive_info.len());
+                                    println!("TODO: combined.len() != primitive_info.len(); {} \
+                                              != {}",
+                                             combined.len(),
+                                             primitive_info.len());
                                 }
                             } else {
                                 // create leaf _BVHBuildNode_
@@ -4920,14 +4950,15 @@ impl BVHAccel {
                                                    mid,
                                                    total_nodes,
                                                    ordered_prims);
-                node.init_interior(dim,
-                                   c0,
-                                   c1);
+                node.init_interior(dim, c0, c1);
             }
         }
         return node;
     }
-    fn flatten_bvh_tree(node: &Box<BVHBuildNode>, nodes: &mut Vec<LinearBVHNode>, offset: &mut usize) -> usize {
+    fn flatten_bvh_tree(node: &Box<BVHBuildNode>,
+                        nodes: &mut Vec<LinearBVHNode>,
+                        offset: &mut usize)
+                        -> usize {
         let my_offset: usize = *offset;
         *offset += 1;
         if node.n_primitives > 0 {
@@ -5020,7 +5051,8 @@ impl Default for ZeroTwoSequenceSampler {
         };
         for i in 0..lds.n_sampled_dimensions {
             let additional_1d: Vec<Float> = vec![0.0; lds.samples_per_pixel as usize];
-            let additional_2d: Vec<Point2f> = vec![Point2f::default(); lds.samples_per_pixel as usize];
+            let additional_2d: Vec<Point2f> =
+                vec![Point2f::default(); lds.samples_per_pixel as usize];
             lds.samples_1d.push(additional_1d);
             lds.samples_2d.push(additional_2d);
         }
@@ -5043,16 +5075,10 @@ impl ZeroTwoSequenceSampler {
         // TODO: ProfilePhase _(Prof::StartPixel);
         // generate 1D and 2D pixel sample components using $(0,2)$-sequence
         for samples in &mut self.samples_1d {
-            van_der_corput(1,
-                           self.samples_per_pixel as i32,
-                           samples,
-                           &mut self.rng);
+            van_der_corput(1, self.samples_per_pixel as i32, samples, &mut self.rng);
         }
         for samples in &mut self.samples_2d {
-            sobol_2d(1,
-                     self.samples_per_pixel as i32,
-                     samples,
-                     &mut self.rng);
+            sobol_2d(1, self.samples_per_pixel as i32, samples, &mut self.rng);
         }
         // generate 1D and 2D array samples using $(0,2)$-sequence
         for i in 0..self.samples_1d_array_sizes.len() {
@@ -5209,7 +5235,8 @@ impl ZeroTwoSequenceSampler {
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
         assert!(self.current_pixel_sample_index < self.samples_per_pixel,
                 "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-                self.current_pixel_sample_index, self.samples_per_pixel);
+                self.current_pixel_sample_index,
+                self.samples_per_pixel);
         // TODO: let index: usize = self.current_pixel_sample_index as usize * n as usize;
         // TODO: samples = self.samples_2d_array[self.array_2d_offset][index];
         for sample in &self.samples_2d_array[self.array_2d_offset] {
@@ -5378,7 +5405,7 @@ pub struct FilmTile<'a> {
     pixel_bounds: Bounds2i,
     filter_radius: Vector2f,
     inv_filter_radius: Vector2f,
-    filter_table: &'a[Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
+    filter_table: &'a [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
     filter_table_size: usize,
     pixels: Vec<FilmTilePixel>,
     max_sample_luminance: Float,
@@ -5387,15 +5414,17 @@ pub struct FilmTile<'a> {
 impl<'a> FilmTile<'a> {
     pub fn new(pixel_bounds: Bounds2i,
                filter_radius: Vector2f,
-               filter_table: &'a[Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
+               filter_table: &'a [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
                filter_table_size: usize,
                max_sample_luminance: Float)
                -> Self {
         FilmTile {
             pixel_bounds: pixel_bounds,
             filter_radius: filter_radius,
-            inv_filter_radius: Vector2f { x: 1.0 / filter_radius.x,
-                                          y: 1.0 / filter_radius.y, },
+            inv_filter_radius: Vector2f {
+                x: 1.0 / filter_radius.x,
+                y: 1.0 / filter_radius.y,
+            },
             filter_table: filter_table,
             filter_table_size: filter_table_size,
             // TODO: pixels = std::vector<FilmTilePixel>(std::max(0, pixelBounds.Area()));
@@ -5642,10 +5671,7 @@ impl PerspectiveCamera {
             a: a,
         }
     }
-    pub fn generate_ray_differential(&self,
-                                     sample: &CameraSample,
-                                     ray: &mut Ray)
-                                     -> Float {
+    pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
         // TODO: ProfilePhase prof(Prof::GenerateCameraRay);
         // compute raster and camera sample positions
         let p_film: Point3f = Point3f {
@@ -5654,9 +5680,11 @@ impl PerspectiveCamera {
             z: 0.0,
         };
         let p_camera: Point3f = self.raster_to_camera.transform_point(p_film);
-        let dir: Vector3f = vec3_normalize(Vector3f { x: p_camera.x,
-                                                      y: p_camera.y,
-                                                      z: p_camera.z, });
+        let dir: Vector3f = vec3_normalize(Vector3f {
+            x: p_camera.x,
+            y: p_camera.y,
+            z: p_camera.z,
+        });
         // *ray = RayDifferential(Point3f(0, 0, 0), dir);
         ray.o = Point3f::default();
         ray.d = dir;
@@ -5667,12 +5695,16 @@ impl PerspectiveCamera {
         let diff: RayDifferential = RayDifferential {
             rx_origin: ray.o,
             ry_origin: ray.o,
-            rx_direction: vec3_normalize(Vector3f { x: p_camera.x,
-                                                    y: p_camera.y,
-                                                    z: p_camera.z, } + self.dx_camera),
-            ry_direction: vec3_normalize(Vector3f { x: p_camera.x,
-                                                    y: p_camera.y,
-                                                    z: p_camera.z, } + self.dy_camera),
+            rx_direction: vec3_normalize(Vector3f {
+                x: p_camera.x,
+                y: p_camera.y,
+                z: p_camera.z,
+            } + self.dx_camera),
+            ry_direction: vec3_normalize(Vector3f {
+                x: p_camera.x,
+                y: p_camera.y,
+                z: p_camera.z,
+            } + self.dy_camera),
         };
         // TODO: ray.time = lerp(sample.time, self.shutter_open, self.shutter_close);
         // TODO: ray->medium = medium;
@@ -5711,9 +5743,9 @@ impl Bsdf {
     }
     pub fn world_to_local(&self, v: Vector3f) -> Vector3f {
         Vector3f {
-            x: vec3_dot(v, self.ss),
-            y: vec3_dot(v, self.ts),
-            z: vec3_dot(v, Vector3f::from(self.ns)),
+            x: vec3_dot_vec3(v, self.ss),
+            y: vec3_dot_vec3(v, self.ts),
+            z: vec3_dot_vec3(v, Vector3f::from(self.ns)),
         }
     }
     pub fn f(&self, wo_w: Vector3f, wi_w: Vector3f, flags: u8) -> Spectrum {
@@ -5723,8 +5755,8 @@ impl Bsdf {
         if wo.z == 0.0 as Float {
             return Spectrum::new(0.0 as Float);
         }
-        let reflect: bool = (vec3_dot(wi_w, Vector3f::from(self.ng)) *
-                             vec3_dot(wo_w, Vector3f::from(self.ng))) >
+        let reflect: bool = (vec3_dot_vec3(wi_w, Vector3f::from(self.ng)) *
+                             vec3_dot_vec3(wo_w, Vector3f::from(self.ng))) >
                             0.0 as Float;
         let mut f: Spectrum = Spectrum::new(0.0 as Float);
         let mut n_bxdfs: usize = self.bxdfs.len();
@@ -5763,7 +5795,6 @@ impl Bsdf {
         }
         v
     }
-
 }
 
 #[repr(u8)]
@@ -5798,9 +5829,7 @@ pub struct LambertianReflection {
 
 impl LambertianReflection {
     pub fn new(r: Spectrum) -> Self {
-        LambertianReflection {
-            r: r,
-        }
+        LambertianReflection { r: r }
     }
 }
 
@@ -5922,8 +5951,7 @@ pub trait Material {
 /// Describes a purely diffuse surface.
 pub struct MatteMaterial {
     pub kd: Spectrum,
-    pub sigma: Float,
-    // TODO: bump_map
+    pub sigma: Float, // TODO: bump_map
 }
 
 impl MatteMaterial {
@@ -5958,8 +5986,7 @@ pub struct GlassMaterial {
     pub kt: Spectrum,
     pub u_roughness: Float,
     pub v_roughness: Float,
-    pub index: Float,
-    // TODO: bump_map
+    pub index: Float, // TODO: bump_map
 }
 
 impl Material for GlassMaterial {
@@ -5976,8 +6003,7 @@ impl Material for GlassMaterial {
 
 /// A simple mirror, modeled with perfect specular reflection.
 pub struct MirrorMaterial {
-    pub kr: Spectrum,
-    // TODO: bump_map
+    pub kr: Spectrum, // TODO: bump_map
 }
 
 impl Material for MirrorMaterial {
@@ -5997,7 +6023,7 @@ pub enum LightFlags {
     DeltaPosition = 1,
     DeltaDirection = 2,
     Area = 4,
-    Infinite = 8
+    Infinite = 8,
 }
 
 /// A closure - an object that encapsulates a small amount of data and
@@ -6009,7 +6035,7 @@ pub struct VisibilityTester {
 }
 
 impl VisibilityTester {
-    fn unoccluded(&self, scene: &Scene) -> bool {
+    pub fn unoccluded(&self, scene: &Scene) -> bool {
         // TODO: !scene.intersect_p(self.p0.spawn_ray_to(self.p1))
         // WORK
         false
@@ -6027,9 +6053,9 @@ pub struct DistantLight {
     world_radius: Float,
     // inherited from class Light (see light.h)
     flags: u8,
-    n_samples: i32, // const?
-    // TODO: const MediumInterface mediumInterface;
-    // TODO: const Transform LightToWorld, WorldToLight;
+    n_samples: i32, /* const?
+                     * TODO: const MediumInterface mediumInterface;
+                     * TODO: const Transform LightToWorld, WorldToLight; */
 }
 
 impl DistantLight {
@@ -6135,7 +6161,8 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
                                  scene: &Scene,
                                  sampler: &mut ZeroTwoSequenceSampler,
                                  n_light_samples: &Vec<i32>,
-                                 handle_media: bool) -> Spectrum {
+                                 handle_media: bool)
+                                 -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
     let mut l: Spectrum = Spectrum::new(0.0);
     for j in 0..scene.lights.len() {
@@ -6184,7 +6211,8 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                        sampler: &mut ZeroTwoSequenceSampler,
                        // TODO: arena
                        handle_media: bool,
-                       specular: bool) -> Spectrum {
+                       specular: bool)
+                       -> Spectrum {
     let mut bsdf_flags: u8 = BxdfType::BSDF_ALL as u8;
     if !specular {
         // bitwise not in Rust is ! (not the ~ operator like in C)
@@ -6196,14 +6224,16 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     let mut light_pdf: Float = 0.0 as Float;
     let mut visibility: VisibilityTester = VisibilityTester::default();
     let mut li: Spectrum = light.sample_li(it, u_light, &mut wi, &mut light_pdf, &mut visibility);
-    // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi: {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
+    // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi:
+    // {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
     if light_pdf > 0.0 as Float && !li.is_black() {
         // compute BSDF or phase function's value for light sample
         let mut f: Spectrum = Spectrum::new(0.0);
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
             if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.f(it.wo, wi, bsdf_flags) * Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
+                f = bsdf.f(it.wo, wi, bsdf_flags) *
+                    Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
                 let scattering_pdf: Float = bsdf.pdf(it.wo, wi, bsdf_flags);
                 println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
@@ -6222,7 +6252,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                     li = Spectrum::new(0.0 as Float);
                     // WORK
                 } else {
-                    println!("  shadow ray unoccluded"); 
+                    println!("  shadow ray unoccluded");
                 }
             }
         }
@@ -6354,7 +6384,9 @@ impl DirectLightingIntegrator {
                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
                             let y: Float = l.y();
                             if ray_weight > 0.0 {
-                                l = self.li(&mut ray, scene, &mut tile_sampler, // &mut arena,
+                                l = self.li(&mut ray,
+                                            scene,
+                                            &mut tile_sampler, // &mut arena,
                                             0_i32);
                             }
                             if l.has_nans() {
@@ -6409,8 +6441,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
         if let Some(mut isect) = scene.intersect(ray) {
             // compute scattering functions for surface interaction
             let mode: TransportMode = TransportMode::Radiance;
-            isect.compute_scattering_functions(ray, // arena,
-                                               false, mode);
+            isect.compute_scattering_functions(ray /* arena, */, false, mode);
             // if (!isect.bsdf)
             //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
             let wo: Vector3f = isect.wo;
@@ -6418,7 +6449,11 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             if scene.lights.len() > 0 {
                 // compute direct lighting for _DirectLightingIntegrator_ integrator
                 if self.strategy == LightStrategy::UniformSampleAll {
-                    l += uniform_sample_all_lights(&isect, scene, sampler, &self.n_light_samples, false);
+                    l += uniform_sample_all_lights(&isect,
+                                                   scene,
+                                                   sampler,
+                                                   &self.n_light_samples,
+                                                   false);
                 } else {
                     // TODO: l += uniform_sample_one_light();
                 }
@@ -6455,7 +6490,7 @@ pub struct ParamSet {
     normals: Vec<ParamSetItem<Normal3f>>,
     // TODO: std::vector<std::shared_ptr<ParamSetItem<Spectrum>>> spectra;
     strings: Vec<ParamSetItem<String>>,
-    textures: Vec<ParamSetItem<String>>, // TODO: static std::map<std::string, Spectrum> cachedSpectra;
+    textures: Vec<ParamSetItem<String>>,
 }
 
 // see api.cpp
