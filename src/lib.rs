@@ -5007,6 +5007,13 @@ pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) 
     }
 }
 
+/// Reducing the variance according to Veach's heuristic.
+pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
+    let f: Float = nf as Float * f_pdf;
+    let g: Float = ng as Float  * g_pdf;
+    (f * f) / (f * f + g * g)
+}
+
 // see zerotwosequence.h
 
 #[derive(Debug)]
@@ -6026,6 +6033,20 @@ pub enum LightFlags {
     Infinite = 8,
 }
 
+/// Check if LightFlags::DeltaPosition or LightFlags::DeltaDirection
+/// is set.
+pub fn is_delta_light(flags: u8) -> bool {
+    let mut pos: bool = false;
+    let mut dir: bool = false;
+    if (flags & LightFlags::DeltaPosition as u8) > 0 {
+        pos = true;
+    }
+    if (flags & LightFlags::DeltaDirection as u8) > 0 {
+        dir = true;
+    }
+    pos || dir
+}
+
 /// A closure - an object that encapsulates a small amount of data and
 /// some computation that is yet to be done.
 #[derive(Debug,Default,Copy,Clone)]
@@ -6222,6 +6243,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     // sample light source with multiple importance sampling
     let mut wi: Vector3f = Vector3f::default();
     let mut light_pdf: Float = 0.0 as Float;
+    let mut scattering_pdf: Float = 0.0 as Float;
     let mut visibility: VisibilityTester = VisibilityTester::default();
     let mut li: Spectrum = light.sample_li(it, u_light, &mut wi, &mut light_pdf, &mut visibility);
     // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi:
@@ -6234,7 +6256,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             if let Some(ref bsdf) = it.bsdf {
                 f = bsdf.f(it.wo, wi, bsdf_flags) *
                     Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
-                let scattering_pdf: Float = bsdf.pdf(it.wo, wi, bsdf_flags);
+                scattering_pdf = bsdf.pdf(it.wo, wi, bsdf_flags);
                 println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
         } else {
@@ -6250,13 +6272,22 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                 if !visibility.unoccluded(scene) {
                     println!("  shadow ray blocked");
                     li = Spectrum::new(0.0 as Float);
-                    // WORK
                 } else {
                     println!("  shadow ray unoccluded");
                 }
             }
+            // add light's contribution to reflected radiance
+            if !li.is_black() {
+                if is_delta_light(light.flags) {
+                    ld += f * li / light_pdf;
+                } else {
+                    let weight: Float = power_heuristic(1_u8, light_pdf, 1_u8, scattering_pdf);
+                    ld += f * li * Spectrum::new(weight) / light_pdf;
+                }
+            }
         }
     }
+    // WORK
     // TODO: if (!IsDeltaLight(light.flags)) { ... }
     ld
 }
