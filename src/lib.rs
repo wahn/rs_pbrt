@@ -617,7 +617,7 @@ extern crate num_cpus;
 // extern crate copy_arena;
 
 use std::cmp::PartialEq;
-use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index};
+use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
@@ -1142,6 +1142,17 @@ impl<T> Index<u8> for Vector3<T> {
     }
 }
 
+impl<T> IndexMut<u8> for Vector3<T> {
+    fn index_mut(&mut self, index: u8) -> &mut T {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Check failed: i >= 0 && i <= 2"),
+        }
+    }
+}
+
 impl<T> From<Point3<T>> for Vector3<T> {
     fn from(p: Point3<T>) -> Self {
         Vector3::<T> {
@@ -1508,6 +1519,17 @@ impl<T> Index<u8> for Point3<T> {
     }
 }
 
+impl<T> IndexMut<u8> for Point3<T> {
+    fn index_mut(&mut self, index: u8) -> &mut T {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Check failed: i >= 0 && i <= 2"),
+        }
+    }
+}
+
 /// Permute the coordinate values according to the povided
 /// permutation.
 pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
@@ -1568,21 +1590,21 @@ pub fn pnt3_offset_ray_origin(p: Point3f, p_error: Vector3f, n: Normal3f, w: Vec
     //     d *= 1024.;
     // #endif
     let mut offset: Vector3f = Vector3f::from(n) * d;
-    //     if (Dot(w, n) < 0) offset = -offset;
     if vec3_dot_nrm(w, n) < 0.0 as Float {
         offset = -offset;
     }
-    //     Point3f po = p + offset;
-    //     // Round offset point _po_ away from _p_
-    //     for (int i = 0; i < 3; ++i) {
-    //         if (offset[i] > 0)
-    //             po[i] = NextFloatUp(po[i]);
-    //         else if (offset[i] < 0)
-    //             po[i] = NextFloatDown(po[i]);
-    //     }
-    //     return po;
-    // WORK
-    Point3f::default()
+    let mut po: Point3f = p + offset;
+    // round offset point _po_ away from _p_
+    for i in 0..3 {
+        if offset[i] > 0.0 as Float {
+            po[i] = next_float_up(po[i] as f32) as f64;
+        } else {
+            if offset[i] < 0.0 as Float {
+                po[i] = next_float_down(po[i] as f32) as f64;
+            }
+        }
+    }
+    po
 }
 
 #[derive(Debug,Default,Copy,Clone)]
