@@ -1175,7 +1175,7 @@ pub fn vec3_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
 /// Product of the Euclidean magnitudes of a vector (and a normal) and
 /// the cosine of the angle between them. A return value of zero means
 /// both are orthogonal, a value if one means they are codirectional.
-pub fn vec3_dot_nrm<T>(v1: Normal3<T>, n2: Vector3<T>) -> T
+pub fn vec3_dot_nrm<T>(v1: Vector3<T>, n2: Normal3<T>) -> T
     where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
 {
     // DCHECK(!v1.HasNaNs() && !n2.HasNaNs());
@@ -1554,6 +1554,10 @@ pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
     (p1 - p2).length()
 }
 
+/// When tracing spawned rays leaving the intersection point p, we
+/// offset their origins enough to ensure that they are past the
+/// boundary of the error box and thus won't incorrectly re-intersect
+/// the surface.
 pub fn pnt3_offset_ray_origin(p: Point3f, p_error: Vector3f, n: Normal3f, w: Vector3f) -> Point3f {
     //     Float d = Dot(Abs(n), pError);
     let d: Float = nrm_dot_vec3(nrm_abs(n), p_error);
@@ -1563,9 +1567,11 @@ pub fn pnt3_offset_ray_origin(p: Point3f, p_error: Vector3f, n: Normal3f, w: Vec
     //     // (In case of any bugs in the epsilons code...)
     //     d *= 1024.;
     // #endif
-    //     Vector3f offset = d * Vector3f(n);
-    let offset: Vector3f = Vector3f::from(n) * d;
+    let mut offset: Vector3f = Vector3f::from(n) * d;
     //     if (Dot(w, n) < 0) offset = -offset;
+    if vec3_dot_nrm(w, n) < 0.0 as Float {
+        offset = -offset;
+    }
     //     Point3f po = p + offset;
     //     // Round offset point _po_ away from _p_
     //     for (int i = 0; i < 3; ++i) {
@@ -6287,8 +6293,22 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             }
         }
     }
-    // WORK
-    // TODO: if (!IsDeltaLight(light.flags)) { ... }
+    // sample BSDF with multiple importance sampling
+    if !is_delta_light(light.flags) {
+        if it.is_surface_interaction() {
+            // sample scattered direction for surface interactions
+            // BxDFType sampledType;
+            // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
+            // f = isect.bsdf->Sample_f(isect.wo, &wi, uScattering, &scatteringPdf,
+            //                          bsdfFlags, &sampledType);
+            // f *= AbsDot(wi, isect.shading.n);
+            // sampledSpecular = (sampledType & BSDF_SPECULAR) != 0;
+            // WORK
+        } else {
+            // WORK
+        }
+        // WORK
+    }
     ld
 }
 
