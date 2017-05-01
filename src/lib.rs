@@ -677,6 +677,16 @@ impl Scene {
                    });
         self.aggregate.intersect(ray)
     }
+    pub fn intersect_p(&self, ray: &mut Ray) -> bool {
+        // TODO: ++nShadowTests;
+        assert_ne!(ray.d,
+                   Vector3f {
+                       x: 0.0,
+                       y: 0.0,
+                       z: 0.0,
+                   });
+        self.aggregate.intersect_p(ray)
+    }
 }
 
 // see pbrt.h
@@ -684,6 +694,7 @@ impl Scene {
 pub type Spectrum = RGBSpectrum;
 
 const MACHINE_EPSILON: Float = std::f64::EPSILON * 0.5;
+const SHADOW_EPSILON: Float = 0.0001;
 const INV_PI: Float = 0.31830988618379067154;
 
 /// Use **unsafe**
@@ -3720,8 +3731,15 @@ pub struct Interaction {
 impl Interaction {
     pub fn spawn_ray_to(&self, it: Interaction) -> Ray {
         let origin: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, it.p - self.p);
-        // WORK
-        Ray::default()
+        let target: Point3f = pnt3_offset_ray_origin(it.p, it.p_error, it.n, origin - it.p);
+        let d: Vector3f = target - origin;
+        Ray {
+            o: origin,
+            d: d,
+            t_max: 1.0 - SHADOW_EPSILON,
+            time: self.time,
+            differential: None,
+        }
     }
 }
 
@@ -3907,7 +3925,6 @@ impl<'a> SurfaceInteraction<'a> {
         if let Some(primitive) = self.primitive {
             // TODO: const AreaLight *area = primitive->GetAreaLight();
             // TODO: return area ? area->L(*this, w) : Spectrum(0.f);
-            // WORK
         }
         Spectrum::default()
     }
@@ -4818,6 +4835,19 @@ impl BVHAccel {
         } else {
             None
         }
+    }
+    pub fn intersect_p(&self, ray: &mut Ray) -> bool {
+        if self.nodes.len() == 0 {
+            return false;
+        }
+        // TODO: ProfilePhase p(Prof::AccelIntersectP);
+        let inv_dir: Vector3f = Vector3f {
+            x: 1.0 / ray.d.x,
+            y: 1.0 / ray.d.y,
+            z: 1.0 / ray.d.z,
+        };
+        // WORK
+        true
     }
     pub fn recursive_build(bvh: Arc<BVHAccel>,
                            // arena,
@@ -6085,9 +6115,7 @@ pub struct VisibilityTester {
 
 impl VisibilityTester {
     pub fn unoccluded(&self, scene: &Scene) -> bool {
-        // TODO: !scene.intersect_p(self.p0.spawn_ray_to(self.p1))
-        // WORK
-        false
+        !scene.intersect_p(&mut self.p0.spawn_ray_to(self.p1))
     }
 }
 
@@ -6325,9 +6353,9 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             //                          bsdfFlags, &sampledType);
             // f *= AbsDot(wi, isect.shading.n);
             // sampledSpecular = (sampledType & BSDF_SPECULAR) != 0;
-            // WORK
+            // TODO
         } else {
-            // WORK
+            // TODO
         }
         // WORK
     }
