@@ -3943,9 +3943,10 @@ pub trait Shape {
     fn object_bound(&self) -> Bounds3f;
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)>;
-    // TODO: fn intersect_p(&self,
-    //                r: &Ray /* , bool testAlphaTexture */)
-    //              -> bool;
+    fn intersect_p(&self, r: &Ray) -> bool {
+        // TODO: Implement for Sphere and Triangle
+        false
+    }
     // TODO: virtual Float Area() const = 0;
     // TODO: virtual Interaction Sample(const Point2f &u, Float *pdf) const = 0;
 }
@@ -3955,11 +3956,7 @@ pub trait Shape {
 pub trait Primitive {
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction>;
-    // TODO: fn intersect_p(&self,
-    //              r: &Ray)
-    //              -> bool {
-    //     false
-    // }
+    fn intersect_p(&self, r: &Ray) -> bool;
     // TODO: fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>>;
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>>;
     fn compute_scattering_functions(&self,
@@ -3968,12 +3965,13 @@ pub trait Primitive {
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
         if let Some(ref material) = self.get_material() {
-            material.compute_scattering_functions(isect /* arena, */, mode, allow_multiple_lobes);
+            material.compute_scattering_functions(isect, // arena,
+                                                  mode,
+                                                  allow_multiple_lobes);
         }
         // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
     }
 }
-
 pub struct GeometricPrimitive {
     pub shape: Arc<Shape + Send + Sync>,
     pub material: Option<Arc<Material + Send + Sync>>,
@@ -3998,6 +3996,9 @@ impl Primitive for GeometricPrimitive {
             ray.t_max = t_hit;
             isect
         })
+    }
+    fn intersect_p(&self, r: &Ray) -> bool {
+        self.shape.intersect_p(r)
     }
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
         if let Some(ref material) = self.material {
@@ -4846,8 +4847,47 @@ impl BVHAccel {
             y: 1.0 / ray.d.y,
             z: 1.0 / ray.d.z,
         };
-        // WORK
-        true
+        let dir_is_neg: [u8; 3] =
+            [(inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8];
+        let mut to_visit_offset: u32 = 0;
+        let mut current_node_index: u32 = 0;
+        let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
+        loop {
+            let node: LinearBVHNode = self.nodes[current_node_index as usize];
+            let mut intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
+            if intersects {
+                // process BVH node _node_ for traversal
+                if node.n_primitives > 0 {
+                    for i in 0..node.n_primitives {
+                        if self.primitives[node.offset + i].intersect_p(ray) {
+                            return true;
+                        }
+                    }
+                    if to_visit_offset == 0_u32 {
+                        break;
+                    }
+                    to_visit_offset -= 1_u32;
+                    current_node_index = nodes_to_visit[to_visit_offset as usize];
+                } else {
+                    if dir_is_neg[node.axis as usize] == 1_u8 {
+                        nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
+                        to_visit_offset += 1_u32;
+                        current_node_index = node.offset as u32;
+                    } else {
+                        nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
+                        to_visit_offset += 1_u32;
+                        current_node_index += 1_u32;
+                    }
+                }
+            } else {
+                if to_visit_offset == 0_u32 {
+                    break;
+                }
+                to_visit_offset -= 1_u32;
+                current_node_index = nodes_to_visit[to_visit_offset as usize];
+            }
+        }
+        false
     }
     pub fn recursive_build(bvh: Arc<BVHAccel>,
                            // arena,
@@ -5050,7 +5090,6 @@ impl BVHAccel {
         my_offset
     }
 }
-
 // see sampling.h
 
 /// Randomly permute an array of *count* sample values, each of which
