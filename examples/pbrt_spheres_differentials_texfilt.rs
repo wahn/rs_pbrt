@@ -2,8 +2,8 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLightingIntegrator,
            DistantLight, Film, Float, GeometricPrimitive, LightStrategy, MatteMaterial,
-           PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Rng, Scene, Shape, Spectrum,
-           Sphere, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
+           PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Rng, Scene, Spectrum, Sphere,
+           SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
            ZeroTwoSequenceSampler};
 use std::string::String;
 use std::sync::Arc;
@@ -103,7 +103,7 @@ struct RenderOptions {
 
 impl RenderOptions {
     fn new(scene: SceneDescription) -> RenderOptions {
-        let mut primitives: Vec<Arc<Primitive>> = Vec::new();
+        let primitives: Vec<Arc<Primitive>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
         let mut spheres: Vec<Arc<Sphere>> = Vec::new();
         let mut lights: Vec<DistantLight> = Vec::new();

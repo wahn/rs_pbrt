@@ -83,7 +83,7 @@ fn main() {
         differential: None,
     };
     println!("r = {:?}", r);
-    if let Some((isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
+    if let Some((_isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
         println!("triangle.intersect(r) = (isect, {:?})", t_hit);
     }
 
@@ -101,7 +101,7 @@ fn main() {
         differential: None,
     };
     println!("r = {:?}", r);
-    if let Some((isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
+    if let Some((_isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
         println!("triangle.intersect(r) = (isect, {:?})", t_hit);
     }
 }

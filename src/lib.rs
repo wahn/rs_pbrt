@@ -1909,7 +1909,7 @@ impl Bounds3<Float> {
         // check for ray intersection against $x$ and $y$ slabs
         let mut t_min: Float = (self[dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
         let mut t_max: Float = (self[1_u8 - dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
-        let mut ty_min: Float = (self[dir_is_neg[1]].y - ray.o.y) * inv_dir.y;
+        let ty_min: Float = (self[dir_is_neg[1]].y - ray.o.y) * inv_dir.y;
         let mut ty_max: Float = (self[1_u8 - dir_is_neg[1]].y - ray.o.y) * inv_dir.y;
         // update _t_max_ and _ty_max_ to ensure robust bounds intersection
         t_max *= 1.0 + 2.0 * gamma(3_i32);
@@ -1924,7 +1924,7 @@ impl Bounds3<Float> {
             t_max = ty_max;
         }
         // check for ray intersection against $z$ slab
-        let mut tz_min: Float = (self[dir_is_neg[2]].z - ray.o.z) * inv_dir.z;
+        let tz_min: Float = (self[dir_is_neg[2]].z - ray.o.z) * inv_dir.z;
         let mut tz_max: Float = (self[1_u8 - dir_is_neg[2]].z - ray.o.z) * inv_dir.z;
         // update _tz_max_ to ensure robust bounds intersection
         tz_max *= 1.0 + 2.0 * gamma(3_i32);
@@ -2596,17 +2596,11 @@ impl Transform {
         r.o = o;
         r.d = d;
         r.t_max = t_max;
-        if let Some(mut d) = r.differential {
-            // RayDifferential ret(tr.o, tr.d, tr.tMax, tr.time, tr.medium);
-            // ret.hasDifferentials = r.hasDifferentials;
+        if let Some(d) = r.differential {
             let diff: RayDifferential = RayDifferential {
-                // ret.rxOrigin = (*this)(r.rxOrigin);
                 rx_origin: self.transform_point(d.rx_origin),
-                // ret.ryOrigin = (*this)(r.ryOrigin);
                 ry_origin: self.transform_point(d.ry_origin),
-                // ret.rxDirection = (*this)(r.rxDirection);
                 rx_direction: self.transform_vector(d.rx_direction),
-                // ret.ryDirection = (*this)(r.ryDirection);
                 ry_direction: self.transform_vector(d.ry_direction),
             };
             r.differential = Some(diff);
@@ -4653,6 +4647,8 @@ impl Shape for Triangle {
         Some((si, t as Float))
     }
     fn intersect_p(&self, ray: &Ray) -> bool {
+        // TODO: ProfilePhase p(Prof::TriIntersectP);
+        // TODO: ++nTests;
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
@@ -4741,9 +4737,9 @@ impl Shape for Triangle {
         }
         // compute barycentric coordinates and $t$ value for triangle intersection
         let inv_det: Float = 1.0 / det;
-        let b0: Float = e0 * inv_det;
-        let b1: Float = e1 * inv_det;
-        let b2: Float = e2 * inv_det;
+        // let b0: Float = e0 * inv_det;
+        // let b1: Float = e1 * inv_det;
+        // let b2: Float = e2 * inv_det;
         let t: Float = t_scaled * inv_det;
 
         // ensure that computed triangle $t$ is conservatively greater than zero
@@ -4786,54 +4782,8 @@ impl Shape for Triangle {
         if t <= delta_t {
             return false;
         }
-        // compute triangle partial derivatives
-        let uv: [Point2f; 3] = self.get_uvs();
-        // compute deltas for triangle partial derivatives
-        let duv02: Vector2f = uv[0] - uv[2];
-        let duv12: Vector2f = uv[1] - uv[2];
-        let dp02: Vector3f = p0 - p2;
-        let dp12: Vector3f = p1 - p2;
-        let determinant: Float = duv02.x * duv12.y - duv02.y * duv12.x;
-        let degenerate_uv: bool = determinant.abs() < 1e-8 as Float;
-        // Vector3f dpdu, dpdv;
-        let mut dpdu: Vector3f = Vector3f::default();
-        let mut dpdv: Vector3f = Vector3f::default();
-        if !degenerate_uv {
-            let invdet: Float = 1.0 / determinant;
-            dpdu = (dp02 * duv12.y - dp12 * duv02.y) * invdet;
-            dpdv = (dp02 * -duv12.x + dp12 * duv02.x) * invdet;
-        }
-        if degenerate_uv || vec3_cross(dpdu, dpdv).length_squared() == 0.0 {
-            // handle zero determinant for triangle partial derivative matrix
-            vec3_coordinate_system(&vec3_normalize(vec3_cross(p2 - p0, p1 - p0)),
-                                   &mut dpdu,
-                                   &mut dpdv);
-        }
-        // compute error bounds for triangle intersection
-        let x_abs_sum: Float = (b0 * p0.x).abs() + (b1 * p1.x).abs() + (b2 * p2.x).abs();
-        let y_abs_sum: Float = (b0 * p0.y).abs() + (b1 * p1.y).abs() + (b2 * p2.y).abs();
-        let z_abs_sum: Float = (b0 * p0.z).abs() + (b1 * p1.z).abs() + (b2 * p2.z).abs();
-        let p_error: Vector3f = Vector3f {
-            x: x_abs_sum,
-            y: y_abs_sum,
-            z: z_abs_sum,
-        } * gamma(7);
-        // interpolate $(u,v)$ parametric coordinates and hit point
-        let p_hit: Point3f = p0 * b0 + p1 * b1 + p2 * b2;
-        let uv_hit: Point2f = uv[0] * b0 + uv[1] * b1 + uv[2] * b2;
-        // TODO: test intersection against alpha texture, if present
-        // if (testAlphaTexture && mesh->alphaMask) {
-        //     SurfaceInteraction isectLocal(p_hit, Vector3f(0, 0, 0), uv_hit, -ray.d,
-        //                                   dpdu, dpdv, Normal3f(0, 0, 0),
-        //                                   Normal3f(0, 0, 0), ray.time, this);
-        //     if (mesh->alphaMask->Evaluate(isectLocal) == 0) return false;
-        // }
-        // fill in _SurfaceInteraction_ from triangle hit
-        let dndu: Normal3f = Normal3f::default();
-        let dndv: Normal3f = Normal3f::default();
-        let wo: Vector3f = -ray.d;
-        let si: SurfaceInteraction =
-            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
+        // TODO: if (testAlphaTexture && (mesh->alphaMask || mesh->shadowAlphaMask)) { ... }
+        // TODO: ++nHits;
         true
     }
 }
@@ -4847,7 +4797,7 @@ pub struct RGBSpectrum {
 
 impl RGBSpectrum {
     pub fn new(v: Float) -> Self {
-        let n_spectrum_samples = 3; // RGB
+        // let n_spectrum_samples = 3; // RGB
         RGBSpectrum { c: [v, v, v] }
         // TODO: DCHECK(!HasNaNs());
     }
@@ -5087,7 +5037,7 @@ impl BVHAccel {
         loop {
             let node: LinearBVHNode = self.nodes[current_node_index as usize];
             // check ray against BVH node
-            let mut intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
+            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
             if intersects {
                 if node.n_primitives > 0 {
                     // intersect ray with primitives in leaf BVH node
@@ -5148,7 +5098,7 @@ impl BVHAccel {
         let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
         loop {
             let node: LinearBVHNode = self.nodes[current_node_index as usize];
-            let mut intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
+            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
             if intersects {
                 // process BVH node _node_ for traversal
                 if node.n_primitives > 0 {
@@ -5257,7 +5207,7 @@ impl BVHAccel {
                                 if b == n_buckets {
                                     b = n_buckets - 1;
                                 }
-                                assert!(b >= 0_usize, "b >= 0");
+                                // assert!(b >= 0_usize, "b >= 0");
                                 assert!(b < n_buckets, "b < {}", n_buckets);
                                 buckets[b].count += 1;
                                 buckets[b].bounds = bnd3_union_bnd3(buckets[b].bounds,
@@ -5302,7 +5252,7 @@ impl BVHAccel {
                                         let mut b: usize = n_buckets *
                                             centroid_bounds.offset(pi.centroid)[dim] as usize;
                                         if b == n_buckets {b = n_buckets - 1;}
-                                        assert!(b >= 0_usize, "b >= 0");
+                                        // assert!(b >= 0_usize, "b >= 0");
                                         assert!(b < n_buckets, "b < {}", n_buckets);
                                         b <= min_cost_split_bucket
                                     });
@@ -5447,7 +5397,7 @@ impl Default for ZeroTwoSequenceSampler {
             array_1d_offset: 0_usize,
             array_2d_offset: 0_usize,
         };
-        for i in 0..lds.n_sampled_dimensions {
+        for _i in 0..lds.n_sampled_dimensions {
             let additional_1d: Vec<Float> = vec![0.0; lds.samples_per_pixel as usize];
             let additional_2d: Vec<Point2f> =
                 vec![Point2f::default(); lds.samples_per_pixel as usize];
@@ -5776,7 +5726,7 @@ pub struct BoxFilter {
 }
 
 impl BoxFilter {
-    pub fn evaluate(&self, p: Point2f) -> Float {
+    pub fn evaluate(&self, _p: Point2f) -> Float {
         1.0
     }
 }
@@ -5869,7 +5819,7 @@ impl<'a> FilmTile<'a> {
                 // update pixel values with filtered sample contribution
                 let idx = self.get_pixel_index(x, y);
                 let ref mut pixel = self.pixels[idx];
-                pixel.contrib_sum += *l * Spectrum::new(filter_weight);
+                pixel.contrib_sum += *l * Spectrum::new(sample_weight) * Spectrum::new(filter_weight);
                 pixel.filter_weight_sum += filter_weight;
             }
         }
@@ -6002,6 +5952,10 @@ impl Film {
                       &self.filter_table,
                       FILTER_TABLE_WIDTH,
                       self.max_sample_luminance)
+    }
+    pub fn write_image(&self, splat_scale: Float) {
+        println!("Converting image to RGB and computing final weighted pixel values");
+        // WORK
     }
 }
 
@@ -6206,12 +6160,12 @@ impl Bsdf {
                              vec3_dot_vec3(wo_w, Vector3f::from(self.ng))) >
                             0.0 as Float;
         let mut f: Spectrum = Spectrum::new(0.0 as Float);
-        let mut n_bxdfs: usize = self.bxdfs.len();
+        let n_bxdfs: usize = self.bxdfs.len();
         for i in 0..n_bxdfs {
             if self.bxdfs[i].matches_flags(flags) &&
-               ((reflect && (self.bxdfs[i].get_type() & BxdfType::BSDF_REFLECTION as u8 > 0_u8)) ||
+               ((reflect && (self.bxdfs[i].get_type() & BxdfType::BsdfReflection as u8 > 0_u8)) ||
                 (!reflect &&
-                 (self.bxdfs[i].get_type() & BxdfType::BSDF_TRANSMISSION as u8 > 0_u8))) {
+                 (self.bxdfs[i].get_type() & BxdfType::BsdfTransmission as u8 > 0_u8))) {
                 f += self.bxdfs[i].f(wo, wi);
             }
         }
@@ -6246,12 +6200,12 @@ impl Bsdf {
 
 #[repr(u8)]
 pub enum BxdfType {
-    BSDF_REFLECTION = 1,
-    BSDF_TRANSMISSION = 2,
-    BSDF_DIFFUSE = 4,
-    BSDF_GLOSSY = 8,
-    BSDF_SPECULAR = 16,
-    BSDF_ALL = 31,
+    BsdfReflection = 1,
+    BsdfTransmission = 2,
+    BsdfDiffuse = 4,
+    BsdfGlossy = 8,
+    BsdfSpecular = 16,
+    BsdfAll = 31,
 }
 
 pub trait Bxdf {
@@ -6281,11 +6235,11 @@ impl LambertianReflection {
 }
 
 impl Bxdf for LambertianReflection {
-    fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
+    fn f(&self, _wo: Vector3f, _wi: Vector3f) -> Spectrum {
         self.r * Spectrum::new(INV_PI)
     }
     fn get_type(&self) -> u8 {
-        BxdfType::BSDF_DIFFUSE as u8 | BxdfType::BSDF_REFLECTION as u8
+        BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
     }
 }
 
@@ -6322,8 +6276,8 @@ impl Bxdf for OrenNayar {
             max_cos = d_cos.max(0.0 as Float);
         }
         // compute sine and tangent terms of Oren-Nayar model
-        let mut sin_alpha: Float = 0.0;
-        let mut tan_beta: Float = 0.0;
+        let sin_alpha: Float;
+        let tan_beta: Float;
         if abs_cos_theta(wi) > abs_cos_theta(wo) {
             sin_alpha = sin_theta_o;
             tan_beta = sin_theta_i / abs_cos_theta(wi);
@@ -6334,7 +6288,7 @@ impl Bxdf for OrenNayar {
         self.r * Spectrum::new(INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta))
     }
     fn get_type(&self) -> u8 {
-        BxdfType::BSDF_DIFFUSE as u8 | BxdfType::BSDF_REFLECTION as u8
+        BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
     }
 }
 
@@ -6418,8 +6372,8 @@ impl Material for MatteMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
                                     // arena: &mut Arena,
-                                    mode: TransportMode,
-                                    allow_multiple_lobes: bool) {
+                                    _mode: TransportMode,
+                                    _allow_multiple_lobes: bool) {
         si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }
@@ -6545,7 +6499,7 @@ impl DistantLight {
     /// them.
     pub fn sample_li(&self,
                      iref: &SurfaceInteraction,
-                     u: &Point2f,
+                     _u: &Point2f,
                      wi: &mut Vector3f,
                      pdf: &mut Float,
                      vis: &mut VisibilityTester)
@@ -6574,7 +6528,7 @@ impl DistantLight {
     }
     /// Default implementation returns no emitted radiance for a ray
     /// that escapes the scene bounds.
-    pub fn le(&self, ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
 }
@@ -6672,10 +6626,10 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                        handle_media: bool,
                        specular: bool)
                        -> Spectrum {
-    let mut bsdf_flags: u8 = BxdfType::BSDF_ALL as u8;
+    let mut bsdf_flags: u8 = BxdfType::BsdfAll as u8;
     if !specular {
         // bitwise not in Rust is ! (not the ~ operator like in C)
-        bsdf_flags = BxdfType::BSDF_ALL as u8 & !(BxdfType::BSDF_SPECULAR as u8);
+        bsdf_flags = BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8);
     }
     let mut ld: Spectrum = Spectrum::new(0.0);
     // sample light source with multiple importance sampling
@@ -6695,7 +6649,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                 f = bsdf.f(it.wo, wi, bsdf_flags) *
                     Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
                 scattering_pdf = bsdf.pdf(it.wo, wi, bsdf_flags);
-                println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
+                // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
         } else {
             // evaluate phase function for light sampling strategy
@@ -6708,10 +6662,10 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                 // TODO: VLOG(2) << "  after Tr, Li: " << Li;
             } else {
                 if !visibility.unoccluded(scene) {
-                    println!("  shadow ray blocked");
+                    // TODO: println!("  shadow ray blocked");
                     li = Spectrum::new(0.0 as Float);
                 } else {
-                    println!("  shadow ray unoccluded");
+                    // TODO: println!("  shadow ray unoccluded");
                 }
             }
             // add light's contribution to reflected radiance
@@ -6788,7 +6742,7 @@ impl DirectLightingIntegrator {
                 self.n_light_samples.push(self.sampler.round_count(light.n_samples));
             }
             // request samples for sampling all lights
-            for i in 0..self.max_depth {
+            for _i in 0..self.max_depth {
                 for j in 0..scene.lights.len() {
                     self.sampler.request_2d_array(self.n_light_samples[j]);
                     self.sampler.request_2d_array(self.n_light_samples[j]);
@@ -6843,7 +6797,7 @@ impl DirectLightingIntegrator {
                     let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
                     let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
                                                               Point2i { x: x1, y: y1 });
-                    let film_tile = self.camera.film.get_film_tile(tile_bounds);
+                    let mut film_tile = self.camera.film.get_film_tile(tile_bounds);
                     for pixel in &tile_bounds {
                         tile_sampler.start_pixel(pixel);
                         if !pnt2_inside_exclusive(pixel, self.pixel_bounds) {
@@ -6858,7 +6812,7 @@ impl DirectLightingIntegrator {
                             let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
                             // generate camera ray for current sample
                             let mut ray: Ray = Ray::default();
-                            let mut ray_weight: Float = self.camera
+                            let ray_weight: Float = self.camera
                                 .generate_ray_differential(&camera_sample, &mut ray);
                             ray.scale_differentials(1.0 as Float /
                                                     tile_sampler.samples_per_pixel as Float);
@@ -6896,7 +6850,7 @@ impl DirectLightingIntegrator {
                                 l = Spectrum::new(0.0);
                             }
                             // add camera ray's contribution to image
-                            // TODO: filmTile->AddSample(cameraSample.pFilm, L, rayWeight);
+                            film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
                             done = !tile_sampler.start_next_sample();
                         } // arena is dropped here !
                         // WORK
@@ -6906,7 +6860,7 @@ impl DirectLightingIntegrator {
             // TODO: reporter.Done();
         }
         println!("Rendering finished");
-        // TODO: camera->film->WriteImage();
+        self.camera.film.write_image(1.0 as Float);
     }
 }
 
@@ -7031,7 +6985,7 @@ impl Rng {
         self.uniform_uint32();
     }
     pub fn uniform_uint32(&mut self) -> u32 {
-        let mut oldstate: u64 = self.state;
+        let oldstate: u64 = self.state;
         self.state = oldstate * PCG32_MULT + self.inc;
         let xorshifted: u32 = ((oldstate >> 18 ^ oldstate) >> 27) as u32;
         let rot: u32 = (oldstate >> 59) as u32;

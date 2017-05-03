@@ -42,7 +42,7 @@ fn main() {
     };
     println!("translate = {:?}", translate);
     println!("r = {:?}", r);
-    if let Some((isect, t_hit)) = Shape::intersect(&sphere, &r) {
+    if let Some((_isect, t_hit)) = Shape::intersect(&sphere, &r) {
         println!("sphere.intersect(r) = (isect, {:?})", t_hit);
     }
 }
