@@ -3943,10 +3943,7 @@ pub trait Shape {
     fn object_bound(&self) -> Bounds3f;
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)>;
-    fn intersect_p(&self, r: &Ray) -> bool {
-        // TODO: Implement for Sphere and Triangle
-        false
-    }
+    fn intersect_p(&self, r: &Ray) -> bool;
     // TODO: virtual Float Area() const = 0;
     // TODO: virtual Interaction Sample(const Point2f &u, Float *pdf) const = 0;
 }
@@ -4253,6 +4250,84 @@ impl Shape for Sphere {
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
         Some((si, t_shape_hit.v as Float))
     }
+    fn intersect_p(&self, r: &Ray) -> bool {
+        // transform _Ray_ to object space
+        let mut o_err: Vector3f = Vector3f::default();
+        let mut d_err: Vector3f = Vector3f::default();
+        let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_err, &mut d_err);
+
+        // compute quadratic sphere coefficients
+
+        // initialize _EFloat_ ray coordinate values
+        let ox = EFloat::new(ray.o.x as f32, o_err.x as f32);
+        let oy = EFloat::new(ray.o.y as f32, o_err.y as f32);
+        let oz = EFloat::new(ray.o.z as f32, o_err.z as f32);
+        let dx = EFloat::new(ray.d.x as f32, d_err.x as f32);
+        let dy = EFloat::new(ray.d.y as f32, d_err.y as f32);
+        let dz = EFloat::new(ray.d.z as f32, d_err.z as f32);
+        let a: EFloat = dx * dx + dy * dy + dz * dz;
+        let b: EFloat = (dx * ox + dy * oy + dz * oz) * 2.0f32;
+        let c: EFloat = ox * ox + oy * oy + oz * oz -
+                        EFloat::new(self.radius as f32, 0.0) * EFloat::new(self.radius as f32, 0.0);
+
+        // solve quadratic equation for _t_ values
+        let mut t0: EFloat = EFloat::default();
+        let mut t1: EFloat = EFloat::default();
+        if !quadratic_efloat(a, b, c, &mut t0, &mut t1) {
+            return false;
+        }
+        // check quadric shape _t0_ and _t1_ for nearest intersection
+        if t0.upper_bound() > ray.t_max as f32 || t1.lower_bound() <= 0.0f32 {
+            return false;
+        }
+        let mut t_shape_hit: EFloat = t0;
+        if t_shape_hit.lower_bound() <= 0.0f32 {
+            t_shape_hit = t1;
+            if t_shape_hit.upper_bound() > ray.t_max as f32 {
+                return false;
+            }
+        }
+        // compute sphere hit position and $\phi$
+        let mut p_hit: Point3f = ray.position(t_shape_hit.v as f64);
+        // refine sphere intersection point
+        p_hit *= self.radius / pnt3_distance(p_hit, Point3f::default());
+        if p_hit.x == 0.0 && p_hit.y == 0.0 {
+            p_hit.x = 1e-5_f64 * self.radius;
+        }
+        let mut phi: Float = p_hit.y.atan2(p_hit.x);
+        if phi < 0.0 {
+            phi += 2.0_f64 * PI;
+        }
+        // test sphere intersection against clipping parameters
+        if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
+           (self.z_max < self.radius && p_hit.z > self.z_max) || phi > self.phi_max {
+            if t_shape_hit == t1 {
+                return false;
+            }
+            if t1.upper_bound() > ray.t_max as f32 {
+                return false;
+            }
+            t_shape_hit = t1;
+            // compute sphere hit position and $\phi$
+            p_hit = ray.position(t_shape_hit.v as f64);
+
+            // refine sphere intersection point
+            p_hit *= self.radius / pnt3_distance(p_hit, Point3f::default());
+            if p_hit.x == 0.0 && p_hit.y == 0.0 {
+                p_hit.x = 1e-5_f64 * self.radius;
+            }
+            phi = p_hit.y.atan2(p_hit.x);
+            if phi < 0.0 {
+                phi += 2.0_f64 * PI;
+            }
+            if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
+               (self.z_max < self.radius && p_hit.z > self.z_max) ||
+               phi > self.phi_max {
+                return false;
+            }
+        }
+        true
+    }
 }
 
 // see triangle.h
@@ -4550,6 +4625,10 @@ impl Shape for Triangle {
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
         Some((si, t as Float))
+    }
+    fn intersect_p(&self, r: &Ray) -> bool {
+        // TODO: Implement for Sphere and Triangle
+        false
     }
 }
 
