@@ -1390,6 +1390,26 @@ pub fn pnt2_ceil<T>(p: Point2<T>) -> Point2<T>
     }
 }
 
+/// Apply std::cmp::min operation component-wise.
+pub fn pnt2_min_pnt2<T>(pa: Point2<T>, pb: Point2<T>) -> Point2<T>
+    where T: Ord
+{
+    Point2 {
+        x: std::cmp::min(pa.x, pb.x),
+        y: std::cmp::min(pa.y, pb.y),
+    }
+}
+
+/// Apply std::cmp::max operation component-wise.
+pub fn pnt2_max_pnt2<T>(pa: Point2<T>, pb: Point2<T>) -> Point2<T>
+    where T: Ord
+{
+    Point2 {
+        x: std::cmp::max(pa.x, pb.x),
+        y: std::cmp::max(pa.y, pb.y),
+    }
+}
+
 /// Is a 2D point inside a 2D bound?
 pub fn pnt2_inside_exclusive<T>(pt: Point2<T>, b: Bounds2<T>) -> bool
     where T: PartialOrd
@@ -1716,6 +1736,12 @@ impl<T> Bounds2<T> {
         where T: Copy + Sub<T, Output = T>
     {
         self.p_max - self.p_min
+    }
+    pub fn area(&self) -> T
+        where T: Copy + Sub<T, Output = T> + Mul<T, Output = T>
+    {
+        let d: Vector2<T> = self.p_max - self.p_min;
+        d.x * d.y
     }
 }
 
@@ -4864,6 +4890,15 @@ impl Mul for RGBSpectrum {
     }
 }
 
+impl MulAssign for RGBSpectrum {
+    fn mul_assign(&mut self, rhs: RGBSpectrum) {
+        // TODO: DCHECK(!HasNaNs());
+        self.c[0] *= rhs.c[0];
+        self.c[1] *= rhs.c[1];
+        self.c[2] *= rhs.c[2];
+    }
+}
+
 impl Div<Float> for RGBSpectrum {
     type Output = RGBSpectrum;
     fn div(self, rhs: Float) -> RGBSpectrum {
@@ -5791,9 +5826,58 @@ impl<'a> FilmTile<'a> {
             filter_table: filter_table,
             filter_table_size: filter_table_size,
             // TODO: pixels = std::vector<FilmTilePixel>(std::max(0, pixelBounds.Area()));
-            pixels: Vec::new(),
+            pixels: vec![FilmTilePixel::default(); pixel_bounds.area() as usize],
             max_sample_luminance: max_sample_luminance,
         }
+    }
+    pub fn add_sample(&mut self, p_film: Point2f, l: &mut Spectrum, sample_weight: Float) {
+        // TODO: ProfilePhase _(Prof::AddFilmSample);
+        if l.y() > self.max_sample_luminance {
+            *l *= Spectrum::new(self.max_sample_luminance / l.y());
+        }
+        // compute sample's raster bounds
+        let p_film_discrete: Point2f = p_film - Vector2f{ x: 0.5, y: 0.5, };
+        let p0f: Point2f = pnt2_ceil(p_film_discrete - self.filter_radius);
+        let mut p0: Point2i = Point2i { x: p0f.x as i32, y: p0f.y as i32, };
+        let p1f: Point2f = pnt2_ceil(p_film_discrete + self.filter_radius);
+        let mut p1: Point2i = Point2i { x: p1f.x as i32 + 1, y: p1f.y as i32 + 1, };
+        p0 = pnt2_max_pnt2(p0, self.pixel_bounds.p_min);
+        p1 = pnt2_min_pnt2(p1, self.pixel_bounds.p_max);
+
+        // loop over filter support and add sample to pixel arrays
+
+        // precompute $x$ and $y$ filter table offsets
+        let mut ifx: Vec<usize> = Vec::with_capacity(p1.x as usize - p0.x as usize);
+        for x in p0.x..p1.x {
+            let fx: Float = ((x as Float - p_film_discrete.x) * self.inv_filter_radius.x *
+                      self.filter_table_size as Float)
+                .abs();
+            ifx.push(fx.floor().min(self.filter_table_size as Float - 1.0) as usize);
+        }
+        let mut ify: Vec<usize> = Vec::with_capacity(p1.y as usize - p0.y as usize);
+        for y in p0.y..p1.y {
+            let fy: Float = ((y as Float - p_film_discrete.y) * self.inv_filter_radius.y *
+                             self.filter_table_size as Float)
+                .abs();
+            ify.push(fy.floor().min(self.filter_table_size as Float - 1.0) as usize);
+        }
+        for y in p0.y..p1.y {
+            for x in p0.x..p1.x {
+                // evaluate filter value at $(x,y)$ pixel
+                let offset: usize = ify[(y - p0.y) as usize] * self.filter_table_size + ifx[(x - p0.x) as usize];
+                let filter_weight: Float = self.filter_table[offset];
+                // update pixel values with filtered sample contribution
+                let idx = self.get_pixel_index(x, y);
+                let ref mut pixel = self.pixels[idx];
+                pixel.contrib_sum += *l * Spectrum::new(filter_weight);
+                pixel.filter_weight_sum += filter_weight;
+            }
+        }
+    }
+    fn get_pixel_index(&self, x: i32, y: i32) -> usize {
+        let width: i32 = self.pixel_bounds.p_max.x - self.pixel_bounds.p_min.x;
+        let pidx = (y - self.pixel_bounds.p_min.y) * width + (x - self.pixel_bounds.p_min.x);
+        pidx as usize
     }
 }
 
