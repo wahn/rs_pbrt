@@ -6979,18 +6979,29 @@ impl Rng {
     }
     pub fn set_sequence(&mut self, initseq: u64) {
         self.state = 0_u64;
-        self.inc = (initseq << 1) | 1;
+        let (shl, _overflow) = initseq.overflowing_shl(1);
+        self.inc = shl | 1;
         self.uniform_uint32();
-        self.state += PCG32_DEFAULT_STATE;
+        let (add, _overflow) = self.state.overflowing_add(PCG32_DEFAULT_STATE);
+        self.state = add;
         self.uniform_uint32();
     }
     pub fn uniform_uint32(&mut self) -> u32 {
         let oldstate: u64 = self.state;
-        self.state = oldstate * PCG32_MULT + self.inc;
-        let xorshifted: u32 = ((oldstate >> 18 ^ oldstate) >> 27) as u32;
-        let rot: u32 = (oldstate >> 59) as u32;
+        let (mul, _overflow) = oldstate.overflowing_mul(PCG32_MULT);
+        let (add, _overflow) = mul.overflowing_add(self.inc);
+        self.state = add;
+        let (shr, _overflow) = oldstate.overflowing_shr(18);
+        let combine = shr ^ oldstate;
+        let (shr, _overflow) = combine.overflowing_shr(27);
+        let xorshifted: u32 = shr as u32;
+        let (shr, _overflow) = oldstate.overflowing_shr(59);
+        let rot: u32 = shr as u32;
         // bitwise not in Rust is ! (not the ~ operator like in C)
-        (xorshifted >> rot) | (xorshifted << ((!rot + 1u32) & 31))
+        let (shr, _overflow) = xorshifted.overflowing_shr(rot);
+        let (neg, _overflow) = rot.overflowing_neg();
+        let (shl, _overflow) = xorshifted.overflowing_shl(neg & 31);
+        shr | shl
     }
     pub fn uniform_uint32_bounded(&mut self, b: u32) -> u32 {
         // bitwise not in Rust is ! (not the ~ operator like in C)
