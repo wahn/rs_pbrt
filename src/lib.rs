@@ -743,8 +743,8 @@ pub fn next_float_up(v: f32) -> f32 {
         } else {
             new_v = v;
         }
-        let mut ui: u32 = float_to_bits(v);
-        if new_v > 0.0 {
+        let mut ui: u32 = float_to_bits(new_v);
+        if new_v >= 0.0 {
             ui += 1;
         } else {
             ui -= 1;
@@ -765,7 +765,7 @@ pub fn next_float_down(v: f32) -> f32 {
         } else {
             new_v = v;
         }
-        let mut ui: u32 = float_to_bits(v);
+        let mut ui: u32 = float_to_bits(new_v);
         if new_v > 0.0 {
             ui -= 1;
         } else {
