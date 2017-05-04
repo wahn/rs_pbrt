@@ -5940,7 +5940,7 @@ impl Film {
         let p_max: Point2f = float_bounds.p_max - half_pixel + self.filter.radius;
         let p1: Point2i = Point2i {
             x: p_max.x.floor() as i32,
-            y: p_max.x.floor() as i32,
+            y: p_max.y.floor() as i32,
         } + Point2i { x: 1, y: 1 };
         let tile_pixel_bounds: Bounds2i = bnd2_intersect_bnd2(Bounds2i {
                                                                   p_min: p0,
