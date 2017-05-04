@@ -5789,7 +5789,7 @@ impl<'a> FilmTile<'a> {
         let p_film_discrete: Point2f = p_film - Vector2f{ x: 0.5, y: 0.5, };
         let p0f: Point2f = pnt2_ceil(p_film_discrete - self.filter_radius);
         let mut p0: Point2i = Point2i { x: p0f.x as i32, y: p0f.y as i32, };
-        let p1f: Point2f = pnt2_ceil(p_film_discrete + self.filter_radius);
+        let p1f: Point2f = pnt2_floor(p_film_discrete + self.filter_radius);
         let mut p1: Point2i = Point2i { x: p1f.x as i32 + 1, y: p1f.y as i32 + 1, };
         p0 = pnt2_max_pnt2(p0, self.pixel_bounds.p_min);
         p1 = pnt2_min_pnt2(p1, self.pixel_bounds.p_max);
