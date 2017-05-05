@@ -5750,7 +5750,7 @@ impl BoxFilter {
 const FILTER_TABLE_WIDTH: usize = 16;
 
 #[derive(Debug,Default,Copy,Clone)]
-struct Pixel {
+pub struct Pixel {
     xyz: [Float; 3],
     filter_weight_sum: Float,
     splat_xyz: [AtomicFloat; 3],
@@ -5859,6 +5859,7 @@ pub struct Film {
     pub cropped_pixel_bounds: Bounds2i,
 
     // Film Private Data
+    pub pixels: Vec<Pixel>,
     filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
     scale: Float,
     max_sample_luminance: Float,
@@ -5883,7 +5884,8 @@ impl Film {
                 y: (resolution.y as Float * crop_window.p_max.y).ceil() as i32,
             },
         };
-        // TODO: allocate film image storage
+        // allocate film image storage
+        let pixels: Vec<Pixel> = vec![Pixel::default(); cropped_pixel_bounds.area() as usize];
         // precompute filter weight table
         let mut filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH] =
             [0.0; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH];
@@ -5904,6 +5906,7 @@ impl Film {
             filter: filt,
             filename: filename,
             cropped_pixel_bounds: cropped_pixel_bounds,
+            pixels: pixels,
             filter_table: filter_table,
             scale: scale,
             max_sample_luminance: max_sample_luminance,
@@ -5969,11 +5972,23 @@ impl Film {
     }
     pub fn write_image(&self, splat_scale: Float) {
         println!("Converting image to RGB and computing final weighted pixel values");
-        // for p in self.cropped_pixel_bounds {
-        // WORK
-        // }
+        let mut offset: usize = 0;
+        for p in &self.cropped_pixel_bounds {
+            // convert pixel XYZ color to RGB
+            let pixel: Pixel = self.get_pixel(p);
+            // xyz_to_rgb(pixel.xyz, &rgb[3 * offset]);
+            // WORK
+            offset += 1;
+        }
         println!("Writing image {:?} with bounds {:?}", self.filename, self.cropped_pixel_bounds);
         // TODO: pbrt::WriteImage(filename, &rgb[0], croppedPixelBounds, fullResolution);
+    }
+    pub fn get_pixel(&self, p: Point2i) -> Pixel {
+        assert!(pnt2_inside_exclusive(p, self.cropped_pixel_bounds));
+        let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
+        let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x) +
+            (p.y - self.cropped_pixel_bounds.p_min.y) * width;
+        self.pixels[offset as usize]
     }
 }
 
