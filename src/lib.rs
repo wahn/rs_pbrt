@@ -615,15 +615,17 @@
 extern crate num;
 extern crate num_cpus;
 // extern crate copy_arena;
+extern crate image;
 
 use std::cmp::PartialEq;
-use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::default::Default;
 use std::f64::consts::PI;
 use std::mem;
+use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
+use std::path::Path;
 use std::sync::Arc;
-use std::thread;
 use std::sync::mpsc;
+use std::thread;
 // use copy_arena::{Arena, Allocator};
 
 pub type Float = f64;
@@ -780,6 +782,14 @@ pub fn gamma(n: i32) -> Float {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
 }
 
+/// Is used to write sRGB-compatible 8-bit image files.
+pub fn gamma_correct(value: Float) -> Float {
+    if value <= 0.0031308 {
+        12.92 * value
+    } else {
+        1.055 as Float * value.powf((1.0 / 2.4) as Float) - 0.055
+    }
+}
 
 /// Clamp the given value *val* to lie between the values *low* and *high*.
 pub fn clamp<T>(val: T, low: T, high: T) -> T
@@ -998,8 +1008,14 @@ impl Div for EFloat {
 // parallel.h
 
 #[derive(Debug,Default,Copy,Clone)]
-struct AtomicFloat {
+pub struct AtomicFloat {
     bits: u32,
+}
+
+impl From<AtomicFloat> for Float {
+    fn from(a: AtomicFloat) -> Float {
+        bits_to_float(a.bits) as Float
+    }
 }
 
 // see geometry.h
@@ -5972,22 +5988,84 @@ impl Film {
     }
     pub fn write_image(&self, splat_scale: Float) {
         println!("Converting image to RGB and computing final weighted pixel values");
+        let mut rgb: Vec<Float> =
+            vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
         let mut offset: usize = 0;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
             let pixel: Pixel = self.get_pixel(p);
-            // xyz_to_rgb(pixel.xyz, &rgb[3 * offset]);
-            // WORK
+            let start = 3 * offset;
+            let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
+            xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
+            rgb[start + 0] = rgb_array[0];
+            rgb[start + 1] = rgb_array[1];
+            rgb[start + 2] = rgb_array[2];
+            // normalize pixel with weight sum
+            let filter_weight_sum: Float = pixel.filter_weight_sum;
+            if filter_weight_sum != 0.0 as Float {
+                let inv_wt: Float = 1.0 as Float / filter_weight_sum;
+                rgb[start + 0] = (rgb[start + 0] * inv_wt).max(0.0 as Float);
+                rgb[start + 1] = (rgb[start + 1] * inv_wt).max(0.0 as Float);
+                rgb[start + 2] = (rgb[start + 2] * inv_wt).max(0.0 as Float);
+            }
+            // add splat value at pixel
+            let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
+            let splat_xyz: [Float; 3] = [Float::from(pixel.splat_xyz[0]),
+                                         Float::from(pixel.splat_xyz[1]),
+                                         Float::from(pixel.splat_xyz[2])];
+            xyz_to_rgb(&splat_xyz, &mut splat_rgb);
+            rgb[start + 0] += splat_scale * splat_rgb[0];
+            rgb[start + 1] += splat_scale * splat_rgb[1];
+            rgb[start + 2] += splat_scale * splat_rgb[2];
+            // scale pixel value by _scale_
+            rgb[start + 0] *= self.scale;
+            rgb[start + 1] *= self.scale;
+            rgb[start + 2] *= self.scale;
             offset += 1;
         }
-        println!("Writing image {:?} with bounds {:?}", self.filename, self.cropped_pixel_bounds);
+        let filename = "pbrt.png";
+        println!("Writing image {:?} with bounds {:?}",
+                 filename, // TODO: self.filename,
+                 self.cropped_pixel_bounds);
         // TODO: pbrt::WriteImage(filename, &rgb[0], croppedPixelBounds, fullResolution);
+        let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * self.cropped_pixel_bounds.area()) as usize];
+        // 8-bit format; apply gamma (see WriteImage(...) in imageio.cpp)
+        let width: u32 = (self.cropped_pixel_bounds.p_max.x -
+                          self.cropped_pixel_bounds.p_min.x) as u32;
+        let height: u32 = (self.cropped_pixel_bounds.p_max.y -
+                           self.cropped_pixel_bounds.p_min.y) as u32;
+        for y in 0..height {
+            for x in 0..width {
+                // red
+                let index: usize = (3 * (y * width + x) + 0) as usize;
+                buffer[index] = clamp(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                      0.0 as Float,
+                                      255.0 as Float) as u8;
+                // green
+                let index: usize = (3 * (y * width + x) + 1) as usize;
+                buffer[index] = clamp(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                      0.0 as Float,
+                                      255.0 as Float) as u8;
+                // blue
+                let index: usize = (3 * (y * width + x) + 2) as usize;
+                buffer[index] = clamp(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                      0.0 as Float,
+                                      255.0 as Float) as u8;
+            }
+        }
+        // write "pbrt.png" to disk
+        image::save_buffer(&Path::new("pbrt.png"),
+                           &buffer,
+                           width,
+                           height,
+                           image::RGB(8))
+            .unwrap();
     }
     pub fn get_pixel(&self, p: Point2i) -> Pixel {
         assert!(pnt2_inside_exclusive(p, self.cropped_pixel_bounds));
         let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
         let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x) +
-            (p.y - self.cropped_pixel_bounds.p_min.y) * width;
+                          (p.y - self.cropped_pixel_bounds.p_min.y) * width;
         self.pixels[offset as usize]
     }
 }
