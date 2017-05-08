@@ -4817,6 +4817,9 @@ impl RGBSpectrum {
         RGBSpectrum { c: [v, v, v] }
         // TODO: DCHECK(!HasNaNs());
     }
+    pub fn to_xyz(&self, xyz: &mut [Float; 3]) {
+        rgb_to_xyz(&self.c, xyz);
+    }
     pub fn y(&self) -> Float {
         let y_weight: [Float; 3] = [0.212671, 0.715160, 0.072169];
         y_weight[0] * self.c[0] + y_weight[1] * self.c[1] + y_weight[2] * self.c[2]
@@ -5780,7 +5783,7 @@ pub struct FilmTilePixel {
 }
 
 pub struct FilmTile<'a> {
-    pixel_bounds: Bounds2i,
+    pub pixel_bounds: Bounds2i,
     filter_radius: Vector2f,
     inv_filter_radius: Vector2f,
     filter_table: &'a [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
@@ -5986,6 +5989,25 @@ impl Film {
                       FILTER_TABLE_WIDTH,
                       self.max_sample_luminance)
     }
+    pub fn merge_film_tile(&mut self, tile: &FilmTile) {
+        // TODO: ProfilePhase p(Prof::MergeFilmTile);
+        println!("Merging film tile {:?}", tile.pixel_bounds);
+        // TODO: std::lock_guard<std::mutex> lock(mutex);
+        for pixel in &tile.pixel_bounds {
+            // merge _pixel_ into _Film::pixels_
+            let idx = tile.get_pixel_index(pixel.x, pixel.y);
+            let ref tile_pixel = tile.pixels[idx];
+            let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
+            let mut xyz: [Float; 3] = [0.0; 3];
+            tile_pixel.contrib_sum.to_xyz(&mut xyz);
+            println!("xyz = [ {:?}, {:?}, {:?} ]", xyz[0], xyz[1], xyz[2]);
+            for i in 0..3 {
+                merge_pixel.xyz[i] += xyz[i];
+            }
+            merge_pixel.filter_weight_sum += tile_pixel.filter_weight_sum;
+        }
+        println!("self.pixels = {:?}", self.pixels);
+    }
     pub fn write_image(&self, splat_scale: Float) {
         println!("Converting image to RGB and computing final weighted pixel values");
         let mut rgb: Vec<Float> =
@@ -6067,6 +6089,13 @@ impl Film {
         let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x) +
                           (p.y - self.cropped_pixel_bounds.p_min.y) * width;
         self.pixels[offset as usize]
+    }
+    pub fn get_pixel_mut(&mut self, p: Point2i) -> &mut Pixel {
+        assert!(pnt2_inside_exclusive(p, self.cropped_pixel_bounds));
+        let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
+        let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x) +
+                          (p.y - self.cropped_pixel_bounds.p_min.y) * width;
+        &mut self.pixels[offset as usize]
     }
 }
 
@@ -6964,8 +6993,11 @@ impl DirectLightingIntegrator {
                             film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
                             done = !tile_sampler.start_next_sample();
                         } // arena is dropped here !
-                        // WORK
                     }
+                    println!{"Finished image tile {:?}", tile_bounds};
+                    // merge image tile into _Film_
+                    // WORK: self.camera.film.merge_film_tile(&film_tile);
+                    // TODO: reporter.Update();
                 }
             }
             // TODO: reporter.Done();
