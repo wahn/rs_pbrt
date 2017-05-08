@@ -617,6 +617,7 @@ extern crate num_cpus;
 // extern crate copy_arena;
 extern crate image;
 
+use std::cell::RefCell;
 use std::cmp::PartialEq;
 use std::default::Default;
 use std::f64::consts::PI;
@@ -5878,7 +5879,7 @@ pub struct Film {
     pub cropped_pixel_bounds: Bounds2i,
 
     // Film Private Data
-    pub pixels: Vec<Pixel>,
+    pub pixels: RefCell<Vec<Pixel>>,
     filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
     scale: Float,
     max_sample_luminance: Float,
@@ -5904,7 +5905,7 @@ impl Film {
             },
         };
         // allocate film image storage
-        let pixels: Vec<Pixel> = vec![Pixel::default(); cropped_pixel_bounds.area() as usize];
+        // let pixels: Vec<Pixel> = vec![Pixel::default(); cropped_pixel_bounds.area() as usize];
         // precompute filter weight table
         let mut filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH] =
             [0.0; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH];
@@ -5925,7 +5926,7 @@ impl Film {
             filter: filt,
             filename: filename,
             cropped_pixel_bounds: cropped_pixel_bounds,
-            pixels: pixels,
+            pixels: RefCell::new(vec![Pixel::default(); cropped_pixel_bounds.area() as usize]),
             filter_table: filter_table,
             scale: scale,
             max_sample_luminance: max_sample_luminance,
@@ -5989,7 +5990,7 @@ impl Film {
                       FILTER_TABLE_WIDTH,
                       self.max_sample_luminance)
     }
-    pub fn merge_film_tile(&mut self, tile: &FilmTile) {
+    pub fn merge_film_tile(&self, tile: &FilmTile) {
         // TODO: ProfilePhase p(Prof::MergeFilmTile);
         println!("Merging film tile {:?}", tile.pixel_bounds);
         // TODO: std::lock_guard<std::mutex> lock(mutex);
@@ -5997,16 +5998,23 @@ impl Film {
             // merge _pixel_ into _Film::pixels_
             let idx = tile.get_pixel_index(pixel.x, pixel.y);
             let ref tile_pixel = tile.pixels[idx];
-            let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
+            // START let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
+            assert!(pnt2_inside_exclusive(pixel, self.cropped_pixel_bounds));
+            let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
+            let offset: i32 = (pixel.x - self.cropped_pixel_bounds.p_min.x) +
+                (pixel.y - self.cropped_pixel_bounds.p_min.y) * width;
+            let mut pixels_ref = self.pixels.borrow_mut();
+            let mut merge_pixel = pixels_ref[offset as usize];
+            // END let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
             let mut xyz: [Float; 3] = [0.0; 3];
             tile_pixel.contrib_sum.to_xyz(&mut xyz);
-            println!("xyz = [ {:?}, {:?}, {:?} ]", xyz[0], xyz[1], xyz[2]);
             for i in 0..3 {
                 merge_pixel.xyz[i] += xyz[i];
             }
             merge_pixel.filter_weight_sum += tile_pixel.filter_weight_sum;
+            // write pixel back
+            pixels_ref[offset as usize] = merge_pixel;
         }
-        println!("self.pixels = {:?}", self.pixels);
     }
     pub fn write_image(&self, splat_scale: Float) {
         println!("Converting image to RGB and computing final weighted pixel values");
@@ -6088,14 +6096,7 @@ impl Film {
         let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
         let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x) +
                           (p.y - self.cropped_pixel_bounds.p_min.y) * width;
-        self.pixels[offset as usize]
-    }
-    pub fn get_pixel_mut(&mut self, p: Point2i) -> &mut Pixel {
-        assert!(pnt2_inside_exclusive(p, self.cropped_pixel_bounds));
-        let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
-        let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x) +
-                          (p.y - self.cropped_pixel_bounds.p_min.y) * width;
-        &mut self.pixels[offset as usize]
+        (*self.pixels.borrow())[offset as usize]
     }
 }
 
@@ -6996,7 +6997,7 @@ impl DirectLightingIntegrator {
                     }
                     println!{"Finished image tile {:?}", tile_bounds};
                     // merge image tile into _Film_
-                    // WORK: self.camera.film.merge_film_tile(&film_tile);
+                    self.camera.film.merge_film_tile(&film_tile);
                     // TODO: reporter.Update();
                 }
             }
