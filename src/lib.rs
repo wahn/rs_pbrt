@@ -1113,17 +1113,17 @@ impl<T> Mul<T> for Vector3<T>
     }
 }
 
-impl<T> Div<T> for Vector3<T>
-    where T: Copy + Div<T, Output = T>
+impl Div<Float> for Vector3f
 {
-    type Output = Vector3<T>;
-    fn div(self, rhs: T) -> Vector3<T>
-        where T: Copy + Div<T, Output = T>
+    type Output = Vector3f;
+    fn div(self, rhs: Float) -> Vector3f
     {
-        Vector3::<T> {
-            x: self.x / rhs,
-            y: self.y / rhs,
-            z: self.z / rhs,
+        assert_ne!(rhs, 0.0 as Float);
+        let inv: Float = 1.0 as Float / rhs;
+        Vector3f {
+            x: self.x * inv,
+            y: self.y * inv,
+            z: self.z * inv,
         }
     }
 }
@@ -1236,26 +1236,24 @@ pub fn vec3_abs_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
 
 /// Given two vectors in 3D, the cross product is a vector that is
 /// perpendicular to both of them.
-pub fn vec3_cross<T>(v1: Vector3<T>, v2: Vector3<T>) -> Vector3<T>
-    where T: Copy + Sub<T, Output = T> + Mul<T, Output = T>
+pub fn vec3_cross(v1: Vector3f, v2: Vector3f) -> Vector3f
 {
-    let v1x: T = v1.x;
-    let v1y: T = v1.y;
-    let v1z: T = v1.z;
-    let v2x: T = v2.x;
-    let v2y: T = v2.y;
-    let v2z: T = v2.z;
-    Vector3::<T> {
-        x: (v1y * v2z) - (v1z * v2y),
-        y: (v1z * v2x) - (v1x * v2z),
-        z: (v1x * v2y) - (v1y * v2x),
+    let v1x: f64 = v1.x as f64;
+    let v1y: f64 = v1.y as f64;
+    let v1z: f64 = v1.z as f64;
+    let v2x: f64 = v2.x as f64;
+    let v2y: f64 = v2.y as f64;
+    let v2z: f64 = v2.z as f64;
+    Vector3f {
+        x: ((v1y * v2z) - (v1z * v2y)) as Float,
+        y: ((v1z * v2x) - (v1x * v2z)) as Float,
+        z: ((v1x * v2y) - (v1y * v2x)) as Float,
     }
 }
 
 /// Compute a new vector pointing in the same direction but with unit
 /// length.
-pub fn vec3_normalize<T>(v: Vector3<T>) -> Vector3<T>
-    where T: num::Float + Copy + Div<T, Output = T>
+pub fn vec3_normalize(v: Vector3f) -> Vector3f
 {
     v / v.length()
 }
@@ -1303,18 +1301,17 @@ pub fn vec3_permute<T>(v: Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T
 }
 
 /// Construct a local coordinate system given only a single 3D vector.
-pub fn vec3_coordinate_system<T>(v1: &Vector3<T>, v2: &mut Vector3<T>, v3: &mut Vector3<T>)
-    where T: num::Float
+pub fn vec3_coordinate_system(v1: &Vector3f, v2: &mut Vector3f, v3: &mut Vector3f)
 {
     if v1.x.abs() > v1.y.abs() {
-        *v2 = Vector3::<T> {
+        *v2 = Vector3f {
             x: -v1.z,
-            y: num::Zero::zero(),
+            y: 0.0 as Float,
             z: v1.x,
         } / (v1.x * v1.x + v1.z * v1.z).sqrt();
     } else {
-        *v2 = Vector3::<T> {
-            x: num::Zero::zero(),
+        *v2 = Vector3f {
+            x: 0.0 as Float,
             y: v1.z,
             z: -v1.y,
         } / (v1.y * v1.y + v1.z * v1.z).sqrt();
@@ -1535,28 +1532,29 @@ impl<T> MulAssign<T> for Point3<T>
     }
 }
 
-impl<T> Div<T> for Point3<T>
-    where T: Copy + Div<T, Output = T>
+impl Div<Float> for Point3f
 {
-    type Output = Point3<T>;
-    fn div(self, rhs: T) -> Point3<T>
-        where T: Copy + Div<T, Output = T>
+    type Output = Point3f;
+    fn div(self, rhs: Float) -> Point3f
     {
-        Point3::<T> {
-            x: self.x / rhs,
-            y: self.y / rhs,
-            z: self.z / rhs,
+        assert_ne!(rhs, 0.0 as Float);
+        let inv: Float = 1.0 as Float / rhs;
+        Point3f {
+            x: self.x * inv,
+            y: self.y * inv,
+            z: self.z * inv,
         }
     }
 }
 
-impl<T> DivAssign<T> for Point3<T>
-    where T: Copy + DivAssign
+impl DivAssign<Float> for Point3f
 {
-    fn div_assign(&mut self, rhs: T) {
-        self.x /= rhs;
-        self.y /= rhs;
-        self.z /= rhs;
+    fn div_assign(&mut self, rhs: Float) {
+        assert_ne!(rhs, 0.0 as Float);
+        let inv: Float = 1.0 as Float / rhs;
+        self.x *= inv;
+        self.y *= inv;
+        self.z *= inv;
     }
 }
 
@@ -2586,10 +2584,11 @@ impl Transform {
                 z: zp,
             }
         } else {
+            let inv: Float = 1.0 as Float / wp;
             Point3::<Float> {
-                x: xp / wp,
-                y: yp / wp,
-                z: zp / wp,
+                x: inv * xp,
+                y: inv * yp,
+                z: inv * zp,
             }
         }
     }
@@ -2700,15 +2699,21 @@ impl Transform {
         let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
                         self.m.m[3][3];
         // compute absolute error for transformed point
-        let x_abs_sum: Float = self.m.m[0][0].abs() * x + self.m.m[0][1].abs() * y +
-                               self.m.m[0][2].abs() * z +
-                               self.m.m[0][3].abs();
-        let y_abs_sum: Float = self.m.m[1][0].abs() * x + self.m.m[1][1].abs() * y +
-                               self.m.m[1][2].abs() * z +
-                               self.m.m[1][3].abs();
-        let z_abs_sum: Float = self.m.m[2][0].abs() * x + self.m.m[2][1].abs() * y +
-                               self.m.m[2][2].abs() * z +
-                               self.m.m[2][3].abs();
+        let x_abs_sum: Float =
+            (self.m.m[0][0] * x).abs() +
+            (self.m.m[0][1] * y).abs() +
+            (self.m.m[0][2] * z).abs() +
+            self.m.m[0][3].abs();
+        let y_abs_sum: Float =
+            (self.m.m[1][0] * x).abs() +
+            (self.m.m[1][1] * y).abs() +
+            (self.m.m[1][2] * z).abs() +
+            self.m.m[1][3].abs();
+        let z_abs_sum: Float =
+            (self.m.m[2][0] * x).abs() +
+            (self.m.m[2][1] * y).abs() +
+            (self.m.m[2][2] * z).abs() +
+            self.m.m[2][3].abs();
         *p_error = Vector3::<Float> {
             x: x_abs_sum,
             y: y_abs_sum,
@@ -2721,11 +2726,12 @@ impl Transform {
                 y: yp,
                 z: zp,
             }
-        } else {
+        } else { 
+            let inv: Float = 1.0 as Float / wp;
             Point3::<Float> {
-                x: xp / wp,
-                y: yp / wp,
-                z: zp / wp,
+                x: inv * xp,
+                y: inv * yp,
+                z: inv * zp,
             }
         }
     }
