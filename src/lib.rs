@@ -1113,14 +1113,16 @@ impl<T> Mul<T> for Vector3<T>
     }
 }
 
-impl Div<Float> for Vector3f
+// work around bug
+// https://github.com/rust-lang/rust/issues/40395
+impl Div<Float> for Vector3<f32>
 {
-    type Output = Vector3f;
-    fn div(self, rhs: Float) -> Vector3f
+    type Output = Vector3<f32>;
+    fn div(self, rhs: Float) -> Vector3<f32>
     {
         assert_ne!(rhs, 0.0 as Float);
         let inv: Float = 1.0 as Float / rhs;
-        Vector3f {
+        Vector3::<f32> {
             x: self.x * inv,
             y: self.y * inv,
             z: self.z * inv,
@@ -1532,14 +1534,16 @@ impl<T> MulAssign<T> for Point3<T>
     }
 }
 
-impl Div<Float> for Point3f
+// work around bug
+// https://github.com/rust-lang/rust/issues/40395
+impl Div<Float> for Point3<f32>
 {
-    type Output = Point3f;
-    fn div(self, rhs: Float) -> Point3f
+    type Output = Point3<f32>;
+    fn div(self, rhs: Float) -> Point3<f32>
     {
         assert_ne!(rhs, 0.0 as Float);
         let inv: Float = 1.0 as Float / rhs;
-        Point3f {
+        Point3::<f32> {
             x: self.x * inv,
             y: self.y * inv,
             z: self.z * inv,
@@ -1547,7 +1551,9 @@ impl Div<Float> for Point3f
     }
 }
 
-impl DivAssign<Float> for Point3f
+// work around bug
+// https://github.com/rust-lang/rust/issues/40395
+impl DivAssign<Float> for Point3<f32>
 {
     fn div_assign(&mut self, rhs: Float) {
         assert_ne!(rhs, 0.0 as Float);
