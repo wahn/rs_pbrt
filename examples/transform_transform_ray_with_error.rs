@@ -21,7 +21,7 @@ fn main() {
     let r: Ray = Ray {
         o: o,
         d: d,
-        t_max: std::f64::INFINITY,
+        t_max: std::f32::INFINITY,
         time: 0.0,
         differential: None,
     };

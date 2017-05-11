@@ -2,7 +2,7 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLightingIntegrator,
            DistantLight, Film, Float, GeometricPrimitive, LightStrategy, MatteMaterial,
-           PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Rng, Scene, Spectrum, Sphere,
+           PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Scene, Spectrum, Sphere,
            SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
            ZeroTwoSequenceSampler};
 use std::string::String;
@@ -300,7 +300,7 @@ fn main() {
                                35.0,
                                filename,
                                1.0,
-                               std::f64::INFINITY);
+                               std::f32::INFINITY);
     // TODO: pixels (see gdb output below)
     // (gdb) p *film
     // fullResolution = {x = 1000, y = 500},
@@ -364,23 +364,7 @@ fn main() {
                                                                        film /* ,
                                                                              * medium */);
     // pbrt::MakeSampler
-    let sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
-        samples_per_pixel: 1,
-        n_sampled_dimensions: 4,
-        samples_1d: Vec::new(),
-        samples_2d: Vec::new(),
-        current_1d_dimension: 0,
-        current_2d_dimension: 0,
-        rng: Rng::default(),
-        current_pixel: Point2i::default(),
-        current_pixel_sample_index: 0_i64,
-        samples_1d_array_sizes: Vec::new(),
-        samples_2d_array_sizes: Vec::new(),
-        samples_1d_array: Vec::new(),
-        samples_2d_array: Vec::new(),
-        array_1d_offset: 0_usize,
-        array_2d_offset: 0_usize,
-    };
+    let sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
     let pixel_bounds: Bounds2i = Bounds2i {
         p_min: Point2i { x: 0, y: 0 },
         p_max: Point2i { x: xres, y: yres },

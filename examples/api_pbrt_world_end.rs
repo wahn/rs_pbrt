@@ -29,7 +29,7 @@ fn main() {
                                 35.0,
                                 String::from("pbrt.exr"),
                                 1.0,
-                                std::f64::INFINITY);
+                                std::f32::INFINITY);
     // TODO: std::unique_ptr<Scene> scene(renderOptions->MakeScene());
     // MakeAccelerator()
     // CreateBVHAccelerator()

@@ -125,7 +125,7 @@
 //!     let ray = Ray {
 //!         o: origin,
 //!         d: direction,
-//!         t_max: std::f64::INFINITY,
+//!         t_max: std::f32::INFINITY,
 //!         time: 0.0,
 //!         differential: None,
 //!     };
@@ -620,7 +620,7 @@ extern crate image;
 use std::cell::RefCell;
 use std::cmp::PartialEq;
 use std::default::Default;
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use std::mem;
 use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::path::Path;
@@ -629,7 +629,7 @@ use std::sync::mpsc;
 use std::thread;
 // use copy_arena::{Arena, Allocator};
 
-pub type Float = f64;
+pub type Float = f32;
 
 // see scene.h
 
@@ -696,7 +696,7 @@ impl Scene {
 
 pub type Spectrum = RGBSpectrum;
 
-const MACHINE_EPSILON: Float = std::f64::EPSILON * 0.5;
+const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 const SHADOW_EPSILON: Float = 0.0001;
 const INV_PI: Float = 0.31830988618379067154;
 
@@ -839,6 +839,11 @@ pub fn round_up_pow2_64(v: &mut i64) -> i64 {
     *v + 1
 }
 
+/// Interpolate linearly between two provided values.
+pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
+    (1.0 as Float - t) * v1 + t * v2
+}
+
 /// Find solution(s) of the quadratic equation at^2 + bt + c = 0.
 pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -> bool {
     // find quadratic discriminant
@@ -850,12 +855,12 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
         // compute quadratic _t_ values
         let q: f64;
         if b < 0.0 {
-            q = -0.5 * (b - root_discrim);
+            q = -0.5 * (b as f64 - root_discrim);
         } else {
-            q = -0.5 * (b + root_discrim);
+            q = -0.5 * (b as f64 + root_discrim);
         }
-        *t0 = q / a;
-        *t1 = c / q;
+        *t0 = q as Float / a;
+        *t1 = c / q as Float;
         if *t0 > *t1 {
             // std::swap(*t0, *t1);
             let swap = *t0;
@@ -1645,10 +1650,10 @@ pub fn pnt3_offset_ray_origin(p: Point3f, p_error: Vector3f, n: Normal3f, w: Vec
     // round offset point _po_ away from _p_
     for i in 0..3 {
         if offset[i] > 0.0 as Float {
-            po[i] = next_float_up(po[i] as f32) as f64;
+            po[i] = next_float_up(po[i]);
         } else {
             if offset[i] < 0.0 as Float {
-                po[i] = next_float_down(po[i] as f32) as f64;
+                po[i] = next_float_down(po[i]);
             }
         }
     }
@@ -1827,12 +1832,12 @@ pub struct Bounds3<T> {
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl Default for Bounds3<f64> {
-    fn default() -> Bounds3<f64> {
-        let min_num: Float = std::f64::MIN;
-        let max_num: Float = std::f64::MAX;
+impl Default for Bounds3<f32> {
+    fn default() -> Bounds3<f32> {
+        let min_num: Float = std::f32::MIN;
+        let max_num: Float = std::f32::MAX;
         // Bounds3f
-        Bounds3::<f64> {
+        Bounds3::<f32> {
             p_min: Point3f {
                 x: max_num,
                 y: max_num,
@@ -4173,15 +4178,15 @@ impl Shape for Sphere {
             }
         }
         // compute sphere hit position and $\phi$
-        let mut p_hit: Point3f = ray.position(t_shape_hit.v as f64);
+        let mut p_hit: Point3f = ray.position(t_shape_hit.v);
         // refine sphere intersection point
         p_hit *= self.radius / pnt3_distance(p_hit, Point3f::default());
         if p_hit.x == 0.0 && p_hit.y == 0.0 {
-            p_hit.x = 1e-5_f64 * self.radius;
+            p_hit.x = 1e-5_f32 * self.radius;
         }
         let mut phi: Float = p_hit.y.atan2(p_hit.x);
         if phi < 0.0 {
-            phi += 2.0_f64 * PI;
+            phi += 2.0_f32 * PI;
         }
         // test sphere intersection against clipping parameters
         if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
@@ -4194,16 +4199,16 @@ impl Shape for Sphere {
             }
             t_shape_hit = t1;
             // compute sphere hit position and $\phi$
-            p_hit = ray.position(t_shape_hit.v as f64);
+            p_hit = ray.position(t_shape_hit.v);
 
             // refine sphere intersection point
             p_hit *= self.radius / pnt3_distance(p_hit, Point3f::default());
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
-                p_hit.x = 1e-5_f64 * self.radius;
+                p_hit.x = 1e-5_f32 * self.radius;
             }
             phi = p_hit.y.atan2(p_hit.x);
             if phi < 0.0 {
-                phi += 2.0_f64 * PI;
+                phi += 2.0_f32 * PI;
             }
             if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
                (self.z_max < self.radius && p_hit.z > self.z_max) ||
@@ -4325,15 +4330,15 @@ impl Shape for Sphere {
             }
         }
         // compute sphere hit position and $\phi$
-        let mut p_hit: Point3f = ray.position(t_shape_hit.v as f64);
+        let mut p_hit: Point3f = ray.position(t_shape_hit.v);
         // refine sphere intersection point
         p_hit *= self.radius / pnt3_distance(p_hit, Point3f::default());
         if p_hit.x == 0.0 && p_hit.y == 0.0 {
-            p_hit.x = 1e-5_f64 * self.radius;
+            p_hit.x = 1e-5_f32 * self.radius;
         }
         let mut phi: Float = p_hit.y.atan2(p_hit.x);
         if phi < 0.0 {
-            phi += 2.0_f64 * PI;
+            phi += 2.0_f32 * PI;
         }
         // test sphere intersection against clipping parameters
         if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
@@ -4346,16 +4351,16 @@ impl Shape for Sphere {
             }
             t_shape_hit = t1;
             // compute sphere hit position and $\phi$
-            p_hit = ray.position(t_shape_hit.v as f64);
+            p_hit = ray.position(t_shape_hit.v);
 
             // refine sphere intersection point
             p_hit *= self.radius / pnt3_distance(p_hit, Point3f::default());
             if p_hit.x == 0.0 && p_hit.y == 0.0 {
-                p_hit.x = 1e-5_f64 * self.radius;
+                p_hit.x = 1e-5_f32 * self.radius;
             }
             phi = p_hit.y.atan2(p_hit.x);
             if phi < 0.0 {
-                phi += 2.0_f64 * PI;
+                phi += 2.0_f32 * PI;
             }
             if (self.z_min > -self.radius && p_hit.z < self.z_min) ||
                (self.z_max < self.radius && p_hit.z > self.z_max) ||
@@ -4528,26 +4533,21 @@ impl Shape for Triangle {
         p2t.x += sx * p2t.z;
         p2t.y += sy * p2t.z;
         // compute edge function coefficients _e0_, _e1_, and _e2_
-        let e0: Float = p1t.x * p2t.y - p1t.y * p2t.x;
-        let e1: Float = p2t.x * p0t.y - p2t.y * p0t.x;
-        let e2: Float = p0t.x * p1t.y - p0t.y * p1t.x;
-        // TODO: fall back to double precision test at triangle edges
-        if mem::size_of::<Float>() == mem::size_of::<f32>() {
-            println!("[Triangle::intersect()]: TODO fall back to double precision test at \
-                      triangle edges");
+        let mut e0: Float = p1t.x * p2t.y - p1t.y * p2t.x;
+        let mut e1: Float = p2t.x * p0t.y - p2t.y * p0t.x;
+        let mut e2: Float = p0t.x * p1t.y - p0t.y * p1t.x;
+        // fall back to double precision test at triangle edges
+        if mem::size_of::<Float>() == mem::size_of::<f32>() && (e0 == 0.0 || e1 == 0.0 || e2 == 0.0) {
+            let p2txp1ty: f64 = p2t.x as f64 * p1t.y as f64;
+            let p2typ1tx: f64 = p2t.y as f64 * p1t.x as f64;
+            e0 = (p2typ1tx - p2txp1ty) as Float;
+            let p0txp2ty = p0t.x as f64 * p2t.y as f64;
+            let p0typ2tx = p0t.y as f64 * p2t.x as f64;
+            e1 = (p0typ2tx - p0txp2ty) as Float;
+            let p1txp0ty = p1t.x as f64 * p0t.y as f64;
+            let p1typ0tx = p1t.y as f64 * p0t.x as f64;
+            e2 = (p1typ0tx - p1txp0ty) as Float;
         }
-        // if (sizeof(Float) == sizeof(float) &&
-        //     (e0 == 0.0f || e1 == 0.0f || e2 == 0.0f)) {
-        //     double p2txp1ty = (double)p2t.x * (double)p1t.y;
-        //     double p2typ1tx = (double)p2t.y * (double)p1t.x;
-        //     e0 = (float)(p2typ1tx - p2txp1ty);
-        //     double p0txp2ty = (double)p0t.x * (double)p2t.y;
-        //     double p0typ2tx = (double)p0t.y * (double)p2t.x;
-        //     e1 = (float)(p0typ2tx - p0txp2ty);
-        //     double p1txp0ty = (double)p1t.x * (double)p0t.y;
-        //     double p1typ0tx = (double)p1t.y * (double)p0t.x;
-        //     e2 = (float)(p1typ0tx - p1txp0ty);
-        // }
         // perform triangle edge and determinant tests
         if (e0 < 0.0 || e1 < 0.0 || e2 < 0.0) && (e0 > 0.0 || e1 > 0.0 || e2 > 0.0) {
             return None;
@@ -4714,26 +4714,21 @@ impl Shape for Triangle {
         p2t.x += sx * p2t.z;
         p2t.y += sy * p2t.z;
         // compute edge function coefficients _e0_, _e1_, and _e2_
-        let e0: Float = p1t.x * p2t.y - p1t.y * p2t.x;
-        let e1: Float = p2t.x * p0t.y - p2t.y * p0t.x;
-        let e2: Float = p0t.x * p1t.y - p0t.y * p1t.x;
-        // TODO: fall back to double precision test at triangle edges
-        if mem::size_of::<Float>() == mem::size_of::<f32>() {
-            println!("[Triangle::intersect()]: TODO fall back to double precision test at \
-                      triangle edges");
+        let mut e0: Float = p1t.x * p2t.y - p1t.y * p2t.x;
+        let mut e1: Float = p2t.x * p0t.y - p2t.y * p0t.x;
+        let mut e2: Float = p0t.x * p1t.y - p0t.y * p1t.x;
+        // fall back to double precision test at triangle edges
+        if mem::size_of::<Float>() == mem::size_of::<f32>() && (e0 == 0.0 || e1 == 0.0 || e2 == 0.0) {
+            let p2txp1ty: f64 = p2t.x as f64 * p1t.y as f64;
+            let p2typ1tx: f64 = p2t.y as f64 * p1t.x as f64;
+            e0 = (p2typ1tx - p2txp1ty) as Float;
+            let p0txp2ty = p0t.x as f64 * p2t.y as f64;
+            let p0typ2tx = p0t.y as f64 * p2t.x as f64;
+            e1 = (p0typ2tx - p0txp2ty) as Float;
+            let p1txp0ty = p1t.x as f64 * p0t.y as f64;
+            let p1typ0tx = p1t.y as f64 * p0t.x as f64;
+            e2 = (p1typ0tx - p1txp0ty) as Float;
         }
-        // if (sizeof(Float) == sizeof(float) &&
-        //     (e0 == 0.0f || e1 == 0.0f || e2 == 0.0f)) {
-        //     double p2txp1ty = (double)p2t.x * (double)p1t.y;
-        //     double p2typ1tx = (double)p2t.y * (double)p1t.x;
-        //     e0 = (float)(p2typ1tx - p2txp1ty);
-        //     double p0txp2ty = (double)p0t.x * (double)p2t.y;
-        //     double p0typ2tx = (double)p0t.y * (double)p2t.x;
-        //     e1 = (float)(p0typ2tx - p0txp2ty);
-        //     double p1txp0ty = (double)p1t.x * (double)p0t.y;
-        //     double p1typ0tx = (double)p1t.y * (double)p0t.x;
-        //     e2 = (float)(p1typ0tx - p1txp0ty);
-        // }
         // perform triangle edge and determinant tests
         if (e0 < 0.0 || e1 < 0.0 || e2 < 0.0) && (e0 > 0.0 || e1 > 0.0 || e2 > 0.0) {
             return false;
@@ -5573,7 +5568,7 @@ impl ZeroTwoSequenceSampler {
                 self.current_pixel_sample_index,
                 self.samples_per_pixel);
         if self.current_1d_dimension < self.samples_1d.len() as i32 {
-            let sample: Float = self.samples_1d[self.current_2d_dimension
+            let sample: Float = self.samples_1d[self.current_1d_dimension
                                                 as usize][self.current_pixel_sample_index
                                                           as usize];
             self.current_1d_dimension += 1;
@@ -5992,7 +5987,7 @@ impl Film {
     }
     pub fn merge_film_tile(&self, tile: &FilmTile) {
         // TODO: ProfilePhase p(Prof::MergeFilmTile);
-        println!("Merging film tile {:?}", tile.pixel_bounds);
+        // println!("Merging film tile {:?}", tile.pixel_bounds);
         // TODO: std::lock_guard<std::mutex> lock(mutex);
         for pixel in &tile.pixel_bounds {
             // merge _pixel_ into _Film::pixels_
@@ -6230,8 +6225,8 @@ impl PerspectiveCamera {
         // *ray = RayDifferential(Point3f(0, 0, 0), dir);
         ray.o = Point3f::default();
         ray.d = dir;
-        ray.t_max = std::f64::INFINITY;
-        ray.time = 0.0;
+        ray.t_max = std::f32::INFINITY;
+        ray.time = lerp(sample.time, self.shutter_open, self.shutter_close);
         // TODO: modify ray for depth of field
         // TODO: if (lensRadius > 0) { ... } else {
         let diff: RayDifferential = RayDifferential {
@@ -6248,7 +6243,6 @@ impl PerspectiveCamera {
                 z: p_camera.z,
             } + self.dy_camera),
         };
-        // TODO: ray.time = lerp(sample.time, self.shutter_open, self.shutter_close);
         // TODO: ray->medium = medium;
         // TODO: *ray = CameraToWorld(*ray);
         // ray->hasDifferentials = true;
@@ -6938,6 +6932,7 @@ impl DirectLightingIntegrator {
                     let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
                     let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
                                                               Point2i { x: x1, y: y1 });
+                    // println!("Starting image tile {:?}", tile_bounds);
                     let mut film_tile = self.camera.film.get_film_tile(tile_bounds);
                     for pixel in &tile_bounds {
                         tile_sampler.start_pixel(pixel);
@@ -6956,7 +6951,7 @@ impl DirectLightingIntegrator {
                             let ray_weight: Float = self.camera
                                 .generate_ray_differential(&camera_sample, &mut ray);
                             ray.scale_differentials(1.0 as Float /
-                                                    tile_sampler.samples_per_pixel as Float);
+                                                    (tile_sampler.samples_per_pixel as Float).sqrt());
                             // TODO: ++nCameraRays;
                             // evaluate radiance along camera ray
                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
@@ -6990,12 +6985,14 @@ impl DirectLightingIntegrator {
                                          tile_sampler.current_sample_number());
                                 l = Spectrum::new(0.0);
                             }
+                            // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
+                            //          camera_sample, ray, l);
                             // add camera ray's contribution to image
                             film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
                             done = !tile_sampler.start_next_sample();
                         } // arena is dropped here !
                     }
-                    println!{"Finished image tile {:?}", tile_bounds};
+                    // println!{"Finished image tile {:?}", tile_bounds};
                     // merge image tile into _Film_
                     self.camera.film.merge_film_tile(&film_tile);
                     // TODO: reporter.Update();

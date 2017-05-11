@@ -16,7 +16,7 @@ fn main() {
     let ray = Ray {
         o: origin,
         d: direction,
-        t_max: std::f64::INFINITY,
+        t_max: std::f32::INFINITY,
         time: 0.0,
         differential: None,
     };

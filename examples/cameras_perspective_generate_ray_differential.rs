@@ -43,7 +43,7 @@ fn main() {
                                35.0,
                                filename,
                                1.0,
-                               std::f64::INFINITY);
+                               std::f32::INFINITY);
     let pos = Point3f {
         x: 2.0,
         y: 2.0,

@@ -16,7 +16,7 @@ fn main() {
             y: -0.164096087,
             z: -0.984571517,
         },
-        t_max: std::f64::INFINITY,
+        t_max: std::f32::INFINITY,
         time: 0.0,
         differential: None,
     };
@@ -63,7 +63,7 @@ fn main() {
             y: -0.168564394,
             z: -0.84591651,
         },
-        t_max: std::f64::INFINITY,
+        t_max: std::f32::INFINITY,
         time: 0.0,
         differential: None,
     };
