@@ -2780,7 +2780,7 @@ impl Transform {
             o: o,
             d: d,
             t_max: r.t_max,
-            time: 0.0,
+            time: r.time,
             differential: None,
         }
     }
@@ -4099,7 +4099,7 @@ impl Default for Sphere {
             z_max: 1.0,
             theta_min: (-1.0 as Float).acos(),
             theta_max: (1.0 as Float).acos(),
-            phi_max: 360.0,
+            phi_max: radians(360.0),
             material: None,
         }
     }
@@ -4127,7 +4127,7 @@ impl Sphere {
             z_max: clamp(z_min.max(z_max), -radius, radius),
             theta_min: clamp(z_min.min(z_max) / radius, -1.0, 1.0).acos(),
             theta_max: clamp(z_min.max(z_max) / radius, -1.0, 1.0).acos(),
-            phi_max: phi_max,
+            phi_max: radians(clamp(phi_max, 0.0, 360.0)),
             material: None,
         }
     }
