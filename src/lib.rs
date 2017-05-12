@@ -6662,9 +6662,9 @@ impl DistantLight {
             p0: Interaction {
                 p: iref.p,
                 time: iref.time,
-                p_error: Vector3f::default(),
-                wo: Vector3f::default(),
-                n: Normal3f::default(),
+                p_error: iref.p_error,
+                wo: iref.wo,
+                n: iref.n,
             },
             p1: Interaction {
                 p: p_outside,
