@@ -3870,7 +3870,7 @@ impl<'a> SurfaceInteraction<'a> {
             p: p,
             time: time,
             p_error: p_error,
-            wo: wo,
+            wo: vec3_normalize(wo),
             n: n,
             uv: uv,
             dpdu: dpdu,
@@ -4673,6 +4673,9 @@ impl Shape for Triangle {
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
+        // override surface normal in _isect_ for triangle
+        let surface_normal: Normal3f = Normal3f::from(vec3_normalize(vec3_cross(dp02, dp12)));
+        // TODO: if (mesh->n || mesh->s) { ... }
         Some((si, t as Float))
     }
     fn intersect_p(&self, ray: &Ray) -> bool {
