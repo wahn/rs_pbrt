@@ -1236,9 +1236,16 @@ pub fn vec3_abs_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
     vec3_dot_vec3(v1, v2).abs()
 }
 
+/// Computes the absolute value of the dot product.
+pub fn vec3_abs_dot_nrm<T>(v1: Vector3<T>, n2: Normal3<T>) -> T
+    where T: num::Float
+{
+    vec3_dot_nrm(v1, n2).abs()
+}
+
 /// Given two vectors in 3D, the cross product is a vector that is
 /// perpendicular to both of them.
-pub fn vec3_cross(v1: Vector3f, v2: Vector3f) -> Vector3f
+pub fn vec3_cross_vec3(v1: Vector3f, v2: Vector3f) -> Vector3f
 {
     let v1x: f64 = v1.x as f64;
     let v1y: f64 = v1.y as f64;
@@ -1318,7 +1325,7 @@ pub fn vec3_coordinate_system(v1: &Vector3f, v2: &mut Vector3f, v3: &mut Vector3
             z: -v1.y,
         } / (v1.y * v1.y + v1.z * v1.z).sqrt();
     }
-    *v3 = vec3_cross(*v1, *v2);
+    *v3 = vec3_cross_vec3(*v1, *v2);
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -1671,6 +1678,19 @@ pub struct Normal3<T> {
     pub z: T,
 }
 
+impl<T> Neg for Normal3<T>
+    where T: Copy + Neg<Output = T>
+{
+    type Output = Normal3<T>;
+    fn neg(self) -> Normal3<T> {
+        Normal3::<T> {
+            x: -self.x,
+            y: -self.y,
+            z: -self.z,
+        }
+    }
+}
+
 impl<T> Normal3<T> {
     pub fn length_squared(&self) -> T
         where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
@@ -1699,6 +1719,23 @@ impl<T> PartialEq for Normal3<T>
     }
 }
 
+// work around bug
+// https://github.com/rust-lang/rust/issues/40395
+impl Div<Float> for Normal3<f32>
+{
+    type Output = Normal3<f32>;
+    fn div(self, rhs: Float) -> Normal3<f32>
+    {
+        assert_ne!(rhs, 0.0 as Float);
+        let inv: Float = 1.0 as Float / rhs;
+        Normal3::<f32> {
+            x: self.x * inv,
+            y: self.y * inv,
+            z: self.z * inv,
+        }
+    }
+}
+
 impl<T> From<Vector3<T>> for Normal3<T> {
     fn from(v: Vector3<T>) -> Self {
         // TODO: DCHECK(!v.HasNaNs());
@@ -1708,6 +1745,41 @@ impl<T> From<Vector3<T>> for Normal3<T> {
             z: v.z,
         }
     }
+}
+
+/// Given a normal and a vector in 3D, the cross product is a vector
+/// that is perpendicular to both of them.
+pub fn nrm_cross_vec3(n1: Normal3f, v2: Vector3f) -> Vector3f
+{
+    let n1x: f64 = n1.x as f64;
+    let n1y: f64 = n1.y as f64;
+    let n1z: f64 = n1.z as f64;
+    let v2x: f64 = v2.x as f64;
+    let v2y: f64 = v2.y as f64;
+    let v2z: f64 = v2.z as f64;
+    Vector3f {
+        x: ((n1y * v2z) - (n1z * v2y)) as Float,
+        y: ((n1z * v2x) - (n1x * v2z)) as Float,
+        z: ((n1x * v2y) - (n1y * v2x)) as Float,
+    }
+}
+
+/// Compute a new normal pointing in the same direction but with unit
+/// length.
+pub fn nrm_normalize(n: Normal3f) -> Normal3f
+{
+    n / n.length()
+}
+
+/// Product of the Euclidean magnitudes of a normal (and another
+/// normal) and the cosine of the angle between them. A return value
+/// of zero means both are orthogonal, a value if one means they are
+/// codirectional.
+pub fn nrm_dot_nrm<T>(n1: Normal3<T>, n2: Normal3<T>) -> T
+    where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+{
+    // TODO: DCHECK(!n1.HasNaNs() && !n2.HasNaNs());
+    n1.x * n2.x + n1.y * n2.y + n1.z * n2.z
 }
 
 /// Product of the Euclidean magnitudes of a normal (and a vector) and
@@ -1727,6 +1799,16 @@ pub fn nrm_abs<T>(n: Normal3<T>) -> Normal3<T>
         x: n.x.abs(),
         y: n.y.abs(),
         z: n.z.abs(),
+    }
+}
+
+/// Flip a surface normal so that it lies in the same hemisphere as a
+/// given normal.
+pub fn nrm_faceforward_nrm(n: Normal3f, n2: Normal3f) -> Normal3f {
+    if nrm_dot_nrm(n, n2) < 0.0 as Float {
+        -n
+    } else {
+        n
     }
 }
 
@@ -2511,7 +2593,7 @@ impl Transform {
         camera_to_world.m[3][3] = 1.0;
         // initialize first three columns of viewing matrix
         let dir: Vector3f = vec3_normalize(look - pos);
-        if vec3_cross(vec3_normalize(up), dir).length() == 0.0 {
+        if vec3_cross_vec3(vec3_normalize(up), dir).length() == 0.0 {
             println!("\"up\" vector ({}, {}, {}) and viewing direction ({}, {}, {}) passed to \
                       LookAt are pointing in the same direction.  Using the identity \
                       transformation.",
@@ -2523,8 +2605,8 @@ impl Transform {
                      dir.z);
             Transform::default()
         } else {
-            let left: Vector3f = vec3_normalize(vec3_cross(vec3_normalize(up), dir));
-            let new_up: Vector3f = vec3_cross(dir, left);
+            let left: Vector3f = vec3_normalize(vec3_cross_vec3(vec3_normalize(up), dir));
+            let new_up: Vector3f = vec3_cross_vec3(dir, left);
             camera_to_world.m[0][0] = left.x;
             camera_to_world.m[1][0] = left.y;
             camera_to_world.m[2][0] = left.z;
@@ -2606,6 +2688,16 @@ impl Transform {
             x: self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z,
             y: self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z,
             z: self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z,
+        }
+    }
+    pub fn transform_normal(&self, n: Normal3<Float>) -> Normal3<Float> {
+        let x: Float = n.x;
+        let y: Float = n.y;
+        let z: Float = n.z;
+        Normal3::<Float> {
+            x: self.m_inv.m[0][0] * x + self.m_inv.m[1][0] * y + self.m_inv.m[2][0] * z,
+            y: self.m_inv.m[0][1] * x + self.m_inv.m[1][1] * y + self.m_inv.m[2][1] * z,
+            z: self.m_inv.m[0][2] * x + self.m_inv.m[1][2] * y + self.m_inv.m[2][2] * z,
         }
     }
     pub fn transform_ray(&self, r: &mut Ray) {
@@ -2705,21 +2797,15 @@ impl Transform {
         let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
                         self.m.m[3][3];
         // compute absolute error for transformed point
-        let x_abs_sum: Float =
-            (self.m.m[0][0] * x).abs() +
-            (self.m.m[0][1] * y).abs() +
-            (self.m.m[0][2] * z).abs() +
-            self.m.m[0][3].abs();
-        let y_abs_sum: Float =
-            (self.m.m[1][0] * x).abs() +
-            (self.m.m[1][1] * y).abs() +
-            (self.m.m[1][2] * z).abs() +
-            self.m.m[1][3].abs();
-        let z_abs_sum: Float =
-            (self.m.m[2][0] * x).abs() +
-            (self.m.m[2][1] * y).abs() +
-            (self.m.m[2][2] * z).abs() +
-            self.m.m[2][3].abs();
+        let x_abs_sum: Float = (self.m.m[0][0] * x).abs() + (self.m.m[0][1] * y).abs() +
+                               (self.m.m[0][2] * z).abs() +
+                               self.m.m[0][3].abs();
+        let y_abs_sum: Float = (self.m.m[1][0] * x).abs() + (self.m.m[1][1] * y).abs() +
+                               (self.m.m[1][2] * z).abs() +
+                               self.m.m[1][3].abs();
+        let z_abs_sum: Float = (self.m.m[2][0] * x).abs() + (self.m.m[2][1] * y).abs() +
+                               (self.m.m[2][2] * z).abs() +
+                               self.m.m[2][3].abs();
         *p_error = Vector3::<Float> {
             x: x_abs_sum,
             y: y_abs_sum,
@@ -2732,7 +2818,58 @@ impl Transform {
                 y: yp,
                 z: zp,
             }
-        } else { 
+        } else {
+            let inv: Float = 1.0 as Float / wp;
+            Point3::<Float> {
+                x: inv * xp,
+                y: inv * yp,
+                z: inv * zp,
+            }
+        }
+    }
+    pub fn transform_point_with_abs_error(&self,
+                                          pt: Point3<Float>,
+                                          pt_error: &Vector3<Float>,
+                                          abs_error: &mut Vector3<Float>)
+                                          -> Point3<Float> {
+        let x: Float = pt.x;
+        let y: Float = pt.y;
+        let z: Float = pt.z;
+        // compute transformed coordinates from point _pt_
+        let xp: Float = self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z +
+                        self.m.m[0][3];
+        let yp: Float = self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z +
+                        self.m.m[1][3];
+        let zp: Float = self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z +
+                        self.m.m[2][3];
+        let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
+                        self.m.m[3][3];
+        abs_error.x = gamma(3i32) * 1.0 as Float *
+                      (self.m.m[0][0].abs() * pt_error.x + self.m.m[0][1].abs() * pt_error.y +
+                       self.m.m[0][2].abs() * pt_error.z) +
+                      gamma(3i32) * (self.m.m[0][0] * x).abs() +
+                      (self.m.m[0][1] * y).abs() +
+                      (self.m.m[0][2] * z).abs() + self.m.m[0][3].abs();
+        abs_error.y = gamma(3i32) * 1.0 as Float *
+                      (self.m.m[1][0].abs() * pt_error.x + self.m.m[1][1].abs() * pt_error.y +
+                       self.m.m[1][2].abs() * pt_error.z) +
+                      gamma(3i32) * (self.m.m[1][0] * x).abs() +
+                      (self.m.m[1][1] * y).abs() +
+                      (self.m.m[1][2] * z).abs() + self.m.m[1][3].abs();
+        abs_error.z = gamma(3i32) * 1.0 as Float *
+                      (self.m.m[2][0].abs() * pt_error.x + self.m.m[2][1].abs() * pt_error.y +
+                       self.m.m[2][2].abs() * pt_error.z) +
+                      gamma(3i32) * (self.m.m[2][0] * x).abs() +
+                      (self.m.m[2][1] * y).abs() +
+                      (self.m.m[2][2] * z).abs() + self.m.m[2][3].abs();
+        assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
+        if wp == 1. {
+            Point3::<Float> {
+                x: xp,
+                y: yp,
+                z: zp,
+            }
+        } else {
             let inv: Float = 1.0 as Float / wp;
             Point3::<Float> {
                 x: inv * xp,
@@ -2783,6 +2920,36 @@ impl Transform {
             time: r.time,
             differential: None,
         }
+    }
+    pub fn transform_surface_interaction(&self, si: &SurfaceInteraction) -> SurfaceInteraction {
+        let mut ret: SurfaceInteraction = SurfaceInteraction::default();
+        // transform _p_ and _pError_ in _SurfaceInteraction_
+        ret.p = self.transform_point_with_abs_error(si.p, &si.p_error, &mut ret.p_error);
+        // transform remaining members of _SurfaceInteraction_
+        ret.n = nrm_normalize(self.transform_normal(si.n));
+        ret.wo = vec3_normalize(self.transform_vector(si.wo));
+        ret.time = si.time;
+        ret.uv = si.uv;
+        // TODO: ret.shape = si.shape;
+        ret.dpdu = self.transform_vector(si.dpdu);
+        ret.dpdv = self.transform_vector(si.dpdv);
+        ret.dndu = self.transform_normal(si.dndu);
+        ret.dndv = self.transform_normal(si.dndv);
+        ret.shading.n = nrm_normalize(self.transform_normal(si.shading.n));
+        ret.shading.dpdu = self.transform_vector(si.shading.dpdu);
+        ret.shading.dpdv = self.transform_vector(si.shading.dpdv);
+        ret.shading.dndu = self.transform_normal(si.shading.dndu);
+        ret.shading.dndv = self.transform_normal(si.shading.dndv);
+        ret.dudx = si.dudx;
+        ret.dvdx = si.dvdx;
+        ret.dudy = si.dudy;
+        ret.dvdy = si.dvdy;
+        ret.dpdx = self.transform_vector(si.dpdx);
+        ret.dpdy = self.transform_vector(si.dpdy);
+        ret.bsdf = si.bsdf.clone();
+        ret.primitive = None; // TODO? si.primitive;
+        ret.shading.n = nrm_faceforward_nrm(ret.shading.n, ret.n);
+        ret
     }
 }
 
@@ -3799,11 +3966,11 @@ impl Interaction {
 
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Shading {
-    pub n: Vector3f,
+    pub n: Normal3f,
     pub dpdu: Vector3f,
     pub dpdv: Vector3f,
-    pub dndu: Vector3f,
-    pub dndv: Vector3f,
+    pub dndu: Normal3f,
+    pub dndv: Normal3f,
 }
 
 #[derive(Default,Clone)]
@@ -3852,7 +4019,7 @@ impl<'a> SurfaceInteraction<'a> {
                time: Float /* ,
                             * sh: &Shape */)
                -> Self {
-        let nv: Vector3f = vec3_normalize(vec3_cross(dpdu, dpdv));
+        let nv: Vector3f = vec3_normalize(vec3_cross_vec3(dpdu, dpdv));
         let n: Normal3f = Normal3f {
             x: nv.x,
             y: nv.y,
@@ -3860,11 +4027,11 @@ impl<'a> SurfaceInteraction<'a> {
         };
         // initialize shading geometry from true geometry
         let shading: Shading = Shading {
-            n: Vector3f::from(n),
+            n: n,
             dpdu: Vector3f::from(dpdu),
             dpdv: Vector3f::from(dpdv),
-            dndu: Vector3f::from(dndu),
-            dndv: Vector3f::from(dndv),
+            dndu: dndu,
+            dndv: dndv,
         };
         SurfaceInteraction {
             p: p,
@@ -4269,7 +4436,7 @@ impl Shape for Sphere {
         let ec: Float = vec3_dot_vec3(dpdu, dpdu);
         let fc: Float = vec3_dot_vec3(dpdu, dpdv);
         let gc: Float = vec3_dot_vec3(dpdv, dpdv);
-        let nc: Vector3f = vec3_normalize(vec3_cross(dpdu, dpdv));
+        let nc: Vector3f = vec3_normalize(vec3_cross_vec3(dpdu, dpdv));
         let el: Float = vec3_dot_vec3(nc, d2_p_duu);
         let fl: Float = vec3_dot_vec3(nc, d2_p_duv);
         let gl: Float = vec3_dot_vec3(nc, d2_p_dvv);
@@ -4295,14 +4462,12 @@ impl Shape for Sphere {
             }
             .abs() * gamma(5_i32);
         // initialize _SurfaceInteraction_ from parametric information
-        // *isect = (*ObjectToWorld)(SurfaceInteraction(pHit, p_error, Point2f(u, v),
-        //                                              -ray.d, dpdu, dpdv, dndu, dndv,
-        //                                              ray.time, this));
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
-        Some((si, t_shape_hit.v as Float))
+        let isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
+        Some((isect, t_shape_hit.v as Float))
     }
     fn intersect_p(&self, r: &Ray) -> bool {
         // transform _Ray_ to object space
@@ -4642,9 +4807,9 @@ impl Shape for Triangle {
             dpdu = (dp02 * duv12.y - dp12 * duv02.y) * invdet;
             dpdv = (dp02 * -duv12.x + dp12 * duv02.x) * invdet;
         }
-        if degenerate_uv || vec3_cross(dpdu, dpdv).length_squared() == 0.0 {
+        if degenerate_uv || vec3_cross_vec3(dpdu, dpdv).length_squared() == 0.0 {
             // handle zero determinant for triangle partial derivative matrix
-            vec3_coordinate_system(&vec3_normalize(vec3_cross(p2 - p0, p1 - p0)),
+            vec3_coordinate_system(&vec3_normalize(vec3_cross_vec3(p2 - p0, p1 - p0)),
                                    &mut dpdu,
                                    &mut dpdv);
         }
@@ -4674,7 +4839,7 @@ impl Shape for Triangle {
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
         // override surface normal in _isect_ for triangle
-        let surface_normal: Normal3f = Normal3f::from(vec3_normalize(vec3_cross(dp02, dp12)));
+        let surface_normal: Normal3f = Normal3f::from(vec3_normalize(vec3_cross_vec3(dp02, dp12)));
         // TODO: if (mesh->n || mesh->s) { ... }
         Some((si, t as Float))
     }
@@ -6285,10 +6450,10 @@ impl Bsdf {
         let ss = vec3_normalize(si.shading.dpdu);
         Bsdf {
             eta: eta,
-            ns: Normal3::from(si.shading.n),
+            ns: si.shading.n,
             ng: si.n,
             ss: ss,
-            ts: vec3_cross(si.shading.n, ss),
+            ts: nrm_cross_vec3(si.shading.n, ss),
             bxdfs: bxdfs,
         }
     }
@@ -6797,7 +6962,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             // evaluate BSDF for light sampling strategy
             if let Some(ref bsdf) = it.bsdf {
                 f = bsdf.f(it.wo, wi, bsdf_flags) *
-                    Spectrum::new(vec3_abs_dot_vec3(wi, it.shading.n));
+                    Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
                 scattering_pdf = bsdf.pdf(it.wo, wi, bsdf_flags);
                 // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
