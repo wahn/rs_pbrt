@@ -2844,24 +2844,24 @@ impl Transform {
                         self.m.m[2][3];
         let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
                         self.m.m[3][3];
-        abs_error.x = gamma(3i32) * 1.0 as Float *
+        abs_error.x = (gamma(3i32) + 1.0 as Float) *
                       (self.m.m[0][0].abs() * pt_error.x + self.m.m[0][1].abs() * pt_error.y +
                        self.m.m[0][2].abs() * pt_error.z) +
-                      gamma(3i32) * (self.m.m[0][0] * x).abs() +
+                      gamma(3i32) * ((self.m.m[0][0] * x).abs() +
                       (self.m.m[0][1] * y).abs() +
-                      (self.m.m[0][2] * z).abs() + self.m.m[0][3].abs();
-        abs_error.y = gamma(3i32) * 1.0 as Float *
+                      (self.m.m[0][2] * z).abs() + self.m.m[0][3].abs());
+        abs_error.y = (gamma(3i32) + 1.0 as Float) *
                       (self.m.m[1][0].abs() * pt_error.x + self.m.m[1][1].abs() * pt_error.y +
                        self.m.m[1][2].abs() * pt_error.z) +
-                      gamma(3i32) * (self.m.m[1][0] * x).abs() +
+                      gamma(3i32) * ((self.m.m[1][0] * x).abs() +
                       (self.m.m[1][1] * y).abs() +
-                      (self.m.m[1][2] * z).abs() + self.m.m[1][3].abs();
-        abs_error.z = gamma(3i32) * 1.0 as Float *
+                      (self.m.m[1][2] * z).abs() + self.m.m[1][3].abs());
+        abs_error.z = (gamma(3i32) + 1.0 as Float) *
                       (self.m.m[2][0].abs() * pt_error.x + self.m.m[2][1].abs() * pt_error.y +
                        self.m.m[2][2].abs() * pt_error.z) +
-                      gamma(3i32) * (self.m.m[2][0] * x).abs() +
+                      gamma(3i32) * ((self.m.m[2][0] * x).abs() +
                       (self.m.m[2][1] * y).abs() +
-                      (self.m.m[2][2] * z).abs() + self.m.m[2][3].abs();
+                      (self.m.m[2][2] * z).abs() + self.m.m[2][3].abs());
         assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
         if wp == 1. {
             Point3::<Float> {
@@ -4020,6 +4020,7 @@ impl<'a> SurfaceInteraction<'a> {
                             * sh: &Shape */)
                -> Self {
         let nv: Vector3f = vec3_normalize(vec3_cross_vec3(dpdu, dpdv));
+        // TODO: Adjust normal based on orientation and handedness
         let n: Normal3f = Normal3f {
             x: nv.x,
             y: nv.y,
