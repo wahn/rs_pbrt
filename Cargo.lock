@@ -1,6 +1,6 @@
 [root]
 name = "pbrt"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "copy_arena 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
