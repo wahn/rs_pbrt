@@ -4191,6 +4191,7 @@ pub trait Primitive {
         // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
     }
 }
+
 pub struct GeometricPrimitive {
     pub shape: Arc<Shape + Send + Sync>,
     pub material: Option<Arc<Material + Send + Sync>>,
@@ -6539,6 +6540,44 @@ pub trait Bxdf {
     fn get_type(&self) -> u8;
 }
 
+pub trait Fresnel {
+    fn evaluate(&self, cos_i: Float) -> Spectrum;
+}
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct FresnelNoOp {
+}
+
+impl Fresnel for FresnelNoOp {
+    fn evaluate(&self, cos_i: Float) -> Spectrum {
+        Spectrum::new(1.0 as Float)
+    }
+}
+
+#[derive(Clone)]
+pub struct SpecularReflection {
+    pub r: Spectrum,
+    // pub fresnel: Arc<Fresnel>,
+}
+
+impl SpecularReflection {
+    pub fn new(r: Spectrum) -> Self {
+        SpecularReflection {
+            r: r,
+            // fresnel: Arc::new(FresnelNoOp{}),
+        }
+    }
+}
+
+impl Bxdf for SpecularReflection {
+    fn f(&self, _wo: Vector3f, _wi: Vector3f) -> Spectrum {
+        Spectrum::new(0.0 as Float)
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct LambertianReflection {
     pub r: Spectrum,
@@ -6721,6 +6760,15 @@ impl Material for GlassMaterial {
 /// A simple mirror, modeled with perfect specular reflection.
 pub struct MirrorMaterial {
     pub kr: Spectrum, // TODO: bump_map
+}
+
+impl MirrorMaterial {
+    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+        let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let r: Spectrum = Spectrum::new(0.9 as Float); // TODO: self.kr.evaluate(si);
+        bxdfs.push(Box::new(SpecularReflection::new(r)));
+        Bsdf::new(si, 1.5, bxdfs)
+    }
 }
 
 impl Material for MirrorMaterial {

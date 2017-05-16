@@ -2,8 +2,8 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, DirectLightingIntegrator,
            DistantLight, Film, Float, GeometricPrimitive, LightStrategy, MatteMaterial,
-           PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Scene, Spectrum, Sphere,
-           SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
+           MirrorMaterial, PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Scene,
+           Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
            ZeroTwoSequenceSampler};
 use std::string::String;
 use std::sync::Arc;
@@ -382,13 +382,23 @@ fn main() {
         kd: Spectrum::new(0.5),
         sigma: 0.0,
     });
+    let mirror = Arc::new(MirrorMaterial {
+        kr: Spectrum::new(0.9),
+    });
     for triangle in render_options.triangles {
         let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
         render_options.primitives.push(geo_prim.clone());
     }
+    let mut sphere_counter: u8 = 0;
     for sphere in render_options.spheres {
-        let geo_prim = Arc::new(GeometricPrimitive::new(sphere, matte.clone()));
-        render_options.primitives.push(geo_prim.clone());
+        if sphere_counter == 0 {
+            let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone()));
+            render_options.primitives.push(geo_prim.clone());
+        } else {
+            let geo_prim = Arc::new(GeometricPrimitive::new(sphere, matte.clone()));
+            render_options.primitives.push(geo_prim.clone());
+        }
+        sphere_counter += 1;
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
