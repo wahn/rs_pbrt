@@ -6459,6 +6459,16 @@ impl Bsdf {
             bxdfs: bxdfs,
         }
     }
+    pub fn num_components(&self, flags: u8) -> u8 {
+        let mut num: u8 = 0;
+        let n_bxdfs: usize = self.bxdfs.len();
+        for i in 0..n_bxdfs {
+            if self.bxdfs[i].matches_flags(flags) {
+                num += 1;
+            }
+        }
+        num
+    }
     pub fn world_to_local(&self, v: Vector3f) -> Vector3f {
         Vector3f {
             x: vec3_dot_vec3(v, self.ss),
@@ -6487,6 +6497,21 @@ impl Bsdf {
             }
         }
         f
+    }
+    /// Calls the individual Bxdf::sample_f() methods to generate samples.
+    pub fn sample_f(&self,
+                    wo: Vector3f,
+                    wi: Vector3f,
+                    u: Point2f,
+                    pdf: Float,
+                    bsdf_flags: u8,
+                    sampled_type: &mut BxdfType)
+                    -> Spectrum {
+        // TODO: ProfilePhase pp(Prof::BSDFSampling);
+        // choose which _BxDF_ to sample
+        // let matching_comps = num_components(bsdf_flags);
+        // WORK
+        Spectrum::default()
     }
     pub fn pdf(&self, wo_world: Vector3f, wi_world: Vector3f, bsdf_flags: u8) -> Float {
         // TODO: ProfilePhase pp(Prof::BSDFPdf);
@@ -6777,7 +6802,7 @@ impl Material for MirrorMaterial {
                                     // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
-        // WORK
+        si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }
 
@@ -7045,14 +7070,19 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     }
     // sample BSDF with multiple importance sampling
     if !is_delta_light(light.flags) {
+        let mut f: Spectrum = Spectrum::new(0.0);
+        let mut sampled_type: BxdfType = BxdfType::BsdfAll;
         if it.is_surface_interaction() {
             // sample scattered direction for surface interactions
             // BxDFType sampledType;
             // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
-            // f = isect.bsdf->Sample_f(isect.wo, &wi, uScattering, &scatteringPdf,
-            //                          bsdfFlags, &sampledType);
-            // f *= AbsDot(wi, isect.shading.n);
-            // sampledSpecular = (sampledType & BSDF_SPECULAR) != 0;
+            if let Some(ref bsdf) = it.bsdf {
+                f = bsdf.sample_f(it.wo, wi, *u_scattering, scattering_pdf, bsdf_flags, &mut sampled_type);
+                // f = isect.bsdf->Sample_f(isect.wo, &wi, uScattering, &scatteringPdf,
+                //                          bsdfFlags, &sampledType);
+                // f *= AbsDot(wi, isect.shading.n);
+                // sampledSpecular = (sampledType & BSDF_SPECULAR) != 0;
+            }
             // TODO
         } else {
             // TODO
