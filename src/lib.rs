@@ -699,6 +699,8 @@ pub type Spectrum = RGBSpectrum;
 const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 const SHADOW_EPSILON: Float = 0.0001;
 const INV_PI: Float = 0.31830988618379067154;
+const PI_OVER_2: Float = 1.57079632679489661923;
+const PI_OVER_4: Float = 0.78539816339744830961;
 
 /// Use **unsafe**
 /// [std::mem::transmute_copy][transmute_copy]
@@ -1394,6 +1396,17 @@ impl<T> Mul<T> for Point2<T>
         Point2::<T> {
             x: self.x * rhs,
             y: self.y * rhs,
+        }
+    }
+}
+
+impl<T> Index<u8> for Point2<T> {
+    type Output = T;
+    fn index(&self, index: u8) -> &T {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            _ => panic!("Check failed: i >= 0 && i <= 1"),
         }
     }
 }
@@ -6500,17 +6513,61 @@ impl Bsdf {
     }
     /// Calls the individual Bxdf::sample_f() methods to generate samples.
     pub fn sample_f(&self,
-                    wo: Vector3f,
-                    wi: Vector3f,
+                    wo_world: Vector3f,
+                    wi_world: Vector3f,
                     u: Point2f,
-                    pdf: Float,
+                    pdf: &mut Float,
                     bsdf_flags: u8,
-                    sampled_type: &mut BxdfType)
+                    sampled_type: &mut u8)
                     -> Spectrum {
         // TODO: ProfilePhase pp(Prof::BSDFSampling);
         // choose which _BxDF_ to sample
-        // let matching_comps = num_components(bsdf_flags);
-        // WORK
+        let matching_comps = self.num_components(bsdf_flags);
+        if matching_comps == 0 {
+            *pdf = 0.0 as Float;
+            *sampled_type = 0_u8;
+            return Spectrum::default();
+        }
+        let comp: u8 = std::cmp::min((u[0] * matching_comps as Float).floor() as u8,
+                                     matching_comps - 1_u8);
+        // get _BxDF_ pointer for chosen component
+        let mut bxdf: Option<&Box<Bxdf + Sync + Send>> = None;
+        let mut count: u8 = comp;
+        let n_bxdfs: usize = self.bxdfs.len();
+        for i in 0..n_bxdfs {
+            if self.bxdfs[i].matches_flags(bsdf_flags) && count == 0 {
+                count -= 1_u8;
+                bxdf = self.bxdfs.get(i);
+                break;
+            }
+        }
+        if bxdf.is_some() {
+            let bxdf = bxdf.unwrap();
+            // TODO: println!("BSDF::Sample_f chose comp = {:?} /
+            // matching = {:?}, bxdf: {:?}", comp, matching_comps,
+            // bxdf);
+
+            // remap _BxDF_ sample _u_ to $[0,1)^2$
+            let u_remapped: Point2f = Point2f {
+                x: (u[0] * matching_comps as Float - comp as Float).min(ONE_MINUS_EPSILON),
+                y: u[1],
+            };
+            // sample chosen _BxDF_
+            let mut wi: Vector3f = Vector3f::default();
+            let wo: Vector3f = self.world_to_local(wo_world);
+            if wo.z == 0.0 as Float {
+                return Spectrum::default();
+            }
+            *pdf = 0.0 as Float;
+            if *sampled_type != 0_u8 {
+                *sampled_type = bxdf.get_type();
+            }
+            let f: Spectrum = bxdf.sample_f(wo, &mut wi, u_remapped, pdf, sampled_type);
+            // WORK
+            return f;
+        } else {
+            panic!("CHECK_NOTNULL(bxdf)");
+        }
         Spectrum::default()
     }
     pub fn pdf(&self, wo_world: Vector3f, wi_world: Vector3f, bsdf_flags: u8) -> Float {
@@ -6555,6 +6612,20 @@ pub trait Bxdf {
         self.get_type() & t == self.get_type()
     }
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum;
+    fn sample_f(&self,
+                wo: Vector3f,
+                wi: &mut Vector3f,
+                u: Point2f,
+                pdf: &mut Float,
+                sampled_type: &mut u8)
+                -> Spectrum {
+        *wi = cosine_sample_hemisphere(u);
+        if wo.z > 0.0 as Float {
+            wi.z *= -1.0 as Float;
+        }
+        *pdf = self.pdf(wo, *wi);
+        self.f(wo, *wi)
+    }
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
             abs_cos_theta(wi) * INV_PI
@@ -6597,6 +6668,16 @@ impl SpecularReflection {
 impl Bxdf for SpecularReflection {
     fn f(&self, _wo: Vector3f, _wi: Vector3f) -> Spectrum {
         Spectrum::new(0.0 as Float)
+    }
+    fn sample_f(&self,
+                wo: Vector3f,
+                wi: &mut Vector3f,
+                sample: Point2f,
+                pdf: &mut Float,
+                sampled_type: &mut u8)
+                -> Spectrum {
+        // WORK
+        Spectrum::default()
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
@@ -7071,13 +7152,14 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     // sample BSDF with multiple importance sampling
     if !is_delta_light(light.flags) {
         let mut f: Spectrum = Spectrum::new(0.0);
-        let mut sampled_type: BxdfType = BxdfType::BsdfAll;
+        let mut sampled_type: u8 = 0_u8;
         if it.is_surface_interaction() {
             // sample scattered direction for surface interactions
             // BxDFType sampledType;
             // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
             if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.sample_f(it.wo, wi, *u_scattering, scattering_pdf, bsdf_flags, &mut sampled_type);
+                f = bsdf.sample_f(it.wo, wi, *u_scattering, &mut scattering_pdf, bsdf_flags, &mut sampled_type);
+                // WORK
                 // f = isect.bsdf->Sample_f(isect.wo, &wi, uScattering, &scatteringPdf,
                 //                          bsdfFlags, &sampledType);
                 // f *= AbsDot(wi, isect.shading.n);
@@ -7090,6 +7172,40 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         // WORK
     }
     ld
+}
+
+// see sampling.h
+
+pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
+    let d: Point2f = concentric_sample_disk(u);
+    let z: Float = (0.0 as Float).max(1.0 as Float - d.x * d.x - d.y * d.y).sqrt();
+    Vector3f {
+        x: d.x,
+        y: d.y,
+        z: z,
+    }
+}
+
+// see sampling.cpp
+
+pub fn concentric_sample_disk(u: Point2f) -> Point2f {
+    // map uniform random numbers to $[-1,1]^2$
+    let u_offset: Point2f = u * 2.0 as Float - Vector2f { x: 1.0 , y: 1.0 };
+    // handle degeneracy at the origin
+    if u_offset.x == 0.0 as Float && u_offset.y == 0.0 as Float{
+        return Point2f::default();
+    }
+    // apply concentric mapping to point
+    let mut theta: Float;
+    let mut r: Float;
+    if u_offset.x.abs() > u_offset.y.abs() {
+        r = u_offset.x;
+        theta = PI_OVER_4 * (u_offset.y / u_offset.x);
+    } else {
+        r = u_offset.y;
+        theta = PI_OVER_2 - PI_OVER_4 * (u_offset.x / u_offset.y);
+    }
+    Point2f { x: theta.cos(), y: theta.sin(), } * r
 }
 
 // see directlighting.h
