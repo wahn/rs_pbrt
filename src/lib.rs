@@ -6489,6 +6489,13 @@ impl Bsdf {
             z: vec3_dot_vec3(v, Vector3f::from(self.ns)),
         }
     }
+    pub fn local_to_world(&self, v: Vector3f) -> Vector3f {
+        Vector3f {
+            x: self.ss.x * v.x + self.ts.x * v.y + self.ns.x * v.z,
+            y: self.ss.y * v.x + self.ts.y * v.y + self.ns.y * v.z,
+            z: self.ss.z * v.x + self.ts.z * v.y + self.ns.z * v.z,
+        }
+    }
     pub fn f(&self, wo_w: Vector3f, wi_w: Vector3f, flags: u8) -> Spectrum {
         // TODO: ProfilePhase pp(Prof::BSDFEvaluation);
         let wi: Vector3f = self.world_to_local(wi_w);
@@ -6514,7 +6521,7 @@ impl Bsdf {
     /// Calls the individual Bxdf::sample_f() methods to generate samples.
     pub fn sample_f(&self,
                     wo_world: Vector3f,
-                    wi_world: Vector3f,
+                    wi_world: &mut Vector3f,
                     u: Point2f,
                     pdf: &mut Float,
                     bsdf_flags: u8,
@@ -6522,7 +6529,7 @@ impl Bsdf {
                     -> Spectrum {
         // TODO: ProfilePhase pp(Prof::BSDFSampling);
         // choose which _BxDF_ to sample
-        let matching_comps = self.num_components(bsdf_flags);
+        let matching_comps: u8 = self.num_components(bsdf_flags);
         if matching_comps == 0 {
             *pdf = 0.0 as Float;
             *sampled_type = 0_u8;
@@ -6534,10 +6541,12 @@ impl Bsdf {
         let mut bxdf: Option<&Box<Bxdf + Sync + Send>> = None;
         let mut count: u8 = comp;
         let n_bxdfs: usize = self.bxdfs.len();
+        let mut bxdf_index: usize = 0_usize;
         for i in 0..n_bxdfs {
             if self.bxdfs[i].matches_flags(bsdf_flags) && count == 0 {
                 count -= 1_u8;
                 bxdf = self.bxdfs.get(i);
+                bxdf_index = i;
                 break;
             }
         }
@@ -6562,8 +6571,55 @@ impl Bsdf {
             if *sampled_type != 0_u8 {
                 *sampled_type = bxdf.get_type();
             }
-            let f: Spectrum = bxdf.sample_f(wo, &mut wi, u_remapped, pdf, sampled_type);
-            // WORK
+            let mut f: Spectrum = bxdf.sample_f(wo, &mut wi, u_remapped, pdf, sampled_type);
+            let mut ratio: Spectrum = Spectrum::default();
+            if *pdf > 0.0 as Float {
+                ratio = f / *pdf;
+            }
+            println!("For wo = {:?}, sampled f = {:?}, pdf = {:?}, ratio = {:?}, wi = {:?}",
+                     wo,
+                     f,
+                     *pdf,
+                     ratio,
+                     wi);
+            if *pdf == 0.0 as Float {
+                if *sampled_type != 0_u8 {
+                    *sampled_type = 0_u8;
+                }
+                return Spectrum::default();
+            }
+            *wi_world = self.local_to_world(wi);
+            // compute overall PDF with all matching _BxDF_s
+            if (bxdf.get_type() & BxdfType::BsdfSpecular as u8 == 0_u8) && matching_comps > 1_u8 {
+                for i in 0..n_bxdfs {
+                    // instead of self.bxdfs[i] != bxdf we compare stored index
+                    if bxdf_index != i && self.bxdfs[i].matches_flags(bsdf_flags) {
+                        *pdf += self.bxdfs[i].pdf(wo, wi);
+                    }
+                }
+            }
+            if matching_comps > 1_u8 {
+                *pdf /= matching_comps as Float;
+            }
+            // compute value of BSDF for sampled direction
+            if (bxdf.get_type() & BxdfType::BsdfSpecular as u8 == 0_u8) && matching_comps > 1_u8 {
+                let reflect: bool = vec3_dot_nrm(*wi_world, self.ng) *
+                                    vec3_dot_nrm(wo_world, self.ng) >
+                                    0.0 as Float;
+                f = Spectrum::default();
+                for i in 0..n_bxdfs {
+                    if self.bxdfs[i].matches_flags(bsdf_flags) &&
+                       ((reflect && (bxdf.get_type() & BxdfType::BsdfReflection as u8) != 0_u8) ||
+                        (reflect && (bxdf.get_type() & BxdfType::BsdfTransmission as u8) == 0_u8)) {
+                        f += self.bxdfs[i].f(wo, wi);
+                    }
+                }
+            }
+            let mut ratio: Spectrum = Spectrum::default();
+            if *pdf > 0.0 as Float {
+                ratio = f / *pdf;
+            }
+            println!("Overall f = {:?}, pdf = {:?}, ratio = {:?}", f, *pdf, ratio);
             return f;
         } else {
             panic!("CHECK_NOTNULL(bxdf)");
@@ -7158,7 +7214,12 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             // BxDFType sampledType;
             // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
             if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.sample_f(it.wo, wi, *u_scattering, &mut scattering_pdf, bsdf_flags, &mut sampled_type);
+                f = bsdf.sample_f(it.wo,
+                                  &mut wi,
+                                  *u_scattering,
+                                  &mut scattering_pdf,
+                                  bsdf_flags,
+                                  &mut sampled_type);
                 // WORK
                 // f = isect.bsdf->Sample_f(isect.wo, &wi, uScattering, &scatteringPdf,
                 //                          bsdfFlags, &sampledType);
@@ -7176,6 +7237,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
 
 // see sampling.h
 
+/// Cosine-weighted hemisphere sampling using Malley's method.
 pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
     let d: Point2f = concentric_sample_disk(u);
     let z: Float = (0.0 as Float).max(1.0 as Float - d.x * d.x - d.y * d.y).sqrt();
@@ -7188,6 +7250,7 @@ pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
 
 // see sampling.cpp
 
+/// Uniformly distribute samples over a unit disk.
 pub fn concentric_sample_disk(u: Point2f) -> Point2f {
     // map uniform random numbers to $[-1,1]^2$
     let u_offset: Point2f = u * 2.0 as Float - Vector2f { x: 1.0 , y: 1.0 };
