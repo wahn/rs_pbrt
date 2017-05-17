@@ -1691,6 +1691,34 @@ pub struct Normal3<T> {
     pub z: T,
 }
 
+impl<T> Add for Normal3<T>
+    where T: Copy + Add<T, Output = T>
+{
+    type Output = Normal3<T>;
+    fn add(self, rhs: Normal3<T>) -> Normal3<T> {
+        Normal3::<T> {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+
+impl<T> Mul<T> for Normal3<T>
+    where T: Copy + Mul<T, Output = T>
+{
+    type Output = Normal3<T>;
+    fn mul(self, rhs: T) -> Normal3<T>
+        where T: Copy + Mul<T, Output = T>
+    {
+        Normal3::<T> {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
+    }
+}
+
 impl<T> Neg for Normal3<T>
     where T: Copy + Neg<Output = T>
 {
@@ -4166,6 +4194,16 @@ impl<'a> SurfaceInteraction<'a> {
     // inherited from Interaction
     pub fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
+    }
+    pub fn spawn_ray(&self, d: Vector3f) -> Ray {
+        let o: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, d);
+        Ray {
+            o: o,
+            d: d,
+            t_max: std::f32::INFINITY,
+            time: self.time,
+            differential: None,
+        }
     }
     pub fn is_medium_interaction(&self) -> bool {
         !self.is_surface_interaction()
@@ -6674,14 +6712,7 @@ pub trait Bxdf {
                 u: Point2f,
                 pdf: &mut Float,
                 sampled_type: &mut u8)
-                -> Spectrum {
-        *wi = cosine_sample_hemisphere(u);
-        if wo.z > 0.0 as Float {
-            wi.z *= -1.0 as Float;
-        }
-        *pdf = self.pdf(wo, *wi);
-        self.f(wo, *wi)
-    }
+                -> Spectrum;
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
             abs_cos_theta(wi) * INV_PI
@@ -6755,6 +6786,20 @@ impl Bxdf for LambertianReflection {
     fn f(&self, _wo: Vector3f, _wi: Vector3f) -> Spectrum {
         self.r * Spectrum::new(INV_PI)
     }
+    fn sample_f(&self,
+                wo: Vector3f,
+                wi: &mut Vector3f,
+                u: Point2f,
+                pdf: &mut Float,
+                sampled_type: &mut u8)
+                -> Spectrum {
+        *wi = cosine_sample_hemisphere(u);
+        if wo.z > 0.0 as Float {
+            wi.z *= -1.0 as Float;
+        }
+        *pdf = self.pdf(wo, *wi);
+        self.f(wo, *wi)
+    }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
     }
@@ -6803,6 +6848,20 @@ impl Bxdf for OrenNayar {
             tan_beta = sin_theta_o / abs_cos_theta(wo);
         }
         self.r * Spectrum::new(INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta))
+    }
+    fn sample_f(&self,
+                wo: Vector3f,
+                wi: &mut Vector3f,
+                u: Point2f,
+                pdf: &mut Float,
+                sampled_type: &mut u8)
+                -> Spectrum {
+        *wi = cosine_sample_hemisphere(u);
+        if wo.z > 0.0 as Float {
+            wi.z *= -1.0 as Float;
+        }
+        *pdf = self.pdf(wo, *wi);
+        self.f(wo, *wi)
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
@@ -7208,11 +7267,10 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     // sample BSDF with multiple importance sampling
     if !is_delta_light(light.flags) {
         let mut f: Spectrum = Spectrum::new(0.0);
-        let mut sampled_type: u8 = 0_u8;
+        let mut sampled_specular: bool = false;
         if it.is_surface_interaction() {
             // sample scattered direction for surface interactions
-            // BxDFType sampledType;
-            // const SurfaceInteraction &isect = (const SurfaceInteraction &)it;
+            let mut sampled_type: u8 = 0_u8;
             if let Some(ref bsdf) = it.bsdf {
                 f = bsdf.sample_f(it.wo,
                                   &mut wi,
@@ -7220,13 +7278,9 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                                   &mut scattering_pdf,
                                   bsdf_flags,
                                   &mut sampled_type);
-                // WORK
-                // f = isect.bsdf->Sample_f(isect.wo, &wi, uScattering, &scatteringPdf,
-                //                          bsdfFlags, &sampledType);
-                // f *= AbsDot(wi, isect.shading.n);
-                // sampledSpecular = (sampledType & BSDF_SPECULAR) != 0;
+                f *= Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
+                sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
             }
-            // TODO
         } else {
             // TODO
         }
@@ -7389,7 +7443,8 @@ impl DirectLightingIntegrator {
                             let ray_weight: Float = self.camera
                                 .generate_ray_differential(&camera_sample, &mut ray);
                             ray.scale_differentials(1.0 as Float /
-                                                    (tile_sampler.samples_per_pixel as Float).sqrt());
+                                                    (tile_sampler.samples_per_pixel as Float)
+                                .sqrt());
                             // TODO: ++nCameraRays;
                             // evaluate radiance along camera ray
                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
@@ -7441,6 +7496,63 @@ impl DirectLightingIntegrator {
         println!("Rendering finished");
         self.camera.film.write_image(1.0 as Float);
     }
+    pub fn specular_reflect(&self,
+                            ray: &Ray,
+                            isect: &SurfaceInteraction,
+                            scene: &Scene,
+                            sampler: &mut ZeroTwoSequenceSampler,
+                            // arena: &mut Arena,
+                            depth: i32)
+                            -> Spectrum {
+        // compute specular reflection direction _wi_ and BSDF value
+        let wo: Vector3f = isect.wo;
+        let mut wi: Vector3f = Vector3f::default();
+        let mut pdf: Float = 0.0 as Float;
+        let ns: Normal3f = isect.shading.n;
+        let mut sampled_type: u8 = 0_u8;
+        let bsdf_flags: u8 = BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8;
+        let mut f: Spectrum = Spectrum::new(0.0);
+        if let Some(ref bsdf) = isect.bsdf {
+            f = bsdf.sample_f(wo,
+                              &mut wi,
+                              sampler.get_2d(),
+                              &mut pdf,
+                              bsdf_flags,
+                              &mut sampled_type);
+            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(wi, ns) != 0.0 as Float {
+                // compute ray differential _rd_ for specular reflection
+                let mut rd: Ray = isect.spawn_ray(wi);
+                if let Some(d) = ray.differential.iter().next() {
+                    let dndx: Normal3f = isect.shading.dndu * isect.dudx +
+                                         isect.shading.dndv * isect.dvdx;
+                    let dndy: Normal3f = isect.shading.dndu * isect.dudy +
+                                         isect.shading.dndv * isect.dvdy;
+                    let dwodx: Vector3f = -d.rx_direction - wo;
+                    let dwody: Vector3f = -d.ry_direction - wo;
+                    let ddndx: Float = vec3_dot_nrm(dwodx, ns) + vec3_dot_nrm(wo, dndx);
+                    let ddndy: Float = vec3_dot_nrm(dwody, ns) + vec3_dot_nrm(wo, dndy);
+                    // compute differential reflected directions
+                    let diff: RayDifferential = RayDifferential {
+                        rx_origin: isect.p + isect.dpdx,
+                        ry_origin: isect.p + isect.dpdy,
+                        rx_direction: wi - dwodx +
+                                      Vector3f::from(dndx * vec3_dot_nrm(wo, ns) + ns * ddndx) *
+                                      2.0 as Float,
+                        ry_direction: wi - dwody +
+                                      Vector3f::from(dndy * vec3_dot_nrm(wo, ns) + ns * ddndy) *
+                                      2.0 as Float,
+                    };
+                    rd.differential = Some(diff);
+                }
+                return f * self.li(&mut rd, scene, sampler, depth + 1) *
+                       Spectrum::new(vec3_abs_dot_nrm(wi, ns) / pdf);
+            } else {
+                Spectrum::new(0.0)
+            }
+        } else {
+            Spectrum::new(0.0)
+        }
+    }
 }
 
 impl SamplerIntegrator for DirectLightingIntegrator {
@@ -7473,16 +7585,19 @@ impl SamplerIntegrator for DirectLightingIntegrator {
                 } else {
                     // TODO: l += uniform_sample_one_light();
                 }
-            } else {
             }
-            // WORK
-            l
+            if ((depth + 1_i32) as i64) < self.max_depth {
+                // trace rays for specular reflection and refraction
+                l += self.specular_reflect(ray, &isect, scene, sampler, // arena, 
+                                           depth);
+                // TODO: L += SpecularTransmit(ray, isect, scene, sampler, arena, depth);
+            }
         } else {
             for light in &scene.lights {
                 l += light.le(ray);
             }
-            l
         }
+        l
     }
 }
 
