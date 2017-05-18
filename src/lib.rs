@@ -1833,6 +1833,7 @@ pub fn nrm_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
     n1.x * v2.x + n1.y * v2.y + n1.z * v2.z
 }
 
+/// Return normal with the absolute value of each coordinate.
 pub fn nrm_abs<T>(n: Normal3<T>) -> Normal3<T>
     where T: num::Float
 {
@@ -6871,26 +6872,35 @@ impl Bxdf for OrenNayar {
     }
 }
 
+/// Utility function to calculate cosine via spherical coordinates.
 pub fn cos_theta(w: Vector3f) -> Float {
     w.z
 }
 
+/// Utility function to calculate the square cosine via spherical
+/// coordinates.
 pub fn cos_2_theta(w: Vector3f) -> Float {
     w.z * w.z
 }
 
+/// Utility function to calculate the absolute value of the cosine via
+/// spherical coordinates.
 pub fn abs_cos_theta(w: Vector3f) -> Float {
     w.z.abs()
 }
 
+/// Utility function to calculate the square sine via spherical
+/// coordinates.
 pub fn sin_2_theta(w: Vector3f) -> Float {
     (0.0 as Float).max(1.0 as Float - cos_2_theta(w))
 }
 
+/// Utility function to calculate sine via spherical coordinates.
 pub fn sin_theta(w: Vector3f) -> Float {
     sin_2_theta(w).sqrt()
 }
 
+/// Utility function to calculate cosine via spherical coordinates.
 pub fn cos_phi(w: Vector3f) -> Float {
     let sin_theta: Float = sin_theta(w);
     if sin_theta == 0.0 as Float {
@@ -6900,6 +6910,7 @@ pub fn cos_phi(w: Vector3f) -> Float {
     }
 }
 
+/// Utility function to calculate sine via spherical coordinates.
 pub fn sin_phi(w: Vector3f) -> Float {
     let sin_theta: Float = sin_theta(w);
     if sin_theta == 0.0 as Float {
@@ -6909,6 +6920,7 @@ pub fn sin_phi(w: Vector3f) -> Float {
     }
 }
 
+/// Check that two vectors lie on the same side of of the surface.
 pub fn vec3_same_hemisphere_vec3(w: Vector3f, wp: Vector3f) -> bool {
     w.z * wp.z > 0.0 as Float
 }
