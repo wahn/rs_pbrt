@@ -6577,12 +6577,12 @@ impl Bsdf {
                                      matching_comps - 1_u8);
         // get _BxDF_ pointer for chosen component
         let mut bxdf: Option<&Box<Bxdf + Sync + Send>> = None;
-        let mut count: u8 = comp;
+        let mut count: i8 = comp as i8;
         let n_bxdfs: usize = self.bxdfs.len();
         let mut bxdf_index: usize = 0_usize;
         for i in 0..n_bxdfs {
             if self.bxdfs[i].matches_flags(bsdf_flags) && count == 0 {
-                count -= 1_u8;
+                count -= 1_i8;
                 bxdf = self.bxdfs.get(i);
                 bxdf_index = i;
                 break;
@@ -6614,12 +6614,12 @@ impl Bsdf {
             if *pdf > 0.0 as Float {
                 ratio = f / *pdf;
             }
-            println!("For wo = {:?}, sampled f = {:?}, pdf = {:?}, ratio = {:?}, wi = {:?}",
-                     wo,
-                     f,
-                     *pdf,
-                     ratio,
-                     wi);
+            // println!("For wo = {:?}, sampled f = {:?}, pdf = {:?}, ratio = {:?}, wi = {:?}",
+            //          wo,
+            //          f,
+            //          *pdf,
+            //          ratio,
+            //          wi);
             if *pdf == 0.0 as Float {
                 if *sampled_type != 0_u8 {
                     *sampled_type = 0_u8;
@@ -6657,7 +6657,7 @@ impl Bsdf {
             if *pdf > 0.0 as Float {
                 ratio = f / *pdf;
             }
-            println!("Overall f = {:?}, pdf = {:?}, ratio = {:?}", f, *pdf, ratio);
+            // println!("Overall f = {:?}, pdf = {:?}, ratio = {:?}", f, *pdf, ratio);
             return f;
         } else {
             panic!("CHECK_NOTNULL(bxdf)");
@@ -6740,14 +6740,15 @@ impl Fresnel for FresnelNoOp {
 #[derive(Clone)]
 pub struct SpecularReflection {
     pub r: Spectrum,
-    // pub fresnel: Arc<Fresnel>,
+    pub fresnel: Arc<Fresnel + Send + Sync>,
 }
 
 impl SpecularReflection {
     pub fn new(r: Spectrum) -> Self {
+        let fresnel = Arc::new(FresnelNoOp{});
         SpecularReflection {
             r: r,
-            // fresnel: Arc::new(FresnelNoOp{}),
+            fresnel: fresnel,
         }
     }
 }
@@ -6763,8 +6764,10 @@ impl Bxdf for SpecularReflection {
                 pdf: &mut Float,
                 sampled_type: &mut u8)
                 -> Spectrum {
-        // WORK
-        Spectrum::default()
+        // compute perfect specular reflection direction
+        *wi = Vector3f { x: -wo.x, y: -wo.y, z: wo.z, };
+        *pdf = 1.0 as Float;
+        self.fresnel.evaluate(cos_theta(*wi)) * self.r / abs_cos_theta(*wi)
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
@@ -6866,6 +6869,10 @@ impl Bxdf for OrenNayar {
     fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
     }
+}
+
+pub fn cos_theta(w: Vector3f) -> Float {
+    w.z
 }
 
 pub fn cos_2_theta(w: Vector3f) -> Float {
