@@ -1845,6 +1845,16 @@ pub fn nrm_abs<T>(n: Normal3<T>) -> Normal3<T>
 }
 
 /// Flip a surface normal so that it lies in the same hemisphere as a
+/// given vector.
+pub fn nrm_faceforward_vec3(n: Normal3f, v: Vector3f) -> Normal3f {
+    if nrm_dot_vec3(n, v) < 0.0 as Float {
+        -n
+    } else {
+        n
+    }
+}
+
+/// Flip a surface normal so that it lies in the same hemisphere as a
 /// given normal.
 pub fn nrm_faceforward_nrm(n: Normal3f, n2: Normal3f) -> Normal3f {
     if nrm_dot_nrm(n, n2) < 0.0 as Float {
@@ -5089,6 +5099,13 @@ impl Mul for RGBSpectrum {
     }
 }
 
+impl Sub for RGBSpectrum {
+    type Output = RGBSpectrum;
+    fn sub(self, rhs: RGBSpectrum) -> RGBSpectrum {
+        RGBSpectrum { c: [self.c[0] - rhs.c[0], self.c[1] - rhs.c[1], self.c[2] - rhs.c[2]] }
+    }
+}
+
 impl MulAssign for RGBSpectrum {
     fn mul_assign(&mut self, rhs: RGBSpectrum) {
         // TODO: DCHECK(!HasNaNs());
@@ -6787,6 +6804,66 @@ impl Bxdf for SpecularReflection {
     }
 }
 
+pub struct SpecularTransmission {
+    pub t: Spectrum,
+    pub eta_a: Float,
+    pub eta_b: Float,
+    pub fresnel: FresnelDielectric,
+    pub mode: TransportMode,
+}
+
+impl SpecularTransmission {
+    pub fn new(t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
+        SpecularTransmission {
+            t: t,
+            eta_a: eta_a,
+            eta_b: eta_b,
+            fresnel: FresnelDielectric { eta_i: eta_a, eta_t: eta_b, },
+            mode: mode,
+        }
+    }
+}
+
+impl Bxdf for SpecularTransmission {
+    fn f(&self, _wo: Vector3f, _wi: Vector3f) -> Spectrum {
+        Spectrum::new(0.0 as Float)
+    }
+    fn sample_f(&self,
+                wo: Vector3f,
+                wi: &mut Vector3f,
+                sample: Point2f,
+                pdf: &mut Float,
+                sampled_type: &mut u8)
+                -> Spectrum {
+        // figure out which $\eta$ is incident and which is transmitted
+        let entering: bool = cos_theta(wo) > 0.0;
+        let mut eta_i: Float = self.eta_b;
+        if entering {
+            eta_i = self.eta_a;
+        }
+        let mut eta_t: Float = self.eta_a;
+        if entering {
+            eta_t = self.eta_b;
+        }
+        // compute ray direction for specular transmission
+        if !refract(wo,
+                    nrm_faceforward_vec3(Normal3f { x: 0.0, y: 0.0, z: 1.0 }, wo),
+                    eta_i / eta_t, wi) {
+            return Spectrum::default();
+        }
+        *pdf = 1.0;
+        let mut ft: Spectrum = self.t * (Spectrum::new(1.0 as Float) - self.fresnel.evaluate(&mut cos_theta(*wi)));
+        // account for non-symmetry with transmission to different medium
+        if self.mode == TransportMode::Radiance {
+            ft *= Spectrum::new((eta_i * eta_i) / (eta_t * eta_t));
+        }
+        ft / abs_cos_theta(*wi)
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct LambertianReflection {
     pub r: Spectrum,
@@ -6932,6 +7009,23 @@ pub fn sin_phi(w: Vector3f) -> Float {
     }
 }
 
+/// Computes the refraction direction given an incident direction, a
+/// surface normal, and the ratio of indices of refraction (incident
+/// and transmitted).
+pub fn refract(wi: Vector3f, n: Normal3f, eta: Float, wt: &mut Vector3f) -> bool {
+    // compute $\cos \theta_\roman{t}$ using Snell's law
+    let cos_theta_i: Float = nrm_dot_vec3(n, wi);
+    let sin2_theta_i: Float = (0.0 as Float).max(1.0 as Float - cos_theta_i * cos_theta_i);
+    let sin2_theta_t: Float = eta * eta * sin2_theta_i;
+    // handle total internal reflection for transmission
+    if sin2_theta_t >= 1.0 as Float {
+        return false;
+    }
+    let cos_theta_t: Float = (1.0 as Float - sin2_theta_t).sqrt();
+    *wt = -wi * eta + Vector3f::from(n) * (eta * cos_theta_i - cos_theta_t);
+    true
+}
+
 /// Check that two vectors lie on the same side of of the surface.
 pub fn vec3_same_hemisphere_vec3(w: Vector3f, wp: Vector3f) -> bool {
     w.z * wp.z > 0.0 as Float
@@ -7066,7 +7160,13 @@ impl GlassMaterial {
                 eta_i: 1.0 as Float,
                 eta_t: 1.5 as Float,
             });
+            // if (isSpecular)
             bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
+            // TODO: else ... MicrofacetReflection
+            // if (isSpecular)
+            let mode: TransportMode = TransportMode::Radiance;
+            bxdfs.push(Box::new(SpecularTransmission::new(r, 1.0, 1.5, mode)));
+            // TODO: else ... MicrofacetTransmission
         } else {
             // TODO: si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetReflection)(R, distrib, fresnel));
         }
@@ -7662,6 +7762,66 @@ impl DirectLightingIntegrator {
             Spectrum::new(0.0)
         }
     }
+    pub fn specular_transmit(&self,
+                            ray: &Ray,
+                            isect: &SurfaceInteraction,
+                            scene: &Scene,
+                            sampler: &mut ZeroTwoSequenceSampler,
+                            // arena: &mut Arena,
+                            depth: i32)
+                            -> Spectrum {
+        let wo: Vector3f = isect.wo;
+        let mut wi: Vector3f = Vector3f::default();
+        let mut pdf: Float = 0.0 as Float;
+        let p: Point3f = isect.p;
+        let ns: Normal3f = isect.shading.n;
+        let mut sampled_type: u8 = 0_u8;
+        let bsdf_flags: u8 = BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8;
+        let mut f: Spectrum = Spectrum::new(0.0);
+        if let Some(ref bsdf) = isect.bsdf {
+            f = bsdf.sample_f(wo,
+                              &mut wi,
+                              sampler.get_2d(),
+                              &mut pdf,
+                              bsdf_flags,
+                              &mut sampled_type);
+            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(wi, ns) != 0.0 as Float {
+                // compute ray differential _rd_ for specular transmission
+                let mut rd: Ray = isect.spawn_ray(wi);
+                if let Some(d) = ray.differential.iter().next() {
+                    let mut eta: Float = bsdf.eta;
+                    let w: Vector3f = -wo;
+                    if vec3_dot_nrm(wo, ns) < 0.0 as Float {
+                        eta = 1.0 / eta;
+                    }
+                    let dndx: Normal3f = isect.shading.dndu * isect.dudx +
+                                         isect.shading.dndv * isect.dvdx;
+                    let dndy: Normal3f = isect.shading.dndu * isect.dudy +
+                                         isect.shading.dndv * isect.dvdy;
+                    let dwodx: Vector3f = -d.rx_direction - wo;
+                    let dwody: Vector3f = -d.ry_direction - wo;
+                    let ddndx: Float = vec3_dot_nrm(dwodx, ns) + vec3_dot_nrm(wo, dndx);
+                    let ddndy: Float = vec3_dot_nrm(dwody, ns) + vec3_dot_nrm(wo, dndy);
+                    let mu: Float = eta * vec3_dot_nrm(w, ns) - vec3_dot_nrm(wi, ns);
+                    let dmudx: Float = (eta - (eta * eta * vec3_dot_nrm(w, ns)) / vec3_dot_nrm(wi, ns)) * ddndx;
+                    let dmudy: Float = (eta - (eta * eta * vec3_dot_nrm(w, ns)) / vec3_dot_nrm(wi, ns)) * ddndy;
+                    let diff: RayDifferential = RayDifferential {
+                        rx_origin: isect.p + isect.dpdx,
+                        ry_origin: isect.p + isect.dpdy,
+                        rx_direction: wi + dwodx * eta - Vector3f::from(dndx * mu + ns * dmudx),
+                        ry_direction: wi + dwody * eta - Vector3f::from(dndy * mu + ns * dmudy),
+                    };
+                    rd.differential = Some(diff);
+                }
+                return f * self.li(&mut rd, scene, sampler, depth + 1) *
+                       Spectrum::new(vec3_abs_dot_nrm(wi, ns) / pdf);
+            } else {
+                Spectrum::new(0.0)
+            }
+        } else {
+            Spectrum::new(0.0)
+        }
+    }
 }
 
 impl SamplerIntegrator for DirectLightingIntegrator {
@@ -7699,7 +7859,8 @@ impl SamplerIntegrator for DirectLightingIntegrator {
                 // trace rays for specular reflection and refraction
                 l += self.specular_reflect(ray, &isect, scene, sampler, // arena, 
                                            depth);
-                // TODO: L += SpecularTransmit(ray, isect, scene, sampler, arena, depth);
+                l += self.specular_transmit(ray, &isect, scene, sampler, // arena, 
+                                            depth);
             }
         } else {
             for light in &scene.lights {
@@ -7826,6 +7987,7 @@ impl Rng {
 /// Is used to inform non-symetric BSDFs about the transported
 /// quantity so that they can correctly switch between the adjoint and
 /// non-adjoint forms.
+#[derive(PartialEq)]
 pub enum TransportMode {
     Radiance,
     Importance,
