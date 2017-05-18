@@ -6725,7 +6725,19 @@ pub trait Bxdf {
 }
 
 pub trait Fresnel {
-    fn evaluate(&self, cos_i: Float) -> Spectrum;
+    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum;
+}
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct FresnelDielectric {
+    pub eta_i: Float,
+    pub eta_t: Float,
+}
+
+impl Fresnel for FresnelDielectric {
+    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum {
+        Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
+    }
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -6733,7 +6745,7 @@ pub struct FresnelNoOp {
 }
 
 impl Fresnel for FresnelNoOp {
-    fn evaluate(&self, cos_i: Float) -> Spectrum {
+    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum {
         Spectrum::new(1.0 as Float)
     }
 }
@@ -6745,8 +6757,7 @@ pub struct SpecularReflection {
 }
 
 impl SpecularReflection {
-    pub fn new(r: Spectrum) -> Self {
-        let fresnel = Arc::new(FresnelNoOp{});
+    pub fn new(r: Spectrum, fresnel: Arc<Fresnel + Send + Sync>) -> Self {
         SpecularReflection {
             r: r,
             fresnel: fresnel,
@@ -6768,7 +6779,8 @@ impl Bxdf for SpecularReflection {
         // compute perfect specular reflection direction
         *wi = Vector3f { x: -wo.x, y: -wo.y, z: wo.z, };
         *pdf = 1.0 as Float;
-        self.fresnel.evaluate(cos_theta(*wi)) * self.r / abs_cos_theta(*wi)
+        let mut cos_theta_i: Float = cos_theta(*wi);
+        self.fresnel.evaluate(&mut cos_theta_i) * self.r / abs_cos_theta(*wi)
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
@@ -6925,6 +6937,36 @@ pub fn vec3_same_hemisphere_vec3(w: Vector3f, wp: Vector3f) -> bool {
     w.z * wp.z > 0.0 as Float
 }
 
+// see reflection.cpp
+
+pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Float {
+    let not_clamped: Float = *cos_theta_i;
+    *cos_theta_i = clamp(not_clamped, -1.0, 1.0);
+    // potentially swap indices of refraction
+    let entering: bool = *cos_theta_i > 0.0;
+    // use local copies because of potential swap (otherwise eta_i and
+    // eta_t would have to be mutable)
+    let mut local_eta_i = eta_i;
+    let mut local_eta_t = eta_t;
+    if !entering {
+        std::mem::swap(&mut local_eta_i, &mut local_eta_t);
+        *cos_theta_i = (*cos_theta_i).abs();
+    }
+    // compute _cosThetaT_ using Snell's law
+    let sin_theta_i: Float = (0.0 as Float).max(1.0 as Float - *cos_theta_i * *cos_theta_i).sqrt();
+    let sin_theta_t: Float = local_eta_i / local_eta_t * sin_theta_i;
+    // handle total internal reflection
+    if sin_theta_t >= 1.0 as Float {
+        return 1.0 as Float;
+    }
+    let cos_theta_t: Float = (0.0 as Float).max(1.0 as Float - sin_theta_t * sin_theta_t).sqrt();
+    let r_parl: Float = ((local_eta_t * *cos_theta_i) - (local_eta_i * cos_theta_t)) /
+                        ((local_eta_t * *cos_theta_i) + (local_eta_i * cos_theta_t));
+    let r_perp: Float = ((local_eta_i * *cos_theta_i) - (local_eta_t * cos_theta_t)) /
+                        ((local_eta_i * *cos_theta_i) + (local_eta_t * cos_theta_t));
+    (r_parl * r_parl + r_perp * r_perp) / 2.0
+}
+
 // see microfacet.h
 
 pub struct TrowbridgeReitzDistribution {
@@ -7019,7 +7061,15 @@ impl GlassMaterial {
             urough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut urough);
             vrough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut vrough);
         }
-        bxdfs.push(Box::new(SpecularReflection::new(r)));
+        if is_specular {
+            let fresnel = Arc::new(FresnelDielectric {
+                eta_i: 1.0 as Float,
+                eta_t: 1.5 as Float,
+            });
+            bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
+        } else {
+            // TODO: si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetReflection)(R, distrib, fresnel));
+        }
         Bsdf::new(si, 1.5, bxdfs)
     }
 }
@@ -7045,7 +7095,8 @@ impl MirrorMaterial {
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
         let r: Spectrum = Spectrum::new(0.9 as Float); // TODO: self.kr.evaluate(si);
-        bxdfs.push(Box::new(SpecularReflection::new(r)));
+        let fresnel = Arc::new(FresnelNoOp{});
+        bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
         Bsdf::new(si, 1.5, bxdfs)
     }
 }
