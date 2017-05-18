@@ -6925,6 +6925,27 @@ pub fn vec3_same_hemisphere_vec3(w: Vector3f, wp: Vector3f) -> bool {
     w.z * wp.z > 0.0 as Float
 }
 
+// see microfacet.h
+
+pub struct TrowbridgeReitzDistribution {
+}
+
+impl TrowbridgeReitzDistribution {
+    /// Microfacet distribution function: In comparison to the
+    /// Beckmann-Spizzichino model, Trowbridge-Reitz has higher tails - it
+    /// falls off to zero more slowly for directions far from the surface
+    /// normal.
+    pub fn roughness_to_alpha(roughness: &mut Float) -> Float {
+        let limit: Float = 1e-3 as Float;
+        if limit > *roughness {
+            *roughness = limit;
+        }
+        let x: Float = roughness.ln(); // natural (base e) logarithm
+        1.62142 + 0.819955 * x + 0.1734 * x * x + 0.0171201 * x * x * x +
+        0.000640711 * x * x * x * x
+    }
+}
+
 // see material.h
 
 /// **Material** defines the interface that material implementations
@@ -6983,6 +7004,24 @@ pub struct GlassMaterial {
     pub u_roughness: Float,
     pub v_roughness: Float,
     pub index: Float, // TODO: bump_map
+    pub remap_roughness: bool,
+}
+
+impl GlassMaterial {
+    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+        let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let mut urough: Float = 0.0; // TODO: uRoughness->Evaluate(*si);
+        let mut vrough: Float = 0.0; // TODO: vRoughness->Evaluate(*si);
+        let r: Spectrum = Spectrum::new(1.0 as Float); // TODO: self.kr.evaluate(si);
+        let is_specular: bool = self.u_roughness == 0.0 as Float && self.v_roughness == 0.0 as Float;
+        // TODO: if (isSpecular && allowMultipleLobes) { ... }
+        if self.remap_roughness {
+            urough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut urough);
+            vrough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut vrough);
+        }
+        bxdfs.push(Box::new(SpecularReflection::new(r)));
+        Bsdf::new(si, 1.5, bxdfs)
+    }
 }
 
 impl Material for GlassMaterial {
@@ -6991,7 +7030,7 @@ impl Material for GlassMaterial {
                                     // arena: &mut Arena,
                                     mode: TransportMode,
                                     allow_multiple_lobes: bool) {
-        // WORK
+        si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }
 
