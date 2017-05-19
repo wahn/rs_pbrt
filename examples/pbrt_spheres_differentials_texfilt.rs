@@ -378,10 +378,7 @@ fn main() {
     // TMP: process SceneDescription before handing primitives to BVHAccel
     let mut render_options: RenderOptions = RenderOptions::new(scene_description);
     // add triangles created above (not meshes)
-    let matte = Arc::new(MatteMaterial {
-        kd: Spectrum::new(0.5),
-        sigma: 0.0,
-    });
+    let matte = Arc::new(MatteMaterial::new(Spectrum::new(0.5), 0.0 as Float));
     let mirror = Arc::new(MirrorMaterial { kr: Spectrum::new(0.9) });
     let glass = Arc::new(GlassMaterial {
         kr: Spectrum::new(1.0),

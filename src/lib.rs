@@ -7103,11 +7103,17 @@ pub trait Material {
 
 /// Describes a purely diffuse surface.
 pub struct MatteMaterial {
-    pub kd: Spectrum,
+    pub kd: Arc<Texture<Spectrum> + Sync + Send>,
     pub sigma: Float, // TODO: bump_map
 }
 
 impl MatteMaterial {
+    pub fn new(r: Spectrum, sigma: Float) -> MatteMaterial {
+        MatteMaterial {
+            kd: Arc::new(ConstantTexture::new(r)),
+            sigma: sigma,
+        }
+    }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
         let r: Spectrum = Spectrum::new(0.5 as Float); // TODO: self.kd.evaluate(si);
@@ -7214,7 +7220,7 @@ impl Material for MirrorMaterial {
 // see texture.h
 
 pub trait TextureMapping2D {
-    fn map(&self, si: SurfaceInteraction, dstdx: Vector2f, dstdy: Vector2f) -> Point2f;
+    fn map(&self, si: SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f;
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -7226,9 +7232,46 @@ pub struct PlanarMapping2D {
 }
 
 impl TextureMapping2D for PlanarMapping2D {
-    fn map(&self, si: SurfaceInteraction, dstdx: Vector2f, dstdy: Vector2f) -> Point2f {
-        // WORK
-        Point2f::default()
+    fn map(&self, si: SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+        let vec: Vector3f = Vector3f {
+            x: si.p.x,
+            y: si.p.y,
+            z: si.p.z,
+        };
+        *dstdx = Vector2f {
+            x: vec3_dot_vec3(si.dpdx, self.vs),
+            y: vec3_dot_vec3(si.dpdx, self.vt),
+        };
+        *dstdy = Vector2f {
+            x: vec3_dot_vec3(si.dpdy, self.vs),
+            y: vec3_dot_vec3(si.dpdy, self.vt),
+        };
+        Point2f {
+            x: self.ds + vec3_dot_vec3(vec, self.vs),
+            y: self.dt + vec3_dot_vec3(vec, self.vt),
+        }
+    }
+}
+
+pub trait Texture<T> {
+    fn evaluate(&self, si: &SurfaceInteraction) -> T;
+}
+
+// see constant.h
+
+pub struct ConstantTexture<T> {
+    value: T,
+}
+
+impl<T: Copy> ConstantTexture<T> {
+    pub fn new(value: T) -> ConstantTexture<T> {
+        ConstantTexture { value: value }
+    }
+}
+
+impl<T: Copy> Texture<T> for ConstantTexture<T> {
+    fn evaluate(&self, _si: &SurfaceInteraction) -> T {
+        self.value
     }
 }
 
