@@ -5073,6 +5073,15 @@ impl RGBSpectrum {
         }
         true
     }
+    pub fn clamp(&self, low: Float, high: Float) -> RGBSpectrum {
+        let mut ret: RGBSpectrum = RGBSpectrum::default();
+        let n_spectrum_samples: usize = 3; // RGB
+        for i in 0..n_spectrum_samples {
+            ret.c[i] = clamp(self.c[i], low, high);
+        }
+        assert!(!ret.has_nans());
+        ret
+    }
     pub fn has_nans(&self) -> bool {
         for i in 0..3 {
             if self.c[i].is_nan() {
@@ -7114,13 +7123,28 @@ impl MatteMaterial {
             sigma: sigma,
         }
     }
+    // pub fn new_checkerboard<T: Copy>(//mapping: Box<TextureMapping2D + Send + Sync>,
+    //     tex1: Arc<Texture<T> + Send + Sync>,
+    //     tex2: Arc<Texture<T> + Send + Sync>,
+    //     sigma: Float)
+    //     -> MatteMaterial
+    //     where Checkerboard2DTexture<T>: Texture<RGBSpectrum>
+    // {
+    //     MatteMaterial {
+    //         kd: Arc::new(Checkerboard2DTexture::new(// mapping,
+    //                                                 tex1, tex2)),
+    //         sigma: sigma,
+    //     }
+    // }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
-        let r: Spectrum = Spectrum::new(0.5 as Float); // TODO: self.kd.evaluate(si);
-        if self.sigma == 0.0 {
-            bxdfs.push(Box::new(LambertianReflection::new(r)));
-        } else {
-            bxdfs.push(Box::new(OrenNayar::new(r, self.sigma)));
+        let r: Spectrum = self.kd.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
+        if !r.is_black() {
+            if self.sigma == 0.0 {
+                bxdfs.push(Box::new(LambertianReflection::new(r)));
+            } else {
+                bxdfs.push(Box::new(OrenNayar::new(r, self.sigma)));
+            }
         }
         Bsdf::new(si, 1.5, bxdfs)
     }
@@ -7220,7 +7244,7 @@ impl Material for MirrorMaterial {
 // see texture.h
 
 pub trait TextureMapping2D {
-    fn map(&self, si: SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f;
+    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f;
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -7232,7 +7256,7 @@ pub struct PlanarMapping2D {
 }
 
 impl TextureMapping2D for PlanarMapping2D {
-    fn map(&self, si: SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
         let vec: Vector3f = Vector3f {
             x: si.p.x,
             y: si.p.y,
@@ -7260,7 +7284,7 @@ pub trait Texture<T> {
 // see constant.h
 
 pub struct ConstantTexture<T> {
-    value: T,
+    pub value: T,
 }
 
 impl<T: Copy> ConstantTexture<T> {
@@ -7272,6 +7296,44 @@ impl<T: Copy> ConstantTexture<T> {
 impl<T: Copy> Texture<T> for ConstantTexture<T> {
     fn evaluate(&self, _si: &SurfaceInteraction) -> T {
         self.value
+    }
+}
+
+// checkerboard.h
+
+pub struct Checkerboard2DTexture<T> {
+    pub tex1: Arc<Texture<T> + Send + Sync>,
+    pub tex2: Arc<Texture<T> + Send + Sync>,
+    pub mapping: Box<TextureMapping2D + Send + Sync>,
+    // TODO: const AAMethod aaMethod;
+}
+
+impl<T: Copy> Checkerboard2DTexture<T>
+    where Checkerboard2DTexture<T>: Texture<RGBSpectrum>
+{
+    pub fn new(mapping: Box<TextureMapping2D + Send + Sync>,
+               tex1: Arc<Texture<T> + Send + Sync>,
+               tex2: Arc<Texture<T> + Send + Sync>// , TODO: aaMethod
+    ) -> Checkerboard2DTexture<T> {
+        Checkerboard2DTexture {
+            tex1: tex1,
+            tex2: tex2,
+            mapping: mapping,
+        }
+    }
+}
+
+impl<T: Copy> Texture<T> for Checkerboard2DTexture<T> {
+    fn evaluate(&self, si: &SurfaceInteraction) -> T {
+        let mut dstdx: Vector2f = Vector2f::default();
+        let mut dstdy: Vector2f = Vector2f::default();
+        let st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
+        // TODO: if (aaMethod == AAMethod::None) {
+        if (st.x.floor() as u32 + st.y.floor() as u32) % 2 == 0 {
+            self.tex1.evaluate(si)
+        } else {
+            self.tex2.evaluate(si)
+        }
     }
 }
 
@@ -7956,6 +8018,35 @@ pub struct ParamSet {
     // TODO: std::vector<std::shared_ptr<ParamSetItem<Spectrum>>> spectra;
     strings: Vec<ParamSetItem<String>>,
     textures: Vec<ParamSetItem<String>>,
+}
+
+impl ParamSet {
+    pub fn find_texture(&mut self, name: String) -> String {
+        let d: String = String::new();
+        lookup_one(&mut self.textures, name, d)
+    }
+}
+
+pub struct TextureParams {
+    pub geom_params: ParamSet,
+}
+
+impl TextureParams {
+    pub fn get_spectrum_texture(&mut self, name: String, def: Spectrum) // TODO: -> &Texture<Spectrum>
+    {
+        self.geom_params.find_texture(name);
+        // WORK
+    }
+}
+
+pub fn lookup_one<T>(vec: &mut Vec<ParamSetItem<T>>, name: String, d: T) -> T
+{
+    for v in vec {
+        if v.name == name && v.n_values == 1_usize {
+            v.looked_up = true;
+        }
+    }
+    d
 }
 
 // see api.cpp
