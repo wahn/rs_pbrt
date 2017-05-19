@@ -7211,6 +7211,27 @@ impl Material for MirrorMaterial {
     }
 }
 
+// see texture.h
+
+pub trait TextureMapping2D {
+    fn map(&self, si: SurfaceInteraction, dstdx: Vector2f, dstdy: Vector2f) -> Point2f;
+}
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct PlanarMapping2D {
+    pub vs: Vector3f,
+    pub vt: Vector3f,
+    pub ds: Float,
+    pub dt: Float,
+}
+
+impl TextureMapping2D for PlanarMapping2D {
+    fn map(&self, si: SurfaceInteraction, dstdx: Vector2f, dstdy: Vector2f) -> Point2f {
+        // WORK
+        Point2f::default()
+    }
+}
+
 // see light.h
 
 #[repr(u8)]
