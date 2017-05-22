@@ -12,8 +12,8 @@ https://www.janwalter.org/doc/rust/pbrt/index.html
 
 Scene with a **glass** material on the first sphere and a **mirror**
 material on the second sphere. The ground triangles use a procedural
-**checker** texture on a **matte** material. Rendered via the Rust
-version of [PBRT][pbrt]:
+**checker** texture on a **matte** material. Rendered via the **Rust**
+version of **PBRT**:
 
 ![Rendered via Rust version of PBRT](https://www.janwalter.org/assets/spheres-differentials-texfilt_v0_1_5.png)
 
