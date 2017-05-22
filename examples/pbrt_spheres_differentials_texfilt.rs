@@ -4,8 +4,8 @@ use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerbo
            ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Float,
            GeometricPrimitive, GlassMaterial, LightStrategy, MatteMaterial, MirrorMaterial,
            PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene,
-           Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
-           ZeroTwoSequenceSampler};
+           Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
+           Vector2f, Vector3f, ZeroTwoSequenceSampler};
 use std::string::String;
 use std::sync::Arc;
 
@@ -394,6 +394,16 @@ fn main() {
         },
         ds: 0.0 as Float,
         dt: 1.0 as Float,
+    });
+    let uscale: Float = 100.0;
+    let vscale: Float = 100.0;
+    let udelta: Float = 0.0;
+    let vdelta: Float = 0.0;
+    let mapping = Box::new(UVMapping2D {
+        su: uscale,
+        sv: vscale,
+        du: udelta,
+        dv: vdelta,
     });
     let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
     // let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));

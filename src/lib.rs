@@ -7235,6 +7235,32 @@ pub trait TextureMapping2D {
 }
 
 #[derive(Debug,Default,Copy,Clone)]
+pub struct UVMapping2D {
+    pub su: Float,
+    pub sv: Float,
+    pub du: Float,
+    pub dv: Float,
+}
+
+impl TextureMapping2D for UVMapping2D {
+    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+        // compute texture differentials for 2D identity mapping
+        *dstdx = Vector2f {
+            x: si.dudx * self.su,
+            y: si.dvdx * self.sv,
+        };
+        *dstdy = Vector2f {
+            x: si.dudy * self.su,
+            y: si.dvdy * self.sv,
+        };
+        Point2f {
+            x: si.uv[0] * self.su + self.du,
+            y: si.uv[1] * self.sv + self.dv
+        }
+    }
+}
+
+#[derive(Debug,Default,Copy,Clone)]
 pub struct PlanarMapping2D {
     pub vs: Vector3f,
     pub vt: Vector3f,
@@ -7319,6 +7345,24 @@ impl<T: Copy> Texture<T> for Checkerboard2DTexture<T> {
         } else {
             self.tex2.evaluate(si)
         }
+    }
+}
+
+// see imagemap.h
+
+pub struct ImageTexture {
+    pub mapping: Box<TextureMapping2D + Send + Sync>,
+}
+
+impl Texture<Spectrum> for ImageTexture {
+    fn evaluate(&self, si: &SurfaceInteraction) -> Spectrum {
+        // Vector2f dstdx, dstdy;
+        // Point2f st = mapping->Map(si, &dstdx, &dstdy);
+        // Tmemory mem = mipmap->Lookup(st, dstdx, dstdy);
+        // Treturn ret;
+        // convertOut(mem, &ret);
+        // return ret;
+        Spectrum::new(0.0 as Float)
     }
 }
 
@@ -7968,9 +8012,9 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             }
             if ((depth + 1_i32) as i64) < self.max_depth {
                 // trace rays for specular reflection and refraction
-                l += self.specular_reflect(ray, &isect, scene, sampler, // arena, 
+                l += self.specular_reflect(ray, &isect, scene, sampler, // arena,
                                            depth);
-                l += self.specular_transmit(ray, &isect, scene, sampler, // arena, 
+                l += self.specular_transmit(ray, &isect, scene, sampler, // arena,
                                             depth);
             }
         } else {
