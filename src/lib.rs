@@ -7348,10 +7348,31 @@ impl<T: Copy> Texture<T> for Checkerboard2DTexture<T> {
     }
 }
 
+// see mipmap.h
+
+#[derive(Debug,Clone)]
+pub enum ImageWrap {
+    Repeat,
+    Black,
+    Clamp,
+}
+
+pub struct MipMap<T> {
+    // MIPMap Private Data
+    pub do_trilinear: bool,
+    pub max_anisotropy: Float,
+    pub wrap_mode: ImageWrap,
+    pub resolution: Point2i,
+    pub pyramid: Vec<BlockedArray<T>>,
+    // TODO: static PBRT_CONSTEXPR int WeightLUTSize = 128;
+    // TODO: static Float weightLut[WeightLUTSize];
+}
+
 // see imagemap.h
 
 pub struct ImageTexture {
     pub mapping: Box<TextureMapping2D + Send + Sync>,
+    pub mipmap: Arc<MipMap<Spectrum>>,
 }
 
 impl Texture<Spectrum> for ImageTexture {
@@ -8175,4 +8196,13 @@ impl Rng {
 pub enum TransportMode {
     Radiance,
     Importance,
+}
+
+// see memory.h
+
+pub struct BlockedArray<T> {
+    pub data: Vec<T>,
+    pub u_res: usize,
+    pub v_res: usize,
+    pub u_blocks: usize,
 }
