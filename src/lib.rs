@@ -7117,25 +7117,12 @@ pub struct MatteMaterial {
 }
 
 impl MatteMaterial {
-    pub fn new(r: Spectrum, sigma: Float) -> MatteMaterial {
+    pub fn new(kd: Arc<Texture<Spectrum> + Send + Sync>, sigma: Float) -> MatteMaterial {
         MatteMaterial {
-            kd: Arc::new(ConstantTexture::new(r)),
+            kd: kd,
             sigma: sigma,
         }
     }
-    // pub fn new_checkerboard<T: Copy>(//mapping: Box<TextureMapping2D + Send + Sync>,
-    //     tex1: Arc<Texture<T> + Send + Sync>,
-    //     tex2: Arc<Texture<T> + Send + Sync>,
-    //     sigma: Float)
-    //     -> MatteMaterial
-    //     where Checkerboard2DTexture<T>: Texture<RGBSpectrum>
-    // {
-    //     MatteMaterial {
-    //         kd: Arc::new(Checkerboard2DTexture::new(// mapping,
-    //                                                 tex1, tex2)),
-    //         sigma: sigma,
-    //     }
-    // }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
         let r: Spectrum = self.kd.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
@@ -7308,9 +7295,7 @@ pub struct Checkerboard2DTexture<T> {
     // TODO: const AAMethod aaMethod;
 }
 
-impl<T: Copy> Checkerboard2DTexture<T>
-    where Checkerboard2DTexture<T>: Texture<RGBSpectrum>
-{
+impl<T: Copy> Checkerboard2DTexture<T> {
     pub fn new(mapping: Box<TextureMapping2D + Send + Sync>,
                tex1: Arc<Texture<T> + Send + Sync>,
                tex2: Arc<Texture<T> + Send + Sync>// , TODO: aaMethod
