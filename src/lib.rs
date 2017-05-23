@@ -628,6 +628,7 @@ use std::sync::Arc;
 use std::sync::mpsc;
 use std::thread;
 // use copy_arena::{Arena, Allocator};
+use num::Zero;
 
 pub type Float = f32;
 
@@ -807,6 +808,20 @@ pub fn clamp<T>(val: T, low: T, high: T) -> T
         r = val;
     }
     r
+}
+
+/// Computes the remainder of a/b. Provides the behavior that the
+/// modulus of a negative number is always positive.
+pub fn mod_t<T>(a: T, b: T) -> T
+    where T: num::Zero + Copy + PartialOrd +
+    Add<T, Output = T> + Sub<T, Output = T> + Mul<T, Output = T> + Div<T, Output = T>
+{
+    let result: T = a - (a / b) * b;
+    if result < num::Zero::zero() {
+        result + b
+    } else {
+        result
+    }
 }
 
 /// Convert from angles expressed in degrees to radians.
@@ -5106,6 +5121,19 @@ impl RGBSpectrum {
     }
 }
 
+impl PartialEq for RGBSpectrum {
+    fn eq(&self, rhs: &RGBSpectrum) -> bool {
+        true
+    }
+}
+
+impl Add for RGBSpectrum {
+    type Output = RGBSpectrum;
+    fn add(self, rhs: RGBSpectrum) -> RGBSpectrum {
+        RGBSpectrum { c: [self.c[0] + rhs.c[0], self.c[1] + rhs.c[1], self.c[2] + rhs.c[2]] }
+    }
+}
+
 impl AddAssign for RGBSpectrum {
     fn add_assign(&mut self, rhs: RGBSpectrum) {
         // TODO: DCHECK(!s2.HasNaNs());
@@ -5122,10 +5150,10 @@ impl Mul for RGBSpectrum {
     }
 }
 
-impl Sub for RGBSpectrum {
+impl Mul<Float> for RGBSpectrum {
     type Output = RGBSpectrum;
-    fn sub(self, rhs: RGBSpectrum) -> RGBSpectrum {
-        RGBSpectrum { c: [self.c[0] - rhs.c[0], self.c[1] - rhs.c[1], self.c[2] - rhs.c[2]] }
+    fn mul(self, rhs: Float) -> RGBSpectrum {
+        RGBSpectrum { c: [self.c[0] * rhs, self.c[1] * rhs, self.c[2] * rhs] }
     }
 }
 
@@ -5138,6 +5166,20 @@ impl MulAssign for RGBSpectrum {
     }
 }
 
+impl Sub for RGBSpectrum {
+    type Output = RGBSpectrum;
+    fn sub(self, rhs: RGBSpectrum) -> RGBSpectrum {
+        RGBSpectrum { c: [self.c[0] - rhs.c[0], self.c[1] - rhs.c[1], self.c[2] - rhs.c[2]] }
+    }
+}
+
+impl Div for RGBSpectrum {
+    type Output = RGBSpectrum;
+    fn div(self, rhs: RGBSpectrum) -> RGBSpectrum {
+        RGBSpectrum { c: [self.c[0] / rhs.c[0], self.c[1] / rhs.c[1], self.c[2] / rhs.c[2]] }
+    }
+}
+
 impl Div<Float> for RGBSpectrum {
     type Output = RGBSpectrum;
     fn div(self, rhs: Float) -> RGBSpectrum {
@@ -5147,6 +5189,16 @@ impl Div<Float> for RGBSpectrum {
             RGBSpectrum { c: [self.c[0] / rhs, self.c[1] / rhs, self.c[2] / rhs] };
         assert!(!ret.has_nans());
         ret
+    }
+}
+
+impl Zero for RGBSpectrum {
+    fn zero() -> RGBSpectrum {
+        RGBSpectrum::new(0.0 as Float)
+    }
+
+    fn is_zero(&self) -> bool {
+        self.is_black()
     }
 }
 
@@ -7382,11 +7434,88 @@ pub struct MipMap<T> {
     // TODO: static Float weightLut[WeightLUTSize];
 }
 
+impl<T: Copy> MipMap<T>
+    where T: num::Zero + PartialEq +
+    Add<T, Output = T> + Sub<T, Output = T> + Mul<Float, Output = T> + Div<T, Output = T>
+{
+    pub fn new(res: &Point2i,
+               img: &[T],
+               do_trilinear: bool,
+               max_anisotropy: Float,
+               wrap_mode: ImageWrap) -> Self {
+        let mut resolution = *res;
+        MipMap {
+            do_trilinear: do_trilinear,
+            max_anisotropy: max_anisotropy,
+            wrap_mode: wrap_mode,
+            resolution: resolution,
+            pyramid: Vec::new(),
+        }
+    }
+    pub fn levels(&self) -> usize {
+        self.pyramid.len()
+    }
+    pub fn texel(&self, level: usize, s: isize, t: isize) -> &T {
+        let l = &self.pyramid[level];
+        let (u_size, v_size) = (l.u_size() as isize, l.v_size() as isize);
+        let (ss, tt): (usize, usize) = match self.wrap_mode {
+            ImageWrap::Repeat => (mod_t(s as usize, u_size as usize), mod_t(t as usize, v_size as usize)),
+            ImageWrap::Clamp => {
+                (clamp(s, 0, u_size - 1) as usize, clamp(t, 0, v_size - 1) as usize)
+            }
+            ImageWrap::Black => {
+                // TODO: let black: T = num::Zero::zero();
+                if s < 0 || s >= u_size || t < 0 || t >= v_size {
+                    // TODO: return &black;
+                    (clamp(s, 0, u_size - 1) as usize, clamp(t, 0, v_size - 1) as usize) // TMP
+                } else {
+                    (s as usize, t as usize)
+                }
+            }
+        };
+        &l[(ss, tt)]
+    }
+    pub fn lookup(&self, st: &Point2f, width: Float) -> T {
+        // TODO: ++nTrilerpLookups;
+        // TODO: ProfilePhase p(Prof::TexFiltTrilerp);
+        // compute MipMap level for trilinear filtering
+        let level: Float = self.levels() as Float - 1.0 as Float + width.max(1e-8).log2();
+        // perform trilinear interpolation at appropriate MipMap level
+        if level < 0.0 {
+            self.triangle(0, st)
+        } else if level >= self.levels() as Float - 1.0{
+            *self.texel(self.levels() - 1, 0, 0)
+        } else {
+            // let i_level: usize = level.floor() as usize;
+            // let delta: Float = level - i_level as Float;
+            // lerp(delta,
+            //      self.triangle(i_level as usize, st),
+            //      self.triangle(i_level as usize + 1, st))
+            // TODO: above
+            // TMP
+            num::Zero::zero()
+        }
+    }
+    pub fn triangle(&self, level: usize, st: &Point2f) -> T {
+        let level: usize = clamp(level, 0_usize, self.levels() - 1_usize);
+        let s: Float = st.x * self.pyramid[level].u_size() as Float - 0.5;
+        let t: Float = st.y * self.pyramid[level].v_size() as Float - 0.5;
+        let s0: isize = s.floor() as isize;
+        let t0: isize = t.floor() as isize;
+        let ds: Float = s - s0 as Float;
+        let dt: Float = t - t0 as Float;
+        *self.texel(level, s0, t0) * (1.0 - ds) * (1.0 - dt) +
+        *self.texel(level, s0, t0 + 1) * (1.0 - ds) * dt +
+        *self.texel(level, s0 + 1, t0) * ds * (1.0 - dt) +
+        *self.texel(level, s0 + 1, t0 + 1) * ds * dt
+    }
+}
+
 // see imagemap.h
 
 pub struct ImageTexture {
     pub mapping: Box<TextureMapping2D + Send + Sync>,
-    // pub mipmap: Arc<MipMap<Spectrum>>,
+    pub mipmap: Arc<MipMap<Spectrum>>,
 }
 
 impl ImageTexture {
@@ -7413,10 +7542,10 @@ impl ImageTexture {
                 pixels.swap(o1, o2);
             }
         }
-        // let mipmap: MipMap<Spectrum> = MipMap::new(&res, &pixels[..], do_trilinear, max_aniso, wrap_mode);
+        let mipmap = Arc::new(MipMap::new(&res, &pixels[..], do_trilinear, max_aniso, wrap_mode));
         ImageTexture {
             mapping: mapping,
-            // mipmap: mipmap,
+            mipmap: mipmap,
         }
     }
 }
@@ -7429,7 +7558,10 @@ impl Texture<Spectrum> for ImageTexture {
         // Treturn ret;
         // convertOut(mem, &ret);
         // return ret;
-        Spectrum::new(0.0 as Float)
+        let mut dstdx: Vector2f = Vector2f::default();
+        let mut dstdy: Vector2f = Vector2f::default();
+        let st = self.mapping.map(si, &mut dstdx, &mut dstdy);
+        self.mipmap.lookup(&st, 0.0)
     }
 }
 
@@ -8246,9 +8378,71 @@ pub enum TransportMode {
 
 // see memory.h
 
+const LOG_BLOCK_SIZE: usize = 3;
+const BLOCK_SIZE: usize = 1 << LOG_BLOCK_SIZE;
+
+fn round_up(x: usize) -> usize {
+    (x + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1)
+}
+
+#[derive(Debug,Default)]
 pub struct BlockedArray<T> {
     pub data: Vec<T>,
     pub u_res: usize,
     pub v_res: usize,
     pub u_blocks: usize,
+    log_block_size: usize,
+    block_size: usize,
 }
+
+impl<T> BlockedArray<T>
+    where T: num::Zero + std::clone::Clone + Add<T, Output = T>
+{
+    pub fn new(u_res: usize, v_res: usize) -> BlockedArray<T> {
+        let data = vec![num::Zero::zero(); round_up(u_res) * round_up(v_res)];
+        BlockedArray {
+            u_res: u_res,
+            v_res: v_res,
+            u_blocks: round_up(u_res) >> LOG_BLOCK_SIZE,
+            log_block_size: LOG_BLOCK_SIZE,
+            block_size: BLOCK_SIZE,
+            data: data,
+        }
+    }
+    pub fn u_size(&self) -> usize {
+        self.u_res
+    }
+    pub fn v_size(&self) -> usize {
+        self.v_res
+    }
+    pub fn block_size(&self) -> usize {
+        self.block_size
+    }
+    pub fn block(&self, a: usize) -> usize {
+        a >> self.log_block_size
+    }
+    pub fn offset(&self, a: usize) -> usize {
+        a & (self.block_size() - 1)
+    }
+}
+
+impl<T> Index<(usize, usize)> for BlockedArray<T>
+    where T: num::Zero + std::clone::Clone + Add<T, Output = T>
+{
+    type Output = T;
+    fn index(&self, i: (usize, usize)) -> &T {
+        let (u, v) = i;
+        let bu = self.block(u);
+        let bv = self.block(v);
+        let ou = self.offset(u);
+        let ov = self.offset(v);
+        let offset = self.block_size() * self.block_size() * (self.u_blocks * bv + bu) +
+                     self.block_size() * ov + ou;
+        &self.data[offset]
+    }
+}
+
+// impl<T> IndexMut<u8> for BlockedArray<T> {
+//     fn index_mut(&mut self, index: u8) -> &mut T {
+//     }
+// }
