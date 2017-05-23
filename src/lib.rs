@@ -5057,8 +5057,22 @@ impl RGBSpectrum {
         RGBSpectrum { c: [v, v, v] }
         // TODO: DCHECK(!HasNaNs());
     }
+    pub fn rgb(r: Float, g: Float, b: Float) -> RGBSpectrum {
+        RGBSpectrum { c: [r, g, b] }
+    }
     pub fn to_xyz(&self, xyz: &mut [Float; 3]) {
         rgb_to_xyz(&self.c, xyz);
+    }
+    pub fn from_srgb(rgb: &[u8; 3]) -> RGBSpectrum {
+        fn convert(v: u8) -> Float {
+            let value = v as Float / 255.0;
+            if value <= 0.04045 {
+                value / 12.92
+            } else {
+                ((value + 0.055) * 1.0 / 1.055).powf(2.4)
+            }
+        }
+        RGBSpectrum::rgb(convert(rgb[0]), convert(rgb[1]), convert(rgb[2]))
     }
     pub fn y(&self) -> Float {
         let y_weight: [Float; 3] = [0.212671, 0.715160, 0.072169];
@@ -6526,7 +6540,7 @@ pub struct Bsdf {
 }
 
 impl Bsdf {
-    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Box<Bxdf + Sync + Send>>) -> Bsdf {
+    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Box<Bxdf + Sync + Send>>) -> Self {
         let ss = vec3_normalize(si.shading.dpdu);
         Bsdf {
             eta: eta,
@@ -7117,7 +7131,7 @@ pub struct MatteMaterial {
 }
 
 impl MatteMaterial {
-    pub fn new(kd: Arc<Texture<Spectrum> + Send + Sync>, sigma: Float) -> MatteMaterial {
+    pub fn new(kd: Arc<Texture<Spectrum> + Send + Sync>, sigma: Float) -> Self {
         MatteMaterial {
             kd: kd,
             sigma: sigma,
@@ -7301,7 +7315,7 @@ pub struct ConstantTexture<T> {
 }
 
 impl<T: Copy> ConstantTexture<T> {
-    pub fn new(value: T) -> ConstantTexture<T> {
+    pub fn new(value: T) -> Self {
         ConstantTexture { value: value }
     }
 }
@@ -7325,7 +7339,7 @@ impl<T: Copy> Checkerboard2DTexture<T> {
     pub fn new(mapping: Box<TextureMapping2D + Send + Sync>,
                tex1: Arc<Texture<T> + Send + Sync>,
                tex2: Arc<Texture<T> + Send + Sync>// , TODO: aaMethod
-    ) -> Checkerboard2DTexture<T> {
+    ) -> Self {
         Checkerboard2DTexture {
             tex1: tex1,
             tex2: tex2,
@@ -7372,7 +7386,39 @@ pub struct MipMap<T> {
 
 pub struct ImageTexture {
     pub mapping: Box<TextureMapping2D + Send + Sync>,
-    pub mipmap: Arc<MipMap<Spectrum>>,
+    // pub mipmap: Arc<MipMap<Spectrum>>,
+}
+
+impl ImageTexture {
+    pub fn new(mapping: Box<TextureMapping2D + Send + Sync>,
+               filename: String,
+               do_trilinear: bool,
+               max_aniso: Float,
+               wrap_mode: ImageWrap,
+               scale: Float,
+               gamma: bool) -> Self {
+        let path = Path::new(&filename);
+        let buf = image::open(path).unwrap();
+        let rgb = buf.to_rgb();
+        let res = Point2i { x: rgb.width() as i32, y: rgb.height() as i32, };
+        let mut pixels: Vec<Spectrum> = rgb.pixels()
+            .map(|p| Spectrum::from_srgb(&p.data))
+            .collect();
+        // flip image in y; texture coordinate space has (0,0) at the
+        // lower left corner.
+        for y in 0..res.y / 2 {
+            for x in 0..res.x {
+                let o1 = (y * res.x + x) as usize;
+                let o2 = ((res.y - 1 - y) * res.x + x) as usize;
+                pixels.swap(o1, o2);
+            }
+        }
+        // let mipmap: MipMap<Spectrum> = MipMap::new(&res, &pixels[..], do_trilinear, max_aniso, wrap_mode);
+        ImageTexture {
+            mapping: mapping,
+            // mipmap: mipmap,
+        }
+    }
 }
 
 impl Texture<Spectrum> for ImageTexture {

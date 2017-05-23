@@ -2,10 +2,10 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerboard2DTexture,
            ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Float,
-           GeometricPrimitive, GlassMaterial, LightStrategy, MatteMaterial, MirrorMaterial,
-           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene,
-           Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
-           Vector2f, Vector3f, ZeroTwoSequenceSampler};
+           GeometricPrimitive, GlassMaterial, ImageTexture, ImageWrap, LightStrategy,
+           MatteMaterial, MirrorMaterial, PerspectiveCamera, PlanarMapping2D, Point2f, Point2i,
+           Point3f, Primitive, Scene, Spectrum, Sphere, SplitMethod, Transform, Triangle,
+           TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 use std::string::String;
 use std::sync::Arc;
 
@@ -379,22 +379,22 @@ fn main() {
     // TMP: process SceneDescription before handing primitives to BVHAccel
     let mut render_options: RenderOptions = RenderOptions::new(scene_description);
     // add triangles created above (not meshes)
-    let tex1 = Arc::new(ConstantTexture { value: Spectrum::new(0.0) });
-    let tex2 = Arc::new(ConstantTexture { value: Spectrum::new(1.0) });
-    let mapping = Box::new(PlanarMapping2D {
-        vs: Vector3f {
-            x: 1.0,
-            y: 0.0,
-            z: 0.0,
-        },
-        vt: Vector3f {
-            x: 0.0,
-            y: 0.0,
-            z: 1.0,
-        },
-        ds: 0.0 as Float,
-        dt: 1.0 as Float,
-    });
+    // let tex1 = Arc::new(ConstantTexture { value: Spectrum::new(0.0) });
+    // let tex2 = Arc::new(ConstantTexture { value: Spectrum::new(1.0) });
+    // let mapping = Box::new(PlanarMapping2D {
+    //     vs: Vector3f {
+    //         x: 1.0,
+    //         y: 0.0,
+    //         z: 0.0,
+    //     },
+    //     vt: Vector3f {
+    //         x: 0.0,
+    //         y: 0.0,
+    //         z: 1.0,
+    //     },
+    //     ds: 0.0 as Float,
+    //     dt: 1.0 as Float,
+    // });
     let uscale: Float = 100.0;
     let vscale: Float = 100.0;
     let udelta: Float = 0.0;
@@ -405,10 +405,25 @@ fn main() {
         du: udelta,
         dv: vdelta,
     });
-    let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
+    let filename: String =
+        String::from("/home/jan/Graphics/Rendering/PBRT/pbrt-v3-scenes/simple/textures/lines.png");
+    let do_trilinear: bool = false;
+    let max_aniso: Float = 8.0;
+    let wrap_mode: ImageWrap = ImageWrap::Repeat;
+    let scale: Float = 1.0;
+    let gamma: bool = true;
+    let lines_tex = Arc::new(ImageTexture::new(mapping,
+                                               filename,
+                                               do_trilinear,
+                                               max_aniso,
+                                               wrap_mode,
+                                               scale,
+                                               gamma));
+    // let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
     // let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
     // let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
-    let matte = Arc::new(MatteMaterial::new(checker, 0.0 as Float));
+    // let matte = Arc::new(MatteMaterial::new(checker, 0.0 as Float));
+    let matte = Arc::new(MatteMaterial::new(lines_tex, 0.0 as Float));
     let mirror = Arc::new(MirrorMaterial { kr: Spectrum::new(0.9) });
     let glass = Arc::new(GlassMaterial {
         kr: Spectrum::new(1.0),
