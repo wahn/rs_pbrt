@@ -622,7 +622,7 @@ use std::cmp::PartialEq;
 use std::default::Default;
 use std::f32::consts::PI;
 use std::mem;
-use std::ops::{Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
+use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::path::Path;
 use std::sync::Arc;
 use std::sync::mpsc;
@@ -832,6 +832,14 @@ pub fn radians(deg: Float) -> Float {
 /// Convert from angles expressed in radians to degrees.
 pub fn degrees(rad: Float) -> Float {
     (180.0 / PI) * rad
+}
+
+/// Determine if a given integer is an exact power of 2.
+pub fn is_power_of_2<T>(v: T) -> bool
+    where T: num::Zero + num::One + Copy + PartialOrd + BitAnd<T, Output = T> + Sub<T, Output = T>
+{
+    // https://doc.rust-lang.org/std/primitive.u32.html#method.is_power_of_two
+    (v > num::Zero::zero()) && !((v & (v - num::One::one())) > num::Zero::zero())
 }
 
 /// Round an integer up to the next higher (or equal) power of 2.
@@ -5081,6 +5089,7 @@ impl RGBSpectrum {
     pub fn from_srgb(rgb: &[u8; 3]) -> RGBSpectrum {
         fn convert(v: u8) -> Float {
             let value = v as Float / 255.0;
+            // see InverseGammaCorrect(Float value) in pbrt.h
             if value <= 0.04045 {
                 value / 12.92
             } else {
@@ -5204,6 +5213,29 @@ impl Zero for RGBSpectrum {
 
     fn is_zero(&self) -> bool {
         self.is_black()
+    }
+}
+
+impl Index<usize> for RGBSpectrum {
+    type Output = Float;
+    fn index(&self, index: usize) -> &Float {
+        match index {
+            0 => &self.c[0],
+            1 => &self.c[1],
+            2 => &self.c[2],
+            _ => panic!("Check failed: i >= 0 && i <= 2"),
+        }
+    }
+}
+
+impl IndexMut<usize> for RGBSpectrum {
+    fn index_mut(&mut self, index: usize) -> &mut Float {
+        match index {
+            0 => &mut self.c[0],
+            1 => &mut self.c[1],
+            2 => &mut self.c[2],
+            _ => panic!("Check failed: i >= 0 && i <= 2"),
+        }
     }
 }
 
@@ -7449,13 +7481,57 @@ impl<T: Copy> MipMap<T>
                max_anisotropy: Float,
                wrap_mode: ImageWrap) -> Self {
         let mut resolution = *res;
-        MipMap {
+        let mut resampled_image: Vec<T> = Vec::new();
+        if !is_power_of_2(resolution.x) || !is_power_of_2(resolution.y) {
+            // resample image to power-of-two resolution
+            let res_pow_2: Point2i = Point2i {
+                x: round_up_pow2_32(&mut resolution.x),
+                y: round_up_pow2_32(&mut resolution.y),
+            };
+            println!("TODO: Resampling MIPMap from {:?} to {:?}. Ratio= {:?}",
+                     resolution, res_pow_2,
+                     (res_pow_2.x * res_pow_2.y) as Float /
+                     (resolution.x * resolution.y) as Float);
+            // TODO
+        }
+        let mut mipmap = MipMap {
             do_trilinear: do_trilinear,
             max_anisotropy: max_anisotropy,
             wrap_mode: wrap_mode,
             resolution: resolution,
             pyramid: Vec::new(),
+        };
+        // initialize levels of MipMap for image
+        let n_levels = 1 + (std::cmp::max(resolution.x, resolution.y) as Float).log2() as usize;
+        println!("mipmap will have {:?} levels", n_levels);
+        // initialize most detailed level of MipMap
+        let img_data: &[T] = if resampled_image.is_empty() {
+            img
+        } else {
+            &resampled_image[..]
+        };
+        mipmap.pyramid.push(BlockedArray::new_from(resolution.x as usize,
+                                                   resolution.y as usize,
+                                                   img_data));
+        for i in 1..n_levels {
+            // initialize $i$th MipMap level from $i-1$st level
+            let s_res = std::cmp::max(1, mipmap.pyramid[i - 1].u_size() / 2);
+            let t_res = std::cmp::max(1, mipmap.pyramid[i - 1].v_size() / 2);
+            let mut ba = BlockedArray::new(s_res, t_res);
+            // filter 4 texels from finer level of pyramid
+            for t in 0..t_res {
+                for s in 0..s_res {
+                    let (si, ti) = (s as isize, t as isize);
+                    ba[(s, t)] = (*mipmap.texel(i - 1, 2 * si, 2 * ti) +
+                                  *mipmap.texel(i - 1, 2 * si + 1, 2 * ti) +
+                                  *mipmap.texel(i - 1, 2 * si, 2 * ti + 1) +
+                                  *mipmap.texel(i - 1, 2 * si + 1, 2 * ti + 1)) * 0.25;
+                }
+            }
+            mipmap.pyramid.push(ba);
         }
+        // TODO: initialize EWA filter weights if needed
+        mipmap
     }
     pub fn levels(&self) -> usize {
         self.pyramid.len()
@@ -7464,7 +7540,8 @@ impl<T: Copy> MipMap<T>
         let l = &self.pyramid[level];
         let (u_size, v_size) = (l.u_size() as isize, l.v_size() as isize);
         let (ss, tt): (usize, usize) = match self.wrap_mode {
-            ImageWrap::Repeat => (mod_t(s as usize, u_size as usize), mod_t(t as usize, v_size as usize)),
+            ImageWrap::Repeat => (mod_t(s as usize, u_size as usize),
+                                  mod_t(t as usize, v_size as usize)),
             ImageWrap::Clamp => {
                 (clamp(s, 0, u_size - 1) as usize, clamp(t, 0, v_size - 1) as usize)
             }
@@ -7530,12 +7607,17 @@ impl ImageTexture {
                max_aniso: Float,
                wrap_mode: ImageWrap,
                scale: Float,
-               gamma: bool) -> Self {
+               gamma: bool)
+               -> Self {
         let path = Path::new(&filename);
         let buf = image::open(path).unwrap();
         let rgb = buf.to_rgb();
-        let res = Point2i { x: rgb.width() as i32, y: rgb.height() as i32, };
-        let mut pixels: Vec<Spectrum> = rgb.pixels()
+        let res = Point2i {
+            x: rgb.width() as i32,
+            y: rgb.height() as i32,
+        };
+        // instead of convertIn(texels[i], &convertedTexels[i], scale, gamma);
+        let mut texels: Vec<Spectrum> = rgb.pixels()
             .map(|p| Spectrum::from_srgb(&p.data))
             .collect();
         // flip image in y; texture coordinate space has (0,0) at the
@@ -7544,10 +7626,11 @@ impl ImageTexture {
             for x in 0..res.x {
                 let o1 = (y * res.x + x) as usize;
                 let o2 = ((res.y - 1 - y) * res.x + x) as usize;
-                pixels.swap(o1, o2);
+                texels.swap(o1, o2);
             }
         }
-        let mipmap = Arc::new(MipMap::new(&res, &pixels[..], do_trilinear, max_aniso, wrap_mode));
+        // create _MipMap_ from converted texels (see above)
+        let mipmap = Arc::new(MipMap::new(&res, &texels[..], do_trilinear, max_aniso, wrap_mode));
         ImageTexture {
             mapping: mapping,
             mipmap: mipmap,
@@ -8390,7 +8473,7 @@ fn round_up(x: usize) -> usize {
     (x + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1)
 }
 
-#[derive(Debug,Default)]
+#[derive(Debug,Clone,Default)]
 pub struct BlockedArray<T> {
     pub data: Vec<T>,
     pub u_res: usize,
@@ -8401,7 +8484,7 @@ pub struct BlockedArray<T> {
 }
 
 impl<T> BlockedArray<T>
-    where T: num::Zero + std::clone::Clone + Add<T, Output = T>
+    where T: num::Zero + Clone + Add<T, Output = T>
 {
     pub fn new(u_res: usize, v_res: usize) -> BlockedArray<T> {
         let data = vec![num::Zero::zero(); round_up(u_res) * round_up(v_res)];
@@ -8413,6 +8496,15 @@ impl<T> BlockedArray<T>
             block_size: BLOCK_SIZE,
             data: data,
         }
+    }
+    pub fn new_from(u_res: usize, v_res: usize, d: &[T]) -> BlockedArray<T> {
+        let mut ba = Self::new(u_res, v_res);
+        for u in 0..u_res {
+            for v in 0..v_res {
+                ba[(u, v)] = d[v * u_res + u].clone();
+            }
+        }
+        ba
     }
     pub fn u_size(&self) -> usize {
         self.u_res
@@ -8447,7 +8539,17 @@ impl<T> Index<(usize, usize)> for BlockedArray<T>
     }
 }
 
-// impl<T> IndexMut<u8> for BlockedArray<T> {
-//     fn index_mut(&mut self, index: u8) -> &mut T {
-//     }
-// }
+impl<T> IndexMut<(usize, usize)> for BlockedArray<T>
+    where T: num::Zero + std::clone::Clone + Add<T, Output = T>
+{
+    fn index_mut(&mut self, i: (usize, usize)) -> &mut T {
+        let (u, v) = i;
+        let bu = self.block(u);
+        let bv = self.block(v);
+        let ou = self.offset(u);
+        let ov = self.offset(v);
+        let offset = self.block_size() * self.block_size() * (self.u_blocks * bv + bu) +
+                     self.block_size() * ov + ou;
+        &mut self.data[offset]
+    }
+}
