@@ -629,6 +629,7 @@ use std::sync::mpsc;
 use std::thread;
 // use copy_arena::{Arena, Allocator};
 use num::Zero;
+use image::{ImageResult, DynamicImage};
 
 pub type Float = f32;
 
@@ -7610,7 +7611,11 @@ impl ImageTexture {
                gamma: bool)
                -> Self {
         let path = Path::new(&filename);
-        let buf = image::open(path).unwrap();
+        let img_result: ImageResult<DynamicImage> = image::open(path);
+        if !img_result.is_ok() {
+            panic!("Error reading \"{}\"", filename);
+        }
+        let buf = img_result.unwrap();
         let rgb = buf.to_rgb();
         let res = Point2i {
             x: rgb.width() as i32,
