@@ -5123,6 +5123,11 @@ impl RGBSpectrum {
 
 impl PartialEq for RGBSpectrum {
     fn eq(&self, rhs: &RGBSpectrum) -> bool {
+        for i in 0..3 {
+            if self.c[i] != rhs.c[i] {
+                return false;
+            }
+        }
         true
     }
 }
