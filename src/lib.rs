@@ -1081,6 +1081,15 @@ impl<T> Vector2<T> {
     }
 }
 
+impl<T> MulAssign<T> for Vector2<T>
+    where T: Copy + MulAssign
+{
+    fn mul_assign(&mut self, rhs: T) {
+        self.x *= rhs;
+        self.y *= rhs;
+    }
+}
+
 /// Product of the Euclidean magnitudes of the two vectors and the
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
@@ -5240,6 +5249,12 @@ impl IndexMut<usize> for RGBSpectrum {
     }
 }
 
+impl From<Float> for RGBSpectrum {
+    fn from(f: Float) -> Self {
+        RGBSpectrum::new(f)
+    }
+}
+
 /// Calculate RGB coefficients from a XYZ representation.
 pub fn xyz_to_rgb(xyz: &[Float; 3], rgb: &mut[Float; 3]) {
     rgb[0] = 3.240479 * xyz[0] - 1.537150 * xyz[1] - 0.498535 * xyz[2];
@@ -5252,6 +5267,11 @@ pub fn rgb_to_xyz(rgb: &[Float; 3], xyz: &mut[Float; 3]) {
     xyz[0] = 0.412453 * rgb[0] + 0.357580 * rgb[1] + 0.180423 * rgb[2];
     xyz[1] = 0.212671 * rgb[0] + 0.715160 * rgb[1] + 0.072169 * rgb[2];
     xyz[2] = 0.019334 * rgb[0] + 0.119193 * rgb[1] + 0.950227 * rgb[2];
+}
+
+/// Interpolate linearly between two provided values.
+pub fn lerp_rgb(t: Float, s1: Spectrum, s2: Spectrum) -> Spectrum {
+    s1 * (1.0 as Float - t) + s2 * t
 }
 
 // see bvh.h
@@ -7454,6 +7474,8 @@ impl<T: Copy> Texture<T> for Checkerboard2DTexture<T> {
 
 // see mipmap.h
 
+const WEIGHT_LUT_SIZE: usize = 128;
+
 #[derive(Debug,Clone)]
 pub enum ImageWrap {
     Repeat,
@@ -7461,28 +7483,25 @@ pub enum ImageWrap {
     Clamp,
 }
 
-pub struct MipMap<T> {
+pub struct MipMap {
     // MIPMap Private Data
     pub do_trilinear: bool,
     pub max_anisotropy: Float,
     pub wrap_mode: ImageWrap,
     pub resolution: Point2i,
-    pub pyramid: Vec<BlockedArray<T>>,
-    // TODO: static PBRT_CONSTEXPR int WeightLUTSize = 128;
+    pub pyramid: Vec<BlockedArray<Spectrum>>,
     // TODO: static Float weightLut[WeightLUTSize];
+    pub weight_lut: [Float; WEIGHT_LUT_SIZE],
 }
 
-impl<T: Copy> MipMap<T>
-    where T: num::Zero + PartialEq +
-    Add<T, Output = T> + Sub<T, Output = T> + Mul<Float, Output = T> + Div<T, Output = T>
-{
+impl MipMap {
     pub fn new(res: &Point2i,
-               img: &[T],
+               img: &[Spectrum],
                do_trilinear: bool,
                max_anisotropy: Float,
                wrap_mode: ImageWrap) -> Self {
         let mut resolution = *res;
-        let mut resampled_image: Vec<T> = Vec::new();
+        let mut resampled_image: Vec<Spectrum> = Vec::new();
         if !is_power_of_2(resolution.x) || !is_power_of_2(resolution.y) {
             // resample image to power-of-two resolution
             let res_pow_2: Point2i = Point2i {
@@ -7501,12 +7520,13 @@ impl<T: Copy> MipMap<T>
             wrap_mode: wrap_mode,
             resolution: resolution,
             pyramid: Vec::new(),
+            weight_lut: [0.0 as Float; WEIGHT_LUT_SIZE],
         };
         // initialize levels of MipMap for image
         let n_levels = 1 + (std::cmp::max(resolution.x, resolution.y) as Float).log2() as usize;
         println!("mipmap will have {:?} levels", n_levels);
         // initialize most detailed level of MipMap
-        let img_data: &[T] = if resampled_image.is_empty() {
+        let img_data: &[Spectrum] = if resampled_image.is_empty() {
             img
         } else {
             &resampled_image[..]
@@ -7531,13 +7551,21 @@ impl<T: Copy> MipMap<T>
             }
             mipmap.pyramid.push(ba);
         }
-        // TODO: initialize EWA filter weights if needed
+        // initialize EWA filter weights if needed
+        if mipmap.weight_lut[0] == 0.0 as Float {
+            for i in 0..WEIGHT_LUT_SIZE {
+                let alpha: Float = 2.0 as Float;
+                let r2: Float = i as Float / (WEIGHT_LUT_SIZE - 1) as Float;
+                mipmap.weight_lut[i] = (-alpha * r2).exp() - (-alpha).exp();
+            }
+        }
+        // TODO: mipMapMemory += (4 * resolution[0] * resolution[1] * sizeof(T)) / 3;
         mipmap
     }
     pub fn levels(&self) -> usize {
         self.pyramid.len()
     }
-    pub fn texel(&self, level: usize, s: isize, t: isize) -> &T {
+    pub fn texel(&self, level: usize, s: isize, t: isize) -> &Spectrum {
         let l = &self.pyramid[level];
         let (u_size, v_size) = (l.u_size() as isize, l.v_size() as isize);
         let (ss, tt): (usize, usize) = match self.wrap_mode {
@@ -7558,28 +7586,91 @@ impl<T: Copy> MipMap<T>
         };
         &l[(ss, tt)]
     }
-    pub fn lookup(&self, st: &Point2f, width: Float) -> T {
-        // TODO: ++nTrilerpLookups;
-        // TODO: ProfilePhase p(Prof::TexFiltTrilerp);
-        // compute MipMap level for trilinear filtering
-        let level: Float = self.levels() as Float - 1.0 as Float + width.max(1e-8).log2();
-        // perform trilinear interpolation at appropriate MipMap level
-        if level < 0.0 {
-            self.triangle(0, st)
-        } else if level >= self.levels() as Float - 1.0{
-            *self.texel(self.levels() - 1, 0, 0)
-        } else {
-            // let i_level: usize = level.floor() as usize;
-            // let delta: Float = level - i_level as Float;
-            // lerp(delta,
-            //      self.triangle(i_level as usize, st),
-            //      self.triangle(i_level as usize + 1, st))
-            // TODO: above
-            // TMP
-            num::Zero::zero()
+    pub fn lookup(&self, st: &mut Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> Spectrum {
+        if self.do_trilinear {
+            let width: Float = dst0.x.abs().max(dst0.y.abs()).max(dst1.x.abs().max(dst1.y.abs()));
+            println!("TODO: Lookup(st, 2 * width);")
         }
+        // TODO: ++nEWALookups;
+        // TODO: ProfilePhase p(Prof::TexFiltEWA);
+        // compute ellipse minor and major axes
+        if dst0.length_squared() < dst1.length_squared() {
+            // std::swap(dst0, dst1);
+            let mut swap: Vector2f = Vector2f { x: dst0.x, y: dst0.y, };
+            // dst0 = dst1
+            dst0.x = dst1.x;
+            dst0.y = dst1.y;
+            // dst1 = dst0
+            dst1.x = swap.x;
+            dst1.y = swap.y;
+        }
+        let major_length: Float = dst0.length();
+        let mut minor_length: Float = dst1.length();
+        // clamp ellipse eccentricity if too large
+        if minor_length * self.max_anisotropy < major_length && minor_length > 0.0 as Float {
+            let scale: Float = major_length / (minor_length * self.max_anisotropy);
+            *dst1 *= scale;
+            minor_length *= scale;
+        }
+        if minor_length == 0.0 as Float
+        {
+            return self.triangle(0, st);
+        }
+        // choose level of detail for EWA lookup and perform EWA filtering
+        let lod: Float = (0.0 as Float).max(self.levels() as Float - 1.0 as Float + minor_length.log2() as Float);
+        let ilod: usize = lod.floor() as usize;
+        lerp_rgb(lod - ilod as Float,
+                 self.ewa(ilod, st, dst0, dst1),
+                 self.ewa(ilod + 1, st, dst0, dst1))
     }
-    pub fn triangle(&self, level: usize, st: &Point2f) -> T {
+    pub fn ewa(&self, level: usize, st: &mut Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> Spectrum {
+        if level >= self.levels() {
+            return *self.texel(self.levels() - 1, 0, 0);
+        }
+        // convert EWA coordinates to appropriate scale for level
+        st.x = st.x * self.pyramid[level].u_size() as Float - 0.5 as Float;
+        st.y = st.y * self.pyramid[level].v_size() as Float - 0.5 as Float;
+        dst0.x *= self.pyramid[level].u_size() as Float;
+        dst0.y *= self.pyramid[level].v_size() as Float;
+        dst1.x *= self.pyramid[level].u_size() as Float;
+        dst1.y *= self.pyramid[level].v_size() as Float;
+        // compute ellipse coefficients to bound EWA filter region
+        let mut a: Float = dst0.y * dst0.y + dst1.y * dst1.y + 1.0 as Float;
+        let mut b: Float = -2.0 as Float * (dst0.x * dst0.y + dst1.x * dst1.y);
+        let mut c: Float = dst0.x * dst0.x + dst1.x * dst1.x + 1.0 as Float;
+        let inv_f: Float = 1.0 as Float / (a * c - b * b * 0.25 as Float);
+        a *= inv_f;
+        b *= inv_f;
+        c *= inv_f;
+        // compute the ellipse's $(s,t)$ bounding box in texture space
+        let det: Float = -b * b + 4.0 as Float * a * c;
+        let inv_det: Float = 1.0 as Float / det;
+        let u_sqrt: Float = (det * c).sqrt();
+        let v_sqrt: Float = (a * det).sqrt();
+        let s0: usize = (st.x - 2.0 as Float * inv_det * u_sqrt).ceil() as usize;
+        let s1: usize  = (st.x + 2.0 as Float * inv_det * u_sqrt).floor() as usize;
+        let t0: usize  = (st.y - 2.0 as Float * inv_det * v_sqrt).ceil() as usize;
+        let t1: usize  = (st.y + 2.0 as Float * inv_det * v_sqrt).floor() as usize;
+        // scan over ellipse bound and compute quadratic equation
+        let mut sum: Spectrum = Spectrum::new(0.0 as Float);
+        let mut sum_wts: Float = 0.0;
+        for it in t0..(t1 + 1) {
+            let tt: Float = it as Float - st.y;
+            for is in s0..(s1 + 1) {
+                let ss: Float = is as Float - st.x;
+                // compute squared radius and filter texel if inside ellipse
+                let r2: Float = a * ss * ss + b * ss * tt + c * tt * tt;
+                if r2 < 1.0 as Float {
+                    let index: usize = std::cmp::min((r2 * WEIGHT_LUT_SIZE as Float) as usize, WEIGHT_LUT_SIZE - 1);
+                    let weight: Float = self.weight_lut[index];
+                    sum += *self.texel(level, is as isize, it as isize) * weight;
+                    sum_wts += weight;
+                }
+            }
+        }
+        sum / sum_wts
+    }
+    pub fn triangle(&self, level: usize, st: &Point2f) -> Spectrum {
         let level: usize = clamp(level, 0_usize, self.levels() - 1_usize);
         let s: Float = st.x * self.pyramid[level].u_size() as Float - 0.5;
         let t: Float = st.y * self.pyramid[level].v_size() as Float - 0.5;
@@ -7598,7 +7689,7 @@ impl<T: Copy> MipMap<T>
 
 pub struct ImageTexture {
     pub mapping: Box<TextureMapping2D + Send + Sync>,
-    pub mipmap: Arc<MipMap<Spectrum>>,
+    pub mipmap: Arc<MipMap>,
 }
 
 impl ImageTexture {
@@ -7653,8 +7744,9 @@ impl Texture<Spectrum> for ImageTexture {
         // return ret;
         let mut dstdx: Vector2f = Vector2f::default();
         let mut dstdy: Vector2f = Vector2f::default();
-        let st = self.mapping.map(si, &mut dstdx, &mut dstdy);
-        self.mipmap.lookup(&st, 0.0)
+        let mut st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
+        self.mipmap.lookup(&mut st, &mut dstdx, &mut dstdy);
+        Spectrum::default() // TMP
     }
 }
 
