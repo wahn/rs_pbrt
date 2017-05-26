@@ -5093,6 +5093,19 @@ impl RGBSpectrum {
     pub fn rgb(r: Float, g: Float, b: Float) -> RGBSpectrum {
         RGBSpectrum { c: [r, g, b] }
     }
+    pub fn from_rgb(rgb: &[Float; 3]) -> Spectrum {
+        let mut s: Spectrum = Spectrum::new(0.0 as Float);
+        s.c[0] = rgb[0];
+        s.c[1] = rgb[1];
+        s.c[2] = rgb[2];
+        // TODO: DCHECK(!s.HasNaNs());
+        s
+    }
+    pub fn to_rgb(&self, rgb: &mut [Float; 3]) {
+        rgb[0] = self.c[0];
+        rgb[1] = self.c[1];
+        rgb[2] = self.c[2];
+    }
     pub fn to_xyz(&self, xyz: &mut [Float; 3]) {
         rgb_to_xyz(&self.c, xyz);
     }
@@ -7619,25 +7632,29 @@ impl MipMap {
         // choose level of detail for EWA lookup and perform EWA filtering
         let lod: Float = (0.0 as Float).max(self.levels() as Float - 1.0 as Float + minor_length.log2() as Float);
         let ilod: usize = lod.floor() as usize;
-        lerp_rgb(lod - ilod as Float,
-                 self.ewa(ilod, st, dst0, dst1),
-                 self.ewa(ilod + 1, st, dst0, dst1))
+        let col2: Spectrum = self.ewa(ilod + 1, st.clone(), dst0.clone(), dst1.clone());
+        let col1: Spectrum = self.ewa(ilod, st.clone(), dst0.clone(), dst1.clone());
+        let ret: Spectrum = lerp_rgb(lod - ilod as Float, col1, col2);
+        ret
     }
-    pub fn ewa(&self, level: usize, st: &mut Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> Spectrum {
+    pub fn ewa(&self, level: usize, st: Point2f, dst0: Vector2f, dst1: Vector2f) -> Spectrum {
         if level >= self.levels() {
             return *self.texel(self.levels() - 1, 0, 0);
         }
         // convert EWA coordinates to appropriate scale for level
-        st.x = st.x * self.pyramid[level].u_size() as Float - 0.5 as Float;
-        st.y = st.y * self.pyramid[level].v_size() as Float - 0.5 as Float;
-        dst0.x *= self.pyramid[level].u_size() as Float;
-        dst0.y *= self.pyramid[level].v_size() as Float;
-        dst1.x *= self.pyramid[level].u_size() as Float;
-        dst1.y *= self.pyramid[level].v_size() as Float;
+        let mut new_st: Vector2f = Vector2f { x: st.x, y: st.y, };
+        new_st.x = new_st.x * self.pyramid[level].u_size() as Float - 0.5 as Float;
+        new_st.y = new_st.y * self.pyramid[level].v_size() as Float - 0.5 as Float;
+        let mut new_dst0: Vector2f = Vector2f { x: dst0.x, y: dst0.y, };
+        let mut new_dst1: Vector2f = Vector2f { x: dst1.x, y: dst1.y, };
+        new_dst0.x *= self.pyramid[level].u_size() as Float;
+        new_dst0.y *= self.pyramid[level].v_size() as Float;
+        new_dst1.x *= self.pyramid[level].u_size() as Float;
+        new_dst1.y *= self.pyramid[level].v_size() as Float;
         // compute ellipse coefficients to bound EWA filter region
-        let mut a: Float = dst0.y * dst0.y + dst1.y * dst1.y + 1.0 as Float;
-        let mut b: Float = -2.0 as Float * (dst0.x * dst0.y + dst1.x * dst1.y);
-        let mut c: Float = dst0.x * dst0.x + dst1.x * dst1.x + 1.0 as Float;
+        let mut a: Float = new_dst0.y * new_dst0.y + new_dst1.y * new_dst1.y + 1.0 as Float;
+        let mut b: Float = -2.0 as Float * (new_dst0.x * new_dst0.y + new_dst1.x * new_dst1.y);
+        let mut c: Float = new_dst0.x * new_dst0.x + new_dst1.x * new_dst1.x + 1.0 as Float;
         let inv_f: Float = 1.0 as Float / (a * c - b * b * 0.25 as Float);
         a *= inv_f;
         b *= inv_f;
@@ -7647,17 +7664,17 @@ impl MipMap {
         let inv_det: Float = 1.0 as Float / det;
         let u_sqrt: Float = (det * c).sqrt();
         let v_sqrt: Float = (a * det).sqrt();
-        let s0: usize = (st.x - 2.0 as Float * inv_det * u_sqrt).ceil() as usize;
-        let s1: usize  = (st.x + 2.0 as Float * inv_det * u_sqrt).floor() as usize;
-        let t0: usize  = (st.y - 2.0 as Float * inv_det * v_sqrt).ceil() as usize;
-        let t1: usize  = (st.y + 2.0 as Float * inv_det * v_sqrt).floor() as usize;
+        let s0: isize = (new_st.x - 2.0 as Float * inv_det * u_sqrt).ceil() as isize;
+        let s1: isize  = (new_st.x + 2.0 as Float * inv_det * u_sqrt).floor() as isize;
+        let t0: isize  = (new_st.y - 2.0 as Float * inv_det * v_sqrt).ceil() as isize;
+        let t1: isize  = (new_st.y + 2.0 as Float * inv_det * v_sqrt).floor() as isize;
         // scan over ellipse bound and compute quadratic equation
         let mut sum: Spectrum = Spectrum::new(0.0 as Float);
         let mut sum_wts: Float = 0.0;
         for it in t0..(t1 + 1) {
-            let tt: Float = it as Float - st.y;
+            let tt: Float = it as Float - new_st.y;
             for is in s0..(s1 + 1) {
-                let ss: Float = is as Float - st.x;
+                let ss: Float = is as Float - new_st.x;
                 // compute squared radius and filter texel if inside ellipse
                 let r2: Float = a * ss * ss + b * ss * tt + c * tt * tt;
                 if r2 < 1.0 as Float {
@@ -7732,6 +7749,11 @@ impl ImageTexture {
             mipmap: mipmap,
         }
     }
+    pub fn convert_out(from: &Spectrum, to: &mut Spectrum) {
+        let mut rgb: [Float; 3] = [0.0 as Float; 3];
+        from.to_rgb(&mut rgb);
+        *to = Spectrum::from_rgb(&rgb);
+    }
 }
 
 impl Texture<Spectrum> for ImageTexture {
@@ -7745,8 +7767,10 @@ impl Texture<Spectrum> for ImageTexture {
         let mut dstdx: Vector2f = Vector2f::default();
         let mut dstdy: Vector2f = Vector2f::default();
         let mut st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
-        self.mipmap.lookup(&mut st, &mut dstdx, &mut dstdy);
-        Spectrum::default() // TMP
+        let mem: Spectrum = self.mipmap.lookup(&mut st, &mut dstdx, &mut dstdy);
+        let mut ret: Spectrum = Spectrum::new(0.0);
+        ImageTexture::convert_out(&mem, &mut ret);
+        ret
     }
 }
 
