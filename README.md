@@ -17,6 +17,10 @@ version of **PBRT**:
 
 ![Rendered via Rust version of PBRT](https://www.janwalter.org/assets/spheres-differentials-texfilt_v0_1_5.png)
 
+Same scene with a non-procedural texture:
+
+![Rendered via Rust version of PBRT](https://www.janwalter.org/assets/spheres-differentials-texfilt_v0_1_6.png)
+
 If you look for a more complete Rust implementation:
 
 https://bitbucket.org/abusch/rustracer
