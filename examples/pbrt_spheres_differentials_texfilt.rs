@@ -96,7 +96,7 @@ impl SceneDescriptionBuilder {
 }
 
 struct RenderOptions {
-    primitives: Vec<Arc<Primitive>>,
+    primitives: Vec<Arc<Primitive + Sync + Send>>,
     triangles: Vec<Arc<Triangle>>,
     spheres: Vec<Arc<Sphere>>,
     lights: Vec<DistantLight>,
@@ -104,7 +104,7 @@ struct RenderOptions {
 
 impl RenderOptions {
     fn new(scene: SceneDescription) -> RenderOptions {
-        let primitives: Vec<Arc<Primitive>> = Vec::new();
+        let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
         let mut spheres: Vec<Arc<Sphere>> = Vec::new();
         let mut lights: Vec<DistantLight> = Vec::new();

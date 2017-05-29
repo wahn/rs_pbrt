@@ -5389,12 +5389,12 @@ pub struct LinearBVHNode {
 pub struct BVHAccel {
     max_prims_in_node: usize,
     split_method: SplitMethod,
-    pub primitives: Vec<Arc<Primitive>>,
+    pub primitives: Vec<Arc<Primitive + Sync + Send>>,
     pub nodes: Vec<LinearBVHNode>,
 }
 
 impl BVHAccel {
-    pub fn new(p: Vec<Arc<Primitive>>,
+    pub fn new(p: Vec<Arc<Primitive + Sync + Send>>,
                max_prims_in_node: usize,
                split_method: SplitMethod)
                -> Self {
@@ -5412,7 +5412,7 @@ impl BVHAccel {
         }
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut total_nodes: usize = 0;
-        let mut ordered_prims: Vec<Arc<Primitive>> = Vec::with_capacity(num_prims);
+        let mut ordered_prims: Vec<Arc<Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
         let root = BVHAccel::recursive_build(bvh.clone(), // instead of self
                                              // arena,
                                              &mut primitive_info,
@@ -5565,7 +5565,7 @@ impl BVHAccel {
                            start: usize,
                            end: usize,
                            total_nodes: &mut usize,
-                           ordered_prims: &mut Vec<Arc<Primitive>>)
+                           ordered_prims: &mut Vec<Arc<Primitive + Sync + Send>>)
                            -> Box<BVHBuildNode> {
         assert_ne!(start, end);
         let mut node: Box<BVHBuildNode> = Box::new(BVHBuildNode::default());
@@ -8163,29 +8163,15 @@ impl DirectLightingIntegrator {
         println!("n_tiles = {:?}", n_tiles);
         // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
         println!("Rendering");
-        // TMP
-        // tx = transmitter/sender
-        // rx = receiver
-        let (tx, rx) = mpsc::channel();
         let num_cores: usize = num_cpus::get();
-        for i in 0..num_cores {
-            let tx = tx.clone();
-            thread::spawn(move || {
-                let x = i;
-                let y = i * i;
-                let answer = (x, y);
-                tx.send(answer).unwrap();
-            });
-        }
-        for _ in 0..num_cores {
-            let (x, y) = rx.recv().unwrap();
-            println!("({}, {})", x, y);
-        }
-        // TMP
         {
+            // let (pixel_tx, pixel_rx) = mpsc::channel();
             // no parallelism
             for y in 0..n_tiles.y {
                 for x in 0..n_tiles.x {
+            // for i in 0..num_cores {
+            //     let pixel_tx = pixel_tx.clone();
+            //     thread::spawn(move || {
                     let tile: Point2i = Point2i { x: x, y: y };
                     // TODO: should be done multi-threaded !!!
                     let seed: i32 = tile.y * n_tiles.x + tile.x;
@@ -8258,12 +8244,18 @@ impl DirectLightingIntegrator {
                         } // arena is dropped here !
                     }
                     // println!{"Finished image tile {:?}", tile_bounds};
-                    // merge image tile into _Film_
-                    self.camera.film.merge_film_tile(&film_tile);
-                    // TODO: reporter.Update();
+                    // pixel_tx.send(film_tile).expect(&format!("Failed to send tile"));
+                // });
+            // }
+            // for _ in 0..num_cores {
+            //     let film_tile = pixel_rx.recv().unwrap();
+                // merge image tile into _Film_
+                self.camera.film.merge_film_tile(&film_tile);
+                // TODO: reporter.Update();
                 }
-            }
+            // }
             // TODO: reporter.Done();
+            }
         }
         println!("Rendering finished");
         self.camera.film.write_image(1.0 as Float);
