@@ -8143,205 +8143,6 @@ impl DirectLightingIntegrator {
             }
         }
     }
-    pub fn render(&mut self, scene: &Scene) {
-        // SamplerIntegrator::Render (integrator.cpp)
-        // create and preprocess sampler
-        let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
-        self.preprocess(scene, &mut sampler);
-        // create camera
-        let pos = Point3f {
-            x: 2.0,
-            y: 2.0,
-            z: 5.0,
-        };
-        let look = Point3f {
-            x: 0.0,
-            y: -0.4,
-            z: 0.0,
-        };
-        let up = Vector3f {
-            x: 0.0,
-            y: 1.0,
-            z: 0.0,
-        };
-        let t: Transform = Transform::look_at(pos, look, up);
-        let it: Transform = Transform {
-            m: t.m_inv.clone(),
-            m_inv: t.m.clone(),
-        };
-        let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
-        let fov: Float = 30.0;
-        let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
-        let xres = self.pixel_bounds.p_max.x;
-        let yres = self.pixel_bounds.p_max.y;
-        println!("(xres, yres) = ({}, {})", xres, yres);
-        let frame: Float = xres as Float / yres as Float;
-        let mut screen: Bounds2f = Bounds2f::default();
-        if frame > 1.0 {
-            screen.p_min.x = -frame;
-            screen.p_max.x = frame;
-            screen.p_min.y = -1.0;
-            screen.p_max.y = 1.0;
-        } else {
-            screen.p_min.x = -1.0;
-            screen.p_max.x = 1.0;
-            screen.p_min.y = -1.0 / frame;
-            screen.p_max.y = 1.0 / frame;
-        }
-        let shutteropen: Float = 0.0;
-        let shutterclose: Float = 1.0;
-        let lensradius: Float = 0.0;
-        let focaldistance: Float = 1e6;
-        let crop: Bounds2f = Bounds2f {
-            p_min: Point2f { x: 0.0, y: 0.0 },
-            p_max: Point2f { x: 1.0, y: 1.0 },
-        };
-        let xw: Float = 0.5;
-        let yw: Float = 0.5;
-        let box_filter = BoxFilter {
-            radius: Vector2f { x: xw, y: yw },
-            inv_radius: Vector2f {
-                x: 1.0 / xw,
-                y: 1.0 / yw,
-            },
-        };
-        let filename: String = String::from("spheres-differentials-texfilt.exr");
-        let film: Film = Film::new(Point2i { x: xres, y: yres },
-                                   crop,
-                                   box_filter,
-                                   35.0,
-                                   filename,
-                                   1.0,
-                                   std::f32::INFINITY);
-        let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
-                                                                           camera_to_screen,
-                                                                           screen,
-                                                                           shutteropen,
-                                                                           shutterclose,
-                                                                           lensradius,
-                                                                           focaldistance,
-                                                                           fov,
-                                                                           film);
-        // use camera below
-        let sample_bounds: Bounds2i = perspective_camera.film.get_sample_bounds();
-        println!("sample_bounds = {:?}", sample_bounds);
-        let sample_extent: Vector2i = sample_bounds.diagonal();
-        println!("sample_extent = {:?}", sample_extent);
-        let tile_size: i32 = 16;
-        let x: i32 = (sample_extent.x + tile_size - 1) / tile_size;
-        let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
-        let n_tiles: Point2i = Point2i { x: x, y: y };
-        println!("n_tiles = {:?}", n_tiles);
-        // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
-        println!("Rendering");
-        let num_cores: usize = num_cpus::get();
-        {
-            let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
-                                               (n_tiles.y * tile_size) as u32),
-                                              (tile_size as u32, tile_size as u32),
-                                              (0, 0));
-            println!("block_queue.len() = {}", block_queue.len());
-            let bq = &block_queue;
-            let sampler = &sampler;
-            // crossbeam::scope(|scope| {
-            //     let (pixel_tx, pixel_rx) = mpsc::channel();
-            //     // spawn worker threads
-            //     for _ in 0..num_cores {
-            //         let pixel_tx = pixel_tx.clone();
-            //         scope.spawn(move || {
-                        while let Some((x, y)) = bq.next() {
-                            let tile: Point2i = Point2i { x: x as i32, y: y as i32, };
-                            // TODO: should be done multi-threaded !!!
-                            let seed: i32 = tile.y * n_tiles.x + tile.x;
-                            let mut tile_sampler = sampler.clone(seed);
-                            let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
-                            let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
-                            let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
-                            let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
-                            let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
-                                                                      Point2i { x: x1, y: y1 });
-                            // println!("Starting image tile {:?}", tile_bounds);
-                            let mut film_tile = perspective_camera.film.get_film_tile(tile_bounds);
-                            for pixel in &tile_bounds {
-                                tile_sampler.start_pixel(pixel);
-                                if !pnt2_inside_exclusive(pixel, self.pixel_bounds) {
-                                    continue;
-                                }
-                                let mut done: bool = false;
-                                while !done {
-                                    // let's use the copy_arena crate instead of pbrt's MemoryArena
-                                    // let mut arena: Arena = Arena::with_capacity(262144); // 256kB
-                                    
-                                    // initialize _CameraSample_ for current sample
-                                    let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
-                                    // generate camera ray for current sample
-                                    let mut ray: Ray = Ray::default();
-                                    let ray_weight: Float = perspective_camera
-                                        .generate_ray_differential(&camera_sample, &mut ray);
-                                    ray.scale_differentials(1.0 as Float /
-                                                            (tile_sampler.samples_per_pixel as Float)
-                                                            .sqrt());
-                                    // TODO: ++nCameraRays;
-                                    // evaluate radiance along camera ray
-                                    let mut l: Spectrum = Spectrum::new(0.0 as Float);
-                                    let y: Float = l.y();
-                                    if ray_weight > 0.0 {
-                                        l = self.li(&mut ray,
-                                                    scene,
-                                                    &mut tile_sampler, // &mut arena,
-                                                    0_i32);
-                                    }
-                                    if l.has_nans() {
-                                        println!("Not-a-number radiance value returned for pixel ({:?}, \
-                                                  {:?}), sample {:?}. Setting to black.",
-                                                 pixel.x,
-                                                 pixel.y,
-                                                 tile_sampler.current_sample_number());
-                                        l = Spectrum::new(0.0);
-                                    } else if y < -10.0e-5 as Float {
-                                        println!("Negative luminance value, {:?}, returned for pixel \
-                                                  ({:?}, {:?}), sample {:?}. Setting to black.",
-                                                 y,
-                                                 pixel.x,
-                                                 pixel.y,
-                                                 tile_sampler.current_sample_number());
-                                        l = Spectrum::new(0.0);
-                                    } else if y.is_infinite() {
-                                        println!("Infinite luminance value returned for pixel ({:?}, \
-                                                  {:?}), sample {:?}. Setting to black.",
-                                                 pixel.x,
-                                                 pixel.y,
-                                                 tile_sampler.current_sample_number());
-                                        l = Spectrum::new(0.0);
-                                    }
-                                    // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
-                                    //          camera_sample, ray, l);
-                                    // add camera ray's contribution to image
-                                    film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
-                                    done = !tile_sampler.start_next_sample();
-                                } // arena is dropped here !
-                            }
-                            // send the tile through the channel to main thread
-                            // pixel_tx.send(0_u8).expect(&format!("Failed to send tile"));
-                            // pixel_tx.send(film_tile).expect(&format!("Failed to send tile"));
-                            perspective_camera.film.merge_film_tile(&film_tile);
-                        }
-                //     });
-                // }
-                // // spawn thread to collect pixels and render image to file
-                // scope.spawn(move || {
-                //     for _ in 0..bq.len() {
-                //         let film_tile = pixel_rx.recv().unwrap();
-                //         // merge image tile into _Film_
-                //         // perspective_camera.film.merge_film_tile(&film_tile);
-                //     }
-                // // }
-                // });
-                println!("Rendering finished");
-                perspective_camera.film.write_image(1.0 as Float);
-            // });
-        }
-    }
     pub fn specular_reflect(&self,
                             ray: &Ray,
                             isect: &SurfaceInteraction,
@@ -8837,4 +8638,214 @@ pub fn part1_by1(mut x: u32) -> u32 {
 /// Compute the Morton code for the `(x, y)` position.
 pub fn morton2(p: &(u32, u32)) -> u32 {
 	(part1_by1(p.1) << 1) + part1_by1(p.0)
+}
+
+pub fn render(scene: &Scene) {
+    // SamplerIntegrator::Render (integrator.cpp)
+    // create integrator
+    let xres = 1000;
+    let yres = 500;
+    let pixel_bounds: Bounds2i = Bounds2i {
+        p_min: Point2i { x: 0, y: 0 },
+        p_max: Point2i { x: xres, y: yres },
+    };
+    let mut integrator: DirectLightingIntegrator =
+        DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, pixel_bounds);
+    // create and preprocess sampler
+    let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
+    integrator.preprocess(scene, &mut sampler);
+    // create camera
+    let pos = Point3f {
+        x: 2.0,
+        y: 2.0,
+        z: 5.0,
+    };
+    let look = Point3f {
+        x: 0.0,
+        y: -0.4,
+        z: 0.0,
+    };
+    let up = Vector3f {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    };
+    let t: Transform = Transform::look_at(pos, look, up);
+    let it: Transform = Transform {
+        m: t.m_inv.clone(),
+        m_inv: t.m.clone(),
+    };
+    let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
+    let fov: Float = 30.0;
+    let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
+    let frame: Float = xres as Float / yres as Float;
+    let mut screen: Bounds2f = Bounds2f::default();
+    if frame > 1.0 {
+        screen.p_min.x = -frame;
+        screen.p_max.x = frame;
+        screen.p_min.y = -1.0;
+        screen.p_max.y = 1.0;
+    } else {
+        screen.p_min.x = -1.0;
+        screen.p_max.x = 1.0;
+        screen.p_min.y = -1.0 / frame;
+        screen.p_max.y = 1.0 / frame;
+    }
+    let shutteropen: Float = 0.0;
+    let shutterclose: Float = 1.0;
+    let lensradius: Float = 0.0;
+    let focaldistance: Float = 1e6;
+    let crop: Bounds2f = Bounds2f {
+        p_min: Point2f { x: 0.0, y: 0.0 },
+        p_max: Point2f { x: 1.0, y: 1.0 },
+    };
+    let xw: Float = 0.5;
+    let yw: Float = 0.5;
+    let box_filter = BoxFilter {
+        radius: Vector2f { x: xw, y: yw },
+        inv_radius: Vector2f {
+            x: 1.0 / xw,
+            y: 1.0 / yw,
+        },
+    };
+    let filename: String = String::from("spheres-differentials-texfilt.exr");
+    let film: Film = Film::new(Point2i { x: xres, y: yres },
+                               crop,
+                               box_filter,
+                               35.0,
+                               filename,
+                               1.0,
+                               std::f32::INFINITY);
+    let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
+                                                                       camera_to_screen,
+                                                                       screen,
+                                                                       shutteropen,
+                                                                       shutterclose,
+                                                                       lensradius,
+                                                                       focaldistance,
+                                                                       fov,
+                                                                       film);
+    // use camera below
+    let sample_bounds: Bounds2i = perspective_camera.film.get_sample_bounds();
+    println!("sample_bounds = {:?}", sample_bounds);
+    let sample_extent: Vector2i = sample_bounds.diagonal();
+    println!("sample_extent = {:?}", sample_extent);
+    let tile_size: i32 = 16;
+    let x: i32 = (sample_extent.x + tile_size - 1) / tile_size;
+    let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
+    let n_tiles: Point2i = Point2i { x: x, y: y };
+    println!("n_tiles = {:?}", n_tiles);
+    // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
+    println!("Rendering");
+    let num_cores: usize = num_cpus::get();
+    {
+        let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
+                                           (n_tiles.y * tile_size) as u32),
+                                          (tile_size as u32, tile_size as u32),
+                                          (0, 0));
+        println!("block_queue.len() = {}", block_queue.len());
+        let integrator = &integrator;
+        let bq = &block_queue;
+        let sampler = &sampler;
+        let perspective_camera = &perspective_camera;
+        let pixel_bounds = integrator.pixel_bounds.clone();
+        crossbeam::scope(|scope| {
+            let (pixel_tx, pixel_rx) = mpsc::channel();
+            // spawn worker threads
+            for _ in 0..num_cores {
+                let pixel_tx = pixel_tx.clone();
+                scope.spawn(move || {
+                    while let Some((x, y)) = bq.next() {
+                        let tile: Point2i = Point2i {
+                            x: x as i32,
+                            y: y as i32,
+                        };
+                        // TODO: should be done multi-threaded !!!
+                        let seed: i32 = tile.y * n_tiles.x + tile.x;
+                        let mut tile_sampler = sampler.clone(seed);
+                        let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
+                        let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
+                        let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
+                        let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
+                        let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
+                                                                  Point2i { x: x1, y: y1 });
+                        // println!("Starting image tile {:?}", tile_bounds);
+                        let mut film_tile = perspective_camera.film.get_film_tile(tile_bounds);
+                        for pixel in &tile_bounds {
+                            tile_sampler.start_pixel(pixel);
+                            if !pnt2_inside_exclusive(pixel, pixel_bounds) {
+                                continue;
+                            }
+                            let mut done: bool = false;
+                            while !done {
+                                // let's use the copy_arena crate instead of pbrt's MemoryArena
+                                // let mut arena: Arena = Arena::with_capacity(262144); // 256kB
+
+                                // initialize _CameraSample_ for current sample
+                                let camera_sample: CameraSample =
+                                    tile_sampler.get_camera_sample(pixel);
+                                // generate camera ray for current sample
+                                let mut ray: Ray = Ray::default();
+                                let ray_weight: Float = perspective_camera
+                                        .generate_ray_differential(&camera_sample, &mut ray);
+                                ray.scale_differentials(1.0 as Float /
+                                                        (tile_sampler.samples_per_pixel as Float)
+                                    .sqrt());
+                                // TODO: ++nCameraRays;
+                                // evaluate radiance along camera ray
+                                let mut l: Spectrum = Spectrum::new(0.0 as Float);
+                                let y: Float = l.y();
+                                if ray_weight > 0.0 {
+                                    l = integrator.li(&mut ray,
+                                                scene,
+                                                &mut tile_sampler, // &mut arena,
+                                                0_i32);
+                                }
+                                if l.has_nans() {
+                                    println!("Not-a-number radiance value returned for pixel \
+                                              ({:?}, {:?}), sample {:?}. Setting to black.",
+                                             pixel.x,
+                                             pixel.y,
+                                             tile_sampler.current_sample_number());
+                                    l = Spectrum::new(0.0);
+                                } else if y < -10.0e-5 as Float {
+                                    println!("Negative luminance value, {:?}, returned for pixel \
+                                              ({:?}, {:?}), sample {:?}. Setting to black.",
+                                             y,
+                                             pixel.x,
+                                             pixel.y,
+                                             tile_sampler.current_sample_number());
+                                    l = Spectrum::new(0.0);
+                                } else if y.is_infinite() {
+                                    println!("Infinite luminance value returned for pixel ({:?}, \
+                                              {:?}), sample {:?}. Setting to black.",
+                                             pixel.x,
+                                             pixel.y,
+                                             tile_sampler.current_sample_number());
+                                    l = Spectrum::new(0.0);
+                                }
+                                // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
+                                //          camera_sample, ray, l);
+                                // add camera ray's contribution to image
+                                film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
+                                done = !tile_sampler.start_next_sample();
+                            } // arena is dropped here !
+                        }
+                        // send the tile through the channel to main thread
+                        pixel_tx.send(film_tile).expect(&format!("Failed to send tile"));
+                    }
+                });
+            }
+            // spawn thread to collect pixels and render image to file
+            scope.spawn(move || {
+                for _ in 0..bq.len() {
+                    let film_tile = pixel_rx.recv().unwrap();
+                    // merge image tile into _Film_
+                    perspective_camera.film.merge_film_tile(&film_tile);
+                }
+            });
+        });
+    }
+    println!("Rendering finished");
+    perspective_camera.film.write_image(1.0 as Float);
 }

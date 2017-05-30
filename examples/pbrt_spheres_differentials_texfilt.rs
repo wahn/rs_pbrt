@@ -1,11 +1,9 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerboard2DTexture,
-           ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Float,
-           GeometricPrimitive, GlassMaterial, ImageTexture, ImageWrap, LightStrategy,
-           MatteMaterial, MirrorMaterial, PerspectiveCamera, PlanarMapping2D, Point2f, Point2i,
-           Point3f, Primitive, Scene, Spectrum, Sphere, SplitMethod, Transform, Triangle,
-           TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+use pbrt::{BVHAccel, Checkerboard2DTexture, ConstantTexture, DistantLight, Float,
+           GeometricPrimitive, GlassMaterial, ImageTexture, ImageWrap, MatteMaterial,
+           MirrorMaterial, PlanarMapping2D, Point2f, Point3f, Primitive, Scene, Spectrum, Sphere,
+           SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D, Vector3f};
 use std::string::String;
 use std::sync::Arc;
 
@@ -275,16 +273,6 @@ fn main() {
 
     // pbrtWorldEnd
 
-    let xres = 1000;
-    let yres = 500;
-    let pixel_bounds: Bounds2i = Bounds2i {
-        p_min: Point2i { x: 0, y: 0 },
-        p_max: Point2i { x: xres, y: yres },
-    };
-    let mut integrator: DirectLightingIntegrator =
-        DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
-                                      10,
-                                      pixel_bounds);
     // TMP: process SceneDescription before handing primitives to BVHAccel
     let mut render_options: RenderOptions = RenderOptions::new(scene_description);
     // add triangles created above (not meshes)
@@ -364,5 +352,5 @@ fn main() {
     println!("###############");
     // SamplerIntegrator::Render (integrator.cpp)
     let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
-    integrator.render(&scene);
+    pbrt::render(&scene);
 }
