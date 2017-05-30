@@ -8108,7 +8108,6 @@ pub enum LightStrategy {
 
 pub struct DirectLightingIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
-    camera: PerspectiveCamera, // std::shared_ptr<const Camera> camera;
     pixel_bounds: Bounds2i,
     // see directlighting.h
     strategy: LightStrategy,
@@ -8119,11 +8118,9 @@ pub struct DirectLightingIntegrator {
 impl DirectLightingIntegrator {
     pub fn new(strategy: LightStrategy,
                max_depth: i64,
-               camera: PerspectiveCamera,
                pixel_bounds: Bounds2i)
                -> Self {
         DirectLightingIntegrator {
-            camera: camera,
             pixel_bounds: pixel_bounds,
             strategy: strategy,
             max_depth: max_depth,
@@ -8148,9 +8145,85 @@ impl DirectLightingIntegrator {
     }
     pub fn render(&mut self, scene: &Scene) {
         // SamplerIntegrator::Render (integrator.cpp)
+        // create and preprocess sampler
         let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
         self.preprocess(scene, &mut sampler);
-        let sample_bounds: Bounds2i = self.camera.film.get_sample_bounds();
+        // create camera
+        let pos = Point3f {
+            x: 2.0,
+            y: 2.0,
+            z: 5.0,
+        };
+        let look = Point3f {
+            x: 0.0,
+            y: -0.4,
+            z: 0.0,
+        };
+        let up = Vector3f {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        };
+        let t: Transform = Transform::look_at(pos, look, up);
+        let it: Transform = Transform {
+            m: t.m_inv.clone(),
+            m_inv: t.m.clone(),
+        };
+        let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
+        let fov: Float = 30.0;
+        let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
+        let xres = self.pixel_bounds.p_max.x;
+        let yres = self.pixel_bounds.p_max.y;
+        println!("(xres, yres) = ({}, {})", xres, yres);
+        let frame: Float = xres as Float / yres as Float;
+        let mut screen: Bounds2f = Bounds2f::default();
+        if frame > 1.0 {
+            screen.p_min.x = -frame;
+            screen.p_max.x = frame;
+            screen.p_min.y = -1.0;
+            screen.p_max.y = 1.0;
+        } else {
+            screen.p_min.x = -1.0;
+            screen.p_max.x = 1.0;
+            screen.p_min.y = -1.0 / frame;
+            screen.p_max.y = 1.0 / frame;
+        }
+        let shutteropen: Float = 0.0;
+        let shutterclose: Float = 1.0;
+        let lensradius: Float = 0.0;
+        let focaldistance: Float = 1e6;
+        let crop: Bounds2f = Bounds2f {
+            p_min: Point2f { x: 0.0, y: 0.0 },
+            p_max: Point2f { x: 1.0, y: 1.0 },
+        };
+        let xw: Float = 0.5;
+        let yw: Float = 0.5;
+        let box_filter = BoxFilter {
+            radius: Vector2f { x: xw, y: yw },
+            inv_radius: Vector2f {
+                x: 1.0 / xw,
+                y: 1.0 / yw,
+            },
+        };
+        let filename: String = String::from("spheres-differentials-texfilt.exr");
+        let film: Film = Film::new(Point2i { x: xres, y: yres },
+                                   crop,
+                                   box_filter,
+                                   35.0,
+                                   filename,
+                                   1.0,
+                                   std::f32::INFINITY);
+        let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
+                                                                           camera_to_screen,
+                                                                           screen,
+                                                                           shutteropen,
+                                                                           shutterclose,
+                                                                           lensradius,
+                                                                           focaldistance,
+                                                                           fov,
+                                                                           film);
+        // use camera below
+        let sample_bounds: Bounds2i = perspective_camera.film.get_sample_bounds();
         println!("sample_bounds = {:?}", sample_bounds);
         let sample_extent: Vector2i = sample_bounds.diagonal();
         println!("sample_extent = {:?}", sample_extent);
@@ -8188,7 +8261,7 @@ impl DirectLightingIntegrator {
                             let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
                                                                       Point2i { x: x1, y: y1 });
                             // println!("Starting image tile {:?}", tile_bounds);
-                            let mut film_tile = self.camera.film.get_film_tile(tile_bounds);
+                            let mut film_tile = perspective_camera.film.get_film_tile(tile_bounds);
                             for pixel in &tile_bounds {
                                 tile_sampler.start_pixel(pixel);
                                 if !pnt2_inside_exclusive(pixel, self.pixel_bounds) {
@@ -8203,7 +8276,7 @@ impl DirectLightingIntegrator {
                                     let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
                                     // generate camera ray for current sample
                                     let mut ray: Ray = Ray::default();
-                                    let ray_weight: Float = self.camera
+                                    let ray_weight: Float = perspective_camera
                                         .generate_ray_differential(&camera_sample, &mut ray);
                                     ray.scale_differentials(1.0 as Float /
                                                             (tile_sampler.samples_per_pixel as Float)
@@ -8251,7 +8324,7 @@ impl DirectLightingIntegrator {
                             // send the tile through the channel to main thread
                             // pixel_tx.send(0_u8).expect(&format!("Failed to send tile"));
                             // pixel_tx.send(film_tile).expect(&format!("Failed to send tile"));
-                            self.camera.film.merge_film_tile(&film_tile);
+                            perspective_camera.film.merge_film_tile(&film_tile);
                         }
                 //     });
                 // }
@@ -8260,12 +8333,12 @@ impl DirectLightingIntegrator {
                 //     for _ in 0..bq.len() {
                 //         let film_tile = pixel_rx.recv().unwrap();
                 //         // merge image tile into _Film_
-                //         // self.camera.film.merge_film_tile(&film_tile);
+                //         // perspective_camera.film.merge_film_tile(&film_tile);
                 //     }
                 // // }
                 // });
                 println!("Rendering finished");
-                self.camera.film.write_image(1.0 as Float);
+                perspective_camera.film.write_image(1.0 as Float);
             // });
         }
     }
