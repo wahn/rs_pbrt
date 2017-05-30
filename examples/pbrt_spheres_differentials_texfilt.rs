@@ -365,7 +365,6 @@ fn main() {
                                                                        film /* ,
                                                                              * medium */);
     // pbrt::MakeSampler
-    let sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
     let pixel_bounds: Bounds2i = Bounds2i {
         p_min: Point2i { x: 0, y: 0 },
         p_max: Point2i { x: xres, y: yres },
@@ -374,7 +373,6 @@ fn main() {
         DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
                                       10,
                                       perspective_camera,
-                                      sampler,
                                       pixel_bounds);
     // TMP: process SceneDescription before handing primitives to BVHAccel
     let mut render_options: RenderOptions = RenderOptions::new(scene_description);

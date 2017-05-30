@@ -616,16 +616,16 @@ extern crate num;
 extern crate num_cpus;
 // extern crate copy_arena;
 extern crate image;
+extern crate crossbeam;
 
-use std::cell::RefCell;
 use std::cmp::PartialEq;
 use std::default::Default;
 use std::f32::consts::PI;
 use std::mem;
-use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
+use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut, Deref};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use std::sync::mpsc;
 use std::thread;
 // use copy_arena::{Arena, Allocator};
@@ -6272,7 +6272,7 @@ pub struct Film {
     pub cropped_pixel_bounds: Bounds2i,
 
     // Film Private Data
-    pub pixels: RefCell<Vec<Pixel>>,
+    pub pixels: RwLock<Vec<Pixel>>,
     filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
     scale: Float,
     max_sample_luminance: Float,
@@ -6319,7 +6319,7 @@ impl Film {
             filter: filt,
             filename: filename,
             cropped_pixel_bounds: cropped_pixel_bounds,
-            pixels: RefCell::new(vec![Pixel::default(); cropped_pixel_bounds.area() as usize]),
+            pixels: RwLock::new(vec![Pixel::default(); cropped_pixel_bounds.area() as usize]),
             filter_table: filter_table,
             scale: scale,
             max_sample_luminance: max_sample_luminance,
@@ -6396,8 +6396,8 @@ impl Film {
             let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
             let offset: i32 = (pixel.x - self.cropped_pixel_bounds.p_min.x) +
                 (pixel.y - self.cropped_pixel_bounds.p_min.y) * width;
-            let mut pixels_ref = self.pixels.borrow_mut();
-            let mut merge_pixel = pixels_ref[offset as usize];
+            let mut pixels_write = self.pixels.write().unwrap();
+            let mut merge_pixel = pixels_write[offset as usize];
             // END let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
             let mut xyz: [Float; 3] = [0.0; 3];
             tile_pixel.contrib_sum.to_xyz(&mut xyz);
@@ -6406,7 +6406,7 @@ impl Film {
             }
             merge_pixel.filter_weight_sum += tile_pixel.filter_weight_sum;
             // write pixel back
-            pixels_ref[offset as usize] = merge_pixel;
+            pixels_write[offset as usize] = merge_pixel;
         }
     }
     pub fn write_image(&self, splat_scale: Float) {
@@ -6489,7 +6489,7 @@ impl Film {
         let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
         let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x) +
                           (p.y - self.cropped_pixel_bounds.p_min.y) * width;
-        (*self.pixels.borrow())[offset as usize]
+        self.pixels.read().unwrap()[offset as usize]
     }
 }
 
@@ -8109,7 +8109,6 @@ pub enum LightStrategy {
 pub struct DirectLightingIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     camera: PerspectiveCamera, // std::shared_ptr<const Camera> camera;
-    sampler: ZeroTwoSequenceSampler, // std::shared_ptr<Sampler> sampler;
     pixel_bounds: Bounds2i,
     // see directlighting.h
     strategy: LightStrategy,
@@ -8121,38 +8120,36 @@ impl DirectLightingIntegrator {
     pub fn new(strategy: LightStrategy,
                max_depth: i64,
                camera: PerspectiveCamera,
-               sampler: ZeroTwoSequenceSampler,
                pixel_bounds: Bounds2i)
                -> Self {
         DirectLightingIntegrator {
             camera: camera,
-            sampler: sampler,
             pixel_bounds: pixel_bounds,
             strategy: strategy,
             max_depth: max_depth,
             n_light_samples: Vec::new(),
         }
     }
-    pub fn preprocess(&mut self, scene: &Scene) {
-        // , sampler: &mut ZeroTwoSequenceSampler
+    pub fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
         if self.strategy == LightStrategy::UniformSampleAll {
             // compute number of samples to use for each light
             for li in 0..scene.lights.len() {
                 let ref light = scene.lights[li];
-                self.n_light_samples.push(self.sampler.round_count(light.n_samples));
+                self.n_light_samples.push(sampler.round_count(light.n_samples));
             }
             // request samples for sampling all lights
             for _i in 0..self.max_depth {
                 for j in 0..scene.lights.len() {
-                    self.sampler.request_2d_array(self.n_light_samples[j]);
-                    self.sampler.request_2d_array(self.n_light_samples[j]);
+                    sampler.request_2d_array(self.n_light_samples[j]);
+                    sampler.request_2d_array(self.n_light_samples[j]);
                 }
             }
         }
     }
     pub fn render(&mut self, scene: &Scene) {
         // SamplerIntegrator::Render (integrator.cpp)
-        self.preprocess(scene); // , &mut self.sampler
+        let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
+        self.preprocess(scene, &mut sampler);
         let sample_bounds: Bounds2i = self.camera.film.get_sample_bounds();
         println!("sample_bounds = {:?}", sample_bounds);
         let sample_extent: Vector2i = sample_bounds.diagonal();
@@ -8166,100 +8163,111 @@ impl DirectLightingIntegrator {
         println!("Rendering");
         let num_cores: usize = num_cpus::get();
         {
-            // let (pixel_tx, pixel_rx) = mpsc::channel();
-            // no parallelism
-            for y in 0..n_tiles.y {
-                for x in 0..n_tiles.x {
-            // for i in 0..num_cores {
-            //     let pixel_tx = pixel_tx.clone();
-            //     thread::spawn(move || {
-                    let tile: Point2i = Point2i { x: x, y: y };
-                    // TODO: should be done multi-threaded !!!
-                    let seed: i32 = tile.y * n_tiles.x + tile.x;
-                    let mut tile_sampler = self.sampler.clone(seed);
-                    let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
-                    let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
-                    let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
-                    let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
-                    let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
-                                                              Point2i { x: x1, y: y1 });
-                    // println!("Starting image tile {:?}", tile_bounds);
-                    let mut film_tile = self.camera.film.get_film_tile(tile_bounds);
-                    for pixel in &tile_bounds {
-                        tile_sampler.start_pixel(pixel);
-                        if !pnt2_inside_exclusive(pixel, self.pixel_bounds) {
-                            continue;
+            let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
+                                               (n_tiles.y * tile_size) as u32),
+                                              (tile_size as u32, tile_size as u32),
+                                              (0, 0));
+            println!("block_queue.len() = {}", block_queue.len());
+            let bq = &block_queue;
+            let sampler = &sampler;
+            // crossbeam::scope(|scope| {
+            //     let (pixel_tx, pixel_rx) = mpsc::channel();
+            //     // spawn worker threads
+            //     for _ in 0..num_cores {
+            //         let pixel_tx = pixel_tx.clone();
+            //         scope.spawn(move || {
+                        while let Some((x, y)) = bq.next() {
+                            let tile: Point2i = Point2i { x: x as i32, y: y as i32, };
+                            // TODO: should be done multi-threaded !!!
+                            let seed: i32 = tile.y * n_tiles.x + tile.x;
+                            let mut tile_sampler = sampler.clone(seed);
+                            let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
+                            let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
+                            let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
+                            let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
+                            let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
+                                                                      Point2i { x: x1, y: y1 });
+                            // println!("Starting image tile {:?}", tile_bounds);
+                            let mut film_tile = self.camera.film.get_film_tile(tile_bounds);
+                            for pixel in &tile_bounds {
+                                tile_sampler.start_pixel(pixel);
+                                if !pnt2_inside_exclusive(pixel, self.pixel_bounds) {
+                                    continue;
+                                }
+                                let mut done: bool = false;
+                                while !done {
+                                    // let's use the copy_arena crate instead of pbrt's MemoryArena
+                                    // let mut arena: Arena = Arena::with_capacity(262144); // 256kB
+                                    
+                                    // initialize _CameraSample_ for current sample
+                                    let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
+                                    // generate camera ray for current sample
+                                    let mut ray: Ray = Ray::default();
+                                    let ray_weight: Float = self.camera
+                                        .generate_ray_differential(&camera_sample, &mut ray);
+                                    ray.scale_differentials(1.0 as Float /
+                                                            (tile_sampler.samples_per_pixel as Float)
+                                                            .sqrt());
+                                    // TODO: ++nCameraRays;
+                                    // evaluate radiance along camera ray
+                                    let mut l: Spectrum = Spectrum::new(0.0 as Float);
+                                    let y: Float = l.y();
+                                    if ray_weight > 0.0 {
+                                        l = self.li(&mut ray,
+                                                    scene,
+                                                    &mut tile_sampler, // &mut arena,
+                                                    0_i32);
+                                    }
+                                    if l.has_nans() {
+                                        println!("Not-a-number radiance value returned for pixel ({:?}, \
+                                                  {:?}), sample {:?}. Setting to black.",
+                                                 pixel.x,
+                                                 pixel.y,
+                                                 tile_sampler.current_sample_number());
+                                        l = Spectrum::new(0.0);
+                                    } else if y < -10.0e-5 as Float {
+                                        println!("Negative luminance value, {:?}, returned for pixel \
+                                                  ({:?}, {:?}), sample {:?}. Setting to black.",
+                                                 y,
+                                                 pixel.x,
+                                                 pixel.y,
+                                                 tile_sampler.current_sample_number());
+                                        l = Spectrum::new(0.0);
+                                    } else if y.is_infinite() {
+                                        println!("Infinite luminance value returned for pixel ({:?}, \
+                                                  {:?}), sample {:?}. Setting to black.",
+                                                 pixel.x,
+                                                 pixel.y,
+                                                 tile_sampler.current_sample_number());
+                                        l = Spectrum::new(0.0);
+                                    }
+                                    // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
+                                    //          camera_sample, ray, l);
+                                    // add camera ray's contribution to image
+                                    film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
+                                    done = !tile_sampler.start_next_sample();
+                                } // arena is dropped here !
+                            }
+                            // send the tile through the channel to main thread
+                            // pixel_tx.send(0_u8).expect(&format!("Failed to send tile"));
+                            // pixel_tx.send(film_tile).expect(&format!("Failed to send tile"));
+                            self.camera.film.merge_film_tile(&film_tile);
                         }
-                        let mut done: bool = false;
-                        while !done {
-                            // let's use the copy_arena crate instead of pbrt's MemoryArena
-                            // let mut arena: Arena = Arena::with_capacity(262144); // 256kB
-
-                            // initialize _CameraSample_ for current sample
-                            let camera_sample: CameraSample = tile_sampler.get_camera_sample(pixel);
-                            // generate camera ray for current sample
-                            let mut ray: Ray = Ray::default();
-                            let ray_weight: Float = self.camera
-                                .generate_ray_differential(&camera_sample, &mut ray);
-                            ray.scale_differentials(1.0 as Float /
-                                                    (tile_sampler.samples_per_pixel as Float)
-                                .sqrt());
-                            // TODO: ++nCameraRays;
-                            // evaluate radiance along camera ray
-                            let mut l: Spectrum = Spectrum::new(0.0 as Float);
-                            let y: Float = l.y();
-                            if ray_weight > 0.0 {
-                                l = self.li(&mut ray,
-                                            scene,
-                                            &mut tile_sampler, // &mut arena,
-                                            0_i32);
-                            }
-                            if l.has_nans() {
-                                println!("Not-a-number radiance value returned for pixel ({:?}, \
-                                          {:?}), sample {:?}. Setting to black.",
-                                         pixel.x,
-                                         pixel.y,
-                                         tile_sampler.current_sample_number());
-                                l = Spectrum::new(0.0);
-                            } else if y < -10.0e-5 as Float {
-                                println!("Negative luminance value, {:?}, returned for pixel \
-                                          ({:?}, {:?}), sample {:?}. Setting to black.",
-                                         y,
-                                         pixel.x,
-                                         pixel.y,
-                                         tile_sampler.current_sample_number());
-                                l = Spectrum::new(0.0);
-                            } else if y.is_infinite() {
-                                println!("Infinite luminance value returned for pixel ({:?}, \
-                                          {:?}), sample {:?}. Setting to black.",
-                                         pixel.x,
-                                         pixel.y,
-                                         tile_sampler.current_sample_number());
-                                l = Spectrum::new(0.0);
-                            }
-                            // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
-                            //          camera_sample, ray, l);
-                            // add camera ray's contribution to image
-                            film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
-                            done = !tile_sampler.start_next_sample();
-                        } // arena is dropped here !
-                    }
-                    // println!{"Finished image tile {:?}", tile_bounds};
-                    // pixel_tx.send(film_tile).expect(&format!("Failed to send tile"));
+                //     });
+                // }
+                // // spawn thread to collect pixels and render image to file
+                // scope.spawn(move || {
+                //     for _ in 0..bq.len() {
+                //         let film_tile = pixel_rx.recv().unwrap();
+                //         // merge image tile into _Film_
+                //         // self.camera.film.merge_film_tile(&film_tile);
+                //     }
+                // // }
                 // });
-            // }
-            // for _ in 0..num_cores {
-            //     let film_tile = pixel_rx.recv().unwrap();
-                // merge image tile into _Film_
-                self.camera.film.merge_film_tile(&film_tile);
-                // TODO: reporter.Update();
-                }
-            // }
-            // TODO: reporter.Done();
-            }
+                println!("Rendering finished");
+                self.camera.film.write_image(1.0 as Float);
+            // });
         }
-        println!("Rendering finished");
-        self.camera.film.write_image(1.0 as Float);
     }
     pub fn specular_reflect(&self,
                             ray: &Ray,
@@ -8753,7 +8761,7 @@ pub fn part1_by1(mut x: u32) -> u32 {
 	// x = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
 	(x ^ (x << 1)) & 0x55555555
 }
-/// Compute the Morton code for the `(x, y)` position
+/// Compute the Morton code for the `(x, y)` position.
 pub fn morton2(p: &(u32, u32)) -> u32 {
 	(part1_by1(p.1) << 1) + part1_by1(p.0)
 }
