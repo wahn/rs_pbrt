@@ -4394,20 +4394,107 @@ impl Disk {
 
 impl Shape for Disk {
     fn object_bound(&self) -> Bounds3f {
-        // WORK
-        Bounds3f::default()
+        Bounds3f {
+            p_min: Point3f { x: -self.radius, y: -self.radius, z: self.height, },
+            p_max: Point3f { x: self.radius, y: self.radius, z: self.height, },
+        }
     }
     fn world_bound(&self) -> Bounds3f {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(self.object_bound())
     }
     fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
-        // WORK
-        None
+        // TODO: ProfilePhase p(Prof::ShapeIntersect);
+        // transform _Ray_ to object space
+        let mut o_err: Vector3f = Vector3f::default();
+        let mut d_err: Vector3f = Vector3f::default();
+        let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_err, &mut d_err);
+
+        // compute plane intersection for disk
+
+        // reject disk intersections for rays parallel to the disk's plane
+        if ray.d.z == 0.0 {
+            return None;
+        }
+        let mut t_shape_hit: Float = (self.height - ray.o.z) / ray.d.z;
+        if t_shape_hit <= 0.0 || t_shape_hit >= ray.t_max {
+            return None;
+        }
+        // see if hit point is inside disk radii and $\phimax$
+        let mut p_hit: Point3f = ray.position(t_shape_hit);
+        let dist2: Float = p_hit.x * p_hit.x + p_hit.y * p_hit.y;
+        if dist2 > self.radius * self.radius || dist2 < self.inner_radius * self.inner_radius {
+            return None;
+        }
+        // test disk $\phi$ value against $\phimax$
+        let mut phi: Float = p_hit.y.atan2(p_hit.x);
+        if phi < 0.0 {
+            phi += 2.0_f32 * PI;
+        }
+        if phi > self.phi_max {
+            return None;
+        }
+        // find parametric representation of disk hit
+        let u: Float = phi / self.phi_max;
+        let r_hit: Float = dist2.sqrt();
+        let one_minus_v: Float = (r_hit - self.inner_radius) / (self.radius - self.inner_radius);
+        let v: Float = 1.0 - one_minus_v;
+        let dpdu: Vector3f = Vector3f {
+            x: -self.phi_max * p_hit.y,
+            y: self.phi_max * p_hit.x,
+            z: 0.0,
+        };
+        let dpdv: Vector3f = Vector3f {
+            x: p_hit.x,
+            y: p_hit.y,
+            z: 0.0,
+        } * (self.inner_radius - self.radius) / r_hit;
+        let dndu: Normal3f = Normal3f::default();
+        let dndv: Normal3f = Normal3f::default();
+        // refine disk intersection point
+        p_hit.z = self.height;
+        // compute error bounds for disk intersection
+        let p_error: Vector3f = Vector3f::default();
+        // initialize _SurfaceInteraction_ from parametric information
+        let uv_hit: Point2f = Point2f { x: u, y: v };
+        let wo: Vector3f = -ray.d;
+        let si: SurfaceInteraction =
+            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
+        let isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
+        Some((isect, t_shape_hit))
     }
     fn intersect_p(&self, r: &Ray) -> bool {
-        // WORK
-        false
+        // TODO: ProfilePhase p(Prof::ShapeIntersectP);
+        // transform _Ray_ to object space
+        let mut o_err: Vector3f = Vector3f::default();
+        let mut d_err: Vector3f = Vector3f::default();
+        let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_err, &mut d_err);
+
+        // compute plane intersection for disk
+
+        // reject disk intersections for rays parallel to the disk's plane
+        if ray.d.z == 0.0 {
+            return false;
+        }
+        let mut t_shape_hit: Float = (self.height - ray.o.z) / ray.d.z;
+        if t_shape_hit <= 0.0 || t_shape_hit >= ray.t_max {
+            return false;
+        }
+        // see if hit point is inside disk radii and $\phimax$
+        let mut p_hit: Point3f = ray.position(t_shape_hit);
+        let dist2: Float = p_hit.x * p_hit.x + p_hit.y * p_hit.y;
+        if dist2 > self.radius * self.radius || dist2 < self.inner_radius * self.inner_radius {
+            return false;
+        }
+        // test disk $\phi$ value against $\phimax$
+        let mut phi: Float = p_hit.y.atan2(p_hit.x);
+        if phi < 0.0 {
+            phi += 2.0_f32 * PI;
+        }
+        if phi > self.phi_max {
+            return false;
+        }
+        true
     }
 }
 
