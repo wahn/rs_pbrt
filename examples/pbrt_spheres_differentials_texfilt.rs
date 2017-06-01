@@ -1,9 +1,10 @@
 extern crate pbrt;
 
-use pbrt::{BVHAccel, Checkerboard2DTexture, ConstantTexture, DistantLight, Float,
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, DistantLight, Film, Float,
            GeometricPrimitive, GlassMaterial, ImageTexture, ImageWrap, MatteMaterial,
-           MirrorMaterial, PlanarMapping2D, Point2f, Point3f, Primitive, Scene, Spectrum, Sphere,
-           SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D, Vector3f};
+           MirrorMaterial, PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Scene,
+           Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
+           Vector2f, Vector3f};
 use std::string::String;
 use std::sync::Arc;
 
@@ -352,5 +353,78 @@ fn main() {
     println!("###############");
     // SamplerIntegrator::Render (integrator.cpp)
     let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
-    pbrt::render(&scene);
+    // create camera
+    let pos = Point3f {
+        x: 2.0,
+        y: 2.0,
+        z: 5.0,
+    };
+    let look = Point3f {
+        x: 0.0,
+        y: -0.4,
+        z: 0.0,
+    };
+    let up = Vector3f {
+        x: 0.0,
+        y: 1.0,
+        z: 0.0,
+    };
+    let t: Transform = Transform::look_at(pos, look, up);
+    let it: Transform = Transform {
+        m: t.m_inv.clone(),
+        m_inv: t.m.clone(),
+    };
+    let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
+    let fov: Float = 30.0;
+    let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
+    let xres = 1000;
+    let yres = 500;
+    let frame: Float = xres as Float / yres as Float;
+    let mut screen: Bounds2f = Bounds2f::default();
+    if frame > 1.0 {
+        screen.p_min.x = -frame;
+        screen.p_max.x = frame;
+        screen.p_min.y = -1.0;
+        screen.p_max.y = 1.0;
+    } else {
+        screen.p_min.x = -1.0;
+        screen.p_max.x = 1.0;
+        screen.p_min.y = -1.0 / frame;
+        screen.p_max.y = 1.0 / frame;
+    }
+    let shutteropen: Float = 0.0;
+    let shutterclose: Float = 1.0;
+    let lensradius: Float = 0.0;
+    let focaldistance: Float = 1e6;
+    let crop: Bounds2f = Bounds2f {
+        p_min: Point2f { x: 0.0, y: 0.0 },
+        p_max: Point2f { x: 1.0, y: 1.0 },
+    };
+    let xw: Float = 0.5;
+    let yw: Float = 0.5;
+    let box_filter = BoxFilter {
+        radius: Vector2f { x: xw, y: yw },
+        inv_radius: Vector2f {
+            x: 1.0 / xw,
+            y: 1.0 / yw,
+        },
+    };
+    let filename: String = String::from("spheres-differentials-texfilt.exr");
+    let film: Film = Film::new(Point2i { x: xres, y: yres },
+                               crop,
+                               box_filter,
+                               35.0,
+                               filename,
+                               1.0,
+                               std::f32::INFINITY);
+    let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
+                                                                       camera_to_screen,
+                                                                       screen,
+                                                                       shutteropen,
+                                                                       shutterclose,
+                                                                       lensradius,
+                                                                       focaldistance,
+                                                                       fov,
+                                                                       film);
+    pbrt::render(&scene, &perspective_camera);
 }
