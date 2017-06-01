@@ -40,6 +40,7 @@ examples: release
 	./target/release/examples/pbrt
 	./target/release/examples/lights_distant_light_new
 	./target/release/examples/pbrt_spheres_differentials_texfilt
+	./target/release/examples/pbrt_teapot_area_light
 	./target/release/examples/quaternion_default
 	./target/release/examples/shapes_sphere_intersect
 	./target/release/examples/shapes_sphere_world_bound
