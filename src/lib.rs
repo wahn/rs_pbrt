@@ -4332,6 +4332,85 @@ impl Primitive for GeometricPrimitive {
     // }
 }
 
+// see disk.h
+
+#[derive(Clone)]
+pub struct Disk {
+    height: Float,
+    radius: Float,
+    inner_radius: Float,
+    phi_max: Float,
+    // inherited from class Shape (see shape.h)
+    object_to_world: Transform,
+    world_to_object: Transform,
+    reverse_orientation: bool,
+    transform_swaps_handedness: bool,
+    pub material: Option<Arc<Material + Send + Sync>>,
+}
+
+impl Default for Disk {
+    fn default() -> Self {
+        Disk {
+            // Shape
+            object_to_world: Transform::default(),
+            world_to_object: Transform::default(),
+            reverse_orientation: false,
+            transform_swaps_handedness: false,
+            // Disk
+            height: 0.0,
+            radius: 1.0,
+            inner_radius: 0.0,
+            phi_max: radians(360.0),
+            material: None,
+        }
+    }
+}
+
+impl Disk {
+    pub fn new(object_to_world: Transform,
+               world_to_object: Transform,
+               reverse_orientation: bool,
+               transform_swaps_handedness: bool,
+               height: Float,
+               radius: Float,
+               inner_radius: Float,
+               phi_max: Float)
+               -> Self {
+        Disk {
+            // Shape
+            object_to_world: object_to_world,
+            world_to_object: world_to_object,
+            reverse_orientation: reverse_orientation,
+            transform_swaps_handedness: transform_swaps_handedness,
+            // Disk
+            height: height,
+            radius: radius,
+            inner_radius: inner_radius,
+            phi_max: radians(clamp(phi_max, 0.0, 360.0)),
+            material: None,
+        }
+    }
+}
+
+impl Shape for Disk {
+    fn object_bound(&self) -> Bounds3f {
+        // WORK
+        Bounds3f::default()
+    }
+    fn world_bound(&self) -> Bounds3f {
+        // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
+        self.object_to_world.transform_bounds(self.object_bound())
+    }
+    fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+        // WORK
+        None
+    }
+    fn intersect_p(&self, r: &Ray) -> bool {
+        // WORK
+        false
+    }
+}
+
 // see sphere.h
 
 #[derive(Clone)]
@@ -8057,7 +8136,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         } else {
             // TODO
         }
-        // WORK
+        // TODO
     }
     ld
 }
@@ -8347,7 +8426,7 @@ impl TextureParams {
     pub fn get_spectrum_texture(&mut self, name: String, def: Spectrum) // TODO: -> &Texture<Spectrum>
     {
         self.geom_params.find_texture(name);
-        // WORK
+        // TODO
     }
 }
 
