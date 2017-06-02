@@ -1296,6 +1296,23 @@ pub fn vec3_cross_vec3(v1: Vector3f, v2: Vector3f) -> Vector3f
     }
 }
 
+/// Given a vectors and a normal in 3D, the cross product is a vector
+/// that is perpendicular to both of them.
+pub fn vec3_cross_nrm(v1: Vector3f, v2: Normal3f) -> Vector3f
+{
+    let v1x: f64 = v1.x as f64;
+    let v1y: f64 = v1.y as f64;
+    let v1z: f64 = v1.z as f64;
+    let v2x: f64 = v2.x as f64;
+    let v2y: f64 = v2.y as f64;
+    let v2z: f64 = v2.z as f64;
+    Vector3f {
+        x: ((v1y * v2z) - (v1z * v2y)) as Float,
+        y: ((v1z * v2x) - (v1x * v2z)) as Float,
+        z: ((v1x * v2y) - (v1y * v2x)) as Float,
+    }
+}
+
 /// Compute a new vector pointing in the same direction but with unit
 /// length.
 pub fn vec3_normalize(v: Vector3f) -> Vector3f
@@ -1734,6 +1751,19 @@ impl<T> Add for Normal3<T>
             x: self.x + rhs.x,
             y: self.y + rhs.y,
             z: self.z + rhs.z,
+        }
+    }
+}
+
+impl<T> Sub for Normal3<T>
+    where T: Copy + Sub<T, Output = T>
+{
+    type Output = Normal3<T>;
+    fn sub(self, rhs: Normal3<T>) -> Normal3<T> {
+        Normal3::<T> {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
         }
     }
 }
@@ -4060,7 +4090,7 @@ pub struct Shading {
 }
 
 #[derive(Default,Clone)]
-pub struct SurfaceInteraction<'a> {
+pub struct SurfaceInteraction<'a, 'b> {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
@@ -4073,15 +4103,7 @@ pub struct SurfaceInteraction<'a> {
     pub dpdu: Vector3f,
     pub dpdv: Vector3f,
     pub dndu: Normal3f,
-    pub dndv: Normal3f, /* const Shape *shape = nullptr;
-                         * struct {
-                         *     Normal3f n;
-                         *     Vector3f dpdu, dpdv;
-                         *     Normal3f dndu, dndv;
-                         * } shading;
-                         * const Primitive *primitive = nullptr;
-                         * BSDF *bsdf = nullptr;
-                         * BSSRDF *bssrdf = nullptr; */
+    pub dndv: Normal3f,
     pub dpdx: Vector3f,
     pub dpdy: Vector3f,
     pub dudx: Float,
@@ -4091,9 +4113,10 @@ pub struct SurfaceInteraction<'a> {
     pub primitive: Option<&'a GeometricPrimitive>,
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
+    pub shape: Option<&'b Shape>,
 }
 
-impl<'a> SurfaceInteraction<'a> {
+impl<'a, 'b> SurfaceInteraction<'a, 'b> {
     pub fn new(p: Point3f,
                p_error: Vector3f,
                uv: Point2f,
@@ -4102,8 +4125,8 @@ impl<'a> SurfaceInteraction<'a> {
                dpdv: Vector3f,
                dndu: Normal3f,
                dndv: Normal3f,
-               time: Float /* ,
-                            * sh: &Shape */)
+               time: Float,
+               sh: Option<&'b Shape>)
                -> Self {
         let nv: Vector3f = vec3_normalize(vec3_cross_vec3(dpdu, dpdv));
         // TODO: Adjust normal based on orientation and handedness
@@ -4140,7 +4163,32 @@ impl<'a> SurfaceInteraction<'a> {
             primitive: None,
             shading: shading,
             bsdf: None,
+            shape: sh,
         }
+    }
+    pub fn set_shading_geometry(&mut self,
+                                dpdus: Vector3f,
+                                dpdvs: Vector3f,
+                                dndus: Normal3f,
+                                dndvs: Normal3f,
+                                orientation_is_authoritative: bool) {
+        // compute _shading.n_ for _SurfaceInteraction_
+        self.shading.n = nrm_normalize(Normal3f::from(vec3_cross_vec3(dpdus, dpdvs)));
+        if let Some(shape) = self.shape {
+            if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
+                self.shading.n = -self.shading.n;
+            }
+        }
+        if orientation_is_authoritative {
+            self.n = nrm_faceforward_nrm(self.n, self.shading.n);
+        } else {
+            self.shading.n = nrm_faceforward_nrm(self.shading.n, self.n);
+        }
+        // initialize _shading_ partial derivative values
+        self.shading.dpdu = dpdus;
+        self.shading.dpdv = dpdvs;
+        self.shading.dndu = dndus;
+        self.shading.dndv = dndvs;
     }
     pub fn compute_scattering_functions(&mut self,
                                         ray: &Ray,
@@ -4149,7 +4197,9 @@ impl<'a> SurfaceInteraction<'a> {
                                         mode: TransportMode) {
         self.compute_differentials(ray);
         if let Some(primitive) = self.primitive {
-            primitive.compute_scattering_functions(self /* arena, */, mode, allow_multiple_lobes);
+            primitive.compute_scattering_functions(self, // arena,
+                                                   mode,
+                                                   allow_multiple_lobes);
         }
     }
     pub fn compute_differentials(&mut self, ray: &Ray) {
@@ -4262,6 +4312,8 @@ pub trait Shape {
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)>;
     fn intersect_p(&self, r: &Ray) -> bool;
+    fn get_reverse_orientation(&self) -> bool;
+    fn get_transform_swaps_handedness(&self) -> bool;
     // TODO: virtual Float Area() const = 0;
     // TODO: virtual Interaction Sample(const Point2f &u, Float *pdf) const = 0;
 }
@@ -4459,7 +4511,7 @@ impl Shape for Disk {
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
-            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
+            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time, None);
         let isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         Some((isect, t_shape_hit))
     }
@@ -4495,6 +4547,12 @@ impl Shape for Disk {
             return false;
         }
         true
+    }
+    fn get_reverse_orientation(&self) -> bool {
+        self.reverse_orientation
+    }
+    fn get_transform_swaps_handedness(&self) -> bool {
+        self.transform_swaps_handedness
     }
 }
 
@@ -4729,7 +4787,7 @@ impl Shape for Sphere {
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
-            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
+            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time, None);
         let isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         Some((isect, t_shape_hit.v as Float))
     }
@@ -4810,6 +4868,12 @@ impl Shape for Sphere {
             }
         }
         true
+    }
+    fn get_reverse_orientation(&self) -> bool {
+        self.reverse_orientation
+    }
+    fn get_transform_swaps_handedness(&self) -> bool {
+        self.transform_swaps_handedness
     }
 }
 
@@ -5100,11 +5164,80 @@ impl Shape for Triangle {
         let dndu: Normal3f = Normal3f::default();
         let dndv: Normal3f = Normal3f::default();
         let wo: Vector3f = -ray.d;
-        let si: SurfaceInteraction =
-            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time);
+        let mut si: SurfaceInteraction =
+            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time, Some(self));
         // override surface normal in _isect_ for triangle
         let surface_normal: Normal3f = Normal3f::from(vec3_normalize(vec3_cross_vec3(dp02, dp12)));
-        // TODO: if (mesh->n || mesh->s) { ... }
+        if !self.mesh.n.is_empty() || !self.mesh.s.is_empty() {
+            // initialize _Triangle_ shading geometry
+
+            // compute shading normal _ns_ for triangle
+            let mut ns: Normal3f = Normal3f::default();
+            if !self.mesh.n.is_empty() {
+                ns =
+                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 0]]) * b0 +
+                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 1]]) * b1 +
+                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]]) * b2;
+                if ns.length_squared() > 0.0 {
+                    ns = nrm_normalize(ns);
+                } else {
+                    ns = si.n;
+                }
+            } else {
+                ns = si.n;
+            }
+            // compute shading tangent _ss_ for triangle
+            let mut ss: Vector3f = Vector3f::default();
+            if !self.mesh.s.is_empty() {
+                ss =
+                    self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 0]] * b0 +
+                    self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 1]] * b1 +
+                    self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 2]] * b2;
+                if ss.length_squared() > 0.0 {
+                    ss = vec3_normalize(ss);
+                } else {
+                    ss = vec3_normalize(si.dpdu);
+                }
+            } else {
+                ss = vec3_normalize(si.dpdu);
+            }
+            // compute shading bitangent _ts_ for triangle and adjust _ss_
+            let mut ts: Vector3f = vec3_cross_nrm(ss, ns);
+            if ts.length_squared() > 0.0 {
+                ts = vec3_normalize(ts);
+                ss = vec3_cross_nrm(ts, ns);
+            } else {
+                vec3_coordinate_system(&Vector3f::from(ns), &mut ss, &mut ts);
+            }
+            // compute $\dndu$ and $\dndv$ for triangle shading geometry
+            let mut dndu: Normal3f = Normal3f::default();
+            let mut dndv: Normal3f = Normal3f::default();
+            if !self.mesh.n.is_empty() {
+                // compute deltas for triangle partial derivatives of normal
+                let duv02: Vector2f = uv[0] - uv[2];
+                let duv12: Vector2f = uv[1] - uv[2];
+                let dn1: Normal3f =
+                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 0]]) -
+                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]]);
+                let dn2: Normal3f =
+                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 1]]) -
+                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]]);
+                let determinant: Float = duv02.x * duv12.y - duv02.y * duv12.x;
+                let degenerateUV: bool = determinant.abs() < 1e-8;
+                if degenerate_uv {
+                    dndu = Normal3f::default();
+                    dndv = Normal3f::default();
+                } else {
+                    let inv_det: Float = 1.0 / determinant;
+                    dndu = (dn1 * duv12.y - dn2 * duv02.y) * inv_det;
+                    dndv = (dn1 * -duv12.x + dn2 * duv02.x) * inv_det;
+                }
+            } else {
+                dndu = Normal3f::default();
+                dndv = Normal3f::default();
+            }
+            si.set_shading_geometry(ss, ts, dndu, dndv, true);
+        }
         Some((si, t as Float))
     }
     fn intersect_p(&self, ray: &Ray) -> bool {
@@ -5241,6 +5374,12 @@ impl Shape for Triangle {
         // TODO: if (testAlphaTexture && (mesh->alphaMask || mesh->shadowAlphaMask)) { ... }
         // TODO: ++nHits;
         true
+    }
+    fn get_reverse_orientation(&self) -> bool {
+        self.reverse_orientation
+    }
+    fn get_transform_swaps_handedness(&self) -> bool {
+        self.transform_swaps_handedness
     }
 }
 
