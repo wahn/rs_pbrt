@@ -5794,13 +5794,14 @@ impl BVHAccel {
                             let mut buckets: [BucketInfo; 12] = [BucketInfo::default(); 12];
                             // initialize _BucketInfo_ for SAH partition buckets
                             for i in start..end {
-                                let mut b: usize = n_buckets *
-                                    centroid_bounds.offset(primitive_info[i].centroid)[dim]
+                                let mut b: usize =
+                                    (n_buckets as Float *
+                                     centroid_bounds.offset(primitive_info[i].centroid)[dim])
                                     as usize;
                                 if b == n_buckets {
                                     b = n_buckets - 1;
                                 }
-                                // assert!(b >= 0_usize, "b >= 0");
+                                assert!(b >= 0_usize, "b >= 0");
                                 assert!(b < n_buckets, "b < {}", n_buckets);
                                 buckets[b].count += 1;
                                 buckets[b].bounds = bnd3_union_bnd3(buckets[b].bounds,
@@ -5842,10 +5843,11 @@ impl BVHAccel {
                                 let (left, right): (Vec<BVHPrimitiveInfo>, Vec<BVHPrimitiveInfo>) =
                                     primitive_info[start..end].into_iter()
                                     .partition(|&pi| {
-                                        let mut b: usize = n_buckets *
-                                            centroid_bounds.offset(pi.centroid)[dim] as usize;
+                                        let mut b: usize =
+                                            (n_buckets as Float *
+                                             centroid_bounds.offset(pi.centroid)[dim]) as usize;
                                         if b == n_buckets {b = n_buckets - 1;}
-                                        // assert!(b >= 0_usize, "b >= 0");
+                                        assert!(b >= 0_usize, "b >= 0");
                                         assert!(b < n_buckets, "b < {}", n_buckets);
                                         b <= min_cost_split_bucket
                                     });
@@ -5854,10 +5856,41 @@ impl BVHAccel {
                                 if combined.len() == primitive_info.len() {
                                     primitive_info.copy_from_slice(combined.as_slice());
                                 } else {
-                                    println!("TODO: combined.len() != primitive_info.len(); {} \
-                                              != {}",
-                                             combined.len(),
-                                             primitive_info.len());
+                                    // can't use above function (copy_from_slice)
+                                    let prim_info_len = primitive_info.len();
+                                    let mut prim_info_clone = primitive_info.clone();
+                                    let (l_prim_info, r_prim_info) = prim_info_clone.split_at_mut(start);
+                                    if combined.len() == r_prim_info.len() {
+                                        r_prim_info.copy_from_slice(combined.as_slice());
+                                        let combined = [l_prim_info, r_prim_info].concat();
+                                        if combined.len() == prim_info_len {
+                                            primitive_info.copy_from_slice(combined.as_slice());
+                                        } else {
+                                            println!("start({}), mid({}), end({})", start, mid, end);
+                                            println!("combined.len() != prim_info.len(); {} != {}",
+                                                     combined.len(), prim_info_len);
+                                        }
+                                    } else {
+                                        // we have to split at end as well
+                                        let (rm_prim_info, rr_prim_info) = r_prim_info.split_at_mut(end - start);
+                                        if combined.len() == rm_prim_info.len() {
+                                            // replace middle part
+                                            rm_prim_info.copy_from_slice(combined.as_slice());
+                                            // combine left, middle, and right
+                                            let combined = [l_prim_info, rm_prim_info, rr_prim_info].concat();
+                                            if combined.len() == prim_info_len {
+                                                primitive_info.copy_from_slice(combined.as_slice());
+                                            } else {
+                                                println!("start({}), mid({}), end({})", start, mid, end);
+                                                println!("combined.len() != prim_info_len; {} != {}",
+                                                         combined.len(), prim_info_len);
+                                            }
+                                        } else {
+                                            println!("start({}), mid({}), end({})", start, mid, end);
+                                            println!("combined.len() != m_prim_info.len(); {} != {}",
+                                                     combined.len(), rm_prim_info.len());
+                                        }
+                                    }
                                 }
                             } else {
                                 // create leaf _BVHBuildNode_
@@ -5927,6 +5960,7 @@ impl BVHAccel {
         my_offset
     }
 }
+
 // see sampling.h
 
 /// Randomly permute an array of *count* sample values, each of which
