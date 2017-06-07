@@ -4336,7 +4336,7 @@ pub trait Primitive {
                                                   mode,
                                                   allow_multiple_lobes);
         }
-        // TODO: CHECK_GE(Dot(isect->n, isect->shading.n), 0.);
+        assert!(nrm_dot_nrm(isect.n, isect.shading.n) > 0.0);
     }
 }
 
@@ -7544,7 +7544,7 @@ pub fn cos_phi(w: Vector3f) -> Float {
     if sin_theta == 0.0 as Float {
         1.0 as Float
     } else {
-        clamp(w.y / sin_theta, -1.0, 1.0)
+        clamp(w.x / sin_theta, -1.0, 1.0)
     }
 }
 
@@ -9193,6 +9193,7 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
     // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
     println!("Rendering");
     let num_cores: usize = num_cpus::get();
+    // DEBUG: let num_cores: usize = 1; // TMP
     {
         let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
                                            (n_tiles.y * tile_size) as u32),
