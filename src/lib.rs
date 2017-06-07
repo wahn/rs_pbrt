@@ -7450,25 +7450,38 @@ impl Bxdf for OrenNayar {
 pub struct MicrofacetReflection {
     pub r: Spectrum,
     pub distribution: TrowbridgeReitzDistribution, // TODO: MicrofacetDistribution,
-    pub f: FresnelDielectric, // TODO: Fresnel,
+    pub fresnel: FresnelDielectric, // TODO: Fresnel,
 }
 
 impl MicrofacetReflection {
     pub fn new(r: Spectrum,
                distribution: TrowbridgeReitzDistribution,
-               f: FresnelDielectric) -> Self {
+               fresnel: FresnelDielectric) -> Self {
         MicrofacetReflection {
             r: r,
             distribution: distribution,
-            f: f,
+            fresnel: fresnel,
         }
     }
 }
 
 impl Bxdf for MicrofacetReflection {
     fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
-        // WORK
-        RGBSpectrum::default()
+        let cos_theta_o: Float = abs_cos_theta(wo);
+        let cos_theta_i: Float = abs_cos_theta(wi);
+        let mut wh: Vector3f = wi + wo;
+        // handle degenerate cases for microfacet reflection
+        if cos_theta_i == 0.0 || cos_theta_o == 0.0 {
+            return Spectrum::new(0.0);
+        }
+        if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 {
+            return Spectrum::new(0.0);
+        }
+        wh = vec3_normalize(wh);
+        let mut dot: Float = vec3_dot_vec3(wi, wh);
+        let f: Spectrum = self.fresnel.evaluate(&mut dot);
+        self.r * self.distribution.d(wh) * self.distribution.g(wo, wi) * f /
+        (4.0 as Float * cos_theta_i * cos_theta_o)
     }
     fn sample_f(&self,
                 wo: Vector3f,
@@ -7513,6 +7526,18 @@ pub fn sin_theta(w: Vector3f) -> Float {
     sin_2_theta(w).sqrt()
 }
 
+/// Utility function to calculate the tangent via spherical
+/// coordinates.
+pub fn tan_theta(w: Vector3f) -> Float {
+    sin_theta(w) / cos_theta(w)
+}
+
+/// Utility function to calculate the square tangent via spherical
+/// coordinates.
+pub fn tan_2_theta(w: Vector3f) -> Float {
+    sin_2_theta(w) / cos_2_theta(w)
+}
+
 /// Utility function to calculate cosine via spherical coordinates.
 pub fn cos_phi(w: Vector3f) -> Float {
     let sin_theta: Float = sin_theta(w);
@@ -7531,6 +7556,16 @@ pub fn sin_phi(w: Vector3f) -> Float {
     } else {
         clamp(w.y / sin_theta, -1.0, 1.0)
     }
+}
+
+/// Utility function to calculate square cosine via spherical coordinates.
+pub fn cos_2_phi(w: Vector3f) -> Float {
+    cos_phi(w) * cos_phi(w)
+}
+
+/// Utility function to calculate square sine via spherical coordinates.
+pub fn sin_2_phi(w: Vector3f) -> Float {
+    sin_phi(w) * sin_phi(w)
 }
 
 /// Computes the refraction direction given an incident direction, a
@@ -7587,9 +7622,20 @@ pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Flo
 
 // see microfacet.h
 
+pub trait MicrofacetDistribution {
+    fn d(&self, wh: Vector3f) -> Float;
+    fn lambda(&self, w: Vector3f) -> Float;
+    fn g1(&self, w: Vector3f) -> Float {
+        1.0 as Float / (1.0 as Float + self.lambda(w))
+    }
+    fn g(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        1.0 as Float / (1.0 as Float + self.lambda(wo) + self.lambda(wi))
+    }
+}
+
 pub struct TrowbridgeReitzDistribution {
     pub alpha_x: Float,
-    pub alpha_b: Float,
+    pub alpha_y: Float,
     // inherited from class MicrofacetDistribution (see microfacet.h)
     pub sample_visible_area: bool,
 }
@@ -7598,7 +7644,7 @@ impl TrowbridgeReitzDistribution {
     pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> Self {
         TrowbridgeReitzDistribution {
             alpha_x: alpha_x,
-            alpha_b: alpha_y,
+            alpha_y: alpha_y,
             sample_visible_area: sample_visible_area,
         }
     }
@@ -7614,6 +7660,33 @@ impl TrowbridgeReitzDistribution {
         let x: Float = roughness.ln(); // natural (base e) logarithm
         1.62142 + 0.819955 * x + 0.1734 * x * x + 0.0171201 * x * x * x +
         0.000640711 * x * x * x * x
+    }
+}
+
+impl MicrofacetDistribution for TrowbridgeReitzDistribution {
+    fn d(&self, wh: Vector3f) -> Float {
+        let tan_2_theta: Float = tan_2_theta(wh);
+        if tan_2_theta.is_infinite() {
+            return 0.0 as Float;
+        }
+        let cos_4_theta: Float = cos_2_theta(wh) * cos_2_theta(wh);
+        let e: Float = (cos_2_phi(wh) / (self.alpha_x * self.alpha_x) +
+                        sin_2_phi(wh) / (self.alpha_y * self.alpha_y)) *
+                       tan_2_theta;
+        1.0 as Float /
+        (PI * self.alpha_x * self.alpha_y * cos_4_theta * (1.0 as Float + e) * (1.0 as Float + e))
+    }
+    fn lambda(&self, w: Vector3f) -> Float {
+        let abs_tan_theta: Float = tan_theta(w).abs();
+        if abs_tan_theta.is_infinite() {
+            return 0.0;
+        }
+        // compute _alpha_ for direction _w_
+        let alpha: Float = (cos_2_phi(w) * self.alpha_x * self.alpha_x +
+                            sin_2_phi(w) * self.alpha_y * self.alpha_y)
+                .sqrt();
+        let alpha_2_tan_2_theta: Float = (alpha * abs_tan_theta) * (alpha * abs_tan_theta);
+        -1.0 as Float + (1.0 as Float + alpha_2_tan_2_theta).sqrt() / 2.0 as Float
     }
 }
 
@@ -7719,7 +7792,7 @@ impl PlasticMaterial {
             }
             let distrib: TrowbridgeReitzDistribution = TrowbridgeReitzDistribution {
                 alpha_x: rough,
-                alpha_b: rough,
+                alpha_y: rough,
                 sample_visible_area: true,
             };
             let spec: MicrofacetReflection = MicrofacetReflection::new(ks, distrib, fresnel);
