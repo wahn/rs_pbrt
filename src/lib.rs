@@ -7795,8 +7795,7 @@ impl PlasticMaterial {
                 alpha_y: rough,
                 sample_visible_area: true,
             };
-            let spec: MicrofacetReflection = MicrofacetReflection::new(ks, distrib, fresnel);
-            bxdfs.push(Box::new(LambertianReflection::new(ks)));
+            bxdfs.push(Box::new(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
         Bsdf::new(si, 1.5, bxdfs)
     }
