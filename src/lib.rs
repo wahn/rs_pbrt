@@ -7686,7 +7686,7 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
                             sin_2_phi(w) * self.alpha_y * self.alpha_y)
                 .sqrt();
         let alpha_2_tan_2_theta: Float = (alpha * abs_tan_theta) * (alpha * abs_tan_theta);
-        -1.0 as Float + (1.0 as Float + alpha_2_tan_2_theta).sqrt() / 2.0 as Float
+        (-1.0 as Float + (1.0 as Float + alpha_2_tan_2_theta).sqrt()) / 2.0 as Float
     }
 }
 
