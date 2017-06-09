@@ -162,14 +162,18 @@ fn main() {
                                       0.000000,
                                       1.000000);
     let t: Transform = t *
-                       Transform::translate(Vector3f {
-                                                x: -4.86,
-                                                y: -7.2,
-                                                z: -5.4,
-                                            });
+        Transform::translate(Vector3f {
+            x: -4.86,
+            y: -7.2,
+            z: -5.4,
+        });
+    let t_inv: Transform = Transform {
+        m: t.m_inv,
+        m_inv: t.m,
+    };
     // LightSource "point" "color I" [ 50 50 50 ]
     let i: Spectrum = Spectrum::new(50.0);
-    builder.add_point_light(&t, &i);
+    builder.add_point_light(&t_inv, &i);
     // pbrt::MakeLight
     let l: Spectrum = Spectrum::new(3.141593);
     let sc: Spectrum = Spectrum::new(1.0);

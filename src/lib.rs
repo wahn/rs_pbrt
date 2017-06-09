@@ -1705,6 +1705,14 @@ pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
     (p1 - p2).length()
 }
 
+/// The distance squared between two points is the length of the
+/// vector between them squared.
+pub fn pnt3_distance_squared<T>(p1: Point3<T>, p2: Point3<T>) -> T
+    where T: num::Float + Sub<T, Output = T>
+{
+    (p1 - p2).length_squared()
+}
+
 /// When tracing spawned rays leaving the intersection point p, we
 /// offset their origins enough to ensure that they are past the
 /// boundary of the error box and thus won't incorrectly re-intersect
@@ -8388,8 +8396,26 @@ impl Light for PointLight {
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
                  -> Spectrum {
-        // WORK
-        Spectrum::default()
+        // TODO: ProfilePhase _(Prof::LightSample);
+        *wi = vec3_normalize(self.p_light - iref.p);
+        *pdf = 1.0 as Float;
+        *vis = VisibilityTester {
+            p0: Interaction {
+                p: iref.p,
+                time: iref.time,
+                p_error: iref.p_error,
+                wo: iref.wo,
+                n: iref.n,
+            },
+            p1: Interaction {
+                p: self.p_light,
+                time: iref.time,
+                p_error: Vector3f::default(),
+                wo: Vector3f::default(),
+                n: Normal3f::default(),
+            },
+        };
+        self.i / pnt3_distance_squared(self.p_light, iref.p)
     }
     fn preprocess(&self, _scene: &Scene) {
     }
