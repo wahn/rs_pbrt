@@ -2,21 +2,21 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Checkerboard2DTexture,
            ConstantTexture, DistantLight, Film, Float, GeometricPrimitive, GlassMaterial,
-           ImageTexture, ImageWrap, PlasticMaterial, PerspectiveCamera, PlanarMapping2D, Point2f,
-           Point2i, Point3f, Primitive, Scene, Spectrum, Disk, SplitMethod, Transform, Triangle,
-           TriangleMesh, UVMapping2D, Vector2f, Vector3f};
+           ImageTexture, ImageWrap, Light, PlasticMaterial, PerspectiveCamera, PlanarMapping2D,
+           Point2f, Point2i, Point3f, PointLight, Primitive, Scene, Spectrum, Disk, SplitMethod,
+           Transform, Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f};
 use std::sync::Arc;
 
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
     disks: Vec<Arc<Disk>>,
-    lights: Vec<DistantLight>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<Arc<TriangleMesh>>,
     disks: Vec<Arc<Disk>>,
-    lights: Vec<DistantLight>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 impl SceneDescriptionBuilder {
@@ -27,13 +27,21 @@ impl SceneDescriptionBuilder {
             lights: Vec::new(),
         }
     }
-    fn add_light(&mut self,
-                 light_to_world: &Transform,
-                 l: &Spectrum,
-                 w_light: &Vector3f)
-                 -> &mut SceneDescriptionBuilder {
-        let distant_light: DistantLight = DistantLight::new(light_to_world, &l, &w_light);
+    fn add_distant_light(&mut self,
+                         light_to_world: &Transform,
+                         l: &Spectrum,
+                         w_light: &Vector3f)
+                         -> &mut SceneDescriptionBuilder {
+        let distant_light = Arc::new(DistantLight::new(light_to_world, &l, &w_light));
         self.lights.push(distant_light);
+        self
+    }
+    fn add_point_light(&mut self,
+                       light_to_world: &Transform,
+                       i: &Spectrum)
+                       -> &mut SceneDescriptionBuilder {
+        let point_light = Arc::new(PointLight::new(light_to_world, &i));
+        self.lights.push(point_light);
         self
     }
     fn add_mesh(&mut self,
@@ -94,7 +102,7 @@ struct RenderOptions {
     primitives: Vec<Arc<Primitive + Sync + Send>>,
     triangles: Vec<Arc<Triangle>>,
     disks: Vec<Arc<Disk>>,
-    lights: Vec<DistantLight>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 impl RenderOptions {
@@ -102,10 +110,10 @@ impl RenderOptions {
         let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
         let mut disks: Vec<Arc<Disk>> = Vec::new();
-        let mut lights: Vec<DistantLight> = Vec::new();
+        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
         // lights
         for light in &scene.lights {
-            lights.push(*light);
+            lights.push(light.clone());
         }
         // disks
         for disk in scene.disks {
@@ -135,6 +143,33 @@ impl RenderOptions {
 
 fn main() {
     let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
+    // we need camera transformation below to transform triangles
+    // INFO: The order in PBRT file is different !!!
+    let t: Transform = Transform::new(0.828849,
+                                      -0.559473,
+                                      -0.000000,
+                                      0.000000,
+                                      -0.295370,
+                                      -0.437585,
+                                      0.849280,
+                                      0.000000,
+                                      -0.475149,
+                                      -0.703924,
+                                      -0.527943,
+                                      0.000000,
+                                      0.000000,
+                                      0.000000,
+                                      0.000000,
+                                      1.000000);
+    let t: Transform = t *
+                       Transform::translate(Vector3f {
+                                                x: -4.86,
+                                                y: -7.2,
+                                                z: -5.4,
+                                            });
+    // LightSource "point" "color I" [ 50 50 50 ]
+    let i: Spectrum = Spectrum::new(50.0);
+    builder.add_point_light(&t, &i);
     // pbrt::MakeLight
     let l: Spectrum = Spectrum::new(3.141593);
     let sc: Spectrum = Spectrum::new(1.0);
@@ -151,7 +186,7 @@ fn main() {
     let dir: Vector3f = from - to;
     let light_to_world: Transform = Transform::default();
     let lsc: Spectrum = l * sc;
-    builder.add_light(&light_to_world, &lsc, &dir);
+    builder.add_distant_light(&light_to_world, &lsc, &dir);
 
     // pbrt::MakeShapes
 
@@ -185,31 +220,6 @@ fn main() {
     //                  radius,
     //                  inner_radius,
     //                  phi_max);
-
-    // we need camera transformation below to transform triangles
-    // INFO: The order in PBRT file is different !!!
-    let t: Transform = Transform::new(0.828849,
-                                      -0.559473,
-                                      -0.000000,
-                                      0.000000,
-                                      -0.295370,
-                                      -0.437585,
-                                      0.849280,
-                                      0.000000,
-                                      -0.475149,
-                                      -0.703924,
-                                      -0.527943,
-                                      0.000000,
-                                      0.000000,
-                                      0.000000,
-                                      0.000000,
-                                      1.000000);
-    let t: Transform = t *
-                       Transform::translate(Vector3f {
-                                                x: -4.86,
-                                                y: -7.2,
-                                                z: -5.4,
-                                            });
 
     // trianglemeshes
     // TODO: insert triangles below
@@ -1772,13 +1782,23 @@ fn main() {
     // add triangles created above (not meshes)
     let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(0.5, 0.3, 0.8)));
     let ks = Arc::new(ConstantTexture::new(Spectrum::rgb(0.2, 0.2, 0.2)));
-    let plastic = Arc::new(PlasticMaterial::new(kd, ks, 0.1 as Float, true));
+    let plastic1 = Arc::new(PlasticMaterial::new(kd, ks.clone(), 0.1 as Float, true));
+    let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(0.8, 0.5, 0.1)));
+    let plastic2 = Arc::new(PlasticMaterial::new(kd, ks.clone(), 0.1 as Float, true));
+    let mut triangle_count: usize = 0;
     for triangle in render_options.triangles {
-        let geo_prim = Arc::new(GeometricPrimitive::new(triangle, plastic.clone()));
-        render_options.primitives.push(geo_prim.clone());
+        if triangle_count < 72 {
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, plastic1.clone()));
+            render_options.primitives.push(geo_prim.clone());
+        } else {
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, plastic2.clone()));
+            render_options.primitives.push(geo_prim.clone());
+        }
+        triangle_count += 1;
     }
+    println!("triangle_count = {}", triangle_count);
     for disk in render_options.disks {
-        let geo_prim = Arc::new(GeometricPrimitive::new(disk, plastic.clone()));
+        let geo_prim = Arc::new(GeometricPrimitive::new(disk, plastic1.clone()));
         render_options.primitives.push(geo_prim.clone());
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel

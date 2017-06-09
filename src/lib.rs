@@ -618,6 +618,7 @@ extern crate num_cpus;
 extern crate image;
 extern crate crossbeam;
 
+// use std::cell::RefCell;
 use std::cmp::PartialEq;
 use std::default::Default;
 use std::f32::consts::PI;
@@ -638,14 +639,14 @@ pub type Float = f32;
 
 #[derive(Clone)]
 pub struct Scene {
-    pub lights: Vec<DistantLight>, // TODO: Light
-    pub infinite_lights: Vec<DistantLight>, // TODO: Light
+    pub lights: Vec<Arc<Light + Sync + Send>>,
+    pub infinite_lights: Vec<Arc<Light + Sync + Send>>,
     aggregate: Arc<BVHAccel>, // TODO: Primitive,
     world_bound: Bounds3f,
 }
 
 impl Scene {
-    pub fn new(aggregate: Arc<BVHAccel>, lights: Vec<DistantLight>) -> Self {
+    pub fn new(aggregate: Arc<BVHAccel>, lights: Vec<Arc<Light + Sync + Send>>) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
         let scene: Scene = Scene {
             lights: Vec::new(),
@@ -657,8 +658,8 @@ impl Scene {
         let mut infinite_lights = Vec::new();
         for mut light in lights {
             light.preprocess(&scene);
-            changed_lights.push(light);
-            let check: u8 = light.flags & LightFlags::Infinite as u8;
+            changed_lights.push(light.clone());
+            let check: u8 = light.get_flags() & LightFlags::Infinite as u8;
             if check == LightFlags::Infinite as u8 {
                 infinite_lights.push(light);
             }
@@ -2232,7 +2233,7 @@ pub fn bnd3_union_bnd3<T>(b1: Bounds3<T>, b2: Bounds3<T>) -> Bounds3<T>
 /// Determine if a given point is inside the bounding box.
 pub fn pnt3_inside_bnd3(p: Point3f, b: Bounds3f) -> bool {
     p.x >= b.p_min.x && p.x <= b.p_max.x && p.y >= b.p_min.y && p.y <= b.p_max.y &&
-    p.z >= b.p_min.z && p.z <= b.p_max.z
+        p.z >= b.p_min.z && p.z <= b.p_max.z
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -2441,7 +2442,7 @@ pub fn mtx_mul(m1: Matrix4x4, m2: Matrix4x4) -> Matrix4x4 {
     for i in 0..4 {
         for j in 0..4 {
             r.m[i][j] = m1.m[i][0] * m2.m[0][j] + m1.m[i][1] * m2.m[1][j] +
-                        m1.m[i][2] * m2.m[2][j] + m1.m[i][3] * m2.m[3][j];
+                m1.m[i][2] * m2.m[2][j] + m1.m[i][3] * m2.m[3][j];
         }
     }
     r
@@ -2773,13 +2774,13 @@ impl Transform {
         let y: Float = p.y;
         let z: Float = p.z;
         let xp: Float = self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z +
-                        self.m.m[0][3];
+            self.m.m[0][3];
         let yp: Float = self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z +
-                        self.m.m[1][3];
+            self.m.m[1][3];
         let zp: Float = self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z +
-                        self.m.m[2][3];
+            self.m.m[2][3];
         let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
-                        self.m.m[3][3];
+            self.m.m[3][3];
         assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
         if wp == 1. {
             Point3::<Float> {
@@ -2905,23 +2906,23 @@ impl Transform {
         let z: Float = p.z;
         // compute transformed coordinates from point _pt_
         let xp: Float = self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z +
-                        self.m.m[0][3];
+            self.m.m[0][3];
         let yp: Float = self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z +
-                        self.m.m[1][3];
+            self.m.m[1][3];
         let zp: Float = self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z +
-                        self.m.m[2][3];
+            self.m.m[2][3];
         let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
-                        self.m.m[3][3];
+            self.m.m[3][3];
         // compute absolute error for transformed point
         let x_abs_sum: Float = (self.m.m[0][0] * x).abs() + (self.m.m[0][1] * y).abs() +
-                               (self.m.m[0][2] * z).abs() +
-                               self.m.m[0][3].abs();
+            (self.m.m[0][2] * z).abs() +
+            self.m.m[0][3].abs();
         let y_abs_sum: Float = (self.m.m[1][0] * x).abs() + (self.m.m[1][1] * y).abs() +
-                               (self.m.m[1][2] * z).abs() +
-                               self.m.m[1][3].abs();
+            (self.m.m[1][2] * z).abs() +
+            self.m.m[1][3].abs();
         let z_abs_sum: Float = (self.m.m[2][0] * x).abs() + (self.m.m[2][1] * y).abs() +
-                               (self.m.m[2][2] * z).abs() +
-                               self.m.m[2][3].abs();
+            (self.m.m[2][2] * z).abs() +
+            self.m.m[2][3].abs();
         *p_error = Vector3::<Float> {
             x: x_abs_sum,
             y: y_abs_sum,
@@ -2953,31 +2954,31 @@ impl Transform {
         let z: Float = pt.z;
         // compute transformed coordinates from point _pt_
         let xp: Float = self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z +
-                        self.m.m[0][3];
+            self.m.m[0][3];
         let yp: Float = self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z +
-                        self.m.m[1][3];
+            self.m.m[1][3];
         let zp: Float = self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z +
-                        self.m.m[2][3];
+            self.m.m[2][3];
         let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
-                        self.m.m[3][3];
+            self.m.m[3][3];
         abs_error.x = (gamma(3i32) + 1.0 as Float) *
-                      (self.m.m[0][0].abs() * pt_error.x + self.m.m[0][1].abs() * pt_error.y +
-                       self.m.m[0][2].abs() * pt_error.z) +
-                      gamma(3i32) * ((self.m.m[0][0] * x).abs() +
-                      (self.m.m[0][1] * y).abs() +
-                      (self.m.m[0][2] * z).abs() + self.m.m[0][3].abs());
+            (self.m.m[0][0].abs() * pt_error.x + self.m.m[0][1].abs() * pt_error.y +
+             self.m.m[0][2].abs() * pt_error.z) +
+            gamma(3i32) * ((self.m.m[0][0] * x).abs() +
+                           (self.m.m[0][1] * y).abs() +
+                           (self.m.m[0][2] * z).abs() + self.m.m[0][3].abs());
         abs_error.y = (gamma(3i32) + 1.0 as Float) *
-                      (self.m.m[1][0].abs() * pt_error.x + self.m.m[1][1].abs() * pt_error.y +
-                       self.m.m[1][2].abs() * pt_error.z) +
-                      gamma(3i32) * ((self.m.m[1][0] * x).abs() +
-                      (self.m.m[1][1] * y).abs() +
-                      (self.m.m[1][2] * z).abs() + self.m.m[1][3].abs());
+            (self.m.m[1][0].abs() * pt_error.x + self.m.m[1][1].abs() * pt_error.y +
+             self.m.m[1][2].abs() * pt_error.z) +
+            gamma(3i32) * ((self.m.m[1][0] * x).abs() +
+                           (self.m.m[1][1] * y).abs() +
+                           (self.m.m[1][2] * z).abs() + self.m.m[1][3].abs());
         abs_error.z = (gamma(3i32) + 1.0 as Float) *
-                      (self.m.m[2][0].abs() * pt_error.x + self.m.m[2][1].abs() * pt_error.y +
-                       self.m.m[2][2].abs() * pt_error.z) +
-                      gamma(3i32) * ((self.m.m[2][0] * x).abs() +
-                      (self.m.m[2][1] * y).abs() +
-                      (self.m.m[2][2] * z).abs() + self.m.m[2][3].abs());
+            (self.m.m[2][0].abs() * pt_error.x + self.m.m[2][1].abs() * pt_error.y +
+             self.m.m[2][2].abs() * pt_error.z) +
+            gamma(3i32) * ((self.m.m[2][0] * x).abs() +
+                           (self.m.m[2][1] * y).abs() +
+                           (self.m.m[2][2] * z).abs() + self.m.m[2][3].abs());
         assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
         if wp == 1. {
             Point3::<Float> {
@@ -3003,14 +3004,14 @@ impl Transform {
         let z: Float = v.z;
         let gamma: Float = gamma(3i32);
         abs_error.x = gamma *
-                      ((self.m.m[0][0] * v.x).abs() + (self.m.m[0][1] * v.y).abs() +
-                       (self.m.m[0][2] * v.z).abs());
+            ((self.m.m[0][0] * v.x).abs() + (self.m.m[0][1] * v.y).abs() +
+             (self.m.m[0][2] * v.z).abs());
         abs_error.y = gamma *
-                      ((self.m.m[1][0] * v.x).abs() + (self.m.m[1][1] * v.y).abs() +
-                       (self.m.m[1][2] * v.z).abs());
+            ((self.m.m[1][0] * v.x).abs() + (self.m.m[1][1] * v.y).abs() +
+             (self.m.m[1][2] * v.z).abs());
         abs_error.z = gamma *
-                      ((self.m.m[2][0] * v.x).abs() + (self.m.m[2][1] * v.y).abs() +
-                       (self.m.m[2][2] * v.z).abs());
+            ((self.m.m[2][0] * v.x).abs() + (self.m.m[2][1] * v.y).abs() +
+             (self.m.m[2][2] * v.z).abs());
         Vector3::<Float> {
             x: self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z,
             y: self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z,
@@ -8311,6 +8312,23 @@ pub enum LightFlags {
     Infinite = 8,
 }
 
+pub trait Light {
+    /// Returns the radiance arriving at a point at a certain time due
+    /// to the light, assuming there are no occluding objects between
+    /// them.
+    fn sample_li(&self,
+                 iref: &SurfaceInteraction,
+                 u: &Point2f,
+                 wi: &mut Vector3f,
+                 pdf: &mut Float,
+                 vis: &mut VisibilityTester)
+                 -> Spectrum;
+    fn preprocess(&self, scene: &Scene);
+    fn le(&self, _ray: &mut Ray) -> Spectrum;
+    fn get_flags(&self) -> u8;
+    fn get_n_samples(&self) -> i32;
+}
+
 /// Check if LightFlags::DeltaPosition or LightFlags::DeltaDirection
 /// is set.
 pub fn is_delta_light(flags: u8) -> bool {
@@ -8339,15 +8357,64 @@ impl VisibilityTester {
     }
 }
 
-// see distant.h
+// see point.h
 
 #[derive(Debug,Copy,Clone)]
+pub struct PointLight {
+    // private data (see point.h)
+    p_light: Point3f,
+    i: Spectrum,
+    // inherited from class Light (see light.h)
+    flags: u8,
+    n_samples: i32,
+}
+
+impl PointLight {
+    pub fn new(light_to_world: &Transform, i: &Spectrum) -> Self {
+        PointLight {
+            p_light: light_to_world.transform_point(Point3f::default()),
+            i: *i,
+            flags: LightFlags::DeltaPosition as u8,
+            n_samples: 1_i32,
+        }
+    }
+}
+
+impl Light for PointLight {
+    fn sample_li(&self,
+                 iref: &SurfaceInteraction,
+                 u: &Point2f,
+                 wi: &mut Vector3f,
+                 pdf: &mut Float,
+                 vis: &mut VisibilityTester)
+                 -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+    fn preprocess(&self, _scene: &Scene) {
+    }
+    /// Default implementation returns no emitted radiance for a ray
+    /// that escapes the scene bounds.
+    fn le(&self, _ray: &mut Ray) -> Spectrum {
+        Spectrum::new(0.0 as Float)
+    }
+    fn get_flags(&self) -> u8 {
+        self.flags
+    }
+    fn get_n_samples(&self) -> i32 {
+        self.n_samples
+    }
+}
+
+// see distant.h
+
+#[derive(Debug)]
 pub struct DistantLight {
     // private data (see distant.h)
     l: Spectrum,
     w_light: Vector3f,
-    world_center: Point3f,
-    world_radius: Float,
+    world_center: RwLock<Point3f>,
+    world_radius: RwLock<Float>,
     // inherited from class Light (see light.h)
     flags: u8,
     n_samples: i32, /* const?
@@ -8360,28 +8427,16 @@ impl DistantLight {
         DistantLight {
             l: *l,
             w_light: vec3_normalize(light_to_world.transform_vector(*w_light)),
-            world_center: Point3f::default(),
-            world_radius: 0.0,
+            world_center: RwLock::new(Point3f::default()),
+            world_radius: RwLock::new(0.0),
             flags: LightFlags::DeltaDirection as u8,
             n_samples: 1_i32,
         }
     }
-    /// Some of the **DistanceLight** methods need to know the bounds
-    /// of the scene. Because lights are created before the scene
-    /// geometry, these bounds aren't available when the
-    /// **DistanceLight** constructor runs. Therefore,
-    /// **DistanceLight** implements the optional *preprocess()*
-    /// method to get the bound. This method is called at the end of
-    /// the **Scene** constructor.
-    pub fn preprocess(&mut self, scene: &Scene) {
-        Bounds3f::bounding_sphere(scene.world_bound(),
-                                  &mut self.world_center,
-                                  &mut self.world_radius);
-    }
-    /// Returns the radiance arriving at a point at a certain time due
-    /// to the light, assuming there are no occluding objects between
-    /// them.
-    pub fn sample_li(&self,
+}
+
+impl Light for DistantLight {
+    fn sample_li(&self,
                      iref: &SurfaceInteraction,
                      _u: &Point2f,
                      wi: &mut Vector3f,
@@ -8391,7 +8446,7 @@ impl DistantLight {
         // TODO: ProfilePhase _(Prof::LightSample);
         *wi = self.w_light;
         *pdf = 1.0 as Float;
-        let p_outside: Point3f = iref.p + self.w_light * (2.0 as Float * self.world_radius);
+        let p_outside: Point3f = iref.p + self.w_light * (2.0 as Float * *self.world_radius.read().unwrap());
         *vis = VisibilityTester {
             p0: Interaction {
                 p: iref.p,
@@ -8410,10 +8465,30 @@ impl DistantLight {
         };
         self.l
     }
+    /// Some of the **DistanceLight** methods need to know the bounds
+    /// of the scene. Because lights are created before the scene
+    /// geometry, these bounds aren't available when the
+    /// **DistanceLight** constructor runs. Therefore,
+    /// **DistanceLight** implements the optional *preprocess()*
+    /// method to get the bound. This method is called at the end of
+    /// the **Scene** constructor.
+    fn preprocess(&self, scene: &Scene) {
+        let mut world_center_ref = self.world_center.write().unwrap();
+        let mut world_radius_ref = self.world_radius.write().unwrap();
+        Bounds3f::bounding_sphere(scene.world_bound(),
+                                  &mut world_center_ref,
+                                  &mut world_radius_ref);
+    }
     /// Default implementation returns no emitted radiance for a ray
     /// that escapes the scene bounds.
-    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
+    fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
+    }
+    fn get_flags(&self) -> u8 {
+        self.flags
+    }
+    fn get_n_samples(&self) -> i32 {
+        self.n_samples
     }
 }
 
@@ -8464,7 +8539,7 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
     let mut l: Spectrum = Spectrum::new(0.0);
     for j in 0..scene.lights.len() {
         // accumulate contribution of _j_th light to _L_
-        let light = scene.lights[j];
+        let ref light = scene.lights[j];
         let n_samples = n_light_samples[j];
         let u_light_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
         let u_scattering_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
@@ -8474,7 +8549,7 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
             let u_scattering: Point2f = sampler.get_2d();
             l += estimate_direct(it,
                                  &u_scattering,
-                                 &light,
+                                 light.clone(),
                                  &u_light,
                                  scene,
                                  sampler, // arena,
@@ -8486,7 +8561,7 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
             for k in 0..n_samples {
                 ld += estimate_direct(it,
                                       &u_scattering_array[k as usize],
-                                      &light,
+                                      light.clone(),
                                       &u_light_array[k as usize],
                                       scene,
                                       sampler, // arena,
@@ -8502,7 +8577,7 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
 /// Computes a direct lighting estimate for a single light source sample.
 pub fn estimate_direct(it: &SurfaceInteraction,
                        u_scattering: &Point2f,
-                       light: &DistantLight,
+                       light: Arc<Light + Send + Sync>,
                        u_light: &Point2f,
                        scene: &Scene,
                        sampler: &mut ZeroTwoSequenceSampler,
@@ -8554,7 +8629,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             }
             // add light's contribution to reflected radiance
             if !li.is_black() {
-                if is_delta_light(light.flags) {
+                if is_delta_light(light.get_flags()) {
                     ld += f * li / light_pdf;
                 } else {
                     let weight: Float = power_heuristic(1_u8, light_pdf, 1_u8, scattering_pdf);
@@ -8564,7 +8639,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         }
     }
     // sample BSDF with multiple importance sampling
-    if !is_delta_light(light.flags) {
+    if !is_delta_light(light.get_flags()) {
         let mut f: Spectrum = Spectrum::new(0.0);
         let mut sampled_specular: bool = false;
         if it.is_surface_interaction() {
@@ -8658,7 +8733,7 @@ impl DirectLightingIntegrator {
             // compute number of samples to use for each light
             for li in 0..scene.lights.len() {
                 let ref light = scene.lights[li];
-                self.n_light_samples.push(sampler.round_count(light.n_samples));
+                self.n_light_samples.push(sampler.round_count(light.get_n_samples()));
             }
             // request samples for sampling all lights
             for _i in 0..self.max_depth {

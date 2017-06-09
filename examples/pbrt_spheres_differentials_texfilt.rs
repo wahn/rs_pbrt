@@ -1,7 +1,7 @@
 extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, DistantLight, Film, Float,
-           GeometricPrimitive, GlassMaterial, ImageTexture, ImageWrap, MatteMaterial,
+           GeometricPrimitive, GlassMaterial, ImageTexture, ImageWrap, Light, MatteMaterial,
            MirrorMaterial, PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Scene,
            Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
            Vector2f, Vector3f};
@@ -11,13 +11,13 @@ use std::sync::Arc;
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
     spheres: Vec<Arc<Sphere>>,
-    lights: Vec<DistantLight>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<Arc<TriangleMesh>>,
     spheres: Vec<Arc<Sphere>>,
-    lights: Vec<DistantLight>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 impl SceneDescriptionBuilder {
@@ -28,13 +28,12 @@ impl SceneDescriptionBuilder {
             lights: Vec::new(),
         }
     }
-    fn add_light(&mut self,
-                 light_to_world: &Transform,
-                 l: &Spectrum,
-                 w_light: &Vector3f)
-                 -> &mut SceneDescriptionBuilder {
-        let distant_light: DistantLight = DistantLight::new(light_to_world, &l, &w_light);
-        println!("distant_light = {:?}", distant_light);
+    fn add_distant_light(&mut self,
+                         light_to_world: &Transform,
+                         l: &Spectrum,
+                         w_light: &Vector3f)
+                         -> &mut SceneDescriptionBuilder {
+        let distant_light = Arc::new(DistantLight::new(light_to_world, &l, &w_light));
         self.lights.push(distant_light);
         self
     }
@@ -98,7 +97,7 @@ struct RenderOptions {
     primitives: Vec<Arc<Primitive + Sync + Send>>,
     triangles: Vec<Arc<Triangle>>,
     spheres: Vec<Arc<Sphere>>,
-    lights: Vec<DistantLight>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 impl RenderOptions {
@@ -106,10 +105,10 @@ impl RenderOptions {
         let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
         let mut spheres: Vec<Arc<Sphere>> = Vec::new();
-        let mut lights: Vec<DistantLight> = Vec::new();
+        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
         // lights
         for light in &scene.lights {
-            lights.push(*light);
+            lights.push(light.clone());
         }
         // spheres
         for sphere in scene.spheres {
@@ -155,7 +154,7 @@ fn main() {
     let dir: Vector3f = from - to;
     let light_to_world: Transform = Transform::default();
     let lsc: Spectrum = l * sc;
-    builder.add_light(&light_to_world, &lsc, &dir);
+    builder.add_distant_light(&light_to_world, &lsc, &dir);
 
     // pbrt::MakeShapes
 
@@ -193,10 +192,10 @@ fn main() {
 
     // CreateTriangleMeshShape()
     let object_to_world: Transform = Transform::translate(Vector3f {
-        x: 0.25,
-        y: 0.0,
-        z: 0.0,
-    });
+                                                              x: 0.25,
+                                                              y: 0.0,
+                                                              z: 0.0,
+                                                          });
     let world_to_object: Transform = Transform::inverse(object_to_world);
     // reverseOrientation = false
     // p graphicsState.floatTextures
@@ -227,10 +226,10 @@ fn main() {
 
     // Translate -1.3 0 0
     let object_to_world: Transform = Transform::translate(Vector3f {
-        x: -1.3,
-        y: 0.0,
-        z: 0.0,
-    });
+                                                              x: -1.3,
+                                                              y: 0.0,
+                                                              z: 0.0,
+                                                          });
     let world_to_object: Transform = Transform::inverse(object_to_world);
 
     // Shape "sphere"
@@ -253,10 +252,10 @@ fn main() {
     // Translate 2.6 0 0 (not protected by Attribute[Begin|End])
     let object_to_world: Transform = object_to_world *
                                      Transform::translate(Vector3f {
-        x: 2.6,
-        y: 0.0,
-        z: 0.0,
-    });
+                                                              x: 2.6,
+                                                              y: 0.0,
+                                                              z: 0.0,
+                                                          });
     let world_to_object: Transform = Transform::inverse(object_to_world);
 
     // Shape "sphere"
@@ -298,11 +297,11 @@ fn main() {
     let udelta: Float = 0.0;
     let vdelta: Float = 0.0;
     let mapping = Box::new(UVMapping2D {
-        su: uscale,
-        sv: vscale,
-        du: udelta,
-        dv: vdelta,
-    });
+                               su: uscale,
+                               sv: vscale,
+                               du: udelta,
+                               dv: vdelta,
+                           });
     let filename: String = String::from("assets/textures/lines.png");
     let do_trilinear: bool = false;
     let max_aniso: Float = 8.0;
@@ -323,13 +322,13 @@ fn main() {
     let matte = Arc::new(MatteMaterial::new(lines_tex, 0.0 as Float));
     let mirror = Arc::new(MirrorMaterial { kr: Spectrum::new(0.9) });
     let glass = Arc::new(GlassMaterial {
-        kr: Spectrum::new(1.0),
-        kt: Spectrum::new(1.0),
-        u_roughness: 0.0 as Float,
-        v_roughness: 0.0 as Float,
-        index: 0.0 as Float,
-        remap_roughness: true,
-    });
+                             kr: Spectrum::new(1.0),
+                             kt: Spectrum::new(1.0),
+                             u_roughness: 0.0 as Float,
+                             v_roughness: 0.0 as Float,
+                             index: 0.0 as Float,
+                             remap_roughness: true,
+                         });
     for triangle in render_options.triangles {
         let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
         render_options.primitives.push(geo_prim.clone());
