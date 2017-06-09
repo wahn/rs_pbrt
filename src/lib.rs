@@ -4323,7 +4323,7 @@ pub trait Shape {
     fn intersect_p(&self, r: &Ray) -> bool;
     fn get_reverse_orientation(&self) -> bool;
     fn get_transform_swaps_handedness(&self) -> bool;
-    // TODO: virtual Float Area() const = 0;
+    fn area(&self) -> Float;
     // TODO: virtual Interaction Sample(const Point2f &u, Float *pdf) const = 0;
 }
 
@@ -4456,8 +4456,16 @@ impl Disk {
 impl Shape for Disk {
     fn object_bound(&self) -> Bounds3f {
         Bounds3f {
-            p_min: Point3f { x: -self.radius, y: -self.radius, z: self.height, },
-            p_max: Point3f { x: self.radius, y: self.radius, z: self.height, },
+            p_min: Point3f {
+                x: -self.radius,
+                y: -self.radius,
+                z: self.height,
+            },
+            p_max: Point3f {
+                x: self.radius,
+                y: self.radius,
+                z: self.height,
+            },
         }
     }
     fn world_bound(&self) -> Bounds3f {
@@ -4469,7 +4477,8 @@ impl Shape for Disk {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_err, &mut d_err);
+        let ray: Ray = self.world_to_object
+            .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute plane intersection for disk
 
@@ -4519,8 +4528,16 @@ impl Shape for Disk {
         // initialize _SurfaceInteraction_ from parametric information
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
-        let si: SurfaceInteraction =
-            SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time, None);
+        let si: SurfaceInteraction = SurfaceInteraction::new(p_hit,
+                                                             p_error,
+                                                             uv_hit,
+                                                             wo,
+                                                             dpdu,
+                                                             dpdv,
+                                                             dndu,
+                                                             dndv,
+                                                             ray.time,
+                                                             None);
         let isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         Some((isect, t_shape_hit))
     }
@@ -4529,7 +4546,8 @@ impl Shape for Disk {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object.transform_ray_with_error(r, &mut o_err, &mut d_err);
+        let ray: Ray = self.world_to_object
+            .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute plane intersection for disk
 
@@ -4562,6 +4580,10 @@ impl Shape for Disk {
     }
     fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
+    }
+    fn area(&self) -> Float {
+        self.phi_max * 0.5 as Float *
+        (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
 }
 
@@ -4883,6 +4905,9 @@ impl Shape for Sphere {
     }
     fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
+    }
+    fn area(&self) -> Float {
+        self.phi_max * self.radius * (self.z_max - self.z_min)
     }
 }
 
@@ -5389,6 +5414,13 @@ impl Shape for Triangle {
     }
     fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
+    }
+    fn area(&self) -> Float {
+        // get triangle vertices in _p0_, _p1_, and _p2_
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
+        0.5 as Float * vec3_cross_vec3(p1 - p0, p2 - p0).length()
     }
 }
 
@@ -8443,9 +8475,10 @@ pub struct DistantLight {
     pub world_radius: RwLock<Float>,
     // inherited from class Light (see light.h)
     flags: u8,
-    n_samples: i32, /* const?
-                     * TODO: const MediumInterface mediumInterface;
-                     * TODO: const Transform LightToWorld, WorldToLight; */
+    n_samples: i32,
+    // TODO: const MediumInterface mediumInterface;
+    light_to_world: Transform,
+    world_to_light: Transform,
 }
 
 impl DistantLight {
@@ -8457,6 +8490,8 @@ impl DistantLight {
             world_radius: RwLock::new(0.0),
             flags: LightFlags::DeltaDirection as u8,
             n_samples: 1_i32,
+            light_to_world: Transform::default(),
+            world_to_light: Transform::default(),
         }
     }
 }
@@ -8520,24 +8555,79 @@ impl Light for DistantLight {
 
 // see light.h
 
-// pub trait AreaLight {
-//     fn l(intr: &mut Interaction, w: Vector3f) -> Spectrum {
-//         // TODO
-//         Spectrum::new(0.0 as Float)
-//     }
-// }
+pub trait AreaLight: Light {
+    fn l(intr: &mut Interaction, w: Vector3f) -> Spectrum;
+}
 
 // see diffuse.h
 
-// pub struct DiffuseAreaLight {
-// }
+pub struct DiffuseAreaLight {
+    pub l_emit: Spectrum,
+    pub shape: Arc<Shape + Send + Sync>,
+    pub two_sided: bool,
+    pub area: Float,
+    // inherited from class Light (see light.h)
+    flags: u8,
+    n_samples: i32,
+    // TODO: const MediumInterface mediumInterface;
+    light_to_world: Transform,
+    world_to_light: Transform,
+}
 
-// impl AreaLight for DiffuseAreaLight {
-//     fn l(intr: &mut Interaction, w: Vector3f) -> Spectrum {
-//         // TODO
-//         Spectrum::new(0.0 as Float)
-//     }
-// }
+impl DiffuseAreaLight {
+    pub fn new(light_to_world: &Transform,
+               l_emit: &Spectrum,
+               n_samples: i32,
+               shape: Arc<Shape + Send + Sync>,
+               two_sided: bool) -> Self {
+        let area: Float = shape.area();
+        DiffuseAreaLight {
+            l_emit: *l_emit,
+            shape: shape,
+            two_sided: two_sided,
+            area: area,
+            // inherited from class Light (see light.h)
+            flags: LightFlags::Area as u8,
+            n_samples: std::cmp::max(1_i32, n_samples),
+            // TODO: const MediumInterface mediumInterface;
+            light_to_world: *light_to_world,
+            world_to_light: Transform::inverse(*light_to_world),
+        }
+    }
+}
+
+impl Light for DiffuseAreaLight {
+    fn sample_li(&self,
+                 iref: &SurfaceInteraction,
+                 u: &Point2f,
+                 wi: &mut Vector3f,
+                 pdf: &mut Float,
+                 vis: &mut VisibilityTester)
+                 -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+    fn preprocess(&self, scene: &Scene) {
+        // TODO?
+    }
+    fn le(&self, _ray: &mut Ray) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+    fn get_flags(&self) -> u8 {
+        self.flags
+    }
+    fn get_n_samples(&self) -> i32 {
+        self.n_samples
+    }
+}
+
+impl AreaLight for DiffuseAreaLight {
+    fn l(intr: &mut Interaction, w: Vector3f) -> Spectrum {
+        // TODO
+        Spectrum::new(0.0 as Float)
+    }
+}
 
 // see integrator.h
 
