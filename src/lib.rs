@@ -8362,8 +8362,8 @@ impl VisibilityTester {
 #[derive(Debug,Copy,Clone)]
 pub struct PointLight {
     // private data (see point.h)
-    p_light: Point3f,
-    i: Spectrum,
+    pub p_light: Point3f,
+    pub i: Spectrum,
     // inherited from class Light (see light.h)
     flags: u8,
     n_samples: i32,
@@ -8411,10 +8411,10 @@ impl Light for PointLight {
 #[derive(Debug)]
 pub struct DistantLight {
     // private data (see distant.h)
-    l: Spectrum,
-    w_light: Vector3f,
-    world_center: RwLock<Point3f>,
-    world_radius: RwLock<Float>,
+    pub l: Spectrum,
+    pub w_light: Vector3f,
+    pub world_center: RwLock<Point3f>,
+    pub world_radius: RwLock<Float>,
     // inherited from class Light (see light.h)
     flags: u8,
     n_samples: i32, /* const?
