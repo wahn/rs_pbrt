@@ -157,6 +157,8 @@ fn main() {
     opts.optflag("h", "help", "print this help menu");
     opts.optflag("c", "checker", "use procedural texture");
     opts.optflag("i", "image", "use image texture");
+    opts.optflag("n", "none", "use no texture");
+    opts.optflag("m", "matte", "use only matte materials");
     opts.optflag("v", "version", "print version number");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -309,7 +311,44 @@ fn main() {
     // TMP: process SceneDescription before handing primitives to BVHAccel
     let mut render_options: RenderOptions = RenderOptions::new(scene_description);
     // add triangles created above (not meshes)
-    if matches.opt_present("c") {
+    let mirror = Arc::new(MirrorMaterial { kr: Spectrum::new(0.9) });
+    let glass = Arc::new(GlassMaterial {
+                             kr: Spectrum::new(1.0),
+                             kt: Spectrum::new(1.0),
+                             u_roughness: 0.0 as Float,
+                             v_roughness: 0.0 as Float,
+                             index: 0.0 as Float,
+                             remap_roughness: true,
+                         });
+    if matches.opt_present("n") || matches.opt_present("m") {
+        // use no texture
+        let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
+        let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
+        for triangle in render_options.triangles {
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
+            render_options.primitives.push(geo_prim.clone());
+        }
+        if matches.opt_present("m") {
+            // use only matte materials
+            for sphere in render_options.spheres {
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, matte.clone()));
+                render_options.primitives.push(geo_prim.clone());
+            }
+        } else {
+            // use mirror and glass on spheres
+            let mut sphere_counter: u8 = 0;
+            for sphere in render_options.spheres {
+                if sphere_counter == 0 {
+                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone()));
+                    render_options.primitives.push(geo_prim.clone());
+                } else {
+                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone()));
+                    render_options.primitives.push(geo_prim.clone());
+                }
+                sphere_counter += 1;
+            }
+        }
+    } else if matches.opt_present("c") {
         // procedural texture (checker board)
         let tex1 = Arc::new(ConstantTexture { value: Spectrum::new(0.0) });
         let tex2 = Arc::new(ConstantTexture { value: Spectrum::new(1.0) });
@@ -332,6 +371,17 @@ fn main() {
         for triangle in render_options.triangles {
             let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
             render_options.primitives.push(geo_prim.clone());
+        }
+        let mut sphere_counter: u8 = 0;
+        for sphere in render_options.spheres {
+            if sphere_counter == 0 {
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone()));
+                render_options.primitives.push(geo_prim.clone());
+            } else {
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone()));
+                render_options.primitives.push(geo_prim.clone());
+            }
+            sphere_counter += 1;
         }
     } else {
         // image texture
@@ -363,26 +413,17 @@ fn main() {
             let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
             render_options.primitives.push(geo_prim.clone());
         }
-    }
-    let mirror = Arc::new(MirrorMaterial { kr: Spectrum::new(0.9) });
-    let glass = Arc::new(GlassMaterial {
-                             kr: Spectrum::new(1.0),
-                             kt: Spectrum::new(1.0),
-                             u_roughness: 0.0 as Float,
-                             v_roughness: 0.0 as Float,
-                             index: 0.0 as Float,
-                             remap_roughness: true,
-                         });
-    let mut sphere_counter: u8 = 0;
-    for sphere in render_options.spheres {
-        if sphere_counter == 0 {
-            let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone()));
-            render_options.primitives.push(geo_prim.clone());
-        } else {
-            let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone()));
-            render_options.primitives.push(geo_prim.clone());
+        let mut sphere_counter: u8 = 0;
+        for sphere in render_options.spheres {
+            if sphere_counter == 0 {
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone()));
+                render_options.primitives.push(geo_prim.clone());
+            } else {
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone()));
+                render_options.primitives.push(geo_prim.clone());
+            }
+            sphere_counter += 1;
         }
-        sphere_counter += 1;
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
