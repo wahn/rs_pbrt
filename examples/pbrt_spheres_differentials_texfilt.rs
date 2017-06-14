@@ -1,12 +1,17 @@
 extern crate pbrt;
+extern crate getopts;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, DistantLight, Film, Float,
-           GeometricPrimitive, GlassMaterial, ImageTexture, ImageWrap, Light, MatteMaterial,
-           MirrorMaterial, PerspectiveCamera, Point2f, Point2i, Point3f, Primitive, Scene,
-           Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
-           Vector2f, Vector3f};
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Checkerboard2DTexture,
+           ConstantTexture, DistantLight, Film, Float, GeometricPrimitive, GlassMaterial,
+           ImageTexture, ImageWrap, Light, MatteMaterial, MirrorMaterial, PerspectiveCamera,
+           PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene, Spectrum, Sphere,
+           SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f};
+use std::env;
 use std::string::String;
 use std::sync::Arc;
+use getopts::Options;
+
+pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
@@ -135,8 +140,36 @@ impl RenderOptions {
     }
 }
 
+fn print_usage(program: &str, opts: Options) {
+    let brief = format!("Usage: {} [options]", program);
+    print!("{}", opts.usage(&brief));
+}
+
+fn print_version(program: &str) {
+    println!("{} {}", program, VERSION);
+}
 
 fn main() {
+    // handle command line options
+    let args: Vec<String> = env::args().collect();
+    let program = args[0].clone();
+    let mut opts = Options::new();
+    opts.optflag("h", "help", "print this help menu");
+    opts.optflag("c", "checker", "use procedural texture");
+    opts.optflag("i", "image", "use image texture");
+    opts.optflag("v", "version", "print version number");
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(f) => panic!(f.to_string()),
+    };
+    if matches.opt_present("h") {
+        print_usage(&program, opts);
+        return;
+    } else if matches.opt_present("v") {
+        print_version(&program);
+        return;
+    }
+    // start building the scene
     let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     // pbrt::MakeLight
     let l: Spectrum = Spectrum::new(3.141593);
@@ -276,50 +309,61 @@ fn main() {
     // TMP: process SceneDescription before handing primitives to BVHAccel
     let mut render_options: RenderOptions = RenderOptions::new(scene_description);
     // add triangles created above (not meshes)
-    // let tex1 = Arc::new(ConstantTexture { value: Spectrum::new(0.0) });
-    // let tex2 = Arc::new(ConstantTexture { value: Spectrum::new(1.0) });
-    // let mapping = Box::new(PlanarMapping2D {
-    //     vs: Vector3f {
-    //         x: 1.0,
-    //         y: 0.0,
-    //         z: 0.0,
-    //     },
-    //     vt: Vector3f {
-    //         x: 0.0,
-    //         y: 0.0,
-    //         z: 1.0,
-    //     },
-    //     ds: 0.0 as Float,
-    //     dt: 1.0 as Float,
-    // });
-    let uscale: Float = 100.0;
-    let vscale: Float = 100.0;
-    let udelta: Float = 0.0;
-    let vdelta: Float = 0.0;
-    let mapping = Box::new(UVMapping2D {
-                               su: uscale,
-                               sv: vscale,
-                               du: udelta,
-                               dv: vdelta,
-                           });
-    let filename: String = String::from("assets/textures/lines.png");
-    let do_trilinear: bool = false;
-    let max_aniso: Float = 8.0;
-    let wrap_mode: ImageWrap = ImageWrap::Repeat;
-    let scale: Float = 1.0;
-    let gamma: bool = true;
-    let lines_tex = Arc::new(ImageTexture::new(mapping,
-                                               filename,
-                                               do_trilinear,
-                                               max_aniso,
-                                               wrap_mode,
-                                               scale,
-                                               gamma));
-    // let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
-    // let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
-    // let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
-    // let matte = Arc::new(MatteMaterial::new(checker, 0.0 as Float));
-    let matte = Arc::new(MatteMaterial::new(lines_tex, 0.0 as Float));
+    if matches.opt_present("c") {
+        // procedural texture (checker board)
+        let tex1 = Arc::new(ConstantTexture { value: Spectrum::new(0.0) });
+        let tex2 = Arc::new(ConstantTexture { value: Spectrum::new(1.0) });
+        let mapping = Box::new(PlanarMapping2D {
+                                   vs: Vector3f {
+                                       x: 1.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   vt: Vector3f {
+                                       x: 0.0,
+                                       y: 0.0,
+                                       z: 1.0,
+                                   },
+                                   ds: 0.0 as Float,
+                                   dt: 1.0 as Float,
+                               });
+        let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
+        let matte = Arc::new(MatteMaterial::new(checker, 0.0 as Float));
+        for triangle in render_options.triangles {
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
+            render_options.primitives.push(geo_prim.clone());
+        }
+    } else {
+        // image texture
+        let uscale: Float = 100.0;
+        let vscale: Float = 100.0;
+        let udelta: Float = 0.0;
+        let vdelta: Float = 0.0;
+        let mapping = Box::new(UVMapping2D {
+                                   su: uscale,
+                                   sv: vscale,
+                                   du: udelta,
+                                   dv: vdelta,
+                               });
+        let filename: String = String::from("assets/textures/lines.png");
+        let do_trilinear: bool = false;
+        let max_aniso: Float = 8.0;
+        let wrap_mode: ImageWrap = ImageWrap::Repeat;
+        let scale: Float = 1.0;
+        let gamma: bool = true;
+        let lines_tex = Arc::new(ImageTexture::new(mapping,
+                                                   filename,
+                                                   do_trilinear,
+                                                   max_aniso,
+                                                   wrap_mode,
+                                                   scale,
+                                                   gamma));
+        let matte = Arc::new(MatteMaterial::new(lines_tex, 0.0 as Float));
+        for triangle in render_options.triangles {
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
+            render_options.primitives.push(geo_prim.clone());
+        }
+    }
     let mirror = Arc::new(MirrorMaterial { kr: Spectrum::new(0.9) });
     let glass = Arc::new(GlassMaterial {
                              kr: Spectrum::new(1.0),
@@ -329,10 +373,6 @@ fn main() {
                              index: 0.0 as Float,
                              remap_roughness: true,
                          });
-    for triangle in render_options.triangles {
-        let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
-        render_options.primitives.push(geo_prim.clone());
-    }
     let mut sphere_counter: u8 = 0;
     for sphere in render_options.spheres {
         if sphere_counter == 0 {
