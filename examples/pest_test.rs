@@ -1,3 +1,5 @@
+#![recursion_limit="200"]
+
 #[macro_use]
 extern crate pest;
 extern crate getopts;
@@ -24,11 +26,27 @@ pub enum Node {
 
 impl_rdp! {
     grammar! {
-        // sentence = _{ ident ~ ([" "] ~ ident)* }
         // IDENT [a-zA-Z_][a-zA-Z_0-9]*
-        ident    =  { ['a'..'z'] | ['A'..'Z'] | ["_"] ~
-                        (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
-        // NUMBER [-+]?([0-9]+|(([0-9]+\.[0-9]*)|(\.[0-9]+)))([eE][-+]?[0-9]+)?
+        ident =  { ['a'..'z'] | ['A'..'Z'] | ["_"] ~
+                     (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
+        // NUMBER [-+]?
+        //        ([0-9]+|
+        //         (
+        //          ([0-9]+\.[0-9]*)|
+        //          (\.[0-9]+)
+        //         )
+        //        )
+        //        ([eE][-+]?[0-9]+)?
+        number = {
+            (["-"] | ["+"])? ~
+                (['0'..'9']+ |
+                 (
+                     (['0'..'9']+ ~ ["."] ~ ['0'..'9']*) |
+                     (["."] ~ ['0'..'9']+)
+                 )
+                ) ~
+                (["e"] | ["E"] ~ (["-"] | ["+"])? ~ ['0'..'9']+)?
+        }
     }
 }
 
@@ -67,7 +85,7 @@ fn main() {
                 reader.read_to_string(&mut str_buf);
                 // parser
                 let mut parser = Rdp::new(StringInput::new(&str_buf));
-                assert!(parser.ident());
+                assert!(parser.number());
                 assert!(parser.end());
                 println!("{:?}", parser.queue());
             }
