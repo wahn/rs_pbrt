@@ -15,49 +15,20 @@ use std::io;
 use std::io::BufReader;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-    
+
 #[derive(Debug, PartialEq)]
 pub enum Node {
     Sentence(LinkedList<Node>),
-    Word(LinkedList<Node>),
-    Letter(char),
+    Ident(char),
 }
 
 impl_rdp! {
     grammar! {
-        sentence = _{ word ~ ([" "] ~ word)* }
-        word     =  { letter* }
-        letter   =  { ['a'..'z'] }
-    }
-
-    process! {
-        main(&self) -> Node {
-            (list: _sentence()) => {
-                Node::Sentence(list)
-            }
-        }
-
-        _sentence(&self) -> LinkedList<Node> {
-            (_: word, head: _word(), mut tail: _sentence()) => {
-                tail.push_front(Node::Word(head));
-
-                tail
-            },
-            () => {
-                LinkedList::new()
-            }
-        }
-
-        _word(&self) -> LinkedList<Node> {
-            (&head: letter, mut tail: _word()) => {
-                tail.push_front(Node::Letter(head.chars().next().unwrap()));
-
-                tail
-            },
-            () => {
-                LinkedList::new()
-            }
-        }
+        // sentence = _{ ident ~ ([" "] ~ ident)* }
+        // IDENT [a-zA-Z_][a-zA-Z_0-9]*
+        ident    =  { ['a'..'z'] | ['A'..'Z'] | ["_"] ~
+                        (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
+        // NUMBER [-+]?([0-9]+|(([0-9]+\.[0-9]*)|(\.[0-9]+)))([eE][-+]?[0-9]+)?
     }
 }
 
@@ -96,8 +67,9 @@ fn main() {
                 reader.read_to_string(&mut str_buf);
                 // parser
                 let mut parser = Rdp::new(StringInput::new(&str_buf));
-                assert!(parser.sentence());
-                println!("{:?}", parser.main());
+                assert!(parser.ident());
+                assert!(parser.end());
+                println!("{:?}", parser.queue());
             }
             None => panic!("no input file name"),
         }
@@ -105,10 +77,8 @@ fn main() {
     } else if matches.opt_present("v") {
         print_version(&program);
         return;
+    } else {
+        print_usage(&program, opts);
+        return;
     }
-    // parser
-    let mut parser = Rdp::new(StringInput::new("abc def"));
-
-    assert!(parser.sentence());
-    println!("{:?}", parser.main());
 }
