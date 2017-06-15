@@ -2,47 +2,56 @@
 extern crate pest;
 
 use pest::prelude::*;
+use std::collections::LinkedList;
+    
+#[derive(Debug, PartialEq)]
+pub enum Node {
+    Sentence(LinkedList<Node>),
+    Word(LinkedList<Node>),
+    Letter(char),
+}
 
 impl_rdp! {
     grammar! {
-        expression = _{
-            { ["("] ~ expression ~ [")"] | number }
-            addition       = { plus  | minus } // precedence 0 is addition
-            multiplication = { times | slash } // precedence 1 is multiplication
-        }
-        number = @{ ["-"]? ~ (["0"] | ['1'..'9'] ~ ['0'..'9']*) }
-        plus   =  { ["+"] }
-        minus  =  { ["-"] }
-        times  =  { ["*"] }
-        slash  =  { ["/"] }
-
-        whitespace = _{ [" "] }
+        sentence = _{ word ~ ([" "] ~ word)* }
+        word     =  { letter* }
+        letter   =  { ['a'..'z'] }
     }
 
     process! {
-        compute(&self) -> i32 {
-            (&number: number) => number.parse::<i32>().unwrap(),
-            (_: addition, left: compute(), sign, right: compute()) => {
-                match sign.rule {
-                    Rule::plus  => left + right,
-                    Rule::minus => left - right,
-                    _ => unreachable!()
-                }
+        main(&self) -> Node {
+            (list: _sentence()) => {
+                Node::Sentence(list)
+            }
+        }
+
+        _sentence(&self) -> LinkedList<Node> {
+            (_: word, head: _word(), mut tail: _sentence()) => {
+                tail.push_front(Node::Word(head));
+
+                tail
             },
-            (_: multiplication, left: compute(), sign, right: compute()) => {
-                match sign.rule {
-                    Rule::times => left * right,
-                    Rule::slash => left / right,
-                    _ => unreachable!()
-                }
+            () => {
+                LinkedList::new()
+            }
+        }
+
+        _word(&self) -> LinkedList<Node> {
+            (&head: letter, mut tail: _word()) => {
+                tail.push_front(Node::Letter(head.chars().next().unwrap()));
+
+                tail
+            },
+            () => {
+                LinkedList::new()
             }
         }
     }
 }
 
 fn main() {
-    let mut parser = Rdp::new(StringInput::new("(3 + (9 + 3 * 4 + (3 + 1) / 2 - 4)) * 2"));
+    let mut parser = Rdp::new(StringInput::new("abc def"));
 
-    assert!(parser.expression());
-    assert_eq!(parser.compute(), 44);
+    assert!(parser.sentence());
+    parser.main();
 }
