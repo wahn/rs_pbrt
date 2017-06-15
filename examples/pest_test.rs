@@ -72,6 +72,7 @@ fn main() {
     let program = args[0].clone();
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
+    opts.optopt("i", "", "parse an input file", "FILE");
     opts.optflag("v", "version", "print version number");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -79,6 +80,15 @@ fn main() {
     };
     if matches.opt_present("h") {
         print_usage(&program, opts);
+        return;
+    } else if matches.opt_present("i") {
+        let infile = matches.opt_str("i");
+        match infile {
+            Some(x) => {
+                println!("FILE = {}", x);
+            }
+            None => panic!("no input file name"),
+        }
         return;
     } else if matches.opt_present("v") {
         print_version(&program);
