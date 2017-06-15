@@ -53,5 +53,5 @@ fn main() {
     let mut parser = Rdp::new(StringInput::new("abc def"));
 
     assert!(parser.sentence());
-    parser.main();
+    println!("{:?}", parser.main());
 }
