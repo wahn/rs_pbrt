@@ -9,6 +9,10 @@ use getopts::Options;
 // std
 use std::collections::LinkedList;
 use std::env;
+use std::fs::File;
+use std::io::prelude::*;
+use std::io;
+use std::io::BufReader;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     
@@ -86,6 +90,14 @@ fn main() {
         match infile {
             Some(x) => {
                 println!("FILE = {}", x);
+                let f = File::open(x).unwrap();
+                let mut reader = BufReader::new(f);
+                let mut str_buf: String = String::default();
+                reader.read_to_string(&mut str_buf);
+                // parser
+                let mut parser = Rdp::new(StringInput::new(&str_buf));
+                assert!(parser.sentence());
+                println!("{:?}", parser.main());
             }
             None => panic!("no input file name"),
         }
