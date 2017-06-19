@@ -1,1 +1,3 @@
-Camera "perspective" "float fov" [30]
+LookAt 0 10 100   0 -1 0 0 1 0
+WorldBegin
+WorldEnd

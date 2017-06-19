@@ -1,4 +1,4 @@
-#![recursion_limit="200"]
+#![recursion_limit="2000"]
 
 #[macro_use]
 extern crate pest;
@@ -26,17 +26,51 @@ pub enum Node {
 
 impl_rdp! {
     grammar! {
-        // "[" { return LBRACK; }
-        lbrack = { ["["] }
-        // "]" { return RBRACK; }
-        rbrack = { ["]"] }
-        // IDENT [a-zA-Z_][a-zA-Z_0-9]*
-        ident =  { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~
-                   (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
-        string = { ["\""] ~ ident ~ ["\""] }
-        string_two_words = { ["\""] ~ ident ~ whitespaces ~ ident ~ ["\""] }
+        pbrt = _{ statement* ~ last_statement }
+        statement = { keyword ~ number* }
+        keyword = {
+            (["Accelerator"] |
+             ["ActiveTransform"] |
+             ["All"] |
+             ["AreaLightSource"] |
+             ["AttributeBegin"] |
+             ["AttributeEnd"] |
+             ["Camera"] |
+             ["ConcatTransform"] |
+             ["CoordinateSystem"] |
+             ["CoordSysTransform"] |
+             ["EndTime"] |
+             ["Film"] |
+             ["Identity"] |
+             ["Include"] |
+             ["LightSource"] |
+             ["LookAt"] |
+             ["MakeNamedMedium"] |
+             ["MakeNamedMaterial"] |
+             ["Material"] |
+             ["MediumInterface"] |
+             ["NamedMaterial"] |
+             ["ObjectBegin"] |
+             ["ObjectEnd"] |
+             ["ObjectInstance"] |
+             ["PixelFilter"] |
+             ["ReverseOrientation"] |
+             ["Rotate"] |
+             ["Sampler"] |
+             ["Scale"] |
+             ["Shape"] |
+             ["StartTime"] |
+             ["Integrator"] |
+             ["Texture"] |
+             ["TransformBegin"] |
+             ["TransformEnd"] |
+             ["TransformTimes"] |
+             ["Transform"] |
+             ["Translate"] |
+             ["WorldBegin"])
+        }
         // NUMBER [-+]?([0-9]+|(([0-9]+\.[0-9]*)|(\.[0-9]+)))([eE][-+]?[0-9]+)?
-        number = {
+        number = @{
             (["-"] | ["+"])? ~ // optional sign, followed by
             (
                 (
@@ -52,20 +86,30 @@ impl_rdp! {
                 ['0'..'9']+ // digits
             )?
         }
-        num_list = { number ~ (whitespaces ~ number)* }
-        // num_array: array_init LBRACK num_list RBRACK
-        num_array = { lbrack ~ whitespaces? ~ num_list ~ whitespaces? ~ rbrack }
-        // paramlist_entry: STRING array
-        paramlist_entry = { string_two_words ~ whitespaces ~ num_array }
-        // LOOKAT NUM NUM NUM NUM NUM NUM NUM NUM NUM
-        look_at = { ["LookAt"] ~ whitespaces ~
-                      number ~ whitespaces ~ number ~ whitespaces ~ number ~ whitespaces ~
-                      number ~ whitespaces ~ number ~ whitespaces ~ number ~ whitespaces ~
-                      number ~ whitespaces ~ number ~ whitespaces ~ number
-        }
-        // CAMERA STRING paramlist
-        camera = { ["Camera"] ~ whitespaces ~ string ~ whitespaces ~ paramlist_entry }
-        whitespaces = _{ [" "]+ }
+        last_statement = { ["WorldEnd"] ~ whitespace? }
+        whitespace = _{ ([" "] | ["\t"] | ["\r"] | ["\n"]) }
+        // // "[" { return LBRACK; }
+        // lbrack = { ["["] }
+        // // "]" { return RBRACK; }
+        // rbrack = { ["]"] }
+        // // IDENT [a-zA-Z_][a-zA-Z_0-9]*
+        // ident =  { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~
+        //            (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
+        // string = { ["\""] ~ ident ~ ["\""] }
+        // string_two_words = { ["\""] ~ ident ~ whitespaces ~ ident ~ ["\""] }
+        // num_list = { number ~ (whitespaces ~ number)* }
+        // // num_array: array_init LBRACK num_list RBRACK
+        // num_array = { lbrack ~ whitespaces? ~ num_list ~ whitespaces? ~ rbrack }
+        // // paramlist_entry: STRING array
+        // paramlist_entry = { string_two_words ~ whitespaces ~ num_array }
+        // // LOOKAT NUM NUM NUM NUM NUM NUM NUM NUM NUM
+        // look_at = { ["LookAt"] ~ whitespaces ~
+        //               number ~ whitespaces ~ number ~ whitespaces ~ number ~ whitespaces ~
+        //               number ~ whitespaces ~ number ~ whitespaces ~ number ~ whitespaces ~
+        //               number ~ whitespaces ~ number ~ whitespaces ~ number
+        // }
+        // // CAMERA STRING paramlist
+        // camera = { ["Camera"] ~ whitespaces ~ string ~ whitespaces ~ paramlist_entry }
     }
 }
 
@@ -104,7 +148,7 @@ fn main() {
                 reader.read_to_string(&mut str_buf);
                 // parser
                 let mut parser = Rdp::new(StringInput::new(&str_buf));
-                assert!(parser.camera());
+                assert!(parser.pbrt());
                 assert!(parser.end());
                 println!("{:?}", parser.queue());
             }
