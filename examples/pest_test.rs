@@ -27,7 +27,64 @@ pub enum Node {
 impl_rdp! {
     grammar! {
         pbrt = _{ statement* ~ last_statement }
-        statement = { keyword ~ number* }
+        statement = { look_at | rotate | named_statement | keyword }
+        named_statement = { camera |
+                            pixel_filter |
+                            sampler |
+                            film |
+                            coord_sys_transform |
+                            light_source |
+                            texture |
+                            material |
+                            shape }
+        parameter = { float_param |
+                      string_param |
+                      integer_param |
+                      point_param |
+                      rgb_param |
+                      spectrum_param |
+                      texture_param }
+        float_param = { ["\"float"] ~ ident ~ ["\""] ~ lbrack ~ number ~ rbrack }
+        string_param = { ["\"string"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack }
+        integer_param = { ["\"integer"] ~ ident ~ ["\""] ~ lbrack ~ integer ~ rbrack }
+        point_param = { ["\"point"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
+        rgb_param = { ["\"rgb"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
+        spectrum_param = { ["\"spectrum\""] ~ string }
+        texture_param = { ["\"texture"] ~ ident ~ ["\""] ~ string }
+        // Rotate angle x y z
+        rotate = { ["Rotate"] ~
+                   // followed by 4 numbers:
+                   number ~ number ~ number ~ number
+        }
+        // LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
+        look_at = { ["LookAt"] ~
+                    // followed by 9 numbers:
+
+                    // eye_x eye_y eye_z
+                    number ~ number ~ number ~
+                    // look_x look_y look_z
+                    number ~ number ~ number ~
+                    // up_x up_y up_z
+                    number ~ number ~ number
+        }
+        // Camera "perspective" "float fov" [90] ...
+        camera = { ["Camera"] ~ string ~ parameter* }
+        // PixelFilter "mitchell" "float xwidth" [2] "float ywidth" [2]
+        pixel_filter = { ["PixelFilter"] ~ string ~ parameter* }
+        // Sampler "halton"
+        sampler = { ["Sampler"] ~ string ~ parameter* }
+        // Film "image" "string filename" ["..."] ...
+        film = { ["Film"] ~ string ~ parameter* }
+        // CoordSysTransform "camera"
+        coord_sys_transform = { ["CoordSysTransform"] ~ string }
+        // LightSource "point" "rgb I" [ .5 .5 .5 ]
+        light_source = { ["LightSource"] ~ string ~ parameter* }
+        // Texture "mydiffuse" "spectrum" "imagemap" "string filename" "image.tga"
+        texture = { ["Texture"] ~ string ~ parameter* }
+        // Material "matte" "texture Kd" "mydiffuse"
+        material = { ["Material"] ~ string ~ parameter* }
+        // Shape "sphere" "float radius" [0.25]
+        shape = { ["Shape"] ~ string ~ parameter* }
         keyword = {
             (["Accelerator"] |
              ["ActiveTransform"] |
@@ -35,33 +92,23 @@ impl_rdp! {
              ["AreaLightSource"] |
              ["AttributeBegin"] |
              ["AttributeEnd"] |
-             ["Camera"] |
              ["ConcatTransform"] |
              ["CoordinateSystem"] |
              ["CoordSysTransform"] |
              ["EndTime"] |
-             ["Film"] |
              ["Identity"] |
              ["Include"] |
-             ["LightSource"] |
-             ["LookAt"] |
              ["MakeNamedMedium"] |
              ["MakeNamedMaterial"] |
-             ["Material"] |
              ["MediumInterface"] |
              ["NamedMaterial"] |
              ["ObjectBegin"] |
              ["ObjectEnd"] |
              ["ObjectInstance"] |
-             ["PixelFilter"] |
              ["ReverseOrientation"] |
-             ["Rotate"] |
-             ["Sampler"] |
              ["Scale"] |
-             ["Shape"] |
              ["StartTime"] |
              ["Integrator"] |
-             ["Texture"] |
              ["TransformBegin"] |
              ["TransformEnd"] |
              ["TransformTimes"] |
@@ -69,6 +116,16 @@ impl_rdp! {
              ["Translate"] |
              ["WorldBegin"])
         }
+        // IDENT [a-zA-Z_][a-zA-Z_0-9]*
+        ident =  { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~
+                   (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
+        string = { (["\""] ~ ident ~ ["\""]) | (["\""] ~ filename ~ ["\""]) }
+        filename = { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~ // TODO: can be a full path
+                     (['a'..'z'] | ['A'..'Z'] | ["_"] | ["."] | ['0'..'9'])* }
+        // "[" { return LBRACK; }
+        lbrack = { ["["] }
+        // "]" { return RBRACK; }
+        rbrack = { ["]"] }
         // NUMBER [-+]?([0-9]+|(([0-9]+\.[0-9]*)|(\.[0-9]+)))([eE][-+]?[0-9]+)?
         number = @{
             (["-"] | ["+"])? ~ // optional sign, followed by
@@ -86,30 +143,13 @@ impl_rdp! {
                 ['0'..'9']+ // digits
             )?
         }
+        integer = @{
+            (["-"] | ["+"])? ~ // optional sign, followed by
+            ['1'..'9'] ~ // at least one non-zero digit, followed by
+            ['0'..'9']* // just digits
+        }
         last_statement = { ["WorldEnd"] ~ whitespace? }
         whitespace = _{ ([" "] | ["\t"] | ["\r"] | ["\n"]) }
-        // // "[" { return LBRACK; }
-        // lbrack = { ["["] }
-        // // "]" { return RBRACK; }
-        // rbrack = { ["]"] }
-        // // IDENT [a-zA-Z_][a-zA-Z_0-9]*
-        // ident =  { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~
-        //            (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
-        // string = { ["\""] ~ ident ~ ["\""] }
-        // string_two_words = { ["\""] ~ ident ~ whitespaces ~ ident ~ ["\""] }
-        // num_list = { number ~ (whitespaces ~ number)* }
-        // // num_array: array_init LBRACK num_list RBRACK
-        // num_array = { lbrack ~ whitespaces? ~ num_list ~ whitespaces? ~ rbrack }
-        // // paramlist_entry: STRING array
-        // paramlist_entry = { string_two_words ~ whitespaces ~ num_array }
-        // // LOOKAT NUM NUM NUM NUM NUM NUM NUM NUM NUM
-        // look_at = { ["LookAt"] ~ whitespaces ~
-        //               number ~ whitespaces ~ number ~ whitespaces ~ number ~ whitespaces ~
-        //               number ~ whitespaces ~ number ~ whitespaces ~ number ~ whitespaces ~
-        //               number ~ whitespaces ~ number ~ whitespaces ~ number
-        // }
-        // // CAMERA STRING paramlist
-        // camera = { ["Camera"] ~ whitespaces ~ string ~ whitespaces ~ paramlist_entry }
     }
 }
 
