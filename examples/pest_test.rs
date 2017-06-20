@@ -3,25 +3,27 @@
 #[macro_use]
 extern crate pest;
 extern crate getopts;
+extern crate pbrt;
 
+use pbrt::Float;
 // parser
 use pest::prelude::*;
 // getopts
 use getopts::Options;
 // std
+use std::str::FromStr;
 use std::collections::LinkedList;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
-use std::io;
 use std::io::BufReader;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
-    Sentence(LinkedList<Node>),
-    Ident(char),
+    Statement(LinkedList<Node>),
+    LastStatement,
 }
 
 impl_rdp! {
@@ -156,27 +158,41 @@ impl_rdp! {
             (_list: _pbrt()) => {}
         }
         _pbrt(&self) -> () {
-            (_head: statement, _tail: _statement()) => { println!("DONE: statement"); },
-            (_l: last_statement) => { println!("TODO: last_statement"); },
+            (_head: statement, _tail: _statement()) => {},
+            (_l: last_statement) => { println!("WorldEnd"); },
         }
         _statement(&self) -> () {
-            (_head: look_at, _tail: _look_at()) => { println!("DONE: look_at"); },
+            (_head: look_at, _tail: _look_at()) => {},
             (_r: rotate) => { println!("TODO: rotate"); },
-            (_n: named_statement) => { println!("TODO: named_statement"); },
+            (_head: named_statement, _tail: _named_statement()) => { println!("TODO: named_statement"); },
             (_k: keyword) => { println!("TODO: keyword"); },
         }
         _look_at(&self) -> () {
             (eye_x: _number(), eye_y: _number(), eye_z: _number(),
              look_x: _number(), look_y: _number(), look_z: _number(),
-             up_x: _number(), up_y: _number(), up_z: _number()) => { println!("TODO: look_at"); }
+             up_x: _number(), up_y: _number(), up_z: _number()) => {
+                println!("LookAt {} {} {} {} {} {} {} {} {}",
+                         eye_x, eye_y, eye_z,
+                         look_x, look_y, look_z,
+                         up_x, up_y, up_z,);
+                self._pbrt();
+            }
         }
-        _number(&self) -> () {
+        _named_statement(&self) -> () {
+            (_ca: camera) => { println!("TODO: camera"); },
+            (_pi: pixel_filter) => { println!("TODO: pixel_filter"); },
+            (_sa: sampler) => { println!("TODO: sampler"); },
+            (_fi: film) => { println!("TODO: film"); },
+            (_co: coord_sys_transform) => { println!("TODO: coord_sys_transform"); },
+            (_li: light_source) => { println!("TODO: light_source"); },
+            (_te: texture) => { println!("TODO: texture"); },
+            (_ma: material) => { println!("TODO: material"); },
+            (_sh: shape) => { println!("TODO: shape"); },
+        }
+        _number(&self) -> Float {
             (&n: number) => {
-                    print!("number = ");
-                for c in n.chars() {
-                    print!("{}", c);
-                }
-                println!("");
+                let number: Float = f32::from_str(n).unwrap();
+                number
             },
         }
     }
