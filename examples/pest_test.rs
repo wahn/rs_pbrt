@@ -151,6 +151,35 @@ impl_rdp! {
         last_statement = { ["WorldEnd"] ~ whitespace? }
         whitespace = _{ ([" "] | ["\t"] | ["\r"] | ["\n"]) }
     }
+    process! {
+        main(&self) -> () {
+            (_list: _pbrt()) => {}
+        }
+        _pbrt(&self) -> () {
+            (_head: statement, _tail: _statement()) => { println!("DONE: statement"); },
+            (_l: last_statement) => { println!("TODO: last_statement"); },
+        }
+        _statement(&self) -> () {
+            (_head: look_at, _tail: _look_at()) => { println!("DONE: look_at"); },
+            (_r: rotate) => { println!("TODO: rotate"); },
+            (_n: named_statement) => { println!("TODO: named_statement"); },
+            (_k: keyword) => { println!("TODO: keyword"); },
+        }
+        _look_at(&self) -> () {
+            (eye_x: _number(), eye_y: _number(), eye_z: _number(),
+             look_x: _number(), look_y: _number(), look_z: _number(),
+             up_x: _number(), up_y: _number(), up_z: _number()) => { println!("TODO: look_at"); }
+        }
+        _number(&self) -> () {
+            (&n: number) => {
+                    print!("number = ");
+                for c in n.chars() {
+                    print!("{}", c);
+                }
+                println!("");
+            },
+        }
+    }
 }
 
 fn print_usage(program: &str, opts: Options) {
@@ -191,6 +220,9 @@ fn main() {
                 assert!(parser.pbrt());
                 assert!(parser.end());
                 println!("{:?}", parser.queue());
+                println!("do something with created tokens ...");
+                parser.main();
+                println!("done.");
             }
             None => panic!("no input file name"),
         }
