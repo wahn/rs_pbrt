@@ -161,6 +161,7 @@ impl_rdp! {
             (_head: statement, _tail: _statement()) => {},
             (_l: last_statement) => { println!("WorldEnd"); },
         }
+        // statements
         _statement(&self) -> () {
             (_head: look_at, _tail: _look_at()) => {},
             (_r: rotate) => { println!("TODO: rotate"); },
@@ -178,8 +179,9 @@ impl_rdp! {
                 self._pbrt();
             }
         }
+        // named statements
         _named_statement(&self) -> () {
-            (_ca: camera) => { println!("TODO: camera"); },
+            (_head: camera, _tail: _camera()) => { println!("TODO: camera"); },
             (_pi: pixel_filter) => { println!("TODO: pixel_filter"); },
             (_sa: sampler) => { println!("TODO: sampler"); },
             (_fi: film) => { println!("TODO: film"); },
@@ -189,10 +191,30 @@ impl_rdp! {
             (_ma: material) => { println!("TODO: material"); },
             (_sh: shape) => { println!("TODO: shape"); },
         }
+        _camera(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                println!("Camera \"{}\"", name);
+                println!("DEBUG: {:?}", optional_parameters);
+            },
+        }
+        // numbers
         _number(&self) -> Float {
             (&n: number) => {
                 let number: Float = f32::from_str(n).unwrap();
                 number
+            },
+        }
+        // strings
+        _string(&self) -> String {
+            (_s: string) => {
+                self._ident()
+            },
+        }
+        // identifiers
+        _ident(&self) -> String {
+            (&s: ident) => {
+                let string: String = String::from_str(s).unwrap();
+                string
             },
         }
     }
