@@ -87,13 +87,14 @@ impl_rdp! {
         material = { ["Material"] ~ string ~ parameter* }
         // Shape "sphere" "float radius" [0.25]
         shape = { ["Shape"] ~ string ~ parameter* }
+        // keywords
         keyword = {
             (["Accelerator"] |
              ["ActiveTransform"] |
              ["All"] |
              ["AreaLightSource"] |
-             ["AttributeBegin"] |
-             ["AttributeEnd"] |
+             attribute_begin |
+             attribute_end |
              ["ConcatTransform"] |
              ["CoordinateSystem"] |
              ["CoordSysTransform"] |
@@ -116,8 +117,12 @@ impl_rdp! {
              ["TransformTimes"] |
              ["Transform"] |
              ["Translate"] |
-             ["WorldBegin"])
+             world_begin
+            )
         }
+        attribute_begin = { ["AttributeBegin"] }
+        attribute_end = { ["AttributeEnd"] }
+        world_begin = { ["WorldBegin"] }
         // IDENT [a-zA-Z_][a-zA-Z_0-9]*
         ident =  { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~
                    (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
@@ -164,9 +169,9 @@ impl_rdp! {
         // statements
         _statement(&self) -> () {
             (_head: look_at, _tail: _look_at()) => {},
-            (_r: rotate) => { println!("TODO: rotate"); },
+            (_head: rotate, _tail: _rotate()) => {},
             (_head: named_statement, _tail: _named_statement()) => {},
-            (_k: keyword) => { println!("TODO: keyword"); },
+            (_head: keyword, _tail: _keyword()) => {},
         }
         _look_at(&self) -> () {
             (eye_x: _number(), eye_y: _number(), eye_z: _number(),
@@ -179,26 +184,112 @@ impl_rdp! {
                 self._pbrt();
             }
         }
+        _rotate(&self) -> () {
+            (angle: _number(), x: _number(), y: _number(), z: _number()) => {
+                println!("Rotate {} {} {} {}",
+                         angle, x, y, z);
+                self._pbrt();
+            }
+        }
         // named statements
         _named_statement(&self) -> () {
             (_head: camera, _tail: _camera()) => {},
-            (_pi: pixel_filter) => { println!("TODO: pixel_filter"); },
-            (_sa: sampler) => { println!("TODO: sampler"); },
-            (_fi: film) => { println!("TODO: film"); },
-            (_co: coord_sys_transform) => { println!("TODO: coord_sys_transform"); },
-            (_li: light_source) => { println!("TODO: light_source"); },
-            (_te: texture) => { println!("TODO: texture"); },
-            (_ma: material) => { println!("TODO: material"); },
-            (_sh: shape) => { println!("TODO: shape"); },
+            (_head: pixel_filter, _tail: _pixel_filter()) => {},
+            (_head: sampler, _tail: _sampler()) => {},
+            (_head: film, _tail: _film()) => {},
+            (_head: coord_sys_transform, _tail: _coord_sys_transform()) => {},
+            (_head: light_source, _tail: _light_source()) => {},
+            (_head: texture, _tail: _texture()) => {},
+            (_head: material, _tail: _material()) => {},
+            (_head: shape, _tail: _shape()) => {},
         }
         _camera(&self) -> () {
             (name: _string(), optional_parameters) => {
                 print!("Camera \"{}\" ", name);
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _pixel_filter(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                print!("PixelFilter \"{}\" ", name);
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _sampler(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                print!("Sampler \"{}\" ", name);
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
                     println!("");
-                    // TODO: what about additional camera parameters?
-                    self._pbrt(); // assume next token to be a statement or last_statement
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _film(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                print!("Film \"{}\" ", name);
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _coord_sys_transform(&self) -> () {
+            (name: _string()) => {
+                println!("CoordSysTransform \"{}\" ", name);
+                self._pbrt();
+            },
+        }
+        _light_source(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                print!("LightSource \"{}\" ", name);
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _texture(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                print!("Texture \"{}\" ", name);
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _material(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                print!("Material \"{}\" ", name);
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _shape(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                print!("Shape \"{}\" ", name);
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -209,13 +300,51 @@ impl_rdp! {
             (_head: float_param, tail: _float_param()) => {
                 let (string, number) = tail;
                 print!("\"float {}\" [{}] ", string, number);
+                self._parameter();
             },
-            (_st: string_param) => { println!("TODO: string_param"); },
-            (_in: integer_param) => { println!("TODO: integer_param"); },
-            (_po: point_param) => { println!("TODO: point_param"); },
-            (_rg: rgb_param) => { println!("TODO: rgb_param"); },
-            (_sp: spectrum_param) => { println!("TODO: spectrum_param"); },
-            (_te: texture_param) => { println!("TODO: texture_param"); },
+            (_head: string_param, tail: _string_param()) => {
+                let (string1, string2) = tail;
+                print!("\"string {}\" [{}] ", string1, string2);
+                self._parameter();
+            },
+            (_head: integer_param, tail: _integer_param()) => {
+                let (string, number) = tail;
+                print!("\"integer {}\" [{}] ", string, number);
+                self._parameter();
+            },
+            (_head: point_param, tail: _point_param()) => {
+                let (string, number1, number2, number3) = tail;
+                print!("\"point {}\" [ {} {} {} ] ", string, number1, number2, number3);
+                self._parameter();
+            },
+            (_head: rgb_param, tail: _rgb_param()) => {
+                let (string, number1, number2, number3) = tail;
+                print!("\"rgb {}\" [ {} {} {} ] ", string, number1, number2, number3);
+                self._parameter();
+            },
+            (_head: spectrum_param, tail: _spectrum_param()) => {
+                let string = tail;
+                print!("\"spectrum\" {} ", string);
+                self._parameter();
+            },
+            (_head: texture_param, tail: _texture_param()) => {
+                let (string1, string2) = tail;
+                print!("\"texture {}\" {} ", string1, string2);
+                self._parameter();
+            },
+            (optional_parameters) => {
+                if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
+                } else if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else {
+                    println!("ERROR: statement or parameter expected, {:?} found ...", optional_parameters);
+                }
+            }
         }
         _float_param(&self) -> (String, Float) {
             (&i: ident, _l: lbrack, &n: number, _r: rbrack) => {
@@ -223,6 +352,72 @@ impl_rdp! {
                 let number: Float = f32::from_str(n).unwrap();
                 (string, number)
             },
+        }
+        _string_param(&self) -> (String, String) {
+            (&i: ident, _l: lbrack, &s: string, _r: rbrack) => {
+                let string1: String = String::from_str(i).unwrap();
+                let string2: String = String::from_str(s).unwrap();
+                (string1, string2)
+            },
+            (&i: ident, _l: lbrack, _s: string, &f: filename, _r: rbrack) => {
+                let string1: String = String::from_str(i).unwrap();
+                let string2: String = String::from_str(f).unwrap();
+                (string1, string2)
+            },
+        }
+        _integer_param(&self) -> (String, i32) {
+            (&i: ident, _l: lbrack, &n: integer, _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let number: i32 = i32::from_str(n).unwrap();
+                (string, number)
+            },
+        }
+        _point_param(&self) -> (String, Float, Float, Float) {
+            (&i: ident, _l: lbrack, &n1: number, &n2: number, &n3: number, _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let number1: Float = f32::from_str(n1).unwrap();
+                let number2: Float = f32::from_str(n2).unwrap();
+                let number3: Float = f32::from_str(n3).unwrap();
+                (string, number1, number2, number3)
+            },
+        }
+        _rgb_param(&self) -> (String, Float, Float, Float) {
+            (&i: ident, _l: lbrack, &n1: number, &n2: number, &n3: number, _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let number1: Float = f32::from_str(n1).unwrap();
+                let number2: Float = f32::from_str(n2).unwrap();
+                let number3: Float = f32::from_str(n3).unwrap();
+                (string, number1, number2, number3)
+            },
+        }
+        _spectrum_param(&self) -> String {
+            (&s: string, _i: ident) => {
+                let string: String = String::from_str(s).unwrap();
+                string
+            },
+        }
+        _texture_param(&self) -> (String, String) {
+            (&i: ident, &s: string, _i: ident) => {
+                let string1: String = String::from_str(i).unwrap();
+                let string2: String = String::from_str(s).unwrap();
+                (string1, string2)
+            },
+        }
+        // keywords
+        _keyword(&self) -> () {
+            (_ab: attribute_begin) => {
+                println!("AttributeBegin");
+                self._pbrt();
+            },
+            (_ae: attribute_end) => {
+                println!("AttributeEnd");
+                self._pbrt();
+            },
+            (_wb: world_begin) => {
+                println!("WorldBegin");
+                self._pbrt();
+            },
+            (t) => { println!("TODO: {:?}", t); },
         }
         // numbers
         _number(&self) -> Float {
