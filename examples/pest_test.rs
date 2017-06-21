@@ -165,7 +165,7 @@ impl_rdp! {
         _statement(&self) -> () {
             (_head: look_at, _tail: _look_at()) => {},
             (_r: rotate) => { println!("TODO: rotate"); },
-            (_head: named_statement, _tail: _named_statement()) => { println!("TODO: named_statement"); },
+            (_head: named_statement, _tail: _named_statement()) => {},
             (_k: keyword) => { println!("TODO: keyword"); },
         }
         _look_at(&self) -> () {
@@ -181,7 +181,7 @@ impl_rdp! {
         }
         // named statements
         _named_statement(&self) -> () {
-            (_head: camera, _tail: _camera()) => { println!("TODO: camera"); },
+            (_head: camera, _tail: _camera()) => {},
             (_pi: pixel_filter) => { println!("TODO: pixel_filter"); },
             (_sa: sampler) => { println!("TODO: sampler"); },
             (_fi: film) => { println!("TODO: film"); },
@@ -193,8 +193,35 @@ impl_rdp! {
         }
         _camera(&self) -> () {
             (name: _string(), optional_parameters) => {
-                println!("Camera \"{}\"", name);
-                println!("DEBUG: {:?}", optional_parameters);
+                print!("Camera \"{}\" ", name);
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                    println!("");
+                    // TODO: what about additional camera parameters?
+                    self._pbrt(); // assume next token to be a statement or last_statement
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        // parameters
+        _parameter(&self) -> () {
+            (_head: float_param, tail: _float_param()) => {
+                let (string, number) = tail;
+                print!("\"float {}\" [{}] ", string, number);
+            },
+            (_st: string_param) => { println!("TODO: string_param"); },
+            (_in: integer_param) => { println!("TODO: integer_param"); },
+            (_po: point_param) => { println!("TODO: point_param"); },
+            (_rg: rgb_param) => { println!("TODO: rgb_param"); },
+            (_sp: spectrum_param) => { println!("TODO: spectrum_param"); },
+            (_te: texture_param) => { println!("TODO: texture_param"); },
+        }
+        _float_param(&self) -> (String, Float) {
+            (&i: ident, _l: lbrack, &n: number, _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let number: Float = f32::from_str(n).unwrap();
+                (string, number)
             },
         }
         // numbers
@@ -212,8 +239,8 @@ impl_rdp! {
         }
         // identifiers
         _ident(&self) -> String {
-            (&s: ident) => {
-                let string: String = String::from_str(s).unwrap();
+            (&i: ident) => {
+                let string: String = String::from_str(i).unwrap();
                 string
             },
         }
