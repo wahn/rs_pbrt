@@ -9080,6 +9080,11 @@ pub fn lookup_one<T>(vec: &mut Vec<ParamSetItem<T>>, name: String, d: T) -> T
 
 // see api.cpp
 
+#[derive(Debug,Default,Copy,Clone)]
+pub struct TransformSet {
+    pub t: [Transform; 2],
+}
+
 pub struct RenderOptions {
     transform_start_time: Float,
     transform_end_time: Float,
@@ -9095,7 +9100,7 @@ pub struct RenderOptions {
     integrator_params: ParamSet,
     camera_name: String, // "perspective";
     camera_params: ParamSet,
-    // TODO: TransformSet camera_to_world;
+    camera_to_world: TransformSet,
     // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
     // TODO: std::vector<std::shared_ptr<Light>> lights;
     // TODO: std::vector<std::shared_ptr<Primitive>> primitives;

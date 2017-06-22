@@ -5,7 +5,7 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::Float;
+use pbrt::{Float, Matrix4x4, Point3f, Transform, TransformSet, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -19,6 +19,21 @@ use std::io::prelude::*;
 use std::io::BufReader;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+static mut CUR_TRANSFORM: TransformSet = TransformSet {
+    t: [Transform {
+        m: Matrix4x4 {
+            m: [[1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0]] },
+        m_inv: Matrix4x4 {
+            m: [[1.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0],
+                [0.0, 0.0, 1.0, 0.0],
+                [0.0, 0.0, 0.0, 1.0]] },
+    }; 2],
+};
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
@@ -181,6 +196,15 @@ impl_rdp! {
                          eye_x, eye_y, eye_z,
                          look_x, look_y, look_z,
                          up_x, up_y, up_z,);
+                let pos: Point3f = Point3f { x: eye_x, y: eye_y, z: eye_z, };
+                let look: Point3f = Point3f { x: look_x, y: look_y, z: look_z, };
+                let up: Vector3f = Vector3f { x: up_x, y: up_y, z: up_z, };
+                let look_at: Transform = Transform::look_at(pos, look, up);
+                unsafe {
+                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
+                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
+                    println!("{:?}", CUR_TRANSFORM);
+                }
                 self._pbrt();
             }
         }
