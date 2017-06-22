@@ -5,7 +5,7 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{Float, Matrix4x4, Point3f, Transform, TransformSet, Vector3f};
+use pbrt::{Float, Matrix4x4, Point3f, RenderOptions, Transform, TransformSet, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -26,13 +26,48 @@ static mut CUR_TRANSFORM: TransformSet = TransformSet {
             m: [[1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0]] },
+                [0.0, 0.0, 0.0, 1.0]],
+        },
         m_inv: Matrix4x4 {
             m: [[1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0]] },
+                [0.0, 0.0, 0.0, 1.0]],
+        },
     }; 2],
+};
+static mut RENDER_OPTIONS: RenderOptions = RenderOptions {
+    transform_start_time: 0.0 as Float,
+    transform_end_time: 1.0 as Float,
+    // filter_name: None,
+    // filter_params: ParamSet,
+    // film_name: None,
+    // film_params: ParamSet,
+    // sampler_name: None,
+    // sampler_params: ParamSet,
+    // accelerator_name: None,
+    // accelerator_params: ParamSet,
+    // integrator_name: None,
+    // integrator_params: ParamSet,
+    // camera_name: None,
+    // camera_params: ParamSet,
+    camera_to_world: TransformSet {
+        t: [Transform {
+            m: Matrix4x4 {
+                m: [[1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0]],
+            },
+            m_inv: Matrix4x4 {
+                m: [[1.0, 0.0, 0.0, 0.0],
+                    [0.0, 1.0, 0.0, 0.0],
+                    [0.0, 0.0, 1.0, 0.0],
+                    [0.0, 0.0, 0.0, 1.0]],
+            },
+        }; 2],
+    },
+    have_scattering_media: false,
 };
 
 #[derive(Debug, PartialEq)]
@@ -203,7 +238,7 @@ impl_rdp! {
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
                     CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
-                    println!("{:?}", CUR_TRANSFORM);
+                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                 }
                 self._pbrt();
             }
@@ -229,6 +264,13 @@ impl_rdp! {
         }
         _camera(&self) -> () {
             (name: _string(), optional_parameters) => {
+                unsafe {
+                    // TODO: renderOptions->CameraName = name;
+                    // TODO: renderOptions->CameraParams = params;
+                    RENDER_OPTIONS.camera_to_world.t[0] = Transform::inverse(CUR_TRANSFORM.t[0]);
+                    RENDER_OPTIONS.camera_to_world.t[1] = Transform::inverse(CUR_TRANSFORM.t[1]);
+                    println!("RENDER_OPTIONS.camera_to_world: {:?}", RENDER_OPTIONS.camera_to_world);
+                }
                 print!("Camera \"{}\" ", name);
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
@@ -366,7 +408,8 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
-                    println!("ERROR: statement or parameter expected, {:?} found ...", optional_parameters);
+                    println!("ERROR: statement or parameter expected, {:?} found ...",
+                             optional_parameters);
                 }
             }
         }

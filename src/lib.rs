@@ -9086,27 +9086,27 @@ pub struct TransformSet {
 }
 
 pub struct RenderOptions {
-    transform_start_time: Float,
-    transform_end_time: Float,
-    filter_name: String,
-    filter_params: ParamSet,
-    film_name: String, // "box"
-    film_params: ParamSet,
-    sampler_name: String, // "halton";
-    sampler_params: ParamSet,
-    accelerator_name: String, // "bvh";
-    accelerator_params: ParamSet,
-    integrator_name: String, // "path";
-    integrator_params: ParamSet,
-    camera_name: String, // "perspective";
-    camera_params: ParamSet,
-    camera_to_world: TransformSet,
+    pub transform_start_time: Float,
+    pub transform_end_time: Float,
+    // pub filter_name: Option<String>,
+    // pub filter_params: ParamSet,
+    // pub film_name: Option<String>, // "box"
+    // pub film_params: ParamSet,
+    // pub sampler_name: Option<String>, // "halton";
+    // pub sampler_params: ParamSet,
+    // pub accelerator_name: Option<String>, // "bvh";
+    // pub accelerator_params: ParamSet,
+    // pub integrator_name: Option<String>, // "path";
+    // pub integrator_params: ParamSet,
+    // pub camera_name: Option<String>, // "perspective";
+    // pub camera_params: ParamSet,
+    pub camera_to_world: TransformSet,
     // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
     // TODO: std::vector<std::shared_ptr<Light>> lights;
     // TODO: std::vector<std::shared_ptr<Primitive>> primitives;
     // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
     // TODO: std::vector<std::shared_ptr<Primitive>> *currentInstance = nullptr;
-    have_scattering_media: bool, // false
+    pub have_scattering_media: bool, // false
 }
 
 // see rng.h
