@@ -1,4 +1,5 @@
 #![recursion_limit="2000"]
+#![feature(drop_types_in_const)]
 
 #[macro_use]
 extern crate pest;
@@ -36,39 +37,7 @@ static mut CUR_TRANSFORM: TransformSet = TransformSet {
         },
     }; 2],
 };
-static mut RENDER_OPTIONS: RenderOptions = RenderOptions {
-    transform_start_time: 0.0 as Float,
-    transform_end_time: 1.0 as Float,
-    // filter_name: None,
-    // filter_params: ParamSet,
-    // film_name: None,
-    // film_params: ParamSet,
-    // sampler_name: None,
-    // sampler_params: ParamSet,
-    // accelerator_name: None,
-    // accelerator_params: ParamSet,
-    // integrator_name: None,
-    // integrator_params: ParamSet,
-    // camera_name: None,
-    // camera_params: ParamSet,
-    camera_to_world: TransformSet {
-        t: [Transform {
-            m: Matrix4x4 {
-                m: [[1.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0]],
-            },
-            m_inv: Matrix4x4 {
-                m: [[1.0, 0.0, 0.0, 0.0],
-                    [0.0, 1.0, 0.0, 0.0],
-                    [0.0, 0.0, 1.0, 0.0],
-                    [0.0, 0.0, 0.0, 1.0]],
-            },
-        }; 2],
-    },
-    have_scattering_media: false,
-};
+static mut RENDER_OPTIONS: Option<Box<RenderOptions>> = None;
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
@@ -210,7 +179,8 @@ impl_rdp! {
     }
     process! {
         main(&self) -> () {
-            (_list: _pbrt()) => {}
+            (_list: _pbrt()) => {
+            }
         }
         _pbrt(&self) -> () {
             (_head: statement, _tail: _statement()) => {},
@@ -265,13 +235,16 @@ impl_rdp! {
         _camera(&self) -> () {
             (name: _string(), optional_parameters) => {
                 unsafe {
-                    // TODO: renderOptions->CameraName = name;
-                    // TODO: renderOptions->CameraParams = params;
-                    RENDER_OPTIONS.camera_to_world.t[0] = Transform::inverse(CUR_TRANSFORM.t[0]);
-                    RENDER_OPTIONS.camera_to_world.t[1] = Transform::inverse(CUR_TRANSFORM.t[1]);
-                    println!("RENDER_OPTIONS.camera_to_world: {:?}", RENDER_OPTIONS.camera_to_world);
+                    if let Some(ref mut render_options) = RENDER_OPTIONS {
+                        // TODO: renderOptions->CameraName = name;
+                        render_options.camera_name = name;
+                        print!("Camera \"{}\" ", render_options.camera_name);
+                        // TODO: renderOptions->CameraParams = params;
+                        render_options.camera_to_world.t[0] = Transform::inverse(CUR_TRANSFORM.t[0]);
+                        render_options.camera_to_world.t[1] = Transform::inverse(CUR_TRANSFORM.t[1]);
+                        println!("render_options.camera_to_world: {:?}", render_options.camera_to_world);
+                    }
                 }
-                print!("Camera \"{}\" ", name);
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
@@ -542,14 +515,18 @@ fn main() {
                 let mut reader = BufReader::new(f);
                 let mut str_buf: String = String::default();
                 reader.read_to_string(&mut str_buf);
-                // parser
-                let mut parser = Rdp::new(StringInput::new(&str_buf));
-                assert!(parser.pbrt());
-                assert!(parser.end());
-                println!("{:?}", parser.queue());
-                println!("do something with created tokens ...");
-                parser.main();
-                println!("done.");
+                unsafe {
+                    // render options
+                    RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
+                    // parser
+                    let mut parser = Rdp::new(StringInput::new(&str_buf));
+                    assert!(parser.pbrt());
+                    assert!(parser.end());
+                    println!("{:?}", parser.queue());
+                    println!("do something with created tokens ...");
+                    parser.main();
+                    println!("done.");
+                }
             }
             None => panic!("no input file name"),
         }

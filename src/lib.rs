@@ -9085,6 +9085,7 @@ pub struct TransformSet {
     pub t: [Transform; 2],
 }
 
+#[derive(Debug,Clone)]
 pub struct RenderOptions {
     pub transform_start_time: Float,
     pub transform_end_time: Float,
@@ -9098,7 +9099,7 @@ pub struct RenderOptions {
     // pub accelerator_params: ParamSet,
     // pub integrator_name: Option<String>, // "path";
     // pub integrator_params: ParamSet,
-    // pub camera_name: Option<String>, // "perspective";
+    pub camera_name: String, // "perspective";
     // pub camera_params: ParamSet,
     pub camera_to_world: TransformSet,
     // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
@@ -9107,6 +9108,33 @@ pub struct RenderOptions {
     // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
     // TODO: std::vector<std::shared_ptr<Primitive>> *currentInstance = nullptr;
     pub have_scattering_media: bool, // false
+}
+
+impl Default for RenderOptions {
+    fn default() -> RenderOptions {
+        RenderOptions {
+            transform_start_time: 0.0 as Float,
+            transform_end_time: 1.0 as Float,
+            camera_name: String::from("perspective"),
+            camera_to_world: TransformSet {
+                t: [Transform {
+                    m: Matrix4x4 {
+                        m: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0]],
+                    },
+                    m_inv: Matrix4x4 {
+                        m: [[1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0]],
+                    },
+                }; 2],
+            },
+            have_scattering_media: false,
+        }
+    }
 }
 
 // see rng.h
