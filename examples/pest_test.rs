@@ -275,7 +275,18 @@ impl_rdp! {
         }
         _sampler(&self) -> () {
             (name: _string(), optional_parameters) => {
-                print!("Sampler \"{}\" ", name);
+                unsafe {
+                    if let Some(ref mut render_options) = RENDER_OPTIONS {
+                        render_options.sampler_name = name;
+                        if optional_parameters.rule == Rule::statement {
+                            println!("");
+                            println!("Sampler \"{}\" ", render_options.sampler_name);
+                        }
+                    }
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("Sampler"));
+                    }
+                }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
@@ -291,7 +302,14 @@ impl_rdp! {
         }
         _film(&self) -> () {
             (name: _string(), optional_parameters) => {
-                print!("Film \"{}\" ", name);
+                unsafe {
+                    if let Some(ref mut render_options) = RENDER_OPTIONS {
+                        render_options.film_name = name;
+                    }
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("Film"));
+                    }
+                }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
@@ -358,12 +376,20 @@ impl_rdp! {
             },
             (_head: string_param, tail: _string_param()) => {
                 let (string1, string2) = tail;
-                print!("\"string {}\" [{}] ", string1, string2);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_string(string1, string2);
+                    }
+                }
                 self._parameter();
             },
             (_head: integer_param, tail: _integer_param()) => {
                 let (string, number) = tail;
-                print!("\"integer {}\" [{}] ", string, number);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_int(string, number as i64);
+                    }
+                }
                 self._parameter();
             },
             (_head: point_param, tail: _point_param()) => {
@@ -402,6 +428,18 @@ impl_rdp! {
                                     println!("PixelFilter \"{}\" ", render_options.filter_name);
                                     render_options.filter_params.copy_from(param_set);
                                     print_params(&render_options.filter_params);
+                                }
+                            } else if param_set.name == String::from("Sampler") {
+                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                    println!("Sampler \"{}\" ", render_options.sampler_name);
+                                    render_options.sampler_params.copy_from(param_set);
+                                    print_params(&render_options.sampler_params);
+                                }
+                            } else if param_set.name == String::from("Film") {
+                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                    println!("Film \"{}\" ", render_options.film_name);
+                                    render_options.film_params.copy_from(param_set);
+                                    print_params(&render_options.film_params);
                                 }
                             } else {
                                 println!("");
@@ -528,9 +566,19 @@ fn print_version(program: &str) {
 }
 
 fn print_params(params: &ParamSet) {
+    for p in &params.ints {
+        if p.n_values == 1_usize {
+            println!("  \"integer {}\" [{}]", p.name, p.values[0]);
+        }
+    }
     for p in &params.floats {
         if p.n_values == 1_usize {
             println!("  \"float {}\" [{}]", p.name, p.values[0]);
+        }
+    }
+    for p in &params.strings {
+        if p.n_values == 1_usize {
+            println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
         }
     }
 }

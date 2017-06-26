@@ -9039,7 +9039,7 @@ pub struct ParamSetItem<T> {
 pub struct ParamSet {
     pub name: String,
     bools: Vec<ParamSetItem<bool>>,
-    ints: Vec<ParamSetItem<i64>>,
+    pub ints: Vec<ParamSetItem<i64>>,
     pub floats: Vec<ParamSetItem<Float>>,
     point2fs: Vec<ParamSetItem<Point2f>>,
     vector2fs: Vec<ParamSetItem<Vector2f>>,
@@ -9047,7 +9047,7 @@ pub struct ParamSet {
     vector3fs: Vec<ParamSetItem<Vector3f>>,
     normals: Vec<ParamSetItem<Normal3f>>,
     // TODO: std::vector<std::shared_ptr<ParamSetItem<Spectrum>>> spectra;
-    strings: Vec<ParamSetItem<String>>,
+    pub strings: Vec<ParamSetItem<String>>,
     textures: Vec<ParamSetItem<String>>,
 }
 
@@ -9066,9 +9066,23 @@ impl ParamSet {
         self.textures.clear();
     }
     pub fn add_float(&mut self, name: String, value: Float) {
-        // EraseFloat(name);
-        // floats.emplace_back(new ParamSetItem<Float>(name, std::move(values), nValues));
         self.floats.push(ParamSetItem::<Float> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
+    pub fn add_int(&mut self, name: String, value: i64) {
+        self.ints.push(ParamSetItem::<i64> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
+    pub fn add_string(&mut self, name: String, value: String) {
+        self.strings.push(ParamSetItem::<String> {
             name: name,
             values: vec!(value),
             n_values: 1_usize,
@@ -9079,11 +9093,23 @@ impl ParamSet {
         self.name = param_set.name.clone();
         self.bools.clear();
         self.ints.clear();
+        for i in &param_set.ints {
+            let mut values: Vec<i64> = Vec::new();
+            for ix in 0..i.n_values {
+                values.push(i.values[ix]);
+            }
+            self.ints.push(ParamSetItem::<i64> {
+                name: i.name.clone(),
+                values: values,
+                n_values: i.n_values,
+                looked_up: false,
+            });
+        }
         self.floats.clear();
         for f in &param_set.floats {
             let mut values: Vec<Float> = Vec::new();
-            for i in 0..f.n_values {
-                values.push(f.values[i]);
+            for ix in 0..f.n_values {
+                values.push(f.values[ix]);
             }
             self.floats.push(ParamSetItem::<Float> {
                 name: f.name.clone(),
@@ -9098,6 +9124,18 @@ impl ParamSet {
         self.vector3fs.clear();
         self.normals.clear();
         self.strings.clear();
+        for s in &param_set.strings {
+            let mut values: Vec<String> = Vec::new();
+            for ix in 0..s.n_values {
+                values.push(s.values[ix].clone());
+            }
+            self.strings.push(ParamSetItem::<String> {
+                name: s.name.clone(),
+                values: values,
+                n_values: s.n_values,
+                looked_up: false,
+            });
+        }
         self.textures.clear();
     }
     pub fn find_texture(&mut self, name: String) -> String {
@@ -9138,12 +9176,12 @@ pub struct TransformSet {
 pub struct RenderOptions {
     pub transform_start_time: Float,
     pub transform_end_time: Float,
-    pub filter_name: String,
+    pub filter_name: String, // "box"
     pub filter_params: ParamSet,
-    // pub film_name: Option<String>, // "box"
-    // pub film_params: ParamSet,
-    // pub sampler_name: Option<String>, // "halton";
-    // pub sampler_params: ParamSet,
+    pub film_name: String, // "image"
+    pub film_params: ParamSet,
+    pub sampler_name: String, // "halton";
+    pub sampler_params: ParamSet,
     // pub accelerator_name: Option<String>, // "bvh";
     // pub accelerator_params: ParamSet,
     // pub integrator_name: Option<String>, // "path";
@@ -9164,8 +9202,12 @@ impl Default for RenderOptions {
         RenderOptions {
             transform_start_time: 0.0 as Float,
             transform_end_time: 1.0 as Float,
-            filter_name: String::from(""),
+            filter_name: String::from("box"),
             filter_params: ParamSet::default(),
+            film_name: String::from("image"),
+            film_params: ParamSet::default(),
+            sampler_name: String::from("halton"),
+            sampler_params: ParamSet::default(),
             camera_name: String::from("perspective"),
             camera_params: ParamSet::default(),
             camera_to_world: TransformSet {
