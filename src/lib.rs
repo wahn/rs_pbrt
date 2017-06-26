@@ -9155,6 +9155,19 @@ impl ParamSet {
         }
         self.vector3fs.clear();
         self.normals.clear();
+        self.spectra.clear();
+        for s in &param_set.spectra {
+            let mut values: Vec<Spectrum> = Vec::new();
+            for ix in 0..s.n_values {
+                values.push(s.values[ix].clone());
+            }
+            self.spectra.push(ParamSetItem::<Spectrum> {
+                name: s.name.clone(),
+                values: values,
+                n_values: s.n_values,
+                looked_up: false,
+            });
+        }
         self.strings.clear();
         for s in &param_set.strings {
             let mut values: Vec<String> = Vec::new();
