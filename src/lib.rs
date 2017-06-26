@@ -9138,8 +9138,8 @@ pub struct TransformSet {
 pub struct RenderOptions {
     pub transform_start_time: Float,
     pub transform_end_time: Float,
-    // pub filter_name: Option<String>,
-    // pub filter_params: ParamSet,
+    pub filter_name: String,
+    pub filter_params: ParamSet,
     // pub film_name: Option<String>, // "box"
     // pub film_params: ParamSet,
     // pub sampler_name: Option<String>, // "halton";
@@ -9164,6 +9164,8 @@ impl Default for RenderOptions {
         RenderOptions {
             transform_start_time: 0.0 as Float,
             transform_end_time: 1.0 as Float,
+            filter_name: String::from(""),
+            filter_params: ParamSet::default(),
             camera_name: String::from("perspective"),
             camera_params: ParamSet::default(),
             camera_to_world: TransformSet {

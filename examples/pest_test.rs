@@ -258,7 +258,14 @@ impl_rdp! {
         }
         _pixel_filter(&self) -> () {
             (name: _string(), optional_parameters) => {
-                print!("PixelFilter \"{}\" ", name);
+                unsafe {
+                    if let Some(ref mut render_options) = RENDER_OPTIONS {
+                        render_options.filter_name = name;
+                    }
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("PixelFilter"));
+                    }
+                }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
@@ -383,15 +390,18 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::statement {
                     unsafe {
                         if let Some(ref mut param_set) = PARAM_SET {
+                            println!("");
                             if param_set.name == String::from("Camera") {
                                 if let Some(ref mut render_options) = RENDER_OPTIONS {
                                     println!("Camera \"{}\" ", render_options.camera_name);
                                     render_options.camera_params.copy_from(param_set);
-                                    for p in &render_options.camera_params.floats {
-                                        if p.n_values == 1_usize {
-                                            println!("  \"float {}\" [{}]", p.name, p.values[0]);
-                                        }
-                                    }
+                                    print_params(&render_options.camera_params);
+                                }
+                            } else if param_set.name == String::from("PixelFilter") {
+                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                    println!("PixelFilter \"{}\" ", render_options.filter_name);
+                                    render_options.filter_params.copy_from(param_set);
+                                    print_params(&render_options.filter_params);
                                 }
                             } else {
                                 println!("");
@@ -515,6 +525,14 @@ fn print_usage(program: &str, opts: Options) {
 
 fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
+}
+
+fn print_params(params: &ParamSet) {
+    for p in &params.floats {
+        if p.n_values == 1_usize {
+            println!("  \"float {}\" [{}]", p.name, p.values[0]);
+        }
+    }
 }
 
 fn main() {
