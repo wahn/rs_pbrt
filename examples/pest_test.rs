@@ -6,14 +6,15 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{Float, Matrix4x4, ParamSet, Point3f, RenderOptions, Transform, TransformSet, Vector3f};
+use pbrt::{Float, Matrix4x4, ParamSet, Point3f, RenderOptions, Spectrum, Transform, TransformSet,
+           Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
 use getopts::Options;
 // std
 use std::str::FromStr;
-use std::collections::LinkedList;
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -37,14 +38,9 @@ static mut CUR_TRANSFORM: TransformSet = TransformSet {
         },
     }; 2],
 };
+static mut NAMED_COORDINATE_SYSTEMS: Option<Box<HashMap<&str, TransformSet>>> = None;
 static mut RENDER_OPTIONS: Option<Box<RenderOptions>> = None;
 static mut PARAM_SET: Option<Box<ParamSet>> = None;
-
-#[derive(Debug, PartialEq)]
-pub enum Node {
-    Statement(LinkedList<Node>),
-    LastStatement,
-}
 
 impl_rdp! {
     grammar! {
@@ -117,7 +113,6 @@ impl_rdp! {
              attribute_end |
              ["ConcatTransform"] |
              ["CoordinateSystem"] |
-             ["CoordSysTransform"] |
              ["EndTime"] |
              ["Identity"] |
              ["Include"] |
@@ -209,7 +204,7 @@ impl_rdp! {
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
                     CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
-                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                 }
                 self._pbrt();
             }
@@ -242,11 +237,19 @@ impl_rdp! {
                             Transform::inverse(CUR_TRANSFORM.t[0]);
                         render_options.camera_to_world.t[1] =
                             Transform::inverse(CUR_TRANSFORM.t[1]);
+                        if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
+                            named_coordinate_systems.insert("camera",
+                                                            TransformSet {
+                                                                t: [render_options.camera_to_world.t[0],
+                                                                    render_options.camera_to_world.t[1]]
+                                                            });
+                            println!("NAMED_COORDINATE_SYSTEMS: {:?}", named_coordinate_systems);
+                        }
                         // println!("render_options.camera_to_world: {:?}",
                         //          render_options.camera_to_world);
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("Camera"));
+                        param_set.reset(String::from("Camera"), String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -263,7 +266,7 @@ impl_rdp! {
                         render_options.filter_name = name;
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("PixelFilter"));
+                        param_set.reset(String::from("PixelFilter"), String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -284,7 +287,7 @@ impl_rdp! {
                         }
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("Sampler"));
+                        param_set.reset(String::from("Sampler"), String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -307,7 +310,7 @@ impl_rdp! {
                         render_options.film_name = name;
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("Film"));
+                        param_set.reset(String::from("Film"), String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -320,12 +323,30 @@ impl_rdp! {
         _coord_sys_transform(&self) -> () {
             (name: _string()) => {
                 println!("CoordSysTransform \"{}\" ", name);
+                unsafe {
+                    if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
+                        match named_coordinate_systems.get(name.as_str()) {
+                            Some(transform_set) => {
+                                CUR_TRANSFORM.t[0] = transform_set.t[0];
+                                CUR_TRANSFORM.t[1] = transform_set.t[1];
+                                println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                            },
+                            None => {
+                                println!("Couldn't find named coordinate system \"{}\"", name);
+                            },
+                        };
+                    }
+                }
                 self._pbrt();
             },
         }
         _light_source(&self) -> () {
             (name: _string(), optional_parameters) => {
-                print!("LightSource \"{}\" ", name);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("LightSource"), String::from(name));
+                    }
+                }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
@@ -394,12 +415,28 @@ impl_rdp! {
             },
             (_head: point_param, tail: _point_param()) => {
                 let (string, number1, number2, number3) = tail;
-                print!("\"point {}\" [ {} {} {} ] ", string, number1, number2, number3);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_point3f(string,
+                                              Point3f {
+                                                  x: number1,
+                                                  y: number2,
+                                                  z: number3,
+                                              });
+                    }
+                }
                 self._parameter();
             },
             (_head: rgb_param, tail: _rgb_param()) => {
                 let (string, number1, number2, number3) = tail;
-                print!("\"rgb {}\" [ {} {} {} ] ", string, number1, number2, number3);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_rgb_spectrum(string,
+                                                   Spectrum {
+                                                       c: [number1, number2, number3],
+                                                   });
+                    }
+                }
                 self._parameter();
             },
             (_head: spectrum_param, tail: _spectrum_param()) => {
@@ -417,35 +454,41 @@ impl_rdp! {
                     unsafe {
                         if let Some(ref mut param_set) = PARAM_SET {
                             println!("");
-                            if param_set.name == String::from("Camera") {
+                            if param_set.key_word == String::from("Camera") {
                                 if let Some(ref mut render_options) = RENDER_OPTIONS {
                                     println!("Camera \"{}\" ", render_options.camera_name);
                                     render_options.camera_params.copy_from(param_set);
                                     print_params(&render_options.camera_params);
                                 }
-                            } else if param_set.name == String::from("PixelFilter") {
+                            } else if param_set.key_word == String::from("PixelFilter") {
                                 if let Some(ref mut render_options) = RENDER_OPTIONS {
                                     println!("PixelFilter \"{}\" ", render_options.filter_name);
                                     render_options.filter_params.copy_from(param_set);
                                     print_params(&render_options.filter_params);
                                 }
-                            } else if param_set.name == String::from("Sampler") {
+                            } else if param_set.key_word == String::from("Sampler") {
                                 if let Some(ref mut render_options) = RENDER_OPTIONS {
                                     println!("Sampler \"{}\" ", render_options.sampler_name);
                                     render_options.sampler_params.copy_from(param_set);
                                     print_params(&render_options.sampler_params);
                                 }
-                            } else if param_set.name == String::from("Film") {
+                            } else if param_set.key_word == String::from("Film") {
                                 if let Some(ref mut render_options) = RENDER_OPTIONS {
                                     println!("Film \"{}\" ", render_options.film_name);
                                     render_options.film_params.copy_from(param_set);
                                     print_params(&render_options.film_params);
                                 }
+                            } else if param_set.key_word == String::from("LightSource") {
+                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                    println!("LightSource \"{}\" ", param_set.name);
+                                    print_params(&param_set);
+                                }
+                                // let lt = make_light(name, params, CUR_TRANSFORM.t[0]);
                             } else {
                                 println!("");
-                                println!("PARAM_SET: {}", param_set.name);
+                                println!("PARAM_SET: {}", param_set.key_word);
                             }
-                            param_set.reset(String::from(""));
+                            param_set.reset(String::from(""), String::from(""));
                         }
                     }
                     self._statement();
@@ -529,6 +572,15 @@ impl_rdp! {
             },
             (_wb: world_begin) => {
                 println!("WorldBegin");
+                unsafe {
+                    if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
+                        named_coordinate_systems.insert("world",
+                                                        TransformSet {
+                                                            t: [Transform::default(); 2]
+                                                        });
+                        println!("NAMED_COORDINATE_SYSTEMS: {:?}", named_coordinate_systems);
+                    }
+                }
                 self._pbrt();
             },
             (t) => { println!("TODO: {:?}", t); },
@@ -576,6 +628,24 @@ fn print_params(params: &ParamSet) {
             println!("  \"float {}\" [{}]", p.name, p.values[0]);
         }
     }
+    for p in &params.point3fs {
+        if p.n_values == 1_usize {
+            println!("  \"point {}\" [\"{} {} {}\"]",
+                     p.name,
+                     p.values[0].x,
+                     p.values[0].y,
+                     p.values[0].z);
+        }
+    }
+    for p in &params.spectra {
+        if p.n_values == 1_usize {
+            println!("  \"rgb {}\" [\"{} {} {}\"]",
+                     p.name,
+                     p.values[0].c[0],
+                     p.values[0].c[1],
+                     p.values[0].c[2]);
+        }
+    }
     for p in &params.strings {
         if p.n_values == 1_usize {
             println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
@@ -609,6 +679,7 @@ fn main() {
                 reader.read_to_string(&mut str_buf);
                 unsafe {
                     // render options
+                    NAMED_COORDINATE_SYSTEMS = Some(Box::new(HashMap::new()));
                     RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
                     PARAM_SET = Some(Box::new(ParamSet::default()));
                     // parser

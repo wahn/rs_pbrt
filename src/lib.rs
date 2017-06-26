@@ -5428,7 +5428,7 @@ impl Shape for Triangle {
 
 #[derive(Debug,Default,Copy,Clone)]
 pub struct RGBSpectrum {
-    c: [Float; 3],
+    pub c: [Float; 3],
 }
 
 impl RGBSpectrum {
@@ -9037,22 +9037,24 @@ pub struct ParamSetItem<T> {
 
 #[derive(Default)]
 pub struct ParamSet {
+    pub key_word: String,
     pub name: String,
     bools: Vec<ParamSetItem<bool>>,
     pub ints: Vec<ParamSetItem<i64>>,
     pub floats: Vec<ParamSetItem<Float>>,
     point2fs: Vec<ParamSetItem<Point2f>>,
     vector2fs: Vec<ParamSetItem<Vector2f>>,
-    point3fs: Vec<ParamSetItem<Point3f>>,
+    pub point3fs: Vec<ParamSetItem<Point3f>>,
     vector3fs: Vec<ParamSetItem<Vector3f>>,
     normals: Vec<ParamSetItem<Normal3f>>,
-    // TODO: std::vector<std::shared_ptr<ParamSetItem<Spectrum>>> spectra;
+    pub spectra: Vec<ParamSetItem<Spectrum>>,
     pub strings: Vec<ParamSetItem<String>>,
     textures: Vec<ParamSetItem<String>>,
 }
 
 impl ParamSet {
-    pub fn reset(&mut self, name: String) {
+    pub fn reset(&mut self, key_word: String, name: String) {
+        self.key_word = key_word;
         self.name = name;
         self.bools.clear();
         self.ints.clear();
@@ -9062,6 +9064,7 @@ impl ParamSet {
         self.point3fs.clear();
         self.vector3fs.clear();
         self.normals.clear();
+        self.spectra.clear();
         self.strings.clear();
         self.textures.clear();
     }
@@ -9081,6 +9084,14 @@ impl ParamSet {
             looked_up: false,
         });
     }
+    pub fn add_point3f(&mut self, name: String, value: Point3f) {
+        self.point3fs.push(ParamSetItem::<Point3f> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
     pub fn add_string(&mut self, name: String, value: String) {
         self.strings.push(ParamSetItem::<String> {
             name: name,
@@ -9089,8 +9100,17 @@ impl ParamSet {
             looked_up: false,
         });
     }
+    pub fn add_rgb_spectrum(&mut self, name: String, value: Spectrum) {
+        self.spectra.push(ParamSetItem::<Spectrum> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
     pub fn copy_from(&mut self, param_set: &ParamSet) {
-        self.name = param_set.name.clone();
+        self.key_word = param_set.key_word.clone();
+        // self.name = param_set.name.clone();
         self.bools.clear();
         self.ints.clear();
         for i in &param_set.ints {
@@ -9121,6 +9141,18 @@ impl ParamSet {
         self.point2fs.clear();
         self.vector2fs.clear();
         self.point3fs.clear();
+        for p in &param_set.point3fs {
+            let mut values: Vec<Point3f> = Vec::new();
+            for ix in 0..p.n_values {
+                values.push(p.values[ix].clone());
+            }
+            self.point3fs.push(ParamSetItem::<Point3f> {
+                name: p.name.clone(),
+                values: values,
+                n_values: p.n_values,
+                looked_up: false,
+            });
+        }
         self.vector3fs.clear();
         self.normals.clear();
         self.strings.clear();
