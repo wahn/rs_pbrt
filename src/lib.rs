@@ -9035,10 +9035,12 @@ pub struct ParamSetItem<T> {
     pub looked_up: bool, // false
 }
 
+#[derive(Default)]
 pub struct ParamSet {
+    pub name: String,
     bools: Vec<ParamSetItem<bool>>,
     ints: Vec<ParamSetItem<i64>>,
-    floats: Vec<ParamSetItem<Float>>,
+    pub floats: Vec<ParamSetItem<Float>>,
     point2fs: Vec<ParamSetItem<Point2f>>,
     vector2fs: Vec<ParamSetItem<Vector2f>>,
     point3fs: Vec<ParamSetItem<Point3f>>,
@@ -9050,6 +9052,54 @@ pub struct ParamSet {
 }
 
 impl ParamSet {
+    pub fn reset(&mut self, name: String) {
+        self.name = name;
+        self.bools.clear();
+        self.ints.clear();
+        self.floats.clear();
+        self.point2fs.clear();
+        self.vector2fs.clear();
+        self.point3fs.clear();
+        self.vector3fs.clear();
+        self.normals.clear();
+        self.strings.clear();
+        self.textures.clear();
+    }
+    pub fn add_float(&mut self, name: String, value: Float) {
+        // EraseFloat(name);
+        // floats.emplace_back(new ParamSetItem<Float>(name, std::move(values), nValues));
+        self.floats.push(ParamSetItem::<Float> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
+    pub fn copy_from(&mut self, param_set: &ParamSet) {
+        self.name = param_set.name.clone();
+        self.bools.clear();
+        self.ints.clear();
+        self.floats.clear();
+        for f in &param_set.floats {
+            let mut values: Vec<Float> = Vec::new();
+            for i in 0..f.n_values {
+                values.push(f.values[i]);
+            }
+            self.floats.push(ParamSetItem::<Float> {
+                name: f.name.clone(),
+                values: values,
+                n_values: f.n_values,
+                looked_up: false,
+            });
+        }
+        self.point2fs.clear();
+        self.vector2fs.clear();
+        self.point3fs.clear();
+        self.vector3fs.clear();
+        self.normals.clear();
+        self.strings.clear();
+        self.textures.clear();
+    }
     pub fn find_texture(&mut self, name: String) -> String {
         let d: String = String::new();
         lookup_one(&mut self.textures, name, d)
@@ -9085,7 +9135,6 @@ pub struct TransformSet {
     pub t: [Transform; 2],
 }
 
-#[derive(Debug,Clone)]
 pub struct RenderOptions {
     pub transform_start_time: Float,
     pub transform_end_time: Float,
@@ -9100,7 +9149,7 @@ pub struct RenderOptions {
     // pub integrator_name: Option<String>, // "path";
     // pub integrator_params: ParamSet,
     pub camera_name: String, // "perspective";
-    // pub camera_params: ParamSet,
+    pub camera_params: ParamSet,
     pub camera_to_world: TransformSet,
     // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
     // TODO: std::vector<std::shared_ptr<Light>> lights;
@@ -9116,6 +9165,7 @@ impl Default for RenderOptions {
             transform_start_time: 0.0 as Float,
             transform_end_time: 1.0 as Float,
             camera_name: String::from("perspective"),
+            camera_params: ParamSet::default(),
             camera_to_world: TransformSet {
                 t: [Transform {
                     m: Matrix4x4 {

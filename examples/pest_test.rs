@@ -6,7 +6,7 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{Float, Matrix4x4, Point3f, RenderOptions, Transform, TransformSet, Vector3f};
+use pbrt::{Float, Matrix4x4, ParamSet, Point3f, RenderOptions, Transform, TransformSet, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -38,6 +38,7 @@ static mut CUR_TRANSFORM: TransformSet = TransformSet {
     }; 2],
 };
 static mut RENDER_OPTIONS: Option<Box<RenderOptions>> = None;
+static mut PARAM_SET: Option<Box<ParamSet>> = None;
 
 #[derive(Debug, PartialEq)]
 pub enum Node {
@@ -208,7 +209,7 @@ impl_rdp! {
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
                     CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
-                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                 }
                 self._pbrt();
             }
@@ -236,13 +237,16 @@ impl_rdp! {
             (name: _string(), optional_parameters) => {
                 unsafe {
                     if let Some(ref mut render_options) = RENDER_OPTIONS {
-                        // TODO: renderOptions->CameraName = name;
                         render_options.camera_name = name;
-                        print!("Camera \"{}\" ", render_options.camera_name);
-                        // TODO: renderOptions->CameraParams = params;
-                        render_options.camera_to_world.t[0] = Transform::inverse(CUR_TRANSFORM.t[0]);
-                        render_options.camera_to_world.t[1] = Transform::inverse(CUR_TRANSFORM.t[1]);
-                        println!("render_options.camera_to_world: {:?}", render_options.camera_to_world);
+                        render_options.camera_to_world.t[0] =
+                            Transform::inverse(CUR_TRANSFORM.t[0]);
+                        render_options.camera_to_world.t[1] =
+                            Transform::inverse(CUR_TRANSFORM.t[1]);
+                        // println!("render_options.camera_to_world: {:?}",
+                        //          render_options.camera_to_world);
+                    }
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("Camera"));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -338,7 +342,11 @@ impl_rdp! {
         _parameter(&self) -> () {
             (_head: float_param, tail: _float_param()) => {
                 let (string, number) = tail;
-                print!("\"float {}\" [{}] ", string, number);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_float(string, number);
+                    }
+                }
                 self._parameter();
             },
             (_head: string_param, tail: _string_param()) => {
@@ -373,7 +381,25 @@ impl_rdp! {
             },
             (optional_parameters) => {
                 if optional_parameters.rule == Rule::statement {
-                    println!("");
+                    unsafe {
+                        if let Some(ref mut param_set) = PARAM_SET {
+                            if param_set.name == String::from("Camera") {
+                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                    println!("Camera \"{}\" ", render_options.camera_name);
+                                    render_options.camera_params.copy_from(param_set);
+                                    for p in &render_options.camera_params.floats {
+                                        if p.n_values == 1_usize {
+                                            println!("  \"float {}\" [{}]", p.name, p.values[0]);
+                                        }
+                                    }
+                                }
+                            } else {
+                                println!("");
+                                println!("PARAM_SET: {}", param_set.name);
+                            }
+                            param_set.reset(String::from(""));
+                        }
+                    }
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
                     println!("");
@@ -518,6 +544,7 @@ fn main() {
                 unsafe {
                     // render options
                     RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
+                    PARAM_SET = Some(Box::new(ParamSet::default()));
                     // parser
                     let mut parser = Rdp::new(StringInput::new(&str_buf));
                     assert!(parser.pbrt());
