@@ -102,7 +102,7 @@ impl_rdp! {
         // LightSource "point" "rgb I" [ .5 .5 .5 ]
         light_source = { ["LightSource"] ~ string ~ parameter* }
         // Texture "mydiffuse" "spectrum" "imagemap" "string filename" "image.tga"
-        texture = { ["Texture"] ~ string ~ parameter* }
+        texture = { ["Texture"] ~ string ~ string ~ string ~ parameter* }
         // Material "matte" "texture Kd" "mydiffuse"
         material = { ["Material"] ~ string ~ parameter* }
         // Shape "sphere" "float radius" [0.25]
@@ -217,6 +217,12 @@ impl_rdp! {
             (angle: _number(), x: _number(), y: _number(), z: _number()) => {
                 println!("Rotate {} {} {} {}",
                          angle, x, y, z);
+                let rotate: Transform = Transform::rotate(angle, Vector3f { x: x, y: y, z: z, });
+                unsafe {
+                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * rotate;
+                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * rotate;
+                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                }
                 self._pbrt();
             }
         }
@@ -253,7 +259,10 @@ impl_rdp! {
                         //          render_options.camera_to_world);
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("Camera"), String::from(""));
+                        param_set.reset(String::from("Camera"),
+                                        String::from(""),
+                                        String::from(""),
+                                        String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -270,7 +279,10 @@ impl_rdp! {
                         render_options.filter_name = name;
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("PixelFilter"), String::from(""));
+                        param_set.reset(String::from("PixelFilter"),
+                                        String::from(""),
+                                        String::from(""),
+                                        String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -291,7 +303,10 @@ impl_rdp! {
                         }
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("Sampler"), String::from(""));
+                        param_set.reset(String::from("Sampler"),
+                                        String::from(""),
+                                        String::from(""),
+                                        String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -314,7 +329,10 @@ impl_rdp! {
                         render_options.film_name = name;
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("Film"), String::from(""));
+                        param_set.reset(String::from("Film"),
+                                        String::from(""),
+                                        String::from(""),
+                                        String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -348,7 +366,10 @@ impl_rdp! {
             (name: _string(), optional_parameters) => {
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.reset(String::from("LightSource"), String::from(name));
+                        param_set.reset(String::from("LightSource"),
+                                        String::from(""),
+                                        String::from(""),
+                                        String::from(name));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -359,8 +380,15 @@ impl_rdp! {
             },
         }
         _texture(&self) -> () {
-            (name: _string(), optional_parameters) => {
-                print!("Texture \"{}\" ", name);
+            (name: _string(), tex_type: _string(), tex_name: _string(), optional_parameters) => {
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("Texture"),
+                                        String::from(name),
+                                        String::from(tex_type),
+                                        String::from(tex_name));
+                    }
+                }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
@@ -446,6 +474,11 @@ impl_rdp! {
             (_head: spectrum_param, tail: _spectrum_param()) => {
                 let string = tail;
                 print!("\"spectrum\" {} ", string);
+                // unsafe {
+                //     if let Some(ref mut param_set) = PARAM_SET {
+                //         param_set.add_string(string1, string2);
+                //     }
+                // }
                 self._parameter();
             },
             (_head: texture_param, tail: _texture_param()) => {
@@ -488,11 +521,25 @@ impl_rdp! {
                                     print_params(&param_set);
                                 }
                                 // let lt = make_light(name, params, CUR_TRANSFORM.t[0]);
+                            } else if param_set.key_word == String::from("Texture") {
+                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                    println!("Texture \"{}\" \"{}\" \"{}\" ",
+                                             param_set.name,
+                                             param_set.tex_type,
+                                             param_set.tex_name);
+                                    print_params(&param_set);
+                                }
+                                // MakeFloatTexture(texname, curTransform[0], tp);
+                                // or
+                                // MakeSpectrumTexture(texname, curTransform[0], tp);
                             } else {
                                 println!("");
                                 println!("PARAM_SET: {}", param_set.key_word);
                             }
-                            param_set.reset(String::from(""), String::from(""));
+                            param_set.reset(String::from(""),
+                                            String::from(""),
+                                            String::from(""),
+                                            String::from(""));
                         }
                     }
                     self._statement();
@@ -605,7 +652,10 @@ impl_rdp! {
                             }
                             let popped_graphics_state: GraphicsState = pushed_graphics_states.pop().unwrap();
                             // material_params
-                            graphics_state.material_params.reset(String::new(), String::new());
+                            graphics_state.material_params.reset(String::new(),
+                                                                 String::from(""),
+                                                                 String::from(""),
+                                                                 String::new());
                             graphics_state.material_params.copy_from(&popped_graphics_state.material_params);
                             // material
                             graphics_state.material = String::from(popped_graphics_state.material.as_ref());

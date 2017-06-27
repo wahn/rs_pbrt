@@ -9039,6 +9039,8 @@ pub struct ParamSetItem<T> {
 pub struct ParamSet {
     pub key_word: String,
     pub name: String,
+    pub tex_type: String,
+    pub tex_name: String,
     bools: Vec<ParamSetItem<bool>>,
     pub ints: Vec<ParamSetItem<i64>>,
     pub floats: Vec<ParamSetItem<Float>>,
@@ -9053,9 +9055,11 @@ pub struct ParamSet {
 }
 
 impl ParamSet {
-    pub fn reset(&mut self, key_word: String, name: String) {
+    pub fn reset(&mut self, key_word: String, name: String, tex_type: String, tex_name: String) {
         self.key_word = key_word;
         self.name = name;
+        self.tex_type = tex_type;
+        self.tex_name = tex_name;
         self.bools.clear();
         self.ints.clear();
         self.floats.clear();
