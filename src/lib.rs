@@ -9276,6 +9276,22 @@ impl Default for RenderOptions {
     }
 }
 
+#[derive(Default)]
+pub struct GraphicsState {
+    // std::string currentInsideMedium, currentOutsideMedium;
+    // std::map<std::string, std::shared_ptr<Texture<Float>>> floatTextures;
+    // std::map<std::string, std::shared_ptr<Texture<Spectrum>>> spectrumTextures;
+    // ParamSet materialParams;
+    pub material_params: ParamSet,
+    // std::string material = "matte";
+    pub material: String,
+    // std::map<std::string, std::shared_ptr<Material>> namedMaterials;
+    // std::string currentNamedMaterial;
+    // ParamSet areaLightParams;
+    // std::string areaLight;
+    // bool reverseOrientation = false;
+}
+
 // see rng.h
 
 const ONE_MINUS_EPSILON: Float = 0.99999994;

@@ -6,8 +6,8 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{Float, Matrix4x4, ParamSet, Point3f, RenderOptions, Spectrum, Transform, TransformSet,
-           Vector3f};
+use pbrt::{Float, GraphicsState, Matrix4x4, ParamSet, Point3f, RenderOptions, Spectrum, Transform,
+           TransformSet, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -40,6 +40,10 @@ static mut CUR_TRANSFORM: TransformSet = TransformSet {
 };
 static mut NAMED_COORDINATE_SYSTEMS: Option<Box<HashMap<&str, TransformSet>>> = None;
 static mut RENDER_OPTIONS: Option<Box<RenderOptions>> = None;
+static mut GRAPHICS_STATE: Option<Box<GraphicsState>> = None;
+static mut PUSHED_GRAPHICS_STATES: Option<Box<Vec<GraphicsState>>> = None;
+static mut PUSHED_GRAPHICS_TRANSFORMS: Option<Box<Vec<TransformSet>>> = None;
+// not used in original C++ code:
 static mut PARAM_SET: Option<Box<ParamSet>> = None;
 
 impl_rdp! {
@@ -564,15 +568,65 @@ impl_rdp! {
         _keyword(&self) -> () {
             (_ab: attribute_begin) => {
                 println!("AttributeBegin");
+                unsafe {
+                    if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                        if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
+                            let mut param_set: ParamSet = ParamSet::default();
+                            param_set.copy_from(&graphics_state.material_params);
+                            pushed_graphics_states.push(GraphicsState {
+                                material_params: param_set,
+                                material: String::from(graphics_state.material.as_ref()),
+                            });
+                        }
+                        if let Some(ref mut pushed_graphics_transforms) = PUSHED_GRAPHICS_TRANSFORMS {
+                            pushed_graphics_transforms.push(TransformSet {
+                                t: [
+                                    Transform {
+                                        m: CUR_TRANSFORM.t[0].m,
+                                        m_inv: CUR_TRANSFORM.t[0].m_inv,},
+                                    Transform {
+                                        m: CUR_TRANSFORM.t[1].m,
+                                        m_inv: CUR_TRANSFORM.t[1].m_inv,},
+                                    ]
+                            });
+                        }
+                        // TODO? pushedActiveTransformBits.push_back(activeTransformBits);
+                    }
+                }
                 self._pbrt();
             },
             (_ae: attribute_end) => {
                 println!("AttributeEnd");
+                unsafe {
+                    if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                        if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
+                            if !(pushed_graphics_states.len() >= 1_usize) {
+                                panic!("Unmatched pbrtAttributeEnd() encountered.")
+                            }
+                            let popped_graphics_state: GraphicsState = pushed_graphics_states.pop().unwrap();
+                            // material_params
+                            graphics_state.material_params.reset(String::new(), String::new());
+                            graphics_state.material_params.copy_from(&popped_graphics_state.material_params);
+                            // material
+                            graphics_state.material = String::from(popped_graphics_state.material.as_ref());
+                        }
+                        if let Some(ref mut pushed_graphics_transforms) = PUSHED_GRAPHICS_TRANSFORMS {
+                            let popped_transform_set: TransformSet = pushed_graphics_transforms.pop().unwrap();
+                            CUR_TRANSFORM.t[0] = popped_transform_set.t[0];
+                            CUR_TRANSFORM.t[1] = popped_transform_set.t[1];
+                            println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                        }
+                        // TODO? pushedActiveTransformBits.push_back(activeTransformBits);
+                    }
+                }
                 self._pbrt();
             },
             (_wb: world_begin) => {
                 println!("WorldBegin");
                 unsafe {
+                    CUR_TRANSFORM.t[0] = Transform::default();
+                    CUR_TRANSFORM.t[1] = Transform::default();
+                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                     if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
                         named_coordinate_systems.insert("world",
                                                         TransformSet {
@@ -681,6 +735,9 @@ fn main() {
                     // render options
                     NAMED_COORDINATE_SYSTEMS = Some(Box::new(HashMap::new()));
                     RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
+                    GRAPHICS_STATE = Some(Box::new(GraphicsState::default()));
+                    PUSHED_GRAPHICS_STATES = Some(Box::new(Vec::new()));
+                    PUSHED_GRAPHICS_TRANSFORMS = Some(Box::new(Vec::new()));
                     PARAM_SET = Some(Box::new(ParamSet::default()));
                     // parser
                     let mut parser = Rdp::new(StringInput::new(&str_buf));
