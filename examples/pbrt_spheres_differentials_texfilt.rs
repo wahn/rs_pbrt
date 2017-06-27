@@ -456,7 +456,6 @@ fn main() {
     };
     let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
     let fov: Float = 30.0;
-    let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
     let xres = 1000;
     let yres = 500;
     let frame: Float = xres as Float / yres as Float;
@@ -498,7 +497,6 @@ fn main() {
                                1.0,
                                std::f32::INFINITY);
     let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
-                                                                       camera_to_screen,
                                                                        screen,
                                                                        shutteropen,
                                                                        shutterclose,

@@ -623,12 +623,11 @@ use std::cmp::PartialEq;
 use std::default::Default;
 use std::f32::consts::PI;
 use std::mem;
-use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut, Deref};
+use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::path::Path;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 use std::sync::mpsc;
-use std::thread;
 // use copy_arena::{Arena, Allocator};
 use num::Zero;
 use image::{ImageResult, DynamicImage};
@@ -656,7 +655,7 @@ impl Scene {
         };
         let mut changed_lights = Vec::new();
         let mut infinite_lights = Vec::new();
-        for mut light in lights {
+        for light in lights {
             light.preprocess(&scene);
             changed_lights.push(light.clone());
             let check: u8 = light.get_flags() & LightFlags::Infinite as u8;
@@ -4486,7 +4485,7 @@ impl Shape for Disk {
         if ray.d.z == 0.0 {
             return None;
         }
-        let mut t_shape_hit: Float = (self.height - ray.o.z) / ray.d.z;
+        let t_shape_hit: Float = (self.height - ray.o.z) / ray.d.z;
         if t_shape_hit <= 0.0 || t_shape_hit >= ray.t_max {
             return None;
         }
@@ -4555,12 +4554,12 @@ impl Shape for Disk {
         if ray.d.z == 0.0 {
             return false;
         }
-        let mut t_shape_hit: Float = (self.height - ray.o.z) / ray.d.z;
+        let t_shape_hit: Float = (self.height - ray.o.z) / ray.d.z;
         if t_shape_hit <= 0.0 || t_shape_hit >= ray.t_max {
             return false;
         }
         // see if hit point is inside disk radii and $\phimax$
-        let mut p_hit: Point3f = ray.position(t_shape_hit);
+        let p_hit: Point3f = ray.position(t_shape_hit);
         let dist2: Float = p_hit.x * p_hit.x + p_hit.y * p_hit.y;
         if dist2 > self.radius * self.radius || dist2 < self.inner_radius * self.inner_radius {
             return false;
@@ -5202,11 +5201,13 @@ impl Shape for Triangle {
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time, Some(self));
         // override surface normal in _isect_ for triangle
         let surface_normal: Normal3f = Normal3f::from(vec3_normalize(vec3_cross_vec3(dp02, dp12)));
+        si.n = surface_normal;
+        si.shading.n = surface_normal;
         if !self.mesh.n.is_empty() || !self.mesh.s.is_empty() {
             // initialize _Triangle_ shading geometry
 
             // compute shading normal _ns_ for triangle
-            let mut ns: Normal3f = Normal3f::default();
+            let mut ns: Normal3f;
             if !self.mesh.n.is_empty() {
                 ns =
                     Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 0]]) * b0 +
@@ -5221,7 +5222,7 @@ impl Shape for Triangle {
                 ns = si.n;
             }
             // compute shading tangent _ss_ for triangle
-            let mut ss: Vector3f = Vector3f::default();
+            let mut ss: Vector3f;
             if !self.mesh.s.is_empty() {
                 ss =
                     self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 0]] * b0 +
@@ -5244,8 +5245,8 @@ impl Shape for Triangle {
                 vec3_coordinate_system(&Vector3f::from(ns), &mut ss, &mut ts);
             }
             // compute $\dndu$ and $\dndv$ for triangle shading geometry
-            let mut dndu: Normal3f = Normal3f::default();
-            let mut dndv: Normal3f = Normal3f::default();
+            let dndu: Normal3f;
+            let dndv: Normal3f;
             if !self.mesh.n.is_empty() {
                 // compute deltas for triangle partial derivatives of normal
                 let duv02: Vector2f = uv[0] - uv[2];
@@ -5257,7 +5258,7 @@ impl Shape for Triangle {
                     Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 1]]) -
                     Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]]);
                 let determinant: Float = duv02.x * duv12.y - duv02.y * duv12.x;
-                let degenerateUV: bool = determinant.abs() < 1e-8;
+                let degenerate_uv: bool = determinant.abs() < 1e-8;
                 if degenerate_uv {
                     dndu = Normal3f::default();
                     dndv = Normal3f::default();
@@ -5981,7 +5982,7 @@ impl BVHAccel {
                                 if b == n_buckets {
                                     b = n_buckets - 1;
                                 }
-                                assert!(b >= 0_usize, "b >= 0");
+                                // assert!(b >= 0_usize, "b >= 0");
                                 assert!(b < n_buckets, "b < {}", n_buckets);
                                 buckets[b].count += 1;
                                 buckets[b].bounds = bnd3_union_bnd3(buckets[b].bounds,
@@ -6027,7 +6028,7 @@ impl BVHAccel {
                                             (n_buckets as Float *
                                              centroid_bounds.offset(pi.centroid)[dim]) as usize;
                                         if b == n_buckets {b = n_buckets - 1;}
-                                        assert!(b >= 0_usize, "b >= 0");
+                                        // assert!(b >= 0_usize, "b >= 0");
                                         assert!(b < n_buckets, "b < {}", n_buckets);
                                         b <= min_cost_split_bucket
                                     });
@@ -6910,7 +6911,6 @@ pub struct PerspectiveCamera {
 
 impl PerspectiveCamera {
     pub fn new(camera_to_world: AnimatedTransform,
-               camera_to_screen: Transform,
                screen_window: Bounds2f,
                shutter_open: Float,
                shutter_close: Float,
@@ -6919,6 +6919,8 @@ impl PerspectiveCamera {
                fov: Float,
                film: Film /* const Medium *medium */)
                -> Self {
+        // see perspective.cpp
+        let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
         // see camera.h
         // compute projective camera screen transformations
         let scale1 = Transform::scale(film.full_resolution.x as Float,
@@ -7214,7 +7216,6 @@ impl Bsdf {
         } else {
             panic!("CHECK_NOTNULL(bxdf)");
         }
-        Spectrum::default()
     }
     pub fn pdf(&self, wo_world: Vector3f, wi_world: Vector3f, bsdf_flags: u8) -> Float {
         // TODO: ProfilePhase pp(Prof::BSDFPdf);
@@ -7296,7 +7297,7 @@ pub struct FresnelNoOp {
 }
 
 impl Fresnel for FresnelNoOp {
-    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum {
+    fn evaluate(&self, _cos_theta_i: &mut Float) -> Spectrum {
         Spectrum::new(1.0 as Float)
     }
 }
@@ -7323,9 +7324,9 @@ impl Bxdf for SpecularReflection {
     fn sample_f(&self,
                 wo: Vector3f,
                 wi: &mut Vector3f,
-                sample: Point2f,
+                _sample: Point2f,
                 pdf: &mut Float,
-                sampled_type: &mut u8)
+                _sampled_type: &mut u8)
                 -> Spectrum {
         // compute perfect specular reflection direction
         *wi = Vector3f { x: -wo.x, y: -wo.y, z: wo.z, };
@@ -7365,9 +7366,9 @@ impl Bxdf for SpecularTransmission {
     fn sample_f(&self,
                 wo: Vector3f,
                 wi: &mut Vector3f,
-                sample: Point2f,
+                _sample: Point2f,
                 pdf: &mut Float,
-                sampled_type: &mut u8)
+                _sampled_type: &mut u8)
                 -> Spectrum {
         // figure out which $\eta$ is incident and which is transmitted
         let entering: bool = cos_theta(wo) > 0.0;
@@ -7418,7 +7419,7 @@ impl Bxdf for LambertianReflection {
                 wi: &mut Vector3f,
                 u: Point2f,
                 pdf: &mut Float,
-                sampled_type: &mut u8)
+                _sampled_type: &mut u8)
                 -> Spectrum {
         *wi = cosine_sample_hemisphere(u);
         if wo.z > 0.0 as Float {
@@ -7481,7 +7482,7 @@ impl Bxdf for OrenNayar {
                 wi: &mut Vector3f,
                 u: Point2f,
                 pdf: &mut Float,
-                sampled_type: &mut u8)
+                _sampled_type: &mut u8)
                 -> Spectrum {
         *wi = cosine_sample_hemisphere(u);
         if wo.z > 0.0 as Float {
@@ -7907,8 +7908,8 @@ impl Material for GlassMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
                                     // arena: &mut Arena,
-                                    mode: TransportMode,
-                                    allow_multiple_lobes: bool) {
+                                    _mode: TransportMode,
+                                    _allow_multiple_lobes: bool) {
         si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }
@@ -7934,8 +7935,8 @@ impl Material for MirrorMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
                                     // arena: &mut Arena,
-                                    mode: TransportMode,
-                                    allow_multiple_lobes: bool) {
+                                    _mode: TransportMode,
+                                    _allow_multiple_lobes: bool) {
         si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }
@@ -8089,7 +8090,7 @@ impl MipMap {
                max_anisotropy: Float,
                wrap_mode: ImageWrap) -> Self {
         let mut resolution = *res;
-        let mut resampled_image: Vec<Spectrum> = Vec::new();
+        let resampled_image: Vec<Spectrum> = Vec::new();
         if !is_power_of_2(resolution.x) || !is_power_of_2(resolution.y) {
             // resample image to power-of-two resolution
             let res_pow_2: Point2i = Point2i {
@@ -8184,7 +8185,7 @@ impl MipMap {
         // compute ellipse minor and major axes
         if dst0.length_squared() < dst1.length_squared() {
             // std::swap(dst0, dst1);
-            let mut swap: Vector2f = Vector2f { x: dst0.x, y: dst0.y, };
+            let swap: Vector2f = Vector2f { x: dst0.x, y: dst0.y, };
             // dst0 = dst1
             dst0.x = dst1.x;
             dst0.y = dst1.y;
@@ -8810,8 +8811,8 @@ pub fn concentric_sample_disk(u: Point2f) -> Point2f {
         return Point2f::default();
     }
     // apply concentric mapping to point
-    let mut theta: Float;
-    let mut r: Float;
+    let theta: Float;
+    let r: Float;
     if u_offset.x.abs() > u_offset.y.abs() {
         r = u_offset.x;
         theta = PI_OVER_4 * (u_offset.y / u_offset.x);

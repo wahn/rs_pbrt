@@ -1,10 +1,9 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Checkerboard2DTexture,
-           ConstantTexture, DistantLight, Film, Float, GeometricPrimitive, GlassMaterial,
-           ImageTexture, ImageWrap, Light, PlasticMaterial, PerspectiveCamera, PlanarMapping2D,
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, ConstantTexture, DistantLight, Film,
+           Float, GeometricPrimitive, Light, MatteMaterial, PlasticMaterial, PerspectiveCamera,
            Point2f, Point2i, Point3f, PointLight, Primitive, Scene, Spectrum, Disk, SplitMethod,
-           Transform, Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f};
+           Transform, Triangle, TriangleMesh, Vector2f, Vector3f};
 use std::sync::Arc;
 
 struct SceneDescription {
@@ -1817,7 +1816,6 @@ fn main() {
     };
     let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
     let fov: Float = 45.0;
-    let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
     let xres = 256;
     let yres = 256;
     let frame: Float = xres as Float / yres as Float;
@@ -1859,7 +1857,6 @@ fn main() {
                                1.0,
                                std::f32::INFINITY);
     let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
-                                                                       camera_to_screen,
                                                                        screen,
                                                                        shutteropen,
                                                                        shutterclose,

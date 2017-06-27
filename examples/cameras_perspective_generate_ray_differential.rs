@@ -83,9 +83,7 @@ fn main() {
         screen.p_max.y = 1.0 / frame;
     }
     let fov: Float = 30.0;
-    let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
     let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
-                                                                       camera_to_screen,
                                                                        screen,
                                                                        shutteropen,
                                                                        shutterclose,
