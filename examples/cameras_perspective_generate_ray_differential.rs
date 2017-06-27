@@ -1,7 +1,7 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, CameraSample, Film, Float, PerspectiveCamera,
-           Point2f, Point2i, Point3f, Ray, Transform, Vector2f, Vector3f};
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, Camera, CameraSample, Film, Float,
+           PerspectiveCamera, Point2f, Point2i, Point3f, Ray, Transform, Vector2f, Vector3f};
 
 fn main() {
     // CameraSample
@@ -95,7 +95,6 @@ fn main() {
                                                                        film);
     // println!("perspective_camera = {:?}", perspective_camera);
     let mut ray: Ray = Ray::default();
-    let _ray_weight: Float =
-        perspective_camera.generate_ray_differential(&camera_sample, &mut ray);
+    let _ray_weight: Float = perspective_camera.generate_ray_differential(&camera_sample, &mut ray);
     println!("ray = {:?}", ray);
 }

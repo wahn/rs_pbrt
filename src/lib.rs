@@ -6875,6 +6875,10 @@ impl Film {
 
 // see camera.h
 
+pub trait Camera {
+    fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float;
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct CameraSample {
     pub p_film: Point2f,
@@ -6986,7 +6990,10 @@ impl PerspectiveCamera {
             a: a,
         }
     }
-    pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
+}
+
+impl Camera for PerspectiveCamera {
+    fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
         // TODO: ProfilePhase prof(Prof::GenerateCameraRay);
         // compute raster and camera sample positions
         let p_film: Point3f = Point3f {
@@ -9051,7 +9058,7 @@ pub struct ParamSet {
     normals: Vec<ParamSetItem<Normal3f>>,
     pub spectra: Vec<ParamSetItem<Spectrum>>,
     pub strings: Vec<ParamSetItem<String>>,
-    textures: Vec<ParamSetItem<String>>,
+    pub textures: Vec<ParamSetItem<String>>,
 }
 
 impl ParamSet {
@@ -9098,6 +9105,14 @@ impl ParamSet {
     }
     pub fn add_string(&mut self, name: String, value: String) {
         self.strings.push(ParamSetItem::<String> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
+    pub fn add_texture(&mut self, name: String, value: String) {
+        self.textures.push(ParamSetItem::<String> {
             name: name,
             values: vec!(value),
             n_values: 1_usize,
@@ -9186,6 +9201,18 @@ impl ParamSet {
             });
         }
         self.textures.clear();
+        for s in &param_set.textures {
+            let mut values: Vec<String> = Vec::new();
+            for ix in 0..s.n_values {
+                values.push(s.values[ix].clone());
+            }
+            self.textures.push(ParamSetItem::<String> {
+                name: s.name.clone(),
+                values: values,
+                n_values: s.n_values,
+                looked_up: false,
+            });
+        }
     }
     pub fn find_texture(&mut self, name: String) -> String {
         let d: String = String::new();
@@ -9278,6 +9305,13 @@ impl Default for RenderOptions {
             have_scattering_media: false,
         }
     }
+}
+
+impl RenderOptions {
+    // pub fn make_integrator(&self) -> Integrator {
+    // }
+    // pub fn make_camera(&self) -> Camera {
+    // }
 }
 
 #[derive(Default)]

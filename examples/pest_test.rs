@@ -208,7 +208,7 @@ impl_rdp! {
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
                     CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
-                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                 }
                 self._pbrt();
             }
@@ -221,7 +221,7 @@ impl_rdp! {
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * rotate;
                     CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * rotate;
-                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                 }
                 self._pbrt();
             }
@@ -253,7 +253,7 @@ impl_rdp! {
                                                                 t: [render_options.camera_to_world.t[0],
                                                                     render_options.camera_to_world.t[1]]
                                                             });
-                            println!("NAMED_COORDINATE_SYSTEMS: {:?}", named_coordinate_systems);
+                            // println!("NAMED_COORDINATE_SYSTEMS: {:?}", named_coordinate_systems);
                         }
                         // println!("render_options.camera_to_world: {:?}",
                         //          render_options.camera_to_world);
@@ -351,7 +351,7 @@ impl_rdp! {
                             Some(transform_set) => {
                                 CUR_TRANSFORM.t[0] = transform_set.t[0];
                                 CUR_TRANSFORM.t[1] = transform_set.t[1];
-                                println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                                // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                             },
                             None => {
                                 println!("Couldn't find named coordinate system \"{}\"", name);
@@ -367,9 +367,9 @@ impl_rdp! {
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
                         param_set.reset(String::from("LightSource"),
+                                        String::from(name),
                                         String::from(""),
-                                        String::from(""),
-                                        String::from(name));
+                                        String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
@@ -398,7 +398,14 @@ impl_rdp! {
         }
         _material(&self) -> () {
             (name: _string(), optional_parameters) => {
-                print!("Material \"{}\" ", name);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("Material"),
+                                        String::from(name),
+                                        String::from(""),
+                                        String::from(""));
+                    }
+                }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
@@ -408,7 +415,14 @@ impl_rdp! {
         }
         _shape(&self) -> () {
             (name: _string(), optional_parameters) => {
-                print!("Shape \"{}\" ", name);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("Shape"),
+                                        String::from(name),
+                                        String::from(""),
+                                        String::from(""));
+                    }
+                }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
@@ -483,7 +497,11 @@ impl_rdp! {
             },
             (_head: texture_param, tail: _texture_param()) => {
                 let (string1, string2) = tail;
-                print!("\"texture {}\" {} ", string1, string2);
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_texture(string1, string2);
+                    }
+                }
                 self._parameter();
             },
             (optional_parameters) => {
@@ -532,6 +550,16 @@ impl_rdp! {
                                 // MakeFloatTexture(texname, curTransform[0], tp);
                                 // or
                                 // MakeSpectrumTexture(texname, curTransform[0], tp);
+                            } else if param_set.key_word == String::from("Material") {
+                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                    println!("Material \"{}\" ", param_set.name);
+                                    print_params(&param_set);
+                                }
+                            } else if param_set.key_word == String::from("Shape") {
+                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                    println!("Shape \"{}\" ", param_set.name);
+                                    print_params(&param_set);
+                                }
                             } else {
                                 println!("");
                                 println!("PARAM_SET: {}", param_set.key_word);
@@ -605,9 +633,9 @@ impl_rdp! {
             },
         }
         _texture_param(&self) -> (String, String) {
-            (&i: ident, &s: string, _i: ident) => {
-                let string1: String = String::from_str(i).unwrap();
-                let string2: String = String::from_str(s).unwrap();
+            (&i1: ident, _s: string, &i2: ident) => {
+                let string1: String = String::from_str(i1).unwrap();
+                let string2: String = String::from_str(i2).unwrap();
                 (string1, string2)
             },
         }
@@ -664,7 +692,7 @@ impl_rdp! {
                             let popped_transform_set: TransformSet = pushed_graphics_transforms.pop().unwrap();
                             CUR_TRANSFORM.t[0] = popped_transform_set.t[0];
                             CUR_TRANSFORM.t[1] = popped_transform_set.t[1];
-                            println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                            // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                         }
                         // TODO? pushedActiveTransformBits.push_back(activeTransformBits);
                     }
@@ -676,13 +704,13 @@ impl_rdp! {
                 unsafe {
                     CUR_TRANSFORM.t[0] = Transform::default();
                     CUR_TRANSFORM.t[1] = Transform::default();
-                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                     if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
                         named_coordinate_systems.insert("world",
                                                         TransformSet {
                                                             t: [Transform::default(); 2]
                                                         });
-                        println!("NAMED_COORDINATE_SYSTEMS: {:?}", named_coordinate_systems);
+                        // println!("NAMED_COORDINATE_SYSTEMS: {:?}", named_coordinate_systems);
                     }
                 }
                 self._pbrt();
@@ -734,7 +762,7 @@ fn print_params(params: &ParamSet) {
     }
     for p in &params.point3fs {
         if p.n_values == 1_usize {
-            println!("  \"point {}\" [\"{} {} {}\"]",
+            println!("  \"point {}\" [{} {} {}]",
                      p.name,
                      p.values[0].x,
                      p.values[0].y,
@@ -743,7 +771,7 @@ fn print_params(params: &ParamSet) {
     }
     for p in &params.spectra {
         if p.n_values == 1_usize {
-            println!("  \"rgb {}\" [\"{} {} {}\"]",
+            println!("  \"rgb {}\" [{} {} {}]",
                      p.name,
                      p.values[0].c[0],
                      p.values[0].c[1],
@@ -753,6 +781,11 @@ fn print_params(params: &ParamSet) {
     for p in &params.strings {
         if p.n_values == 1_usize {
             println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
+        }
+    }
+    for p in &params.textures {
+        if p.n_values == 1_usize {
+            println!("  \"texture {}\" \"{}\"", p.name, p.values[0]);
         }
     }
 }
