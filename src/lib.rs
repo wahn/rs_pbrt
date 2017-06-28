@@ -9055,7 +9055,7 @@ pub struct ParamSet {
     point2fs: Vec<ParamSetItem<Point2f>>,
     vector2fs: Vec<ParamSetItem<Vector2f>>,
     pub point3fs: Vec<ParamSetItem<Point3f>>,
-    vector3fs: Vec<ParamSetItem<Vector3f>>,
+    pub vector3fs: Vec<ParamSetItem<Vector3f>>,
     normals: Vec<ParamSetItem<Normal3f>>,
     pub spectra: Vec<ParamSetItem<Spectrum>>,
     pub strings: Vec<ParamSetItem<String>>,
@@ -9114,6 +9114,14 @@ impl ParamSet {
     }
     pub fn add_texture(&mut self, name: String, value: String) {
         self.textures.push(ParamSetItem::<String> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
+    pub fn add_vector3f(&mut self, name: String, value: Vector3f) {
+        self.vector3fs.push(ParamSetItem::<Vector3f> {
             name: name,
             values: vec!(value),
             n_values: 1_usize,
@@ -9261,8 +9269,8 @@ pub struct RenderOptions {
     pub sampler_params: ParamSet,
     // pub accelerator_name: Option<String>, // "bvh";
     // pub accelerator_params: ParamSet,
-    // pub integrator_name: Option<String>, // "path";
-    // pub integrator_params: ParamSet,
+    pub integrator_name: String, // "path";
+    pub integrator_params: ParamSet,
     pub camera_name: String, // "perspective";
     pub camera_params: ParamSet,
     pub camera_to_world: TransformSet,
@@ -9285,6 +9293,8 @@ impl Default for RenderOptions {
             film_params: ParamSet::default(),
             sampler_name: String::from("halton"),
             sampler_params: ParamSet::default(),
+            integrator_name: String::from("image"),
+            integrator_params: ParamSet::default(),
             camera_name: String::from("perspective"),
             camera_params: ParamSet::default(),
             camera_to_world: TransformSet {

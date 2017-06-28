@@ -1,0 +1,25 @@
+
+LookAt 2 2 5   0 -.4 0 0 1 0
+Camera "perspective" "float fov" [30 ]
+
+Film "image" "integer xresolution" [1000 ] "integer yresolution" [500 ] 
+    "string filename" "spheres-differentials-texfilt.exr"
+
+Integrator "directlighting" "integer maxdepth" [10]
+
+Sampler "lowdiscrepancy" "integer pixelsamples" [1]
+PixelFilter "box"
+
+WorldBegin
+LightSource "distant" "point from" [0 10 0 ] "point to" [0 0 0 ]
+    "color L" [3.141593 3.141593 3.141593 ] 
+
+AttributeBegin
+	Translate .25 0 0
+	Texture "checker" "color" "checkerboard" 
+		"string mapping" "planar"
+		"vector v1" [ 1 0 0 ] "vector v2" [ 0 0 1]
+		"string aamode" ["none"]
+
+AttributeEnd
+WorldEnd

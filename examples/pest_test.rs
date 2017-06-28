@@ -48,12 +48,13 @@ static mut PARAM_SET: Option<Box<ParamSet>> = None;
 
 impl_rdp! {
     grammar! {
-        pbrt = _{ statement* ~ last_statement }
-        statement = { look_at | rotate | named_statement | keyword }
+        pbrt = _{ whitespace? ~ statement* ~ last_statement }
+        statement = { look_at | translate | rotate | named_statement | keyword }
         named_statement = { camera |
                             pixel_filter |
                             sampler |
                             film |
+                            integrator |
                             coord_sys_transform |
                             light_source |
                             texture |
@@ -63,16 +64,25 @@ impl_rdp! {
                       string_param |
                       integer_param |
                       point_param |
+                      vector_param |
                       rgb_param |
                       spectrum_param |
                       texture_param }
         float_param = { ["\"float"] ~ ident ~ ["\""] ~ lbrack ~ number ~ rbrack }
-        string_param = { ["\"string"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack }
+        string_param = { (["\"string"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack) |
+                         (["\"string"] ~ ident ~ ["\""] ~ string) }
         integer_param = { ["\"integer"] ~ ident ~ ["\""] ~ lbrack ~ integer ~ rbrack }
         point_param = { ["\"point"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
-        rgb_param = { ["\"rgb"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
+        vector_param = { ["\"vector"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
+        rgb_param = { (["\"rgb"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack) |
+                      (["\"color"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack) }
         spectrum_param = { ["\"spectrum\""] ~ string }
         texture_param = { ["\"texture"] ~ ident ~ ["\""] ~ string }
+        // Translate x y z
+        translate = { ["Translate"] ~
+                   // followed by 3 numbers:
+                   number ~ number ~ number
+        }
         // Rotate angle x y z
         rotate = { ["Rotate"] ~
                    // followed by 4 numbers:
@@ -97,6 +107,8 @@ impl_rdp! {
         sampler = { ["Sampler"] ~ string ~ parameter* }
         // Film "image" "string filename" ["..."] ...
         film = { ["Film"] ~ string ~ parameter* }
+        // Integrator "path" "integer maxdepth" [5]
+        integrator = { ["Integrator"] ~ string ~ parameter* }
         // CoordSysTransform "camera"
         coord_sys_transform = { ["CoordSysTransform"] ~ string }
         // LightSource "point" "rgb I" [ .5 .5 .5 ]
@@ -130,12 +142,10 @@ impl_rdp! {
              ["ReverseOrientation"] |
              ["Scale"] |
              ["StartTime"] |
-             ["Integrator"] |
              ["TransformBegin"] |
              ["TransformEnd"] |
              ["TransformTimes"] |
              ["Transform"] |
-             ["Translate"] |
              world_begin
             )
         }
@@ -147,7 +157,7 @@ impl_rdp! {
                    (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
         string = { (["\""] ~ ident ~ ["\""]) | (["\""] ~ filename ~ ["\""]) }
         filename = { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~ // TODO: can be a full path
-                     (['a'..'z'] | ['A'..'Z'] | ["_"] | ["."] | ['0'..'9'])* }
+                     (['a'..'z'] | ['A'..'Z'] | ["_"] | ["-"] | ["."] | ['0'..'9'])* }
         // "[" { return LBRACK; }
         lbrack = { ["["] }
         // "]" { return RBRACK; }
@@ -189,6 +199,7 @@ impl_rdp! {
         // statements
         _statement(&self) -> () {
             (_head: look_at, _tail: _look_at()) => {},
+            (_head: translate, _tail: _translate()) => {},
             (_head: rotate, _tail: _rotate()) => {},
             (_head: named_statement, _tail: _named_statement()) => {},
             (_head: keyword, _tail: _keyword()) => {},
@@ -213,6 +224,18 @@ impl_rdp! {
                 self._pbrt();
             }
         }
+        _translate(&self) -> () {
+            (x: _number(), y: _number(), z: _number()) => {
+                println!("Translate {} {} {}", x, y, z);
+                let translate: Transform = Transform::translate(Vector3f { x: x, y: y, z: z, });
+                unsafe {
+                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * translate;
+                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * translate;
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                }
+                self._pbrt();
+            }
+        }
         _rotate(&self) -> () {
             (angle: _number(), x: _number(), y: _number(), z: _number()) => {
                 println!("Rotate {} {} {} {}",
@@ -232,6 +255,7 @@ impl_rdp! {
             (_head: pixel_filter, _tail: _pixel_filter()) => {},
             (_head: sampler, _tail: _sampler()) => {},
             (_head: film, _tail: _film()) => {},
+            (_head: integrator, _tail: _integrator()) => {},
             (_head: coord_sys_transform, _tail: _coord_sys_transform()) => {},
             (_head: light_source, _tail: _light_source()) => {},
             (_head: texture, _tail: _texture()) => {},
@@ -241,22 +265,22 @@ impl_rdp! {
         _camera(&self) -> () {
             (name: _string(), optional_parameters) => {
                 unsafe {
-                    if let Some(ref mut render_options) = RENDER_OPTIONS {
-                        render_options.camera_name = name;
-                        render_options.camera_to_world.t[0] =
+                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                        ro.camera_name = name;
+                        ro.camera_to_world.t[0] =
                             Transform::inverse(CUR_TRANSFORM.t[0]);
-                        render_options.camera_to_world.t[1] =
+                        ro.camera_to_world.t[1] =
                             Transform::inverse(CUR_TRANSFORM.t[1]);
                         if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
                             named_coordinate_systems.insert("camera",
                                                             TransformSet {
-                                                                t: [render_options.camera_to_world.t[0],
-                                                                    render_options.camera_to_world.t[1]]
+                                                                t: [ro.camera_to_world.t[0],
+                                                                    ro.camera_to_world.t[1]]
                                                             });
                             // println!("NAMED_COORDINATE_SYSTEMS: {:?}", named_coordinate_systems);
                         }
-                        // println!("render_options.camera_to_world: {:?}",
-                        //          render_options.camera_to_world);
+                        // println!("ro.camera_to_world: {:?}",
+                        //          ro.camera_to_world);
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
                         param_set.reset(String::from("Camera"),
@@ -267,6 +291,12 @@ impl_rdp! {
                 }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -275,8 +305,13 @@ impl_rdp! {
         _pixel_filter(&self) -> () {
             (name: _string(), optional_parameters) => {
                 unsafe {
-                    if let Some(ref mut render_options) = RENDER_OPTIONS {
-                        render_options.filter_name = name;
+                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                        ro.filter_name = name;
+                        if optional_parameters.rule == Rule::statement ||
+                            optional_parameters.rule == Rule::last_statement {
+                            println!("");
+                            println!("PixelFilter \"{}\" ", ro.filter_name);
+                        }
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
                         param_set.reset(String::from("PixelFilter"),
@@ -287,6 +322,12 @@ impl_rdp! {
                 }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -295,11 +336,12 @@ impl_rdp! {
         _sampler(&self) -> () {
             (name: _string(), optional_parameters) => {
                 unsafe {
-                    if let Some(ref mut render_options) = RENDER_OPTIONS {
-                        render_options.sampler_name = name;
-                        if optional_parameters.rule == Rule::statement {
+                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                        ro.sampler_name = name;
+                        if optional_parameters.rule == Rule::statement ||
+                            optional_parameters.rule == Rule::last_statement {
                             println!("");
-                            println!("Sampler \"{}\" ", render_options.sampler_name);
+                            println!("Sampler \"{}\" ", ro.sampler_name);
                         }
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
@@ -325,8 +367,8 @@ impl_rdp! {
         _film(&self) -> () {
             (name: _string(), optional_parameters) => {
                 unsafe {
-                    if let Some(ref mut render_options) = RENDER_OPTIONS {
-                        render_options.film_name = name;
+                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                        ro.film_name = name;
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
                         param_set.reset(String::from("Film"),
@@ -337,6 +379,38 @@ impl_rdp! {
                 }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _integrator(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                unsafe {
+                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                        ro.integrator_name = name;
+                    }
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("Integrator"),
+                                        String::from(""),
+                                        String::from(""),
+                                        String::from(""));
+                    }
+                }
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -374,6 +448,12 @@ impl_rdp! {
                 }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -382,6 +462,15 @@ impl_rdp! {
         _texture(&self) -> () {
             (name: _string(), tex_type: _string(), tex_name: _string(), optional_parameters) => {
                 unsafe {
+                    if optional_parameters.rule == Rule::statement ||
+                        optional_parameters.rule == Rule::last_statement
+                    {
+                        println!("");
+                        println!("Texture \"{}\" \"{}\" \"{}\" ",
+                                 name,
+                                 tex_type,
+                                 tex_name);
+                    }
                     if let Some(ref mut param_set) = PARAM_SET {
                         param_set.reset(String::from("Texture"),
                                         String::from(name),
@@ -391,6 +480,12 @@ impl_rdp! {
                 }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -408,6 +503,12 @@ impl_rdp! {
                 }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -425,6 +526,12 @@ impl_rdp! {
                 }
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    println!("");
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    println!("");
+                    println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -473,6 +580,20 @@ impl_rdp! {
                 }
                 self._parameter();
             },
+            (_head: vector_param, tail: _vector_param()) => {
+                let (string, number1, number2, number3) = tail;
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_vector3f(string,
+                                              Vector3f {
+                                                  x: number1,
+                                                  y: number2,
+                                                  z: number3,
+                                              });
+                    }
+                }
+                self._parameter();
+            },
             (_head: rgb_param, tail: _rgb_param()) => {
                 let (string, number1, number2, number3) = tail;
                 unsafe {
@@ -505,42 +626,49 @@ impl_rdp! {
                 self._parameter();
             },
             (optional_parameters) => {
-                if optional_parameters.rule == Rule::statement {
+                if optional_parameters.rule == Rule::statement ||
+                    optional_parameters.rule == Rule::last_statement {
                     unsafe {
                         if let Some(ref mut param_set) = PARAM_SET {
                             println!("");
                             if param_set.key_word == String::from("Camera") {
-                                if let Some(ref mut render_options) = RENDER_OPTIONS {
-                                    println!("Camera \"{}\" ", render_options.camera_name);
-                                    render_options.camera_params.copy_from(param_set);
-                                    print_params(&render_options.camera_params);
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    println!("Camera \"{}\" ", ro.camera_name);
+                                    ro.camera_params.copy_from(param_set);
+                                    print_params(&ro.camera_params);
                                 }
                             } else if param_set.key_word == String::from("PixelFilter") {
-                                if let Some(ref mut render_options) = RENDER_OPTIONS {
-                                    println!("PixelFilter \"{}\" ", render_options.filter_name);
-                                    render_options.filter_params.copy_from(param_set);
-                                    print_params(&render_options.filter_params);
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    println!("PixelFilter \"{}\" ", ro.filter_name);
+                                    ro.filter_params.copy_from(param_set);
+                                    print_params(&ro.filter_params);
                                 }
                             } else if param_set.key_word == String::from("Sampler") {
-                                if let Some(ref mut render_options) = RENDER_OPTIONS {
-                                    println!("Sampler \"{}\" ", render_options.sampler_name);
-                                    render_options.sampler_params.copy_from(param_set);
-                                    print_params(&render_options.sampler_params);
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    println!("Sampler \"{}\" ", ro.sampler_name);
+                                    ro.sampler_params.copy_from(param_set);
+                                    print_params(&ro.sampler_params);
                                 }
                             } else if param_set.key_word == String::from("Film") {
-                                if let Some(ref mut render_options) = RENDER_OPTIONS {
-                                    println!("Film \"{}\" ", render_options.film_name);
-                                    render_options.film_params.copy_from(param_set);
-                                    print_params(&render_options.film_params);
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    println!("Film \"{}\" ", ro.film_name);
+                                    ro.film_params.copy_from(param_set);
+                                    print_params(&ro.film_params);
+                                }
+                            } else if param_set.key_word == String::from("Integrator") {
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    println!("Integrator \"{}\" ", ro.integrator_name);
+                                    ro.integrator_params.copy_from(param_set);
+                                    print_params(&ro.integrator_params);
                                 }
                             } else if param_set.key_word == String::from("LightSource") {
-                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("LightSource \"{}\" ", param_set.name);
                                     print_params(&param_set);
                                 }
                                 // let lt = make_light(name, params, CUR_TRANSFORM.t[0]);
                             } else if param_set.key_word == String::from("Texture") {
-                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("Texture \"{}\" \"{}\" \"{}\" ",
                                              param_set.name,
                                              param_set.tex_type,
@@ -551,12 +679,12 @@ impl_rdp! {
                                 // or
                                 // MakeSpectrumTexture(texname, curTransform[0], tp);
                             } else if param_set.key_word == String::from("Material") {
-                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("Material \"{}\" ", param_set.name);
                                     print_params(&param_set);
                                 }
                             } else if param_set.key_word == String::from("Shape") {
-                                if let Some(ref mut render_options) = RENDER_OPTIONS {
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("Shape \"{}\" ", param_set.name);
                                     print_params(&param_set);
                                 }
@@ -570,10 +698,12 @@ impl_rdp! {
                                             String::from(""));
                         }
                     }
-                    self._statement();
-                } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
-                    println!("WorldEnd");
+                    if optional_parameters.rule == Rule::last_statement {
+                        println!("");
+                        println!("WorldEnd");
+                    } else { // statement
+                        self._statement();
+                    }
                 } else if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else {
@@ -590,14 +720,24 @@ impl_rdp! {
             },
         }
         _string_param(&self) -> (String, String) {
-            (&i: ident, _l: lbrack, &s: string, _r: rbrack) => {
-                let string1: String = String::from_str(i).unwrap();
-                let string2: String = String::from_str(s).unwrap();
-                (string1, string2)
-            },
             (&i: ident, _l: lbrack, _s: string, &f: filename, _r: rbrack) => {
                 let string1: String = String::from_str(i).unwrap();
                 let string2: String = String::from_str(f).unwrap();
+                (string1, string2)
+            },
+            (&i1: ident, _l: lbrack, _s: string, &i2: ident, _r: rbrack) => {
+                let string1: String = String::from_str(i1).unwrap();
+                let string2: String = String::from_str(i2).unwrap();
+                (string1, string2)
+            },
+            (&i: ident, _s: string, &f: filename) => {
+                let string1: String = String::from_str(i).unwrap();
+                let string2: String = String::from_str(f).unwrap();
+                (string1, string2)
+            },
+            (&i1: ident, _s: string, &i2: ident) => {
+                let string1: String = String::from_str(i1).unwrap();
+                let string2: String = String::from_str(i2).unwrap();
                 (string1, string2)
             },
         }
@@ -609,6 +749,15 @@ impl_rdp! {
             },
         }
         _point_param(&self) -> (String, Float, Float, Float) {
+            (&i: ident, _l: lbrack, &n1: number, &n2: number, &n3: number, _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let number1: Float = f32::from_str(n1).unwrap();
+                let number2: Float = f32::from_str(n2).unwrap();
+                let number3: Float = f32::from_str(n3).unwrap();
+                (string, number1, number2, number3)
+            },
+        }
+        _vector_param(&self) -> (String, Float, Float, Float) {
             (&i: ident, _l: lbrack, &n1: number, &n2: number, &n3: number, _r: rbrack) => {
                 let string: String = String::from_str(i).unwrap();
                 let number1: Float = f32::from_str(n1).unwrap();
@@ -653,8 +802,8 @@ impl_rdp! {
                                 material: String::from(graphics_state.material.as_ref()),
                             });
                         }
-                        if let Some(ref mut pushed_graphics_transforms) = PUSHED_GRAPHICS_TRANSFORMS {
-                            pushed_graphics_transforms.push(TransformSet {
+                        if let Some(ref mut pgt) = PUSHED_GRAPHICS_TRANSFORMS {
+                            pgt.push(TransformSet {
                                 t: [
                                     Transform {
                                         m: CUR_TRANSFORM.t[0].m,
@@ -678,18 +827,18 @@ impl_rdp! {
                             if !(pushed_graphics_states.len() >= 1_usize) {
                                 panic!("Unmatched pbrtAttributeEnd() encountered.")
                             }
-                            let popped_graphics_state: GraphicsState = pushed_graphics_states.pop().unwrap();
+                            let pgs: GraphicsState = pushed_graphics_states.pop().unwrap();
                             // material_params
                             graphics_state.material_params.reset(String::new(),
                                                                  String::from(""),
                                                                  String::from(""),
                                                                  String::new());
-                            graphics_state.material_params.copy_from(&popped_graphics_state.material_params);
+                            graphics_state.material_params.copy_from(&pgs.material_params);
                             // material
-                            graphics_state.material = String::from(popped_graphics_state.material.as_ref());
+                            graphics_state.material = String::from(pgs.material.as_ref());
                         }
-                        if let Some(ref mut pushed_graphics_transforms) = PUSHED_GRAPHICS_TRANSFORMS {
-                            let popped_transform_set: TransformSet = pushed_graphics_transforms.pop().unwrap();
+                        if let Some(ref mut pgt) = PUSHED_GRAPHICS_TRANSFORMS {
+                            let popped_transform_set: TransformSet = pgt.pop().unwrap();
                             CUR_TRANSFORM.t[0] = popped_transform_set.t[0];
                             CUR_TRANSFORM.t[1] = popped_transform_set.t[1];
                             // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
@@ -763,6 +912,15 @@ fn print_params(params: &ParamSet) {
     for p in &params.point3fs {
         if p.n_values == 1_usize {
             println!("  \"point {}\" [{} {} {}]",
+                     p.name,
+                     p.values[0].x,
+                     p.values[0].y,
+                     p.values[0].z);
+        }
+    }
+    for p in &params.vector3fs {
+        if p.n_values == 1_usize {
+            println!("  \"vector {}\" [{} {} {}]",
                      p.name,
                      p.values[0].x,
                      p.values[0].y,
