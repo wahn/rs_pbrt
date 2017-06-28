@@ -14,7 +14,7 @@ use pest::prelude::*;
 use getopts::Options;
 // std
 use std::str::FromStr;
-use std::collections::HashMap;
+use std::collections::{HashMap, LinkedList};
 use std::env;
 use std::fs::File;
 use std::io::prelude::*;
@@ -46,6 +46,12 @@ static mut PUSHED_GRAPHICS_TRANSFORMS: Option<Box<Vec<TransformSet>>> = None;
 // not used in original C++ code:
 static mut PARAM_SET: Option<Box<ParamSet>> = None;
 
+#[derive(Debug, PartialEq)]
+pub enum Node {
+    Ints(LinkedList<Node>),
+    Int(i32)
+}
+
 impl_rdp! {
     grammar! {
         pbrt = _{ whitespace? ~ statement* ~ last_statement }
@@ -71,7 +77,7 @@ impl_rdp! {
         float_param = { ["\"float"] ~ ident ~ ["\""] ~ lbrack ~ number ~ rbrack }
         string_param = { (["\"string"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack) |
                          (["\"string"] ~ ident ~ ["\""] ~ string) }
-        integer_param = { ["\"integer"] ~ ident ~ ["\""] ~ lbrack ~ integer ~ rbrack }
+        integer_param = { ["\"integer"] ~ ident ~ ["\""] ~ lbrack ~ integer+ ~ rbrack }
         point_param = { ["\"point"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
         vector_param = { ["\"vector"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
         rgb_param = { (["\"rgb"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack) |
@@ -154,10 +160,10 @@ impl_rdp! {
         world_begin = { ["WorldBegin"] }
         // IDENT [a-zA-Z_][a-zA-Z_0-9]*
         ident =  { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~
-                   (['a'..'z'] | ['A'..'Z'] | ["_"] | ['0'..'9'])* }
+                   (['a'..'z'] | ['A'..'Z'] | ["_"] | ["-"] | ['0'..'9'])* }
         string = { (["\""] ~ ident ~ ["\""]) | (["\""] ~ filename ~ ["\""]) }
         filename = { (['a'..'z'] | ['A'..'Z'] | ["_"]) ~ // TODO: can be a full path
-                     (['a'..'z'] | ['A'..'Z'] | ["_"] | ["-"] | ["."] | ['0'..'9'])* }
+                     (['a'..'z'] | ['A'..'Z'] | ["_"] | ["-"] | ["."] | ["/"] | ['0'..'9'])* }
         // "[" { return LBRACK; }
         lbrack = { ["["] }
         // "]" { return RBRACK; }
@@ -181,8 +187,12 @@ impl_rdp! {
         }
         integer = @{
             (["-"] | ["+"])? ~ // optional sign, followed by
-            ['1'..'9'] ~ // at least one non-zero digit, followed by
-            ['0'..'9']* // just digits
+                (
+                    ['1'..'9'] ~ // at least one non-zero digit, followed by
+                    ['0'..'9']* // just digits
+                )
+                    | // or
+                ['0'..'9'] // single digit
         }
         last_statement = @{ whitespace? ~ ["WorldEnd"] ~ whitespace? }
         whitespace = _{ ([" "] | ["\t"] | ["\r"] | ["\n"]) }
@@ -558,10 +568,14 @@ impl_rdp! {
                 self._parameter();
             },
             (_head: integer_param, tail: _integer_param()) => {
-                let (string, number) = tail;
+                let (string, numbers) = tail;
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.add_int(string, number as i64);
+                        if numbers.len() == 1 {
+                            param_set.add_int(string, numbers[0]);
+                        } else {
+                            param_set.add_ints(string, numbers);
+                        }
                     }
                 }
                 self._parameter();
@@ -741,12 +755,57 @@ impl_rdp! {
                 (string1, string2)
             },
         }
-        _integer_param(&self) -> (String, i32) {
+        _integer_param(&self) -> (String, Vec<i32>) {
+            // single integer
             (&i: ident, _l: lbrack, &n: integer, _r: rbrack) => {
                 let string: String = String::from_str(i).unwrap();
+                //println!("ints: {:?}", ints);
                 let number: i32 = i32::from_str(n).unwrap();
-                (string, number)
+                let ivec: Vec<i32> = vec![number];
+                (string, ivec)
             },
+            // more than one integer
+            (&i: ident, _l: lbrack, mut list: _list_of_integers(), _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let mut ivec: Vec<i32> = Vec::new();
+                if let Some(integers) = list.pop_front() {
+                    match integers {
+                        Node::Ints(list) => {
+                            for element in list.iter() {
+                                match *element {
+                                    Node::Ints(ref _l) => {},
+                                    Node::Int(ref i) => {
+                                        ivec.push(*i);
+                                    },
+                                };
+                            }
+                        },
+                        Node::Int(_i) => {},
+                    };
+                }
+                (string, ivec)
+            },
+        }
+        _list_of_integers(&self) -> LinkedList<Node> {
+            (&i: integer, mut head: _integer(), mut tail: _list_of_integers()) => {
+                let number: i32 = i32::from_str(i).unwrap();
+                head.push_front(Node::Int(number));
+                tail.push_front(Node::Ints(head));
+                tail
+            },
+            () => {
+                LinkedList::new()
+            }
+        }
+        _integer(&self) -> LinkedList<Node> {
+            (&head: integer, mut tail: _integer()) => {
+                let number: i32 = i32::from_str(head).unwrap();
+                tail.push_front(Node::Int(number));
+                tail
+            },
+            () => {
+                LinkedList::new()
+            }
         }
         _point_param(&self) -> (String, Float, Float, Float) {
             (&i: ident, _l: lbrack, &n1: number, &n2: number, &n3: number, _r: rbrack) => {
@@ -902,6 +961,12 @@ fn print_params(params: &ParamSet) {
     for p in &params.ints {
         if p.n_values == 1_usize {
             println!("  \"integer {}\" [{}]", p.name, p.values[0]);
+        } else {
+            print!("  \"integer {}\" [ ", p.name);
+            for i in 0..p.n_values {
+                print!("{} ", p.values[i]);
+            }
+            println!("]");
         }
     }
     for p in &params.floats {

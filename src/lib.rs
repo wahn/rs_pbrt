@@ -9050,7 +9050,7 @@ pub struct ParamSet {
     pub tex_type: String,
     pub tex_name: String,
     bools: Vec<ParamSetItem<bool>>,
-    pub ints: Vec<ParamSetItem<i64>>,
+    pub ints: Vec<ParamSetItem<i32>>,
     pub floats: Vec<ParamSetItem<Float>>,
     point2fs: Vec<ParamSetItem<Point2f>>,
     vector2fs: Vec<ParamSetItem<Vector2f>>,
@@ -9088,11 +9088,20 @@ impl ParamSet {
             looked_up: false,
         });
     }
-    pub fn add_int(&mut self, name: String, value: i64) {
-        self.ints.push(ParamSetItem::<i64> {
+    pub fn add_int(&mut self, name: String, value: i32) {
+        self.ints.push(ParamSetItem::<i32> {
             name: name,
             values: vec!(value),
             n_values: 1_usize,
+            looked_up: false,
+        });
+    }
+    pub fn add_ints(&mut self, name: String, values: Vec<i32>) {
+        let n_values: usize = values.len();
+        self.ints.push(ParamSetItem::<i32> {
+            name: name,
+            values: values,
+            n_values: n_values,
             looked_up: false,
         });
     }
@@ -9142,11 +9151,11 @@ impl ParamSet {
         self.bools.clear();
         self.ints.clear();
         for i in &param_set.ints {
-            let mut values: Vec<i64> = Vec::new();
+            let mut values: Vec<i32> = Vec::new();
             for ix in 0..i.n_values {
                 values.push(i.values[ix]);
             }
-            self.ints.push(ParamSetItem::<i64> {
+            self.ints.push(ParamSetItem::<i32> {
                 name: i.name.clone(),
                 values: values,
                 n_values: i.n_values,
