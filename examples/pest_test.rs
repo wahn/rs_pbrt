@@ -174,7 +174,7 @@ impl_rdp! {
             ['1'..'9'] ~ // at least one non-zero digit, followed by
             ['0'..'9']* // just digits
         }
-        last_statement = { ["WorldEnd"] ~ whitespace? }
+        last_statement = @{ whitespace? ~ ["WorldEnd"] ~ whitespace? }
         whitespace = _{ ([" "] | ["\t"] | ["\r"] | ["\n"]) }
     }
     process! {
