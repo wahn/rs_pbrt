@@ -6,8 +6,8 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{Float, GraphicsState, Matrix4x4, ParamSet, Point3f, RenderOptions, Spectrum, Transform,
-           TransformSet, Vector3f};
+use pbrt::{DistantLight, Float, GraphicsState, Matrix4x4, ParamSet, Point3f, RenderOptions,
+           Spectrum, Transform, TransformSet, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -19,6 +19,7 @@ use std::env;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
+use std::sync::Arc;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -49,13 +50,13 @@ static mut PARAM_SET: Option<Box<ParamSet>> = None;
 #[derive(Debug, PartialEq)]
 pub enum IntNode {
     Ints(LinkedList<IntNode>),
-    OneInt(i32)
+    OneInt(i32),
 }
 
 #[derive(Debug, PartialEq)]
 pub enum FloatNode {
     Floats(LinkedList<FloatNode>),
-    OneFloat(Float)
+    OneFloat(Float),
 }
 
 impl_rdp! {
@@ -679,6 +680,44 @@ impl_rdp! {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("LightSource \"{}\" ", param_set.name);
                                     print_params(&param_set);
+                                    // MakeLight (api.cpp:591)
+                                    if param_set.name == String::from("point") {
+                                        println!("TODO: CreatePointLight");
+                                    } else if param_set.name == String::from("spot") {
+                                        println!("TODO: CreateSpotLight");
+                                    } else if param_set.name == String::from("goniometric") {
+                                        println!("TODO: CreateGoniometricLight");
+                                    } else if param_set.name == String::from("projection") {
+                                        println!("TODO: CreateProjectionLight");
+                                    } else if param_set.name == String::from("distant") {
+                                        // CreateDistantLight
+                                        let l: Spectrum = param_set.find_one_spectrum(String::from("L"),
+                                                                                      Spectrum::new(1.0
+                                                                                                    as Float));
+                                        let sc: Spectrum = param_set.find_one_spectrum(String::from("scale"),
+                                                                                       Spectrum::new(1.0
+                                                                                                     as Float));
+                                        let from: Point3f = param_set.find_one_point3f(String::from("from"),
+                                                                                       Point3f { x: 0.0,
+                                                                                                 y: 0.0,
+                                                                                                 z: 0.0 });
+                                        let to: Point3f = param_set.find_one_point3f(String::from("to"),
+                                                                                       Point3f { x: 0.0,
+                                                                                                 y: 0.0,
+                                                                                                 z: 0.0 });
+                                        let dir: Vector3f = from - to;
+                                        // return std::make_shared<DistantLight>(light2world, L * sc, dir);
+                                        let distant_light =
+                                            Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
+                                        println!("{:?}", distant_light);
+                                        ro.lights.push(distant_light);
+                                    } else if param_set.name == String::from("infinite") {
+                                        println!("TODO: CreateInfiniteLight");
+                                    } else if param_set.name == String::from("exinfinite") {
+                                        println!("TODO: CreateInfiniteLight");
+                                    } else {
+                                        panic!("MakeLight: unknown name {}", param_set.name);
+                                    }
                                 }
                                 // let lt = make_light(name, params, CUR_TRANSFORM.t[0]);
                             } else if param_set.key_word == String::from("Texture") {

@@ -9259,6 +9259,24 @@ impl ParamSet {
             });
         }
     }
+    pub fn find_one_point3f(&mut self, name: String, d: Point3f) -> Point3f {
+        for v in &self.point3fs {
+            if v.name == name && v.n_values == 1 {
+                // v.looked_up = true;
+                return v.values[0];
+            }
+        }
+        d
+    }
+    pub fn find_one_spectrum(&mut self, name: String, d: Spectrum) -> Spectrum {
+        for v in &self.spectra {
+            if v.name == name && v.n_values == 1 {
+                // v.looked_up = true;
+                return v.values[0];
+            }
+        }
+        d
+    }
     pub fn find_texture(&mut self, name: String) -> String {
         let d: String = String::new();
         lookup_one(&mut self.textures, name, d)
@@ -9311,7 +9329,7 @@ pub struct RenderOptions {
     pub camera_params: ParamSet,
     pub camera_to_world: TransformSet,
     // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
-    // TODO: std::vector<std::shared_ptr<Light>> lights;
+    pub lights: Vec<Arc<Light + Sync + Send>>,
     // TODO: std::vector<std::shared_ptr<Primitive>> primitives;
     // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
     // TODO: std::vector<std::shared_ptr<Primitive>> *currentInstance = nullptr;
@@ -9349,6 +9367,7 @@ impl Default for RenderOptions {
                     },
                 }; 2],
             },
+            lights: Vec::new(),
             have_scattering_media: false,
         }
     }
