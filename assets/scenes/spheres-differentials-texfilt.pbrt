@@ -25,5 +25,15 @@ Texture "lines-tex" "color" "imagemap" "string filename" "textures/lines.png"
 
 	Material "matte" "texture Kd" "lines-tex"
     Shape "trianglemesh"  "integer indices" [0 2 1 0 3 2 ] 
+	"point P" [-100 -1 -100 400 -1 -100 400 -1 400 -100 -1 400 ] 
         "float st" [ 0 0 1 0 0 1 1 1]
+AttributeEnd
+
+Translate -1.3 0 0 
+Material "mirror"
+Shape "sphere"
+
+Translate 2.6 0 0 
+Material "glass"
+Shape "sphere"
 WorldEnd

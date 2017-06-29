@@ -9122,6 +9122,24 @@ impl ParamSet {
             looked_up: false,
         });
     }
+    pub fn add_point3fs(&mut self, name: String, values: Vec<Float>) {
+        let n_values: usize = values.len();
+        let mut p_values: Vec<Point3f> = Vec::new();
+        let n_points: usize = values.len() / 3_usize;
+        assert!(n_values % 3 == 0, "point parameters need 3 coordinates");
+        for i in 0..n_points {
+            let x: Float = values[i*3+0];
+            let y: Float = values[i*3+1];
+            let z: Float = values[i*3+2];
+            p_values.push(Point3f { x: x, y: y, z: z, });
+        }
+        self.point3fs.push(ParamSetItem::<Point3f> {
+            name: name,
+            values: p_values,
+            n_values: n_points,
+            looked_up: false,
+        });
+    }
     pub fn add_string(&mut self, name: String, value: String) {
         self.strings.push(ParamSetItem::<String> {
             name: name,

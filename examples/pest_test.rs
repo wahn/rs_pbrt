@@ -84,7 +84,7 @@ impl_rdp! {
         string_param = { (["\"string"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack) |
                          (["\"string"] ~ ident ~ ["\""] ~ string) }
         integer_param = { ["\"integer"] ~ ident ~ ["\""] ~ lbrack ~ integer+ ~ rbrack }
-        point_param = { ["\"point"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
+        point_param = { ["\"point"] ~ ident ~ ["\""] ~ lbrack ~ number+ ~ rbrack }
         vector_param = { ["\"vector"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
         rgb_param = { (["\"rgb"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack) |
                       (["\"color"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack) }
@@ -308,10 +308,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -325,7 +323,6 @@ impl_rdp! {
                         ro.filter_name = name;
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement {
-                            println!("");
                             println!("PixelFilter \"{}\" ", ro.filter_name);
                         }
                     }
@@ -339,10 +336,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -356,7 +351,6 @@ impl_rdp! {
                         ro.sampler_name = name;
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement {
-                            println!("");
                             println!("Sampler \"{}\" ", ro.sampler_name);
                         }
                     }
@@ -370,10 +364,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -396,10 +388,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -422,10 +412,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -465,10 +453,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -481,7 +467,6 @@ impl_rdp! {
                     if optional_parameters.rule == Rule::statement ||
                         optional_parameters.rule == Rule::last_statement
                     {
-                        println!("");
                         println!("Texture \"{}\" \"{}\" \"{}\" ",
                                  name,
                                  tex_type,
@@ -497,10 +482,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -511,6 +494,10 @@ impl_rdp! {
             (name: _string(), optional_parameters) => {
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
+                        if optional_parameters.rule == Rule::statement ||
+                            optional_parameters.rule == Rule::last_statement {
+                            println!("Material \"{}\" ", name);
+                        }
                         param_set.reset(String::from("Material"),
                                         String::from(name),
                                         String::from(""),
@@ -520,10 +507,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -534,6 +519,10 @@ impl_rdp! {
             (name: _string(), optional_parameters) => {
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
+                        if optional_parameters.rule == Rule::statement ||
+                            optional_parameters.rule == Rule::last_statement {
+                            println!("Shape \"{}\" ", name);
+                        }
                         param_set.reset(String::from("Shape"),
                                         String::from(name),
                                         String::from(""),
@@ -543,10 +532,8 @@ impl_rdp! {
                 if optional_parameters.rule == Rule::parameter {
                     self._parameter();
                 } else if optional_parameters.rule == Rule::statement {
-                    println!("");
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("");
                     println!("WorldEnd");
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
@@ -591,15 +578,19 @@ impl_rdp! {
                 self._parameter();
             },
             (_head: point_param, tail: _point_param()) => {
-                let (string, number1, number2, number3) = tail;
+                let (string, numbers) = tail;
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.add_point3f(string,
-                                              Point3f {
-                                                  x: number1,
-                                                  y: number2,
-                                                  z: number3,
-                                              });
+                        if numbers.len() == 3 {
+                            param_set.add_point3f(string,
+                                                  Point3f {
+                                                      x: numbers[0],
+                                                      y: numbers[1],
+                                                      z: numbers[2],
+                                                  });
+                        } else {
+                            param_set.add_point3fs(string, numbers);
+                        }
                     }
                 }
                 self._parameter();
@@ -654,7 +645,6 @@ impl_rdp! {
                     optional_parameters.rule == Rule::last_statement {
                     unsafe {
                         if let Some(ref mut param_set) = PARAM_SET {
-                            println!("");
                             if param_set.key_word == String::from("Camera") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("Camera \"{}\" ", ro.camera_name);
@@ -713,7 +703,6 @@ impl_rdp! {
                                     print_params(&param_set);
                                 }
                             } else {
-                                println!("");
                                 println!("PARAM_SET: {}", param_set.key_word);
                             }
                             param_set.reset(String::from(""),
@@ -723,7 +712,6 @@ impl_rdp! {
                         }
                     }
                     if optional_parameters.rule == Rule::last_statement {
-                        println!("");
                         println!("WorldEnd");
                     } else { // statement
                         self._statement();
@@ -860,13 +848,37 @@ impl_rdp! {
                 LinkedList::new()
             }
         }
-        _point_param(&self) -> (String, Float, Float, Float) {
+        _point_param(&self) -> (String, Vec<Float>) {
+            // single point
             (&i: ident, _l: lbrack, &n1: number, &n2: number, &n3: number, _r: rbrack) => {
                 let string: String = String::from_str(i).unwrap();
                 let number1: Float = f32::from_str(n1).unwrap();
                 let number2: Float = f32::from_str(n2).unwrap();
                 let number3: Float = f32::from_str(n3).unwrap();
-                (string, number1, number2, number3)
+                let fvec: Vec<Float> = vec![number1, number2, number3];
+                (string, fvec)
+            },
+            // more than one point (3 floats define one point)
+            (&i: ident, _l: lbrack, mut list: _list_of_floats(), _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let mut fvec: Vec<Float> = Vec::new();
+                if let Some(floats) = list.pop_front() {
+                    match floats {
+                        FloatNode::Floats(list) => {
+                            for element in list.iter() {
+                                match *element {
+                                    FloatNode::Floats(ref _l) => {},
+                                    FloatNode::OneFloat(ref f) => {
+                                        fvec.push(*f);
+                                    },
+                                };
+                            }
+                        },
+                        FloatNode::OneFloat(_f) => {},
+                    };
+                }
+                assert!(fvec.len() % 3 == 0, "point parameters need 3 coordinates");
+                (string, fvec)
             },
         }
         _vector_param(&self) -> (String, Float, Float, Float) {
@@ -1040,6 +1052,12 @@ fn print_params(params: &ParamSet) {
                      p.values[0].x,
                      p.values[0].y,
                      p.values[0].z);
+        } else {
+            println!("  \"point {}\" [", p.name);
+            for i in 0..p.n_values {
+                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+            }
+            println!("  ]");
         }
     }
     for p in &params.vector3fs {
