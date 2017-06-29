@@ -9088,6 +9088,15 @@ impl ParamSet {
             looked_up: false,
         });
     }
+    pub fn add_floats(&mut self, name: String, values: Vec<Float>) {
+        let n_values: usize = values.len();
+        self.floats.push(ParamSetItem::<Float> {
+            name: name,
+            values: values,
+            n_values: n_values,
+            looked_up: false,
+        });
+    }
     pub fn add_int(&mut self, name: String, value: i32) {
         self.ints.push(ParamSetItem::<i32> {
             name: name,

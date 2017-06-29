@@ -47,9 +47,15 @@ static mut PUSHED_GRAPHICS_TRANSFORMS: Option<Box<Vec<TransformSet>>> = None;
 static mut PARAM_SET: Option<Box<ParamSet>> = None;
 
 #[derive(Debug, PartialEq)]
-pub enum Node {
-    Ints(LinkedList<Node>),
-    Int(i32)
+pub enum IntNode {
+    Ints(LinkedList<IntNode>),
+    OneInt(i32)
+}
+
+#[derive(Debug, PartialEq)]
+pub enum FloatNode {
+    Floats(LinkedList<FloatNode>),
+    OneFloat(Float)
 }
 
 impl_rdp! {
@@ -74,7 +80,7 @@ impl_rdp! {
                       rgb_param |
                       spectrum_param |
                       texture_param }
-        float_param = { ["\"float"] ~ ident ~ ["\""] ~ lbrack ~ number ~ rbrack }
+        float_param = { ["\"float"] ~ ident ~ ["\""] ~ lbrack ~ number+ ~ rbrack }
         string_param = { (["\"string"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack) |
                          (["\"string"] ~ ident ~ ["\""] ~ string) }
         integer_param = { ["\"integer"] ~ ident ~ ["\""] ~ lbrack ~ integer+ ~ rbrack }
@@ -550,10 +556,14 @@ impl_rdp! {
         // parameters
         _parameter(&self) -> () {
             (_head: float_param, tail: _float_param()) => {
-                let (string, number) = tail;
+                let (string, numbers) = tail;
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.add_float(string, number);
+                        if numbers.len() == 1 {
+                            param_set.add_float(string, numbers[0]);
+                        } else {
+                            param_set.add_floats(string, numbers);
+                        }
                     }
                 }
                 self._parameter();
@@ -726,12 +736,56 @@ impl_rdp! {
                 }
             }
         }
-        _float_param(&self) -> (String, Float) {
+        _float_param(&self) -> (String, Vec<Float>) {
+            // single float
             (&i: ident, _l: lbrack, &n: number, _r: rbrack) => {
                 let string: String = String::from_str(i).unwrap();
                 let number: Float = f32::from_str(n).unwrap();
-                (string, number)
+                let fvec: Vec<Float> = vec![number];
+                (string, fvec)
             },
+            // more than one float
+            (&i: ident, _l: lbrack, mut list: _list_of_floats(), _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let mut fvec: Vec<Float> = Vec::new();
+                if let Some(floats) = list.pop_front() {
+                    match floats {
+                        FloatNode::Floats(list) => {
+                            for element in list.iter() {
+                                match *element {
+                                    FloatNode::Floats(ref _l) => {},
+                                    FloatNode::OneFloat(ref f) => {
+                                        fvec.push(*f);
+                                    },
+                                };
+                            }
+                        },
+                        FloatNode::OneFloat(_f) => {},
+                    };
+                }
+                (string, fvec)
+            },
+        }
+        _list_of_floats(&self) -> LinkedList<FloatNode> {
+            (&n: number, mut head: _float(), mut tail: _list_of_floats()) => {
+                let number: Float = Float::from_str(n).unwrap();
+                head.push_front(FloatNode::OneFloat(number));
+                tail.push_front(FloatNode::Floats(head));
+                tail
+            },
+            () => {
+                LinkedList::new()
+            }
+        }
+        _float(&self) -> LinkedList<FloatNode> {
+            (&head: number, mut tail: _float()) => {
+                let number: Float = Float::from_str(head).unwrap();
+                tail.push_front(FloatNode::OneFloat(number));
+                tail
+            },
+            () => {
+                LinkedList::new()
+            }
         }
         _string_param(&self) -> (String, String) {
             (&i: ident, _l: lbrack, _s: string, &f: filename, _r: rbrack) => {
@@ -759,7 +813,6 @@ impl_rdp! {
             // single integer
             (&i: ident, _l: lbrack, &n: integer, _r: rbrack) => {
                 let string: String = String::from_str(i).unwrap();
-                //println!("ints: {:?}", ints);
                 let number: i32 = i32::from_str(n).unwrap();
                 let ivec: Vec<i32> = vec![number];
                 (string, ivec)
@@ -770,37 +823,37 @@ impl_rdp! {
                 let mut ivec: Vec<i32> = Vec::new();
                 if let Some(integers) = list.pop_front() {
                     match integers {
-                        Node::Ints(list) => {
+                        IntNode::Ints(list) => {
                             for element in list.iter() {
                                 match *element {
-                                    Node::Ints(ref _l) => {},
-                                    Node::Int(ref i) => {
+                                    IntNode::Ints(ref _l) => {},
+                                    IntNode::OneInt(ref i) => {
                                         ivec.push(*i);
                                     },
                                 };
                             }
                         },
-                        Node::Int(_i) => {},
+                        IntNode::OneInt(_i) => {},
                     };
                 }
                 (string, ivec)
             },
         }
-        _list_of_integers(&self) -> LinkedList<Node> {
+        _list_of_integers(&self) -> LinkedList<IntNode> {
             (&i: integer, mut head: _integer(), mut tail: _list_of_integers()) => {
                 let number: i32 = i32::from_str(i).unwrap();
-                head.push_front(Node::Int(number));
-                tail.push_front(Node::Ints(head));
+                head.push_front(IntNode::OneInt(number));
+                tail.push_front(IntNode::Ints(head));
                 tail
             },
             () => {
                 LinkedList::new()
             }
         }
-        _integer(&self) -> LinkedList<Node> {
+        _integer(&self) -> LinkedList<IntNode> {
             (&head: integer, mut tail: _integer()) => {
                 let number: i32 = i32::from_str(head).unwrap();
-                tail.push_front(Node::Int(number));
+                tail.push_front(IntNode::OneInt(number));
                 tail
             },
             () => {
@@ -972,6 +1025,12 @@ fn print_params(params: &ParamSet) {
     for p in &params.floats {
         if p.n_values == 1_usize {
             println!("  \"float {}\" [{}]", p.name, p.values[0]);
+        } else {
+            print!("  \"float {}\" [ ", p.name);
+            for i in 0..p.n_values {
+                print!("{} ", p.values[i]);
+            }
+            println!("]");
         }
     }
     for p in &params.point3fs {
