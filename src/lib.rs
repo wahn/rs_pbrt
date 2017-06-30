@@ -620,6 +620,7 @@ extern crate crossbeam;
 
 // use std::cell::RefCell;
 use std::cmp::PartialEq;
+use std::collections::HashMap;
 use std::default::Default;
 use std::f32::consts::PI;
 use std::mem;
@@ -9259,6 +9260,15 @@ impl ParamSet {
             });
         }
     }
+    pub fn find_one_int(&mut self, name: String, d: i32) -> i32 {
+        for v in &self.ints {
+            if v.name == name && v.n_values == 1 {
+                // v.looked_up = true;
+                return v.values[0];
+            }
+        }
+        d
+    }
     pub fn find_one_point3f(&mut self, name: String, d: Point3f) -> Point3f {
         for v in &self.point3fs {
             if v.name == name && v.n_values == 1 {
@@ -9283,15 +9293,39 @@ impl ParamSet {
     }
 }
 
-pub struct TextureParams {
+#[derive(Default)]
+pub struct TextureParams<'a> {
+    pub float_textures: HashMap<&'a str, Arc<Texture<Float>>>,
+    pub spectrum_textures: HashMap<&'a str, Arc<Spectrum>>,
     pub geom_params: ParamSet,
+    pub material_params: ParamSet,
 }
 
-impl TextureParams {
-    pub fn get_spectrum_texture(&mut self, name: String, def: Spectrum) // TODO: -> &Texture<Spectrum>
+impl<'a> TextureParams<'a> {
+    pub fn get_spectrum_texture(&mut self, n: String, def: Spectrum) -> Arc<Texture<Spectrum>>
     {
-        self.geom_params.find_texture(name);
-        // TODO
+        let mut name: String = self.geom_params.find_texture(n.clone());
+        if name == String::new() {
+            name = self.material_params.find_texture(n.clone());
+        }
+        if name != String::new() {
+            match self.spectrum_textures.get(name.as_str()) {
+                Some(spectrum_texture) => {
+                },
+                None => {
+                    panic!("Couldn't find spectrum texture named \"{}\" for parameter \"{}\"",
+                           name, n);
+                },
+            }
+        }
+        let mut val: Spectrum = self.material_params.find_one_spectrum(n.clone(), def);
+        val = self.geom_params.find_one_spectrum(n.clone(), def);
+        Arc::new(ConstantTexture { value: Spectrum::new(0.0) })
+    }
+    pub fn find_int(&mut self, name: String, d: i32) -> i32 {
+        self.geom_params.find_one_int(name.clone(),
+                                      self.material_params.find_one_int(name.clone(),
+                                                                        d))
     }
 }
 
@@ -9381,13 +9415,11 @@ impl RenderOptions {
 }
 
 #[derive(Default)]
-pub struct GraphicsState {
+pub struct GraphicsState<'a> {
     // std::string currentInsideMedium, currentOutsideMedium;
-    // std::map<std::string, std::shared_ptr<Texture<Float>>> floatTextures;
-    // std::map<std::string, std::shared_ptr<Texture<Spectrum>>> spectrumTextures;
-    // ParamSet materialParams;
+    pub float_textures: HashMap<&'a str, Arc<Texture<Float>>>,
+    pub spectrum_textures: HashMap<&'a str, Arc<Spectrum>>,
     pub material_params: ParamSet,
-    // std::string material = "matte";
     pub material: String,
     // std::map<std::string, std::shared_ptr<Material>> namedMaterials;
     // std::string currentNamedMaterial;

@@ -7,7 +7,7 @@ extern crate getopts;
 extern crate pbrt;
 
 use pbrt::{DistantLight, Float, GraphicsState, Matrix4x4, ParamSet, Point3f, RenderOptions,
-           Spectrum, Transform, TransformSet, Vector3f};
+           Spectrum, TextureParams, Transform, TransformSet, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -727,6 +727,81 @@ impl_rdp! {
                                              param_set.tex_type,
                                              param_set.tex_name);
                                     print_params(&param_set);
+                                    // pbrtTexture (api.cpp:1049)
+                                    unsafe {
+                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                            let mut geom_params: ParamSet = ParamSet::default();
+                                            let mut material_params: ParamSet = ParamSet::default();
+                                            material_params.copy_from(&graphics_state.material_params);
+                                            geom_params.copy_from(&graphics_state.material_params);
+                                            let mut tp: TextureParams = TextureParams {
+                                                float_textures: graphics_state.float_textures.clone(),
+                                                spectrum_textures: graphics_state.spectrum_textures.clone(),
+                                                geom_params: geom_params,
+                                                material_params: material_params,
+                                            };
+                                            if param_set.tex_type == String::from("float") {
+                                                println!("TODO: MakeFloatTexture");
+                                            } else if param_set.tex_type == String::from("color") ||
+                                                param_set.tex_type == String::from("spectrum") {
+                                                    println!("TODO: MakeSpectrumTexture");
+                                                    match graphics_state.spectrum_textures.get(param_set.name.as_str()) {
+                                                        Some(_spectrum_texture) => {
+                                                            println!("Texture \"{}\" being redefined",
+                                                                     param_set.name);
+                                                        },
+                                                        None => {},
+                                                    }
+                                                    // MakeSpectrumTexture(texname, curTransform[0], tp);
+                                                    if param_set.tex_name == String::from("constant") {
+                                                        println!("TODO: CreateConstantSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("scale") {
+                                                        println!("TODO: CreateScaleSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("mix") {
+                                                        println!("TODO: CreateMixSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("bilerp") {
+                                                        println!("TODO: CreateBilerpSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("imagemap") {
+                                                        println!("TODO: CreateImageSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("uv") {
+                                                        println!("TODO: CreateUVSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("checkerboard") {
+                                                        println!("TODO: CreateCheckerboardSpectrumTexture");
+                                                        // CreateCheckerboardSpectrumTexture
+                                                        let dim: i32 = tp.find_int(String::from("dimension"), 2);
+                                                        println!("WORK: dim = {}", dim);
+                                                        if dim != 2 && dim != 3 {
+                                                            panic!("{} dimensional checkerboard texture not supported",
+                                                                   dim);
+                                                        }
+                                                        let tex1 = tp.get_spectrum_texture(String::from("tex1"),
+                                                                                           Spectrum::new(1.0));
+                                                        let tex2 = tp.get_spectrum_texture(String::from("tex2"),
+                                                                                           Spectrum::new(0.0));
+                                                        if dim == 2 {
+                                                            println!("TODO: Checkerboard2DTexture");
+                                                        } else { // dim == 3
+                                                            println!("TODO: TextureMapping3D");
+                                                        }
+                                                    } else if param_set.tex_name == String::from("dots") {
+                                                        println!("TODO: CreateDotsSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("fbm") {
+                                                        println!("TODO: CreateFBmSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("wrinkled") {
+                                                        println!("TODO: CreateWrinkledSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("marble") {
+                                                        println!("TODO: CreateMarbleSpectrumTexture");
+                                                    } else if param_set.tex_name == String::from("windy") {
+                                                        println!("TODO: CreateWindySpectrumTexture");
+                                                    } else {
+                                                        println!("Spectrum texture \"{}\" unknown.",
+                                                        param_set.tex_name);
+                                                    }
+                                                } else {
+                                                    panic!("Texture type \"{}\" unknown.", param_set.tex_type);
+                                                }
+                                        }
+                                    }
                                 }
                                 // MakeFloatTexture(texname, curTransform[0], tp);
                                 // or
@@ -961,6 +1036,8 @@ impl_rdp! {
                             let mut param_set: ParamSet = ParamSet::default();
                             param_set.copy_from(&graphics_state.material_params);
                             pushed_graphics_states.push(GraphicsState {
+                                float_textures: graphics_state.float_textures.clone(),
+                                spectrum_textures: graphics_state.spectrum_textures.clone(),
                                 material_params: param_set,
                                 material: String::from(graphics_state.material.as_ref()),
                             });
