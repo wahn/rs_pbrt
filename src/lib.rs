@@ -8114,7 +8114,6 @@ impl MipMap {
         };
         // initialize levels of MipMap for image
         let n_levels = 1 + (std::cmp::max(resolution.x, resolution.y) as Float).log2() as usize;
-        println!("mipmap will have {:?} levels", n_levels);
         // initialize most detailed level of MipMap
         let img_data: &[Spectrum] = if resampled_image.is_empty() {
             img
@@ -9050,7 +9049,7 @@ pub struct ParamSet {
     pub name: String,
     pub tex_type: String,
     pub tex_name: String,
-    bools: Vec<ParamSetItem<bool>>,
+    pub bools: Vec<ParamSetItem<bool>>,
     pub ints: Vec<ParamSetItem<i32>>,
     pub floats: Vec<ParamSetItem<Float>>,
     point2fs: Vec<ParamSetItem<Point2f>>,
@@ -9278,6 +9277,15 @@ impl ParamSet {
         }
         d
     }
+    pub fn find_one_bool(&mut self, name: String, d: bool) -> bool {
+        for v in &self.bools {
+            if v.name == name && v.n_values == 1 {
+                // v.looked_up = true;
+                return v.values[0];
+            }
+        }
+        d
+    }
     pub fn find_one_point3f(&mut self, name: String, d: Point3f) -> Point3f {
         for v in &self.point3fs {
             if v.name == name && v.n_values == 1 {
@@ -9313,6 +9321,14 @@ impl ParamSet {
             }
         }
         d
+    }
+    pub fn find_one_filename(&mut self, name: String, d: String) -> String {
+        let filename: String = self.find_one_string(name, String::new());
+        if filename == String::new() {
+            return d;
+        }
+        // TODO: filename = AbsolutePath(ResolveFilename(filename));
+        filename
     }
     pub fn find_texture(&mut self, name: String) -> String {
         let d: String = String::new();
@@ -9359,10 +9375,20 @@ impl<'a> TextureParams<'a> {
                                          self.material_params.find_one_string(name.clone(),
                                                                               d))
     }
+    pub fn find_filename(&mut self, name: String, d: String) -> String {
+        self.geom_params.find_one_filename(name.clone(),
+                                           self.material_params.find_one_filename(name.clone(),
+                                                                                  d))
+    }
     pub fn find_int(&mut self, name: String, d: i32) -> i32 {
         self.geom_params.find_one_int(name.clone(),
                                       self.material_params.find_one_int(name.clone(),
                                                                         d))
+    }
+    pub fn find_bool(&mut self, name: String, d: bool) -> bool {
+        self.geom_params.find_one_bool(name.clone(),
+                                       self.material_params.find_one_bool(name.clone(),
+                                                                          d))
     }
     pub fn find_vector3f(&mut self, name: String, d: Vector3f) -> Vector3f {
         self.geom_params.find_one_vector3f(name.clone(),
