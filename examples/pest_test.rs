@@ -6,8 +6,9 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{DistantLight, Float, GraphicsState, Matrix4x4, ParamSet, Point3f, RenderOptions,
-           Spectrum, TextureParams, Transform, TransformSet, Vector3f};
+use pbrt::{Checkerboard2DTexture, DistantLight, Float, GraphicsState, Matrix4x4, ParamSet,
+           PlanarMapping2D, Point3f, RenderOptions, Spectrum, Texture, TextureMapping2D,
+           TextureParams, Transform, TransformSet, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -732,8 +733,8 @@ impl_rdp! {
                                         if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                                             let mut geom_params: ParamSet = ParamSet::default();
                                             let mut material_params: ParamSet = ParamSet::default();
-                                            material_params.copy_from(&graphics_state.material_params);
-                                            geom_params.copy_from(&graphics_state.material_params);
+                                            geom_params.copy_from(param_set);
+                                            material_params.copy_from(param_set);
                                             let mut tp: TextureParams = TextureParams {
                                                 float_textures: graphics_state.float_textures.clone(),
                                                 spectrum_textures: graphics_state.spectrum_textures.clone(),
@@ -744,7 +745,6 @@ impl_rdp! {
                                                 println!("TODO: MakeFloatTexture");
                                             } else if param_set.tex_type == String::from("color") ||
                                                 param_set.tex_type == String::from("spectrum") {
-                                                    println!("TODO: MakeSpectrumTexture");
                                                     match graphics_state.spectrum_textures.get(param_set.name.as_str()) {
                                                         Some(_spectrum_texture) => {
                                                             println!("Texture \"{}\" being redefined",
@@ -766,20 +766,57 @@ impl_rdp! {
                                                     } else if param_set.tex_name == String::from("uv") {
                                                         println!("TODO: CreateUVSpectrumTexture");
                                                     } else if param_set.tex_name == String::from("checkerboard") {
-                                                        println!("TODO: CreateCheckerboardSpectrumTexture");
                                                         // CreateCheckerboardSpectrumTexture
                                                         let dim: i32 = tp.find_int(String::from("dimension"), 2);
-                                                        println!("WORK: dim = {}", dim);
                                                         if dim != 2 && dim != 3 {
                                                             panic!("{} dimensional checkerboard texture not supported",
                                                                    dim);
                                                         }
-                                                        let tex1 = tp.get_spectrum_texture(String::from("tex1"),
-                                                                                           Spectrum::new(1.0));
-                                                        let tex2 = tp.get_spectrum_texture(String::from("tex2"),
-                                                                                           Spectrum::new(0.0));
+                                                        let tex1: Arc<Texture<Spectrum> + Send + Sync> =
+                                                            tp.get_spectrum_texture(String::from("tex1"),
+                                                                                    Spectrum::new(1.0));
+                                                        let tex2: Arc<Texture<Spectrum> + Send + Sync> =
+                                                            tp.get_spectrum_texture(String::from("tex2"),
+                                                                                    Spectrum::new(0.0));
                                                         if dim == 2 {
-                                                            println!("TODO: Checkerboard2DTexture");
+                                                            let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+                                                            let mapping: String =
+                                                                tp.find_string(String::from("mapping"), String::from("uv"));
+                                                            if mapping == String::from("uv") {
+                                                                println!("TODO: UVMapping2D");
+                                                            } else if mapping == String::from("spherical") {
+                                                                println!("TODO: SphericalMapping2D");
+                                                            } else if mapping == String::from("cylindrical") {
+                                                                println!("TODO: CylindricalMapping2D");
+                                                            } else if mapping == String::from("planar") {
+                                                                map = Some(Box::new(PlanarMapping2D {
+                                                                    vs: tp.find_vector3f(String::from("v1"),
+                                                                                         Vector3f {
+                                                                                             x: 1.0,
+                                                                                             y: 0.0,
+                                                                                             z: 0.0
+                                                                                         }),
+                                                                    vt: tp.find_vector3f(String::from("v2"),
+                                                                                         Vector3f {
+                                                                                             x: 0.0,
+                                                                                             y: 1.0,
+                                                                                             z: 0.0
+                                                                                         }),
+                                                                    ds: tp.find_float(String::from("udelta"),
+                                                                                      0.0),
+                                                                    dt: tp.find_float(String::from("vdelta"),
+                                                                                      0.0),
+                                                                }));
+                                                            } else {
+                                                                panic!("2D texture mapping \"{}\" unknown",
+                                                                       mapping);
+                                                            }
+                                                            // TODO: aamode
+                                                            if let Some(mapping) = map {
+                                                                Arc::new(Checkerboard2DTexture::new(mapping,
+                                                                                                    tex1,
+                                                                                                    tex2));
+                                                            }
                                                         } else { // dim == 3
                                                             println!("TODO: TextureMapping3D");
                                                         }

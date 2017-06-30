@@ -9260,6 +9260,15 @@ impl ParamSet {
             });
         }
     }
+    pub fn find_one_float(&mut self, name: String, d: Float) -> Float {
+        for v in &self.floats {
+            if v.name == name && v.n_values == 1 {
+                // v.looked_up = true;
+                return v.values[0];
+            }
+        }
+        d
+    }
     pub fn find_one_int(&mut self, name: String, d: i32) -> i32 {
         for v in &self.ints {
             if v.name == name && v.n_values == 1 {
@@ -9278,11 +9287,29 @@ impl ParamSet {
         }
         d
     }
+    pub fn find_one_vector3f(&mut self, name: String, d: Vector3f) -> Vector3f {
+        for v in &self.vector3fs {
+            if v.name == name && v.n_values == 1 {
+                // v.looked_up = true;
+                return v.values[0];
+            }
+        }
+        d
+    }
     pub fn find_one_spectrum(&mut self, name: String, d: Spectrum) -> Spectrum {
         for v in &self.spectra {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
                 return v.values[0];
+            }
+        }
+        d
+    }
+    pub fn find_one_string(&mut self, name: String, d: String) -> String {
+        for v in &self.strings {
+            if v.name == name && v.n_values == 1 {
+                // v.looked_up = true;
+                return v.values[0].clone();
             }
         }
         d
@@ -9302,7 +9329,7 @@ pub struct TextureParams<'a> {
 }
 
 impl<'a> TextureParams<'a> {
-    pub fn get_spectrum_texture(&mut self, n: String, def: Spectrum) -> Arc<Texture<Spectrum>>
+    pub fn get_spectrum_texture(&mut self, n: String, def: Spectrum) -> Arc<Texture<Spectrum> + Send + Sync>
     {
         let mut name: String = self.geom_params.find_texture(n.clone());
         if name == String::new() {
@@ -9322,10 +9349,25 @@ impl<'a> TextureParams<'a> {
         val = self.geom_params.find_one_spectrum(n.clone(), def);
         Arc::new(ConstantTexture { value: Spectrum::new(0.0) })
     }
+    pub fn find_float(&mut self, name: String, d: Float) -> Float {
+        self.geom_params.find_one_float(name.clone(),
+                                        self.material_params.find_one_float(name.clone(),
+                                                                              d))
+    }
+    pub fn find_string(&mut self, name: String, d: String) -> String {
+        self.geom_params.find_one_string(name.clone(),
+                                         self.material_params.find_one_string(name.clone(),
+                                                                              d))
+    }
     pub fn find_int(&mut self, name: String, d: i32) -> i32 {
         self.geom_params.find_one_int(name.clone(),
                                       self.material_params.find_one_int(name.clone(),
                                                                         d))
+    }
+    pub fn find_vector3f(&mut self, name: String, d: Vector3f) -> Vector3f {
+        self.geom_params.find_one_vector3f(name.clone(),
+                                           self.material_params.find_one_vector3f(name.clone(),
+                                                                                  d))
     }
 }
 
