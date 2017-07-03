@@ -209,6 +209,1554 @@ fn main() {
 
     // trianglemeshes
     // TODO: insert triangles below
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -4.0,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -4.0,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -4.0,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -4.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -4.0,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -4.0,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -2.66667,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -2.66667,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -2.66667,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -1.33333,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -1.33333,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -1.33333,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 0.0,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 0.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 0.0,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 1.33333,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 1.33333,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 1.33333,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 2.66667,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 2.66667,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 2.66667,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -4.0,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -4.0,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -4.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -4.0,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -4.0,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -4.0,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -2.66667,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -2.66667,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -2.66667,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -2.66667,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -1.33333,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -1.33333,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: -1.33333,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: -1.33333,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 0.0,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 0.0,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 0.0,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 0.0,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 1.33333,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: -4.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 1.33333,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 1.33333,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 1.33333,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 2.66667,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: -1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: -2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 2.66667,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: 1.33333,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 0.0,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
+    {
+        let vertex_indices: Vec<usize> = vec![0, 2, 1, 0, 3, 2];
+        let n_triangles: usize = vertex_indices.len() / 3;
+        let p: Vec<Point3f> = vec![Point3f {
+                                       x: 2.66667,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: 4.0,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 4.0,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   },
+                                   Point3f {
+                                       x: 2.66667,
+                                       y: 2.66667,
+                                       z: 0.0,
+                                   }];
+        let object_to_world: Transform = Transform::translate(Vector3f {
+                                                                  x: 0.0,
+                                                                  y: 0.0,
+                                                                  z: 0.0,
+                                                              });
+        let world_to_object: Transform = Transform::inverse(object_to_world);
+        let s: Vec<Vector3f> = Vec::new();
+        let n: Vec<Vector3f> = Vec::new();
+        let uv: Vec<Point2f> = Vec::new();
+        let n_vertices: usize = p.len();
+        builder.add_mesh(object_to_world,
+                         world_to_object,
+                         n_triangles,
+                         vertex_indices,
+                         n_vertices,
+                         p,
+                         s,
+                         n,
+                         uv);
+    }
     // TODO: insert triangles above
 
     let scene_description: SceneDescription = builder.finalize();

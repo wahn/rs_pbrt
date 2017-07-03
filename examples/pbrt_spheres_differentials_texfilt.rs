@@ -396,7 +396,7 @@ fn main() {
                                    du: udelta,
                                    dv: vdelta,
                                });
-        let filename: String = String::from("assets/textures/lines.png");
+        let filename: String = String::from("assets/scenes/textures/lines.png");
         let do_trilinear: bool = false;
         let max_aniso: Float = 8.0;
         let wrap_mode: ImageWrap = ImageWrap::Repeat;
