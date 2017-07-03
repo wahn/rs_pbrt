@@ -7,8 +7,9 @@ extern crate getopts;
 extern crate pbrt;
 
 use pbrt::{Checkerboard2DTexture, DistantLight, Float, GraphicsState, ImageTexture, ImageWrap,
-           Matrix4x4, ParamSet, PlanarMapping2D, Point3f, RenderOptions, Spectrum, Texture,
-           TextureMapping2D, TextureParams, Transform, TransformSet, UVMapping2D, Vector3f};
+           Matrix4x4, ParamSet, PlanarMapping2D, Point3f, RenderOptions, Spectrum, Sphere,
+           Texture, TextureMapping2D, TextureParams, Transform, TransformSet, UVMapping2D,
+           Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -524,8 +525,68 @@ impl_rdp! {
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
                         if optional_parameters.rule == Rule::statement ||
-                            optional_parameters.rule == Rule::last_statement {
+                            optional_parameters.rule == Rule::last_statement
+                        {
                             println!("Shape \"{}\" ", name);
+                            // pbrtShape (api.cpp:1153)
+                            // TODO: if (!curTransform.IsAnimated()) { ... }
+                            // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
+                            let obj_to_world: Transform = Transform {
+                                m: CUR_TRANSFORM.t[0].m,
+                                m_inv: CUR_TRANSFORM.t[0].m_inv,
+                            };
+                            let world_to_obj: Transform =Transform {
+                                m: CUR_TRANSFORM.t[0].m_inv,
+                                m_inv: CUR_TRANSFORM.t[0].m,
+                            };
+                            // MakeShapes (api.cpp:296)
+                            if name == String::from("sphere") {
+                                // CreateSphereShape
+                                let radius: Float = 1.0; // default
+                                let z_min: Float = -radius; // default
+                                let z_max: Float = radius; // default
+                                let phi_max: Float = 360.0; // default
+                                let sphere = Arc::new(Sphere::new(obj_to_world,
+                                                                  world_to_obj,
+                                                                  false,
+                                                                  false,
+                                                                  radius,
+                                                                  z_min,
+                                                                  z_max,
+                                                                  phi_max));
+                                print!("Sphere {{ object_to_world: {:?}, world_to_object: {:?}, ",
+                                       obj_to_world,
+                                       world_to_obj);
+                                println!("radius: {}, z_min: {}, z_max: {}, phi_max: {} }}",
+                                         radius,
+                                         z_min,
+                                         z_max,
+                                         phi_max)
+                            } else if name == String::from("cylinder") {
+                                println!("TODO: CreateCylinderShape");
+                            } else if name == String::from("disk") {
+                                println!("TODO: CreateDiskShape");
+                            } else if name == String::from("cone") {
+                                println!("TODO: CreateConeShape");
+                            } else if name == String::from("paraboloid") {
+                                println!("TODO: CreateParaboloidShape");
+                            } else if name == String::from("hyperboloid") {
+                                    println!("TODO: CreateHyperboloidShape");
+                            } else if name == String::from("curve") {
+                                println!("TODO: CreateCurveShape");
+                            } else if name == String::from("trianglemesh") {
+                                println!("TODO: CreateTriangleMeshShape");
+                            } else if name == String::from("plymesh") {
+                                println!("TODO: CreatePLYMesh");
+                            } else if name == String::from("heightfield") {
+                                println!("TODO: CreateHeightfield");
+                            } else if name == String::from("loopsubdiv") {
+                                println!("TODO: CreateLoopSubdiv");
+                            } else if name == String::from("nurbs") {
+                                println!("TODO: CreateNURBS");
+                            } else {
+                                panic!("Shape \"{}\" unknown.", name);
+                            }
                         }
                         param_set.reset(String::from("Shape"),
                                         String::from(name),
@@ -937,11 +998,84 @@ impl_rdp! {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("Material \"{}\" ", param_set.name);
                                     print_params(&param_set);
+                                    // pbrtMaterial (api.cpp:1082)
+                                    unsafe {
+                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                            graphics_state.material = name;
+                                            graphics_state.material_params.copy_from(&param_set);
+                                            graphics_state.current_named_material = String::new();
+                                        }
+                                    }
                                 }
                             } else if param_set.key_word == String::from("Shape") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("Shape \"{}\" ", param_set.name);
                                     print_params(&param_set);
+                                    unsafe {
+                                        // pbrtShape (api.cpp:1153)
+                                        // TODO: if (!curTransform.IsAnimated()) { ... }
+                                        // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
+                                        let obj_to_world: Transform = Transform {
+                                            m: CUR_TRANSFORM.t[0].m,
+                                            m_inv: CUR_TRANSFORM.t[0].m_inv,
+                                        };
+                                        let world_to_obj: Transform =Transform {
+                                            m: CUR_TRANSFORM.t[0].m_inv,
+                                            m_inv: CUR_TRANSFORM.t[0].m,
+                                        };
+                                        // MakeShapes (api.cpp:296)
+                                        if param_set.name == String::from("sphere") {
+                                            // CreateSphereShape
+                                            let radius: Float = param_set.find_one_float(String::from("radius"),
+                                                                                         1.0 as Float);
+                                            let z_min: Float = param_set.find_one_float(String::from("zmin"),
+                                                                                        -radius);
+                                            let z_max: Float = param_set.find_one_float(String::from("zmin"),
+                                                                                        radius);
+                                            let phi_max: Float = param_set.find_one_float(String::from("phimax"),
+                                                                                          360.0 as Float);
+                                            let sphere = Arc::new(Sphere::new(obj_to_world,
+                                                                              world_to_obj,
+                                                                              false,
+                                                                              false,
+                                                                              radius,
+                                                                              z_min,
+                                                                              z_max,
+                                                                              phi_max));
+                                            print!("Sphere {{ object_to_world: {:?}, world_to_object: {:?}, ",
+                                                   obj_to_world,
+                                                   world_to_obj);
+                                            println!("radius: {}, z_min: {}, z_max: {}, phi_max: {} }}",
+                                                     radius,
+                                                     z_min,
+                                                     z_max,
+                                                     phi_max)
+                                        } else if param_set.name == String::from("cylinder") {
+                                            println!("TODO: CreateCylinderShape");
+                                        } else if param_set.name == String::from("disk") {
+                                            println!("TODO: CreateDiskShape");
+                                        } else if param_set.name == String::from("cone") {
+                                            println!("TODO: CreateConeShape");
+                                        } else if param_set.name == String::from("paraboloid") {
+                                            println!("TODO: CreateParaboloidShape");
+                                        } else if param_set.name == String::from("hyperboloid") {
+                                            println!("TODO: CreateHyperboloidShape");
+                                        } else if param_set.name == String::from("curve") {
+                                            println!("TODO: CreateCurveShape");
+                                        } else if param_set.name == String::from("trianglemesh") {
+                                            println!("TODO: CreateTriangleMeshShape");
+                                        } else if param_set.name == String::from("plymesh") {
+                                            println!("TODO: CreatePLYMesh");
+                                        } else if param_set.name == String::from("heightfield") {
+                                            println!("TODO: CreateHeightfield");
+                                        } else if param_set.name == String::from("loopsubdiv") {
+                                            println!("TODO: CreateLoopSubdiv");
+                                        } else if param_set.name == String::from("nurbs") {
+                                            println!("TODO: CreateNURBS");
+                                        } else {
+                                            panic!("Shape \"{}\" unknown.", param_set.name);
+                                        }
+                                    }
                                 }
                             } else {
                                 println!("PARAM_SET: {}", param_set.key_word);
@@ -1167,6 +1301,7 @@ impl_rdp! {
                                 spectrum_textures: graphics_state.spectrum_textures.clone(),
                                 material_params: param_set,
                                 material: String::from(graphics_state.material.as_ref()),
+                                current_named_material: String::from(graphics_state.current_named_material.as_ref()),
                             });
                         }
                         if let Some(ref mut pgt) = PUSHED_GRAPHICS_TRANSFORMS {

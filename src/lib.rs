@@ -9490,7 +9490,7 @@ pub struct GraphicsState {
     pub material_params: ParamSet,
     pub material: String,
     // std::map<std::string, std::shared_ptr<Material>> namedMaterials;
-    // std::string currentNamedMaterial;
+    pub current_named_material: String,
     // ParamSet areaLightParams;
     // std::string areaLight;
     // bool reverseOrientation = false;
