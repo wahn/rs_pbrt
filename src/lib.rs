@@ -9337,14 +9337,14 @@ impl ParamSet {
 }
 
 #[derive(Default)]
-pub struct TextureParams<'a> {
-    pub float_textures: HashMap<&'a str, Arc<Texture<Float>>>,
-    pub spectrum_textures: HashMap<&'a str, Arc<Spectrum>>,
+pub struct TextureParams {
+    pub float_textures: HashMap<String, Arc<Texture<Float>>>,
+    pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum>>>,
     pub geom_params: ParamSet,
     pub material_params: ParamSet,
 }
 
-impl<'a> TextureParams<'a> {
+impl TextureParams {
     pub fn get_spectrum_texture(&mut self, n: String, def: Spectrum) -> Arc<Texture<Spectrum> + Send + Sync>
     {
         let mut name: String = self.geom_params.find_texture(n.clone());
@@ -9483,10 +9483,10 @@ impl RenderOptions {
 }
 
 #[derive(Default)]
-pub struct GraphicsState<'a> {
+pub struct GraphicsState {
     // std::string currentInsideMedium, currentOutsideMedium;
-    pub float_textures: HashMap<&'a str, Arc<Texture<Float>>>,
-    pub spectrum_textures: HashMap<&'a str, Arc<Spectrum>>,
+    pub float_textures: HashMap<String, Arc<Texture<Float>>>,
+    pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum>>>,
     pub material_params: ParamSet,
     pub material: String,
     // std::map<std::string, std::shared_ptr<Material>> namedMaterials;

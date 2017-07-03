@@ -649,6 +649,8 @@ impl_rdp! {
                     optional_parameters.rule == Rule::last_statement {
                     unsafe {
                         if let Some(ref mut param_set) = PARAM_SET {
+                            let mut name: String = String::new();
+                            name.push_str(param_set.name.as_str());
                             if param_set.key_word == String::from("Camera") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("Camera \"{}\" ", ro.camera_name);
@@ -841,13 +843,15 @@ impl_rdp! {
                                                         let gamma: bool = tp.find_bool(String::from("gamma"), true);
                                                         
                                                         if let Some(mapping) = map {
-                                                            Arc::new(ImageTexture::new(mapping,
-                                                                                       filename,
-                                                                                       do_trilinear,
-                                                                                       max_aniso,
-                                                                                       wrap_mode,
-                                                                                       scale,
-                                                                                       gamma));
+                                                            let st = Arc::new(ImageTexture::new(mapping,
+                                                                                                filename,
+                                                                                                do_trilinear,
+                                                                                                max_aniso,
+                                                                                                wrap_mode,
+                                                                                                scale,
+                                                                                                gamma));
+                                                            graphics_state.spectrum_textures.insert(
+                                                                name, st);
                                                         }
                                                     } else if param_set.tex_name == String::from("uv") {
                                                         println!("TODO: CreateUVSpectrumTexture");
