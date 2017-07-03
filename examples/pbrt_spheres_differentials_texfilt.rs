@@ -2,7 +2,7 @@ extern crate pbrt;
 extern crate getopts;
 
 use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Checkerboard2DTexture,
-           ConstantTexture, DistantLight, Film, Float, GeometricPrimitive, GlassMaterial,
+           ConstantTexture, DistantLight, Film, Filter, Float, GeometricPrimitive, GlassMaterial,
            ImageTexture, ImageWrap, Light, MatteMaterial, MirrorMaterial, PerspectiveCamera,
            PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene, Spectrum, Sphere,
            SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f};
@@ -311,7 +311,8 @@ fn main() {
     // TMP: process SceneDescription before handing primitives to BVHAccel
     let mut render_options: RenderOptions = RenderOptions::new(scene_description);
     // add triangles created above (not meshes)
-    let mirror = Arc::new(MirrorMaterial { kr: Spectrum::new(0.9) });
+    let kr = Arc::new(ConstantTexture::new(Spectrum::new(0.9)));
+    let mirror = Arc::new(MirrorMaterial::new(kr));
     let glass = Arc::new(GlassMaterial {
                              kr: Spectrum::new(1.0),
                              kt: Spectrum::new(1.0),
@@ -481,17 +482,17 @@ fn main() {
     };
     let xw: Float = 0.5;
     let yw: Float = 0.5;
-    let box_filter = BoxFilter {
+    let filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
         radius: Vector2f { x: xw, y: yw },
         inv_radius: Vector2f {
             x: 1.0 / xw,
             y: 1.0 / yw,
         },
-    };
+    });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
     let film: Film = Film::new(Point2i { x: xres, y: yres },
                                crop,
-                               box_filter,
+                               filter,
                                35.0,
                                filename,
                                1.0,

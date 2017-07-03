@@ -6526,6 +6526,13 @@ pub fn sobol_2d(n_samples_per_pixel_sample: i32,
             rng);
 }
 
+// see filter.h
+
+pub trait Filter {
+    fn evaluate(&self, p: Point2f) -> Float;
+    fn get_radius(&self) -> Vector2f;
+}
+
 // see box.h
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -6534,9 +6541,15 @@ pub struct BoxFilter {
     pub inv_radius: Vector2f,
 }
 
-impl BoxFilter {
-    pub fn evaluate(&self, _p: Point2f) -> Float {
+impl Filter for BoxFilter {
+    fn evaluate(&self, _p: Point2f) -> Float {
         1.0
+    }
+    fn get_radius(&self) -> Vector2f {
+        Vector2f {
+            x: self.radius.x,
+            y: self.radius.y,
+        }
     }
 }
 
@@ -6647,7 +6660,7 @@ pub struct Film {
     /// The length of the diagonal of the film's physical area (specified in mm, stored in meters)
     pub diagonal: Float,
     /// A filter function
-    pub filter: BoxFilter, // TODO: Filter
+    pub filter: Arc<Filter + Sync + Send>,
     /// The filename of the output image
     pub filename: String,
     /// A crop window that may specify a subset of the image to render
@@ -6663,7 +6676,7 @@ pub struct Film {
 impl Film {
     pub fn new(resolution: Point2i,
                crop_window: Bounds2f,
-               filt: BoxFilter,
+               filter: Arc<Filter + Sync + Send>,
                diagonal: Float,
                filename: String,
                scale: Float,
@@ -6685,20 +6698,21 @@ impl Film {
         let mut filter_table: [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH] =
             [0.0; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH];
         let mut offset: usize = 0;
+        let filter_radius: Vector2f = filter.get_radius();
         for y in 0..FILTER_TABLE_WIDTH {
             for x in 0..FILTER_TABLE_WIDTH {
                 let p: Point2f = Point2f {
-                    x: (x as Float + 0.5) * filt.radius.x / FILTER_TABLE_WIDTH as Float,
-                    y: (y as Float + 0.5) * filt.radius.y / FILTER_TABLE_WIDTH as Float,
+                    x: (x as Float + 0.5) * filter_radius.x / FILTER_TABLE_WIDTH as Float,
+                    y: (y as Float + 0.5) * filter_radius.y / FILTER_TABLE_WIDTH as Float,
                 };
-                filter_table[offset] = filt.evaluate(p);
+                filter_table[offset] = filter.evaluate(p);
                 offset += 1;
             }
         }
         Film {
             full_resolution: resolution,
             diagonal: diagonal * 0.001,
-            filter: filt,
+            filter: filter,
             filename: filename,
             cropped_pixel_bounds: cropped_pixel_bounds,
             pixels: RwLock::new(vec![Pixel::default(); cropped_pixel_bounds.area() as usize]),
@@ -6711,11 +6725,11 @@ impl Film {
         let f: Point2f = pnt2_floor(Point2f {
             x: self.cropped_pixel_bounds.p_min.x as Float,
             y: self.cropped_pixel_bounds.p_min.y as Float,
-        } + Vector2f { x: 0.5, y: 0.5 } - self.filter.radius);
+        } + Vector2f { x: 0.5, y: 0.5 } - self.filter.get_radius());
         let c: Point2f = pnt2_ceil(Point2f {
             x: self.cropped_pixel_bounds.p_max.x as Float,
             y: self.cropped_pixel_bounds.p_max.y as Float,
-        } - Vector2f { x: 0.5, y: 0.5 } + self.filter.radius);
+        } - Vector2f { x: 0.5, y: 0.5 } + self.filter.get_radius());
         let float_bounds: Bounds2f = Bounds2f {
             p_min: f,
             p_max: c,
@@ -6744,12 +6758,12 @@ impl Film {
                 y: sample_bounds.p_max.y as Float,
             },
         };
-        let p_min: Point2f = float_bounds.p_min - half_pixel - self.filter.radius;
+        let p_min: Point2f = float_bounds.p_min - half_pixel - self.filter.get_radius();
         let p0: Point2i = Point2i {
             x: p_min.x.ceil() as i32,
             y: p_min.y.ceil() as i32,
         };
-        let p_max: Point2f = float_bounds.p_max - half_pixel + self.filter.radius;
+        let p_max: Point2f = float_bounds.p_max - half_pixel + self.filter.get_radius();
         let p1: Point2i = Point2i {
             x: p_max.x.floor() as i32,
             y: p_max.y.floor() as i32,
@@ -6760,7 +6774,7 @@ impl Film {
                                                               },
                                                               self.cropped_pixel_bounds);
         FilmTile::new(tile_pixel_bounds,
-                      self.filter.radius,
+                      self.filter.get_radius(),
                       &self.filter_table,
                       FILTER_TABLE_WIDTH,
                       self.max_sample_luminance)
@@ -7919,13 +7933,19 @@ impl Material for GlassMaterial {
 
 /// A simple mirror, modeled with perfect specular reflection.
 pub struct MirrorMaterial {
-    pub kr: Spectrum, // TODO: bump_map
+    pub kr: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.9
+    // TODO: bump_map
 }
 
 impl MirrorMaterial {
+    pub fn new(kr: Arc<Texture<Spectrum> + Send + Sync>) -> Self {
+        MirrorMaterial {
+            kr: kr,
+        }
+    }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
-        let r: Spectrum = Spectrum::new(0.9 as Float); // TODO: self.kr.evaluate(si);
+        let r: Spectrum = self.kr.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
         let fresnel = Arc::new(FresnelNoOp{});
         bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
         Bsdf::new(si, 1.5, bxdfs)
@@ -9432,7 +9452,7 @@ pub struct RenderOptions {
     pub camera_to_world: TransformSet,
     // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
     pub lights: Vec<Arc<Light + Sync + Send>>,
-    // TODO: std::vector<std::shared_ptr<Primitive>> primitives;
+    pub primitives: Vec<Arc<Primitive + Sync + Send>>,
     // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
     // TODO: std::vector<std::shared_ptr<Primitive>> *currentInstance = nullptr;
     pub have_scattering_media: bool, // false
@@ -9470,6 +9490,7 @@ impl Default for RenderOptions {
                 }; 2],
             },
             lights: Vec::new(),
+            primitives: Vec::new(),
             have_scattering_media: false,
         }
     }

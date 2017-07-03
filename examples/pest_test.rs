@@ -6,10 +6,11 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{Checkerboard2DTexture, DistantLight, Float, GraphicsState, ImageTexture, ImageWrap,
-           Matrix4x4, ParamSet, PlanarMapping2D, Point3f, RenderOptions, Spectrum, Sphere,
-           Texture, TextureMapping2D, TextureParams, Transform, TransformSet, UVMapping2D,
-           Vector3f};
+use pbrt::{Bounds2f, BoxFilter, Checkerboard2DTexture, ConstantTexture, DistantLight, Film,
+           Filter, Float, GeometricPrimitive, GraphicsState, ImageTexture, ImageWrap, Material,
+           MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet, PlanarMapping2D, Point2i, Point2f,
+           Point3f, RenderOptions, Spectrum, Sphere, Texture, TextureMapping2D, TextureParams,
+           Transform, TransformSet, UVMapping2D, Vector2f, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -47,7 +48,7 @@ static mut NAMED_COORDINATE_SYSTEMS: Option<Box<HashMap<&str, TransformSet>>> = 
 static mut RENDER_OPTIONS: Option<Box<RenderOptions>> = None;
 static mut GRAPHICS_STATE: Option<Box<GraphicsState>> = None;
 static mut PUSHED_GRAPHICS_STATES: Option<Box<Vec<GraphicsState>>> = None;
-static mut PUSHED_GRAPHICS_TRANSFORMS: Option<Box<Vec<TransformSet>>> = None;
+static mut PUSHED_TRANSFORMS: Option<Box<Vec<TransformSet>>> = None;
 // not used in original C++ code:
 static mut PARAM_SET: Option<Box<ParamSet>> = None;
 
@@ -315,7 +316,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -343,7 +344,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -371,7 +372,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -395,7 +396,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -419,7 +420,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -460,7 +461,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -489,7 +490,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -500,8 +501,16 @@ impl_rdp! {
                 unsafe {
                     if let Some(ref mut param_set) = PARAM_SET {
                         if optional_parameters.rule == Rule::statement ||
-                            optional_parameters.rule == Rule::last_statement {
-                            println!("Material \"{}\" ", name);
+                            optional_parameters.rule == Rule::last_statement
+                        {
+                            println!("Material \"{}\" ", name.clone());
+                        }
+                        // pbrtMaterial (api.cpp:1082)
+                        unsafe {
+                            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                graphics_state.material = name.clone();
+                                graphics_state.current_named_material = String::new();
+                            }
                         }
                         param_set.reset(String::from("Material"),
                                         String::from(name),
@@ -514,7 +523,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -561,7 +570,12 @@ impl_rdp! {
                                          radius,
                                          z_min,
                                          z_max,
-                                         phi_max)
+                                         phi_max);
+                                let mtl: Arc<Material + Send + Sync> = create_material();
+                                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    ro.primitives.push(geo_prim.clone());
+                                }
                             } else if name == String::from("cylinder") {
                                 println!("TODO: CreateCylinderShape");
                             } else if name == String::from("disk") {
@@ -599,7 +613,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    println!("WorldEnd");
+                    world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -1087,7 +1101,7 @@ impl_rdp! {
                         }
                     }
                     if optional_parameters.rule == Rule::last_statement {
-                        println!("WorldEnd");
+                        world_end();
                     } else { // statement
                         self._statement();
                     }
@@ -1304,8 +1318,8 @@ impl_rdp! {
                                 current_named_material: String::from(graphics_state.current_named_material.as_ref()),
                             });
                         }
-                        if let Some(ref mut pgt) = PUSHED_GRAPHICS_TRANSFORMS {
-                            pgt.push(TransformSet {
+                        if let Some(ref mut pt) = PUSHED_TRANSFORMS {
+                            pt.push(TransformSet {
                                 t: [
                                     Transform {
                                         m: CUR_TRANSFORM.t[0].m,
@@ -1339,8 +1353,8 @@ impl_rdp! {
                             // material
                             graphics_state.material = String::from(pgs.material.as_ref());
                         }
-                        if let Some(ref mut pgt) = PUSHED_GRAPHICS_TRANSFORMS {
-                            let popped_transform_set: TransformSet = pgt.pop().unwrap();
+                        if let Some(ref mut pt) = PUSHED_TRANSFORMS {
+                            let popped_transform_set: TransformSet = pt.pop().unwrap();
                             CUR_TRANSFORM.t[0] = popped_transform_set.t[0];
                             CUR_TRANSFORM.t[1] = popped_transform_set.t[1];
                             // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
@@ -1468,6 +1482,151 @@ fn print_params(params: &ParamSet) {
     }
 }
 
+fn create_material() -> Arc<Material + Send + Sync> {
+    unsafe {
+        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+            // CreateMaterial
+            let mut material_params = ParamSet::default();
+            material_params.copy_from(&graphics_state.material_params);
+            let mut mp: TextureParams = TextureParams {
+                float_textures: graphics_state.float_textures.clone(),
+                spectrum_textures: graphics_state.spectrum_textures.clone(),
+                geom_params: ParamSet::default(),
+                material_params: material_params,
+            };
+            if graphics_state.current_named_material != String::new() {
+                println!("TODO: CreateMaterial, if (currentNamedMaterial != \"\")");
+            } else {
+                // MakeMaterial
+                assert_ne!(graphics_state.material, String::new());
+                assert_ne!(graphics_state.material, String::from("none"));
+                if graphics_state.material == String::from("matte") {
+                    println!("TODO: CreateMatteMaterial");
+                } else if graphics_state.material == String::from("plastic") {
+                    println!("TODO: CreatePlasticMaterial");
+                } else if graphics_state.material == String::from("translucent") {
+                    println!("TODO: CreateTranslucentMaterial");
+                } else if graphics_state.material == String::from("glass") {
+                    println!("TODO: CreateGlassMaterial");
+                } else if graphics_state.material == String::from("mirror") {
+                    println!("TODO: CreateMirrorMaterial");
+                    let kr = mp.get_spectrum_texture(String::from("Kr"),
+                                                     Spectrum::new(0.9 as Float));
+                    // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
+                    let mirror = Arc::new(MirrorMaterial { kr: kr });
+                    return mirror;
+                } else if graphics_state.material == String::from("hair") {
+                    println!("TODO: CreateHairMaterial");
+                } else if graphics_state.material == String::from("mix") {
+                    println!("TODO: CreateMixMaterial");
+                } else if graphics_state.material == String::from("metal") {
+                    println!("TODO: CreateMetalMaterial");
+                } else if graphics_state.material == String::from("substrate") {
+                    println!("TODO: CreateSubstrateMaterial");
+                } else if graphics_state.material == String::from("uber") {
+                    println!("TODO: CreateUberMaterial");
+                } else if graphics_state.material == String::from("subsurface") {
+                    println!("TODO: CreateSubsurfaceMaterial");
+                } else if graphics_state.material == String::from("kdsubsurface") {
+                    println!("TODO: CreateKdsubsurfaceMaterial");
+                } else if graphics_state.material == String::from("fourier") {
+                    println!("TODO: CreateFourierMaterial");
+                } else {
+                    panic!("Material \"{}\" unknown.", graphics_state.material);
+                }
+            }
+        }
+    }
+    let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
+    Arc::new(MatteMaterial::new(kd, 0.0 as Float))
+}
+
+fn world_end() {
+    println!("WorldEnd");
+    unsafe {
+        if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
+            assert!(pushed_graphics_states.len() == 0_usize,
+                    "Missing end to pbrtAttributeBegin()");
+            if let Some(ref mut pt) = PUSHED_TRANSFORMS {
+                assert!(pt.len() == 0_usize, "Missing end to pbrtTransformBegin()");
+                if let Some(ref mut ro) = RENDER_OPTIONS {
+                    // MakeFilter
+                    let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
+                    if ro.filter_name == String::from("box") {
+                        let xw: Float = ro.filter_params.find_one_float(String::from("xwidth"),
+                                                                        0.5);
+                        let yw: Float = ro.filter_params.find_one_float(String::from("ywidth"),
+                                                                        0.5);
+                        let box_filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
+                            radius: Vector2f { x: xw, y: yw },
+                            inv_radius: Vector2f {
+                                x: 1.0 / xw,
+                                y: 1.0 / yw,
+                            },
+                        });
+                        some_filter = Some(box_filter);
+                    } else if ro.filter_name == String::from("gaussian") {
+                        println!("TODO: CreateGaussianFilter");
+                    } else if ro.filter_name == String::from("mitchell") {
+                        println!("TODO: CreateMitchellFilter");
+                    } else if ro.filter_name == String::from("sinc") {
+                        println!("TODO: CreateSincFilter");
+                    } else if ro.filter_name == String::from("triangle") {
+                        println!("TODO: CreateTriangleFilter");
+                    } else {
+                        panic!("Filter \"{}\" unknown.", ro.filter_name);
+                    }
+                    // MakeFilm
+                    if ro.film_name == String::from("image") {
+                        println!("TODO: CreateFilm");
+                        let filename: String =
+                            ro.film_params
+                                .find_one_string(String::from("filename"), String::new());
+                        println!("filename = {:?}", filename);
+                        let xres: i32 = ro.film_params
+                            .find_one_int(String::from("xresolution"), 1280);
+                        let yres: i32 = ro.film_params
+                            .find_one_int(String::from("yresolution"), 720);
+                        // TODO: if (PbrtOptions.quickRender) xres = std::max(1, xres / 4);
+                        // TODO: if (PbrtOptions.quickRender) yres = std::max(1, yres / 4);
+                        println!("xres = {:?}", xres);
+                        println!("yres = {:?}", yres);
+                        let crop: Bounds2f = Bounds2f {
+                            p_min: Point2f { x: 0.0, y: 0.0 },
+                            p_max: Point2f { x: 1.0, y: 1.0 },
+                        };
+                        // TODO: const Float *cr = params.FindFloat("cropwindow", &cwi);
+                        let scale: Float = ro.film_params.find_one_float(String::from("scale"),
+                                                                         1.0);
+                        println!("scale = {:?}", scale);
+                        let diagonal: Float = ro.film_params
+                            .find_one_float(String::from("diagonal"), 35.0);
+                        println!("diagonal = {:?}", diagonal);
+                        let max_sample_luminance: Float =
+                            ro.film_params
+                                .find_one_float(String::from("maxsampleluminance"),
+                                                std::f32::INFINITY);
+                        if let Some(filter) = some_filter {
+                            let film: Film = Film::new(Point2i { x: xres, y: yres },
+                                                       crop,
+                                                       filter,
+                                                       diagonal,
+                                                       filename,
+                                                   scale,
+                                                       max_sample_luminance);
+                        }
+                    } else {
+                        panic!("Film \"{}\" unknown.", ro.film_name);
+                    }
+                    // MakeIntegrator
+                    // MakeCamera
+                    // MakeScene
+                }
+            }
+        }
+    }
+}
+
 fn main() {
     // handle command line options
     let args: Vec<String> = env::args().collect();
@@ -1508,7 +1667,7 @@ fn main() {
                     RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
                     GRAPHICS_STATE = Some(Box::new(GraphicsState::default()));
                     PUSHED_GRAPHICS_STATES = Some(Box::new(Vec::new()));
-                    PUSHED_GRAPHICS_TRANSFORMS = Some(Box::new(Vec::new()));
+                    PUSHED_TRANSFORMS = Some(Box::new(Vec::new()));
                     PARAM_SET = Some(Box::new(ParamSet::default()));
                     // parser
                     let mut parser = Rdp::new(StringInput::new(&str_buf));
