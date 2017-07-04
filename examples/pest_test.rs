@@ -6,11 +6,12 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{Bounds2f, BoxFilter, Checkerboard2DTexture, ConstantTexture, DistantLight, Film,
-           Filter, Float, GeometricPrimitive, GraphicsState, ImageTexture, ImageWrap, Material,
-           MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet, PlanarMapping2D, Point2i, Point2f,
-           Point3f, RenderOptions, Spectrum, Sphere, Texture, TextureMapping2D, TextureParams,
-           Transform, TransformSet, UVMapping2D, Vector2f, Vector3f};
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, Camera, Checkerboard2DTexture, ConstantTexture,
+           DistantLight, Film, Filter, Float, GeometricPrimitive, GraphicsState, ImageTexture,
+           ImageWrap, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
+           PerspectiveCamera, PlanarMapping2D, Point2i, Point2f, Point3f, RenderOptions, Spectrum,
+           Sphere, Texture, TextureMapping2D, TextureParams, Transform, TransformSet, UVMapping2D,
+           Vector2f, Vector3f};
 // parser
 use pest::prelude::*;
 // getopts
@@ -1557,13 +1558,14 @@ fn world_end() {
                                                                         0.5);
                         let yw: Float = ro.filter_params.find_one_float(String::from("ywidth"),
                                                                         0.5);
-                        let box_filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
-                            radius: Vector2f { x: xw, y: yw },
-                            inv_radius: Vector2f {
-                                x: 1.0 / xw,
-                                y: 1.0 / yw,
-                            },
-                        });
+                        let box_filter: Arc<Filter + Sync + Send> =
+                            Arc::new(BoxFilter {
+                                         radius: Vector2f { x: xw, y: yw },
+                                         inv_radius: Vector2f {
+                                             x: 1.0 / xw,
+                                             y: 1.0 / yw,
+                                         },
+                                     });
                         some_filter = Some(box_filter);
                     } else if ro.filter_name == String::from("gaussian") {
                         println!("TODO: CreateGaussianFilter");
@@ -1612,15 +1614,81 @@ fn world_end() {
                                                        filter,
                                                        diagonal,
                                                        filename,
-                                                   scale,
+                                                       scale,
                                                        max_sample_luminance);
+                            // MakeCamera
+                            // TODO: MediumInterface mediumInterface = graphicsState.CreateMediumInterface();
+                            println!("camera_to_world: {:?}", ro.camera_to_world);
+                            let animated_cam_to_world: AnimatedTransform =
+                                AnimatedTransform::new(&ro.camera_to_world.t[0],
+                                                       ro.transform_start_time,
+                                                       &ro.camera_to_world.t[1],
+                                                       ro.transform_end_time);
+                            if ro.camera_name == String::from("perspective") {
+                                let shutteropen: Float =
+                                    ro.camera_params
+                                        .find_one_float(String::from("shutteropen"), 0.0);
+                                let shutterclose: Float =
+                                    ro.camera_params
+                                        .find_one_float(String::from("shutterclose"), 1.0);
+                                // TODO: std::swap(shutterclose, shutteropen);
+                                assert!(shutterclose >= shutteropen);
+                                let lensradius: Float =
+                                    ro.camera_params
+                                        .find_one_float(String::from("lensradius"), 0.0);
+                                let focaldistance: Float =
+                                    ro.camera_params
+                                        .find_one_float(String::from("focaldistance"), 1e6);
+                                let frame: Float =
+                                    ro.camera_params
+                                        .find_one_float(String::from("frameaspectratio"),
+                                                        (film.full_resolution.x as Float) /
+                                                        (film.full_resolution.y as Float));
+                                let mut screen: Bounds2f = Bounds2f::default();
+                                if frame > 1.0 {
+                                    screen.p_min.x = -frame;
+                                    screen.p_max.x = frame;
+                                    screen.p_min.y = -1.0;
+                                    screen.p_max.y = 1.0;
+                                } else {
+                                    screen.p_min.x = -1.0;
+                                    screen.p_max.x = 1.0;
+                                    screen.p_min.y = -1.0 / frame;
+                                    screen.p_max.y = 1.0 / frame;
+                                }
+                                // TODO: const Float *sw = params.FindFloat("screenwindow", &swi);
+                                let fov: Float =
+                                    ro.camera_params.find_one_float(String::from("fov"), 90.0);
+                                // let halffov: Float =
+                                //     ro.camera_params.find_one_float(String::from("halffov"), -1.0);
+                                // TODO: if (halffov > 0.f)
+                                let perspective_camera: PerspectiveCamera =
+                                    PerspectiveCamera::new(animated_cam_to_world,
+                                                           screen,
+                                                           shutteropen,
+                                                           shutterclose,
+                                                           lensradius,
+                                                           focaldistance,
+                                                           fov,
+                                                           film);
+                            } else if ro.camera_name == String::from("orthographic") {
+                                println!("TODO: CreateOrthographicCamera");
+                            } else if ro.camera_name == String::from("realistic") {
+                                println!("TODO: CreateRealisticCamera");
+                            } else if ro.camera_name == String::from("environment") {
+                                println!("TODO: CreateEnvironmentCamera");
+                            } else {
+                                panic!("Camera \"{}\" unknown.", ro.camera_name);
+                            }
+                            // MakeSampler
+                            // MakeIntegrator
+                            // MakeScene
+                        } else {
+                            panic!("Unable to create film.");
                         }
                     } else {
                         panic!("Film \"{}\" unknown.", ro.film_name);
                     }
-                    // MakeIntegrator
-                    // MakeCamera
-                    // MakeScene
                 }
             }
         }

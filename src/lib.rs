@@ -6164,6 +6164,14 @@ pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
     (f * f) / (f * f + g * g)
 }
 
+// see sampler.h
+
+pub trait Sampler {
+    fn get_1d(&mut self) -> Float;
+    fn get_2d(&mut self) -> Point2f;
+    fn clone(&self, seed: i32) -> Self;
+}
+
 // see zerotwosequence.h
 
 #[derive(Debug)]
@@ -6259,7 +6267,89 @@ impl ZeroTwoSequenceSampler {
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;
     }
-    pub fn clone(&self, seed: i32) -> Self {
+    pub fn round_count(&self, count: i32) -> i32 {
+        let mut mut_count: i32 = count;
+        round_up_pow2_32(&mut mut_count)
+    }
+    // PixelSampler public methods
+    pub fn start_next_sample(&mut self) -> bool {
+        self.current_1d_dimension = 0_i32;
+        self.current_2d_dimension = 0_i32;
+        // Sampler::StartNextSample()
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
+        self.current_pixel_sample_index += 1_i64;
+        self.current_pixel_sample_index < self.samples_per_pixel
+    }
+    // inherited from class Sampler (see sampler.h)
+    pub fn request_2d_array(&mut self, n: i32) {
+        assert_eq!(self.round_count(n), n);
+        self.samples_2d_array_sizes.push(n);
+        let size: usize = (n * self.samples_per_pixel as i32) as usize;
+        let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
+        self.samples_2d_array.push(additional_points);
+    }
+    pub fn get_2d_array(&mut self, n: i32) -> Vec<Point2f> {
+        let mut samples: Vec<Point2f> = Vec::new();
+        if self.array_2d_offset == self.samples_2d_array.len() {
+            return samples;
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
+                "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+                self.current_pixel_sample_index,
+                self.samples_per_pixel);
+        // TODO: let index: usize = self.current_pixel_sample_index as usize * n as usize;
+        // TODO: samples = self.samples_2d_array[self.array_2d_offset][index];
+        for sample in &self.samples_2d_array[self.array_2d_offset] {
+            samples.push(*sample);
+        }
+        self.array_2d_offset += 1;
+        samples
+    }
+    pub fn current_sample_number(&self) -> i64 {
+        self.current_pixel_sample_index
+    }
+}
+
+impl Sampler for ZeroTwoSequenceSampler {
+    fn get_1d(&mut self) -> Float {
+        // TODO: ProfilePhase _(Prof::GetSample);
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
+                "current_pixel_sample_index = {}, samples_per_pixel = {}",
+                self.current_pixel_sample_index,
+                self.samples_per_pixel);
+        if self.current_1d_dimension < self.samples_1d.len() as i32 {
+            let sample: Float = self.samples_1d[self.current_1d_dimension
+                                                as usize][self.current_pixel_sample_index
+                                                          as usize];
+            self.current_1d_dimension += 1;
+            sample
+        } else {
+            self.rng.uniform_float()
+        }
+    }
+    fn get_2d(&mut self) -> Point2f {
+        // TODO: ProfilePhase _(Prof::GetSample);
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
+                "current_pixel_sample_index = {}, samples_per_pixel = {}",
+                self.current_pixel_sample_index,
+                self.samples_per_pixel);
+        if self.current_2d_dimension < self.samples_2d.len() as i32 {
+            let sample: Point2f = self.samples_2d[self.current_2d_dimension
+                                                  as usize][self.current_pixel_sample_index
+                                                            as usize];
+            self.current_2d_dimension += 1;
+            sample
+        } else {
+            Point2f {
+                x: self.rng.uniform_float(),
+                y: self.rng.uniform_float(),
+            }
+        }
+    }
+    fn clone(&self, seed: i32) -> Self {
         // copy self.samples_1d
         let mut samples_1d: Vec<Vec<Float>> = Vec::new();
         for vec in &self.samples_1d {
@@ -6325,85 +6415,6 @@ impl ZeroTwoSequenceSampler {
         };
         lds.rng.set_sequence(seed as u64);
         lds
-    }
-    pub fn round_count(&self, count: i32) -> i32 {
-        let mut mut_count: i32 = count;
-        round_up_pow2_32(&mut mut_count)
-    }
-    // PixelSampler public methods
-    pub fn start_next_sample(&mut self) -> bool {
-        self.current_1d_dimension = 0_i32;
-        self.current_2d_dimension = 0_i32;
-        // Sampler::StartNextSample()
-        // reset array offsets for next pixel sample
-        self.array_1d_offset = 0_usize;
-        self.array_2d_offset = 0_usize;
-        self.current_pixel_sample_index += 1_i64;
-        self.current_pixel_sample_index < self.samples_per_pixel
-    }
-    pub fn get_1d(&mut self) -> Float {
-        // TODO: ProfilePhase _(Prof::GetSample);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "current_pixel_sample_index = {}, samples_per_pixel = {}",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
-        if self.current_1d_dimension < self.samples_1d.len() as i32 {
-            let sample: Float = self.samples_1d[self.current_1d_dimension
-                                                as usize][self.current_pixel_sample_index
-                                                          as usize];
-            self.current_1d_dimension += 1;
-            sample
-        } else {
-            self.rng.uniform_float()
-        }
-    }
-    pub fn get_2d(&mut self) -> Point2f {
-        // TODO: ProfilePhase _(Prof::GetSample);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "current_pixel_sample_index = {}, samples_per_pixel = {}",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
-        if self.current_2d_dimension < self.samples_2d.len() as i32 {
-            let sample: Point2f = self.samples_2d[self.current_2d_dimension
-                                                  as usize][self.current_pixel_sample_index
-                                                            as usize];
-            self.current_2d_dimension += 1;
-            sample
-        } else {
-            Point2f {
-                x: self.rng.uniform_float(),
-                y: self.rng.uniform_float(),
-            }
-        }
-    }
-    // inherited from class Sampler (see sampler.h)
-    pub fn request_2d_array(&mut self, n: i32) {
-        assert_eq!(self.round_count(n), n);
-        self.samples_2d_array_sizes.push(n);
-        let size: usize = (n * self.samples_per_pixel as i32) as usize;
-        let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
-        self.samples_2d_array.push(additional_points);
-    }
-    pub fn get_2d_array(&mut self, n: i32) -> Vec<Point2f> {
-        let mut samples: Vec<Point2f> = Vec::new();
-        if self.array_2d_offset == self.samples_2d_array.len() {
-            return samples;
-        }
-        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
-        // TODO: let index: usize = self.current_pixel_sample_index as usize * n as usize;
-        // TODO: samples = self.samples_2d_array[self.array_2d_offset][index];
-        for sample in &self.samples_2d_array[self.array_2d_offset] {
-            samples.push(*sample);
-        }
-        self.array_2d_offset += 1;
-        samples
-    }
-    pub fn current_sample_number(&self) -> i64 {
-        self.current_pixel_sample_index
     }
 }
 
