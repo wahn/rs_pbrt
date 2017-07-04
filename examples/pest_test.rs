@@ -11,7 +11,7 @@ use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera,
            Filter, Float, GeometricPrimitive, GraphicsState, ImageTexture, ImageWrap,
            LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
            PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions, Sampler,
-           SamplerIntegrator, Spectrum, Sphere, SplitMethod, Texture, TextureMapping2D,
+           SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod, Texture, TextureMapping2D,
            TextureParams, Transform, TransformSet, UVMapping2D, Vector2f, Vector3f,
            ZeroTwoSequenceSampler};
 // parser
@@ -1612,7 +1612,8 @@ fn world_end() {
                                                        scale,
                                                        max_sample_luminance);
                             // MakeCamera
-                            let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
+                            // TODO: let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
+                            let mut some_camera: Option<Arc<PerspectiveCamera>> = None;
                             // TODO: MediumInterface mediumInterface = graphicsState.CreateMediumInterface();
                             let animated_cam_to_world: AnimatedTransform =
                                 AnimatedTransform::new(&ro.camera_to_world.t[0],
@@ -1657,7 +1658,8 @@ fn world_end() {
                                 // let halffov: Float =
                                 //     ro.camera_params.find_one_float(String::from("halffov"), -1.0);
                                 // TODO: if (halffov > 0.f)
-                                let perspective_camera: Arc<Camera + Sync + Send> =
+                                // TODO: let perspective_camera: Arc<Camera + Sync + Send> =
+                                let perspective_camera: Arc<PerspectiveCamera> =
                                     Arc::new(PerspectiveCamera::new(animated_cam_to_world,
                                                                     screen,
                                                                     shutteropen,
@@ -1786,13 +1788,17 @@ fn world_end() {
                                                 Arc::new(BVHAccel::new(ro.primitives.clone(),
                                                                        max_prims_in_node as usize,
                                                                        split_method));
+                                            // MakeScene
+                                            let scene: Scene = Scene::new(accelerator.clone(), ro.lights.clone());
+                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                                            // TODO: lights.erase(lights.begin(), lights.end());
+                                            pbrt::render(&scene, &camera);
                                         } else if ro.accelerator_name == String::from("kdtree") {
                                             println!("TODO: CreateKdTreeAccelerator");
                                         } else {
                                             panic!("Accelerator \"{}\" unknown.",
                                                    ro.accelerator_name);
                                         }
-                                        // MakeScene
                                     } else {
                                         panic!("Unable to create integrator.");
                                     }
