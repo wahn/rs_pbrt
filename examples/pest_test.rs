@@ -9,9 +9,9 @@ extern crate pbrt;
 use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, Camera, Checkerboard2DTexture, ConstantTexture,
            DistantLight, Film, Filter, Float, GeometricPrimitive, GraphicsState, ImageTexture,
            ImageWrap, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
-           PerspectiveCamera, PlanarMapping2D, Point2i, Point2f, Point3f, RenderOptions, Spectrum,
-           Sphere, Texture, TextureMapping2D, TextureParams, Transform, TransformSet, UVMapping2D,
-           Vector2f, Vector3f};
+           PerspectiveCamera, PlanarMapping2D, Point2i, Point2f, Point3f, RenderOptions, Sampler,
+           Spectrum, Sphere, Texture, TextureMapping2D, TextureParams, Transform, TransformSet,
+           UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -1681,6 +1681,33 @@ fn world_end() {
                                 panic!("Camera \"{}\" unknown.", ro.camera_name);
                             }
                             // MakeSampler
+                            let mut some_sampler: Option<Arc<Sampler + Sync + Send>> = None;
+                            if ro.sampler_name == String::from("lowdiscrepancy") ||
+                                ro.sampler_name == String::from("02sequence")
+                            {
+                                let nsamp: i32 =
+                                    ro.sampler_params
+                                    .find_one_int(String::from("pixelsamples"), 16);
+                                let sd: i32 = ro.sampler_params
+                                    .find_one_int(String::from("dimensions"), 4);
+                                // TODO: if (PbrtOptions.quickRender) nsamp = 1;
+                                let sampler =
+                                    Arc::new(ZeroTwoSequenceSampler::new(nsamp as i64,
+                                                                         sd as i64));
+                                some_sampler = Some(sampler);
+                            } else if ro.sampler_name == String::from("maxmindist") {
+                                println!("TODO: CreateMaxMinDistSampler");
+                            } else if ro.sampler_name == String::from("halton") {
+                                println!("TODO: CreateHaltonSampler");
+                            } else if ro.sampler_name == String::from("sobol") {
+                                println!("TODO: CreateSobolSampler");
+                            } else if ro.sampler_name == String::from("random") {
+                                println!("TODO: CreateRandomSampler");
+                            } else if ro.sampler_name == String::from("stratified") {
+                                println!("TODO: CreateStratifiedSampler");
+                            } else {
+                                panic!("Sampler \"{}\" unknown.", ro.sampler_name);
+                            }
                             // MakeIntegrator
                             // MakeScene
                         } else {

@@ -6169,7 +6169,7 @@ pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
 pub trait Sampler {
     fn get_1d(&mut self) -> Float;
     fn get_2d(&mut self) -> Point2f;
-    fn clone(&self, seed: i32) -> Self;
+    fn clone(&self, seed: i32) -> Self where Self: Sized;
 }
 
 // see zerotwosequence.h
@@ -6226,6 +6226,33 @@ impl Default for ZeroTwoSequenceSampler {
 }
 
 impl ZeroTwoSequenceSampler {
+    pub fn new(samples_per_pixel: i64, n_sampled_dimensions: i64) -> Self {
+        let mut lds: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
+            samples_per_pixel: samples_per_pixel,
+            n_sampled_dimensions: n_sampled_dimensions,
+            samples_1d: Vec::new(),
+            samples_2d: Vec::new(),
+            current_1d_dimension: 0_i32,
+            current_2d_dimension: 0_i32,
+            rng: Rng::default(),
+            current_pixel: Point2i::default(),
+            current_pixel_sample_index: 0_i64,
+            samples_1d_array_sizes: Vec::new(),
+            samples_2d_array_sizes: Vec::new(),
+            samples_1d_array: Vec::new(),
+            samples_2d_array: Vec::new(),
+            array_1d_offset: 0_usize,
+            array_2d_offset: 0_usize,
+        };
+        for _i in 0..lds.n_sampled_dimensions {
+            let additional_1d: Vec<Float> = vec![0.0; lds.samples_per_pixel as usize];
+            let additional_2d: Vec<Point2f> =
+                vec![Point2f::default(); lds.samples_per_pixel as usize];
+            lds.samples_1d.push(additional_1d);
+            lds.samples_2d.push(additional_2d);
+        }
+        lds
+    }
     pub fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
         let mut cs: CameraSample = CameraSample::default();
         cs.p_film = Point2f {
