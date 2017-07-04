@@ -6,12 +6,13 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, Camera, Checkerboard2DTexture, ConstantTexture,
-           DistantLight, Film, Filter, Float, GeometricPrimitive, GraphicsState, ImageTexture,
-           ImageWrap, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
-           PerspectiveCamera, PlanarMapping2D, Point2i, Point2f, Point3f, RenderOptions, Sampler,
-           Spectrum, Sphere, Texture, TextureMapping2D, TextureParams, Transform, TransformSet,
-           UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, Camera, Checkerboard2DTexture,
+           ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Filter, Float,
+           GeometricPrimitive, GraphicsState, ImageTexture, ImageWrap, LightStrategy, Material,
+           MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet, PerspectiveCamera, PlanarMapping2D,
+           Point2f, Point2i, Point3f, RenderOptions, Sampler, Spectrum, Sphere, Texture,
+           TextureMapping2D, TextureParams, Transform, TransformSet, UVMapping2D, Vector2f,
+           Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -1510,7 +1511,6 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 } else if graphics_state.material == String::from("glass") {
                     println!("TODO: CreateGlassMaterial");
                 } else if graphics_state.material == String::from("mirror") {
-                    println!("TODO: CreateMirrorMaterial");
                     let kr = mp.get_spectrum_texture(String::from("Kr"),
                                                      Spectrum::new(0.9 as Float));
                     // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
@@ -1580,19 +1580,15 @@ fn world_end() {
                     }
                     // MakeFilm
                     if ro.film_name == String::from("image") {
-                        println!("TODO: CreateFilm");
                         let filename: String =
                             ro.film_params
                                 .find_one_string(String::from("filename"), String::new());
-                        println!("filename = {:?}", filename);
                         let xres: i32 = ro.film_params
                             .find_one_int(String::from("xresolution"), 1280);
                         let yres: i32 = ro.film_params
                             .find_one_int(String::from("yresolution"), 720);
                         // TODO: if (PbrtOptions.quickRender) xres = std::max(1, xres / 4);
                         // TODO: if (PbrtOptions.quickRender) yres = std::max(1, yres / 4);
-                        println!("xres = {:?}", xres);
-                        println!("yres = {:?}", yres);
                         let crop: Bounds2f = Bounds2f {
                             p_min: Point2f { x: 0.0, y: 0.0 },
                             p_max: Point2f { x: 1.0, y: 1.0 },
@@ -1600,10 +1596,8 @@ fn world_end() {
                         // TODO: const Float *cr = params.FindFloat("cropwindow", &cwi);
                         let scale: Float = ro.film_params.find_one_float(String::from("scale"),
                                                                          1.0);
-                        println!("scale = {:?}", scale);
                         let diagonal: Float = ro.film_params
                             .find_one_float(String::from("diagonal"), 35.0);
-                        println!("diagonal = {:?}", diagonal);
                         let max_sample_luminance: Float =
                             ro.film_params
                                 .find_one_float(String::from("maxsampleluminance"),
@@ -1617,8 +1611,8 @@ fn world_end() {
                                                        scale,
                                                        max_sample_luminance);
                             // MakeCamera
+                            let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
                             // TODO: MediumInterface mediumInterface = graphicsState.CreateMediumInterface();
-                            println!("camera_to_world: {:?}", ro.camera_to_world);
                             let animated_cam_to_world: AnimatedTransform =
                                 AnimatedTransform::new(&ro.camera_to_world.t[0],
                                                        ro.transform_start_time,
@@ -1662,15 +1656,16 @@ fn world_end() {
                                 // let halffov: Float =
                                 //     ro.camera_params.find_one_float(String::from("halffov"), -1.0);
                                 // TODO: if (halffov > 0.f)
-                                let perspective_camera: PerspectiveCamera =
-                                    PerspectiveCamera::new(animated_cam_to_world,
-                                                           screen,
-                                                           shutteropen,
-                                                           shutterclose,
-                                                           lensradius,
-                                                           focaldistance,
-                                                           fov,
-                                                           film);
+                                let perspective_camera: Arc<Camera + Sync + Send> =
+                                    Arc::new(PerspectiveCamera::new(animated_cam_to_world,
+                                                                    screen,
+                                                                    shutteropen,
+                                                                    shutterclose,
+                                                                    lensradius,
+                                                                    focaldistance,
+                                                                    fov,
+                                                                    film));
+                                some_camera = Some(perspective_camera);
                             } else if ro.camera_name == String::from("orthographic") {
                                 println!("TODO: CreateOrthographicCamera");
                             } else if ro.camera_name == String::from("realistic") {
@@ -1680,36 +1675,87 @@ fn world_end() {
                             } else {
                                 panic!("Camera \"{}\" unknown.", ro.camera_name);
                             }
-                            // MakeSampler
-                            let mut some_sampler: Option<Arc<Sampler + Sync + Send>> = None;
-                            if ro.sampler_name == String::from("lowdiscrepancy") ||
-                                ro.sampler_name == String::from("02sequence")
-                            {
-                                let nsamp: i32 =
-                                    ro.sampler_params
-                                    .find_one_int(String::from("pixelsamples"), 16);
-                                let sd: i32 = ro.sampler_params
-                                    .find_one_int(String::from("dimensions"), 4);
-                                // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-                                let sampler =
-                                    Arc::new(ZeroTwoSequenceSampler::new(nsamp as i64,
-                                                                         sd as i64));
-                                some_sampler = Some(sampler);
-                            } else if ro.sampler_name == String::from("maxmindist") {
-                                println!("TODO: CreateMaxMinDistSampler");
-                            } else if ro.sampler_name == String::from("halton") {
-                                println!("TODO: CreateHaltonSampler");
-                            } else if ro.sampler_name == String::from("sobol") {
-                                println!("TODO: CreateSobolSampler");
-                            } else if ro.sampler_name == String::from("random") {
-                                println!("TODO: CreateRandomSampler");
-                            } else if ro.sampler_name == String::from("stratified") {
-                                println!("TODO: CreateStratifiedSampler");
+                            if let Some(camera) = some_camera {
+                                // MakeSampler
+                                let mut some_sampler: Option<Arc<Sampler + Sync + Send>> = None;
+                                if ro.sampler_name == String::from("lowdiscrepancy") ||
+                                   ro.sampler_name == String::from("02sequence") {
+                                    let nsamp: i32 =
+                                        ro.sampler_params
+                                            .find_one_int(String::from("pixelsamples"), 16);
+                                    let sd: i32 = ro.sampler_params
+                                        .find_one_int(String::from("dimensions"), 4);
+                                    // TODO: if (PbrtOptions.quickRender) nsamp = 1;
+                                    let sampler = Arc::new(ZeroTwoSequenceSampler::new(nsamp as
+                                                                                       i64,
+                                                                                       sd as i64));
+                                    some_sampler = Some(sampler);
+                                } else if ro.sampler_name == String::from("maxmindist") {
+                                    println!("TODO: CreateMaxMinDistSampler");
+                                } else if ro.sampler_name == String::from("halton") {
+                                    println!("TODO: CreateHaltonSampler");
+                                } else if ro.sampler_name == String::from("sobol") {
+                                    println!("TODO: CreateSobolSampler");
+                                } else if ro.sampler_name == String::from("random") {
+                                    println!("TODO: CreateRandomSampler");
+                                } else if ro.sampler_name == String::from("stratified") {
+                                    println!("TODO: CreateStratifiedSampler");
+                                } else {
+                                    panic!("Sampler \"{}\" unknown.", ro.sampler_name);
+                                }
+                                // MakeIntegrator
+                                if let Some(sampler) = some_sampler {
+                                    if ro.integrator_name == String::from("whitted") {
+                                        println!("TODO: CreateWhittedIntegrator");
+                                    } else if ro.integrator_name == String::from("directlighting") {
+                                        // CreateDirectLightingIntegrator
+                                        let max_depth: i32 =
+                                            ro.integrator_params
+                                                .find_one_int(String::from("maxdepth"), 5);
+                                        let st: String = ro.integrator_params
+                                            .find_one_string(String::from("strategy"),
+                                                             String::from("all"));
+                                        let mut strategy: LightStrategy = LightStrategy::UniformSampleAll;
+                                        if st == String::from("one") {
+                                            strategy = LightStrategy::UniformSampleOne;
+                                        } else if st == String::from("all") {
+                                            strategy = LightStrategy::UniformSampleAll;
+                                        } else {
+                                            panic!("Strategy \"{}\" for direct lighting unknown.",
+                                                   st);
+                                        }
+                                        // TODO: const int *pb = params.FindInt("pixelbounds", &np);
+                                        let pixel_bounds: Bounds2i = Bounds2i {
+                                            p_min: Point2i { x: 0, y: 0 },
+                                            p_max: Point2i { x: xres, y: yres },
+                                        };
+                                        let mut integrator: DirectLightingIntegrator =
+                                            DirectLightingIntegrator::new(strategy,
+                                                                          max_depth as i64,
+                                                                          pixel_bounds);
+                                    } else if ro.integrator_name == String::from("path") {
+                                        println!("TODO: CreatePathIntegrator");
+                                    } else if ro.integrator_name == String::from("volpath") {
+                                        println!("TODO: CreateVolPathIntegrator");
+                                    } else if ro.integrator_name == String::from("bdpt") {
+                                        println!("TODO: CreateBDPTIntegrator");
+                                    } else if ro.integrator_name == String::from("mlt") {
+                                        println!("TODO: CreateMLTIntegrator");
+                                    } else if ro.integrator_name ==
+                                              String::from("ambientocclusion") {
+                                        println!("TODO: CreateAOIntegrator");
+                                    } else if ro.integrator_name == String::from("sppm") {
+                                        println!("TODO: CreateSPPMIntegrator");
+                                    } else {
+                                        panic!("Integrator \"{}\" unknown.", ro.integrator_name);
+                                    }
+                                    // MakeScene
+                                } else {
+                                    panic!("Unable to create sampler.");
+                                }
                             } else {
-                                panic!("Sampler \"{}\" unknown.", ro.sampler_name);
+                                panic!("Unable to create camera.");
                             }
-                            // MakeIntegrator
-                            // MakeScene
                         } else {
                             panic!("Unable to create film.");
                         }
