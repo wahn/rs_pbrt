@@ -1086,9 +1086,7 @@ impl_rdp! {
                                             println!("TODO: CreateCurveShape");
                                         } else if param_set.name == String::from("trianglemesh") {
                                             let vi = param_set.find_int(String::from("indices"));
-                                            println!("vi = {:?}", vi);
                                             let p = param_set.find_point3f(String::from("P"));
-                                            println!("p = {:?}", p);
                                             // try "uv" with Point2f
                                             let mut uvs = param_set.find_point2f(String::from("uv"));
                                             if uvs.is_empty() {
@@ -1111,7 +1109,6 @@ impl_rdp! {
                                                     }
                                                 }
                                             }
-                                            println!("uvs = {:?}", uvs);
                                             if !uvs.is_empty() {
                                                 // TODO: if (nuvi < npi) {...} else if (nuvi > npi) ...
                                                 assert!(uvs.len() == p.len());
@@ -1591,7 +1588,11 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 assert_ne!(graphics_state.material, String::new());
                 assert_ne!(graphics_state.material, String::from("none"));
                 if graphics_state.material == String::from("matte") {
-                    println!("TODO: CreateMatteMaterial");
+                    let kd = mp.get_spectrum_texture(String::from("Kd"),
+                                                     Spectrum::new(0.5 as Float));
+                    // TODO: std::shared_ptr<Texture<Float>> sigma = mp.GetFloatTexture("sigma", 0.f);
+                    let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
+                    return matte;
                 } else if graphics_state.material == String::from("plastic") {
                     println!("TODO: CreatePlasticMaterial");
                 } else if graphics_state.material == String::from("translucent") {

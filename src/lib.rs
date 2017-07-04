@@ -9474,8 +9474,8 @@ impl ParamSet {
 
 #[derive(Default)]
 pub struct TextureParams {
-    pub float_textures: HashMap<String, Arc<Texture<Float>>>,
-    pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum>>>,
+    pub float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
+    pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
     pub geom_params: ParamSet,
     pub material_params: ParamSet,
 }
@@ -9490,6 +9490,7 @@ impl TextureParams {
         if name != String::new() {
             match self.spectrum_textures.get(name.as_str()) {
                 Some(spectrum_texture) => {
+                    return spectrum_texture.clone();
                 },
                 None => {
                     panic!("Couldn't find spectrum texture named \"{}\" for parameter \"{}\"",
@@ -9581,10 +9582,12 @@ impl TextureParams {
 }
 
 pub fn lookup_one<T>(vec: &mut Vec<ParamSetItem<T>>, name: String, d: T) -> T
+    where T: Clone
 {
     for v in vec {
         if v.name == name && v.n_values == 1_usize {
             v.looked_up = true;
+            return v.values[0].clone();
         }
     }
     d
@@ -9671,8 +9674,8 @@ impl RenderOptions {
 #[derive(Default)]
 pub struct GraphicsState {
     // std::string currentInsideMedium, currentOutsideMedium;
-    pub float_textures: HashMap<String, Arc<Texture<Float>>>,
-    pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum>>>,
+    pub float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
+    pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
     pub material_params: ParamSet,
     pub material: String,
     // std::map<std::string, std::shared_ptr<Material>> namedMaterials;
