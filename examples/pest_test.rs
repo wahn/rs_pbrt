@@ -12,8 +12,8 @@ use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera,
            LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
            PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions, Sampler,
            SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod, Texture, TextureMapping2D,
-           TextureParams, Transform, TransformSet, UVMapping2D, Vector2f, Vector3f,
-           ZeroTwoSequenceSampler};
+           TextureParams, Transform, TransformSet, Triangle, TriangleMesh, UVMapping2D, Vector2f,
+           Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -1066,7 +1066,12 @@ impl_rdp! {
                                                      radius,
                                                      z_min,
                                                      z_max,
-                                                     phi_max)
+                                                     phi_max);
+                                            let mtl: Arc<Material + Send + Sync> = create_material();
+                                            let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
+                                            if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                ro.primitives.push(geo_prim.clone());
+                                            }
                                         } else if param_set.name == String::from("cylinder") {
                                             println!("TODO: CreateCylinderShape");
                                         } else if param_set.name == String::from("disk") {
@@ -1080,7 +1085,89 @@ impl_rdp! {
                                         } else if param_set.name == String::from("curve") {
                                             println!("TODO: CreateCurveShape");
                                         } else if param_set.name == String::from("trianglemesh") {
-                                            println!("TODO: CreateTriangleMeshShape");
+                                            let vi = param_set.find_int(String::from("indices"));
+                                            println!("vi = {:?}", vi);
+                                            let p = param_set.find_point3f(String::from("P"));
+                                            println!("p = {:?}", p);
+                                            // try "uv" with Point2f
+                                            let mut uvs = param_set.find_point2f(String::from("uv"));
+                                            if uvs.is_empty() {
+                                                // try "st" with Point2f
+                                                uvs = param_set.find_point2f(String::from("st"));
+                                            }
+                                            if uvs.is_empty() {
+                                                // try "uv" with float
+                                                let mut fuv = param_set.find_float(String::from("uv"));
+                                                if fuv.is_empty() {
+                                                    // try "st" with float
+                                                    fuv = param_set.find_float(String::from("st"));
+                                                }
+                                                if !fuv.is_empty() {
+                                                    // found some float UVs
+                                                    for i in 0..(fuv.len() / 2) {
+                                                        uvs.push(Point2f { x: fuv[2 * i],
+                                                                           y:  fuv[2 * i + 1],
+                                                        });
+                                                    }
+                                                }
+                                            }
+                                            println!("uvs = {:?}", uvs);
+                                            if !uvs.is_empty() {
+                                                // TODO: if (nuvi < npi) {...} else if (nuvi > npi) ...
+                                                assert!(uvs.len() == p.len());
+                                            }
+                                            assert!(vi.len() > 0_usize);
+                                            assert!(p.len() > 0_usize);
+                                            let s = param_set.find_vector3f(String::from("S"));
+                                            if !s.is_empty() {
+                                                assert!(s.len() == p.len());
+                                            }
+                                            let n = param_set.find_vector3f(String::from("N"));
+                                            if !n.is_empty() {
+                                                assert!(n.len() == p.len());
+                                            }
+                                            for i in 0..vi.len() {
+                                                if vi[i] as usize >= p.len() {
+                                                    panic!("trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)", vi[i], p.len());
+                                                }
+                                            }
+                                            // TODO: alpha
+                                            // CreateTriangleMesh
+                                            // transform mesh vertices to world space
+                                            let mut p_ws: Vec<Point3f> = Vec::new();
+                                            let n_vertices: usize = p.len();
+                                            for i in 0..n_vertices {
+                                                p_ws.push(obj_to_world.transform_point(p[i]));
+                                            }
+                                            // vertex indices are expected as usize, not i32
+                                            let mut vertex_indices: Vec<usize> = Vec::new();
+                                            for i in 0..vi.len() {
+                                                vertex_indices.push(vi[i] as usize);
+                                            }
+                                            let mesh =
+                                                Arc::new(TriangleMesh::new(obj_to_world,
+                                                                           world_to_obj,
+                                                                           false, // reverse_orientation
+                                                                           false, // transform_swaps_handedness
+                                                                           vi.len() / 3, // n_triangles
+                                                                           vertex_indices,
+                                                                           n_vertices,
+                                                                           p_ws, // in world space
+                                                                           s,
+                                                                           n,
+                                                                           uvs));
+                                            if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                let mtl: Arc<Material + Send + Sync> = create_material();
+                                                for id in 0..mesh.n_triangles {
+                                                    let triangle = Arc::new(Triangle::new(mesh.object_to_world,
+                                                                                          mesh.world_to_object,
+                                                                                          mesh.transform_swaps_handedness,
+                                                                                          mesh.clone(),
+                                                                                          id));
+                                                    let geo_prim = Arc::new(GeometricPrimitive::new(triangle, mtl.clone()));
+                                                    ro.primitives.push(geo_prim.clone());
+                                                }
+                                            }
                                         } else if param_set.name == String::from("plymesh") {
                                             println!("TODO: CreatePLYMesh");
                                         } else if param_set.name == String::from("heightfield") {

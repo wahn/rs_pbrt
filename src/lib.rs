@@ -9110,11 +9110,11 @@ pub struct ParamSet {
     pub bools: Vec<ParamSetItem<bool>>,
     pub ints: Vec<ParamSetItem<i32>>,
     pub floats: Vec<ParamSetItem<Float>>,
-    point2fs: Vec<ParamSetItem<Point2f>>,
-    vector2fs: Vec<ParamSetItem<Vector2f>>,
+    pub point2fs: Vec<ParamSetItem<Point2f>>,
+    pub vector2fs: Vec<ParamSetItem<Vector2f>>,
     pub point3fs: Vec<ParamSetItem<Point3f>>,
     pub vector3fs: Vec<ParamSetItem<Vector3f>>,
-    normals: Vec<ParamSetItem<Normal3f>>,
+    pub normals: Vec<ParamSetItem<Normal3f>>,
     pub spectra: Vec<ParamSetItem<Spectrum>>,
     pub strings: Vec<ParamSetItem<String>>,
     pub textures: Vec<ParamSetItem<String>>,
@@ -9391,6 +9391,84 @@ impl ParamSet {
     pub fn find_texture(&mut self, name: String) -> String {
         let d: String = String::new();
         lookup_one(&mut self.textures, name, d)
+    }
+    pub fn find_int(&mut self, name: String) -> Vec<i32> {
+        let mut values: Vec<i32> = Vec::new();
+        for v in &self.ints {
+            if v.name == name {
+                let n_values = v.n_values;
+                // v.looked_up = true;
+                for i in 0..n_values {
+                    values.push(v.values[i]);
+                }
+            }
+        }
+        values
+    }
+    pub fn find_float(&mut self, name: String) -> Vec<Float> {
+        let mut values: Vec<Float> = Vec::new();
+        for v in &self.floats {
+            if v.name == name {
+                let n_values = v.n_values;
+                // v.looked_up = true;
+                for i in 0..n_values {
+                    values.push(v.values[i]);
+                }
+            }
+        }
+        values
+    }
+    pub fn find_point2f(&mut self, name: String) -> Vec<Point2f> {
+        let mut values: Vec<Point2f> = Vec::new();
+        for v in &self.point2fs {
+            if v.name == name {
+                let n_values = v.n_values;
+                // v.looked_up = true;
+                for i in 0..n_values {
+                    values.push(v.values[i]);
+                }
+            }
+        }
+        values
+    }
+    pub fn find_vector2f(&mut self, name: String) -> Vec<Vector2f> {
+        let mut values: Vec<Vector2f> = Vec::new();
+        for v in &self.vector2fs {
+            if v.name == name {
+                let n_values = v.n_values;
+                // v.looked_up = true;
+                for i in 0..n_values {
+                    values.push(v.values[i]);
+                }
+            }
+        }
+        values
+    }
+    pub fn find_point3f(&mut self, name: String) -> Vec<Point3f> {
+        let mut values: Vec<Point3f> = Vec::new();
+        for v in &self.point3fs {
+            if v.name == name {
+                let n_values = v.n_values;
+                // v.looked_up = true;
+                for i in 0..n_values {
+                    values.push(v.values[i]);
+                }
+            }
+        }
+        values
+    }
+    pub fn find_vector3f(&mut self, name: String) -> Vec<Vector3f> {
+        let mut values: Vec<Vector3f> = Vec::new();
+        for v in &self.vector3fs {
+            if v.name == name {
+                let n_values = v.n_values;
+                // v.looked_up = true;
+                for i in 0..n_values {
+                    values.push(v.values[i]);
+                }
+            }
+        }
+        values
     }
 }
 
