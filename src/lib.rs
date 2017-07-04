@@ -9499,7 +9499,7 @@ impl TextureParams {
         }
         let mut val: Spectrum = self.material_params.find_one_spectrum(n.clone(), def);
         val = self.geom_params.find_one_spectrum(n.clone(), def);
-        Arc::new(ConstantTexture { value: Spectrum::new(0.0) })
+        Arc::new(ConstantTexture { value: val })
     }
     pub fn find_float(&mut self, name: String, d: Float) -> Float {
         self.geom_params.find_one_float(name.clone(),
