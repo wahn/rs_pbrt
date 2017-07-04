@@ -313,9 +313,11 @@ fn main() {
     // add triangles created above (not meshes)
     let kr = Arc::new(ConstantTexture::new(Spectrum::new(0.9)));
     let mirror = Arc::new(MirrorMaterial::new(kr));
+    let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+    let kt = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
     let glass = Arc::new(GlassMaterial {
-                             kr: Spectrum::new(1.0),
-                             kt: Spectrum::new(1.0),
+                             kr: kr,
+                             kt: kt,
                              u_roughness: 0.0 as Float,
                              v_roughness: 0.0 as Float,
                              index: 0.0 as Float,

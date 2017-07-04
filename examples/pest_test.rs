@@ -8,8 +8,8 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera,
            Checkerboard2DTexture, ConstantTexture, DirectLightingIntegrator, DistantLight, Film,
-           Filter, Float, GeometricPrimitive, GraphicsState, ImageTexture, ImageWrap,
-           LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
+           Filter, Float, GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture,
+           ImageWrap, LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
            PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions, Sampler,
            SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod, Texture, TextureMapping2D,
            TextureParams, Transform, TransformSet, Triangle, TriangleMesh, UVMapping2D, Vector2f,
@@ -1597,7 +1597,34 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 } else if graphics_state.material == String::from("translucent") {
                     println!("TODO: CreateTranslucentMaterial");
                 } else if graphics_state.material == String::from("glass") {
-                    println!("TODO: CreateGlassMaterial");
+                    let kr = mp.get_spectrum_texture(String::from("Kr"),
+                                                     Spectrum::new(1.0 as Float));
+                    let kt = mp.get_spectrum_texture(String::from("Kt"),
+                                                     Spectrum::new(1.0 as Float));
+                    // let some_eta = mp.get_float_texture_or_null(String::from("eta"));
+                    // if let Some(eta) = some_eta {
+                    //     println!("some eta");
+                    // } else {
+                    //     let eta = mp.get_float_texture(String::from("index"), 1.5);
+                    // }
+                    // std::shared_ptr<Texture<Float>> roughu =
+                    //     mp.GetFloatTexture("uroughness", 0.f);
+                    // std::shared_ptr<Texture<Float>> roughv =
+                    //     mp.GetFloatTexture("vroughness", 0.f);
+                    // std::shared_ptr<Texture<Float>> bumpMap =
+                    //     mp.GetFloatTextureOrNull("bumpmap");
+                    // bool remapRoughness = mp.FindBool("remaproughness", true);
+                    // return new GlassMaterial(Kr, Kt, roughu, roughv, eta, bumpMap,
+                    //                          remapRoughness);
+                    let glass = Arc::new(GlassMaterial {
+                                             kr: kr,
+                                             kt: kt,
+                                             u_roughness: 0.0 as Float,
+                                             v_roughness: 0.0 as Float,
+                                             index: 0.0 as Float,
+                                             remap_roughness: true,
+                                         });
+                    return glass;
                 } else if graphics_state.material == String::from("mirror") {
                     let kr = mp.get_spectrum_texture(String::from("Kr"),
                                                      Spectrum::new(0.9 as Float));

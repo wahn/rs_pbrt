@@ -7918,8 +7918,8 @@ impl Material for PlasticMaterial {
 /// Perfect or glossy specular reflection and transmission, weighted
 /// by Fresnel terms for accurate angular-dependent variation.
 pub struct GlassMaterial {
-    pub kr: Spectrum,
-    pub kt: Spectrum,
+    pub kr: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
+    pub kt: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
     pub u_roughness: Float,
     pub v_roughness: Float,
     pub index: Float, // TODO: bump_map
@@ -9500,6 +9500,53 @@ impl TextureParams {
         let mut val: Spectrum = self.material_params.find_one_spectrum(n.clone(), def);
         val = self.geom_params.find_one_spectrum(n.clone(), def);
         Arc::new(ConstantTexture { value: val })
+    }
+    pub fn get_float_texture(&mut self, n: String, def: Float) -> Arc<Texture<Float> + Send + Sync>
+    {
+        let mut name: String = self.geom_params.find_texture(n.clone());
+        if name == String::new() {
+            name = self.material_params.find_texture(n.clone());
+        }
+        if name != String::new() {
+            match self.float_textures.get(name.as_str()) {
+                Some(float_texture) => {
+                },
+                None => {
+                    panic!("Couldn't find float texture named \"{}\" for parameter \"{}\"",
+                           name, n);
+                },
+            }
+        }
+        let mut val: Float = self.material_params.find_one_float(n.clone(), def);
+        val = self.geom_params.find_one_float(n.clone(), def);
+        Arc::new(ConstantTexture { value: val })
+    }
+    pub fn get_float_texture_or_null(&mut self, n: String) -> Option<Arc<Texture<Float> + Send + Sync>>
+    {
+        let mut name: String = self.geom_params.find_texture(n.clone());
+        if name == String::new() {
+            name = self.material_params.find_texture(n.clone());
+        }
+        if name != String::new() {
+            match self.float_textures.get(name.as_str()) {
+                Some(float_texture) => {
+                },
+                None => {
+                    println!("Couldn't find float texture named \"{}\" for parameter \"{}\"",
+                             name, n);
+                    return None;
+                },
+            }
+        }
+        let mut val: Vec<Float> = self.material_params.find_float(n.clone());
+        if val.len() == 0_usize {
+            val = self.geom_params.find_float(n.clone());
+        }
+        if val.len() == 0_usize {
+            None
+        } else {
+            Some(Arc::new(ConstantTexture { value: val[0] }))
+        }
     }
     pub fn find_float(&mut self, name: String, d: Float) -> Float {
         self.geom_params.find_one_float(name.clone(),
