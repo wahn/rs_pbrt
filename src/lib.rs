@@ -9481,8 +9481,8 @@ pub struct RenderOptions {
     pub film_params: ParamSet,
     pub sampler_name: String, // "halton";
     pub sampler_params: ParamSet,
-    // pub accelerator_name: Option<String>, // "bvh";
-    // pub accelerator_params: ParamSet,
+    pub accelerator_name: String, // "bvh";
+    pub accelerator_params: ParamSet,
     pub integrator_name: String, // "path";
     pub integrator_params: ParamSet,
     pub camera_name: String, // "perspective";
@@ -9507,6 +9507,8 @@ impl Default for RenderOptions {
             film_params: ParamSet::default(),
             sampler_name: String::from("halton"),
             sampler_params: ParamSet::default(),
+            accelerator_name: String::from("bvh"),
+            accelerator_params: ParamSet::default(),
             integrator_name: String::from("image"),
             integrator_params: ParamSet::default(),
             camera_name: String::from("perspective"),

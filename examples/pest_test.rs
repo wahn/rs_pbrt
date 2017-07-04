@@ -6,13 +6,14 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, Camera, Checkerboard2DTexture,
-           ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Filter, Float,
-           GeometricPrimitive, GraphicsState, ImageTexture, ImageWrap, LightStrategy, Material,
-           MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet, PerspectiveCamera, PlanarMapping2D,
-           Point2f, Point2i, Point3f, RenderOptions, Sampler, Spectrum, Sphere, Texture,
-           TextureMapping2D, TextureParams, Transform, TransformSet, UVMapping2D, Vector2f,
-           Vector3f, ZeroTwoSequenceSampler};
+use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera,
+           Checkerboard2DTexture, ConstantTexture, DirectLightingIntegrator, DistantLight, Film,
+           Filter, Float, GeometricPrimitive, GraphicsState, ImageTexture, ImageWrap,
+           LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
+           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions, Sampler,
+           SamplerIntegrator, Spectrum, Sphere, SplitMethod, Texture, TextureMapping2D,
+           TextureParams, Transform, TransformSet, UVMapping2D, Vector2f, Vector3f,
+           ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -1705,6 +1706,7 @@ fn world_end() {
                                 }
                                 // MakeIntegrator
                                 if let Some(sampler) = some_sampler {
+                                    let mut some_integrator: Option<Arc<SamplerIntegrator + Sync + Send>> = None;
                                     if ro.integrator_name == String::from("whitted") {
                                         println!("TODO: CreateWhittedIntegrator");
                                     } else if ro.integrator_name == String::from("directlighting") {
@@ -1729,10 +1731,12 @@ fn world_end() {
                                             p_min: Point2i { x: 0, y: 0 },
                                             p_max: Point2i { x: xres, y: yres },
                                         };
-                                        let mut integrator: DirectLightingIntegrator =
-                                            DirectLightingIntegrator::new(strategy,
-                                                                          max_depth as i64,
-                                                                          pixel_bounds);
+                                        let integrator =
+                                            Arc::new(DirectLightingIntegrator::new(strategy,
+                                                                                   max_depth as
+                                                                                   i64,
+                                                                                   pixel_bounds));
+                                        some_integrator = Some(integrator);
                                     } else if ro.integrator_name == String::from("path") {
                                         println!("TODO: CreatePathIntegrator");
                                     } else if ro.integrator_name == String::from("volpath") {
@@ -1749,7 +1753,49 @@ fn world_end() {
                                     } else {
                                         panic!("Integrator \"{}\" unknown.", ro.integrator_name);
                                     }
-                                    // MakeScene
+                                    if let Some(integrator) = some_integrator {
+                                        // MakeIntegrator
+                                        // TODO: if (renderOptions->haveScatteringMedia && ...)
+                                        if ro.lights.is_empty() {
+                                            // warn if no light sources are defined
+                                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                                        }
+                                        // MakeAccelerator
+                                        if ro.accelerator_name == String::from("bvh") {
+                                            //  CreateBVHAccelerator
+                                            let split_method_name: String =
+                                                ro.accelerator_params.find_one_string(String::from("splitmethod"),
+                                                                                      String::from("sah"));
+                                            let mut split_method: SplitMethod = SplitMethod::SAH;
+                                            if split_method_name == String::from("sah") {
+                                                split_method = SplitMethod::SAH;
+                                            } else if split_method_name == String::from("hlbvh") {
+                                                split_method = SplitMethod::HLBVH;
+                                            } else if split_method_name == String::from("middle") {
+                                                split_method = SplitMethod::Middle;
+                                            } else if split_method_name == String::from("equal") {
+                                                split_method = SplitMethod::EqualCounts;
+                                            } else {
+                                                println!("WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                                                         split_method_name);
+                                                split_method = SplitMethod::SAH;
+                                            }
+                                            let max_prims_in_node: i32 =
+                                                ro.accelerator_params.find_one_int(String::from("maxnodeprims"), 4);
+                                            let accelerator =
+                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
+                                                                       max_prims_in_node as usize,
+                                                                       split_method));
+                                        } else if ro.accelerator_name == String::from("kdtree") {
+                                            println!("TODO: CreateKdTreeAccelerator");
+                                        } else {
+                                            panic!("Accelerator \"{}\" unknown.",
+                                                   ro.accelerator_name);
+                                        }
+                                        // MakeScene
+                                    } else {
+                                        panic!("Unable to create integrator.");
+                                    }
                                 } else {
                                     panic!("Unable to create sampler.");
                                 }
