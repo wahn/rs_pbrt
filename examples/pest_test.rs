@@ -381,7 +381,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -419,7 +419,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -447,7 +447,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -475,7 +475,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -499,7 +499,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -523,7 +523,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -564,7 +564,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -585,7 +585,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -614,7 +614,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -645,7 +645,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -659,70 +659,7 @@ impl_rdp! {
                             optional_parameters.rule == Rule::last_statement
                         {
                             println!("Shape \"{}\" ", name);
-                            // pbrtShape (api.cpp:1153)
-                            // TODO: if (!curTransform.IsAnimated()) { ... }
-                            // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
-                            let obj_to_world: Transform = Transform {
-                                m: CUR_TRANSFORM.t[0].m,
-                                m_inv: CUR_TRANSFORM.t[0].m_inv,
-                            };
-                            let world_to_obj: Transform =Transform {
-                                m: CUR_TRANSFORM.t[0].m_inv,
-                                m_inv: CUR_TRANSFORM.t[0].m,
-                            };
-                            // MakeShapes (api.cpp:296)
-                            if name == String::from("sphere") {
-                                // CreateSphereShape
-                                let radius: Float = 1.0; // default
-                                let z_min: Float = -radius; // default
-                                let z_max: Float = radius; // default
-                                let phi_max: Float = 360.0; // default
-                                let sphere = Arc::new(Sphere::new(obj_to_world,
-                                                                  world_to_obj,
-                                                                  false,
-                                                                  false,
-                                                                  radius,
-                                                                  z_min,
-                                                                  z_max,
-                                                                  phi_max));
-                                print!("Sphere {{ object_to_world: {:?}, world_to_object: {:?}, ",
-                                       obj_to_world,
-                                       world_to_obj);
-                                println!("radius: {}, z_min: {}, z_max: {}, phi_max: {} }}",
-                                         radius,
-                                         z_min,
-                                         z_max,
-                                         phi_max);
-                                let mtl: Arc<Material + Send + Sync> = create_material();
-                                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
-                                if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    ro.primitives.push(geo_prim.clone());
-                                }
-                            } else if name == String::from("cylinder") {
-                                println!("TODO: CreateCylinderShape");
-                            } else if name == String::from("disk") {
-                                println!("TODO: CreateDiskShape");
-                            } else if name == String::from("cone") {
-                                println!("TODO: CreateConeShape");
-                            } else if name == String::from("paraboloid") {
-                                println!("TODO: CreateParaboloidShape");
-                            } else if name == String::from("hyperboloid") {
-                                    println!("TODO: CreateHyperboloidShape");
-                            } else if name == String::from("curve") {
-                                println!("TODO: CreateCurveShape");
-                            } else if name == String::from("trianglemesh") {
-                                println!("TODO: CreateTriangleMeshShape");
-                            } else if name == String::from("plymesh") {
-                                println!("TODO: CreatePLYMesh");
-                            } else if name == String::from("heightfield") {
-                                println!("TODO: CreateHeightfield");
-                            } else if name == String::from("loopsubdiv") {
-                                println!("TODO: CreateLoopSubdiv");
-                            } else if name == String::from("nurbs") {
-                                println!("TODO: CreateNURBS");
-                            } else {
-                                panic!("Shape \"{}\" unknown.", name);
-                            }
+                            pbrt_shape(&param_set);
                         }
                         param_set.reset(String::from("Shape"),
                                         String::from(name),
@@ -735,7 +672,7 @@ impl_rdp! {
                 } else if optional_parameters.rule == Rule::statement {
                     self._statement();
                 } else if optional_parameters.rule == Rule::last_statement {
-                    world_end();
+                    pbrt_world_end();
                 } else {
                     println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
                 }
@@ -1170,153 +1107,7 @@ impl_rdp! {
                             } else if param_set.key_word == String::from("Shape") {
                                 println!("Shape \"{}\" ", param_set.name);
                                 print_params(&param_set);
-                                // pbrtShape (api.cpp:1153)
-                                // TODO: if (!curTransform.IsAnimated()) { ... }
-                                // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
-                                let obj_to_world: Transform = Transform {
-                                    m: CUR_TRANSFORM.t[0].m,
-                                    m_inv: CUR_TRANSFORM.t[0].m_inv,
-                                };
-                                let world_to_obj: Transform =Transform {
-                                    m: CUR_TRANSFORM.t[0].m_inv,
-                                    m_inv: CUR_TRANSFORM.t[0].m,
-                                };
-                                // MakeShapes (api.cpp:296)
-                                if param_set.name == String::from("sphere") {
-                                    // CreateSphereShape
-                                    let radius: Float = param_set.find_one_float(String::from("radius"),
-                                                                                 1.0 as Float);
-                                    let z_min: Float = param_set.find_one_float(String::from("zmin"),
-                                                                                -radius);
-                                    let z_max: Float = param_set.find_one_float(String::from("zmin"),
-                                                                                radius);
-                                    let phi_max: Float = param_set.find_one_float(String::from("phimax"),
-                                                                                  360.0 as Float);
-                                    let sphere = Arc::new(Sphere::new(obj_to_world,
-                                                                      world_to_obj,
-                                                                      false,
-                                                                      false,
-                                                                      radius,
-                                                                      z_min,
-                                                                      z_max,
-                                                                      phi_max));
-                                    print!("Sphere {{ object_to_world: {:?}, world_to_object: {:?}, ",
-                                           obj_to_world,
-                                           world_to_obj);
-                                    println!("radius: {}, z_min: {}, z_max: {}, phi_max: {} }}",
-                                             radius,
-                                             z_min,
-                                             z_max,
-                                             phi_max);
-                                    let mtl: Arc<Material + Send + Sync> = create_material();
-                                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
-                                    if let Some(ref mut ro) = RENDER_OPTIONS {
-                                        ro.primitives.push(geo_prim.clone());
-                                    }
-                                } else if param_set.name == String::from("cylinder") {
-                                    println!("TODO: CreateCylinderShape");
-                                } else if param_set.name == String::from("disk") {
-                                    println!("TODO: CreateDiskShape");
-                                } else if param_set.name == String::from("cone") {
-                                    println!("TODO: CreateConeShape");
-                                } else if param_set.name == String::from("paraboloid") {
-                                    println!("TODO: CreateParaboloidShape");
-                                } else if param_set.name == String::from("hyperboloid") {
-                                    println!("TODO: CreateHyperboloidShape");
-                                } else if param_set.name == String::from("curve") {
-                                    println!("TODO: CreateCurveShape");
-                                } else if param_set.name == String::from("trianglemesh") {
-                                    let vi = param_set.find_int(String::from("indices"));
-                                    let p = param_set.find_point3f(String::from("P"));
-                                    // try "uv" with Point2f
-                                    let mut uvs = param_set.find_point2f(String::from("uv"));
-                                    if uvs.is_empty() {
-                                        // try "st" with Point2f
-                                        uvs = param_set.find_point2f(String::from("st"));
-                                    }
-                                    if uvs.is_empty() {
-                                        // try "uv" with float
-                                        let mut fuv = param_set.find_float(String::from("uv"));
-                                        if fuv.is_empty() {
-                                            // try "st" with float
-                                            fuv = param_set.find_float(String::from("st"));
-                                        }
-                                        if !fuv.is_empty() {
-                                            // found some float UVs
-                                            for i in 0..(fuv.len() / 2) {
-                                                uvs.push(Point2f { x: fuv[2 * i],
-                                                                   y:  fuv[2 * i + 1],
-                                                });
-                                            }
-                                        }
-                                    }
-                                    if !uvs.is_empty() {
-                                        // TODO: if (nuvi < npi) {...} else if (nuvi > npi) ...
-                                        assert!(uvs.len() == p.len());
-                                    }
-                                    assert!(vi.len() > 0_usize);
-                                    assert!(p.len() > 0_usize);
-                                    let s = param_set.find_vector3f(String::from("S"));
-                                    if !s.is_empty() {
-                                        assert!(s.len() == p.len());
-                                    }
-                                    let n = param_set.find_vector3f(String::from("N"));
-                                    if !n.is_empty() {
-                                        assert!(n.len() == p.len());
-                                    }
-                                    for i in 0..vi.len() {
-                                        if vi[i] as usize >= p.len() {
-                                            panic!("trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)", vi[i], p.len());
-                                        }
-                                    }
-                                    // TODO: alpha
-                                    // CreateTriangleMesh
-                                    // transform mesh vertices to world space
-                                    let mut p_ws: Vec<Point3f> = Vec::new();
-                                    let n_vertices: usize = p.len();
-                                    for i in 0..n_vertices {
-                                        p_ws.push(obj_to_world.transform_point(p[i]));
-                                    }
-                                    // vertex indices are expected as usize, not i32
-                                    let mut vertex_indices: Vec<usize> = Vec::new();
-                                    for i in 0..vi.len() {
-                                        vertex_indices.push(vi[i] as usize);
-                                    }
-                                    let mesh =
-                                        Arc::new(TriangleMesh::new(obj_to_world,
-                                                                   world_to_obj,
-                                                                   false, // reverse_orientation
-                                                                   false, // transform_swaps_handedness
-                                                                   vi.len() / 3, // n_triangles
-                                                                   vertex_indices,
-                                                                   n_vertices,
-                                                                   p_ws, // in world space
-                                                                   s,
-                                                                   n,
-                                                                   uvs));
-                                    if let Some(ref mut ro) = RENDER_OPTIONS {
-                                        let mtl: Arc<Material + Send + Sync> = create_material();
-                                        for id in 0..mesh.n_triangles {
-                                            let triangle = Arc::new(Triangle::new(mesh.object_to_world,
-                                                                                  mesh.world_to_object,
-                                                                                  mesh.transform_swaps_handedness,
-                                                                                  mesh.clone(),
-                                                                                  id));
-                                            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, mtl.clone()));
-                                            ro.primitives.push(geo_prim.clone());
-                                        }
-                                    }
-                                } else if param_set.name == String::from("plymesh") {
-                                    println!("TODO: CreatePLYMesh");
-                                } else if param_set.name == String::from("heightfield") {
-                                    println!("TODO: CreateHeightfield");
-                                } else if param_set.name == String::from("loopsubdiv") {
-                                    println!("TODO: CreateLoopSubdiv");
-                                } else if param_set.name == String::from("nurbs") {
-                                    println!("TODO: CreateNURBS");
-                                } else {
-                                    panic!("Shape \"{}\" unknown.", param_set.name);
-                                }
+                                pbrt_shape(&param_set);
                             } else {
                                 println!("PARAM_SET: {}", param_set.key_word);
                             }
@@ -1327,7 +1118,7 @@ impl_rdp! {
                         }
                     }
                     if optional_parameters.rule == Rule::last_statement {
-                        world_end();
+                        pbrt_world_end();
                     } else { // statement
                         self._statement();
                     }
@@ -1856,7 +1647,159 @@ fn create_material() -> Arc<Material + Send + Sync> {
     Arc::new(MatteMaterial::new(kd, 0.0 as Float))
 }
 
-fn world_end() {
+fn pbrt_shape(param_set: &ParamSet) {
+    // pbrtShape (api.cpp:1153)
+    // TODO: if (!curTransform.IsAnimated()) { ... }
+    // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
+    unsafe {
+        let obj_to_world: Transform = Transform {
+            m: CUR_TRANSFORM.t[0].m,
+            m_inv: CUR_TRANSFORM.t[0].m_inv,
+        };
+        let world_to_obj: Transform =Transform {
+            m: CUR_TRANSFORM.t[0].m_inv,
+            m_inv: CUR_TRANSFORM.t[0].m,
+        };
+        // MakeShapes (api.cpp:296)
+        if param_set.name == String::from("sphere") {
+            // CreateSphereShape
+            let radius: Float = param_set.find_one_float(String::from("radius"),
+                                                         1.0 as Float);
+            let z_min: Float = param_set.find_one_float(String::from("zmin"),
+                                                        -radius);
+            let z_max: Float = param_set.find_one_float(String::from("zmin"),
+                                                        radius);
+            let phi_max: Float = param_set.find_one_float(String::from("phimax"),
+                                                          360.0 as Float);
+            let sphere = Arc::new(Sphere::new(obj_to_world,
+                                              world_to_obj,
+                                              false,
+                                              false,
+                                              radius,
+                                              z_min,
+                                              z_max,
+                                              phi_max));
+            print!("Sphere {{ object_to_world: {:?}, world_to_object: {:?}, ",
+                   obj_to_world,
+                   world_to_obj);
+            println!("radius: {}, z_min: {}, z_max: {}, phi_max: {} }}",
+                     radius,
+                     z_min,
+                     z_max,
+                     phi_max);
+            let mtl: Arc<Material + Send + Sync> = create_material();
+            let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
+            if let Some(ref mut ro) = RENDER_OPTIONS {
+                ro.primitives.push(geo_prim.clone());
+            }
+        } else if param_set.name == String::from("cylinder") {
+            println!("TODO: CreateCylinderShape");
+        } else if param_set.name == String::from("disk") {
+            println!("TODO: CreateDiskShape");
+        } else if param_set.name == String::from("cone") {
+            println!("TODO: CreateConeShape");
+        } else if param_set.name == String::from("paraboloid") {
+            println!("TODO: CreateParaboloidShape");
+        } else if param_set.name == String::from("hyperboloid") {
+            println!("TODO: CreateHyperboloidShape");
+        } else if param_set.name == String::from("curve") {
+            println!("TODO: CreateCurveShape");
+        } else if param_set.name == String::from("trianglemesh") {
+            let vi = param_set.find_int(String::from("indices"));
+            let p = param_set.find_point3f(String::from("P"));
+            // try "uv" with Point2f
+            let mut uvs = param_set.find_point2f(String::from("uv"));
+            if uvs.is_empty() {
+                // try "st" with Point2f
+                uvs = param_set.find_point2f(String::from("st"));
+            }
+            if uvs.is_empty() {
+                // try "uv" with float
+                let mut fuv = param_set.find_float(String::from("uv"));
+                if fuv.is_empty() {
+                    // try "st" with float
+                    fuv = param_set.find_float(String::from("st"));
+                }
+                if !fuv.is_empty() {
+                    // found some float UVs
+                    for i in 0..(fuv.len() / 2) {
+                        uvs.push(Point2f { x: fuv[2 * i],
+                                           y:  fuv[2 * i + 1],
+                        });
+                    }
+                }
+            }
+            if !uvs.is_empty() {
+                // TODO: if (nuvi < npi) {...} else if (nuvi > npi) ...
+                assert!(uvs.len() == p.len());
+            }
+            assert!(vi.len() > 0_usize);
+            assert!(p.len() > 0_usize);
+            let s = param_set.find_vector3f(String::from("S"));
+            if !s.is_empty() {
+                assert!(s.len() == p.len());
+            }
+            let n = param_set.find_vector3f(String::from("N"));
+            if !n.is_empty() {
+                assert!(n.len() == p.len());
+            }
+            for i in 0..vi.len() {
+                if vi[i] as usize >= p.len() {
+                    panic!("trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)", vi[i], p.len());
+                }
+            }
+            // TODO: alpha
+            // CreateTriangleMesh
+            // transform mesh vertices to world space
+            let mut p_ws: Vec<Point3f> = Vec::new();
+            let n_vertices: usize = p.len();
+            for i in 0..n_vertices {
+                p_ws.push(obj_to_world.transform_point(p[i]));
+            }
+            // vertex indices are expected as usize, not i32
+            let mut vertex_indices: Vec<usize> = Vec::new();
+            for i in 0..vi.len() {
+                vertex_indices.push(vi[i] as usize);
+            }
+            let mesh =
+                Arc::new(TriangleMesh::new(obj_to_world,
+                                           world_to_obj,
+                                           false, // reverse_orientation
+                                           false, // transform_swaps_handedness
+                                           vi.len() / 3, // n_triangles
+                                           vertex_indices,
+                                           n_vertices,
+                                           p_ws, // in world space
+                                           s,
+                                           n,
+                                           uvs));
+            if let Some(ref mut ro) = RENDER_OPTIONS {
+                let mtl: Arc<Material + Send + Sync> = create_material();
+                for id in 0..mesh.n_triangles {
+                    let triangle = Arc::new(Triangle::new(mesh.object_to_world,
+                                                          mesh.world_to_object,
+                                                          mesh.transform_swaps_handedness,
+                                                          mesh.clone(),
+                                                          id));
+                    let geo_prim = Arc::new(GeometricPrimitive::new(triangle, mtl.clone()));
+                    ro.primitives.push(geo_prim.clone());
+                }
+            }
+        } else if param_set.name == String::from("plymesh") {
+            println!("TODO: CreatePLYMesh");
+        } else if param_set.name == String::from("heightfield") {
+            println!("TODO: CreateHeightfield");
+        } else if param_set.name == String::from("loopsubdiv") {
+            println!("TODO: CreateLoopSubdiv");
+        } else if param_set.name == String::from("nurbs") {
+            println!("TODO: CreateNURBS");
+        } else {
+            panic!("Shape \"{}\" unknown.", param_set.name);
+        }
+    }
+}
+
+fn pbrt_world_end() {
     println!("WorldEnd");
     unsafe {
         if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {

@@ -9343,7 +9343,7 @@ impl ParamSet {
             });
         }
     }
-    pub fn find_one_float(&mut self, name: String, d: Float) -> Float {
+    pub fn find_one_float(&self, name: String, d: Float) -> Float {
         for v in &self.floats {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -9352,7 +9352,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_int(&mut self, name: String, d: i32) -> i32 {
+    pub fn find_one_int(&self, name: String, d: i32) -> i32 {
         for v in &self.ints {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -9361,7 +9361,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_bool(&mut self, name: String, d: bool) -> bool {
+    pub fn find_one_bool(&self, name: String, d: bool) -> bool {
         for v in &self.bools {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -9370,7 +9370,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_point3f(&mut self, name: String, d: Point3f) -> Point3f {
+    pub fn find_one_point3f(&self, name: String, d: Point3f) -> Point3f {
         for v in &self.point3fs {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -9379,7 +9379,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_vector3f(&mut self, name: String, d: Vector3f) -> Vector3f {
+    pub fn find_one_vector3f(&self, name: String, d: Vector3f) -> Vector3f {
         for v in &self.vector3fs {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -9388,7 +9388,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_spectrum(&mut self, name: String, d: Spectrum) -> Spectrum {
+    pub fn find_one_spectrum(&self, name: String, d: Spectrum) -> Spectrum {
         for v in &self.spectra {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -9397,7 +9397,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_string(&mut self, name: String, d: String) -> String {
+    pub fn find_one_string(&self, name: String, d: String) -> String {
         for v in &self.strings {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -9406,7 +9406,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_filename(&mut self, name: String, d: String) -> String {
+    pub fn find_one_filename(&self, name: String, d: String) -> String {
         let filename: String = self.find_one_string(name, String::new());
         if filename == String::new() {
             return d;
@@ -9414,11 +9414,11 @@ impl ParamSet {
         // TODO: filename = AbsolutePath(ResolveFilename(filename));
         filename
     }
-    pub fn find_texture(&mut self, name: String) -> String {
+    pub fn find_texture(&self, name: String) -> String {
         let d: String = String::new();
-        lookup_one(&mut self.textures, name, d)
+        lookup_one(&self.textures, name, d)
     }
-    pub fn find_int(&mut self, name: String) -> Vec<i32> {
+    pub fn find_int(&self, name: String) -> Vec<i32> {
         let mut values: Vec<i32> = Vec::new();
         for v in &self.ints {
             if v.name == name {
@@ -9431,7 +9431,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_float(&mut self, name: String) -> Vec<Float> {
+    pub fn find_float(&self, name: String) -> Vec<Float> {
         let mut values: Vec<Float> = Vec::new();
         for v in &self.floats {
             if v.name == name {
@@ -9444,7 +9444,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_point2f(&mut self, name: String) -> Vec<Point2f> {
+    pub fn find_point2f(&self, name: String) -> Vec<Point2f> {
         let mut values: Vec<Point2f> = Vec::new();
         for v in &self.point2fs {
             if v.name == name {
@@ -9457,7 +9457,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_vector2f(&mut self, name: String) -> Vec<Vector2f> {
+    pub fn find_vector2f(&self, name: String) -> Vec<Vector2f> {
         let mut values: Vec<Vector2f> = Vec::new();
         for v in &self.vector2fs {
             if v.name == name {
@@ -9470,7 +9470,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_point3f(&mut self, name: String) -> Vec<Point3f> {
+    pub fn find_point3f(&self, name: String) -> Vec<Point3f> {
         let mut values: Vec<Point3f> = Vec::new();
         for v in &self.point3fs {
             if v.name == name {
@@ -9483,7 +9483,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_vector3f(&mut self, name: String) -> Vec<Vector3f> {
+    pub fn find_vector3f(&self, name: String) -> Vec<Vector3f> {
         let mut values: Vec<Vector3f> = Vec::new();
         for v in &self.vector3fs {
             if v.name == name {
@@ -9607,12 +9607,12 @@ impl TextureParams {
     }
 }
 
-pub fn lookup_one<T>(vec: &mut Vec<ParamSetItem<T>>, name: String, d: T) -> T
+pub fn lookup_one<T>(vec: &Vec<ParamSetItem<T>>, name: String, d: T) -> T
     where T: Clone
 {
     for v in vec {
         if v.name == name && v.n_values == 1_usize {
-            v.looked_up = true;
+            // v.looked_up = true;
             return v.values[0].clone();
         }
     }
