@@ -9,11 +9,11 @@ extern crate pbrt;
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera,
            Checkerboard2DTexture, ConstantTexture, DirectLightingIntegrator, DistantLight, Film,
            Filter, Float, GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture,
-           ImageWrap, LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, ParamSet,
-           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions, Sampler,
-           SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod, Texture, TextureMapping2D,
-           TextureParams, Transform, TransformSet, Triangle, TriangleMesh, UVMapping2D, Vector2f,
-           Vector3f, ZeroTwoSequenceSampler};
+           ImageWrap, LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f,
+           ParamSet, PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions,
+           Sampler, SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod, Texture,
+           TextureMapping2D, TextureParams, Transform, TransformSet, Triangle, TriangleMesh,
+           UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -69,14 +69,16 @@ pub enum FloatNode {
 
 impl_rdp! {
     grammar! {
-        pbrt = _{ whitespace? ~ statement* ~ last_statement }
-        statement = { look_at | translate | rotate | named_statement | keyword }
-        named_statement = { camera |
+        pbrt = _{ whitespace? ~ (statement | comment)* ~ last_statement }
+        statement = { look_at | translate | rotate | concat_transform | named_statement | keyword }
+        named_statement = { accelerator |
+                            camera |
                             pixel_filter |
                             sampler |
                             film |
                             integrator |
                             coord_sys_transform |
+                            area_light_source |
                             light_source |
                             texture |
                             material |
@@ -86,15 +88,18 @@ impl_rdp! {
                       integer_param |
                       point_param |
                       vector_param |
+                      normal_param |
                       rgb_param |
                       spectrum_param |
                       texture_param }
-        float_param = { ["\"float"] ~ ident ~ ["\""] ~ lbrack ~ number+ ~ rbrack }
+        float_param = { (["\"float"] ~ ident ~ ["\""] ~ lbrack ~ number+ ~ rbrack) |
+                        (["\"float"] ~ ident ~ ["\""] ~ number) }
         string_param = { (["\"string"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack) |
                          (["\"string"] ~ ident ~ ["\""] ~ string) }
         integer_param = { ["\"integer"] ~ ident ~ ["\""] ~ lbrack ~ integer+ ~ rbrack }
         point_param = { ["\"point"] ~ ident ~ ["\""] ~ lbrack ~ number+ ~ rbrack }
         vector_param = { ["\"vector"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack }
+        normal_param = { ["\"normal"] ~ ident ~ ["\""] ~ lbrack ~ number+ ~ rbrack }
         rgb_param = { (["\"rgb"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack) |
                       (["\"color"] ~ ident ~ ["\""] ~ lbrack ~ number ~ number ~ number ~ rbrack) }
         spectrum_param = { ["\"spectrum\""] ~ string }
@@ -109,6 +114,20 @@ impl_rdp! {
                    // followed by 4 numbers:
                    number ~ number ~ number ~ number
         }
+        // ConcatTransform m00 .. m33
+        concat_transform = { (["ConcatTransform"] ~ lbrack ~
+                              // followed by 16 numbers:
+                              number ~ number ~ number ~ number ~
+                              number ~ number ~ number ~ number ~
+                              number ~ number ~ number ~ number ~
+                              number ~ number ~ number ~ number ~ rbrack) |
+                             (["ConcatTransform"] ~
+                              // followed by 16 numbers:
+                              number ~ number ~ number ~ number ~
+                              number ~ number ~ number ~ number ~
+                              number ~ number ~ number ~ number ~
+                              number ~ number ~ number ~ number)
+        }
         // LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
         look_at = { ["LookAt"] ~
                     // followed by 9 numbers:
@@ -120,6 +139,8 @@ impl_rdp! {
                     // up_x up_y up_z
                     number ~ number ~ number
         }
+        // Accelerator "kdtree" "float emptybonus" [0.1]
+        accelerator = { ["Accelerator"] ~ string ~ parameter* }
         // Camera "perspective" "float fov" [90] ...
         camera = { ["Camera"] ~ string ~ parameter* }
         // PixelFilter "mitchell" "float xwidth" [2] "float ywidth" [2]
@@ -132,6 +153,8 @@ impl_rdp! {
         integrator = { ["Integrator"] ~ string ~ parameter* }
         // CoordSysTransform "camera"
         coord_sys_transform = { ["CoordSysTransform"] ~ string }
+        // AreaLightSource "diffuse" "rgb L" [ .5 .5 .5 ]
+        area_light_source = { ["AreaLightSource"] ~ string ~ parameter* }
         // LightSource "point" "rgb I" [ .5 .5 .5 ]
         light_source = { ["LightSource"] ~ string ~ parameter* }
         // Texture "mydiffuse" "spectrum" "imagemap" "string filename" "image.tga"
@@ -142,13 +165,10 @@ impl_rdp! {
         shape = { ["Shape"] ~ string ~ parameter* }
         // keywords
         keyword = {
-            (["Accelerator"] |
-             ["ActiveTransform"] |
+            (["ActiveTransform"] |
              ["All"] |
-             ["AreaLightSource"] |
              attribute_begin |
              attribute_end |
-             ["ConcatTransform"] |
              ["CoordinateSystem"] |
              ["EndTime"] |
              ["Identity"] |
@@ -209,8 +229,9 @@ impl_rdp! {
                     | // or
                 ['0'..'9'] // single digit
         }
-        last_statement = @{ whitespace? ~ ["WorldEnd"] ~ whitespace? }
+        last_statement = @{ whitespace? ~ ["WorldEnd"] ~ (whitespace | comment)* }
         whitespace = _{ ([" "] | ["\t"] | ["\r"] | ["\n"]) }
+        comment = _{ ( ["#"] ~ (!(["\r"] | ["\n"]) ~ any)* ~ (["\n"] | ["\r\n"] | ["\r"] | eoi) ) }
     }
     process! {
         main(&self) -> () {
@@ -226,6 +247,7 @@ impl_rdp! {
             (_head: look_at, _tail: _look_at()) => {},
             (_head: translate, _tail: _translate()) => {},
             (_head: rotate, _tail: _rotate()) => {},
+            (_head: concat_transform, _tail: _concat_transform()) => {},
             (_head: named_statement, _tail: _named_statement()) => {},
             (_head: keyword, _tail: _keyword()) => {},
         }
@@ -274,18 +296,96 @@ impl_rdp! {
                 self._pbrt();
             }
         }
+        _concat_transform(&self) -> () {
+            (_l: lbrack,
+             m00: _number(), m01: _number(), m02: _number(), m03: _number(),
+             m10: _number(), m11: _number(), m12: _number(), m13: _number(),
+             m20: _number(), m21: _number(), m22: _number(), m23: _number(),
+             m30: _number(), m31: _number(), m32: _number(), m33: _number(),
+             _r: rbrack) => {
+                println!("ConcatTransform [");
+                println!("  {} {} {} {}", m00, m01, m02, m03);
+                println!("  {} {} {} {}", m10, m11, m12, m13);
+                println!("  {} {} {} {}", m20, m21, m22, m23);
+                println!("  {} {} {} {}", m30, m31, m32, m33);
+                println!("]");
+                // INFO: The order in PBRT file is different !!!
+                let transform: Transform = Transform::new(m00, m10, m20, m30,
+                                                          m01, m11, m21, m31,
+                                                          m02, m12, m22, m32,
+                                                          m03, m13, m23, m33);
+                unsafe {
+                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
+                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                }
+                self._pbrt();
+            },
+            (m00: _number(), m01: _number(), m02: _number(), m03: _number(),
+             m10: _number(), m11: _number(), m12: _number(), m13: _number(),
+             m20: _number(), m21: _number(), m22: _number(), m23: _number(),
+             m30: _number(), m31: _number(), m32: _number(), m33: _number()) => {
+                println!("ConcatTransform [");
+                println!("  {} {} {} {}", m00, m01, m02, m03);
+                println!("  {} {} {} {}", m10, m11, m12, m13);
+                println!("  {} {} {} {}", m20, m21, m22, m23);
+                println!("  {} {} {} {}", m30, m31, m32, m33);
+                println!("]");
+                // INFO: The order in PBRT file is different !!!
+                let transform: Transform = Transform::new(m00, m10, m20, m30,
+                                                          m01, m11, m21, m31,
+                                                          m02, m12, m22, m32,
+                                                          m03, m13, m23, m33);
+                unsafe {
+                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
+                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                }
+                self._pbrt();
+            },
+        }
         // named statements
         _named_statement(&self) -> () {
+            (_head: accelerator, _tail: _accelerator()) => {},
             (_head: camera, _tail: _camera()) => {},
             (_head: pixel_filter, _tail: _pixel_filter()) => {},
             (_head: sampler, _tail: _sampler()) => {},
             (_head: film, _tail: _film()) => {},
             (_head: integrator, _tail: _integrator()) => {},
             (_head: coord_sys_transform, _tail: _coord_sys_transform()) => {},
+            (_head: area_light_source, _tail: _area_light_source()) => {},
             (_head: light_source, _tail: _light_source()) => {},
             (_head: texture, _tail: _texture()) => {},
             (_head: material, _tail: _material()) => {},
             (_head: shape, _tail: _shape()) => {},
+        }
+        _accelerator(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                unsafe {
+                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                        ro.accelerator_name = name;
+                        if optional_parameters.rule == Rule::statement ||
+                            optional_parameters.rule == Rule::last_statement {
+                            println!("Accelerator \"{}\" ", ro.accelerator_name);
+                        }
+                    }
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("Accelerator"),
+                                        String::from(""),
+                                        String::from(""),
+                                        String::from(""));
+                    }
+                }
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    world_end();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
         }
         _camera(&self) -> () {
             (name: _string(), optional_parameters) => {
@@ -447,6 +547,27 @@ impl_rdp! {
                     }
                 }
                 self._pbrt();
+            },
+        }
+        _area_light_source(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.reset(String::from("AreaLightSource"),
+                                        String::from(name),
+                                        String::from(""),
+                                        String::from(""));
+                    }
+                }
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    world_end();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
             },
         }
         _light_source(&self) -> () {
@@ -691,6 +812,24 @@ impl_rdp! {
                 }
                 self._parameter();
             },
+            (_head: normal_param, tail: _normal_param()) => {
+                let (string, numbers) = tail;
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        if numbers.len() == 3 {
+                            param_set.add_normal3f(string,
+                                                   Normal3f {
+                                                       x: numbers[0],
+                                                       y: numbers[1],
+                                                       z: numbers[2],
+                                                   });
+                        } else {
+                            param_set.add_normal3fs(string, numbers);
+                        }
+                    }
+                }
+                self._parameter();
+            },
             (_head: rgb_param, tail: _rgb_param()) => {
                 let (string, number1, number2, number3) = tail;
                 unsafe {
@@ -729,7 +868,13 @@ impl_rdp! {
                         if let Some(ref mut param_set) = PARAM_SET {
                             let mut name: String = String::new();
                             name.push_str(param_set.name.as_str());
-                            if param_set.key_word == String::from("Camera") {
+                            if param_set.key_word == String::from("Accelerator") {
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    println!("Accelerator \"{}\" ", ro.accelerator_name);
+                                    ro.accelerator_params.copy_from(param_set);
+                                    print_params(&ro.accelerator_params);
+                                }
+                            } else if param_set.key_word == String::from("Camera") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("Camera \"{}\" ", ro.camera_name);
                                     ro.camera_params.copy_from(param_set);
@@ -758,6 +903,18 @@ impl_rdp! {
                                     println!("Integrator \"{}\" ", ro.integrator_name);
                                     ro.integrator_params.copy_from(param_set);
                                     print_params(&ro.integrator_params);
+                                }
+                            } else if param_set.key_word == String::from("AreaLightSource") {
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    println!("AreaLightSource \"{}\" ", param_set.name);
+                                    print_params(&param_set);
+                                    // pbrtAreaLightSource (api.cpp:1142)
+                                    unsafe {
+                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                            graphics_state.area_light = name;
+                                            graphics_state.area_light_params.copy_from(&param_set);
+                                        }
+                                    }
                                 }
                             } else if param_set.key_word == String::from("LightSource") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
@@ -919,7 +1076,7 @@ impl_rdp! {
                                                         // HasExtension(filename,
                                                         // ".png"));
                                                         let gamma: bool = tp.find_bool(String::from("gamma"), true);
-                                                        
+
                                                         if let Some(mapping) = map {
                                                             let st = Arc::new(ImageTexture::new(mapping,
                                                                                                 filename,
@@ -1201,6 +1358,13 @@ impl_rdp! {
             }
         }
         _float_param(&self) -> (String, Vec<Float>) {
+            // single float without brackets
+            (&i: ident, &n: number) => {
+                let string: String = String::from_str(i).unwrap();
+                let number: Float = f32::from_str(n).unwrap();
+                let fvec: Vec<Float> = vec![number];
+                (string, fvec)
+            },
             // single float
             (&i: ident, _l: lbrack, &n: number, _r: rbrack) => {
                 let string: String = String::from_str(i).unwrap();
@@ -1366,6 +1530,39 @@ impl_rdp! {
                 (string, number1, number2, number3)
             },
         }
+        _normal_param(&self) -> (String, Vec<Float>) {
+            // single normal
+            (&i: ident, _l: lbrack, &n1: number, &n2: number, &n3: number, _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let number1: Float = f32::from_str(n1).unwrap();
+                let number2: Float = f32::from_str(n2).unwrap();
+                let number3: Float = f32::from_str(n3).unwrap();
+                let fvec: Vec<Float> = vec![number1, number2, number3];
+                (string, fvec)
+            },
+            // more than one normal (3 floats define one normal)
+            (&i: ident, _l: lbrack, mut list: _list_of_floats(), _r: rbrack) => {
+                let string: String = String::from_str(i).unwrap();
+                let mut fvec: Vec<Float> = Vec::new();
+                if let Some(floats) = list.pop_front() {
+                    match floats {
+                        FloatNode::Floats(list) => {
+                            for element in list.iter() {
+                                match *element {
+                                    FloatNode::Floats(ref _l) => {},
+                                    FloatNode::OneFloat(ref f) => {
+                                        fvec.push(*f);
+                                    },
+                                };
+                            }
+                        },
+                        FloatNode::OneFloat(_f) => {},
+                    };
+                }
+                assert!(fvec.len() % 3 == 0, "normal parameters need 3 coordinates");
+                (string, fvec)
+            },
+        }
         _rgb_param(&self) -> (String, Float, Float, Float) {
             (&i: ident, _l: lbrack, &n1: number, &n2: number, &n3: number, _r: rbrack) => {
                 let string: String = String::from_str(i).unwrap();
@@ -1395,14 +1592,18 @@ impl_rdp! {
                 unsafe {
                     if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                         if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
-                            let mut param_set: ParamSet = ParamSet::default();
-                            param_set.copy_from(&graphics_state.material_params);
+                            let mut material_param_set: ParamSet = ParamSet::default();
+                            material_param_set.copy_from(&graphics_state.material_params);
+                            let mut area_light_param_set: ParamSet = ParamSet::default();
+                            area_light_param_set.copy_from(&graphics_state.area_light_params);
                             pushed_graphics_states.push(GraphicsState {
                                 float_textures: graphics_state.float_textures.clone(),
                                 spectrum_textures: graphics_state.spectrum_textures.clone(),
-                                material_params: param_set,
+                                material_params: material_param_set,
                                 material: String::from(graphics_state.material.as_ref()),
                                 current_named_material: String::from(graphics_state.current_named_material.as_ref()),
+                                area_light_params: area_light_param_set,
+                                area_light: String::from(graphics_state.area_light.as_ref()),
                             });
                         }
                         if let Some(ref mut pt) = PUSHED_TRANSFORMS {
@@ -1546,6 +1747,21 @@ fn print_params(params: &ParamSet) {
                      p.values[0].x,
                      p.values[0].y,
                      p.values[0].z);
+        }
+    }
+    for p in &params.normals {
+        if p.n_values == 1_usize {
+            println!("  \"normal {}\" [{} {} {}]",
+                     p.name,
+                     p.values[0].x,
+                     p.values[0].y,
+                     p.values[0].z);
+        } else {
+            println!("  \"normal {}\" [", p.name);
+            for i in 0..p.n_values {
+                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+            }
+            println!("  ]");
         }
     }
     for p in &params.spectra {
@@ -1981,7 +2197,7 @@ fn main() {
                     let mut parser = Rdp::new(StringInput::new(&str_buf));
                     assert!(parser.pbrt());
                     assert!(parser.end());
-                    println!("{:?}", parser.queue());
+                    // println!("{:?}", parser.queue());
                     println!("do something with created tokens ...");
                     parser.main();
                     println!("done.");

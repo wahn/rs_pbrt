@@ -9222,6 +9222,32 @@ impl ParamSet {
             looked_up: false,
         });
     }
+    pub fn add_normal3f(&mut self, name: String, value: Normal3f) {
+        self.normals.push(ParamSetItem::<Normal3f> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
+    pub fn add_normal3fs(&mut self, name: String, values: Vec<Float>) {
+        let n_values: usize = values.len();
+        let mut p_values: Vec<Normal3f> = Vec::new();
+        let n_normals: usize = values.len() / 3_usize;
+        assert!(n_values % 3 == 0, "normal parameters need 3 coordinates");
+        for i in 0..n_normals {
+            let x: Float = values[i*3+0];
+            let y: Float = values[i*3+1];
+            let z: Float = values[i*3+2];
+            p_values.push(Normal3f { x: x, y: y, z: z, });
+        }
+        self.normals.push(ParamSetItem::<Normal3f> {
+            name: name,
+            values: p_values,
+            n_values: n_normals,
+            looked_up: false,
+        });
+    }
     pub fn add_rgb_spectrum(&mut self, name: String, value: Spectrum) {
         self.spectra.push(ParamSetItem::<Spectrum> {
             name: name,
@@ -9680,8 +9706,8 @@ pub struct GraphicsState {
     pub material: String,
     // std::map<std::string, std::shared_ptr<Material>> namedMaterials;
     pub current_named_material: String,
-    // ParamSet areaLightParams;
-    // std::string areaLight;
+    pub area_light_params: ParamSet,
+    pub area_light: String,
     // bool reverseOrientation = false;
 }
 
