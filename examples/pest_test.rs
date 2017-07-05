@@ -6,14 +6,14 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera,
-           Checkerboard2DTexture, ConstantTexture, DirectLightingIntegrator, DistantLight, Film,
-           Filter, Float, GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture,
-           ImageWrap, LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f,
-           ParamSet, PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions,
-           Sampler, SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod, Texture,
-           TextureMapping2D, TextureParams, Transform, TransformSet, Triangle, TriangleMesh,
-           UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerboard2DTexture,
+           ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Filter, Float,
+           GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture, ImageWrap,
+           LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet,
+           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions, Sampler,
+           SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod, Texture, TextureMapping2D,
+           TextureParams, Transform, TransformSet, Triangle, TriangleMesh, UVMapping2D, Vector2f,
+           Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -630,11 +630,9 @@ impl_rdp! {
                             println!("Material \"{}\" ", name.clone());
                         }
                         // pbrtMaterial (api.cpp:1082)
-                        unsafe {
-                            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                graphics_state.material = name.clone();
-                                graphics_state.current_named_material = String::new();
-                            }
+                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                            graphics_state.material = name.clone();
+                            graphics_state.current_named_material = String::new();
                         }
                         param_set.reset(String::from("Material"),
                                         String::from(name),
@@ -905,16 +903,12 @@ impl_rdp! {
                                     print_params(&ro.integrator_params);
                                 }
                             } else if param_set.key_word == String::from("AreaLightSource") {
-                                if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("AreaLightSource \"{}\" ", param_set.name);
-                                    print_params(&param_set);
-                                    // pbrtAreaLightSource (api.cpp:1142)
-                                    unsafe {
-                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                            graphics_state.area_light = name;
-                                            graphics_state.area_light_params.copy_from(&param_set);
-                                        }
-                                    }
+                                println!("AreaLightSource \"{}\" ", param_set.name);
+                                print_params(&param_set);
+                                // pbrtAreaLightSource (api.cpp:1142)
+                                if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                    graphics_state.area_light = name;
+                                    graphics_state.area_light_params.copy_from(&param_set);
                                 }
                             } else if param_set.key_word == String::from("LightSource") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
@@ -961,379 +955,367 @@ impl_rdp! {
                                 }
                                 // let lt = make_light(name, params, CUR_TRANSFORM.t[0]);
                             } else if param_set.key_word == String::from("Texture") {
-                                if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("Texture \"{}\" \"{}\" \"{}\" ",
-                                             param_set.name,
-                                             param_set.tex_type,
-                                             param_set.tex_name);
-                                    print_params(&param_set);
-                                    // pbrtTexture (api.cpp:1049)
-                                    unsafe {
-                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                            let mut geom_params: ParamSet = ParamSet::default();
-                                            let mut material_params: ParamSet = ParamSet::default();
-                                            geom_params.copy_from(param_set);
-                                            material_params.copy_from(param_set);
-                                            let mut tp: TextureParams = TextureParams {
-                                                float_textures: graphics_state.float_textures.clone(),
-                                                spectrum_textures: graphics_state.spectrum_textures.clone(),
-                                                geom_params: geom_params,
-                                                material_params: material_params,
-                                            };
-                                            if param_set.tex_type == String::from("float") {
-                                                println!("TODO: MakeFloatTexture");
-                                            } else if param_set.tex_type == String::from("color") ||
-                                                param_set.tex_type == String::from("spectrum") {
-                                                    match graphics_state.spectrum_textures.get(param_set.name.as_str()) {
-                                                        Some(_spectrum_texture) => {
-                                                            println!("Texture \"{}\" being redefined",
-                                                                     param_set.name);
-                                                        },
-                                                        None => {},
-                                                    }
-                                                    // MakeSpectrumTexture(texname, curTransform[0], tp);
-                                                    if param_set.tex_name == String::from("constant") {
-                                                        println!("TODO: CreateConstantSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("scale") {
-                                                        println!("TODO: CreateScaleSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("mix") {
-                                                        println!("TODO: CreateMixSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("bilerp") {
-                                                        println!("TODO: CreateBilerpSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("imagemap") {
-                                                        // CreateImageSpectrumTexture
-                                                        let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
-                                                        let mapping: String =
-                                                            tp.find_string(String::from("mapping"), String::from("uv"));
-                                                        if mapping == String::from("uv") {
-                                                            let su: Float = tp.find_float(String::from("uscale"), 1.0);
-                                                            let sv: Float = tp.find_float(String::from("vscale"), 1.0);
-                                                            let du: Float = tp.find_float(String::from("udelta"), 0.0);
-                                                            let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
-                                                            map = Some(Box::new(UVMapping2D {
-                                                                su: su,
-                                                                sv: sv,
-                                                                du: du,
-                                                                dv: dv,
-                                                            }));
-                                                        } else if mapping == String::from("spherical") {
-                                                            println!("TODO: SphericalMapping2D");
-                                                        } else if mapping == String::from("cylindrical") {
-                                                            println!("TODO: CylindricalMapping2D");
-                                                        } else if mapping == String::from("planar") {
-                                                            map = Some(Box::new(PlanarMapping2D {
-                                                                vs: tp.find_vector3f(String::from("v1"),
-                                                                                     Vector3f {
-                                                                                         x: 1.0,
-                                                                                         y: 0.0,
-                                                                                         z: 0.0
-                                                                                     }),
-                                                                vt: tp.find_vector3f(String::from("v2"),
-                                                                                     Vector3f {
-                                                                                         x: 0.0,
-                                                                                         y: 1.0,
-                                                                                         z: 0.0
-                                                                                     }),
-                                                                ds: tp.find_float(String::from("udelta"),
-                                                                                      0.0),
-                                                                dt: tp.find_float(String::from("vdelta"),
-                                                                                  0.0),
-                                                            }));
-                                                        } else {
-                                                            panic!("2D texture mapping \"{}\" unknown",
-                                                                   mapping);
-                                                        }
-                                                        // initialize _ImageTexture_ parameters
-                                                        let max_aniso: Float =
-                                                            tp.find_float(String::from("maxanisotropy"), 8.0);
-                                                        let do_trilinear: bool =
-                                                            tp.find_bool(String::from("trilinear"), false);
-                                                        let wrap: String =
-                                                            tp.find_string(String::from("wrap"),
-                                                                           String::from("repeat"));
-                                                        let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
-                                                        if wrap == String::from("black") {
-                                                            wrap_mode = ImageWrap::Black;
-                                                        }
-                                                        else if wrap == String::from("clamp") {
-                                                            wrap_mode = ImageWrap::Clamp;
-                                                        }
-                                                        let scale: Float =
-                                                            tp.find_float(String::from("scale"), 1.0);
-                                                        let mut filename: String =
-                                                            tp.find_filename(String::from("filename"),
-                                                                             String::new());
-                                                        if let Some(ref search_directory) = SEARCH_DIRECTORY {
-                                                            // filename = AbsolutePath(ResolveFilename(filename));
-                                                            let mut path_buf: PathBuf = PathBuf::from("/");
-                                                            path_buf.push(search_directory.as_ref());
-                                                            path_buf.push(filename);
-                                                            filename = String::from(path_buf.to_str().unwrap());
-                                                        }
-                                                        // TODO: default depends on:
-                                                        // HasExtension(filename,
-                                                        // ".tga") ||
-                                                        // HasExtension(filename,
-                                                        // ".png"));
-                                                        let gamma: bool = tp.find_bool(String::from("gamma"), true);
-
-                                                        if let Some(mapping) = map {
-                                                            let st = Arc::new(ImageTexture::new(mapping,
-                                                                                                filename,
-                                                                                                do_trilinear,
-                                                                                                max_aniso,
-                                                                                                wrap_mode,
-                                                                                                scale,
-                                                                                                gamma));
-                                                            graphics_state.spectrum_textures.insert(
-                                                                name, st);
-                                                        }
-                                                    } else if param_set.tex_name == String::from("uv") {
-                                                        println!("TODO: CreateUVSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("checkerboard") {
-                                                        // CreateCheckerboardSpectrumTexture
-                                                        let dim: i32 = tp.find_int(String::from("dimension"), 2);
-                                                        if dim != 2 && dim != 3 {
-                                                            panic!("{} dimensional checkerboard texture not supported",
-                                                                   dim);
-                                                        }
-                                                        let tex1: Arc<Texture<Spectrum> + Send + Sync> =
-                                                            tp.get_spectrum_texture(String::from("tex1"),
-                                                                                    Spectrum::new(1.0));
-                                                        let tex2: Arc<Texture<Spectrum> + Send + Sync> =
-                                                            tp.get_spectrum_texture(String::from("tex2"),
-                                                                                    Spectrum::new(0.0));
-                                                        if dim == 2 {
-                                                            let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
-                                                            let mapping: String =
-                                                                tp.find_string(String::from("mapping"), String::from("uv"));
-                                                            if mapping == String::from("uv") {
-                                                                println!("TODO: UVMapping2D");
-                                                            } else if mapping == String::from("spherical") {
-                                                                println!("TODO: SphericalMapping2D");
-                                                            } else if mapping == String::from("cylindrical") {
-                                                                println!("TODO: CylindricalMapping2D");
-                                                            } else if mapping == String::from("planar") {
-                                                                map = Some(Box::new(PlanarMapping2D {
-                                                                    vs: tp.find_vector3f(String::from("v1"),
-                                                                                         Vector3f {
-                                                                                             x: 1.0,
-                                                                                             y: 0.0,
-                                                                                             z: 0.0
-                                                                                         }),
-                                                                    vt: tp.find_vector3f(String::from("v2"),
-                                                                                         Vector3f {
-                                                                                             x: 0.0,
-                                                                                             y: 1.0,
-                                                                                             z: 0.0
-                                                                                         }),
-                                                                    ds: tp.find_float(String::from("udelta"),
-                                                                                      0.0),
-                                                                    dt: tp.find_float(String::from("vdelta"),
-                                                                                      0.0),
-                                                                }));
-                                                            } else {
-                                                                panic!("2D texture mapping \"{}\" unknown",
-                                                                       mapping);
-                                                            }
-                                                            // TODO: aamode
-                                                            if let Some(mapping) = map {
-                                                                Arc::new(Checkerboard2DTexture::new(mapping,
-                                                                                                    tex1,
-                                                                                                    tex2));
-                                                            }
-                                                        } else { // dim == 3
-                                                            println!("TODO: TextureMapping3D");
-                                                        }
-                                                    } else if param_set.tex_name == String::from("dots") {
-                                                        println!("TODO: CreateDotsSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("fbm") {
-                                                        println!("TODO: CreateFBmSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("wrinkled") {
-                                                        println!("TODO: CreateWrinkledSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("marble") {
-                                                        println!("TODO: CreateMarbleSpectrumTexture");
-                                                    } else if param_set.tex_name == String::from("windy") {
-                                                        println!("TODO: CreateWindySpectrumTexture");
-                                                    } else {
-                                                        println!("Spectrum texture \"{}\" unknown.",
-                                                        param_set.tex_name);
-                                                    }
+                                println!("Texture \"{}\" \"{}\" \"{}\" ",
+                                         param_set.name,
+                                         param_set.tex_type,
+                                         param_set.tex_name);
+                                print_params(&param_set);
+                                // pbrtTexture (api.cpp:1049)
+                                if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                    let mut geom_params: ParamSet = ParamSet::default();
+                                    let mut material_params: ParamSet = ParamSet::default();
+                                    geom_params.copy_from(param_set);
+                                    material_params.copy_from(param_set);
+                                    let mut tp: TextureParams = TextureParams {
+                                        float_textures: graphics_state.float_textures.clone(),
+                                        spectrum_textures: graphics_state.spectrum_textures.clone(),
+                                        geom_params: geom_params,
+                                        material_params: material_params,
+                                    };
+                                    if param_set.tex_type == String::from("float") {
+                                        println!("TODO: MakeFloatTexture");
+                                    } else if param_set.tex_type == String::from("color") ||
+                                        param_set.tex_type == String::from("spectrum") {
+                                            match graphics_state.spectrum_textures.get(param_set.name.as_str()) {
+                                                Some(_spectrum_texture) => {
+                                                    println!("Texture \"{}\" being redefined",
+                                                             param_set.name);
+                                                },
+                                                None => {},
+                                            }
+                                            // MakeSpectrumTexture(texname, curTransform[0], tp);
+                                            if param_set.tex_name == String::from("constant") {
+                                                println!("TODO: CreateConstantSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("scale") {
+                                                println!("TODO: CreateScaleSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("mix") {
+                                                println!("TODO: CreateMixSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("bilerp") {
+                                                println!("TODO: CreateBilerpSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("imagemap") {
+                                                // CreateImageSpectrumTexture
+                                                let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+                                                let mapping: String =
+                                                    tp.find_string(String::from("mapping"), String::from("uv"));
+                                                if mapping == String::from("uv") {
+                                                    let su: Float = tp.find_float(String::from("uscale"), 1.0);
+                                                    let sv: Float = tp.find_float(String::from("vscale"), 1.0);
+                                                    let du: Float = tp.find_float(String::from("udelta"), 0.0);
+                                                    let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
+                                                    map = Some(Box::new(UVMapping2D {
+                                                        su: su,
+                                                        sv: sv,
+                                                        du: du,
+                                                        dv: dv,
+                                                    }));
+                                                } else if mapping == String::from("spherical") {
+                                                    println!("TODO: SphericalMapping2D");
+                                                } else if mapping == String::from("cylindrical") {
+                                                    println!("TODO: CylindricalMapping2D");
+                                                } else if mapping == String::from("planar") {
+                                                    map = Some(Box::new(PlanarMapping2D {
+                                                        vs: tp.find_vector3f(String::from("v1"),
+                                                                             Vector3f {
+                                                                                 x: 1.0,
+                                                                                 y: 0.0,
+                                                                                 z: 0.0
+                                                                             }),
+                                                        vt: tp.find_vector3f(String::from("v2"),
+                                                                             Vector3f {
+                                                                                 x: 0.0,
+                                                                                 y: 1.0,
+                                                                                 z: 0.0
+                                                                             }),
+                                                        ds: tp.find_float(String::from("udelta"),
+                                                                          0.0),
+                                                        dt: tp.find_float(String::from("vdelta"),
+                                                                          0.0),
+                                                    }));
                                                 } else {
-                                                    panic!("Texture type \"{}\" unknown.", param_set.tex_type);
+                                                    panic!("2D texture mapping \"{}\" unknown",
+                                                           mapping);
                                                 }
+                                                // initialize _ImageTexture_ parameters
+                                                let max_aniso: Float =
+                                                    tp.find_float(String::from("maxanisotropy"), 8.0);
+                                                let do_trilinear: bool =
+                                                    tp.find_bool(String::from("trilinear"), false);
+                                                let wrap: String =
+                                                    tp.find_string(String::from("wrap"),
+                                                                   String::from("repeat"));
+                                                let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
+                                                if wrap == String::from("black") {
+                                                    wrap_mode = ImageWrap::Black;
+                                                }
+                                                else if wrap == String::from("clamp") {
+                                                    wrap_mode = ImageWrap::Clamp;
+                                                }
+                                                let scale: Float =
+                                                    tp.find_float(String::from("scale"), 1.0);
+                                                let mut filename: String =
+                                                    tp.find_filename(String::from("filename"),
+                                                                     String::new());
+                                                if let Some(ref search_directory) = SEARCH_DIRECTORY {
+                                                    // filename = AbsolutePath(ResolveFilename(filename));
+                                                    let mut path_buf: PathBuf = PathBuf::from("/");
+                                                    path_buf.push(search_directory.as_ref());
+                                                    path_buf.push(filename);
+                                                    filename = String::from(path_buf.to_str().unwrap());
+                                                }
+                                                // TODO: default depends on:
+                                                // HasExtension(filename,
+                                                // ".tga") ||
+                                                // HasExtension(filename,
+                                                // ".png"));
+                                                let gamma: bool = tp.find_bool(String::from("gamma"), true);
+                                                
+                                                if let Some(mapping) = map {
+                                                    let st = Arc::new(ImageTexture::new(mapping,
+                                                                                        filename,
+                                                                                        do_trilinear,
+                                                                                        max_aniso,
+                                                                                        wrap_mode,
+                                                                                        scale,
+                                                                                        gamma));
+                                                    graphics_state.spectrum_textures.insert(
+                                                        name, st);
+                                                }
+                                            } else if param_set.tex_name == String::from("uv") {
+                                                println!("TODO: CreateUVSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("checkerboard") {
+                                                // CreateCheckerboardSpectrumTexture
+                                                let dim: i32 = tp.find_int(String::from("dimension"), 2);
+                                                if dim != 2 && dim != 3 {
+                                                    panic!("{} dimensional checkerboard texture not supported",
+                                                           dim);
+                                                }
+                                                let tex1: Arc<Texture<Spectrum> + Send + Sync> =
+                                                    tp.get_spectrum_texture(String::from("tex1"),
+                                                                            Spectrum::new(1.0));
+                                                let tex2: Arc<Texture<Spectrum> + Send + Sync> =
+                                                    tp.get_spectrum_texture(String::from("tex2"),
+                                                                            Spectrum::new(0.0));
+                                                if dim == 2 {
+                                                    let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+                                                    let mapping: String =
+                                                        tp.find_string(String::from("mapping"), String::from("uv"));
+                                                    if mapping == String::from("uv") {
+                                                        println!("TODO: UVMapping2D");
+                                                    } else if mapping == String::from("spherical") {
+                                                        println!("TODO: SphericalMapping2D");
+                                                    } else if mapping == String::from("cylindrical") {
+                                                        println!("TODO: CylindricalMapping2D");
+                                                    } else if mapping == String::from("planar") {
+                                                        map = Some(Box::new(PlanarMapping2D {
+                                                            vs: tp.find_vector3f(String::from("v1"),
+                                                                                 Vector3f {
+                                                                                     x: 1.0,
+                                                                                     y: 0.0,
+                                                                                     z: 0.0
+                                                                                 }),
+                                                            vt: tp.find_vector3f(String::from("v2"),
+                                                                                 Vector3f {
+                                                                                     x: 0.0,
+                                                                                     y: 1.0,
+                                                                                     z: 0.0
+                                                                                 }),
+                                                            ds: tp.find_float(String::from("udelta"),
+                                                                              0.0),
+                                                            dt: tp.find_float(String::from("vdelta"),
+                                                                              0.0),
+                                                        }));
+                                                    } else {
+                                                        panic!("2D texture mapping \"{}\" unknown",
+                                                               mapping);
+                                                    }
+                                                    // TODO: aamode
+                                                    if let Some(mapping) = map {
+                                                        Arc::new(Checkerboard2DTexture::new(mapping,
+                                                                                            tex1,
+                                                                                            tex2));
+                                                    }
+                                                } else { // dim == 3
+                                                    println!("TODO: TextureMapping3D");
+                                                }
+                                            } else if param_set.tex_name == String::from("dots") {
+                                                println!("TODO: CreateDotsSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("fbm") {
+                                                println!("TODO: CreateFBmSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("wrinkled") {
+                                                println!("TODO: CreateWrinkledSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("marble") {
+                                                println!("TODO: CreateMarbleSpectrumTexture");
+                                            } else if param_set.tex_name == String::from("windy") {
+                                                println!("TODO: CreateWindySpectrumTexture");
+                                            } else {
+                                                println!("Spectrum texture \"{}\" unknown.",
+                                                         param_set.tex_name);
+                                            }
+                                        } else {
+                                            panic!("Texture type \"{}\" unknown.", param_set.tex_type);
                                         }
-                                    }
                                 }
                                 // MakeFloatTexture(texname, curTransform[0], tp);
                                 // or
                                 // MakeSpectrumTexture(texname, curTransform[0], tp);
                             } else if param_set.key_word == String::from("Material") {
-                                if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("Material \"{}\" ", param_set.name);
-                                    print_params(&param_set);
-                                    // pbrtMaterial (api.cpp:1082)
-                                    unsafe {
-                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                            graphics_state.material = name;
-                                            graphics_state.material_params.copy_from(&param_set);
-                                            graphics_state.current_named_material = String::new();
-                                        }
-                                    }
+                                println!("Material \"{}\" ", param_set.name);
+                                print_params(&param_set);
+                                // pbrtMaterial (api.cpp:1082)
+                                if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                    graphics_state.material = name;
+                                    graphics_state.material_params.copy_from(&param_set);
+                                    graphics_state.current_named_material = String::new();
                                 }
                             } else if param_set.key_word == String::from("Shape") {
-                                if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("Shape \"{}\" ", param_set.name);
-                                    print_params(&param_set);
-                                    unsafe {
-                                        // pbrtShape (api.cpp:1153)
-                                        // TODO: if (!curTransform.IsAnimated()) { ... }
-                                        // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
-                                        let obj_to_world: Transform = Transform {
-                                            m: CUR_TRANSFORM.t[0].m,
-                                            m_inv: CUR_TRANSFORM.t[0].m_inv,
-                                        };
-                                        let world_to_obj: Transform =Transform {
-                                            m: CUR_TRANSFORM.t[0].m_inv,
-                                            m_inv: CUR_TRANSFORM.t[0].m,
-                                        };
-                                        // MakeShapes (api.cpp:296)
-                                        if param_set.name == String::from("sphere") {
-                                            // CreateSphereShape
-                                            let radius: Float = param_set.find_one_float(String::from("radius"),
-                                                                                         1.0 as Float);
-                                            let z_min: Float = param_set.find_one_float(String::from("zmin"),
-                                                                                        -radius);
-                                            let z_max: Float = param_set.find_one_float(String::from("zmin"),
-                                                                                        radius);
-                                            let phi_max: Float = param_set.find_one_float(String::from("phimax"),
-                                                                                          360.0 as Float);
-                                            let sphere = Arc::new(Sphere::new(obj_to_world,
-                                                                              world_to_obj,
-                                                                              false,
-                                                                              false,
-                                                                              radius,
-                                                                              z_min,
-                                                                              z_max,
-                                                                              phi_max));
-                                            print!("Sphere {{ object_to_world: {:?}, world_to_object: {:?}, ",
-                                                   obj_to_world,
-                                                   world_to_obj);
-                                            println!("radius: {}, z_min: {}, z_max: {}, phi_max: {} }}",
-                                                     radius,
-                                                     z_min,
-                                                     z_max,
-                                                     phi_max);
-                                            let mtl: Arc<Material + Send + Sync> = create_material();
-                                            let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
-                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                ro.primitives.push(geo_prim.clone());
+                                println!("Shape \"{}\" ", param_set.name);
+                                print_params(&param_set);
+                                // pbrtShape (api.cpp:1153)
+                                // TODO: if (!curTransform.IsAnimated()) { ... }
+                                // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
+                                let obj_to_world: Transform = Transform {
+                                    m: CUR_TRANSFORM.t[0].m,
+                                    m_inv: CUR_TRANSFORM.t[0].m_inv,
+                                };
+                                let world_to_obj: Transform =Transform {
+                                    m: CUR_TRANSFORM.t[0].m_inv,
+                                    m_inv: CUR_TRANSFORM.t[0].m,
+                                };
+                                // MakeShapes (api.cpp:296)
+                                if param_set.name == String::from("sphere") {
+                                    // CreateSphereShape
+                                    let radius: Float = param_set.find_one_float(String::from("radius"),
+                                                                                 1.0 as Float);
+                                    let z_min: Float = param_set.find_one_float(String::from("zmin"),
+                                                                                -radius);
+                                    let z_max: Float = param_set.find_one_float(String::from("zmin"),
+                                                                                radius);
+                                    let phi_max: Float = param_set.find_one_float(String::from("phimax"),
+                                                                                  360.0 as Float);
+                                    let sphere = Arc::new(Sphere::new(obj_to_world,
+                                                                      world_to_obj,
+                                                                      false,
+                                                                      false,
+                                                                      radius,
+                                                                      z_min,
+                                                                      z_max,
+                                                                      phi_max));
+                                    print!("Sphere {{ object_to_world: {:?}, world_to_object: {:?}, ",
+                                           obj_to_world,
+                                           world_to_obj);
+                                    println!("radius: {}, z_min: {}, z_max: {}, phi_max: {} }}",
+                                             radius,
+                                             z_min,
+                                             z_max,
+                                             phi_max);
+                                    let mtl: Arc<Material + Send + Sync> = create_material();
+                                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
+                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                        ro.primitives.push(geo_prim.clone());
+                                    }
+                                } else if param_set.name == String::from("cylinder") {
+                                    println!("TODO: CreateCylinderShape");
+                                } else if param_set.name == String::from("disk") {
+                                    println!("TODO: CreateDiskShape");
+                                } else if param_set.name == String::from("cone") {
+                                    println!("TODO: CreateConeShape");
+                                } else if param_set.name == String::from("paraboloid") {
+                                    println!("TODO: CreateParaboloidShape");
+                                } else if param_set.name == String::from("hyperboloid") {
+                                    println!("TODO: CreateHyperboloidShape");
+                                } else if param_set.name == String::from("curve") {
+                                    println!("TODO: CreateCurveShape");
+                                } else if param_set.name == String::from("trianglemesh") {
+                                    let vi = param_set.find_int(String::from("indices"));
+                                    let p = param_set.find_point3f(String::from("P"));
+                                    // try "uv" with Point2f
+                                    let mut uvs = param_set.find_point2f(String::from("uv"));
+                                    if uvs.is_empty() {
+                                        // try "st" with Point2f
+                                        uvs = param_set.find_point2f(String::from("st"));
+                                    }
+                                    if uvs.is_empty() {
+                                        // try "uv" with float
+                                        let mut fuv = param_set.find_float(String::from("uv"));
+                                        if fuv.is_empty() {
+                                            // try "st" with float
+                                            fuv = param_set.find_float(String::from("st"));
+                                        }
+                                        if !fuv.is_empty() {
+                                            // found some float UVs
+                                            for i in 0..(fuv.len() / 2) {
+                                                uvs.push(Point2f { x: fuv[2 * i],
+                                                                   y:  fuv[2 * i + 1],
+                                                });
                                             }
-                                        } else if param_set.name == String::from("cylinder") {
-                                            println!("TODO: CreateCylinderShape");
-                                        } else if param_set.name == String::from("disk") {
-                                            println!("TODO: CreateDiskShape");
-                                        } else if param_set.name == String::from("cone") {
-                                            println!("TODO: CreateConeShape");
-                                        } else if param_set.name == String::from("paraboloid") {
-                                            println!("TODO: CreateParaboloidShape");
-                                        } else if param_set.name == String::from("hyperboloid") {
-                                            println!("TODO: CreateHyperboloidShape");
-                                        } else if param_set.name == String::from("curve") {
-                                            println!("TODO: CreateCurveShape");
-                                        } else if param_set.name == String::from("trianglemesh") {
-                                            let vi = param_set.find_int(String::from("indices"));
-                                            let p = param_set.find_point3f(String::from("P"));
-                                            // try "uv" with Point2f
-                                            let mut uvs = param_set.find_point2f(String::from("uv"));
-                                            if uvs.is_empty() {
-                                                // try "st" with Point2f
-                                                uvs = param_set.find_point2f(String::from("st"));
-                                            }
-                                            if uvs.is_empty() {
-                                                // try "uv" with float
-                                                let mut fuv = param_set.find_float(String::from("uv"));
-                                                if fuv.is_empty() {
-                                                    // try "st" with float
-                                                    fuv = param_set.find_float(String::from("st"));
-                                                }
-                                                if !fuv.is_empty() {
-                                                    // found some float UVs
-                                                    for i in 0..(fuv.len() / 2) {
-                                                        uvs.push(Point2f { x: fuv[2 * i],
-                                                                           y:  fuv[2 * i + 1],
-                                                        });
-                                                    }
-                                                }
-                                            }
-                                            if !uvs.is_empty() {
-                                                // TODO: if (nuvi < npi) {...} else if (nuvi > npi) ...
-                                                assert!(uvs.len() == p.len());
-                                            }
-                                            assert!(vi.len() > 0_usize);
-                                            assert!(p.len() > 0_usize);
-                                            let s = param_set.find_vector3f(String::from("S"));
-                                            if !s.is_empty() {
-                                                assert!(s.len() == p.len());
-                                            }
-                                            let n = param_set.find_vector3f(String::from("N"));
-                                            if !n.is_empty() {
-                                                assert!(n.len() == p.len());
-                                            }
-                                            for i in 0..vi.len() {
-                                                if vi[i] as usize >= p.len() {
-                                                    panic!("trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)", vi[i], p.len());
-                                                }
-                                            }
-                                            // TODO: alpha
-                                            // CreateTriangleMesh
-                                            // transform mesh vertices to world space
-                                            let mut p_ws: Vec<Point3f> = Vec::new();
-                                            let n_vertices: usize = p.len();
-                                            for i in 0..n_vertices {
-                                                p_ws.push(obj_to_world.transform_point(p[i]));
-                                            }
-                                            // vertex indices are expected as usize, not i32
-                                            let mut vertex_indices: Vec<usize> = Vec::new();
-                                            for i in 0..vi.len() {
-                                                vertex_indices.push(vi[i] as usize);
-                                            }
-                                            let mesh =
-                                                Arc::new(TriangleMesh::new(obj_to_world,
-                                                                           world_to_obj,
-                                                                           false, // reverse_orientation
-                                                                           false, // transform_swaps_handedness
-                                                                           vi.len() / 3, // n_triangles
-                                                                           vertex_indices,
-                                                                           n_vertices,
-                                                                           p_ws, // in world space
-                                                                           s,
-                                                                           n,
-                                                                           uvs));
-                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                let mtl: Arc<Material + Send + Sync> = create_material();
-                                                for id in 0..mesh.n_triangles {
-                                                    let triangle = Arc::new(Triangle::new(mesh.object_to_world,
-                                                                                          mesh.world_to_object,
-                                                                                          mesh.transform_swaps_handedness,
-                                                                                          mesh.clone(),
-                                                                                          id));
-                                                    let geo_prim = Arc::new(GeometricPrimitive::new(triangle, mtl.clone()));
-                                                    ro.primitives.push(geo_prim.clone());
-                                                }
-                                            }
-                                        } else if param_set.name == String::from("plymesh") {
-                                            println!("TODO: CreatePLYMesh");
-                                        } else if param_set.name == String::from("heightfield") {
-                                            println!("TODO: CreateHeightfield");
-                                        } else if param_set.name == String::from("loopsubdiv") {
-                                            println!("TODO: CreateLoopSubdiv");
-                                        } else if param_set.name == String::from("nurbs") {
-                                            println!("TODO: CreateNURBS");
-                                        } else {
-                                            panic!("Shape \"{}\" unknown.", param_set.name);
                                         }
                                     }
+                                    if !uvs.is_empty() {
+                                        // TODO: if (nuvi < npi) {...} else if (nuvi > npi) ...
+                                        assert!(uvs.len() == p.len());
+                                    }
+                                    assert!(vi.len() > 0_usize);
+                                    assert!(p.len() > 0_usize);
+                                    let s = param_set.find_vector3f(String::from("S"));
+                                    if !s.is_empty() {
+                                        assert!(s.len() == p.len());
+                                    }
+                                    let n = param_set.find_vector3f(String::from("N"));
+                                    if !n.is_empty() {
+                                        assert!(n.len() == p.len());
+                                    }
+                                    for i in 0..vi.len() {
+                                        if vi[i] as usize >= p.len() {
+                                            panic!("trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)", vi[i], p.len());
+                                        }
+                                    }
+                                    // TODO: alpha
+                                    // CreateTriangleMesh
+                                    // transform mesh vertices to world space
+                                    let mut p_ws: Vec<Point3f> = Vec::new();
+                                    let n_vertices: usize = p.len();
+                                    for i in 0..n_vertices {
+                                        p_ws.push(obj_to_world.transform_point(p[i]));
+                                    }
+                                    // vertex indices are expected as usize, not i32
+                                    let mut vertex_indices: Vec<usize> = Vec::new();
+                                    for i in 0..vi.len() {
+                                        vertex_indices.push(vi[i] as usize);
+                                    }
+                                    let mesh =
+                                        Arc::new(TriangleMesh::new(obj_to_world,
+                                                                   world_to_obj,
+                                                                   false, // reverse_orientation
+                                                                   false, // transform_swaps_handedness
+                                                                   vi.len() / 3, // n_triangles
+                                                                   vertex_indices,
+                                                                   n_vertices,
+                                                                   p_ws, // in world space
+                                                                   s,
+                                                                   n,
+                                                                   uvs));
+                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                        let mtl: Arc<Material + Send + Sync> = create_material();
+                                        for id in 0..mesh.n_triangles {
+                                            let triangle = Arc::new(Triangle::new(mesh.object_to_world,
+                                                                                  mesh.world_to_object,
+                                                                                  mesh.transform_swaps_handedness,
+                                                                                  mesh.clone(),
+                                                                                  id));
+                                            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, mtl.clone()));
+                                            ro.primitives.push(geo_prim.clone());
+                                        }
+                                    }
+                                } else if param_set.name == String::from("plymesh") {
+                                    println!("TODO: CreatePLYMesh");
+                                } else if param_set.name == String::from("heightfield") {
+                                    println!("TODO: CreateHeightfield");
+                                } else if param_set.name == String::from("loopsubdiv") {
+                                    println!("TODO: CreateLoopSubdiv");
+                                } else if param_set.name == String::from("nurbs") {
+                                    println!("TODO: CreateNURBS");
+                                } else {
+                                    panic!("Shape \"{}\" unknown.", param_set.name);
                                 }
                             } else {
                                 println!("PARAM_SET: {}", param_set.key_word);
@@ -2038,7 +2020,7 @@ fn world_end() {
                                     panic!("Sampler \"{}\" unknown.", ro.sampler_name);
                                 }
                                 // MakeIntegrator
-                                if let Some(sampler) = some_sampler {
+                                if let Some(_sampler) = some_sampler {
                                     let mut some_integrator: Option<Arc<SamplerIntegrator + Sync + Send>> = None;
                                     if ro.integrator_name == String::from("whitted") {
                                         println!("TODO: CreateWhittedIntegrator");
@@ -2050,7 +2032,7 @@ fn world_end() {
                                         let st: String = ro.integrator_params
                                             .find_one_string(String::from("strategy"),
                                                              String::from("all"));
-                                        let mut strategy: LightStrategy = LightStrategy::UniformSampleAll;
+                                        let strategy: LightStrategy;
                                         if st == String::from("one") {
                                             strategy = LightStrategy::UniformSampleOne;
                                         } else if st == String::from("all") {
@@ -2086,7 +2068,7 @@ fn world_end() {
                                     } else {
                                         panic!("Integrator \"{}\" unknown.", ro.integrator_name);
                                     }
-                                    if let Some(integrator) = some_integrator {
+                                    if let Some(_integrator) = some_integrator {
                                         // MakeIntegrator
                                         // TODO: if (renderOptions->haveScatteringMedia && ...)
                                         if ro.lights.is_empty() {
@@ -2099,7 +2081,7 @@ fn world_end() {
                                             let split_method_name: String =
                                                 ro.accelerator_params.find_one_string(String::from("splitmethod"),
                                                                                       String::from("sah"));
-                                            let mut split_method: SplitMethod = SplitMethod::SAH;
+                                            let split_method;
                                             if split_method_name == String::from("sah") {
                                                 split_method = SplitMethod::SAH;
                                             } else if split_method_name == String::from("hlbvh") {
@@ -2184,7 +2166,11 @@ fn main() {
                 }
                 let mut reader = BufReader::new(f);
                 let mut str_buf: String = String::default();
-                reader.read_to_string(&mut str_buf);
+                let num_bytes = reader.read_to_string(&mut str_buf);
+                if num_bytes.is_ok() {
+                    let n_bytes = num_bytes.unwrap();
+                    println!("{} bytes read", n_bytes);
+                }
                 unsafe {
                     // render options
                     NAMED_COORDINATE_SYSTEMS = Some(Box::new(HashMap::new()));
