@@ -27,6 +27,7 @@ use std::io::prelude::*;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::thread;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -857,44 +858,7 @@ impl_rdp! {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
                                     println!("LightSource \"{}\" ", param_set.name);
                                     print_params(&param_set);
-                                    // MakeLight (api.cpp:591)
-                                    if param_set.name == String::from("point") {
-                                        println!("TODO: CreatePointLight");
-                                    } else if param_set.name == String::from("spot") {
-                                        println!("TODO: CreateSpotLight");
-                                    } else if param_set.name == String::from("goniometric") {
-                                        println!("TODO: CreateGoniometricLight");
-                                    } else if param_set.name == String::from("projection") {
-                                        println!("TODO: CreateProjectionLight");
-                                    } else if param_set.name == String::from("distant") {
-                                        // CreateDistantLight
-                                        let l: Spectrum = param_set.find_one_spectrum(String::from("L"),
-                                                                                      Spectrum::new(1.0
-                                                                                                    as Float));
-                                        let sc: Spectrum = param_set.find_one_spectrum(String::from("scale"),
-                                                                                       Spectrum::new(1.0
-                                                                                                     as Float));
-                                        let from: Point3f = param_set.find_one_point3f(String::from("from"),
-                                                                                       Point3f { x: 0.0,
-                                                                                                 y: 0.0,
-                                                                                                 z: 0.0 });
-                                        let to: Point3f = param_set.find_one_point3f(String::from("to"),
-                                                                                       Point3f { x: 0.0,
-                                                                                                 y: 0.0,
-                                                                                                 z: 0.0 });
-                                        let dir: Vector3f = from - to;
-                                        // return std::make_shared<DistantLight>(light2world, L * sc, dir);
-                                        let distant_light =
-                                            Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
-                                        println!("{:?}", distant_light);
-                                        ro.lights.push(distant_light);
-                                    } else if param_set.name == String::from("infinite") {
-                                        println!("TODO: CreateInfiniteLight");
-                                    } else if param_set.name == String::from("exinfinite") {
-                                        println!("TODO: CreateInfiniteLight");
-                                    } else {
-                                        panic!("MakeLight: unknown name {}", param_set.name);
-                                    }
+                                    make_light(&param_set, ro);
                                 }
                                 // let lt = make_light(name, params, CUR_TRANSFORM.t[0]);
                             } else if param_set.key_word == String::from("Texture") {
@@ -1653,6 +1617,49 @@ fn create_material() -> Arc<Material + Send + Sync> {
     Arc::new(MatteMaterial::new(kd, 0.0 as Float))
 }
 
+fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
+    // MakeLight (api.cpp:591)
+    if param_set.name == String::from("point") {
+        println!("TODO: CreatePointLight");
+    } else if param_set.name == String::from("spot") {
+        println!("TODO: CreateSpotLight");
+    } else if param_set.name == String::from("goniometric") {
+        println!("TODO: CreateGoniometricLight");
+    } else if param_set.name == String::from("projection") {
+        println!("TODO: CreateProjectionLight");
+    } else if param_set.name == String::from("distant") {
+        // CreateDistantLight
+        let l: Spectrum = param_set.find_one_spectrum(String::from("L"),
+                                                      Spectrum::new(1.0
+                                                                    as Float));
+        let sc: Spectrum = param_set.find_one_spectrum(String::from("scale"),
+                                                       Spectrum::new(1.0
+                                                                     as Float));
+        let from: Point3f = param_set.find_one_point3f(String::from("from"),
+                                                       Point3f { x: 0.0,
+                                                                 y: 0.0,
+                                                                 z: 0.0 });
+        let to: Point3f = param_set.find_one_point3f(String::from("to"),
+                                                     Point3f { x: 0.0,
+                                                               y: 0.0,
+                                                               z: 0.0 });
+        let dir: Vector3f = from - to;
+        // return std::make_shared<DistantLight>(light2world, L * sc, dir);
+        unsafe {
+            let distant_light =
+                Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
+            println!("{:?}", distant_light);
+            ro.lights.push(distant_light);
+        }
+    } else if param_set.name == String::from("infinite") {
+        println!("TODO: CreateInfiniteLight");
+    } else if param_set.name == String::from("exinfinite") {
+        println!("TODO: CreateInfiniteLight");
+    } else {
+        panic!("MakeLight: unknown name {}", param_set.name);
+    }
+}
+
 fn pbrt_shape(param_set: &ParamSet) {
     // pbrtShape (api.cpp:1153)
     // TODO: if (!curTransform.IsAnimated()) { ... }
@@ -2083,69 +2090,72 @@ fn pbrt_world_end() {
 }
 
 fn main() {
-    // handle command line options
-    let args: Vec<String> = env::args().collect();
-    let program = args[0].clone();
-    let mut opts = Options::new();
-    opts.optflag("h", "help", "print this help menu");
-    opts.optopt("i", "", "parse an input file", "FILE");
-    opts.optflag("v", "version", "print version number");
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(f) => panic!(f.to_string()),
-    };
-    if matches.opt_present("h") {
-        print_usage(&program, opts);
-        return;
-    } else if matches.opt_present("i") {
-        let infile = matches.opt_str("i");
-        match infile {
-            Some(x) => {
-                println!("FILE = {}", x);
-                let f = File::open(x.clone()).unwrap();
-                let ip: &Path = Path::new(x.as_str());
-                if ip.is_relative() {
-                    let cp: PathBuf = env::current_dir().unwrap();
-                    let pb: PathBuf = cp.join(ip);
-                    let search_directory: &Path = pb.as_path().parent().unwrap();
-                    println!("search_directory is {}", search_directory.display());
+    let child = thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
+        // handle command line options
+        let args: Vec<String> = env::args().collect();
+        let program = args[0].clone();
+        let mut opts = Options::new();
+        opts.optflag("h", "help", "print this help menu");
+        opts.optopt("i", "", "parse an input file", "FILE");
+        opts.optflag("v", "version", "print version number");
+        let matches = match opts.parse(&args[1..]) {
+            Ok(m) => m,
+            Err(f) => panic!(f.to_string()),
+        };
+        if matches.opt_present("h") {
+            print_usage(&program, opts);
+            return;
+        } else if matches.opt_present("i") {
+            let infile = matches.opt_str("i");
+            match infile {
+                Some(x) => {
+                    println!("FILE = {}", x);
+                    let f = File::open(x.clone()).unwrap();
+                    let ip: &Path = Path::new(x.as_str());
+                    if ip.is_relative() {
+                        let cp: PathBuf = env::current_dir().unwrap();
+                        let pb: PathBuf = cp.join(ip);
+                        let search_directory: &Path = pb.as_path().parent().unwrap();
+                        println!("search_directory is {}", search_directory.display());
+                        unsafe {
+                            SEARCH_DIRECTORY = Some(Box::new(PathBuf::from(search_directory)));
+                        }
+                    }
+                    let mut reader = BufReader::new(f);
+                    let mut str_buf: String = String::default();
+                    let num_bytes = reader.read_to_string(&mut str_buf);
+                    if num_bytes.is_ok() {
+                        let n_bytes = num_bytes.unwrap();
+                        println!("{} bytes read", n_bytes);
+                    }
                     unsafe {
-                        SEARCH_DIRECTORY = Some(Box::new(PathBuf::from(search_directory)));
+                        // render options
+                        NAMED_COORDINATE_SYSTEMS = Some(Box::new(HashMap::new()));
+                        RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
+                        GRAPHICS_STATE = Some(Box::new(GraphicsState::default()));
+                        PUSHED_GRAPHICS_STATES = Some(Box::new(Vec::new()));
+                        PUSHED_TRANSFORMS = Some(Box::new(Vec::new()));
+                        PARAM_SET = Some(Box::new(ParamSet::default()));
+                        // parser
+                        let mut parser = Rdp::new(StringInput::new(&str_buf));
+                        assert!(parser.pbrt());
+                        assert!(parser.end());
+                        // println!("{:?}", parser.queue());
+                        println!("do something with created tokens ...");
+                        parser.main();
+                        println!("done.");
                     }
                 }
-                let mut reader = BufReader::new(f);
-                let mut str_buf: String = String::default();
-                let num_bytes = reader.read_to_string(&mut str_buf);
-                if num_bytes.is_ok() {
-                    let n_bytes = num_bytes.unwrap();
-                    println!("{} bytes read", n_bytes);
-                }
-                unsafe {
-                    // render options
-                    NAMED_COORDINATE_SYSTEMS = Some(Box::new(HashMap::new()));
-                    RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
-                    GRAPHICS_STATE = Some(Box::new(GraphicsState::default()));
-                    PUSHED_GRAPHICS_STATES = Some(Box::new(Vec::new()));
-                    PUSHED_TRANSFORMS = Some(Box::new(Vec::new()));
-                    PARAM_SET = Some(Box::new(ParamSet::default()));
-                    // parser
-                    let mut parser = Rdp::new(StringInput::new(&str_buf));
-                    assert!(parser.pbrt());
-                    assert!(parser.end());
-                    // println!("{:?}", parser.queue());
-                    println!("do something with created tokens ...");
-                    parser.main();
-                    println!("done.");
-                }
+                None => panic!("no input file name"),
             }
-            None => panic!("no input file name"),
+            return;
+        } else if matches.opt_present("v") {
+            print_version(&program);
+            return;
+        } else {
+            print_usage(&program, opts);
+            return;
         }
-        return;
-    } else if matches.opt_present("v") {
-        print_version(&program);
-        return;
-    } else {
-        print_usage(&program, opts);
-        return;
-    }
+    }).unwrap();
+    let _res = child.join().unwrap();
 }
