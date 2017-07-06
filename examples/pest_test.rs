@@ -7,13 +7,13 @@ extern crate getopts;
 extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerboard2DTexture,
-           ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Filter, Float,
+           ConstantTexture, DirectLightingIntegrator, Disk, DistantLight, Film, Filter, Float,
            GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture, ImageWrap,
            LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet,
            PerspectiveCamera, PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f,
-           RenderOptions, Sampler, SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod,
-           Texture, TextureMapping2D, TextureParams, Transform, TransformSet, Triangle,
-           TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+           PointLight, RenderOptions, Sampler, SamplerIntegrator, Scene, Spectrum, Sphere,
+           SplitMethod, Texture, TextureMapping2D, TextureParams, Transform, TransformSet,
+           Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -1561,7 +1561,8 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     // TODO: let roughness = mp.get_float_texture(String::from("roughness"), 0.1 as Float);
                     // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
                     let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
-                    let plastic = Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
+                    let plastic =
+                        Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
                     return plastic;
                 } else if graphics_state.material == String::from("translucent") {
                     println!("TODO: CreateTranslucentMaterial");
@@ -1629,7 +1630,17 @@ fn create_material() -> Arc<Material + Send + Sync> {
 fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     // MakeLight (api.cpp:591)
     if param_set.name == String::from("point") {
-        println!("TODO: CreatePointLight");
+        let i: Spectrum = param_set
+            .find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
+        // Spectrum sc = paramSet.FindOneSpectrum("scale", Spectrum(1.0));
+        // Point3f P = paramSet.FindOnePoint3f("from", Point3f(0, 0, 0));
+        // Transform l2w = Translate(Vector3f(P.x, P.y, P.z)) * light2world;
+        // return std::make_shared<PointLight>(l2w, medium, I * sc);
+        unsafe {
+            let point_light = Arc::new(PointLight::new(&CUR_TRANSFORM.t[0], &i));
+            println!("{:?}", point_light);
+            ro.lights.push(point_light);
+        }
     } else if param_set.name == String::from("spot") {
         println!("TODO: CreateSpotLight");
     } else if param_set.name == String::from("goniometric") {
@@ -1698,14 +1709,6 @@ fn pbrt_shape(param_set: &ParamSet) {
                                               z_min,
                                               z_max,
                                               phi_max));
-            print!("Sphere {{ object_to_world: {:?}, world_to_object: {:?}, ",
-                   obj_to_world,
-                   world_to_obj);
-            println!("radius: {}, z_min: {}, z_max: {}, phi_max: {} }}",
-                     radius,
-                     z_min,
-                     z_max,
-                     phi_max);
             let mtl: Arc<Material + Send + Sync> = create_material();
             let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
             if let Some(ref mut ro) = RENDER_OPTIONS {
@@ -1714,7 +1717,23 @@ fn pbrt_shape(param_set: &ParamSet) {
         } else if param_set.name == String::from("cylinder") {
             println!("TODO: CreateCylinderShape");
         } else if param_set.name == String::from("disk") {
-            println!("TODO: CreateDiskShape");
+            let height: Float = param_set.find_one_float(String::from("height"), 0.0);
+            let radius: Float = param_set.find_one_float(String::from("radius"), 1.0);
+            let inner_radius: Float = param_set.find_one_float(String::from("innerradius"), 0.0);
+            let phi_max: Float = param_set.find_one_float(String::from("phimax"), 360.0);
+            let disk = Arc::new(Disk::new(obj_to_world,
+                                          world_to_obj,
+                                          false,
+                                          false,
+                                          height,
+                                          radius,
+                                          inner_radius,
+                                          phi_max));
+            let mtl: Arc<Material + Send + Sync> = create_material();
+            let geo_prim = Arc::new(GeometricPrimitive::new(disk, mtl.clone()));
+            if let Some(ref mut ro) = RENDER_OPTIONS {
+                ro.primitives.push(geo_prim.clone());
+            }
         } else if param_set.name == String::from("cone") {
             println!("TODO: CreateConeShape");
         } else if param_set.name == String::from("paraboloid") {
@@ -1846,7 +1865,19 @@ fn pbrt_world_end() {
                                      });
                         some_filter = Some(box_filter);
                     } else if ro.filter_name == String::from("gaussian") {
-                        println!("TODO: CreateGaussianFilter");
+                        // println!("TODO: CreateGaussianFilter");
+                        // WARNING: Use BoxFilter for now !!!
+                        let xw: Float = 0.5;
+                        let yw: Float = 0.5;
+                        let box_filter: Arc<Filter + Sync + Send> =
+                            Arc::new(BoxFilter {
+                                         radius: Vector2f { x: xw, y: yw },
+                                         inv_radius: Vector2f {
+                                             x: 1.0 / xw,
+                                             y: 1.0 / yw,
+                                         },
+                                     });
+                        some_filter = Some(box_filter);
                     } else if ro.filter_name == String::from("mitchell") {
                         println!("TODO: CreateMitchellFilter");
                     } else if ro.filter_name == String::from("sinc") {
@@ -1959,10 +1990,11 @@ fn pbrt_world_end() {
                                 // MakeSampler
                                 let mut some_sampler: Option<Arc<Sampler + Sync + Send>> = None;
                                 if ro.sampler_name == String::from("lowdiscrepancy") ||
-                                   ro.sampler_name == String::from("02sequence") {
+                                    ro.sampler_name == String::from("02sequence")
+                                {
                                     let nsamp: i32 =
                                         ro.sampler_params
-                                            .find_one_int(String::from("pixelsamples"), 16);
+                                        .find_one_int(String::from("pixelsamples"), 16);
                                     let sd: i32 = ro.sampler_params
                                         .find_one_int(String::from("dimensions"), 4);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
@@ -1973,7 +2005,16 @@ fn pbrt_world_end() {
                                 } else if ro.sampler_name == String::from("maxmindist") {
                                     println!("TODO: CreateMaxMinDistSampler");
                                 } else if ro.sampler_name == String::from("halton") {
-                                    println!("TODO: CreateHaltonSampler");
+                                    // println!("TODO: CreateHaltonSampler");
+                                    // int nsamp = params.FindOneInt("pixelsamples", 16);
+                                    // if (PbrtOptions.quickRender) nsamp = 1;
+                                    // bool sampleAtCenter = params.FindOneBool("samplepixelcenter", false);
+                                    // return new HaltonSampler(nsamp, sampleBounds, sampleAtCenter);
+                                    // WARNING: Use ZeroTwoSequenceSampler for now !!!
+                                    let nsamp: i64 = 16;
+                                    let sd: i64 = 4;
+                                    let sampler = Arc::new(ZeroTwoSequenceSampler::new(nsamp, sd));
+                                    some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("sobol") {
                                     println!("TODO: CreateSobolSampler");
                                 } else if ro.sampler_name == String::from("random") {
@@ -2071,7 +2112,17 @@ fn pbrt_world_end() {
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             pbrt::render(&scene, &camera);
                                         } else if ro.accelerator_name == String::from("kdtree") {
-                                            println!("TODO: CreateKdTreeAccelerator");
+                                            // println!("TODO: CreateKdTreeAccelerator");
+                                            // WARNING: Use BVHAccel for now !!!
+                                            let accelerator =
+                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
+                                                                       4,
+                                                                       SplitMethod::SAH));
+                                            // MakeScene
+                                            let scene: Scene = Scene::new(accelerator.clone(), ro.lights.clone());
+                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                                            // TODO: lights.erase(lights.begin(), lights.end());
+                                            pbrt::render(&scene, &camera);
                                         } else {
                                             panic!("Accelerator \"{}\" unknown.",
                                                    ro.accelerator_name);
