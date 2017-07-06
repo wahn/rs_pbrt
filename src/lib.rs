@@ -9525,7 +9525,7 @@ impl TextureParams {
             }
         }
         let mut val: Spectrum = self.material_params.find_one_spectrum(n.clone(), def);
-        val = self.geom_params.find_one_spectrum(n.clone(), def);
+        val = self.geom_params.find_one_spectrum(n.clone(), val);
         Arc::new(ConstantTexture { value: val })
     }
     pub fn get_float_texture(&mut self, n: String, def: Float) -> Arc<Texture<Float> + Send + Sync>
@@ -9545,7 +9545,7 @@ impl TextureParams {
             }
         }
         let mut val: Float = self.material_params.find_one_float(n.clone(), def);
-        val = self.geom_params.find_one_float(n.clone(), def);
+        val = self.geom_params.find_one_float(n.clone(), val);
         Arc::new(ConstantTexture { value: val })
     }
     pub fn get_float_texture_or_null(&mut self, n: String) -> Option<Arc<Texture<Float> + Send + Sync>>
