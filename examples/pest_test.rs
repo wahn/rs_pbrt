@@ -1778,7 +1778,7 @@ fn pbrt_shape(param_set: &ParamSet) {
             if !s.is_empty() {
                 assert!(s.len() == p.len());
             }
-            let n = param_set.find_vector3f(String::from("N"));
+            let n = param_set.find_normal3f(String::from("N"));
             if !n.is_empty() {
                 assert!(n.len() == p.len());
             }

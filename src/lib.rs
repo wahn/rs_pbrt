@@ -449,7 +449,7 @@
 //! ```rust
 //! extern crate pbrt;
 //!
-//! use pbrt::{Point2f, Point3f, Transform, TriangleMesh, Vector3f};
+//! use pbrt::{Normal3f, Point2f, Point3f, Transform, TriangleMesh, Vector3f};
 //!
 //! fn main() {
 //!     let translate: Transform = Transform::translate(Vector3f {
@@ -482,7 +482,7 @@
 //!                                    z: 400.0,
 //!                                }];
 //!     let s: Vec<Vector3f> = Vec::new();
-//!     let n: Vec<Vector3f> = Vec::new();
+//!     let n: Vec<Normal3f> = Vec::new();
 //!     let uv: Vec<Point2f> = vec![Point2f { x: 0.0, y: 0.0 },
 //!                                 Point2f { x: 1.0, y: 0.0 },
 //!                                 Point2f { x: 0.0, y: 1.0 },
@@ -4924,7 +4924,7 @@ pub struct TriangleMesh {
     /// vector of *n_vertices* vertex positions
     pub p: Vec<Point3f>,
     /// an optional vector of normal vectors (can be empty)
-    pub n: Vec<Vector3f>,
+    pub n: Vec<Normal3f>,
     /// an optional vector of tangent vectors (can be empty)
     pub s: Vec<Vector3f>,
     /// an optional vector of paramtric (u, v) values (texture coordinates)
@@ -4947,7 +4947,7 @@ impl TriangleMesh {
                n_vertices: usize,
                p: Vec<Point3f>,
                s: Vec<Vector3f>,
-               n: Vec<Vector3f>,
+               n: Vec<Normal3f>,
                uv: Vec<Point2f>)
                -> Self {
         TriangleMesh {
@@ -9486,6 +9486,19 @@ impl ParamSet {
     pub fn find_vector3f(&self, name: String) -> Vec<Vector3f> {
         let mut values: Vec<Vector3f> = Vec::new();
         for v in &self.vector3fs {
+            if v.name == name {
+                let n_values = v.n_values;
+                // v.looked_up = true;
+                for i in 0..n_values {
+                    values.push(v.values[i]);
+                }
+            }
+        }
+        values
+    }
+    pub fn find_normal3f(&self, name: String) -> Vec<Normal3f> {
+        let mut values: Vec<Normal3f> = Vec::new();
+        for v in &self.normals {
             if v.name == name {
                 let n_values = v.n_values;
                 // v.looked_up = true;

@@ -1,7 +1,7 @@
 extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, ConstantTexture, DistantLight, Film,
-           Filter, Float, GeometricPrimitive, Light, MatteMaterial, PlasticMaterial,
+           Filter, Float, GeometricPrimitive, Light, MatteMaterial, Normal3f, PlasticMaterial,
            PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive, Scene, Spectrum,
            Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f};
 use std::sync::Arc;
@@ -51,7 +51,7 @@ impl SceneDescriptionBuilder {
                 n_vertices: usize,
                 p_ws: Vec<Point3f>,
                 s: Vec<Vector3f>,
-                n: Vec<Vector3f>,
+                n: Vec<Normal3f>,
                 uv: Vec<Point2f>)
                 -> &mut SceneDescriptionBuilder {
         let triangle_mesh = Arc::new(TriangleMesh::new(object_to_world,
@@ -239,7 +239,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -282,7 +282,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -325,7 +325,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -368,7 +368,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -411,7 +411,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -454,7 +454,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -497,7 +497,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -540,7 +540,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -583,7 +583,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -626,7 +626,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -669,7 +669,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -712,7 +712,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -755,7 +755,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -798,7 +798,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -841,7 +841,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -884,7 +884,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -927,7 +927,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -970,7 +970,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1013,7 +1013,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1056,7 +1056,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1099,7 +1099,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1142,7 +1142,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1185,7 +1185,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1228,7 +1228,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1271,7 +1271,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1314,7 +1314,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1357,7 +1357,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1400,7 +1400,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1443,7 +1443,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1486,7 +1486,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1529,7 +1529,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1572,7 +1572,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1615,7 +1615,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1658,7 +1658,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1701,7 +1701,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,
@@ -1744,7 +1744,7 @@ fn main() {
                                                               });
         let world_to_object: Transform = Transform::inverse(object_to_world);
         let s: Vec<Vector3f> = Vec::new();
-        let n: Vec<Vector3f> = Vec::new();
+        let n: Vec<Normal3f> = Vec::new();
         let uv: Vec<Point2f> = Vec::new();
         let n_vertices: usize = p.len();
         builder.add_mesh(object_to_world,

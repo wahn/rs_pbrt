@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Point2f, Point3f, Transform, Ray, Shape, Triangle, TriangleMesh, Vector3f};
+use pbrt::{Normal3f, Point2f, Point3f, Transform, Ray, Shape, Triangle, TriangleMesh, Vector3f};
 use std::sync::Arc;
 
 fn main() {
@@ -31,10 +31,10 @@ fn main() {
                                 Point2f { x: 0.0, y: 1.0 },
                                 Point2f { x: 1.0, y: 1.0 }];
     let object_to_world: Transform = Transform::translate(Vector3f {
-        x: 0.25,
-        y: 0.0,
-        z: 0.0,
-    });
+                                                              x: 0.25,
+                                                              y: 0.0,
+                                                              z: 0.0,
+                                                          });
     let world_to_object: Transform = Transform::inverse(object_to_world);
     let mut p_ws: Vec<Point3f> = Vec::new();
     let n_vertices: usize = p.len();
@@ -42,7 +42,7 @@ fn main() {
         p_ws.push(object_to_world.transform_point(p[i]));
     }
     let s: Vec<Vector3f> = Vec::new();
-    let n: Vec<Vector3f> = Vec::new();
+    let n: Vec<Normal3f> = Vec::new();
     let triangle_mesh = Arc::new(TriangleMesh::new(object_to_world,
                                                    world_to_object,
                                                    false,

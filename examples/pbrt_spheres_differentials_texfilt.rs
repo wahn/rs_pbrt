@@ -3,9 +3,10 @@ extern crate getopts;
 
 use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Checkerboard2DTexture,
            ConstantTexture, DistantLight, Film, Filter, Float, GeometricPrimitive, GlassMaterial,
-           ImageTexture, ImageWrap, Light, MatteMaterial, MirrorMaterial, PerspectiveCamera,
-           PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene, Spectrum, Sphere,
-           SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f};
+           ImageTexture, ImageWrap, Light, MatteMaterial, MirrorMaterial, Normal3f,
+           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene,
+           Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
+           Vector2f, Vector3f};
 use std::env;
 use std::string::String;
 use std::sync::Arc;
@@ -50,7 +51,7 @@ impl SceneDescriptionBuilder {
                 n_vertices: usize,
                 p_ws: Vec<Point3f>,
                 s: Vec<Vector3f>,
-                n: Vec<Vector3f>,
+                n: Vec<Normal3f>,
                 uv: Vec<Point2f>)
                 -> &mut SceneDescriptionBuilder {
         let triangle_mesh = Arc::new(TriangleMesh::new(object_to_world,
@@ -243,7 +244,7 @@ fn main() {
         p_ws.push(object_to_world.transform_point(p[i]));
     }
     let s: Vec<Vector3f> = Vec::new();
-    let n: Vec<Vector3f> = Vec::new();
+    let n: Vec<Normal3f> = Vec::new();
     println!("########");
     println!("# mesh #");
     println!("########");
@@ -485,12 +486,12 @@ fn main() {
     let xw: Float = 0.5;
     let yw: Float = 0.5;
     let filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
-        radius: Vector2f { x: xw, y: yw },
-        inv_radius: Vector2f {
-            x: 1.0 / xw,
-            y: 1.0 / yw,
-        },
-    });
+                                                         radius: Vector2f { x: xw, y: yw },
+                                                         inv_radius: Vector2f {
+                                                             x: 1.0 / xw,
+                                                             y: 1.0 / yw,
+                                                         },
+                                                     });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
     let film: Film = Film::new(Point2i { x: xres, y: yres },
                                crop,
