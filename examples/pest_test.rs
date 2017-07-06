@@ -10,10 +10,10 @@ use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerbo
            ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Filter, Float,
            GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture, ImageWrap,
            LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet,
-           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, RenderOptions, Sampler,
-           SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod, Texture, TextureMapping2D,
-           TextureParams, Transform, TransformSet, Triangle, TriangleMesh, UVMapping2D, Vector2f,
-           Vector3f, ZeroTwoSequenceSampler};
+           PerspectiveCamera, PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f,
+           RenderOptions, Sampler, SamplerIntegrator, Scene, Spectrum, Sphere, SplitMethod,
+           Texture, TextureMapping2D, TextureParams, Transform, TransformSet, Triangle,
+           TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -1553,7 +1553,16 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
                     return matte;
                 } else if graphics_state.material == String::from("plastic") {
-                    println!("TODO: CreatePlasticMaterial");
+                    let kd = mp.get_spectrum_texture(String::from("Kd"),
+                                                     Spectrum::new(0.25 as Float));
+                    let ks = mp.get_spectrum_texture(String::from("Ks"),
+                                                     Spectrum::new(0.25 as Float));
+                    let roughness: Float = 0.1;
+                    // TODO: let roughness = mp.get_float_texture(String::from("roughness"), 0.1 as Float);
+                    // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
+                    let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
+                    let plastic = Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
+                    return plastic;
                 } else if graphics_state.material == String::from("translucent") {
                     println!("TODO: CreateTranslucentMaterial");
                 } else if graphics_state.material == String::from("glass") {
@@ -1629,25 +1638,26 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
         println!("TODO: CreateProjectionLight");
     } else if param_set.name == String::from("distant") {
         // CreateDistantLight
-        let l: Spectrum = param_set.find_one_spectrum(String::from("L"),
-                                                      Spectrum::new(1.0
-                                                                    as Float));
-        let sc: Spectrum = param_set.find_one_spectrum(String::from("scale"),
-                                                       Spectrum::new(1.0
-                                                                     as Float));
+        let l: Spectrum = param_set
+            .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
+        let sc: Spectrum =
+            param_set.find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
         let from: Point3f = param_set.find_one_point3f(String::from("from"),
-                                                       Point3f { x: 0.0,
-                                                                 y: 0.0,
-                                                                 z: 0.0 });
+                                                       Point3f {
+                                                           x: 0.0,
+                                                           y: 0.0,
+                                                           z: 0.0,
+                                                       });
         let to: Point3f = param_set.find_one_point3f(String::from("to"),
-                                                     Point3f { x: 0.0,
-                                                               y: 0.0,
-                                                               z: 0.0 });
+                                                     Point3f {
+                                                         x: 0.0,
+                                                         y: 0.0,
+                                                         z: 0.0,
+                                                     });
         let dir: Vector3f = from - to;
         // return std::make_shared<DistantLight>(light2world, L * sc, dir);
         unsafe {
-            let distant_light =
-                Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
+            let distant_light = Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
             println!("{:?}", distant_light);
             ro.lights.push(distant_light);
         }
@@ -1669,21 +1679,17 @@ fn pbrt_shape(param_set: &ParamSet) {
             m: CUR_TRANSFORM.t[0].m,
             m_inv: CUR_TRANSFORM.t[0].m_inv,
         };
-        let world_to_obj: Transform =Transform {
+        let world_to_obj: Transform = Transform {
             m: CUR_TRANSFORM.t[0].m_inv,
             m_inv: CUR_TRANSFORM.t[0].m,
         };
         // MakeShapes (api.cpp:296)
         if param_set.name == String::from("sphere") {
             // CreateSphereShape
-            let radius: Float = param_set.find_one_float(String::from("radius"),
-                                                         1.0 as Float);
-            let z_min: Float = param_set.find_one_float(String::from("zmin"),
-                                                        -radius);
-            let z_max: Float = param_set.find_one_float(String::from("zmin"),
-                                                        radius);
-            let phi_max: Float = param_set.find_one_float(String::from("phimax"),
-                                                          360.0 as Float);
+            let radius: Float = param_set.find_one_float(String::from("radius"), 1.0 as Float);
+            let z_min: Float = param_set.find_one_float(String::from("zmin"), -radius);
+            let z_max: Float = param_set.find_one_float(String::from("zmin"), radius);
+            let phi_max: Float = param_set.find_one_float(String::from("phimax"), 360.0 as Float);
             let sphere = Arc::new(Sphere::new(obj_to_world,
                                               world_to_obj,
                                               false,
@@ -1736,9 +1742,10 @@ fn pbrt_shape(param_set: &ParamSet) {
                 if !fuv.is_empty() {
                     // found some float UVs
                     for i in 0..(fuv.len() / 2) {
-                        uvs.push(Point2f { x: fuv[2 * i],
-                                           y:  fuv[2 * i + 1],
-                        });
+                        uvs.push(Point2f {
+                                     x: fuv[2 * i],
+                                     y: fuv[2 * i + 1],
+                                 });
                     }
                 }
             }
@@ -1758,7 +1765,9 @@ fn pbrt_shape(param_set: &ParamSet) {
             }
             for i in 0..vi.len() {
                 if vi[i] as usize >= p.len() {
-                    panic!("trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)", vi[i], p.len());
+                    panic!("trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)",
+                           vi[i],
+                           p.len());
                 }
             }
             // TODO: alpha
@@ -1774,18 +1783,17 @@ fn pbrt_shape(param_set: &ParamSet) {
             for i in 0..vi.len() {
                 vertex_indices.push(vi[i] as usize);
             }
-            let mesh =
-                Arc::new(TriangleMesh::new(obj_to_world,
-                                           world_to_obj,
-                                           false, // reverse_orientation
-                                           false, // transform_swaps_handedness
-                                           vi.len() / 3, // n_triangles
-                                           vertex_indices,
-                                           n_vertices,
-                                           p_ws, // in world space
-                                           s,
-                                           n,
-                                           uvs));
+            let mesh = Arc::new(TriangleMesh::new(obj_to_world,
+                                                  world_to_obj,
+                                                  false, // reverse_orientation
+                                                  false, // transform_swaps_handedness
+                                                  vi.len() / 3, // n_triangles
+                                                  vertex_indices,
+                                                  n_vertices,
+                                                  p_ws, // in world space
+                                                  s,
+                                                  n,
+                                                  uvs));
             if let Some(ref mut ro) = RENDER_OPTIONS {
                 let mtl: Arc<Material + Send + Sync> = create_material();
                 for id in 0..mesh.n_triangles {
@@ -2090,72 +2098,75 @@ fn pbrt_world_end() {
 }
 
 fn main() {
-    let child = thread::Builder::new().stack_size(32 * 1024 * 1024).spawn(move || {
-        // handle command line options
-        let args: Vec<String> = env::args().collect();
-        let program = args[0].clone();
-        let mut opts = Options::new();
-        opts.optflag("h", "help", "print this help menu");
-        opts.optopt("i", "", "parse an input file", "FILE");
-        opts.optflag("v", "version", "print version number");
-        let matches = match opts.parse(&args[1..]) {
-            Ok(m) => m,
-            Err(f) => panic!(f.to_string()),
-        };
-        if matches.opt_present("h") {
-            print_usage(&program, opts);
-            return;
-        } else if matches.opt_present("i") {
-            let infile = matches.opt_str("i");
-            match infile {
-                Some(x) => {
-                    println!("FILE = {}", x);
-                    let f = File::open(x.clone()).unwrap();
-                    let ip: &Path = Path::new(x.as_str());
-                    if ip.is_relative() {
-                        let cp: PathBuf = env::current_dir().unwrap();
-                        let pb: PathBuf = cp.join(ip);
-                        let search_directory: &Path = pb.as_path().parent().unwrap();
-                        println!("search_directory is {}", search_directory.display());
+    let child = thread::Builder::new()
+        .stack_size(32 * 1024 * 1024)
+        .spawn(move || {
+            // handle command line options
+            let args: Vec<String> = env::args().collect();
+            let program = args[0].clone();
+            let mut opts = Options::new();
+            opts.optflag("h", "help", "print this help menu");
+            opts.optopt("i", "", "parse an input file", "FILE");
+            opts.optflag("v", "version", "print version number");
+            let matches = match opts.parse(&args[1..]) {
+                Ok(m) => m,
+                Err(f) => panic!(f.to_string()),
+            };
+            if matches.opt_present("h") {
+                print_usage(&program, opts);
+                return;
+            } else if matches.opt_present("i") {
+                let infile = matches.opt_str("i");
+                match infile {
+                    Some(x) => {
+                        println!("FILE = {}", x);
+                        let f = File::open(x.clone()).unwrap();
+                        let ip: &Path = Path::new(x.as_str());
+                        if ip.is_relative() {
+                            let cp: PathBuf = env::current_dir().unwrap();
+                            let pb: PathBuf = cp.join(ip);
+                            let search_directory: &Path = pb.as_path().parent().unwrap();
+                            println!("search_directory is {}", search_directory.display());
+                            unsafe {
+                                SEARCH_DIRECTORY = Some(Box::new(PathBuf::from(search_directory)));
+                            }
+                        }
+                        let mut reader = BufReader::new(f);
+                        let mut str_buf: String = String::default();
+                        let num_bytes = reader.read_to_string(&mut str_buf);
+                        if num_bytes.is_ok() {
+                            let n_bytes = num_bytes.unwrap();
+                            println!("{} bytes read", n_bytes);
+                        }
                         unsafe {
-                            SEARCH_DIRECTORY = Some(Box::new(PathBuf::from(search_directory)));
+                            // render options
+                            NAMED_COORDINATE_SYSTEMS = Some(Box::new(HashMap::new()));
+                            RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
+                            GRAPHICS_STATE = Some(Box::new(GraphicsState::default()));
+                            PUSHED_GRAPHICS_STATES = Some(Box::new(Vec::new()));
+                            PUSHED_TRANSFORMS = Some(Box::new(Vec::new()));
+                            PARAM_SET = Some(Box::new(ParamSet::default()));
+                            // parser
+                            let mut parser = Rdp::new(StringInput::new(&str_buf));
+                            assert!(parser.pbrt());
+                            assert!(parser.end());
+                            // println!("{:?}", parser.queue());
+                            println!("do something with created tokens ...");
+                            parser.main();
+                            println!("done.");
                         }
                     }
-                    let mut reader = BufReader::new(f);
-                    let mut str_buf: String = String::default();
-                    let num_bytes = reader.read_to_string(&mut str_buf);
-                    if num_bytes.is_ok() {
-                        let n_bytes = num_bytes.unwrap();
-                        println!("{} bytes read", n_bytes);
-                    }
-                    unsafe {
-                        // render options
-                        NAMED_COORDINATE_SYSTEMS = Some(Box::new(HashMap::new()));
-                        RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
-                        GRAPHICS_STATE = Some(Box::new(GraphicsState::default()));
-                        PUSHED_GRAPHICS_STATES = Some(Box::new(Vec::new()));
-                        PUSHED_TRANSFORMS = Some(Box::new(Vec::new()));
-                        PARAM_SET = Some(Box::new(ParamSet::default()));
-                        // parser
-                        let mut parser = Rdp::new(StringInput::new(&str_buf));
-                        assert!(parser.pbrt());
-                        assert!(parser.end());
-                        // println!("{:?}", parser.queue());
-                        println!("do something with created tokens ...");
-                        parser.main();
-                        println!("done.");
-                    }
+                    None => panic!("no input file name"),
                 }
-                None => panic!("no input file name"),
+                return;
+            } else if matches.opt_present("v") {
+                print_version(&program);
+                return;
+            } else {
+                print_usage(&program, opts);
+                return;
             }
-            return;
-        } else if matches.opt_present("v") {
-            print_version(&program);
-            return;
-        } else {
-            print_usage(&program, opts);
-            return;
-        }
-    }).unwrap();
+        })
+        .unwrap();
     let _res = child.join().unwrap();
 }
