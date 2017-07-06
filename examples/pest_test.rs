@@ -659,12 +659,18 @@ impl_rdp! {
                             optional_parameters.rule == Rule::last_statement
                         {
                             println!("Shape \"{}\" ", name);
+                            // WARNING: Reset BEFORE calling pbrt_shape() !
+                            param_set.reset(String::from("Shape"),
+                                            String::from(name),
+                                            String::from(""),
+                                            String::from(""));
                             pbrt_shape(&param_set);
+                        } else {
+                            param_set.reset(String::from("Shape"),
+                                            String::from(name),
+                                            String::from(""),
+                                            String::from(""));
                         }
-                        param_set.reset(String::from("Shape"),
-                                        String::from(name),
-                                        String::from(""),
-                                        String::from(""));
                     }
                 }
                 if optional_parameters.rule == Rule::parameter {
