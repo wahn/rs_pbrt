@@ -8,7 +8,7 @@ extern crate pbrt;
 
 use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerboard2DTexture,
            ConstantTexture, DirectLightingIntegrator, Disk, DistantLight, Film, Filter, Float,
-           GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture, ImageWrap,
+           GaussianFilter, GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture, ImageWrap,
            LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet,
            PerspectiveCamera, PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f,
            PointLight, RenderOptions, Sampler, SamplerIntegrator, Scene, Spectrum, Sphere,
@@ -1857,27 +1857,36 @@ fn pbrt_world_end() {
                                                                         0.5);
                         let box_filter: Arc<Filter + Sync + Send> =
                             Arc::new(BoxFilter {
-                                         radius: Vector2f { x: xw, y: yw },
-                                         inv_radius: Vector2f {
-                                             x: 1.0 / xw,
-                                             y: 1.0 / yw,
-                                         },
-                                     });
+                                radius: Vector2f { x: xw, y: yw },
+                                inv_radius: Vector2f {
+                                    x: 1.0 / xw,
+                                    y: 1.0 / yw,
+                                },
+                            });
                         some_filter = Some(box_filter);
                     } else if ro.filter_name == String::from("gaussian") {
                         // println!("TODO: CreateGaussianFilter");
-                        // WARNING: Use BoxFilter for now !!!
-                        let xw: Float = 0.5;
-                        let yw: Float = 0.5;
-                        let box_filter: Arc<Filter + Sync + Send> =
-                            Arc::new(BoxFilter {
-                                         radius: Vector2f { x: xw, y: yw },
-                                         inv_radius: Vector2f {
-                                             x: 1.0 / xw,
-                                             y: 1.0 / yw,
+                        let xw: Float = ro.filter_params.find_one_float(String::from("xwidth"),
+                                                                        2.0);
+                        let yw: Float = ro.filter_params.find_one_float(String::from("ywidth"),
+                                                                        2.0);
+                        let alpha: Float = ro.filter_params.find_one_float(String::from("alpha"),
+                                                                        2.0);
+                        // see gaussian.h (GaussianFilter constructor)
+                        let exp_x: Float = (-alpha * xw * xw).exp();
+                        let exp_y: Float = (-alpha * yw * yw).exp();
+                        let gaussian_filter: Arc<Filter + Sync + Send> =
+                            Arc::new(GaussianFilter {
+                                alpha: alpha,
+                                exp_x: exp_x,
+                                exp_y: exp_y,
+                                radius: Vector2f { x: xw, y: yw },
+                                inv_radius: Vector2f {
+                                    x: 1.0 / xw,
+                                    y: 1.0 / yw,
                                          },
-                                     });
-                        some_filter = Some(box_filter);
+                            });
+                        some_filter = Some(gaussian_filter);
                     } else if ro.filter_name == String::from("mitchell") {
                         println!("TODO: CreateMitchellFilter");
                     } else if ro.filter_name == String::from("sinc") {
