@@ -6,14 +6,15 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerboard2DTexture,
-           ConstantTexture, DirectLightingIntegrator, Disk, DistantLight, Film, Filter, Float,
-           GaussianFilter, GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture, ImageWrap,
-           LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet,
-           PerspectiveCamera, PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f,
-           PointLight, RenderOptions, Sampler, SamplerIntegrator, Scene, Spectrum, Sphere,
-           SplitMethod, Texture, TextureMapping2D, TextureParams, Transform, TransformSet,
-           Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+use pbrt::{AnimatedTransform, AreaLight, Bounds2f, Bounds2i, BoxFilter, BVHAccel,
+           Checkerboard2DTexture, ConstantTexture, DiffuseAreaLight, DirectLightingIntegrator,
+           Disk, DistantLight, Film, Filter, Float, GaussianFilter, GeometricPrimitive,
+           GlassMaterial, GraphicsState, ImageTexture, ImageWrap, LightStrategy, Material,
+           MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet, PerspectiveCamera,
+           PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f, PointLight, RenderOptions,
+           Sampler, SamplerIntegrator, Scene, Shape, Spectrum, Sphere, SplitMethod, Texture,
+           TextureMapping2D, TextureParams, Transform, TransformSet, Triangle, TriangleMesh,
+           UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -1077,7 +1078,53 @@ impl_rdp! {
                             } else if param_set.key_word == String::from("Shape") {
                                 println!("Shape \"{}\" ", param_set.name);
                                 print_params(&param_set);
-                                pbrt_shape(&param_set);
+                                // possibly create area light for shape (see pbrtShape())
+                                if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                    if graphics_state.area_light != String::new() {
+                                        // MakeAreaLight
+                                        if graphics_state.area_light == String::from("area") ||
+                                            graphics_state.area_light == String::from("diffuse")
+                                        {
+                                            // first create the shape
+                                            let shapes: Vec<Arc<Shape + Send + Sync>> = pbrt_shape(&param_set);
+                                            for shape in shapes {
+                                                // CreateDiffuseAreaLight
+                                                let light_to_world: Transform = CUR_TRANSFORM.t[0];
+                                                let l: Spectrum =
+                                                    graphics_state.area_light_params.find_one_spectrum(String::from("L"),
+                                                                                                       Spectrum::new(1.0));
+                                                let sc: Spectrum =
+                                                    graphics_state.area_light_params.find_one_spectrum(String::from("scale"),
+                                                                                                       Spectrum::new(1.0));
+                                                let n_samples: i32 = // try "nsamples" first
+                                                    graphics_state.area_light_params.find_one_int(String::from("nsamples"),
+                                                                                                  1);
+                                                let n_samples: i32 = // try "samples"next
+                                                    graphics_state.area_light_params.find_one_int(String::from("samples"),
+                                                                                                  n_samples);
+                                                let two_sided: bool =
+                                                    graphics_state.area_light_params.find_one_bool(String::from("twosided"),
+                                                                                                   false);
+                                                // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
+                                                let l_emit: Spectrum = l * sc;
+                                                let area_light: Arc<DiffuseAreaLight> =
+                                                    Arc::new(DiffuseAreaLight::new(
+                                                        &light_to_world,
+                                                        &l_emit,
+                                                        n_samples,
+                                                        shape,
+                                                        two_sided
+                                                    ));
+                                            }
+                                        }
+                                    } else {
+                                        // continue with shape itself
+                                        pbrt_shape(&param_set);
+                                    }
+                                } else {
+                                    // continue with shape itself
+                                    pbrt_shape(&param_set);
+                                }
                             } else {
                                 println!("PARAM_SET: {}", param_set.key_word);
                             }
@@ -1681,7 +1728,8 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     }
 }
 
-fn pbrt_shape(param_set: &ParamSet) {
+fn pbrt_shape(param_set: &ParamSet) -> Vec<Arc<Shape + Send + Sync>> {
+    let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
     // pbrtShape (api.cpp:1153)
     // TODO: if (!curTransform.IsAnimated()) { ... }
     // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
@@ -1710,10 +1758,11 @@ fn pbrt_shape(param_set: &ParamSet) {
                                               z_max,
                                               phi_max));
             let mtl: Arc<Material + Send + Sync> = create_material();
-            let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mtl.clone()));
+            let geo_prim = Arc::new(GeometricPrimitive::new(sphere.clone(), mtl.clone()));
             if let Some(ref mut ro) = RENDER_OPTIONS {
                 ro.primitives.push(geo_prim.clone());
             }
+            shapes.push(sphere.clone());
         } else if param_set.name == String::from("cylinder") {
             println!("TODO: CreateCylinderShape");
         } else if param_set.name == String::from("disk") {
@@ -1730,10 +1779,11 @@ fn pbrt_shape(param_set: &ParamSet) {
                                           inner_radius,
                                           phi_max));
             let mtl: Arc<Material + Send + Sync> = create_material();
-            let geo_prim = Arc::new(GeometricPrimitive::new(disk, mtl.clone()));
+            let geo_prim = Arc::new(GeometricPrimitive::new(disk.clone(), mtl.clone()));
             if let Some(ref mut ro) = RENDER_OPTIONS {
                 ro.primitives.push(geo_prim.clone());
             }
+            shapes.push(disk.clone());
         } else if param_set.name == String::from("cone") {
             println!("TODO: CreateConeShape");
         } else if param_set.name == String::from("paraboloid") {
@@ -1821,8 +1871,9 @@ fn pbrt_shape(param_set: &ParamSet) {
                                                           mesh.transform_swaps_handedness,
                                                           mesh.clone(),
                                                           id));
-                    let geo_prim = Arc::new(GeometricPrimitive::new(triangle, mtl.clone()));
+                    let geo_prim = Arc::new(GeometricPrimitive::new(triangle.clone(), mtl.clone()));
                     ro.primitives.push(geo_prim.clone());
+                    shapes.push(triangle.clone());
                 }
             }
         } else if param_set.name == String::from("plymesh") {
@@ -1837,6 +1888,7 @@ fn pbrt_shape(param_set: &ParamSet) {
             panic!("Shape \"{}\" unknown.", param_set.name);
         }
     }
+    shapes
 }
 
 fn pbrt_world_end() {
@@ -1857,12 +1909,12 @@ fn pbrt_world_end() {
                                                                         0.5);
                         let box_filter: Arc<Filter + Sync + Send> =
                             Arc::new(BoxFilter {
-                                radius: Vector2f { x: xw, y: yw },
-                                inv_radius: Vector2f {
-                                    x: 1.0 / xw,
-                                    y: 1.0 / yw,
-                                },
-                            });
+                                         radius: Vector2f { x: xw, y: yw },
+                                         inv_radius: Vector2f {
+                                             x: 1.0 / xw,
+                                             y: 1.0 / yw,
+                                         },
+                                     });
                         some_filter = Some(box_filter);
                     } else if ro.filter_name == String::from("gaussian") {
                         // println!("TODO: CreateGaussianFilter");
@@ -1871,21 +1923,21 @@ fn pbrt_world_end() {
                         let yw: Float = ro.filter_params.find_one_float(String::from("ywidth"),
                                                                         2.0);
                         let alpha: Float = ro.filter_params.find_one_float(String::from("alpha"),
-                                                                        2.0);
+                                                                           2.0);
                         // see gaussian.h (GaussianFilter constructor)
                         let exp_x: Float = (-alpha * xw * xw).exp();
                         let exp_y: Float = (-alpha * yw * yw).exp();
                         let gaussian_filter: Arc<Filter + Sync + Send> =
                             Arc::new(GaussianFilter {
-                                alpha: alpha,
-                                exp_x: exp_x,
-                                exp_y: exp_y,
-                                radius: Vector2f { x: xw, y: yw },
-                                inv_radius: Vector2f {
-                                    x: 1.0 / xw,
-                                    y: 1.0 / yw,
+                                         alpha: alpha,
+                                         exp_x: exp_x,
+                                         exp_y: exp_y,
+                                         radius: Vector2f { x: xw, y: yw },
+                                         inv_radius: Vector2f {
+                                             x: 1.0 / xw,
+                                             y: 1.0 / yw,
                                          },
-                            });
+                                     });
                         some_filter = Some(gaussian_filter);
                     } else if ro.filter_name == String::from("mitchell") {
                         println!("TODO: CreateMitchellFilter");
@@ -1999,11 +2051,10 @@ fn pbrt_world_end() {
                                 // MakeSampler
                                 let mut some_sampler: Option<Arc<Sampler + Sync + Send>> = None;
                                 if ro.sampler_name == String::from("lowdiscrepancy") ||
-                                    ro.sampler_name == String::from("02sequence")
-                                {
+                                   ro.sampler_name == String::from("02sequence") {
                                     let nsamp: i32 =
                                         ro.sampler_params
-                                        .find_one_int(String::from("pixelsamples"), 16);
+                                            .find_one_int(String::from("pixelsamples"), 16);
                                     let sd: i32 = ro.sampler_params
                                         .find_one_int(String::from("dimensions"), 4);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
