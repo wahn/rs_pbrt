@@ -4352,13 +4352,26 @@ pub trait Primitive {
 pub struct GeometricPrimitive {
     pub shape: Arc<Shape + Send + Sync>,
     pub material: Option<Arc<Material + Send + Sync>>,
+    pub area_light: Option<Arc<AreaLight + Send + Sync>>,
+    // TODO: MediumInterface mediumInterface;
 }
 
 impl GeometricPrimitive {
-    pub fn new(shape: Arc<Shape + Send + Sync>, material: Arc<Material + Send + Sync>) -> Self {
-        GeometricPrimitive {
-            shape: shape,
-            material: Some(material),
+    pub fn new(shape: Arc<Shape + Send + Sync>,
+               material: Arc<Material + Send + Sync>,
+               area_light: Option<Arc<AreaLight + Send + Sync>>) -> Self {
+        if let Some(area_light) = area_light {
+            GeometricPrimitive {
+                shape: shape,
+                material: Some(material),
+                area_light: Some(area_light),
+            }
+        } else {
+            GeometricPrimitive {
+                shape: shape,
+                material: Some(material),
+                area_light: None,
+            }
         }
     }
 }
@@ -8653,7 +8666,7 @@ impl Light for DistantLight {
 // see light.h
 
 pub trait AreaLight: Light {
-    fn l(intr: &mut Interaction, w: Vector3f) -> Spectrum;
+    fn l(&self, intr: &mut Interaction, w: Vector3f) -> Spectrum;
 }
 
 // see diffuse.h
@@ -8720,7 +8733,7 @@ impl Light for DiffuseAreaLight {
 }
 
 impl AreaLight for DiffuseAreaLight {
-    fn l(intr: &mut Interaction, w: Vector3f) -> Spectrum {
+    fn l(&self, intr: &mut Interaction, w: Vector3f) -> Spectrum {
         // TODO
         Spectrum::new(0.0 as Float)
     }

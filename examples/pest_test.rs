@@ -666,7 +666,18 @@ impl_rdp! {
                                             String::from(name),
                                             String::from(""),
                                             String::from(""));
-                            pbrt_shape(&param_set);
+                            let (shapes, materials) = pbrt_shape(&param_set);
+                            assert_eq!(shapes.len(), materials.len());
+                            for i in 0..shapes.len() {
+                                let shape = &shapes[i];
+                                let material = &materials[i];
+                                let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
+                                                                                material.clone(),
+                                                                                None));
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    ro.primitives.push(geo_prim.clone());
+                                }
+                            }
                         } else {
                             param_set.reset(String::from("Shape"),
                                             String::from(name),
@@ -1078,6 +1089,8 @@ impl_rdp! {
                             } else if param_set.key_word == String::from("Shape") {
                                 println!("Shape \"{}\" ", param_set.name);
                                 print_params(&param_set);
+                                // collect area lights
+                                let mut area_lights: Vec<Arc<AreaLight + Send + Sync>> = Vec::new();
                                 // possibly create area light for shape (see pbrtShape())
                                 if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                                     if graphics_state.area_light != String::new() {
@@ -1086,8 +1099,11 @@ impl_rdp! {
                                             graphics_state.area_light == String::from("diffuse")
                                         {
                                             // first create the shape
-                                            let shapes: Vec<Arc<Shape + Send + Sync>> = pbrt_shape(&param_set);
-                                            for shape in shapes {
+                                            let (shapes, materials) = pbrt_shape(&param_set);
+                                            assert_eq!(shapes.len(), materials.len());
+                                            for i in 0..shapes.len() {
+                                                let shape = &shapes[i];
+                                                let material = &materials[i];
                                                 // CreateDiffuseAreaLight
                                                 let light_to_world: Transform = CUR_TRANSFORM.t[0];
                                                 let l: Spectrum =
@@ -1112,18 +1128,47 @@ impl_rdp! {
                                                         &light_to_world,
                                                         &l_emit,
                                                         n_samples,
-                                                        shape,
+                                                        shape.clone(),
                                                         two_sided
                                                     ));
+                                                area_lights.push(area_light.clone());
+                                                let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
+                                                                                                material.clone(),
+                                                                                                Some(area_light.clone())));
+                                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                    ro.primitives.push(geo_prim.clone());
+                                                }
                                             }
                                         }
                                     } else {
                                         // continue with shape itself
-                                        pbrt_shape(&param_set);
+                                        let (shapes, materials) = pbrt_shape(&param_set);
+                                        assert_eq!(shapes.len(), materials.len());
+                                        for i in 0..shapes.len() {
+                                            let shape = &shapes[i];
+                                            let material = &materials[i];
+                                            let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
+                                                                                            material.clone(),
+                                                                                            None));
+                                            if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                ro.primitives.push(geo_prim.clone());
+                                            }
+                                        }
                                     }
                                 } else {
                                     // continue with shape itself
-                                    pbrt_shape(&param_set);
+                                    let (shapes, materials) = pbrt_shape(&param_set);
+                                    assert_eq!(shapes.len(), materials.len());
+                                    for i in 0..shapes.len() {
+                                        let shape = &shapes[i];
+                                        let material = &materials[i];
+                                        let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
+                                                                                        material.clone(),
+                                                                                        None));
+                                        if let Some(ref mut ro) = RENDER_OPTIONS {
+                                            ro.primitives.push(geo_prim.clone());
+                                        }
+                                    }
                                 }
                             } else {
                                 println!("PARAM_SET: {}", param_set.key_word);
@@ -1728,8 +1773,9 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     }
 }
 
-fn pbrt_shape(param_set: &ParamSet) -> Vec<Arc<Shape + Send + Sync>> {
+fn pbrt_shape(param_set: &ParamSet) -> (Vec<Arc<Shape + Send + Sync>>, Vec<Arc<Material + Send + Sync>>) {
     let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+    let mut materials: Vec<Arc<Material + Send + Sync>> = Vec::new();
     // pbrtShape (api.cpp:1153)
     // TODO: if (!curTransform.IsAnimated()) { ... }
     // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
@@ -1758,11 +1804,8 @@ fn pbrt_shape(param_set: &ParamSet) -> Vec<Arc<Shape + Send + Sync>> {
                                               z_max,
                                               phi_max));
             let mtl: Arc<Material + Send + Sync> = create_material();
-            let geo_prim = Arc::new(GeometricPrimitive::new(sphere.clone(), mtl.clone()));
-            if let Some(ref mut ro) = RENDER_OPTIONS {
-                ro.primitives.push(geo_prim.clone());
-            }
             shapes.push(sphere.clone());
+            materials.push(mtl.clone());
         } else if param_set.name == String::from("cylinder") {
             println!("TODO: CreateCylinderShape");
         } else if param_set.name == String::from("disk") {
@@ -1779,11 +1822,8 @@ fn pbrt_shape(param_set: &ParamSet) -> Vec<Arc<Shape + Send + Sync>> {
                                           inner_radius,
                                           phi_max));
             let mtl: Arc<Material + Send + Sync> = create_material();
-            let geo_prim = Arc::new(GeometricPrimitive::new(disk.clone(), mtl.clone()));
-            if let Some(ref mut ro) = RENDER_OPTIONS {
-                ro.primitives.push(geo_prim.clone());
-            }
             shapes.push(disk.clone());
+            materials.push(mtl.clone());
         } else if param_set.name == String::from("cone") {
             println!("TODO: CreateConeShape");
         } else if param_set.name == String::from("paraboloid") {
@@ -1863,18 +1903,15 @@ fn pbrt_shape(param_set: &ParamSet) -> Vec<Arc<Shape + Send + Sync>> {
                                                   s,
                                                   n,
                                                   uvs));
-            if let Some(ref mut ro) = RENDER_OPTIONS {
-                let mtl: Arc<Material + Send + Sync> = create_material();
-                for id in 0..mesh.n_triangles {
-                    let triangle = Arc::new(Triangle::new(mesh.object_to_world,
-                                                          mesh.world_to_object,
-                                                          mesh.transform_swaps_handedness,
-                                                          mesh.clone(),
-                                                          id));
-                    let geo_prim = Arc::new(GeometricPrimitive::new(triangle.clone(), mtl.clone()));
-                    ro.primitives.push(geo_prim.clone());
-                    shapes.push(triangle.clone());
-                }
+            let mtl: Arc<Material + Send + Sync> = create_material();
+            for id in 0..mesh.n_triangles {
+                let triangle = Arc::new(Triangle::new(mesh.object_to_world,
+                                                      mesh.world_to_object,
+                                                      mesh.transform_swaps_handedness,
+                                                      mesh.clone(),
+                                                      id));
+                shapes.push(triangle.clone());
+                materials.push(mtl.clone());
             }
         } else if param_set.name == String::from("plymesh") {
             println!("TODO: CreatePLYMesh");
@@ -1888,7 +1925,7 @@ fn pbrt_shape(param_set: &ParamSet) -> Vec<Arc<Shape + Send + Sync>> {
             panic!("Shape \"{}\" unknown.", param_set.name);
         }
     }
-    shapes
+    (shapes, materials)
 }
 
 fn pbrt_world_end() {

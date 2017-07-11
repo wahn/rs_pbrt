@@ -329,13 +329,13 @@ fn main() {
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
         let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
             render_options.primitives.push(geo_prim.clone());
         }
         if matches.opt_present("m") {
             // use only matte materials
             for sphere in render_options.spheres {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, matte.clone()));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, matte.clone(), None));
                 render_options.primitives.push(geo_prim.clone());
             }
         } else {
@@ -343,10 +343,10 @@ fn main() {
             let mut sphere_counter: u8 = 0;
             for sphere in render_options.spheres {
                 if sphere_counter == 0 {
-                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone()));
+                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone(), None));
                     render_options.primitives.push(geo_prim.clone());
                 } else {
-                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone()));
+                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone(), None));
                     render_options.primitives.push(geo_prim.clone());
                 }
                 sphere_counter += 1;
@@ -373,16 +373,16 @@ fn main() {
         let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
         let matte = Arc::new(MatteMaterial::new(checker, 0.0 as Float));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
             render_options.primitives.push(geo_prim.clone());
         }
         let mut sphere_counter: u8 = 0;
         for sphere in render_options.spheres {
             if sphere_counter == 0 {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone()));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone(), None));
                 render_options.primitives.push(geo_prim.clone());
             } else {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone()));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone(), None));
                 render_options.primitives.push(geo_prim.clone());
             }
             sphere_counter += 1;
@@ -414,16 +414,16 @@ fn main() {
                                                    gamma));
         let matte = Arc::new(MatteMaterial::new(lines_tex, 0.0 as Float));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone()));
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
             render_options.primitives.push(geo_prim.clone());
         }
         let mut sphere_counter: u8 = 0;
         for sphere in render_options.spheres {
             if sphere_counter == 0 {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone()));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone(), None));
                 render_options.primitives.push(geo_prim.clone());
             } else {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone()));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone(), None));
                 render_options.primitives.push(geo_prim.clone());
             }
             sphere_counter += 1;
