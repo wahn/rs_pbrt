@@ -1792,6 +1792,16 @@ impl<T> Mul<T> for Normal3<T>
     }
 }
 
+impl<T> MulAssign<T> for Normal3<T>
+    where T: Copy + MulAssign
+{
+    fn mul_assign(&mut self, rhs: T) {
+        self.x *= rhs;
+        self.y *= rhs;
+        self.z *= rhs;
+    }
+}
+
 impl<T> Neg for Normal3<T>
     where T: Copy + Neg<Output = T>
 {
@@ -1904,6 +1914,13 @@ pub fn nrm_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
 {
     // TODO: DCHECK(!n1.HasNaNs() && !v2.HasNaNs());
     n1.x * v2.x + n1.y * v2.y + n1.z * v2.z
+}
+
+/// Computes the absolute value of the dot product.
+pub fn nrm_abs_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
+    where T: num::Float
+{
+    nrm_dot_vec3(n1, v2).abs()
 }
 
 /// Return normal with the absolute value of each coordinate.
@@ -4334,21 +4351,21 @@ pub trait Shape {
     fn get_reverse_orientation(&self) -> bool;
     fn get_transform_swaps_handedness(&self) -> bool;
     fn area(&self) -> Float;
-    fn sample(&self, u: &Point2f, pdf: &mut Float) -> Interaction;
-    fn sample_with_ref_point(&self, iref: &Interaction, u: &Point2f, pdf: &mut Float) -> Interaction {
-        // WORK
-        // Interaction intr = Sample(u, pdf);
-        let intr: Interaction = Interaction::default();
-        // Vector3f wi = intr.p - ref.p;
-        // if (wi.LengthSquared() == 0)
-        //     *pdf = 0;
-        // else {
-        //     wi = Normalize(wi);
-        //     // Convert from area measure, as returned by the Sample() call
-        //     // above, to solid angle measure.
-        //     *pdf *= DistanceSquared(ref.p, intr.p) / AbsDot(intr.n, -wi);
-        //     if (std::isinf(*pdf)) *pdf = 0.f;
-        // }
+    fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction;
+    fn sample_with_ref_point(&self, iref: &Interaction, u: Point2f, pdf: &mut Float) -> Interaction {
+        let intr: Interaction = self.sample(u, pdf);
+        let mut wi: Vector3f = intr.p - iref.p;
+        if wi.length_squared() == 0.0 as Float {
+            *pdf = 0.0 as Float;
+        } else {
+            wi = vec3_normalize(wi);
+            // convert from area measure, as returned by the Sample()
+            // call above, to solid angle measure.
+            *pdf *= pnt3_distance_squared(iref.p, intr.p) / nrm_abs_dot_vec3(intr.n, -wi);
+            if (*pdf).is_infinite() {
+                *pdf = 0.0 as Float;
+            }
+        }
         intr
     }
 }
@@ -4624,15 +4641,27 @@ impl Shape for Disk {
         self.phi_max * 0.5 as Float *
         (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
-    fn sample(&self, u: &Point2f, pdf: &mut Float) -> Interaction {
-        // WORK
-        // Point2f pd = ConcentricSampleDisk(u);
-        // Point3f pObj(pd.x * radius, pd.y * radius, height);
-        let it: Interaction = Interaction::default();
-        // it.n = Normalize((*ObjectToWorld)(Normal3f(0, 0, 1)));
-        // if (reverseOrientation) it.n *= -1;
-        // it.p = (*ObjectToWorld)(pObj, Vector3f(0, 0, 0), &it.pError);
-        // *pdf = 1 / Area();
+    fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction {
+        let pd: Point2f = concentric_sample_disk(u);
+        let p_obj: Point3f = Point3f {
+            x: pd.x * self.radius,
+            y: pd.y * self.radius,
+            z: self.height,
+        };
+        let mut it: Interaction = Interaction::default();
+        it.n = nrm_normalize(self.object_to_world.transform_normal(Normal3f {
+            x: 0.0 as Float,
+            y: 0.0 as Float,
+            z: 1.0 as Float,
+        }));
+        if self.reverse_orientation {
+            it.n *= -1.0 as Float;
+        }
+        let pt_error: Vector3f = Vector3f::default();
+        it.p = self.object_to_world.transform_point_with_abs_error(p_obj,
+                                                                   &pt_error,
+                                                                   &mut it.p_error);
+        *pdf = 1.0 as Float / self.area();
         it
     }
 }
@@ -4959,7 +4988,7 @@ impl Shape for Sphere {
     fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
-    fn sample(&self, u: &Point2f, pdf: &mut Float) -> Interaction {
+    fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction {
         // WORK
         // Point3f pObj = Point3f(0, 0, 0) + radius * UniformSampleSphere(u);
         let it: Interaction = Interaction::default();
@@ -5487,7 +5516,7 @@ impl Shape for Triangle {
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         0.5 as Float * vec3_cross_vec3(p1 - p0, p2 - p0).length()
     }
-    fn sample(&self, u: &Point2f, pdf: &mut Float) -> Interaction {
+    fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction {
         // WORK
         // Point2f b = UniformSampleTriangle(u);
         // // Get triangle vertices in _p0_, _p1_, and _p2_
@@ -8545,7 +8574,7 @@ pub trait Light {
     /// them.
     fn sample_li(&self,
                  iref: &SurfaceInteraction,
-                 u: &Point2f,
+                 u: Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
@@ -8610,7 +8639,7 @@ impl PointLight {
 impl Light for PointLight {
     fn sample_li(&self,
                  iref: &SurfaceInteraction,
-                 u: &Point2f,
+                 u: Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
@@ -8686,7 +8715,7 @@ impl DistantLight {
 impl Light for DistantLight {
     fn sample_li(&self,
                      iref: &SurfaceInteraction,
-                     _u: &Point2f,
+                     _u: Point2f,
                      wi: &mut Vector3f,
                      pdf: &mut Float,
                      vis: &mut VisibilityTester)
@@ -8786,7 +8815,7 @@ impl DiffuseAreaLight {
 impl Light for DiffuseAreaLight {
     fn sample_li(&self,
                  iref: &SurfaceInteraction,
-                 u: &Point2f,
+                 u: Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
@@ -8800,17 +8829,26 @@ impl Light for DiffuseAreaLight {
             wo: iref.wo,
             n: iref.n,
         };
-        // Interaction pShape = shape->Sample(ref, u, pdf);
         self.shape.sample_with_ref_point(&interaction, u, pdf);
-        // pShape.mediumInterface = mediumInterface;
-        // if (*pdf == 0 || (pShape.p - ref.p).LengthSquared() == 0) {
-        //     *pdf = 0;
-        //     return 0.f;
-        // }
-        // *wi = Normalize(pShape.p - ref.p);
-        // *vis = VisibilityTester(ref, pShape);
-        // return L(pShape, -*wi);
-        Spectrum::default()
+        // TODO: interaction.mediumInterface = mediumInterface;
+        // if (*pdf == 0 || (interaction.p - ref.p).LengthSquared() == 0) {
+        if *pdf == 0.0 as Float ||
+            (interaction.p - iref.p).length_squared() == 0.0 as Float {
+                *pdf = 0.0 as Float;
+                return Spectrum::default();
+            }
+        let new_wi: Vector3f = vec3_normalize(interaction.p - iref.p);
+        *wi = new_wi;
+        vis.p0 = Interaction {
+            p: iref.p,
+            time: iref.time,
+            p_error: iref.p_error,
+            wo: iref.wo,
+            n: iref.n,
+        };
+        vis.p1 = interaction;
+        // return L(interaction, -*wi);
+        self.l(&interaction, -new_wi)
     }
     fn preprocess(&self, scene: &Scene) {
         // TODO?
@@ -8872,9 +8910,9 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
             let u_light: Point2f = sampler.get_2d();
             let u_scattering: Point2f = sampler.get_2d();
             l += estimate_direct(it,
-                                 &u_scattering,
+                                 u_scattering,
                                  light.clone(),
-                                 &u_light,
+                                 u_light,
                                  scene,
                                  sampler, // arena,
                                  handle_media,
@@ -8884,9 +8922,9 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
             let mut ld: Spectrum = Spectrum::new(0.0);
             for k in 0..n_samples {
                 ld += estimate_direct(it,
-                                      &u_scattering_array[k as usize],
+                                      u_scattering_array[k as usize],
                                       light.clone(),
-                                      &u_light_array[k as usize],
+                                      u_light_array[k as usize],
                                       scene,
                                       sampler, // arena,
                                       handle_media,
@@ -8900,9 +8938,9 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
 
 /// Computes a direct lighting estimate for a single light source sample.
 pub fn estimate_direct(it: &SurfaceInteraction,
-                       u_scattering: &Point2f,
+                       u_scattering: Point2f,
                        light: Arc<Light + Send + Sync>,
-                       u_light: &Point2f,
+                       u_light: Point2f,
                        scene: &Scene,
                        sampler: &mut ZeroTwoSequenceSampler,
                        // TODO: arena
@@ -8972,7 +9010,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             if let Some(ref bsdf) = it.bsdf {
                 f = bsdf.sample_f(it.wo,
                                   &mut wi,
-                                  *u_scattering,
+                                  u_scattering,
                                   &mut scattering_pdf,
                                   bsdf_flags,
                                   &mut sampled_type);
@@ -10161,7 +10199,8 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
         crossbeam::scope(|scope| {
             let (pixel_tx, pixel_rx) = mpsc::channel();
             // spawn worker threads
-            for _ in 0..num_cores {
+            // for _ in 0..num_cores {
+            for _ in 0..1 {
                 let pixel_tx = pixel_tx.clone();
                 scope.spawn(move || {
                     while let Some((x, y)) = bq.next() {
@@ -10206,9 +10245,9 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
                                 let y: Float = l.y();
                                 if ray_weight > 0.0 {
                                     l = integrator.li(&mut ray,
-                                                scene,
-                                                &mut tile_sampler, // &mut arena,
-                                                0_i32);
+                                                      scene,
+                                                      &mut tile_sampler, // &mut arena,
+                                                      0_i32);
                                 }
                                 if l.has_nans() {
                                     println!("Not-a-number radiance value returned for pixel \

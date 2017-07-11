@@ -1475,6 +1475,14 @@ impl_rdp! {
                             graphics_state.material_params.copy_from(&pgs.material_params);
                             // material
                             graphics_state.material = String::from(pgs.material.as_ref());
+                            // area_light_params
+                            graphics_state.area_light_params.reset(String::new(),
+                                                                 String::from(""),
+                                                                 String::from(""),
+                                                                 String::new());
+                            graphics_state.area_light_params.copy_from(&pgs.area_light_params);
+                            // area_light
+                            graphics_state.area_light = String::from(pgs.area_light.as_ref());
                         }
                         if let Some(ref mut pt) = PUSHED_TRANSFORMS {
                             let popped_transform_set: TransformSet = pt.pop().unwrap();
