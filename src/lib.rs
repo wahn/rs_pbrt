@@ -4291,7 +4291,17 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
     pub fn le(&self, w: Vector3f) -> Spectrum {
         if let Some(primitive) = self.primitive {
             // TODO: const AreaLight *area = primitive->GetAreaLight();
-            // TODO: return area ? area->L(*this, w) : Spectrum(0.f);
+            if let Some(area_light) = primitive.get_area_light() {
+                // create Interaction from self
+                let interaction: Interaction = Interaction {
+                    p: self.p,
+                    time: self.time,
+                    p_error: self.p_error,
+                    wo: self.wo,
+                    n: self.n,
+                };
+                return area_light.l(&interaction, w);
+            }
         }
         Spectrum::default()
     }
@@ -4324,7 +4334,23 @@ pub trait Shape {
     fn get_reverse_orientation(&self) -> bool;
     fn get_transform_swaps_handedness(&self) -> bool;
     fn area(&self) -> Float;
-    // TODO: virtual Interaction Sample(const Point2f &u, Float *pdf) const = 0;
+    fn sample(&self, u: &Point2f, pdf: &mut Float) -> Interaction;
+    fn sample_with_ref_point(&self, iref: &Interaction, u: &Point2f, pdf: &mut Float) -> Interaction {
+        // WORK
+        // Interaction intr = Sample(u, pdf);
+        let intr: Interaction = Interaction::default();
+        // Vector3f wi = intr.p - ref.p;
+        // if (wi.LengthSquared() == 0)
+        //     *pdf = 0;
+        // else {
+        //     wi = Normalize(wi);
+        //     // Convert from area measure, as returned by the Sample() call
+        //     // above, to solid angle measure.
+        //     *pdf *= DistanceSquared(ref.p, intr.p) / AbsDot(intr.n, -wi);
+        //     if (std::isinf(*pdf)) *pdf = 0.f;
+        // }
+        intr
+    }
 }
 
 // see primitive.h
@@ -4333,7 +4359,7 @@ pub trait Primitive {
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction>;
     fn intersect_p(&self, r: &Ray) -> bool;
-    // TODO: fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>>;
+    fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>>;
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>>;
     fn compute_scattering_functions(&self,
                                     isect: &mut SurfaceInteraction,
@@ -4397,13 +4423,13 @@ impl Primitive for GeometricPrimitive {
             None
         }
     }
-    // fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
-    //     if let Some(ref area_light) = self.area_light {
-    //         Some(area_light.clone())
-    //     } else {
-    //         None
-    //     }
-    // }
+    fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
+        if let Some(ref area_light) = self.area_light {
+            Some(area_light.clone())
+        } else {
+            None
+        }
+    }
 }
 
 // see disk.h
@@ -4597,6 +4623,17 @@ impl Shape for Disk {
     fn area(&self) -> Float {
         self.phi_max * 0.5 as Float *
         (self.radius * self.radius - self.inner_radius * self.inner_radius)
+    }
+    fn sample(&self, u: &Point2f, pdf: &mut Float) -> Interaction {
+        // WORK
+        // Point2f pd = ConcentricSampleDisk(u);
+        // Point3f pObj(pd.x * radius, pd.y * radius, height);
+        let it: Interaction = Interaction::default();
+        // it.n = Normalize((*ObjectToWorld)(Normal3f(0, 0, 1)));
+        // if (reverseOrientation) it.n *= -1;
+        // it.p = (*ObjectToWorld)(pObj, Vector3f(0, 0, 0), &it.pError);
+        // *pdf = 1 / Area();
+        it
     }
 }
 
@@ -4921,6 +4958,19 @@ impl Shape for Sphere {
     }
     fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
+    }
+    fn sample(&self, u: &Point2f, pdf: &mut Float) -> Interaction {
+        // WORK
+        // Point3f pObj = Point3f(0, 0, 0) + radius * UniformSampleSphere(u);
+        let it: Interaction = Interaction::default();
+        // it.n = Normalize((*ObjectToWorld)(Normal3f(pObj.x, pObj.y, pObj.z)));
+        // if (reverseOrientation) it.n *= -1;
+        // // Reproject _pObj_ to sphere surface and compute _pObjError_
+        // pObj *= radius / Distance(pObj, Point3f(0, 0, 0));
+        // Vector3f pObjError = gamma(5) * Abs((Vector3f)pObj);
+        // it.p = (*ObjectToWorld)(pObj, pObjError, &it.pError);
+        // *pdf = 1 / Area();
+        it
     }
 }
 
@@ -5436,6 +5486,33 @@ impl Shape for Triangle {
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         0.5 as Float * vec3_cross_vec3(p1 - p0, p2 - p0).length()
+    }
+    fn sample(&self, u: &Point2f, pdf: &mut Float) -> Interaction {
+        // WORK
+        // Point2f b = UniformSampleTriangle(u);
+        // // Get triangle vertices in _p0_, _p1_, and _p2_
+        // const Point3f &p0 = mesh->p[v[0]];
+        // const Point3f &p1 = mesh->p[v[1]];
+        // const Point3f &p2 = mesh->p[v[2]];
+        let it: Interaction = Interaction::default();
+        // it.p = b[0] * p0 + b[1] * p1 + (1 - b[0] - b[1]) * p2;
+        // // Compute surface normal for sampled point on triangle
+        // it.n = Normalize(Normal3f(Cross(p1 - p0, p2 - p0)));
+        // // Ensure correct orientation of the geometric normal; follow the same
+        // // approach as was used in Triangle::Intersect().
+        // if (mesh->n) {
+        //     Normal3f ns(b[0] * mesh->n[v[0]] + b[1] * mesh->n[v[1]] +
+        //                 (1 - b[0] - b[1]) * mesh->n[v[2]]);
+        //     it.n = Faceforward(it.n, ns);
+        // } else if (reverseOrientation ^ transformSwapsHandedness)
+        //     it.n *= -1;
+
+        // // Compute error bounds for sampled point on triangle
+        // Point3f pAbsSum =
+        //     Abs(b[0] * p0) + Abs(b[1] * p1) + Abs((1 - b[0] - b[1]) * p2);
+        // it.pError = gamma(6) * Vector3f(pAbsSum.x, pAbsSum.y, pAbsSum.z);
+        // *pdf = 1 / Area();
+        it
     }
 }
 
@@ -8666,7 +8743,7 @@ impl Light for DistantLight {
 // see light.h
 
 pub trait AreaLight: Light {
-    fn l(&self, intr: &mut Interaction, w: Vector3f) -> Spectrum;
+    fn l(&self, intr: &Interaction, w: Vector3f) -> Spectrum;
 }
 
 // see diffuse.h
@@ -8714,7 +8791,25 @@ impl Light for DiffuseAreaLight {
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
                  -> Spectrum {
-        // WORK
+        // TODO: ProfilePhase _(Prof::LightSample);
+        // create Interaction from SurfaceInteraction
+        let interaction: Interaction = Interaction {
+            p: iref.p,
+            time: iref.time,
+            p_error: iref.p_error,
+            wo: iref.wo,
+            n: iref.n,
+        };
+        // Interaction pShape = shape->Sample(ref, u, pdf);
+        self.shape.sample_with_ref_point(&interaction, u, pdf);
+        // pShape.mediumInterface = mediumInterface;
+        // if (*pdf == 0 || (pShape.p - ref.p).LengthSquared() == 0) {
+        //     *pdf = 0;
+        //     return 0.f;
+        // }
+        // *wi = Normalize(pShape.p - ref.p);
+        // *vis = VisibilityTester(ref, pShape);
+        // return L(pShape, -*wi);
         Spectrum::default()
     }
     fn preprocess(&self, scene: &Scene) {
@@ -8733,9 +8828,12 @@ impl Light for DiffuseAreaLight {
 }
 
 impl AreaLight for DiffuseAreaLight {
-    fn l(&self, intr: &mut Interaction, w: Vector3f) -> Spectrum {
-        // TODO
-        Spectrum::new(0.0 as Float)
+    fn l(&self, intr: &Interaction, w: Vector3f) -> Spectrum {
+        if self.two_sided || nrm_dot_vec3(intr.n, w) > 0.0 as Float {
+            self.l_emit
+        } else {
+            Spectrum::new(0.0 as Float)
+        }
     }
 }
 
