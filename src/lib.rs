@@ -9238,7 +9238,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         }
         // TODO: println!("  BSDF / phase sampling f: {:?}, scatteringPdf: {:?}",
         //          f, scattering_pdf);
-        if !li.is_black() && scattering_pdf > 0.0 {
+        if !f.is_black() && scattering_pdf > 0.0 {
             // account for light contributions along sampled direction _wi_
             let mut weight: Float = 1.0;
             if !sampled_specular {
@@ -9271,10 +9271,11 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                     found_surface_interaction = true;
                     if let Some(primitive) = light_isect.primitive {
                         if let Some(area_light) = primitive.get_area_light() {
-// WORK: see https://users.rust-lang.org/t/arc-traits-inheritance-and-how-to-compare-two-pointers/11819
-                            // if Arc::ptr_eq(&area_light, &light) {
-                            li = light_isect.le(-wi);
-                            // }
+                            let pa = &*area_light as *const _ as *const usize;
+                            let pl = &*light as *const _ as *const usize;
+                            if pa == pl {
+                                li = light_isect.le(-wi);
+                            }
                         }
                     }
                 }
