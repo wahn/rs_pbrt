@@ -9,7 +9,7 @@ extern crate pbrt;
 use pbrt::{AnimatedTransform, AreaLight, Bounds2f, Bounds2i, BoxFilter, BVHAccel,
            Checkerboard2DTexture, ConstantTexture, DiffuseAreaLight, DirectLightingIntegrator,
            Disk, DistantLight, Film, Filter, Float, GaussianFilter, GeometricPrimitive,
-           GlassMaterial, GraphicsState, ImageTexture, ImageWrap, LightStrategy, Material,
+           GlassMaterial, GraphicsState, ImageTexture, ImageWrap, Light, LightStrategy, Material,
            MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet, PerspectiveCamera,
            PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f, PointLight, RenderOptions,
            Sampler, SamplerIntegrator, Scene, Shape, Spectrum, Sphere, SplitMethod, Texture,
@@ -1090,7 +1090,7 @@ impl_rdp! {
                                 println!("Shape \"{}\" ", param_set.name);
                                 print_params(&param_set);
                                 // collect area lights
-                                let mut area_lights: Vec<Arc<AreaLight + Send + Sync>> = Vec::new();
+                                let mut area_lights: Vec<Arc<Light + Send + Sync>> = Vec::new();
                                 // possibly create area light for shape (see pbrtShape())
                                 if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                                     if graphics_state.area_light != String::new() {
@@ -1167,6 +1167,22 @@ impl_rdp! {
                                                                                         None));
                                         if let Some(ref mut ro) = RENDER_OPTIONS {
                                             ro.primitives.push(geo_prim.clone());
+                                        }
+                                    }
+                                }
+                                // add _prims_ and _areaLights_ to scene or current instance
+                                // if (renderOptions->currentInstance) {
+                                //     if (areaLights.size())
+                                //         Warning("Area lights not supported with object instancing");
+                                //     renderOptions->currentInstance->insert(
+                                //         renderOptions->currentInstance->end(), prims.begin(), prims.end());
+                                // } else {
+                                if let Some(ref mut ro) = RENDER_OPTIONS {
+                                    // ro.primitives.insert(ro.primitives.end(),
+                                    //                      prims.begin(), prims.end());
+                                    if area_lights.len() > 0 {
+                                        for area_light in area_lights {
+                                            ro.lights.push(area_light);
                                         }
                                     }
                                 }
@@ -1781,7 +1797,8 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     }
 }
 
-fn pbrt_shape(param_set: &ParamSet) -> (Vec<Arc<Shape + Send + Sync>>, Vec<Arc<Material + Send + Sync>>) {
+fn pbrt_shape(param_set: &ParamSet)
+              -> (Vec<Arc<Shape + Send + Sync>>, Vec<Arc<Material + Send + Sync>>) {
     let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
     let mut materials: Vec<Arc<Material + Send + Sync>> = Vec::new();
     // pbrtShape (api.cpp:1153)

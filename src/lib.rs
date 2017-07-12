@@ -1744,6 +1744,14 @@ pub fn pnt3_offset_ray_origin(p: Point3f, p_error: Vector3f, n: Normal3f, w: Vec
     po
 }
 
+pub fn spherical_direction(sin_theta: Float, cos_theta: Float, phi: Float) -> Vector3f {
+    Vector3f {
+        x: sin_theta * phi.cos(),
+        y: sin_theta * phi.sin(),
+        z: cos_theta,
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Normal3<T> {
     pub x: T,
@@ -4092,6 +4100,16 @@ pub struct Interaction {
 }
 
 impl Interaction {
+    pub fn spawn_ray(&self, d: Vector3f) -> Ray {
+        let o: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, d);
+        Ray {
+            o: o,
+            d: d,
+            t_max: std::f32::INFINITY,
+            time: self.time,
+            differential: None,
+        }
+    }
     pub fn spawn_ray_to(&self, it: Interaction) -> Ray {
         let origin: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, it.p - self.p);
         let target: Point3f = pnt3_offset_ray_origin(it.p, it.p_error, it.n, origin - it.p);
@@ -4307,7 +4325,6 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
     }
     pub fn le(&self, w: Vector3f) -> Spectrum {
         if let Some(primitive) = self.primitive {
-            // TODO: const AreaLight *area = primitive->GetAreaLight();
             if let Some(area_light) = primitive.get_area_light() {
                 // create Interaction from self
                 let interaction: Interaction = Interaction {
@@ -4367,6 +4384,24 @@ pub trait Shape {
             }
         }
         intr
+    }
+    fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
+        // intersect sample ray with area light geometry
+        let ray: Ray = iref.spawn_ray(wi);
+        // ignore any alpha textures used for trimming the shape when
+        // performing this intersection. Hack for the "San Miguel"
+        // scene, where this is used to make an invisible area light.
+        if let Some((isect_light, t_hit)) = self.intersect(&ray) {
+            // convert light sample weight to solid angle measure
+            let mut pdf: Float = pnt3_distance_squared(iref.p, isect_light.p) /
+                (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
+            if pdf.is_infinite() {
+                pdf = 0.0 as Float;
+            }
+            pdf
+        } else {
+            0.0 as Float
+        }
     }
 }
 
@@ -7307,7 +7342,8 @@ impl Bsdf {
             if self.bxdfs[i].matches_flags(flags) &&
                ((reflect && (self.bxdfs[i].get_type() & BxdfType::BsdfReflection as u8 > 0_u8)) ||
                 (!reflect &&
-                 (self.bxdfs[i].get_type() & BxdfType::BsdfTransmission as u8 > 0_u8))) {
+                 (self.bxdfs[i].get_type() & BxdfType::BsdfTransmission as u8 > 0_u8)))
+            {
                 f += self.bxdfs[i].f(wo, wi);
             }
         }
@@ -7338,11 +7374,19 @@ impl Bsdf {
         let n_bxdfs: usize = self.bxdfs.len();
         let mut bxdf_index: usize = 0_usize;
         for i in 0..n_bxdfs {
-            if self.bxdfs[i].matches_flags(bsdf_flags) && count == 0 {
+            let matches: bool = self.bxdfs[i].matches_flags(bsdf_flags);
+            if  matches && count == 0 {
                 count -= 1_i8;
                 bxdf = self.bxdfs.get(i);
                 bxdf_index = i;
                 break;
+            } else {
+                // fix count
+                if matches {
+                    // C++ version does this in a single line:
+                    // if (bxdfs[i]->MatchesFlags(type) && count-- == 0)
+                    count -= 1_i8;
+                }
             }
         }
         if bxdf.is_some() {
@@ -7733,7 +7777,7 @@ impl Bxdf for MicrofacetReflection {
         let mut dot: Float = vec3_dot_vec3(wi, wh);
         let f: Spectrum = self.fresnel.evaluate(&mut dot);
         self.r * self.distribution.d(wh) * self.distribution.g(wo, wi) * f /
-        (4.0 as Float * cos_theta_i * cos_theta_o)
+            (4.0 as Float * cos_theta_i * cos_theta_o)
     }
     fn sample_f(&self,
                 wo: Vector3f,
@@ -7742,8 +7786,26 @@ impl Bxdf for MicrofacetReflection {
                 pdf: &mut Float,
                 sampled_type: &mut u8)
                 -> Spectrum {
-        // WORK
-        RGBSpectrum::default()
+        // sample microfacet orientation $\wh$ and reflected direction $\wi$
+        if wo.z == 0.0 as Float {
+            return Spectrum::default();
+        }
+        let wh: Vector3f = self.distribution.sample_wh(wo, u);
+        *wi = reflect(wo, wh);
+        if !vec3_same_hemisphere_vec3(wo, *wi) {
+            return Spectrum::default();
+        }
+
+        // compute PDF of _wi_ for microfacet reflection
+        *pdf = self.distribution.pdf(wo, wh) / (4.0 * vec3_dot_vec3(wo, wh));
+        self.f(wo, *wi)
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if !vec3_same_hemisphere_vec3(wo, wi) {
+            return 0.0 as Float;
+        }
+        let wh: Vector3f = vec3_normalize(wo + wi);
+        self.distribution.pdf(wo, wh) / (4.0 * vec3_dot_vec3(wo, wh))
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfGlossy as u8
@@ -7820,6 +7882,12 @@ pub fn sin_2_phi(w: Vector3f) -> Float {
     sin_phi(w) * sin_phi(w)
 }
 
+/// Computes the reflection direction given an incident direction and
+/// a surface normal.
+pub fn reflect(wo: Vector3f, n: Vector3f) -> Vector3f {
+    -wo + n * 2.0 as Float * vec3_dot_vec3(wo, n)
+}
+
 /// Computes the refraction direction given an incident direction, a
 /// surface normal, and the ratio of indices of refraction (incident
 /// and transmitted).
@@ -7883,6 +7951,14 @@ pub trait MicrofacetDistribution {
     fn g(&self, wo: Vector3f, wi: Vector3f) -> Float {
         1.0 as Float / (1.0 as Float + self.lambda(wo) + self.lambda(wi))
     }
+    fn pdf(&self, wo: Vector3f, wh: Vector3f) -> Float {
+        if self.get_sample_visible_area() {
+            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3(wo, wh) / abs_cos_theta(wo)
+        } else {
+            self.d(wh) * abs_cos_theta(wh)
+        }
+    }
+    fn get_sample_visible_area(&self) -> bool;
 }
 
 pub struct TrowbridgeReitzDistribution {
@@ -7913,6 +7989,43 @@ impl TrowbridgeReitzDistribution {
         1.62142 + 0.819955 * x + 0.1734 * x * x + 0.0171201 * x * x * x +
         0.000640711 * x * x * x * x
     }
+    pub fn sample_wh(&self, wo: Vector3f, u: Point2f) -> Vector3f {
+        let mut wh: Vector3f = Vector3f::default();
+        if !self.sample_visible_area {
+            let mut cos_theta: Float = 0.0;
+            let mut phi: Float = (2.0 * PI) * u[1];
+            if self.alpha_x == self.alpha_y {
+                let tan_theta2: Float = self.alpha_x * self.alpha_x * u[0] / (1.0 - u[0]);
+                cos_theta = 1.0 / (1.0 + tan_theta2).sqrt();
+            } else {
+                phi = (self.alpha_y / self.alpha_x * (2.0 * PI * u[1] + 0.5 * PI).tan()).atan();
+                if u[1] > 0.5 {
+                    phi += PI;
+                }
+                let sin_phi: Float = phi.sin();
+                let cos_phi: Float = phi.cos();
+                let alphax2: Float = self.alpha_x * self.alpha_x;
+                let alphay2: Float = self.alpha_y * self.alpha_y;
+                let alpha2: Float = 1.0 / (cos_phi * cos_phi / alphax2 + sin_phi * sin_phi / alphay2);
+                let tan_theta2: Float = alpha2 * u[0] / (1.0 - u[0]);
+                cos_theta = 1.0 / (1.0 + tan_theta2).sqrt();
+            }
+            let sin_theta: Float = (0.0 as Float).max(1.0 - cos_theta * cos_theta).sqrt();
+            wh = spherical_direction(sin_theta, cos_theta, phi);
+            if !vec3_same_hemisphere_vec3(wo, wh) {
+                wh = -wh;
+            }
+        } else {
+            let flip: bool = wo.z < 0.0;
+            if flip {
+                wh = trowbridge_reitz_sample(-wo, self.alpha_x, self.alpha_y, u[0], u[1]);
+                wh = -wh;
+            } else {
+                wh = trowbridge_reitz_sample(wo, self.alpha_x, self.alpha_y, u[0], u[1]);
+            }
+        }
+        wh
+    }
 }
 
 impl MicrofacetDistribution for TrowbridgeReitzDistribution {
@@ -7940,6 +8053,98 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
         let alpha_2_tan_2_theta: Float = (alpha * abs_tan_theta) * (alpha * abs_tan_theta);
         (-1.0 as Float + (1.0 as Float + alpha_2_tan_2_theta).sqrt()) / 2.0 as Float
     }
+    fn get_sample_visible_area(&self) -> bool {
+        self.sample_visible_area
+    }
+}
+
+fn trowbridge_reitz_sample_11(cos_theta: Float,
+                              u1: Float,
+                              u2: Float,
+                              slope_x: &mut Float,
+                              slope_y: &mut Float) {
+    // special case (normal incidence)
+    if cos_theta > 0.9999 {
+        let r: Float = (u1 / (1.0 - u1)).sqrt();
+        let phi: Float = 6.28318530718 * u2;
+        *slope_x = r * phi.cos();
+        *slope_y = r * phi.sin();
+        return;
+    }
+
+    let sin_theta: Float = (0.0 as Float).max(1.0 as Float - cos_theta * cos_theta).sqrt();
+    let tan_theta: Float = sin_theta / cos_theta;
+    let a: Float = 1.0 / tan_theta;
+    let g1: Float = 2.0 / (1.0 + (1.0 + 1.0 / (a * a)).sqrt());
+
+    // sample slope_x
+    let a: Float = 2.0 * u1 / g1 - 1.0;
+    let mut tmp: Float = 1.0 / (a * a - 1.0);
+    if tmp > 1e10
+    {
+        tmp = 1e10;
+    }
+    let b: Float = tan_theta;
+    let d: Float = (b * b * tmp * tmp - (a * a - b * b) * tmp).max(0.0 as Float).sqrt();
+    let slope_x_1: Float = b * tmp - d;
+    let slope_x_2: Float = b * tmp + d;
+    if a < 0.0 || slope_x_2 > 1.0 / tan_theta {
+        *slope_x = slope_x_1;
+    } else {
+        *slope_x = slope_x_2;
+    }
+
+    // sample slope_y
+    let mut s: Float;
+    let mut new_u2: Float;
+    if u2 > 0.5 {
+        s = 1.0;
+        new_u2 = 2.0 * (u2 - 0.5);
+    } else {
+        s = -1.0;
+        new_u2 = 2.0 * (0.5 - u2);
+    }
+    let z: Float =
+        (new_u2 * (new_u2 * (new_u2 * 0.27385 - 0.73369) + 0.46341)) /
+        (new_u2 * (new_u2 * (new_u2 * 0.093073 + 0.309420) - 1.0) + 0.597999);
+    *slope_y = s * z * (1.0 + *slope_x * *slope_x).sqrt();
+
+    assert!(!(*slope_y).is_infinite());
+    assert!(!(*slope_y).is_nan());
+}
+
+fn trowbridge_reitz_sample(wi: Vector3f,
+                           alpha_x: Float,
+                           alpha_y: Float,
+                           u1: Float,
+                           u2: Float) -> Vector3f {
+    // 1. stretch wi
+    let wi_stretched: Vector3f = vec3_normalize(Vector3f {
+        x: alpha_x * wi.x,
+        y: alpha_y * wi.y,
+        z: wi.z,
+    });
+
+    // 2. simulate P22_{wi}(x_slope, y_slope, 1, 1)
+    let mut slope_x: Float = 0.0;
+    let mut slope_y: Float = 0.0;
+    trowbridge_reitz_sample_11(cos_theta(wi_stretched), u1, u2, &mut slope_x, &mut slope_y);
+
+    // 3. rotate
+    let tmp: Float = cos_phi(wi_stretched) * slope_x - sin_phi(wi_stretched) * slope_y;
+    slope_y = sin_phi(wi_stretched) * slope_x + cos_phi(wi_stretched) * slope_y;
+    slope_x = tmp;
+
+    // 4. unstretch
+    slope_x = alpha_x * slope_x;
+    slope_y = alpha_y * slope_y;
+
+    // 5. compute normal
+    vec3_normalize(Vector3f {
+        x: -slope_x,
+        y: -slope_y,
+        z:1.0,
+    })
 }
 
 // see material.h
@@ -8581,6 +8786,7 @@ pub trait Light {
                  -> Spectrum;
     fn preprocess(&self, scene: &Scene);
     fn le(&self, _ray: &mut Ray) -> Spectrum;
+    fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float;
     fn get_flags(&self) -> u8;
     fn get_n_samples(&self) -> i32;
 }
@@ -8672,6 +8878,9 @@ impl Light for PointLight {
     fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
+    fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float {
+        0.0 as Float
+    }
     fn get_flags(&self) -> u8 {
         self.flags
     }
@@ -8761,6 +8970,9 @@ impl Light for DistantLight {
     fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
+    fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float {
+        0.0 as Float
+    }
     fn get_flags(&self) -> u8 {
         self.flags
     }
@@ -8831,7 +9043,6 @@ impl Light for DiffuseAreaLight {
         };
         self.shape.sample_with_ref_point(&interaction, u, pdf);
         // TODO: interaction.mediumInterface = mediumInterface;
-        // if (*pdf == 0 || (interaction.p - ref.p).LengthSquared() == 0) {
         if *pdf == 0.0 as Float ||
             (interaction.p - iref.p).length_squared() == 0.0 as Float {
                 *pdf = 0.0 as Float;
@@ -8847,7 +9058,6 @@ impl Light for DiffuseAreaLight {
             n: iref.n,
         };
         vis.p1 = interaction;
-        // return L(interaction, -*wi);
         self.l(&interaction, -new_wi)
     }
     fn preprocess(&self, scene: &Scene) {
@@ -8856,6 +9066,10 @@ impl Light for DiffuseAreaLight {
     fn le(&self, _ray: &mut Ray) -> Spectrum {
         // WORK
         Spectrum::default()
+    }
+    fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float {
+        // TODO: ProfilePhase _(Prof::LightPdf);
+        self.shape.pdf(iref, wi)
     }
     fn get_flags(&self) -> u8 {
         self.flags
@@ -8975,6 +9189,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         } else {
             // evaluate phase function for light sampling strategy
             // TODO
+            println!("TODO: evaluate phase function for light sampling strategy");
         }
         if !f.is_black() {
             // compute effect of visibility for light source sample
@@ -9019,8 +9234,58 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             }
         } else {
             // TODO
+            println!("TODO: estimate_direct 1");
         }
-        // TODO
+        // TODO: println!("  BSDF / phase sampling f: {:?}, scatteringPdf: {:?}",
+        //          f, scattering_pdf);
+        if !li.is_black() && scattering_pdf > 0.0 {
+            // account for light contributions along sampled direction _wi_
+            let mut weight: Float = 1.0;
+            if !sampled_specular {
+                // create Interaction from SurfaceInteraction
+                let interaction: Interaction = Interaction {
+                    p: it.p,
+                    time: it.time,
+                    p_error: it.p_error,
+                    wo: it.wo,
+                    n: it.n,
+                };
+                light_pdf = light.pdf_li(&interaction, wi);
+                if light_pdf == 0.0 {
+                    return ld;
+                }
+                weight = power_heuristic(1, scattering_pdf, 1, light_pdf);
+            }
+            // find intersection and compute transmittance
+            //     SurfaceInteraction lightIsect;
+            //     Ray ray = it.SpawnRay(wi);
+            let mut ray: Ray = it.spawn_ray(wi);
+            let tr: Spectrum = Spectrum::new(1.0 as Float);
+            let mut found_surface_interaction: bool = false;
+            // add light contribution from material sampling
+            let mut li: Spectrum = Spectrum::default();
+            if handle_media {
+                // TODO: scene.IntersectTr(ray, sampler, &lightIsect, &Tr)
+            } else {
+                if let Some(light_isect) = scene.intersect(&mut ray) {
+                    found_surface_interaction = true;
+                    if let Some(primitive) = light_isect.primitive {
+                        if let Some(area_light) = primitive.get_area_light() {
+// WORK: see https://users.rust-lang.org/t/arc-traits-inheritance-and-how-to-compare-two-pointers/11819
+                            // if Arc::ptr_eq(&area_light, &light) {
+                            li = light_isect.le(-wi);
+                            // }
+                        }
+                    }
+                }
+            }
+            if !found_surface_interaction {
+                li = light.le(&mut ray);
+            }
+            if !li.is_black() {
+                ld += f * li * tr * weight / scattering_pdf;
+            }
+        }
     }
     ld
 }
@@ -10199,8 +10464,7 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
         crossbeam::scope(|scope| {
             let (pixel_tx, pixel_rx) = mpsc::channel();
             // spawn worker threads
-            // for _ in 0..num_cores {
-            for _ in 0..1 {
+            for _ in 0..num_cores {
                 let pixel_tx = pixel_tx.clone();
                 scope.spawn(move || {
                     while let Some((x, y)) = bq.next() {
@@ -10208,7 +10472,6 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
                             x: x as i32,
                             y: y as i32,
                         };
-                        // TODO: should be done multi-threaded !!!
                         let seed: i32 = tile.y * n_tiles.x + tile.x;
                         let mut tile_sampler = sampler.clone(seed);
                         let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
