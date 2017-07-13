@@ -5,10 +5,12 @@ Camera "perspective" "float fov" [45.000000 ]
 Film "image" "integer xresolution" [256 ] "integer yresolution" [256 ]
     "string filename" "teapot-area-light.exr"
 
-Integrator "directlighting" 
-Sampler "halton" "integer pixelsamples" [8]
+Integrator "directlighting" "integer maxdepth" [10]
+#Integrator "directlighting" 
+Sampler "lowdiscrepancy" "integer pixelsamples" [1]
+#Sampler "halton" "integer pixelsamples" [8]
 PixelFilter "gaussian" "float xwidth" [2.000000 ] "float ywidth" [2.000000 ] 
-Accelerator "kdtree"
+#Accelerator "kdtree"
 
 WorldBegin
 
