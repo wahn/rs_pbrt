@@ -10451,7 +10451,6 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
     println!("Rendering");
     let num_cores: usize = num_cpus::get();
     // DEBUG: let num_cores: usize = 1; // TMP
-    let num_cores: usize = 1; // TMP
     {
         let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
                                            (n_tiles.y * tile_size) as u32),
