@@ -9041,14 +9041,14 @@ impl Light for DiffuseAreaLight {
             wo: iref.wo,
             n: iref.n,
         };
-        self.shape.sample_with_ref_point(&interaction, u, pdf);
+        let p_shape: Interaction = self.shape.sample_with_ref_point(&interaction, u, pdf);
         // TODO: interaction.mediumInterface = mediumInterface;
         if *pdf == 0.0 as Float ||
-            (interaction.p - iref.p).length_squared() == 0.0 as Float {
+            (p_shape.p - iref.p).length_squared() == 0.0 as Float {
                 *pdf = 0.0 as Float;
                 return Spectrum::default();
             }
-        let new_wi: Vector3f = vec3_normalize(interaction.p - iref.p);
+        let new_wi: Vector3f = vec3_normalize(p_shape.p - iref.p);
         *wi = new_wi;
         vis.p0 = Interaction {
             p: iref.p,
@@ -9057,8 +9057,8 @@ impl Light for DiffuseAreaLight {
             wo: iref.wo,
             n: iref.n,
         };
-        vis.p1 = interaction;
-        self.l(&interaction, -new_wi)
+        vis.p1 = p_shape;
+        self.l(&p_shape, -new_wi)
     }
     fn preprocess(&self, scene: &Scene) {
         // TODO?
@@ -10451,6 +10451,7 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
     println!("Rendering");
     let num_cores: usize = num_cpus::get();
     // DEBUG: let num_cores: usize = 1; // TMP
+    let num_cores: usize = 1; // TMP
     {
         let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
                                            (n_tiles.y * tile_size) as u32),
