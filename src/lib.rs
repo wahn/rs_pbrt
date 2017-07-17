@@ -3080,7 +3080,7 @@ impl Transform {
         ret.wo = vec3_normalize(self.transform_vector(si.wo));
         ret.time = si.time;
         ret.uv = si.uv;
-        // TODO: ret.shape = si.shape;
+        ret.shape = None; // TODO? si.shape;
         ret.dpdu = self.transform_vector(si.dpdu);
         ret.dpdv = self.transform_vector(si.dpdv);
         ret.dndu = self.transform_normal(si.dndu);
@@ -4629,7 +4629,13 @@ impl Shape for Disk {
                                                              dndv,
                                                              ray.time,
                                                              None);
-        let isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
+        let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
+        if let Some(shape) = si.shape {
+            isect.shape = si.shape;
+        }
+        if let Some(primitive) = si.primitive {
+            isect.primitive = si.primitive;
+        }
         Some((isect, t_shape_hit))
     }
     fn intersect_p(&self, r: &Ray) -> bool {
@@ -4933,7 +4939,13 @@ impl Shape for Sphere {
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time, None);
-        let isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
+        let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
+        if let Some(shape) = si.shape {
+            isect.shape = si.shape;
+        }
+        if let Some(primitive) = si.primitive {
+            isect.primitive = si.primitive;
+        }
         Some((isect, t_shape_hit.v as Float))
     }
     fn intersect_p(&self, r: &Ray) -> bool {
