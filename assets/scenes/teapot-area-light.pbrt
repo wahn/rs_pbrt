@@ -7,7 +7,7 @@ Film "image" "integer xresolution" [256 ] "integer yresolution" [256 ]
 
 Integrator "directlighting" "integer maxdepth" [10]
 #Integrator "directlighting" 
-Sampler "lowdiscrepancy" "integer pixelsamples" [1]
+Sampler "lowdiscrepancy" "integer pixelsamples" [8]
 #Sampler "halton" "integer pixelsamples" [8]
 PixelFilter "gaussian" "float xwidth" [2.000000 ] "float ywidth" [2.000000 ] 
 #Accelerator "kdtree"

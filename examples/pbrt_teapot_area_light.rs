@@ -3,7 +3,8 @@ extern crate pbrt;
 use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, ConstantTexture, DistantLight, Film,
            Filter, Float, GeometricPrimitive, Light, MatteMaterial, Normal3f, PlasticMaterial,
            PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive, Scene, Spectrum,
-           Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f};
+           Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
+           ZeroTwoSequenceSampler};
 use std::sync::Arc;
 
 struct SceneDescription {
@@ -1827,12 +1828,12 @@ fn main() {
     let xw: Float = 0.5;
     let yw: Float = 0.5;
     let filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
-        radius: Vector2f { x: xw, y: yw },
-        inv_radius: Vector2f {
-            x: 1.0 / xw,
-            y: 1.0 / yw,
-        },
-    });
+                                                         radius: Vector2f { x: xw, y: yw },
+                                                         inv_radius: Vector2f {
+                                                             x: 1.0 / xw,
+                                                             y: 1.0 / yw,
+                                                         },
+                                                     });
     let filename: String = String::from("teapot_area_light.exr");
     let film: Film = Film::new(Point2i { x: xres, y: yres },
                                crop,
@@ -1848,6 +1849,7 @@ fn main() {
                                                                        lensradius,
                                                                        focaldistance,
                                                                        fov,
-                                                                       film);
-    pbrt::render(&scene, &perspective_camera);
+                                                                       film); 
+    let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
+    pbrt::render(&scene, &perspective_camera, &mut sampler);
 }

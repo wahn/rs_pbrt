@@ -6407,6 +6407,63 @@ impl ZeroTwoSequenceSampler {
         }
         lds
     }
+    pub fn copy_from(&mut self, sampler: &ZeroTwoSequenceSampler) {
+        self.samples_per_pixel = sampler.samples_per_pixel;
+        self.n_sampled_dimensions = sampler.n_sampled_dimensions;
+        // copy sampler.samples_1d
+        self.samples_1d.clear();
+        for sample_vec in &sampler.samples_1d {
+            let mut inner: Vec<Float> = Vec::new();
+            for sample in sample_vec {
+                inner.push(*sample);
+            }
+            self.samples_1d.push(inner);
+        }
+        // copy sampler.samples_2d
+        self.samples_2d.clear();
+        for sample_vec in &sampler.samples_2d {
+            let mut inner: Vec<Point2f> = Vec::new();
+            for sample in sample_vec {
+                inner.push(*sample);
+            }
+            self.samples_2d.push(inner);
+        }
+        self.current_1d_dimension = sampler.current_1d_dimension;
+        self.current_2d_dimension = sampler.current_2d_dimension;
+        self.rng = Rng::default();
+        self.current_pixel = Point2i::default();
+        self.current_pixel_sample_index = sampler.current_pixel_sample_index;
+        // copy sampler.samples_1d_array_sizes
+        self.samples_1d_array_sizes.clear();
+        for i in &sampler.samples_1d_array_sizes {
+            self.samples_1d_array_sizes.push(*i);
+        }
+        // copy sampler.samples_2d_array_sizes
+        self.samples_2d_array_sizes.clear();
+        for i in &sampler.samples_2d_array_sizes {
+            self.samples_2d_array_sizes.push(*i);
+        }
+        // copy sampler.samples_1d_array
+        self.samples_1d_array.clear();
+        for vec in &sampler.samples_1d_array {
+            let mut inner: Vec<Float> = Vec::new();
+            for f in vec {
+                inner.push(*f);
+            }
+            self.samples_1d_array.push(inner);
+        }
+        // copy sampler.samples_2d_array
+        self.samples_2d_array.clear();
+        for vec in &sampler.samples_2d_array {
+            let mut inner: Vec<Point2f> = Vec::new();
+            for f in vec {
+                inner.push(*f);
+            }
+            self.samples_2d_array.push(inner);
+        }
+        self.array_1d_offset = sampler.array_1d_offset;
+        self.array_2d_offset = sampler.array_2d_offset;
+    }
     pub fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
         let mut cs: CameraSample = CameraSample::default();
         cs.p_film = Point2f {
@@ -10423,7 +10480,9 @@ pub fn morton2(p: &(u32, u32)) -> u32 {
 	(part1_by1(p.1) << 1) + part1_by1(p.0)
 }
 
-pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
+pub fn render(scene: &Scene,
+              perspective_camera: &PerspectiveCamera,
+              mut sampler: &mut ZeroTwoSequenceSampler) {
     // SamplerIntegrator::Render (integrator.cpp)
     // create integrator
     let xres = perspective_camera.film.full_resolution.x;
@@ -10435,7 +10494,6 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
     let mut integrator: DirectLightingIntegrator =
         DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, pixel_bounds);
     // create and preprocess sampler
-    let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
     integrator.preprocess(scene, &mut sampler);
     // use camera below
     let sample_bounds: Bounds2i = perspective_camera.film.get_sample_bounds();
@@ -10474,7 +10532,7 @@ pub fn render(scene: &Scene, perspective_camera: &PerspectiveCamera) {
                             y: y as i32,
                         };
                         let seed: i32 = tile.y * n_tiles.x + tile.x;
-                        let mut tile_sampler = sampler.clone(seed);
+                        let mut tile_sampler = ZeroTwoSequenceSampler::clone(sampler, seed);
                         let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                         let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                         let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;

@@ -6,7 +6,7 @@ use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Checkerboard2DTextu
            ImageTexture, ImageWrap, Light, MatteMaterial, MirrorMaterial, Normal3f,
            PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene,
            Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
-           Vector2f, Vector3f};
+           Vector2f, Vector3f, ZeroTwoSequenceSampler};
 use std::env;
 use std::string::String;
 use std::sync::Arc;
@@ -508,5 +508,6 @@ fn main() {
                                                                        focaldistance,
                                                                        fov,
                                                                        film);
-    pbrt::render(&scene, &perspective_camera);
+    let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
+    pbrt::render(&scene, &perspective_camera, &mut sampler);
 }

@@ -2111,7 +2111,7 @@ fn pbrt_world_end() {
                             }
                             if let Some(camera) = some_camera {
                                 // MakeSampler
-                                let mut some_sampler: Option<Arc<Sampler + Sync + Send>> = None;
+                                let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
                                 if ro.sampler_name == String::from("lowdiscrepancy") ||
                                    ro.sampler_name == String::from("02sequence") {
                                     let nsamp: i32 =
@@ -2120,10 +2120,10 @@ fn pbrt_world_end() {
                                     let sd: i32 = ro.sampler_params
                                         .find_one_int(String::from("dimensions"), 4);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-                                    let sampler = Arc::new(ZeroTwoSequenceSampler::new(nsamp as
-                                                                                       i64,
-                                                                                       sd as i64));
-                                    some_sampler = Some(sampler);
+                                    let new_sampler = ZeroTwoSequenceSampler::new(nsamp as
+                                                                                  i64,
+                                                                                  sd as i64);
+                                    sampler.copy_from(&new_sampler);
                                 } else if ro.sampler_name == String::from("maxmindist") {
                                     println!("TODO: CreateMaxMinDistSampler");
                                 } else if ro.sampler_name == String::from("halton") {
@@ -2135,8 +2135,8 @@ fn pbrt_world_end() {
                                     // WARNING: Use ZeroTwoSequenceSampler for now !!!
                                     let nsamp: i64 = 16;
                                     let sd: i64 = 4;
-                                    let sampler = Arc::new(ZeroTwoSequenceSampler::new(nsamp, sd));
-                                    some_sampler = Some(sampler);
+                                    let new_sampler = ZeroTwoSequenceSampler::new(nsamp, sd);
+                                    sampler.copy_from(&new_sampler);
                                 } else if ro.sampler_name == String::from("sobol") {
                                     println!("TODO: CreateSobolSampler");
                                 } else if ro.sampler_name == String::from("random") {
@@ -2147,7 +2147,7 @@ fn pbrt_world_end() {
                                     panic!("Sampler \"{}\" unknown.", ro.sampler_name);
                                 }
                                 // MakeIntegrator
-                                if let Some(_sampler) = some_sampler {
+                                // if let Some(mut sampler) = some_sampler {
                                     let mut some_integrator: Option<Arc<SamplerIntegrator + Sync + Send>> = None;
                                     if ro.integrator_name == String::from("whitted") {
                                         println!("TODO: CreateWhittedIntegrator");
@@ -2232,7 +2232,7 @@ fn pbrt_world_end() {
                                             let scene: Scene = Scene::new(accelerator.clone(), ro.lights.clone());
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
-                                            pbrt::render(&scene, &camera);
+                                            pbrt::render(&scene, &camera, &mut sampler);
                                         } else if ro.accelerator_name == String::from("kdtree") {
                                             // println!("TODO: CreateKdTreeAccelerator");
                                             // WARNING: Use BVHAccel for now !!!
@@ -2244,7 +2244,7 @@ fn pbrt_world_end() {
                                             let scene: Scene = Scene::new(accelerator.clone(), ro.lights.clone());
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
-                                            pbrt::render(&scene, &camera);
+                                            pbrt::render(&scene, &camera, &mut sampler);
                                         } else {
                                             panic!("Accelerator \"{}\" unknown.",
                                                    ro.accelerator_name);
@@ -2252,9 +2252,9 @@ fn pbrt_world_end() {
                                     } else {
                                         panic!("Unable to create integrator.");
                                     }
-                                } else {
-                                    panic!("Unable to create sampler.");
-                                }
+                                // } else {
+                                //     panic!("Unable to create sampler.");
+                                // }
                             } else {
                                 panic!("Unable to create camera.");
                             }
