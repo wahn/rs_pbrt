@@ -6550,8 +6550,6 @@ impl ZeroTwoSequenceSampler {
                 "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
                 self.current_pixel_sample_index,
                 self.samples_per_pixel);
-        // TODO: let index: usize = self.current_pixel_sample_index as usize * n as usize;
-        // TODO: samples = self.samples_2d_array[self.array_2d_offset][index];
         for sample in &self.samples_2d_array[self.array_2d_offset] {
             samples.push(*sample);
         }
@@ -9126,14 +9124,19 @@ impl Light for DiffuseAreaLight {
             wo: iref.wo,
             n: iref.n,
         };
-        vis.p1 = p_shape;
+        vis.p1 = Interaction {
+            p: p_shape.p,
+            time: p_shape.time,
+            p_error: p_shape.p_error,
+            wo: p_shape.wo,
+            n: p_shape.n,
+        };
         self.l(&p_shape, -new_wi)
     }
     fn preprocess(&self, scene: &Scene) {
         // TODO?
     }
     fn le(&self, _ray: &mut Ray) -> Spectrum {
-        // WORK
         Spectrum::default()
     }
     fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float {
@@ -9300,6 +9303,8 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                                   &mut sampled_type);
                 f *= Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
                 sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+            } else {
+                println!("TODO: if let Some(ref bsdf) = it.bsdf failed");
             }
         } else {
             // TODO
@@ -9326,8 +9331,6 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                 weight = power_heuristic(1, scattering_pdf, 1, light_pdf);
             }
             // find intersection and compute transmittance
-            //     SurfaceInteraction lightIsect;
-            //     Ray ray = it.SpawnRay(wi);
             let mut ray: Ray = it.spawn_ray(wi);
             let tr: Spectrum = Spectrum::new(1.0 as Float);
             let mut found_surface_interaction: bool = false;
@@ -10496,20 +10499,13 @@ pub fn render(scene: &Scene,
               perspective_camera: &PerspectiveCamera,
               mut sampler: &mut ZeroTwoSequenceSampler) {
     // SamplerIntegrator::Render (integrator.cpp)
-    // create integrator
-    let xres = perspective_camera.film.full_resolution.x;
-    let yres = perspective_camera.film.full_resolution.y;
-    let pixel_bounds: Bounds2i = Bounds2i {
-        p_min: Point2i { x: 0, y: 0 },
-        p_max: Point2i { x: xres, y: yres },
-    };
+    let sample_bounds: Bounds2i = perspective_camera.film.get_sample_bounds();
+    println!("sample_bounds = {:?}", sample_bounds);
     let mut integrator: DirectLightingIntegrator =
-        DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, pixel_bounds);
+        DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds);
     // create and preprocess sampler
     integrator.preprocess(scene, &mut sampler);
     // use camera below
-    let sample_bounds: Bounds2i = perspective_camera.film.get_sample_bounds();
-    println!("sample_bounds = {:?}", sample_bounds);
     let sample_extent: Vector2i = sample_bounds.diagonal();
     println!("sample_extent = {:?}", sample_extent);
     let tile_size: i32 = 16;
