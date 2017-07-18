@@ -6344,20 +6344,20 @@ pub struct ZeroTwoSequenceSampler {
     pub samples_per_pixel: i64,
     pub n_sampled_dimensions: i64,
     // inherited from class PixelSampler (see sampler.h)
-    pub samples_1d: Vec<Vec<Float>>, // TODO: not pub?
-    pub samples_2d: Vec<Vec<Point2f>>, // TODO: not pub?
-    pub current_1d_dimension: i32, // TODO: not pub?
-    pub current_2d_dimension: i32, // TODO: not pub?
-    pub rng: Rng, // TODO: not pub?
+    pub samples_1d: Vec<Vec<Float>>,
+    pub samples_2d: Vec<Vec<Point2f>>,
+    pub current_1d_dimension: i32,
+    pub current_2d_dimension: i32,
+    pub rng: Rng,
     // inherited from class Sampler (see sampler.h)
-    pub current_pixel: Point2i, // TODO: not pub?
-    pub current_pixel_sample_index: i64, // TODO: not pub?
-    pub samples_1d_array_sizes: Vec<i32>, // TODO: not pub?
-    pub samples_2d_array_sizes: Vec<i32>, // TODO: not pub?
-    pub samples_1d_array: Vec<Vec<Float>>, // TODO: not pub?
-    pub samples_2d_array: Vec<Vec<Point2f>>, // TODO: not pub?
-    pub array_1d_offset: usize, // TODO: not pub?
-    pub array_2d_offset: usize, // TODO: not pub?
+    pub current_pixel: Point2i,
+    pub current_pixel_sample_index: i64,
+    pub samples_1d_array_sizes: Vec<i32>,
+    pub samples_2d_array_sizes: Vec<i32>,
+    pub samples_1d_array: Vec<Vec<Float>>,
+    pub samples_2d_array: Vec<Vec<Point2f>>,
+    pub array_1d_offset: usize,
+    pub array_2d_offset: usize,
 }
 
 impl Default for ZeroTwoSequenceSampler {
@@ -6492,9 +6492,9 @@ impl ZeroTwoSequenceSampler {
                 "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
                 self.current_pixel_sample_index,
                 self.samples_per_pixel);
-        for sample in &self.samples_2d_array[self.array_2d_offset] {
-            samples.push(*sample);
-        }
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        samples = self.samples_2d_array[self.array_2d_offset][start..end].to_vec();
         self.array_2d_offset += 1;
         samples
     }
@@ -10392,7 +10392,6 @@ pub fn render(scene: &Scene,
     println!("Rendering");
     let num_cores: usize = num_cpus::get();
     // DEBUG: let num_cores: usize = 1; // TMP
-    let num_cores: usize = 1; // TMP
     {
         let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
                                            (n_tiles.y * tile_size) as u32),
