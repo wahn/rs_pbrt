@@ -6335,12 +6335,11 @@ pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
 pub trait Sampler {
     fn get_1d(&mut self) -> Float;
     fn get_2d(&mut self) -> Point2f;
-    fn clone(&self, seed: i32) -> Self where Self: Sized;
 }
 
 // see zerotwosequence.h
 
-#[derive(Debug)]
+#[derive(Debug,Clone)]
 pub struct ZeroTwoSequenceSampler {
     pub samples_per_pixel: i64,
     pub n_sampled_dimensions: i64,
@@ -6418,63 +6417,6 @@ impl ZeroTwoSequenceSampler {
             lds.samples_2d.push(additional_2d);
         }
         lds
-    }
-    pub fn copy_from(&mut self, sampler: &ZeroTwoSequenceSampler) {
-        self.samples_per_pixel = sampler.samples_per_pixel;
-        self.n_sampled_dimensions = sampler.n_sampled_dimensions;
-        // copy sampler.samples_1d
-        self.samples_1d.clear();
-        for sample_vec in &sampler.samples_1d {
-            let mut inner: Vec<Float> = Vec::new();
-            for sample in sample_vec {
-                inner.push(*sample);
-            }
-            self.samples_1d.push(inner);
-        }
-        // copy sampler.samples_2d
-        self.samples_2d.clear();
-        for sample_vec in &sampler.samples_2d {
-            let mut inner: Vec<Point2f> = Vec::new();
-            for sample in sample_vec {
-                inner.push(*sample);
-            }
-            self.samples_2d.push(inner);
-        }
-        self.current_1d_dimension = sampler.current_1d_dimension;
-        self.current_2d_dimension = sampler.current_2d_dimension;
-        self.rng = Rng::default();
-        self.current_pixel = Point2i::default();
-        self.current_pixel_sample_index = sampler.current_pixel_sample_index;
-        // copy sampler.samples_1d_array_sizes
-        self.samples_1d_array_sizes.clear();
-        for i in &sampler.samples_1d_array_sizes {
-            self.samples_1d_array_sizes.push(*i);
-        }
-        // copy sampler.samples_2d_array_sizes
-        self.samples_2d_array_sizes.clear();
-        for i in &sampler.samples_2d_array_sizes {
-            self.samples_2d_array_sizes.push(*i);
-        }
-        // copy sampler.samples_1d_array
-        self.samples_1d_array.clear();
-        for vec in &sampler.samples_1d_array {
-            let mut inner: Vec<Float> = Vec::new();
-            for f in vec {
-                inner.push(*f);
-            }
-            self.samples_1d_array.push(inner);
-        }
-        // copy sampler.samples_2d_array
-        self.samples_2d_array.clear();
-        for vec in &sampler.samples_2d_array {
-            let mut inner: Vec<Point2f> = Vec::new();
-            for f in vec {
-                inner.push(*f);
-            }
-            self.samples_2d_array.push(inner);
-        }
-        self.array_1d_offset = sampler.array_1d_offset;
-        self.array_2d_offset = sampler.array_2d_offset;
     }
     pub fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
         let mut cs: CameraSample = CameraSample::default();
@@ -6596,73 +6538,6 @@ impl Sampler for ZeroTwoSequenceSampler {
                 y: self.rng.uniform_float(),
             }
         }
-    }
-    fn clone(&self, seed: i32) -> Self {
-        // copy self.samples_1d
-        let mut samples_1d: Vec<Vec<Float>> = Vec::new();
-        for vec in &self.samples_1d {
-            let mut inner: Vec<Float> = Vec::new();
-            for f in vec {
-                inner.push(*f);
-            }
-            samples_1d.push(inner);
-        }
-        // copy self.samples_2d
-        let mut samples_2d: Vec<Vec<Point2f>> = Vec::new();
-        for vec in &self.samples_2d {
-            let mut inner: Vec<Point2f> = Vec::new();
-            for p in vec {
-                inner.push(*p);
-            }
-            samples_2d.push(inner);
-        }
-        // copy self.samples_1d_array_sizes
-        let mut samples_1d_array_sizes: Vec<i32> = Vec::new();
-        for i in &self.samples_1d_array_sizes {
-            samples_1d_array_sizes.push(*i);
-        }
-        // copy self.samples_2d_array_sizes
-        let mut samples_2d_array_sizes: Vec<i32> = Vec::new();
-        for i in &self.samples_2d_array_sizes {
-            samples_2d_array_sizes.push(*i);
-        }
-        // copy self.samples_1d_array
-        let mut samples_1d_array: Vec<Vec<Float>> = Vec::new();
-        for vec in &self.samples_1d_array {
-            let mut inner: Vec<Float> = Vec::new();
-            for f in vec {
-                inner.push(*f);
-            }
-            samples_1d_array.push(inner);
-        }
-        // copy self.samples_2d_array
-        let mut samples_2d_array: Vec<Vec<Point2f>> = Vec::new();
-        for vec in &self.samples_2d_array {
-            let mut inner: Vec<Point2f> = Vec::new();
-            for p in vec {
-                inner.push(*p);
-            }
-            samples_2d_array.push(inner);
-        }
-        let mut lds: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
-            samples_per_pixel: self.samples_per_pixel,
-            n_sampled_dimensions: self.n_sampled_dimensions,
-            samples_1d: samples_1d,
-            samples_2d: samples_2d,
-            current_1d_dimension: self.current_1d_dimension,
-            current_2d_dimension: self.current_2d_dimension,
-            rng: self.rng,
-            current_pixel: self.current_pixel,
-            current_pixel_sample_index: self.current_pixel_sample_index,
-            samples_1d_array_sizes: samples_1d_array_sizes,
-            samples_2d_array_sizes: samples_2d_array_sizes,
-            samples_1d_array: samples_1d_array,
-            samples_2d_array: samples_2d_array,
-            array_1d_offset: self.array_1d_offset,
-            array_2d_offset: self.array_2d_offset,
-        };
-        lds.rng.set_sequence(seed as u64);
-        lds
     }
 }
 
@@ -10517,6 +10392,7 @@ pub fn render(scene: &Scene,
     println!("Rendering");
     let num_cores: usize = num_cpus::get();
     // DEBUG: let num_cores: usize = 1; // TMP
+    let num_cores: usize = 1; // TMP
     {
         let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
                                            (n_tiles.y * tile_size) as u32),
@@ -10540,7 +10416,10 @@ pub fn render(scene: &Scene,
                             y: y as i32,
                         };
                         let seed: i32 = tile.y * n_tiles.x + tile.x;
-                        let mut tile_sampler = ZeroTwoSequenceSampler::clone(sampler, seed);
+                        // don't use ZeroTwoSequenceSampler::Clone(int seed)
+                        let mut tile_sampler = ZeroTwoSequenceSampler::clone(sampler);
+                        // adjust the seed here
+                        tile_sampler.rng.set_sequence(seed as u64);
                         let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                         let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                         let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;

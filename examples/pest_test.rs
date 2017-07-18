@@ -6,13 +6,13 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, AreaLight, Bounds2f, Bounds2i, BoxFilter, BVHAccel,
-           Checkerboard2DTexture, ConstantTexture, DiffuseAreaLight, DirectLightingIntegrator,
-           Disk, DistantLight, Film, Filter, Float, GaussianFilter, GeometricPrimitive,
-           GlassMaterial, GraphicsState, ImageTexture, ImageWrap, Light, LightStrategy, Material,
-           MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet, PerspectiveCamera,
-           PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f, PointLight, RenderOptions,
-           Sampler, SamplerIntegrator, Scene, Shape, Spectrum, Sphere, SplitMethod, Texture,
+use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerboard2DTexture,
+           ConstantTexture, DiffuseAreaLight, DirectLightingIntegrator, Disk, DistantLight, Film,
+           Filter, Float, GaussianFilter, GeometricPrimitive, GlassMaterial, GraphicsState,
+           ImageTexture, ImageWrap, Light, LightStrategy, Material, MatteMaterial, Matrix4x4,
+           MirrorMaterial, Normal3f, ParamSet, PerspectiveCamera, PlanarMapping2D,
+           PlasticMaterial, Point2f, Point2i, Point3f, PointLight, RenderOptions,
+           SamplerIntegrator, Scene, Shape, Spectrum, Sphere, SplitMethod, Texture,
            TextureMapping2D, TextureParams, Transform, TransformSet, Triangle, TriangleMesh,
            UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
@@ -2120,10 +2120,9 @@ fn pbrt_world_end() {
                                     let sd: i32 = ro.sampler_params
                                         .find_one_int(String::from("dimensions"), 4);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-                                    let new_sampler = ZeroTwoSequenceSampler::new(nsamp as
-                                                                                  i64,
+                                    let new_sampler = ZeroTwoSequenceSampler::new(nsamp as i64,
                                                                                   sd as i64);
-                                    sampler.copy_from(&new_sampler);
+                                    sampler = new_sampler.clone()
                                 } else if ro.sampler_name == String::from("maxmindist") {
                                     println!("TODO: CreateMaxMinDistSampler");
                                 } else if ro.sampler_name == String::from("halton") {
@@ -2136,7 +2135,7 @@ fn pbrt_world_end() {
                                     let nsamp: i64 = 16;
                                     let sd: i64 = 4;
                                     let new_sampler = ZeroTwoSequenceSampler::new(nsamp, sd);
-                                    sampler.copy_from(&new_sampler);
+                                    sampler = new_sampler.clone()
                                 } else if ro.sampler_name == String::from("sobol") {
                                     println!("TODO: CreateSobolSampler");
                                 } else if ro.sampler_name == String::from("random") {
@@ -2148,110 +2147,108 @@ fn pbrt_world_end() {
                                 }
                                 // MakeIntegrator
                                 // if let Some(mut sampler) = some_sampler {
-                                    let mut some_integrator: Option<Arc<SamplerIntegrator + Sync + Send>> = None;
-                                    if ro.integrator_name == String::from("whitted") {
-                                        println!("TODO: CreateWhittedIntegrator");
-                                    } else if ro.integrator_name == String::from("directlighting") {
-                                        // CreateDirectLightingIntegrator
-                                        let max_depth: i32 =
-                                            ro.integrator_params
-                                                .find_one_int(String::from("maxdepth"), 5);
-                                        let st: String = ro.integrator_params
-                                            .find_one_string(String::from("strategy"),
-                                                             String::from("all"));
-                                        let strategy: LightStrategy;
-                                        if st == String::from("one") {
-                                            strategy = LightStrategy::UniformSampleOne;
-                                        } else if st == String::from("all") {
-                                            strategy = LightStrategy::UniformSampleAll;
-                                        } else {
-                                            panic!("Strategy \"{}\" for direct lighting unknown.",
-                                                   st);
-                                        }
-                                        // TODO: const int *pb = params.FindInt("pixelbounds", &np);
-                                        let pixel_bounds: Bounds2i = Bounds2i {
-                                            p_min: Point2i { x: 0, y: 0 },
-                                            p_max: Point2i { x: xres, y: yres },
-                                        };
-                                        let integrator =
-                                            Arc::new(DirectLightingIntegrator::new(strategy,
-                                                                                   max_depth as
-                                                                                   i64,
-                                                                                   pixel_bounds));
-                                        some_integrator = Some(integrator);
-                                    } else if ro.integrator_name == String::from("path") {
-                                        println!("TODO: CreatePathIntegrator");
-                                    } else if ro.integrator_name == String::from("volpath") {
-                                        println!("TODO: CreateVolPathIntegrator");
-                                    } else if ro.integrator_name == String::from("bdpt") {
-                                        println!("TODO: CreateBDPTIntegrator");
-                                    } else if ro.integrator_name == String::from("mlt") {
-                                        println!("TODO: CreateMLTIntegrator");
-                                    } else if ro.integrator_name ==
-                                              String::from("ambientocclusion") {
-                                        println!("TODO: CreateAOIntegrator");
-                                    } else if ro.integrator_name == String::from("sppm") {
-                                        println!("TODO: CreateSPPMIntegrator");
+                                let mut some_integrator: Option<Arc<SamplerIntegrator + Sync + Send>> = None;
+                                if ro.integrator_name == String::from("whitted") {
+                                    println!("TODO: CreateWhittedIntegrator");
+                                } else if ro.integrator_name == String::from("directlighting") {
+                                    // CreateDirectLightingIntegrator
+                                    let max_depth: i32 =
+                                        ro.integrator_params
+                                            .find_one_int(String::from("maxdepth"), 5);
+                                    let st: String = ro.integrator_params
+                                        .find_one_string(String::from("strategy"),
+                                                         String::from("all"));
+                                    let strategy: LightStrategy;
+                                    if st == String::from("one") {
+                                        strategy = LightStrategy::UniformSampleOne;
+                                    } else if st == String::from("all") {
+                                        strategy = LightStrategy::UniformSampleAll;
                                     } else {
-                                        panic!("Integrator \"{}\" unknown.", ro.integrator_name);
+                                        panic!("Strategy \"{}\" for direct lighting unknown.", st);
                                     }
-                                    if let Some(_integrator) = some_integrator {
-                                        // MakeIntegrator
-                                        // TODO: if (renderOptions->haveScatteringMedia && ...)
-                                        if ro.lights.is_empty() {
-                                            // warn if no light sources are defined
-                                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
-                                        }
-                                        // MakeAccelerator
-                                        if ro.accelerator_name == String::from("bvh") {
-                                            //  CreateBVHAccelerator
-                                            let split_method_name: String =
+                                    // TODO: const int *pb = params.FindInt("pixelbounds", &np);
+                                    let pixel_bounds: Bounds2i = Bounds2i {
+                                        p_min: Point2i { x: 0, y: 0 },
+                                        p_max: Point2i { x: xres, y: yres },
+                                    };
+                                    let integrator =
+                                        Arc::new(DirectLightingIntegrator::new(strategy,
+                                                                               max_depth as i64,
+                                                                               pixel_bounds));
+                                    some_integrator = Some(integrator);
+                                } else if ro.integrator_name == String::from("path") {
+                                    println!("TODO: CreatePathIntegrator");
+                                } else if ro.integrator_name == String::from("volpath") {
+                                    println!("TODO: CreateVolPathIntegrator");
+                                } else if ro.integrator_name == String::from("bdpt") {
+                                    println!("TODO: CreateBDPTIntegrator");
+                                } else if ro.integrator_name == String::from("mlt") {
+                                    println!("TODO: CreateMLTIntegrator");
+                                } else if ro.integrator_name == String::from("ambientocclusion") {
+                                    println!("TODO: CreateAOIntegrator");
+                                } else if ro.integrator_name == String::from("sppm") {
+                                    println!("TODO: CreateSPPMIntegrator");
+                                } else {
+                                    panic!("Integrator \"{}\" unknown.", ro.integrator_name);
+                                }
+                                if let Some(_integrator) = some_integrator {
+                                    // MakeIntegrator
+                                    // TODO: if (renderOptions->haveScatteringMedia && ...)
+                                    if ro.lights.is_empty() {
+                                        // warn if no light sources are defined
+                                        println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                                    }
+                                    // MakeAccelerator
+                                    if ro.accelerator_name == String::from("bvh") {
+                                        //  CreateBVHAccelerator
+                                        let split_method_name: String =
                                                 ro.accelerator_params.find_one_string(String::from("splitmethod"),
                                                                                       String::from("sah"));
-                                            let split_method;
-                                            if split_method_name == String::from("sah") {
-                                                split_method = SplitMethod::SAH;
-                                            } else if split_method_name == String::from("hlbvh") {
-                                                split_method = SplitMethod::HLBVH;
-                                            } else if split_method_name == String::from("middle") {
-                                                split_method = SplitMethod::Middle;
-                                            } else if split_method_name == String::from("equal") {
-                                                split_method = SplitMethod::EqualCounts;
-                                            } else {
-                                                println!("WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
-                                                         split_method_name);
-                                                split_method = SplitMethod::SAH;
-                                            }
-                                            let max_prims_in_node: i32 =
-                                                ro.accelerator_params.find_one_int(String::from("maxnodeprims"), 4);
-                                            let accelerator =
-                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
-                                                                       max_prims_in_node as usize,
-                                                                       split_method));
-                                            // MakeScene
-                                            let scene: Scene = Scene::new(accelerator.clone(), ro.lights.clone());
-                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                                            // TODO: lights.erase(lights.begin(), lights.end());
-                                            pbrt::render(&scene, &camera, &mut sampler);
-                                        } else if ro.accelerator_name == String::from("kdtree") {
-                                            // println!("TODO: CreateKdTreeAccelerator");
-                                            // WARNING: Use BVHAccel for now !!!
-                                            let accelerator =
-                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
-                                                                       4,
-                                                                       SplitMethod::SAH));
-                                            // MakeScene
-                                            let scene: Scene = Scene::new(accelerator.clone(), ro.lights.clone());
-                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                                            // TODO: lights.erase(lights.begin(), lights.end());
-                                            pbrt::render(&scene, &camera, &mut sampler);
+                                        let split_method;
+                                        if split_method_name == String::from("sah") {
+                                            split_method = SplitMethod::SAH;
+                                        } else if split_method_name == String::from("hlbvh") {
+                                            split_method = SplitMethod::HLBVH;
+                                        } else if split_method_name == String::from("middle") {
+                                            split_method = SplitMethod::Middle;
+                                        } else if split_method_name == String::from("equal") {
+                                            split_method = SplitMethod::EqualCounts;
                                         } else {
-                                            panic!("Accelerator \"{}\" unknown.",
-                                                   ro.accelerator_name);
+                                            println!("WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                                                     split_method_name);
+                                            split_method = SplitMethod::SAH;
                                         }
+                                        let max_prims_in_node: i32 =
+                                                ro.accelerator_params.find_one_int(String::from("maxnodeprims"), 4);
+                                        let accelerator =
+                                            Arc::new(BVHAccel::new(ro.primitives.clone(),
+                                                                   max_prims_in_node as usize,
+                                                                   split_method));
+                                        // MakeScene
+                                        let scene: Scene = Scene::new(accelerator.clone(),
+                                                                      ro.lights.clone());
+                                        // TODO: primitives.erase(primitives.begin(), primitives.end());
+                                        // TODO: lights.erase(lights.begin(), lights.end());
+                                        pbrt::render(&scene, &camera, &mut sampler);
+                                    } else if ro.accelerator_name == String::from("kdtree") {
+                                        // println!("TODO: CreateKdTreeAccelerator");
+                                        // WARNING: Use BVHAccel for now !!!
+                                        let accelerator = Arc::new(BVHAccel::new(ro.primitives
+                                                                                     .clone(),
+                                                                                 4,
+                                                                                 SplitMethod::SAH));
+                                        // MakeScene
+                                        let scene: Scene = Scene::new(accelerator.clone(),
+                                                                      ro.lights.clone());
+                                        // TODO: primitives.erase(primitives.begin(), primitives.end());
+                                        // TODO: lights.erase(lights.begin(), lights.end());
+                                        pbrt::render(&scene, &camera, &mut sampler);
                                     } else {
-                                        panic!("Unable to create integrator.");
+                                        panic!("Accelerator \"{}\" unknown.", ro.accelerator_name);
                                     }
+                                } else {
+                                    panic!("Unable to create integrator.");
+                                }
                                 // } else {
                                 //     panic!("Unable to create sampler.");
                                 // }
