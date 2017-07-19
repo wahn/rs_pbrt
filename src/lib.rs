@@ -9298,6 +9298,45 @@ pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
     }
 }
 
+// see ao.h
+
+pub struct AOIntegrator {
+    // inherited from SamplerIntegrator (see integrator.h)
+    pixel_bounds: Bounds2i,
+    // see ao.h
+    cos_sample: bool,
+    n_samples: i32,
+}
+
+impl AOIntegrator {
+    pub fn new(cos_sample: bool,
+               n_samples: i32,
+               perspective_camera: &PerspectiveCamera,
+               sampler: &ZeroTwoSequenceSampler,
+               pixel_bounds: Bounds2i)
+               -> Self {
+        // WORK
+        AOIntegrator {
+            pixel_bounds: pixel_bounds,
+            cos_sample: cos_sample,
+            n_samples: n_samples,
+        }
+    }
+}
+
+impl SamplerIntegrator for AOIntegrator {
+    fn li(&self,
+          ray: &mut Ray,
+          scene: &Scene,
+          sampler: &mut ZeroTwoSequenceSampler,
+          // arena: &mut Arena,
+          depth: i32)
+          -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+}
+
 // see directlighting.h
 
 #[derive(Debug,Clone,PartialEq)]

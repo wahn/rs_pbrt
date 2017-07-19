@@ -6,12 +6,12 @@ extern crate pest;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Checkerboard2DTexture,
-           ConstantTexture, DiffuseAreaLight, DirectLightingIntegrator, Disk, DistantLight, Film,
-           Filter, Float, GaussianFilter, GeometricPrimitive, GlassMaterial, GraphicsState,
-           ImageTexture, ImageWrap, Light, LightStrategy, Material, MatteMaterial, Matrix4x4,
-           MirrorMaterial, Normal3f, ParamSet, PerspectiveCamera, PlanarMapping2D,
-           PlasticMaterial, Point2f, Point2i, Point3f, PointLight, RenderOptions,
+use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i, BoxFilter, BVHAccel,
+           Checkerboard2DTexture, ConstantTexture, DiffuseAreaLight, DirectLightingIntegrator,
+           Disk, DistantLight, Film, Filter, Float, GaussianFilter, GeometricPrimitive,
+           GlassMaterial, GraphicsState, ImageTexture, ImageWrap, Light, LightStrategy, Material,
+           MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet, PerspectiveCamera,
+           PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f, PointLight, RenderOptions,
            SamplerIntegrator, Scene, Shape, Spectrum, Sphere, SplitMethod, Texture,
            TextureMapping2D, TextureParams, Transform, TransformSet, Triangle, TriangleMesh,
            UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
@@ -1816,14 +1816,16 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 material_params: material_params,
             };
             if graphics_state.current_named_material != String::new() {
-                match graphics_state.named_materials.get(graphics_state.current_named_material.as_str()) {
+                match graphics_state
+                          .named_materials
+                          .get(graphics_state.current_named_material.as_str()) {
                     Some(named_material) => {
                         return named_material.clone();
-                    },
+                    }
                     None => {
                         println!("WARNING: Named material \"{}\" not defined. Using \"matte\".",
                                  graphics_state.current_named_material);
-                    },
+                    }
                 }
             } else {
                 // MakeMaterial
@@ -2352,7 +2354,44 @@ fn pbrt_world_end() {
                                 } else if ro.integrator_name == String::from("mlt") {
                                     println!("TODO: CreateMLTIntegrator");
                                 } else if ro.integrator_name == String::from("ambientocclusion") {
-                                    println!("TODO: CreateAOIntegrator");
+                                    // CreateAOIntegrator
+                                    let pb: Vec<i32> = ro.integrator_params
+                                        .find_int(String::from("pixelbounds"));
+                                    let np: usize = pb.len();
+                                    let pixel_bounds: Bounds2i = camera.film.get_sample_bounds();
+                                    if np > 0 as usize {
+                                        if np != 4 as usize {
+                                            panic!("Expected four values for \"pixelbounds\" parameter. Got {}.",
+                                                   np);
+                                        } else {
+                                            println!("TODO: pixelBounds = Intersect(...)");
+                                            // pixelBounds = Intersect(pixelBounds,
+                                            //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
+                                            // if (pixelBounds.Area() == 0)
+                                            //     Error("Degenerate \"pixelbounds\" specified.");
+                                        }
+                                    }
+                                    let rr_threshold: Float =
+                                        ro.integrator_params
+                                            .find_one_float(String::from("rrthreshold"),
+                                                            1.0 as Float);
+                                    println!("DEBUG: rr_threshold = {:?}", rr_threshold);
+                                    let cos_sample: bool =
+                                        ro.integrator_params
+                                            .find_one_bool(String::from("cossample"), true);
+                                    println!("DEBUG: cos_sample = {:?}", cos_sample);
+                                    // int nSamples = params.Find_One_Int("nsamples", 64);
+                                    let n_samples: i32 =
+                                        ro.integrator_params
+                                            .find_one_int(String::from("nsamples"), 64 as i32);
+                                    // return new AOIntegrator(cosSample, nSamples, camera, sampler, pixelBounds);
+
+                                    let integrator = Arc::new(AOIntegrator::new(cos_sample,
+                                                                                n_samples,
+                                                                                &camera,
+                                                                                &sampler,
+                                                                                pixel_bounds));
+                                    some_integrator = Some(integrator);
                                 } else if ro.integrator_name == String::from("sppm") {
                                     println!("TODO: CreateSPPMIntegrator");
                                 } else {
