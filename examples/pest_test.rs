@@ -72,7 +72,7 @@ pub enum FloatNode {
 impl_rdp! {
     grammar! {
         pbrt = _{ whitespace? ~ (statement | comment)* ~ last_statement }
-        statement = { look_at | translate | rotate | concat_transform | named_statement | keyword }
+        statement = { look_at | translate | rotate | transform | concat_transform | named_statement | keyword }
         named_statement = { accelerator |
                             camera |
                             pixel_filter |
@@ -84,6 +84,8 @@ impl_rdp! {
                             light_source |
                             texture |
                             material |
+                            make_named_material |
+                            named_material |
                             shape }
         parameter = { float_param |
                       string_param |
@@ -115,6 +117,20 @@ impl_rdp! {
         rotate = { ["Rotate"] ~
                    // followed by 4 numbers:
                    number ~ number ~ number ~ number
+        }
+        // Transform m00 .. m33
+        transform = { (["Transform"] ~ lbrack ~
+                       // followed by 16 numbers:
+                       number ~ number ~ number ~ number ~
+                       number ~ number ~ number ~ number ~
+                       number ~ number ~ number ~ number ~
+                       number ~ number ~ number ~ number ~ rbrack) |
+                      (["Transform"] ~
+                       // followed by 16 numbers:
+                       number ~ number ~ number ~ number ~
+                       number ~ number ~ number ~ number ~
+                       number ~ number ~ number ~ number ~
+                       number ~ number ~ number ~ number)
         }
         // ConcatTransform m00 .. m33
         concat_transform = { (["ConcatTransform"] ~ lbrack ~
@@ -163,6 +179,10 @@ impl_rdp! {
         texture = { ["Texture"] ~ string ~ string ~ string ~ parameter* }
         // Material "matte" "texture Kd" "mydiffuse"
         material = { ["Material"] ~ string ~ parameter* }
+        // MakeNamedMaterial "myplastic" "string type" "plastic" "float roughness" [0.1]
+        make_named_material = { ["MakeNamedMaterial"] ~ string ~ parameter* }
+        // NamedMaterial "myplastic"
+        named_material = { ["NamedMaterial"] ~ string ~ parameter* }
         // Shape "sphere" "float radius" [0.25]
         shape = { ["Shape"] ~ string ~ parameter* }
         // keywords
@@ -176,9 +196,7 @@ impl_rdp! {
              ["Identity"] |
              ["Include"] |
              ["MakeNamedMedium"] |
-             ["MakeNamedMaterial"] |
              ["MediumInterface"] |
-             ["NamedMaterial"] |
              ["ObjectBegin"] |
              ["ObjectEnd"] |
              ["ObjectInstance"] |
@@ -188,7 +206,6 @@ impl_rdp! {
              ["TransformBegin"] |
              ["TransformEnd"] |
              ["TransformTimes"] |
-             ["Transform"] |
              world_begin
             )
         }
@@ -242,13 +259,14 @@ impl_rdp! {
         }
         _pbrt(&self) -> () {
             (_head: statement, _tail: _statement()) => {},
-            (_l: last_statement) => { println!("WorldEnd"); },
+            (_l: last_statement) => { pbrt_world_end(); },
         }
         // statements
         _statement(&self) -> () {
             (_head: look_at, _tail: _look_at()) => {},
             (_head: translate, _tail: _translate()) => {},
             (_head: rotate, _tail: _rotate()) => {},
+            (_head: transform, _tail: _transform()) => {},
             (_head: concat_transform, _tail: _concat_transform()) => {},
             (_head: named_statement, _tail: _named_statement()) => {},
             (_head: keyword, _tail: _keyword()) => {},
@@ -297,6 +315,54 @@ impl_rdp! {
                 }
                 self._pbrt();
             }
+        }
+        _transform(&self) -> () {
+            (_l: lbrack,
+             m00: _number(), m01: _number(), m02: _number(), m03: _number(),
+             m10: _number(), m11: _number(), m12: _number(), m13: _number(),
+             m20: _number(), m21: _number(), m22: _number(), m23: _number(),
+             m30: _number(), m31: _number(), m32: _number(), m33: _number(),
+             _r: rbrack) => {
+                println!("Transform [");
+                println!("  {} {} {} {}", m00, m01, m02, m03);
+                println!("  {} {} {} {}", m10, m11, m12, m13);
+                println!("  {} {} {} {}", m20, m21, m22, m23);
+                println!("  {} {} {} {}", m30, m31, m32, m33);
+                println!("]");
+                // INFO: The order in PBRT file is different !!!
+                let transform: Transform = Transform::new(m00, m10, m20, m30,
+                                                          m01, m11, m21, m31,
+                                                          m02, m12, m22, m32,
+                                                          m03, m13, m23, m33);
+                unsafe {
+                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
+                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                }
+                self._pbrt();
+            },
+            (m00: _number(), m01: _number(), m02: _number(), m03: _number(),
+             m10: _number(), m11: _number(), m12: _number(), m13: _number(),
+             m20: _number(), m21: _number(), m22: _number(), m23: _number(),
+             m30: _number(), m31: _number(), m32: _number(), m33: _number()) => {
+                println!("Transform [");
+                println!("  {} {} {} {}", m00, m01, m02, m03);
+                println!("  {} {} {} {}", m10, m11, m12, m13);
+                println!("  {} {} {} {}", m20, m21, m22, m23);
+                println!("  {} {} {} {}", m30, m31, m32, m33);
+                println!("]");
+                // INFO: The order in PBRT file is different !!!
+                let transform: Transform = Transform::new(m00, m10, m20, m30,
+                                                          m01, m11, m21, m31,
+                                                          m02, m12, m22, m32,
+                                                          m03, m13, m23, m33);
+                unsafe {
+                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
+                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                }
+                self._pbrt();
+            },
         }
         _concat_transform(&self) -> () {
             (_l: lbrack,
@@ -359,6 +425,8 @@ impl_rdp! {
             (_head: light_source, _tail: _light_source()) => {},
             (_head: texture, _tail: _texture()) => {},
             (_head: material, _tail: _material()) => {},
+            (_head: make_named_material, _tail: _make_named_material()) => {},
+            (_head: named_material, _tail: _named_material()) => {},
             (_head: shape, _tail: _shape()) => {},
         }
         _accelerator(&self) -> () {
@@ -637,6 +705,67 @@ impl_rdp! {
                             graphics_state.current_named_material = String::new();
                         }
                         param_set.reset(String::from("Material"),
+                                        String::from(name),
+                                        String::from(""),
+                                        String::from(""));
+                    }
+                }
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    pbrt_world_end();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _make_named_material(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        if optional_parameters.rule == Rule::statement ||
+                            optional_parameters.rule == Rule::last_statement
+                        {
+                            println!("MakeNamedMaterial \"{}\" ", name.clone());
+                        }
+                        // pbrtMakeNamedMaterial (api.cpp:1094)
+                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                            graphics_state.material = name.clone();
+                            graphics_state.current_named_material = String::new();
+                        }
+                        param_set.reset(String::from("MakeNamedMaterial"),
+                                        String::from(name),
+                                        String::from(""),
+                                        String::from(""));
+                    }
+                }
+                if optional_parameters.rule == Rule::parameter {
+                    self._parameter();
+                } else if optional_parameters.rule == Rule::statement {
+                    self._statement();
+                } else if optional_parameters.rule == Rule::last_statement {
+                    pbrt_world_end();
+                } else {
+                    println!("ERROR: parameter expected, {:?} found ...", optional_parameters);
+                }
+            },
+        }
+        _named_material(&self) -> () {
+            (name: _string(), optional_parameters) => {
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        if optional_parameters.rule == Rule::statement ||
+                            optional_parameters.rule == Rule::last_statement
+                        {
+                            println!("NamedMaterial \"{}\" ", name.clone());
+                        }
+                        // pbrtNamedMaterial (api.cpp:1119)
+                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                            graphics_state.current_named_material = name.clone();
+                        }
+                        param_set.reset(String::from("NamedMaterial"),
                                         String::from(name),
                                         String::from(""),
                                         String::from(""));
@@ -1086,6 +1215,35 @@ impl_rdp! {
                                     graphics_state.material_params.copy_from(&param_set);
                                     graphics_state.current_named_material = String::new();
                                 }
+                            } else if param_set.key_word == String::from("MakeNamedMaterial") {
+                                println!("MakeNamedMaterial \"{}\" ", param_set.name);
+                                print_params(&param_set);
+                                // pbrtMakeNamedMaterial (api.cpp:1094)
+                                let mat_type: String = param_set.find_one_string(String::from("type"),
+                                                                                 String::new());
+                                if mat_type == String::new() {
+                                    panic!("No parameter string \"type\" found in MakeNamedMaterial");
+                                }
+                                if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                    graphics_state.material = mat_type.clone();
+                                    graphics_state.material_params.copy_from(&param_set);
+                                    let mtl: Arc<Material + Send + Sync> = create_material();
+                                    match graphics_state.named_materials.get(mat_type.as_str()) {
+                                        Some(_named_material) => {
+                                            println!("Named material \"{}\" redefined",
+                                                     mat_type);
+                                        },
+                                        None => {},
+                                    }
+                                    graphics_state.named_materials.insert(param_set.name.clone(), mtl);
+                                }
+                            } else if param_set.key_word == String::from("NamedMaterial") {
+                                println!("NamedMaterial \"{}\" ", param_set.name);
+                                print_params(&param_set);
+                                // pbrtNamedMaterial (api.cpp:1119)
+                                if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                    graphics_state.current_named_material = param_set.name.clone();
+                                }
                             } else if param_set.key_word == String::from("Shape") {
                                 println!("Shape \"{}\" ", param_set.name);
                                 print_params(&param_set);
@@ -1452,6 +1610,7 @@ impl_rdp! {
                                 spectrum_textures: graphics_state.spectrum_textures.clone(),
                                 material_params: material_param_set,
                                 material: String::from(graphics_state.material.as_ref()),
+                                named_materials: graphics_state.named_materials.clone(),
                                 current_named_material: String::from(graphics_state.current_named_material.as_ref()),
                                 area_light_params: area_light_param_set,
                                 area_light: String::from(graphics_state.area_light.as_ref()),
@@ -1657,7 +1816,15 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 material_params: material_params,
             };
             if graphics_state.current_named_material != String::new() {
-                println!("TODO: CreateMaterial, if (currentNamedMaterial != \"\")");
+                match graphics_state.named_materials.get(graphics_state.current_named_material.as_str()) {
+                    Some(named_material) => {
+                        return named_material.clone();
+                    },
+                    None => {
+                        println!("WARNING: Named material \"{}\" not defined. Using \"matte\".",
+                                 graphics_state.current_named_material);
+                    },
+                }
             } else {
                 // MakeMaterial
                 assert_ne!(graphics_state.material, String::new());

@@ -10110,7 +10110,7 @@ pub struct GraphicsState {
     pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
     pub material_params: ParamSet,
     pub material: String,
-    // std::map<std::string, std::shared_ptr<Material>> namedMaterials;
+    pub named_materials: HashMap<String, Arc<Material + Send + Sync>>,
     pub current_named_material: String,
     pub area_light_params: ParamSet,
     pub area_light: String,
