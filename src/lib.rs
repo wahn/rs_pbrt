@@ -9288,7 +9288,9 @@ pub fn concentric_sample_disk(u: Point2f) -> Point2f {
     Point2f { x: theta.cos(), y: theta.sin(), } * r
 }
 
-fn uniform_sample_triangle(u: Point2f) -> Point2f {
+/// Uniformly distributing samples over isosceles right triangles
+/// actually works for any triangle.
+pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
     let su0: Float = u[0].sqrt();
     Point2f {
         x: 1.0 as Float - su0,
