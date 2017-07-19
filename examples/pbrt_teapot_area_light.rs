@@ -1,10 +1,10 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, ConstantTexture, DistantLight, Film,
-           Filter, Float, GeometricPrimitive, Light, MatteMaterial, Normal3f, PlasticMaterial,
-           PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive, Scene, Spectrum,
-           Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
-           ZeroTwoSequenceSampler};
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Camera, ConstantTexture,
+           DistantLight, Film, Filter, Float, GeometricPrimitive, Light, MatteMaterial, Normal3f,
+           PlasticMaterial, PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive,
+           Scene, Spectrum, Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f,
+           Vector3f, ZeroTwoSequenceSampler};
 use std::sync::Arc;
 
 struct SceneDescription {
@@ -1835,21 +1835,21 @@ fn main() {
                                                          },
                                                      });
     let filename: String = String::from("teapot_area_light.exr");
-    let film: Film = Film::new(Point2i { x: xres, y: yres },
-                               crop,
-                               filter,
-                               35.0,
-                               filename,
-                               1.0,
-                               std::f32::INFINITY);
-    let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
-                                                                       screen,
-                                                                       shutteropen,
-                                                                       shutterclose,
-                                                                       lensradius,
-                                                                       focaldistance,
-                                                                       fov,
-                                                                       film); 
+    let film: Arc<Film> = Arc::new(Film::new(Point2i { x: xres, y: yres },
+                                             crop,
+                                             filter,
+                                             35.0,
+                                             filename,
+                                             1.0,
+                                             std::f32::INFINITY));
+    let camera: Arc<Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(animated_cam_to_world,
+                                                                            screen,
+                                                                            shutteropen,
+                                                                            shutterclose,
+                                                                            lensradius,
+                                                                            focaldistance,
+                                                                            fov,
+                                                                            film));
     let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
-    pbrt::render(&scene, &perspective_camera, &mut sampler);
+    pbrt::render(&scene, camera, &mut sampler);
 }

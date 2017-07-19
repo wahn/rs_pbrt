@@ -5592,7 +5592,7 @@ impl Shape for Triangle {
                                self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 1]] * b[1] +
                                self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]] * (1.0 as Float - b[0] - b[1]));
             it.n = nrm_faceforward_nrm(it.n, ns);
-        } else if (self.reverse_orientation ^ self.transform_swaps_handedness) {
+        } else if self.reverse_orientation ^ self.transform_swaps_handedness {
             it.n *= -1.0 as Float;
         }
         // compute error bounds for sampled point on triangle
@@ -7072,6 +7072,7 @@ impl Film {
 
 pub trait Camera {
     fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float;
+    fn get_film(&self) -> Arc<Film>;
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -7088,7 +7089,7 @@ pub struct PerspectiveCamera {
     pub camera_to_world: AnimatedTransform,
     pub shutter_open: Float,
     pub shutter_close: Float,
-    pub film: Film,
+    pub film: Arc<Film>,
     // TODO: const Medium *medium;
     // inherited from ProjectiveCamera (see camera.h)
     camera_to_screen: Transform,
@@ -7111,7 +7112,8 @@ impl PerspectiveCamera {
                lens_radius: Float,
                focal_distance: Float,
                fov: Float,
-               film: Film /* const Medium *medium */)
+               film: Arc<Film>,
+               /* const Medium *medium */)
                -> Self {
         // see perspective.cpp
         let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
@@ -7230,6 +7232,9 @@ impl Camera for PerspectiveCamera {
         ray.differential = Some(diff);
         self.camera_to_world.transform_ray(ray);
         1.0
+    }
+    fn get_film(&self) -> Arc<Film> {
+        self.film.clone()
     }
 }
 
@@ -10434,10 +10439,11 @@ pub fn morton2(p: &(u32, u32)) -> u32 {
 }
 
 pub fn render(scene: &Scene,
-              perspective_camera: &PerspectiveCamera,
+              camera: Arc<Camera + Send + Sync>,
               mut sampler: &mut ZeroTwoSequenceSampler) {
     // SamplerIntegrator::Render (integrator.cpp)
-    let sample_bounds: Bounds2i = perspective_camera.film.get_sample_bounds();
+    let film = camera.get_film();
+    let sample_bounds: Bounds2i = film.get_sample_bounds();
     println!("sample_bounds = {:?}", sample_bounds);
     let mut integrator: DirectLightingIntegrator =
         DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds);
@@ -10464,7 +10470,8 @@ pub fn render(scene: &Scene,
         let integrator = &integrator;
         let bq = &block_queue;
         let sampler = &sampler;
-        let perspective_camera = &perspective_camera;
+        let camera = &camera;
+        let film = &film;
         let pixel_bounds = integrator.pixel_bounds.clone();
         crossbeam::scope(|scope| {
             let (pixel_tx, pixel_rx) = mpsc::channel();
@@ -10489,7 +10496,7 @@ pub fn render(scene: &Scene,
                         let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
                                                                   Point2i { x: x1, y: y1 });
                         // println!("Starting image tile {:?}", tile_bounds);
-                        let mut film_tile = perspective_camera.film.get_film_tile(tile_bounds);
+                        let mut film_tile = film.get_film_tile(tile_bounds);
                         for pixel in &tile_bounds {
                             tile_sampler.start_pixel(pixel);
                             if !pnt2_inside_exclusive(pixel, pixel_bounds) {
@@ -10505,7 +10512,7 @@ pub fn render(scene: &Scene,
                                     tile_sampler.get_camera_sample(pixel);
                                 // generate camera ray for current sample
                                 let mut ray: Ray = Ray::default();
-                                let ray_weight: Float = perspective_camera
+                                let ray_weight: Float = camera
                                         .generate_ray_differential(&camera_sample, &mut ray);
                                 ray.scale_differentials(1.0 as Float /
                                                         (tile_sampler.samples_per_pixel as Float)
@@ -10560,11 +10567,11 @@ pub fn render(scene: &Scene,
                 for _ in 0..bq.len() {
                     let film_tile = pixel_rx.recv().unwrap();
                     // merge image tile into _Film_
-                    perspective_camera.film.merge_film_tile(&film_tile);
+                    film.merge_film_tile(&film_tile);
                 }
             });
         });
     }
     println!("Rendering finished");
-    perspective_camera.film.write_image(1.0 as Float);
+    film.write_image(1.0 as Float);
 }

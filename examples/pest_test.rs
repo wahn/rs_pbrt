@@ -2204,13 +2204,13 @@ fn pbrt_world_end() {
                                 .find_one_float(String::from("maxsampleluminance"),
                                                 std::f32::INFINITY);
                         if let Some(filter) = some_filter {
-                            let film: Film = Film::new(Point2i { x: xres, y: yres },
-                                                       crop,
-                                                       filter,
-                                                       diagonal,
-                                                       filename,
-                                                       scale,
-                                                       max_sample_luminance);
+                            let film: Arc<Film> = Arc::new(Film::new(Point2i { x: xres, y: yres },
+                                                                     crop,
+                                                                     filter,
+                                                                     diagonal,
+                                                                     filename,
+                                                                     scale,
+                                                                     max_sample_luminance));
                             // MakeCamera
                             // TODO: let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
                             let mut some_camera: Option<Arc<PerspectiveCamera>> = None;
@@ -2435,7 +2435,7 @@ fn pbrt_world_end() {
                                                                       ro.lights.clone());
                                         // TODO: primitives.erase(primitives.begin(), primitives.end());
                                         // TODO: lights.erase(lights.begin(), lights.end());
-                                        pbrt::render(&scene, &camera, &mut sampler);
+                                        pbrt::render(&scene, camera, &mut sampler);
                                     } else if ro.accelerator_name == String::from("kdtree") {
                                         // println!("TODO: CreateKdTreeAccelerator");
                                         // WARNING: Use BVHAccel for now !!!
@@ -2448,7 +2448,7 @@ fn pbrt_world_end() {
                                                                       ro.lights.clone());
                                         // TODO: primitives.erase(primitives.begin(), primitives.end());
                                         // TODO: lights.erase(lights.begin(), lights.end());
-                                        pbrt::render(&scene, &camera, &mut sampler);
+                                        pbrt::render(&scene, camera, &mut sampler);
                                     } else {
                                         panic!("Accelerator \"{}\" unknown.", ro.accelerator_name);
                                     }

@@ -38,13 +38,13 @@ fn main() {
         p_min: Point2f { x: 0.0, y: 0.0 },
         p_max: Point2f { x: 1.0, y: 1.0 },
     };
-    let film: Film = Film::new(Point2i { x: xres, y: yres },
-                               crop,
-                               filter,
-                               35.0,
-                               filename,
-                               1.0,
-                               std::f32::INFINITY);
+    let film: Arc<Film> = Arc::new(Film::new(Point2i { x: xres, y: yres },
+                                             crop,
+                                             filter,
+                                             35.0,
+                                             filename,
+                                             1.0,
+                                             std::f32::INFINITY));
     let pos = Point3f {
         x: 2.0,
         y: 2.0,

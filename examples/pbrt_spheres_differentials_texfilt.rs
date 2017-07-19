@@ -1,7 +1,7 @@
 extern crate pbrt;
 extern crate getopts;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Checkerboard2DTexture,
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Camera, Checkerboard2DTexture,
            ConstantTexture, DistantLight, Film, Filter, Float, GeometricPrimitive, GlassMaterial,
            ImageTexture, ImageWrap, Light, MatteMaterial, MirrorMaterial, Normal3f,
            PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene,
@@ -493,21 +493,21 @@ fn main() {
                                                          },
                                                      });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
-    let film: Film = Film::new(Point2i { x: xres, y: yres },
-                               crop,
-                               filter,
-                               35.0,
-                               filename,
-                               1.0,
-                               std::f32::INFINITY);
-    let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
-                                                                       screen,
-                                                                       shutteropen,
-                                                                       shutterclose,
-                                                                       lensradius,
-                                                                       focaldistance,
-                                                                       fov,
-                                                                       film);
+    let film: Arc<Film> = Arc::new(Film::new(Point2i { x: xres, y: yres },
+                                             crop,
+                                             filter,
+                                             35.0,
+                                             filename,
+                                             1.0,
+                                             std::f32::INFINITY));
+    let camera: Arc<Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(animated_cam_to_world,
+                                                                            screen,
+                                                                            shutteropen,
+                                                                            shutterclose,
+                                                                            lensradius,
+                                                                            focaldistance,
+                                                                            fov,
+                                                                            film));
     let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
-    pbrt::render(&scene, &perspective_camera, &mut sampler);
+    pbrt::render(&scene, camera, &mut sampler);
 }
