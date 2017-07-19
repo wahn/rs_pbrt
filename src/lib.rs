@@ -1697,6 +1697,17 @@ pub fn pnt3_ceil<T>(p: Point3<T>) -> Point3<T>
     }
 }
 
+/// Apply abs operation component-wise.
+pub fn pnt3_abs<T>(p: Point3<T>) -> Point3<T>
+    where T: num::Float
+{
+    Point3 {
+        x: p.x.abs(),
+        y: p.y.abs(),
+        z: p.z.abs(),
+    }
+}
+
 /// The distance between two points is the length of the vector
 /// between them.
 pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
@@ -5564,30 +5575,33 @@ impl Shape for Triangle {
         0.5 as Float * vec3_cross_vec3(p1 - p0, p2 - p0).length()
     }
     fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction {
-        // WORK
-        // Point2f b = UniformSampleTriangle(u);
-        // // Get triangle vertices in _p0_, _p1_, and _p2_
-        // const Point3f &p0 = mesh->p[v[0]];
-        // const Point3f &p1 = mesh->p[v[1]];
-        // const Point3f &p2 = mesh->p[v[2]];
-        let it: Interaction = Interaction::default();
-        // it.p = b[0] * p0 + b[1] * p1 + (1 - b[0] - b[1]) * p2;
-        // // Compute surface normal for sampled point on triangle
-        // it.n = Normalize(Normal3f(Cross(p1 - p0, p2 - p0)));
-        // // Ensure correct orientation of the geometric normal; follow the same
-        // // approach as was used in Triangle::Intersect().
-        // if (mesh->n) {
-        //     Normal3f ns(b[0] * mesh->n[v[0]] + b[1] * mesh->n[v[1]] +
-        //                 (1 - b[0] - b[1]) * mesh->n[v[2]]);
-        //     it.n = Faceforward(it.n, ns);
-        // } else if (reverseOrientation ^ transformSwapsHandedness)
-        //     it.n *= -1;
-
-        // // Compute error bounds for sampled point on triangle
-        // Point3f pAbsSum =
-        //     Abs(b[0] * p0) + Abs(b[1] * p1) + Abs((1 - b[0] - b[1]) * p2);
-        // it.pError = gamma(6) * Vector3f(pAbsSum.x, pAbsSum.y, pAbsSum.z);
-        // *pdf = 1 / Area();
+        let b: Point2f = uniform_sample_triangle(u);
+        // get triangle vertices in _p0_, _p1_, and _p2_
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
+        let mut it: Interaction = Interaction::default();
+        it.p = p0 * b[0] + p1 * b[1] + p2* (1.0 as Float - b[0] - b[1]);
+        // compute surface normal for sampled point on triangle
+        it.n = nrm_normalize(Normal3f::from(vec3_cross_vec3(p1 - p0, p2 - p0)));
+        // ensure correct orientation of the geometric normal; follow
+        // the same approach as was used in Triangle::Intersect().
+        if !self.mesh.n.is_empty() {
+            let ns: Normal3f =
+                Normal3f::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 0]] * b[0] +
+                               self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 1]] * b[1] +
+                               self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]] * (1.0 as Float - b[0] - b[1]));
+            it.n = nrm_faceforward_nrm(it.n, ns);
+        } else if (self.reverse_orientation ^ self.transform_swaps_handedness) {
+            it.n *= -1.0 as Float;
+        }
+        // compute error bounds for sampled point on triangle
+        let p_abs_sum: Point3f =
+            pnt3_abs(p0 * b[0]) + pnt3_abs(p1 * b[1]) + pnt3_abs(p2 * (1.0 as Float - b[0] - b[1]));
+        it.p_error = Vector3f{ x: p_abs_sum.x,
+                               y: p_abs_sum.y,
+                               z: p_abs_sum.z, } * gamma(6);
+        *pdf = 1.0 as Float / self.area();
         it
     }
 }
@@ -9272,6 +9286,14 @@ pub fn concentric_sample_disk(u: Point2f) -> Point2f {
         theta = PI_OVER_2 - PI_OVER_4 * (u_offset.x / u_offset.y);
     }
     Point2f { x: theta.cos(), y: theta.sin(), } * r
+}
+
+fn uniform_sample_triangle(u: Point2f) -> Point2f {
+    let su0: Float = u[0].sqrt();
+    Point2f {
+        x: 1.0 as Float - su0,
+        y: u[1] * su0,
+    }
 }
 
 // see directlighting.h
