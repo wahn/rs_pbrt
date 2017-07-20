@@ -4402,7 +4402,7 @@ pub trait Shape {
         // ignore any alpha textures used for trimming the shape when
         // performing this intersection. Hack for the "San Miguel"
         // scene, where this is used to make an invisible area light.
-        if let Some((isect_light, t_hit)) = self.intersect(&ray) {
+        if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
             // convert light sample weight to solid angle measure
             let mut pdf: Float = pnt3_distance_squared(iref.p, isect_light.p) /
                 (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
@@ -4641,10 +4641,10 @@ impl Shape for Disk {
                                                              ray.time,
                                                              None);
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
-        if let Some(shape) = si.shape {
+        if let Some(_shape) = si.shape {
             isect.shape = si.shape;
         }
-        if let Some(primitive) = si.primitive {
+        if let Some(_primitive) = si.primitive {
             isect.primitive = si.primitive;
         }
         Some((isect, t_shape_hit))
@@ -4951,10 +4951,10 @@ impl Shape for Sphere {
         let si: SurfaceInteraction =
             SurfaceInteraction::new(p_hit, p_error, uv_hit, wo, dpdu, dpdv, dndu, dndv, ray.time, None);
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
-        if let Some(shape) = si.shape {
+        if let Some(_shape) = si.shape {
             isect.shape = si.shape;
         }
-        if let Some(primitive) = si.primitive {
+        if let Some(_primitive) = si.primitive {
             isect.primitive = si.primitive;
         }
         Some((isect, t_shape_hit.v as Float))
@@ -5046,7 +5046,7 @@ impl Shape for Sphere {
     fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
-    fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction {
+    fn sample(&self, _u: Point2f, _pdf: &mut Float) -> Interaction {
         // WORK
         // Point3f pObj = Point3f(0, 0, 0) + radius * UniformSampleSphere(u);
         let it: Interaction = Interaction::default();
@@ -6512,7 +6512,7 @@ impl ZeroTwoSequenceSampler {
         self.array_2d_offset += 1;
         samples
     }
-    pub fn current_sample_number(&self) -> i64 {
+    pub fn get_current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index
     }
 }
@@ -7092,16 +7092,16 @@ pub struct PerspectiveCamera {
     pub film: Arc<Film>,
     // TODO: const Medium *medium;
     // inherited from ProjectiveCamera (see camera.h)
-    camera_to_screen: Transform,
+    // camera_to_screen: Transform,
     raster_to_camera: Transform,
-    screen_to_raster: Transform,
-    raster_to_screen: Transform,
-    lens_radius: Float,
-    focal_distance: Float,
+    // screen_to_raster: Transform,
+    // raster_to_screen: Transform,
+    // lens_radius: Float,
+    // focal_distance: Float,
     // private data (see perspective.h)
     dx_camera: Vector3f,
     dy_camera: Vector3f,
-    a: Float,
+    // a: Float,
 }
 
 impl PerspectiveCamera {
@@ -7109,8 +7109,8 @@ impl PerspectiveCamera {
                screen_window: Bounds2f,
                shutter_open: Float,
                shutter_close: Float,
-               lens_radius: Float,
-               focal_distance: Float,
+               _lens_radius: Float,
+               _focal_distance: Float,
                fov: Float,
                film: Arc<Film>,
                /* const Medium *medium */)
@@ -7170,22 +7170,22 @@ impl PerspectiveCamera {
         });
         p_min /= p_min.z;
         p_max /= p_max.z;
-        let a: Float = ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs();
+        // let a: Float = ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs();
 
         PerspectiveCamera {
             camera_to_world: camera_to_world,
             shutter_open: shutter_open,
             shutter_close: shutter_close,
             film: film,
-            camera_to_screen: camera_to_screen,
+            // camera_to_screen: camera_to_screen,
             raster_to_camera: raster_to_camera,
-            screen_to_raster: screen_to_raster,
-            raster_to_screen: raster_to_screen,
-            lens_radius: lens_radius,
-            focal_distance: focal_distance,
+            // screen_to_raster: screen_to_raster,
+            // raster_to_screen: raster_to_screen,
+            // lens_radius: lens_radius,
+            // focal_distance: focal_distance,
             dx_camera: dx_camera,
             dy_camera: dy_camera,
-            a: a,
+            // a: a,
         }
     }
 }
@@ -7372,10 +7372,10 @@ impl Bsdf {
                 *sampled_type = bxdf.get_type();
             }
             let mut f: Spectrum = bxdf.sample_f(wo, &mut wi, u_remapped, pdf, sampled_type);
-            let mut ratio: Spectrum = Spectrum::default();
-            if *pdf > 0.0 as Float {
-                ratio = f / *pdf;
-            }
+            // let mut ratio: Spectrum = Spectrum::default();
+            // if *pdf > 0.0 as Float {
+            //     ratio = f / *pdf;
+            // }
             // println!("For wo = {:?}, sampled f = {:?}, pdf = {:?}, ratio = {:?}, wi = {:?}",
             //          wo,
             //          f,
@@ -7415,10 +7415,10 @@ impl Bsdf {
                     }
                 }
             }
-            let mut ratio: Spectrum = Spectrum::default();
-            if *pdf > 0.0 as Float {
-                ratio = f / *pdf;
-            }
+            // let mut ratio: Spectrum = Spectrum::default();
+            // if *pdf > 0.0 as Float {
+            //     ratio = f / *pdf;
+            // }
             // println!("Overall f = {:?}, pdf = {:?}, ratio = {:?}", f, *pdf, ratio);
             return f;
         } else {
@@ -7745,7 +7745,7 @@ impl Bxdf for MicrofacetReflection {
                 wi: &mut Vector3f,
                 u: Point2f,
                 pdf: &mut Float,
-                sampled_type: &mut u8)
+                _sampled_type: &mut u8)
                 -> Spectrum {
         // sample microfacet orientation $\wh$ and reflected direction $\wi$
         if wo.z == 0.0 as Float {
@@ -7951,9 +7951,9 @@ impl TrowbridgeReitzDistribution {
         0.000640711 * x * x * x * x
     }
     pub fn sample_wh(&self, wo: Vector3f, u: Point2f) -> Vector3f {
-        let mut wh: Vector3f = Vector3f::default();
+        let mut wh: Vector3f;
         if !self.sample_visible_area {
-            let mut cos_theta: Float = 0.0;
+            let cos_theta;
             let mut phi: Float = (2.0 * PI) * u[1];
             if self.alpha_x == self.alpha_y {
                 let tan_theta2: Float = self.alpha_x * self.alpha_x * u[0] / (1.0 - u[0]);
@@ -8056,8 +8056,8 @@ fn trowbridge_reitz_sample_11(cos_theta: Float,
     }
 
     // sample slope_y
-    let mut s: Float;
-    let mut new_u2: Float;
+    let s: Float;
+    let new_u2: Float;
     if u2 > 0.5 {
         s = 1.0;
         new_u2 = 2.0 * (u2 - 0.5);
@@ -8665,8 +8665,8 @@ impl ImageTexture {
                do_trilinear: bool,
                max_aniso: Float,
                wrap_mode: ImageWrap,
-               scale: Float,
-               gamma: bool)
+               _scale: Float,
+               _gamma: bool)
                -> Self {
         let path = Path::new(&filename);
         let img_result: ImageResult<DynamicImage> = image::open(path);
@@ -8806,7 +8806,7 @@ impl PointLight {
 impl Light for PointLight {
     fn sample_li(&self,
                  iref: &SurfaceInteraction,
-                 u: Point2f,
+                 _u: Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
@@ -8839,7 +8839,7 @@ impl Light for PointLight {
     fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float {
+    fn pdf_li(&self, _iref: &Interaction, _wi: Vector3f) -> Float {
         0.0 as Float
     }
     fn get_flags(&self) -> u8 {
@@ -8931,7 +8931,7 @@ impl Light for DistantLight {
     fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float {
+    fn pdf_li(&self, _iref: &Interaction, _wi: Vector3f) -> Float {
         0.0 as Float
     }
     fn get_flags(&self) -> u8 {
@@ -8959,12 +8959,12 @@ pub struct DiffuseAreaLight {
     flags: u8,
     n_samples: i32,
     // TODO: const MediumInterface mediumInterface;
-    light_to_world: Transform,
-    world_to_light: Transform,
+    // light_to_world: Transform,
+    // world_to_light: Transform,
 }
 
 impl DiffuseAreaLight {
-    pub fn new(light_to_world: &Transform,
+    pub fn new(_light_to_world: &Transform,
                l_emit: &Spectrum,
                n_samples: i32,
                shape: Arc<Shape + Send + Sync>,
@@ -8979,8 +8979,8 @@ impl DiffuseAreaLight {
             flags: LightFlags::Area as u8,
             n_samples: std::cmp::max(1_i32, n_samples),
             // TODO: const MediumInterface mediumInterface;
-            light_to_world: *light_to_world,
-            world_to_light: Transform::inverse(*light_to_world),
+            // light_to_world: *light_to_world,
+            // world_to_light: Transform::inverse(*light_to_world),
         }
     }
 }
@@ -9027,7 +9027,7 @@ impl Light for DiffuseAreaLight {
         };
         self.l(&p_shape, -new_wi)
     }
-    fn preprocess(&self, scene: &Scene) {
+    fn preprocess(&self, _scene: &Scene) {
         // TODO?
     }
     fn le(&self, _ray: &mut Ray) -> Spectrum {
@@ -9122,7 +9122,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                        light: Arc<Light + Send + Sync>,
                        u_light: Point2f,
                        scene: &Scene,
-                       sampler: &mut ZeroTwoSequenceSampler,
+                       _sampler: &mut ZeroTwoSequenceSampler,
                        // TODO: arena
                        handle_media: bool,
                        specular: bool)
@@ -9316,8 +9316,8 @@ pub struct AOIntegrator {
 impl AOIntegrator {
     pub fn new(cos_sample: bool,
                n_samples: i32,
-               perspective_camera: &PerspectiveCamera,
-               sampler: &ZeroTwoSequenceSampler,
+               _perspective_camera: &PerspectiveCamera,
+               _sampler: &ZeroTwoSequenceSampler,
                pixel_bounds: Bounds2i)
                -> Self {
         // WORK
@@ -9331,11 +9331,11 @@ impl AOIntegrator {
 
 impl SamplerIntegrator for AOIntegrator {
     fn li(&self,
-          ray: &mut Ray,
-          scene: &Scene,
-          sampler: &mut ZeroTwoSequenceSampler,
+          _ray: &mut Ray,
+          _scene: &Scene,
+          _sampler: &mut ZeroTwoSequenceSampler,
           // arena: &mut Arena,
-          depth: i32)
+          _depth: i32)
           -> Spectrum {
         // WORK
         Spectrum::default()
@@ -9402,7 +9402,7 @@ impl DirectLightingIntegrator {
         let ns: Normal3f = isect.shading.n;
         let mut sampled_type: u8 = 0_u8;
         let bsdf_flags: u8 = BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8;
-        let mut f: Spectrum = Spectrum::new(0.0);
+        let f: Spectrum;
         if let Some(ref bsdf) = isect.bsdf {
             f = bsdf.sample_f(wo,
                               &mut wi,
@@ -9455,11 +9455,11 @@ impl DirectLightingIntegrator {
         let wo: Vector3f = isect.wo;
         let mut wi: Vector3f = Vector3f::default();
         let mut pdf: Float = 0.0 as Float;
-        let p: Point3f = isect.p;
+        // let p: Point3f = isect.p;
         let ns: Normal3f = isect.shading.n;
         let mut sampled_type: u8 = 0_u8;
         let bsdf_flags: u8 = BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8;
-        let mut f: Spectrum = Spectrum::new(0.0);
+        let f: Spectrum;
         if let Some(ref bsdf) = isect.bsdf {
             f = bsdf.sample_f(wo,
                               &mut wi,
@@ -10010,7 +10010,7 @@ impl TextureParams {
         }
         if name != String::new() {
             match self.float_textures.get(name.as_str()) {
-                Some(float_texture) => {
+                Some(_float_texture) => {
                 },
                 None => {
                     panic!("Couldn't find float texture named \"{}\" for parameter \"{}\"",
@@ -10030,7 +10030,7 @@ impl TextureParams {
         }
         if name != String::new() {
             match self.float_textures.get(name.as_str()) {
-                Some(float_texture) => {
+                Some(_float_texture) => {
                 },
                 None => {
                     println!("Couldn't find float texture named \"{}\" for parameter \"{}\"",
@@ -10532,7 +10532,7 @@ pub fn render(scene: &Scene,
                                               ({:?}, {:?}), sample {:?}. Setting to black.",
                                              pixel.x,
                                              pixel.y,
-                                             tile_sampler.current_sample_number());
+                                             tile_sampler.get_current_sample_number());
                                     l = Spectrum::new(0.0);
                                 } else if y < -10.0e-5 as Float {
                                     println!("Negative luminance value, {:?}, returned for pixel \
@@ -10540,14 +10540,14 @@ pub fn render(scene: &Scene,
                                              y,
                                              pixel.x,
                                              pixel.y,
-                                             tile_sampler.current_sample_number());
+                                             tile_sampler.get_current_sample_number());
                                     l = Spectrum::new(0.0);
                                 } else if y.is_infinite() {
                                     println!("Infinite luminance value returned for pixel ({:?}, \
                                               {:?}), sample {:?}. Setting to black.",
                                              pixel.x,
                                              pixel.y,
-                                             tile_sampler.current_sample_number());
+                                             tile_sampler.get_current_sample_number());
                                     l = Spectrum::new(0.0);
                                 }
                                 // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",

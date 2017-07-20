@@ -1,10 +1,10 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Camera, ConstantTexture,
-           DistantLight, Film, Filter, Float, GeometricPrimitive, Light, MatteMaterial, Normal3f,
-           PlasticMaterial, PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive,
-           Scene, Spectrum, Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f,
-           Vector3f, ZeroTwoSequenceSampler};
+use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Camera, ConstantTexture, Film,
+           Filter, Float, GeometricPrimitive, Light, MatteMaterial, Normal3f, PlasticMaterial,
+           PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive, Scene, Spectrum,
+           Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
+           ZeroTwoSequenceSampler};
 use std::sync::Arc;
 
 struct SceneDescription {
@@ -26,15 +26,6 @@ impl SceneDescriptionBuilder {
             disks: Vec::new(),
             lights: Vec::new(),
         }
-    }
-    fn add_distant_light(&mut self,
-                         light_to_world: &Transform,
-                         l: &Spectrum,
-                         w_light: &Vector3f)
-                         -> &mut SceneDescriptionBuilder {
-        let distant_light = Arc::new(DistantLight::new(light_to_world, &l, &w_light));
-        self.lights.push(distant_light);
-        self
     }
     fn add_point_light(&mut self,
                        light_to_world: &Transform,
