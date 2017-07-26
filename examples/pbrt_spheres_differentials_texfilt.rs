@@ -1,10 +1,13 @@
 extern crate pbrt;
 extern crate getopts;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Camera, Checkerboard2DTexture,
-           ConstantTexture, DistantLight, Film, Filter, Float, GeometricPrimitive, GlassMaterial,
-           ImageTexture, ImageWrap, Light, MatteMaterial, MirrorMaterial, Normal3f,
-           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, Primitive, Scene,
+use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera,
+           Checkerboard2DTexture,
+           ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Filter, Float,
+           GeometricPrimitive, GlassMaterial,
+           ImageTexture, ImageWrap, Light, LightStrategy, MatteMaterial, MirrorMaterial, Normal3f,
+           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, Primitive,
+           SamplerIntegrator, Scene,
            Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
            Vector2f, Vector3f, ZeroTwoSequenceSampler};
 use std::env;
@@ -507,7 +510,12 @@ fn main() {
                                                                             lensradius,
                                                                             focaldistance,
                                                                             fov,
-                                                                            film));
+                                                                            film.clone()));
     let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
-    pbrt::render(&scene, camera, &mut sampler);
+    let sample_bounds: Bounds2i = film.get_sample_bounds();
+    let mut integrator: Arc<SamplerIntegrator + Send + Sync> =
+        Arc::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
+                                               10,
+                                               sample_bounds));
+    pbrt::render(&scene, camera, &mut sampler, &mut integrator);
 }

@@ -9059,6 +9059,7 @@ impl AreaLight for DiffuseAreaLight {
 
 pub trait SamplerIntegrator {
     // TODO: use Sampler trait
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler);
     fn li(&self,
           ray: &mut Ray,
           scene: &Scene,
@@ -9066,6 +9067,7 @@ pub trait SamplerIntegrator {
           // arena: &mut Arena,
           depth: i32)
           -> Spectrum;
+    fn get_pixel_bounds(&self) -> Bounds2i;
 }
 
 // see integrator.cpp
@@ -9330,6 +9332,8 @@ impl AOIntegrator {
 }
 
 impl SamplerIntegrator for AOIntegrator {
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+    }
     fn li(&self,
           _ray: &mut Ray,
           _scene: &Scene,
@@ -9339,6 +9343,9 @@ impl SamplerIntegrator for AOIntegrator {
           -> Spectrum {
         // WORK
         Spectrum::default()
+    }
+    fn get_pixel_bounds(&self) -> Bounds2i {
+        self.pixel_bounds
     }
 }
 
@@ -9369,22 +9376,6 @@ impl DirectLightingIntegrator {
             strategy: strategy,
             max_depth: max_depth,
             n_light_samples: Vec::new(),
-        }
-    }
-    pub fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
-        if self.strategy == LightStrategy::UniformSampleAll {
-            // compute number of samples to use for each light
-            for li in 0..scene.lights.len() {
-                let ref light = scene.lights[li];
-                self.n_light_samples.push(sampler.round_count(light.get_n_samples()));
-            }
-            // request samples for sampling all lights
-            for _i in 0..self.max_depth {
-                for j in 0..scene.lights.len() {
-                    sampler.request_2d_array(self.n_light_samples[j]);
-                    sampler.request_2d_array(self.n_light_samples[j]);
-                }
-            }
         }
     }
     pub fn specular_reflect(&self,
@@ -9507,6 +9498,22 @@ impl DirectLightingIntegrator {
 }
 
 impl SamplerIntegrator for DirectLightingIntegrator {
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+        if self.strategy == LightStrategy::UniformSampleAll {
+            // compute number of samples to use for each light
+            for li in 0..scene.lights.len() {
+                let ref light = scene.lights[li];
+                self.n_light_samples.push(sampler.round_count(light.get_n_samples()));
+            }
+            // request samples for sampling all lights
+            for _i in 0..self.max_depth {
+                for j in 0..scene.lights.len() {
+                    sampler.request_2d_array(self.n_light_samples[j]);
+                    sampler.request_2d_array(self.n_light_samples[j]);
+                }
+            }
+        }
+    }
     fn li(&self,
           ray: &mut Ray,
           scene: &Scene,
@@ -9550,6 +9557,9 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             }
         }
         l
+    }
+    fn get_pixel_bounds(&self) -> Bounds2i {
+        self.pixel_bounds
     }
 }
 
@@ -10440,14 +10450,17 @@ pub fn morton2(p: &(u32, u32)) -> u32 {
 
 pub fn render(scene: &Scene,
               camera: Arc<Camera + Send + Sync>,
-              mut sampler: &mut ZeroTwoSequenceSampler) {
+              mut sampler: &mut ZeroTwoSequenceSampler,
+              mut integrator: &mut Arc<SamplerIntegrator + Send + Sync>) {
     // SamplerIntegrator::Render (integrator.cpp)
     let film = camera.get_film();
     let sample_bounds: Bounds2i = film.get_sample_bounds();
     println!("sample_bounds = {:?}", sample_bounds);
-    let mut integrator: DirectLightingIntegrator =
-        DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds);
+    // let mut integrator: DirectLightingIntegrator =
+    //     DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds);
     // create and preprocess sampler
+    let integrator_option = Arc::get_mut(&mut integrator);
+    let mut integrator: &mut (SamplerIntegrator + Send + Sync) = integrator_option.unwrap();
     integrator.preprocess(scene, &mut sampler);
     // use camera below
     let sample_extent: Vector2i = sample_bounds.diagonal();
@@ -10472,7 +10485,7 @@ pub fn render(scene: &Scene,
         let sampler = &sampler;
         let camera = &camera;
         let film = &film;
-        let pixel_bounds = integrator.pixel_bounds.clone();
+        let pixel_bounds = integrator.get_pixel_bounds().clone();
         crossbeam::scope(|scope| {
             let (pixel_tx, pixel_rx) = mpsc::channel();
             // spawn worker threads

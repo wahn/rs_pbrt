@@ -1,8 +1,11 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, BVHAccel, Camera, ConstantTexture, Film,
-           Filter, Float, GeometricPrimitive, Light, MatteMaterial, Normal3f, PlasticMaterial,
-           PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive, Scene, Spectrum,
+use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera, ConstantTexture,
+           DirectLightingIntegrator, Film,
+           Filter, Float, GeometricPrimitive, Light, LightStrategy, MatteMaterial, Normal3f,
+           PlasticMaterial,
+           PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive, SamplerIntegrator,
+           Scene, Spectrum,
            Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
            ZeroTwoSequenceSampler};
 use std::sync::Arc;
@@ -1840,7 +1843,12 @@ fn main() {
                                                                             lensradius,
                                                                             focaldistance,
                                                                             fov,
-                                                                            film));
+                                                                            film.clone()));
     let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
-    pbrt::render(&scene, camera, &mut sampler);
+    let sample_bounds: Bounds2i = film.get_sample_bounds();
+    let mut integrator: Arc<SamplerIntegrator + Send + Sync> =
+        Arc::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
+                                               10,
+                                               sample_bounds));
+    pbrt::render(&scene, camera, &mut sampler, &mut integrator);
 }

@@ -2397,7 +2397,7 @@ fn pbrt_world_end() {
                                 } else {
                                     panic!("Integrator \"{}\" unknown.", ro.integrator_name);
                                 }
-                                if let Some(_integrator) = some_integrator {
+                                if let Some(mut integrator) = some_integrator {
                                     // MakeIntegrator
                                     // TODO: if (renderOptions->haveScatteringMedia && ...)
                                     if ro.lights.is_empty() {
@@ -2435,7 +2435,7 @@ fn pbrt_world_end() {
                                                                       ro.lights.clone());
                                         // TODO: primitives.erase(primitives.begin(), primitives.end());
                                         // TODO: lights.erase(lights.begin(), lights.end());
-                                        pbrt::render(&scene, camera, &mut sampler);
+                                        pbrt::render(&scene, camera, &mut sampler, &mut integrator);
                                     } else if ro.accelerator_name == String::from("kdtree") {
                                         // println!("TODO: CreateKdTreeAccelerator");
                                         // WARNING: Use BVHAccel for now !!!
@@ -2448,7 +2448,7 @@ fn pbrt_world_end() {
                                                                       ro.lights.clone());
                                         // TODO: primitives.erase(primitives.begin(), primitives.end());
                                         // TODO: lights.erase(lights.begin(), lights.end());
-                                        pbrt::render(&scene, camera, &mut sampler);
+                                        pbrt::render(&scene, camera, &mut sampler, &mut integrator);
                                     } else {
                                         panic!("Accelerator \"{}\" unknown.", ro.accelerator_name);
                                     }
