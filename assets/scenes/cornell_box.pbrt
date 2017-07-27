@@ -12,7 +12,8 @@ Film "image"
 Sampler "lowdiscrepancy" "integer pixelsamples" [8]
 ##PixelFilter "blackmanharris"
 ##SurfaceIntegrator "bidirectional"
-Integrator "directlighting" "integer maxdepth" [10]
+##Integrator "directlighting" "integer maxdepth" [10]
+Integrator "ambientocclusion"
 WorldBegin
   # box_Material
   MakeNamedMaterial "box_Material"

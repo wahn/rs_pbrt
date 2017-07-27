@@ -703,6 +703,7 @@ pub type Spectrum = RGBSpectrum;
 const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 const SHADOW_EPSILON: Float = 0.0001;
 const INV_PI: Float = 0.31830988618379067154;
+const INV_2_PI: Float = 0.15915494309189533577;
 const PI_OVER_2: Float = 1.57079632679489661923;
 const PI_OVER_4: Float = 0.78539816339744830961;
 
@@ -6323,27 +6324,6 @@ impl BVHAccel {
     }
 }
 
-// see sampling.h
-
-/// Randomly permute an array of *count* sample values, each of which
-/// has *n_dimensions* dimensions.
-pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) {
-    for i in 0..count {
-        let other: i32 = i + rng.uniform_uint32_bounded((count - i) as u32) as i32;
-        for j in 0..n_dimensions {
-            samp.swap((n_dimensions * i + j) as usize,
-                      (n_dimensions * other + j) as usize);
-        }
-    }
-}
-
-/// Reducing the variance according to Veach's heuristic.
-pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
-    let f: Float = nf as Float * f_pdf;
-    let g: Float = ng as Float  * g_pdf;
-    (f * f) / (f * f + g * g)
-}
-
 // see sampler.h
 
 pub trait Sampler {
@@ -9261,6 +9241,18 @@ pub fn estimate_direct(it: &SurfaceInteraction,
 
 // see sampling.h
 
+/// Randomly permute an array of *count* sample values, each of which
+/// has *n_dimensions* dimensions.
+pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) {
+    for i in 0..count {
+        let other: i32 = i + rng.uniform_uint32_bounded((count - i) as u32) as i32;
+        for j in 0..n_dimensions {
+            samp.swap((n_dimensions * i + j) as usize,
+                      (n_dimensions * other + j) as usize);
+        }
+    }
+}
+
 /// Cosine-weighted hemisphere sampling using Malley's method.
 pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
     let d: Point2f = concentric_sample_disk(u);
@@ -9272,7 +9264,33 @@ pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
     }
 }
 
+pub fn cosine_hemisphere_pdf(cos_theta: Float) -> Float {
+    cos_theta * INV_PI
+}
+
+/// Reducing the variance according to Veach's heuristic.
+pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
+    let f: Float = nf as Float * f_pdf;
+    let g: Float = ng as Float  * g_pdf;
+    (f * f) / (f * f + g * g)
+}
+
 // see sampling.cpp
+
+pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
+    let z: Float = u[0_u8];
+    let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
+    let phi: Float = 2.0 as Float * PI * u[1_u8];
+    Vector3f {
+        x: r * phi.cos(),
+        y: r * phi.sin(),
+        z: z
+    }
+}
+
+pub fn uniform_hemisphere_pdf() -> Float {
+    INV_2_PI
+}
 
 /// Uniformly distribute samples over a unit disk.
 pub fn concentric_sample_disk(u: Point2f) -> Point2f {
@@ -9322,7 +9340,6 @@ impl AOIntegrator {
                _sampler: &ZeroTwoSequenceSampler,
                pixel_bounds: Bounds2i)
                -> Self {
-        // WORK
         AOIntegrator {
             pixel_bounds: pixel_bounds,
             cos_sample: cos_sample,
@@ -9332,17 +9349,63 @@ impl AOIntegrator {
 }
 
 impl SamplerIntegrator for AOIntegrator {
-    fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+    fn preprocess(&mut self, _scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+        sampler.request_2d_array(self.n_samples);
     }
     fn li(&self,
-          _ray: &mut Ray,
-          _scene: &Scene,
-          _sampler: &mut ZeroTwoSequenceSampler,
+          r: &mut Ray,
+          scene: &Scene,
+          sampler: &mut ZeroTwoSequenceSampler,
           // arena: &mut Arena,
           _depth: i32)
           -> Spectrum {
-        // WORK
-        Spectrum::default()
+        // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
+        let mut l: Spectrum = Spectrum::default();
+        let mut ray: Ray = Ray {
+            o: r.o,
+            d: r.d,
+            t_max: r.t_max,
+            time: r.time,
+            differential: r.differential,
+        };
+        if let Some(mut isect) = scene.intersect(&mut ray) {
+            let mode: TransportMode = TransportMode::Radiance;
+            isect.compute_scattering_functions(&mut ray, true, mode);
+            // if (!isect.bsdf) {
+            //     VLOG(2) << "Skipping intersection due to null bsdf";
+            //     ray = isect.SpawnRay(ray.d);
+            //     goto retry;
+            // }
+            // compute coordinate frame based on true geometry, not
+            // shading geometry.
+            let n: Normal3f = nrm_faceforward_vec3(isect.n, -ray.d);
+            let s: Vector3f = vec3_normalize(isect.dpdu);
+            let t: Vector3f = nrm_cross_vec3(isect.n, s);
+            let u: Vec<Point2f> = sampler.get_2d_array(self.n_samples);
+            for i in 0..self.n_samples as usize {
+                // Vector3f wi;
+                let mut wi: Vector3f;
+                let pdf: Float;
+                if self.cos_sample {
+                    wi = cosine_sample_hemisphere(u[i]);
+                    pdf = cosine_hemisphere_pdf(wi.z.abs());
+                } else {
+                    wi = uniform_sample_hemisphere(u[i]);
+                    pdf = uniform_hemisphere_pdf();
+                }
+                // transform wi from local frame to world space.
+                wi = Vector3f {
+                    x: s.x * wi.x + t.x * wi.y + n.x * wi.z,
+                    y: s.y * wi.x + t.y * wi.y + n.y * wi.z,
+                    z: s.z * wi.x + t.z * wi.y + n.z * wi.z,
+                };
+                let mut ray: Ray = isect.spawn_ray(wi);
+                if !scene.intersect_p(&mut ray) {
+                    l += Spectrum::new(vec3_dot_nrm(wi, n) / (pdf * self.n_samples as Float));
+                }
+            }
+        }
+        l
     }
     fn get_pixel_bounds(&self) -> Bounds2i {
         self.pixel_bounds
