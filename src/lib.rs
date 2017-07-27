@@ -9323,6 +9323,54 @@ pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
     }
 }
 
+// see path.h
+
+pub struct PathIntegrator {
+    // inherited from SamplerIntegrator (see integrator.h)
+    pixel_bounds: Bounds2i,
+    // see path.h
+    max_depth: i32,
+    rr_threshold: Float, // 1.0
+    light_sample_strategy: String, // "spatial"
+    // TODO: std::unique_ptr<LightDistribution> lightDistribution;
+}
+
+impl PathIntegrator {
+    pub fn new(max_depth: i32,
+               _perspective_camera: &PerspectiveCamera,
+               _sampler: &ZeroTwoSequenceSampler,
+               pixel_bounds: Bounds2i,
+               rr_threshold: Float,
+               light_sample_strategy: String)
+               -> Self
+    {
+        PathIntegrator {
+            pixel_bounds: pixel_bounds,
+            max_depth: max_depth,
+            rr_threshold: rr_threshold,
+            light_sample_strategy: light_sample_strategy,
+        }
+    }
+}
+
+impl SamplerIntegrator for PathIntegrator {
+    fn preprocess(&mut self, _scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+        // sampler.request_2d_array(self.n_samples);
+    }
+    fn li(&self,
+          r: &mut Ray,
+          scene: &Scene,
+          sampler: &mut ZeroTwoSequenceSampler,
+          // arena: &mut Arena,
+          _depth: i32)
+          -> Spectrum {
+        Spectrum::default()
+    }
+    fn get_pixel_bounds(&self) -> Bounds2i {
+        self.pixel_bounds
+    }
+}
+
 // see ao.h
 
 pub struct AOIntegrator {

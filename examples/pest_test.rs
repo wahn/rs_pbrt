@@ -10,7 +10,7 @@ use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i, BoxFilter, BVHAc
            Checkerboard2DTexture, ConstantTexture, DiffuseAreaLight, DirectLightingIntegrator,
            Disk, DistantLight, Film, Filter, Float, GaussianFilter, GeometricPrimitive,
            GlassMaterial, GraphicsState, ImageTexture, ImageWrap, Light, LightStrategy, Material,
-           MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet, PerspectiveCamera,
+           MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet, PathIntegrator, PerspectiveCamera,
            PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f, PointLight, RenderOptions,
            SamplerIntegrator, Scene, Shape, Spectrum, Sphere, SplitMethod, Texture,
            TextureMapping2D, TextureParams, Transform, TransformSet, Triangle, TriangleMesh,
@@ -2346,7 +2346,44 @@ fn pbrt_world_end() {
                                                                                pixel_bounds));
                                     some_integrator = Some(integrator);
                                 } else if ro.integrator_name == String::from("path") {
-                                    println!("TODO: CreatePathIntegrator");
+                                    // CreatePathIntegrator
+                                    let max_depth: i32 =
+                                        ro.integrator_params
+                                            .find_one_int(String::from("maxdepth"), 5);
+                                    let pb: Vec<i32> = ro.integrator_params
+                                        .find_int(String::from("pixelbounds"));
+                                    let np: usize = pb.len();
+                                    let pixel_bounds: Bounds2i = camera.film.get_sample_bounds();
+                                    if np > 0 as usize {
+                                        if np != 4 as usize {
+                                            panic!("Expected four values for \"pixelbounds\" parameter. Got {}.",
+                                                   np);
+                                        } else {
+                                            println!("TODO: pixelBounds = Intersect(...)");
+                                            // pixelBounds = Intersect(pixelBounds,
+                                            //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
+                                            // if (pixelBounds.Area() == 0)
+                                            //     Error("Degenerate \"pixelbounds\" specified.");
+                                        }
+                                    }
+                                    let rr_threshold: Float =
+                                        ro.integrator_params
+                                            .find_one_float(String::from("rrthreshold"),
+                                                            1.0 as Float);
+                                    println!("DEBUG: rr_threshold = {:?}", rr_threshold);
+                                    // std::string lightStrategy =
+                                    //     params.FindOneString("lightsamplestrategy", "spatial");
+                                    let light_strategy: String =
+                                        ro.integrator_params
+                                            .find_one_string(String::from("lightsamplestrategy"),
+                                                             String::from("spatial"));
+                                    let integrator = Arc::new(PathIntegrator::new(max_depth,
+                                                                                  &camera,
+                                                                                  &sampler,
+                                                                                  pixel_bounds,
+                                                                                  rr_threshold,
+                                                                                  light_strategy));
+                                    some_integrator = Some(integrator);
                                 } else if ro.integrator_name == String::from("volpath") {
                                     println!("TODO: CreateVolPathIntegrator");
                                 } else if ro.integrator_name == String::from("bdpt") {
