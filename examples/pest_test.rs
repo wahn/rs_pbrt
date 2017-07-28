@@ -2377,7 +2377,7 @@ fn pbrt_world_end() {
                                         ro.integrator_params
                                             .find_one_string(String::from("lightsamplestrategy"),
                                                              String::from("spatial"));
-                                    let integrator = Arc::new(PathIntegrator::new(max_depth,
+                                    let integrator = Arc::new(PathIntegrator::new(max_depth as u32,
                                                                                   &camera,
                                                                                   &sampler,
                                                                                   pixel_bounds,

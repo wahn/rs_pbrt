@@ -9241,6 +9241,13 @@ pub fn estimate_direct(it: &SurfaceInteraction,
 
 // see sampling.h
 
+#[derive(Debug,Default,Clone)]
+pub struct Distribution1D {
+    pub func: Vec<Float>,
+    pub cdf: Vec<Float>,
+    pub func_int: Float,
+}
+
 /// Randomly permute an array of *count* sample values, each of which
 /// has *n_dimensions* dimensions.
 pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) {
@@ -9323,20 +9330,61 @@ pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
     }
 }
 
+// see lightdistrib.h
+
+pub struct LightDistribution {
+}
+
+impl LightDistribution {
+    /// Given a point |p| in space, this method returns a (hopefully
+    /// effective) sampling distribution for light sources at that
+    /// point.
+    pub fn lookup(&self, p: Point3f) -> Distribution1D {
+        // WORK
+        Distribution1D::default()
+    }
+}
+
+// see lightdistrib.cpp
+
+pub fn create_light_sample_distribution(name: String, scene: &Scene)
+                                        -> Option<Arc<LightDistribution>> {
+    if name == String::from("uniform") || scene.lights.len() == 1 {
+        println!("TODO: UniformLightDistribution");
+        // return std::unique_ptr<LightDistribution>{
+        //     new UniformLightDistribution(scene)};
+    } else if name == String::from("power") {
+        println!("TODO: PowerLightDistribution");
+        // return std::unique_ptr<LightDistribution>{
+        //     new PowerLightDistribution(scene)};
+    } else if name == String::from("spatial") {
+        println!("TODO: SpatialLightDistribution");
+        // return std::unique_ptr<LightDistribution>{
+        //     new SpatialLightDistribution(scene)};
+    } else {
+        println!("Light sample distribution type \"{:?}\" unknown. Using \"spatial\".",
+                 name);
+        // return std::unique_ptr<LightDistribution>{
+        //     new SpatialLightDistribution(scene)};
+    }
+    None
+}
+
 // see path.h
 
 pub struct PathIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pixel_bounds: Bounds2i,
     // see path.h
-    max_depth: i32,
+    max_depth: u32,
     rr_threshold: Float, // 1.0
     light_sample_strategy: String, // "spatial"
     // TODO: std::unique_ptr<LightDistribution> lightDistribution;
+    light_distribution: Option<Arc<LightDistribution>>,
 }
 
 impl PathIntegrator {
-    pub fn new(max_depth: i32,
+    pub fn new(max_depth: u32,
                _perspective_camera: &PerspectiveCamera,
                _sampler: &ZeroTwoSequenceSampler,
                pixel_bounds: Bounds2i,
@@ -9349,13 +9397,16 @@ impl PathIntegrator {
             max_depth: max_depth,
             rr_threshold: rr_threshold,
             light_sample_strategy: light_sample_strategy,
+            light_distribution: None,
         }
     }
 }
 
 impl SamplerIntegrator for PathIntegrator {
-    fn preprocess(&mut self, _scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
-        // sampler.request_2d_array(self.n_samples);
+    fn preprocess(&mut self, scene: &Scene, _sampler: &mut ZeroTwoSequenceSampler) {
+        self.light_distribution =
+            create_light_sample_distribution(self.light_sample_strategy.clone(),
+                                             scene);
     }
     fn li(&self,
           r: &mut Ray,
@@ -9364,7 +9415,63 @@ impl SamplerIntegrator for PathIntegrator {
           // arena: &mut Arena,
           _depth: i32)
           -> Spectrum {
-        Spectrum::default()
+        // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
+        let mut l: Spectrum = Spectrum::default();
+        let mut beta: Spectrum = Spectrum::new(1.0 as Float);
+        let mut ray: Ray = Ray {
+            o: r.o,
+            d: r.d,
+            t_max: r.t_max,
+            time: r.time,
+            differential: r.differential,
+        };
+        let mut specular_bounce: bool = false;
+        let mut bounces: u32 = 0_u32;
+        loop {
+            bounces += 1_u32;
+            // find next path vertex and accumulate contribution
+            println!("Path tracer bounce {:?}, current L = {:?}, beta = {:?}",
+                     bounces, l, beta);
+            // intersect _ray_ with scene and store intersection in _isect_
+            let mut found_intersection: bool = false;
+            if let Some(mut isect) = scene.intersect(&mut ray) {
+                found_intersection = true;
+                // possibly add emitted light at intersection
+                if bounces == 0 || specular_bounce {
+                    // add emitted light at path vertex
+                    l += beta * isect.le(-ray.d);
+                    println!("Added Le -> L = {:?}", l);
+                }
+                // terminate path if _maxDepth_ was reached
+                if bounces >= self.max_depth {
+                    break;
+                }
+                // compute scattering functions and skip over medium boundaries
+                let mode: TransportMode = TransportMode::Radiance;
+                isect.compute_scattering_functions(&mut ray, true, mode);
+                // if (!isect.bsdf) {
+                //     VLOG(2) << "Skipping intersection due to null bsdf";
+                //     ray = isect.SpawnRay(ray.d);
+                //     bounces--;
+                //     continue;
+                // }
+                if let Some(ref light_distribution) = self.light_distribution {
+                    let distrib: Distribution1D = light_distribution.lookup(isect.p);
+                }
+            } else {
+                // add emitted light from the environment
+                if bounces == 0 || specular_bounce {
+                    // for (const auto &light : scene.infiniteLights)
+                    for light in &scene.infinite_lights {
+                        l += beta * light.le(&mut ray);
+                    }
+                    println!("Added infinite area lights -> L = {:?}", l);
+                }
+                // terminate path if ray escaped
+                break;
+            }
+        }
+        l
     }
     fn get_pixel_bounds(&self) -> Bounds2i {
         self.pixel_bounds
