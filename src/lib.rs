@@ -671,8 +671,8 @@ impl Scene {
             world_bound: world_bound,
         }
     }
-    pub fn world_bound(&self) -> &Bounds3f {
-        &self.world_bound
+    pub fn world_bound(&self) -> Bounds3f {
+        self.world_bound
     }
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         // TODO: ++nIntersectionTests;
@@ -8902,7 +8902,7 @@ impl Light for DistantLight {
     fn preprocess(&self, scene: &Scene) {
         let mut world_center_ref = self.world_center.write().unwrap();
         let mut world_radius_ref = self.world_radius.write().unwrap();
-        Bounds3f::bounding_sphere(scene.world_bound(),
+        Bounds3f::bounding_sphere(&scene.world_bound(),
                                   &mut world_center_ref,
                                   &mut world_radius_ref);
     }
@@ -9332,14 +9332,71 @@ pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
 
 // see lightdistrib.h
 
-pub struct LightDistribution {
-}
-
-impl LightDistribution {
+pub trait LightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
     /// point.
-    pub fn lookup(&self, p: Point3f) -> Distribution1D {
+    fn lookup(&self, p: Point3f) -> Distribution1D;
+}
+
+/// A spatially-varying light distribution that adjusts the
+/// probability of sampling a light source based on an estimate of its
+/// contribution to a region of space.  A fixed voxel grid is imposed
+/// over the scene bounds and a sampling distribution is computed as
+/// needed for each voxel.
+pub struct SpatialLightDistribution {
+    pub scene: Scene,
+    pub n_voxels: [i32; 3],
+    pub hash_table_size: usize,
+}
+
+impl SpatialLightDistribution {
+    pub fn new(scene: &Scene, max_voxels: u32) -> Self {
+        // compute the number of voxels so that the widest scene
+        // bounding box dimension has maxVoxels voxels and the other
+        // dimensions have a number of voxels so that voxels are
+        // roughly cube shaped.
+        let b: Bounds3f = scene.world_bound();
+        let diag: Vector3f = b.diagonal();
+        let bmax: Float = diag[b.maximum_extent()];
+        let mut n_voxels: [i32; 3] = [0_i32; 3];
+        for i in 0..3 {
+            n_voxels[i] = std::cmp::max(1 as i32, (diag[i as u8] /
+                                                   bmax *
+                                                   max_voxels as Float).round()
+                                        as i32);
+            // in the Lookup() method, we require that 20 or fewer
+            // bits be sufficient to represent each coordinate
+            // value. It's fairly hard to imagine that this would ever
+            // be a problem.
+            assert!(n_voxels[i] < (1 << 20));
+        }
+        let hash_table_size: usize =
+            (4 as i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
+        // WORK
+        SpatialLightDistribution {
+            scene: scene.clone(),
+            n_voxels: n_voxels,
+            hash_table_size: hash_table_size,
+        }
+    }
+}
+
+impl LightDistribution for SpatialLightDistribution {
+    fn lookup(&self, p: Point3f) -> Distribution1D {
+        // TODO: ProfilePhase _(Prof::LightDistribLookup);
+        // TODO: ++nLookups;
+
+        // first, compute integer voxel coordinates for the given
+        // point |p| with respect to the overall voxel grid.
+        let offset: Vector3f = self.scene.world_bound().offset(p); // offset in [0,1].
+        // Point3i pi;
+        for i in 0..3 {
+            //     // The clamp should almost never be necessary, but is there to be
+            //     // robust to computed intersection points being slightly outside
+            //     // the scene bounds due to floating-point roundoff error.
+            //     pi[i] = Clamp(int(offset[i] * nVoxels[i]), 0, nVoxels[i] - 1);
+        }
         // WORK
         Distribution1D::default()
     }
@@ -9347,8 +9404,10 @@ impl LightDistribution {
 
 // see lightdistrib.cpp
 
+const INVALID_PACKED_POS: u64 = 0xffffffffffffffff;
+
 pub fn create_light_sample_distribution(name: String, scene: &Scene)
-                                        -> Option<Arc<LightDistribution>> {
+                                        -> Option<Arc<LightDistribution + Send + Sync>> {
     if name == String::from("uniform") || scene.lights.len() == 1 {
         println!("TODO: UniformLightDistribution");
         // return std::unique_ptr<LightDistribution>{
@@ -9380,7 +9439,7 @@ pub struct PathIntegrator {
     rr_threshold: Float, // 1.0
     light_sample_strategy: String, // "spatial"
     // TODO: std::unique_ptr<LightDistribution> lightDistribution;
-    light_distribution: Option<Arc<LightDistribution>>,
+    light_distribution: Option<Arc<LightDistribution + Send + Sync>>,
 }
 
 impl PathIntegrator {
