@@ -9339,6 +9339,12 @@ pub trait LightDistribution {
     fn lookup(&self, p: Point3f) -> Distribution1D;
 }
 
+#[derive(Debug,Default,Clone)]
+struct HashEntry {
+    packed_pos: u64,
+    distribution: Option<Distribution1D>,
+}
+
 /// A spatially-varying light distribution that adjusts the
 /// probability of sampling a light source based on an estimate of its
 /// contribution to a region of space.  A fixed voxel grid is imposed
@@ -9347,6 +9353,7 @@ pub trait LightDistribution {
 pub struct SpatialLightDistribution {
     pub scene: Scene,
     pub n_voxels: [i32; 3],
+    hash_table: Arc<Vec<HashEntry>>,
     pub hash_table_size: usize,
 }
 
@@ -9373,10 +9380,21 @@ impl SpatialLightDistribution {
         }
         let hash_table_size: usize =
             (4 as i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
+        let mut hash_table: Vec<HashEntry> = Vec::new();
+        for i in 0..hash_table_size {
+            let hash_entry: HashEntry = HashEntry {
+                packed_pos: INVALID_PACKED_POS,
+                distribution: None,
+            };
+            hash_table.push(hash_entry);
+        }
+        println!("SpatialLightDistribution: scene bounds {:?}, voxel res ({:?}, {:?}, {:?})",
+                 b, n_voxels[0], n_voxels[1], n_voxels[2]);
         // WORK
         SpatialLightDistribution {
             scene: scene.clone(),
             n_voxels: n_voxels,
+            hash_table: Arc::new(hash_table),
             hash_table_size: hash_table_size,
         }
     }
@@ -9390,13 +9408,19 @@ impl LightDistribution for SpatialLightDistribution {
         // first, compute integer voxel coordinates for the given
         // point |p| with respect to the overall voxel grid.
         let offset: Vector3f = self.scene.world_bound().offset(p); // offset in [0,1].
-        // Point3i pi;
+        let mut pi: Point3i = Point3i::default();
         for i in 0..3 {
-            //     // The clamp should almost never be necessary, but is there to be
-            //     // robust to computed intersection points being slightly outside
-            //     // the scene bounds due to floating-point roundoff error.
-            //     pi[i] = Clamp(int(offset[i] * nVoxels[i]), 0, nVoxels[i] - 1);
+            // the clamp should almost never be necessary, but is
+            // there to be robust to computed intersection points
+            // being slightly outside the scene bounds due to
+            // floating-point roundoff error.
+            pi[i] = clamp((offset[i] * self.n_voxels[i as usize] as Float) as i32,
+                          0_i32,
+                          self.n_voxels[i as usize] - 1_i32);
         }
+        // pack the 3D integer voxel coordinates into a single 64-bit value.
+        let packed_pos: u64 = ((pi[0] as u64) << 40) | ((pi[1] as u64) << 20) | (pi[2] as u64);
+        assert_ne!(packed_pos, INVALID_PACKED_POS);
         // WORK
         Distribution1D::default()
     }
@@ -9417,9 +9441,7 @@ pub fn create_light_sample_distribution(name: String, scene: &Scene)
         // return std::unique_ptr<LightDistribution>{
         //     new PowerLightDistribution(scene)};
     } else if name == String::from("spatial") {
-        println!("TODO: SpatialLightDistribution");
-        // return std::unique_ptr<LightDistribution>{
-        //     new SpatialLightDistribution(scene)};
+        return Some(Arc::new(SpatialLightDistribution::new(scene, 64)));
     } else {
         println!("Light sample distribution type \"{:?}\" unknown. Using \"spatial\".",
                  name);
@@ -9489,8 +9511,8 @@ impl SamplerIntegrator for PathIntegrator {
         loop {
             bounces += 1_u32;
             // find next path vertex and accumulate contribution
-            println!("Path tracer bounce {:?}, current L = {:?}, beta = {:?}",
-                     bounces, l, beta);
+            // println!("Path tracer bounce {:?}, current L = {:?}, beta = {:?}",
+            //          bounces, l, beta);
             // intersect _ray_ with scene and store intersection in _isect_
             let mut found_intersection: bool = false;
             if let Some(mut isect) = scene.intersect(&mut ray) {
