@@ -9421,7 +9421,33 @@ impl LightDistribution for SpatialLightDistribution {
         // pack the 3D integer voxel coordinates into a single 64-bit value.
         let packed_pos: u64 = ((pi[0] as u64) << 40) | ((pi[1] as u64) << 20) | (pi[2] as u64);
         assert_ne!(packed_pos, INVALID_PACKED_POS);
-        // WORK
+        // Compute a hash value from the packed voxel coordinates. We
+        // could just take packed_Pos mod the hash table size, but
+        // since packed_Pos isn't necessarily well distributed on its
+        // own, it's worthwhile to do a little work to make sure that
+        // its bits values are individually fairly random. For details
+        // of and motivation for the following, see:
+        // http://zimbry.blogspot.ch/2011/09/better-bit-mixing-improving-on.html
+        let mut hash: u64 = packed_pos;
+        hash ^= hash >> 31;
+        hash *= 0x7fb5d329728ea185;
+        hash ^= hash >> 27;
+        hash *= 0x81dadef4bc2dd44d;
+        hash ^= hash >> 33;
+        hash %= self.hash_table_size as u64;
+        assert!(hash >= 0_u64, "hash needs to be greater or equal zero");
+        // Now, see if the hash table already has an entry for the
+        // voxel. We'll use quadratic probing when the hash table
+        // entry is already used for another value; step stores the
+        // square root of the probe step.
+        let mut step: u64 = 1;
+        // TODO: int nProbes = 0;
+        loop {
+            // TODO: ++nProbes;
+            // let entry: HashEntry = self.hash_table[hash as usize];
+            // WORK
+            step += 1_u64;
+        }
         Distribution1D::default()
     }
 }
