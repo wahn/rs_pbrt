@@ -611,6 +611,7 @@
 //! point being shaded - and ignores indirect illumination from
 //! objects that are not themselfes emissive, except for basic
 //! specular reflection and transmission effects.
+#![feature(integer_atomics)]
 
 extern crate num;
 extern crate num_cpus;
@@ -626,7 +627,7 @@ use std::f32::consts::PI;
 use std::mem;
 use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::path::Path;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 use std::sync::mpsc;
 // use copy_arena::{Arena, Allocator};
@@ -9339,9 +9340,9 @@ pub trait LightDistribution {
     fn lookup(&self, p: Point3f) -> Distribution1D;
 }
 
-#[derive(Debug,Default,Clone)]
+#[derive(Debug,Default)]
 struct HashEntry {
-    packed_pos: u64,
+    packed_pos: AtomicU64,
     distribution: Option<Distribution1D>,
 }
 
@@ -9383,7 +9384,7 @@ impl SpatialLightDistribution {
         let mut hash_table: Vec<HashEntry> = Vec::new();
         for i in 0..hash_table_size {
             let hash_entry: HashEntry = HashEntry {
-                packed_pos: INVALID_PACKED_POS,
+                packed_pos: AtomicU64::new(INVALID_PACKED_POS),
                 distribution: None,
             };
             hash_table.push(hash_entry);
@@ -9444,7 +9445,20 @@ impl LightDistribution for SpatialLightDistribution {
         // TODO: int nProbes = 0;
         loop {
             // TODO: ++nProbes;
-            // let entry: HashEntry = self.hash_table[hash as usize];
+            let entry: &HashEntry = &self.hash_table[hash as usize];
+            // does the hash table entry at offset |hash| match the current point?
+            let entry_packed_pos: u64 = entry.packed_pos.load(Ordering::Acquire);
+            if entry_packed_pos == packed_pos {
+                println!("TODO: if entry_packed_pos == packed_pos");
+            } else if entry_packed_pos != INVALID_PACKED_POS {
+                println!("TODO: else if entry_packed_pos != INVALID_PACKED_POS");
+            } else {
+                // We have found an invalid entry. (Though this may
+                // have changed since the load into entryPackedPos
+                // above.)  Use an atomic compare/exchange to try to
+                // claim this entry for the current position.
+                let invalid: u64 = INVALID_PACKED_POS;
+            }
             // WORK
             step += 1_u64;
         }
