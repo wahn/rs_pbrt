@@ -627,7 +627,7 @@ use std::f32::consts::PI;
 use std::mem;
 use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::path::Path;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, AtomicPtr, Ordering};
 use std::sync::{Arc, RwLock};
 use std::sync::mpsc;
 // use copy_arena::{Arena, Allocator};
@@ -9343,7 +9343,7 @@ pub trait LightDistribution {
 #[derive(Debug,Default)]
 struct HashEntry {
     packed_pos: AtomicU64,
-    distribution: Option<Distribution1D>,
+    distribution: AtomicPtr<Distribution1D>,
 }
 
 /// A spatially-varying light distribution that adjusts the
@@ -9382,10 +9382,11 @@ impl SpatialLightDistribution {
         let hash_table_size: usize =
             (4 as i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
         let mut hash_table: Vec<HashEntry> = Vec::new();
+        let null: *mut Distribution1D = std::ptr::null_mut();
         for i in 0..hash_table_size {
             let hash_entry: HashEntry = HashEntry {
                 packed_pos: AtomicU64::new(INVALID_PACKED_POS),
-                distribution: None,
+                distribution: AtomicPtr::new(null),
             };
             hash_table.push(hash_entry);
         }
@@ -9398,6 +9399,12 @@ impl SpatialLightDistribution {
             hash_table: Arc::new(hash_table),
             hash_table_size: hash_table_size,
         }
+    }
+    /// Compute the sampling distribution for the voxel with integer
+    /// coordiantes given by "pi".
+    pub fn compute_distribution(&self, pi: Point3i) -> Distribution1D {
+        // WORK
+        Distribution1D::default()
     }
 }
 
@@ -9466,6 +9473,16 @@ impl LightDistribution for SpatialLightDistribution {
                     Err(x) => false,
                 };
                 println!("DEBUG: compare_exchange_weak(...) returns {}", success);
+                // Success; we've claimed this position for this
+                // voxel's distribution. Now compute the sampling
+                // distribution and add it to the hash table. As long
+                // as packedPos has been set but the entry's
+                // distribution pointer is nullptr, any other threads
+                // looking up the distribution for this voxel will
+                // spin wait until the distribution pointer is
+                // written.
+                let dist: *mut Distribution1D = &mut self.compute_distribution(pi);
+                entry.distribution.store(dist, Ordering::Release);
             }
             // WORK
             step += 1_u64;
