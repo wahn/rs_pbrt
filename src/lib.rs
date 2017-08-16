@@ -9458,6 +9458,14 @@ impl LightDistribution for SpatialLightDistribution {
                 // above.)  Use an atomic compare/exchange to try to
                 // claim this entry for the current position.
                 let invalid: u64 = INVALID_PACKED_POS;
+                let success = match entry.packed_pos.compare_exchange_weak(invalid,
+                                                                           packed_pos,
+                                                                           Ordering::SeqCst,
+                                                                           Ordering::Relaxed) {
+                    Ok(_) => true,
+                    Err(x) => false,
+                };
+                println!("DEBUG: compare_exchange_weak(...) returns {}", success);
             }
             // WORK
             step += 1_u64;
