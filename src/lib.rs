@@ -2176,6 +2176,13 @@ impl<T> Bounds3<T> {
 }
 
 impl Bounds3<Float> {
+    pub fn lerp(&self, t: Point3f) -> Point3f {
+        Point3f {
+            x: lerp(t.x, self.p_min.x as Float, self.p_max.x as Float),
+            y: lerp(t.y, self.p_min.y as Float, self.p_max.y as Float),
+            z: lerp(t.z, self.p_min.z as Float, self.p_max.z as Float),
+        }
+    }
     pub fn intersect_p(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: [u8; 3]) -> bool {
         // check for ray intersection against $x$ and $y$ slabs
         let mut t_min: Float = (self[dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
@@ -9403,6 +9410,20 @@ impl SpatialLightDistribution {
     /// Compute the sampling distribution for the voxel with integer
     /// coordiantes given by "pi".
     pub fn compute_distribution(&self, pi: Point3i) -> Distribution1D {
+        // compute the world-space bounding box of the voxel
+        // corresponding to |pi|.
+        let p0: Point3f = Point3f { x: pi[0] as Float / self.n_voxels[0] as Float,
+                                    y: pi[1] as Float / self.n_voxels[1] as Float,
+                                    z: pi[2] as Float / self.n_voxels[2] as Float,
+        };
+        let p1: Point3f = Point3f { x: (pi[0] + 1) as Float / self.n_voxels[0] as Float,
+                                    y: (pi[1] + 1) as Float / self.n_voxels[1] as Float,
+                                    z: (pi[2] + 1) as Float / self.n_voxels[2] as Float,
+        };
+        let voxel_bounds: Bounds3f = Bounds3f {
+            p_min: self.scene.world_bound().lerp(p0),
+            p_max: self.scene.world_bound().lerp(p1),
+        };
         // WORK
         Distribution1D::default()
     }
