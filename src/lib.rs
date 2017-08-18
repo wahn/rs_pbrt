@@ -6545,6 +6545,21 @@ impl Sampler for ZeroTwoSequenceSampler {
 
 // see lowdiscrepancy.h
 
+pub fn reverse_bits_32(n: u32) -> u32 {
+    let mut n = (n << 16) | (n >> 16);
+    n = ((n & 0x00ff00ff) << 8) | ((n & 0xff00ff00) >> 8);
+    n = ((n & 0x0f0f0f0f) << 4) | ((n & 0xf0f0f0f0) >> 4);
+    n = ((n & 0x33333333) << 2) | ((n & 0xcccccccc) >> 2);
+    n = ((n & 0x55555555) << 1) | ((n & 0xaaaaaaaa) >> 1);
+    n
+}
+
+pub fn reverse_bits_64(n: u64) -> u64 {
+    let n0: u64 = reverse_bits_32(n as u32) as u64;
+    let n1: u64 = reverse_bits_32((n >> 32) as u32) as u64;
+    n0 << 32 | n1
+}
+
 /// Takes a generator matrix *c*, a number of 1D samples to generate
 /// *n*, and stores the corresponding samples in memory at the
 /// location pointed to by *p*.
@@ -6660,6 +6675,44 @@ pub fn sobol_2d(n_samples_per_pixel_sample: i32,
             n_pixel_samples,
             n_samples_per_pixel_sample,
             rng);
+}
+
+// see lowdiscrepancy.cpp
+
+pub fn radical_inverse_specialized(base: u16, a: u64) -> Float {
+    let inv_base: Float = 1.0 as Float / base as Float;
+    let mut reversed_digits: u64 = 0_u64;
+    let mut inv_base_n: Float = 1.0 as Float;
+    let mut a: u64 = a; // shadowing input parameter
+    while a != 0_u64 {
+        let next: u64 = a / base as u64;
+        let digit: u64 = a - next * base as u64;
+        reversed_digits = reversed_digits * base as u64 + digit;
+        inv_base_n *= inv_base;
+        a = next;
+    }
+    assert!(reversed_digits as Float * inv_base_n < 1.00001 as Float);
+    (reversed_digits as Float * inv_base_n).min(ONE_MINUS_EPSILON)
+}
+
+pub fn radical_inverse(base_index: u16, a: u64) -> Float {
+    match base_index {
+        0 => {
+            // TODO: #ifndef PBRT_HAVE_HEX_FP_CONSTANTS
+            return reverse_bits_64(a) as Float * (0x1E-64) as Float;
+        },
+        1 => {
+            return radical_inverse_specialized(3_u16, a);
+        },
+        2 => {
+            return radical_inverse_specialized(5_u16, a);
+        },
+        // WORK
+        _ => {
+            panic!("TODO: radical_inverse({:?}, {:?})", base_index, a);
+        },
+    };
+    0.0 as Float // TMP
 }
 
 // see filter.h
@@ -9410,7 +9463,7 @@ impl SpatialLightDistribution {
     /// Compute the sampling distribution for the voxel with integer
     /// coordiantes given by "pi".
     pub fn compute_distribution(&self, pi: Point3i) -> Distribution1D {
-        // compute the world-space bounding box of the voxel
+        // Compute the world-space bounding box of the voxel
         // corresponding to |pi|.
         let p0: Point3f = Point3f { x: pi[0] as Float / self.n_voxels[0] as Float,
                                     y: pi[1] as Float / self.n_voxels[1] as Float,
@@ -9424,6 +9477,41 @@ impl SpatialLightDistribution {
             p_min: self.scene.world_bound().lerp(p0),
             p_max: self.scene.world_bound().lerp(p1),
         };
+        // Compute the sampling distribution. Sample a number of
+        // points inside voxelBounds using a 3D Halton sequence; at
+        // each one, sample each light source and compute a weight
+        // based on Li/pdf for the light's sample (ignoring visibility
+        // between the point in the voxel and the point on the light
+        // source) as an approximation to how much the light is likely
+        // to contribute to illumination in the voxel.
+        let n_samples: usize = 128;
+        // std::vector<Float> lightContrib(scene.lights.size(), Float(0));
+        // for (int i = 0; i < nSamples; ++i) {
+        for i in 0..n_samples {
+            let po: Point3f = voxel_bounds.lerp(Point3f {
+                x: radical_inverse(0, i as u64),
+                y: radical_inverse(1, i as u64),
+                z: radical_inverse(2, i as u64),
+            });
+            // Interaction intr(po, Normal3f(), Vector3f(), Vector3f(1, 0, 0),
+            //                  0 /* time */, MediumInterface());
+            //     // Use the next two Halton dimensions to sample a point on the
+            //     // light source.
+            //     Point2f u(radical_inverse(3, i), radical_inverse(4, i));
+            //     for (size_t j = 0; j < scene.lights.size(); ++j) {
+            //         Float pdf;
+            //         Vector3f wi;
+            //         VisibilityTester vis;
+            //         Spectrum Li = scene.lights[j]->Sample_Li(intr, u, &wi, &pdf, &vis);
+            //         if (pdf > 0) {
+            //             // TODO: look at tracing shadow rays / computing beam
+            //             // transmittance.  Probably shouldn't give those full weight
+            //         // but instead e.g. have an occluded shadow ray scale down
+            //             // the contribution by 10 or something.
+            //             lightContrib[j] += Li.y() / pdf;
+            //         }
+            //     }
+        }
         // WORK
         Distribution1D::default()
     }
