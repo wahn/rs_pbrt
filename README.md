@@ -36,6 +36,36 @@ Options:
     -v, --version       print version number
 ```
 
+There are also a couple of scenes which can be rendered from the
+command line by parsing a scene description file:
+
+```shell
+> ./target/release/examples/pest_test -i assets/scenes/teapot-area-light.pbrt
+```
+
+![Teapot scene rendered via Rust version of PBRT](https://www.janwalter.org/assets/teapot-area-light_v0.1.12.png)
+
+```
+> ./target/release/examples/pest_test -i assets/scenes/cornell_box.pbrt
+```
+
+With direct lighting:
+
+```
+Integrator "directlighting" "integer maxdepth" [10]
+```
+
+![Cornell Box scene rendered via Rust version of PBRT](https://www.janwalter.org/assets/cornell_box_v0.1.13.png)
+
+With ambient occlusion:
+
+```
+Integrator "ambientocclusion"
+```
+
+![Cornell Box scene rendered via Rust using
+ AO](https://www.janwalter.org/assets/cornell_box_pbrt_rust_ao.png)
+
 If you look for a more complete Rust implementation:
 
 https://bitbucket.org/abusch/rustracer
