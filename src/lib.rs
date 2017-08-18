@@ -4116,10 +4116,25 @@ pub struct Interaction {
     pub time: Float,
     pub p_error: Vector3f,
     pub wo: Vector3f,
-    pub n: Normal3f, // TODO: MediumInterface mediumInterface;
+    pub n: Normal3f, // TODO: MediumInterface medium_interface;
 }
 
 impl Interaction {
+    pub fn new(p: Point3f,
+               n: Normal3f,
+               p_error: Vector3f,
+               wo: Vector3f,
+               time: Float //,
+               // TODO: medium_interface: MediumInterface
+    ) -> Self {
+        Interaction {
+            p: p,
+            time: time,
+            p_error: p_error,
+            wo: wo,
+            n: n,
+        }
+    }
     pub fn spawn_ray(&self, d: Vector3f) -> Ray {
         let o: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, d);
         Ray {
@@ -9486,32 +9501,43 @@ impl SpatialLightDistribution {
         // source) as an approximation to how much the light is likely
         // to contribute to illumination in the voxel.
         let n_samples: usize = 128;
-        // std::vector<Float> lightContrib(scene.lights.size(), Float(0));
-        // for (int i = 0; i < nSamples; ++i) {
+        // std::vector<Float> light_contrib(self.scene.lights.size(), Float(0));
         for i in 0..n_samples {
             let po: Point3f = voxel_bounds.lerp(Point3f {
                 x: radical_inverse(0, i as u64),
                 y: radical_inverse(1, i as u64),
                 z: radical_inverse(2, i as u64),
             });
-            // Interaction intr(po, Normal3f(), Vector3f(), Vector3f(1, 0, 0),
-            //                  0 /* time */, MediumInterface());
-            //     // Use the next two Halton dimensions to sample a point on the
-            //     // light source.
-            //     Point2f u(radical_inverse(3, i), radical_inverse(4, i));
-            //     for (size_t j = 0; j < scene.lights.size(); ++j) {
-            //         Float pdf;
-            //         Vector3f wi;
-            //         VisibilityTester vis;
-            //         Spectrum Li = scene.lights[j]->Sample_Li(intr, u, &wi, &pdf, &vis);
-            //         if (pdf > 0) {
-            //             // TODO: look at tracing shadow rays / computing beam
-            //             // transmittance.  Probably shouldn't give those full weight
-            //         // but instead e.g. have an occluded shadow ray scale down
-            //             // the contribution by 10 or something.
-            //             lightContrib[j] += Li.y() / pdf;
-            //         }
-            //     }
+            let time: Float = 0.0;
+            let intr: Interaction = Interaction::new(po,
+                                                     Normal3f::default(),
+                                                     Vector3f::default(),
+                                                     Vector3f {
+                                                         x: 1.0,
+                                                         y: 0.0,
+                                                         z: 0.0,
+                                                     },
+                                                     time); // TODO: MediumInterface()
+            // Use the next two Halton dimensions to sample a point on the
+            // light source.
+            let u: Point2f = Point2f {
+                x: radical_inverse(3, i as u64),
+                y: radical_inverse(4, i as u64),
+            };
+            for j in 0..self.scene.lights.len() {
+                let mut pdf: Float = 0.0 as Float;
+                let mut wi: Vector3f = Vector3f::default();
+                let mut vis: VisibilityTester = VisibilityTester::default();
+                // TODO: see issue #12.
+                // TODO: let li: Spectrum = self.scene.lights[j].sample_li(&intr, u, &mut wi, &mut pdf, &mut vis);
+                //         if (pdf > 0) {
+                //             // TODO: look at tracing shadow rays / computing beam
+                //             // transmittance.  Probably shouldn't give those full weight
+                //         // but instead e.g. have an occluded shadow ray scale down
+                //             // the contribution by 10 or something.
+                //             light_contrib[j] += Li.y() / pdf;
+                //         }
+            }
         }
         // WORK
         Distribution1D::default()
