@@ -6557,7 +6557,7 @@ pub fn reverse_bits_32(n: u32) -> u32 {
 pub fn reverse_bits_64(n: u64) -> u64 {
     let n0: u64 = reverse_bits_32(n as u32) as u64;
     let n1: u64 = reverse_bits_32((n >> 32) as u32) as u64;
-    n0 << 32 | n1
+    (n0 << 32) | n1
 }
 
 /// Takes a generator matrix *c*, a number of 1D samples to generate
@@ -6699,7 +6699,8 @@ pub fn radical_inverse(base_index: u16, a: u64) -> Float {
     match base_index {
         0 => {
             // TODO: #ifndef PBRT_HAVE_HEX_FP_CONSTANTS
-            return reverse_bits_64(a) as Float * (0x1E-64) as Float;
+            // 0x1p-64 = (2.0 as Float).powi(-64 as i32)
+            return reverse_bits_64(a) as Float * (2.0 as Float).powi(-64 as i32);
         },
         1 => {
             return radical_inverse_specialized(3_u16, a);
