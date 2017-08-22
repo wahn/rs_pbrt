@@ -9332,6 +9332,35 @@ pub struct Distribution1D {
     pub func_int: Float,
 }
 
+impl Distribution1D {
+    pub fn new(f: Vec<Float>) -> Self {
+        let n: usize = f.len();
+        // Compute integral of step function at $x_i$
+        let mut cdf: Vec<Float> = Vec::new();
+        cdf.push(0.0 as Float);
+        for i in 1..(n + 1) {
+            let previous: Float = cdf[i - 1];
+            cdf.push(previous + f[i - 1] / n as Float);
+        }
+        // Transform step function integral into CDF
+        let func_int: Float = cdf[n];
+        if func_int == 0.0 as Float {
+            for i in 1..(n + 1) {
+                cdf[i] = i as Float / n as Float;
+            }
+        } else {
+            for i in 1..(n + 1) {
+                cdf[i] /= func_int;
+            }
+        }
+        Distribution1D {
+            func: f,
+            cdf: cdf,
+            func_int: func_int,
+        }
+    }
+}
+
 /// Randomly permute an array of *count* sample values, each of which
 /// has *n_dimensions* dimensions.
 pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) {
@@ -9475,7 +9504,6 @@ impl SpatialLightDistribution {
         }
         println!("SpatialLightDistribution: scene bounds {:?}, voxel res ({:?}, {:?}, {:?})",
                  b, n_voxels[0], n_voxels[1], n_voxels[2]);
-        // WORK
         SpatialLightDistribution {
             scene: scene.clone(),
             n_voxels: n_voxels,
@@ -9508,7 +9536,7 @@ impl SpatialLightDistribution {
         // source) as an approximation to how much the light is likely
         // to contribute to illumination in the voxel.
         let n_samples: usize = 128;
-        // std::vector<Float> light_contrib(self.scene.lights.size(), Float(0));
+        let mut light_contrib: Vec<Float> = vec![0.0 as Float; self.scene.lights.len()];
         for i in 0..n_samples {
             let po: Point3f = voxel_bounds.lerp(Point3f {
                 x: radical_inverse(0, i as u64),
@@ -9516,15 +9544,17 @@ impl SpatialLightDistribution {
                 z: radical_inverse(2, i as u64),
             });
             let time: Float = 0.0;
-            // let intr: Interaction = Interaction::new(po,
-            //                                          Normal3f::default(),
-            //                                          Vector3f::default(),
-            //                                          Vector3f {
-            //                                              x: 1.0,
-            //                                              y: 0.0,
-            //                                              z: 0.0,
-            //                                          },
-            //                                          time); // TODO: MediumInterface()
+            let intr: InteractionCommon = InteractionCommon {
+                p: po,
+                time: time,
+                p_error: Vector3f::default(),
+                wo: Vector3f {
+                    x: 1.0,
+                    y: 0.0,
+                    z: 0.0,
+                },
+                n: Normal3f::default(),
+            };
             // Use the next two Halton dimensions to sample a point on the
             // light source.
             let u: Point2f = Point2f {
@@ -9535,19 +9565,40 @@ impl SpatialLightDistribution {
                 let mut pdf: Float = 0.0 as Float;
                 let mut wi: Vector3f = Vector3f::default();
                 let mut vis: VisibilityTester = VisibilityTester::default();
-                // TODO: see issue #12.
-                // TODO: let li: Spectrum = self.scene.lights[j].sample_li(&intr, u, &mut wi, &mut pdf, &mut vis);
-                //         if (pdf > 0) {
-                //             // TODO: look at tracing shadow rays / computing beam
-                //             // transmittance.  Probably shouldn't give those full weight
-                //         // but instead e.g. have an occluded shadow ray scale down
-                //             // the contribution by 10 or something.
-                //             light_contrib[j] += Li.y() / pdf;
-                //         }
+                let li: Spectrum = self.scene.lights[j].sample_li(&intr, u, &mut wi, &mut pdf, &mut vis);
+                if pdf > 0.0 as Float {
+                    // TODO: look at tracing shadow rays / computing
+                    // beam transmittance. Probably shouldn't give
+                    // those full weight but instead e.g. have an
+                    // occluded shadow ray scale down the contribution
+                    // by 10 or something.
+                    light_contrib[j] += li.y() / pdf;
+                }
             }
         }
-        // WORK
-        Distribution1D::default()
+        // We don't want to leave any lights with a zero probability;
+        // it's possible that a light contributes to points in the
+        // voxel even though we didn't find such a point when sampling
+        // above. Therefore, compute a minimum (small) weight and
+        // ensure that all lights are given at least the corresponding
+        // probability.
+        let sum_contrib: Float = light_contrib.iter().sum();
+        let avg_contrib: Float = sum_contrib / (n_samples * light_contrib.len()) as Float;
+        let min_contrib: Float;
+        if avg_contrib > 0.0 as Float {
+            min_contrib = 0.001 * avg_contrib;
+        } else {
+            min_contrib = 1.0 as Float;
+        }
+        for i in 0..light_contrib.len() {
+            // println!("Voxel pi = {:?}, light {:?} contrib = {:?}",
+            //          pi, i, light_contrib[i]);
+            light_contrib[i] = light_contrib[i].max(min_contrib);
+        }
+        // println!("Initialized light distribution in voxel pi= {:?}, avg_contrib = {:?}",
+        //          pi, avg_contrib);
+        // Compute a sampling distribution from the accumulated contributions.
+        Distribution1D::new(light_contrib)
     }
 }
 
@@ -9655,8 +9706,6 @@ impl LightDistribution for SpatialLightDistribution {
                 return dist;
             }
         }
-        let ret_p: *const Distribution1D = std::ptr::null();
-        ret_p
     }
 }
 
