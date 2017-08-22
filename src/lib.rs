@@ -6727,6 +6727,18 @@ pub fn radical_inverse(base_index: u16, a: u64) -> Float {
         2 => {
             return radical_inverse_specialized(5_u16, a);
         },
+        3 => {
+            return radical_inverse_specialized(7_u16, a);
+        },
+        4 => {
+            return radical_inverse_specialized(11_u16, a);
+        },
+        5 => {
+            return radical_inverse_specialized(13_u16, a);
+        },
+        6 => {
+            return radical_inverse_specialized(17_u16, a);
+        },
         // WORK
         _ => {
             panic!("TODO: radical_inverse({:?}, {:?})", base_index, a);
@@ -9408,7 +9420,7 @@ pub trait LightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
     /// point.
-    fn lookup(&self, p: Point3f) -> Distribution1D;
+    fn lookup(&self, p: Point3f) -> *const Distribution1D;
 }
 
 #[derive(Debug,Default)]
@@ -9540,7 +9552,7 @@ impl SpatialLightDistribution {
 }
 
 impl LightDistribution for SpatialLightDistribution {
-    fn lookup(&self, p: Point3f) -> Distribution1D {
+    fn lookup(&self, p: Point3f) -> *const Distribution1D {
         // TODO: ProfilePhase _(Prof::LightDistribLookup);
         // TODO: ++nLookups;
 
@@ -9587,9 +9599,35 @@ impl LightDistribution for SpatialLightDistribution {
             // does the hash table entry at offset |hash| match the current point?
             let entry_packed_pos: u64 = entry.packed_pos.load(Ordering::Acquire);
             if entry_packed_pos == packed_pos {
-                println!("TODO: if entry_packed_pos == packed_pos");
+                // Yes! Most of the time, there should already by a light
+                // sampling distribution available.
+                let mut dist: *mut Distribution1D = entry.distribution.load(Ordering::Acquire);
+                if dist.is_null() {
+                    // Rarely, another thread will have already done a
+                    // lookup at this point, found that there isn't a
+                    // sampling distribution, and will already be
+                    // computing the distribution for the point.  In
+                    // this case, we spin until the sampling
+                    // distribution is ready.  We assume that this is
+                    // a rare case, so don't do anything more
+                    // sophisticated than spinning.
+                    // TODO: ProfilePhase _(Prof::LightDistribSpinWait);
+                    while dist.is_null() {
+                        dist = entry.distribution.load(Ordering::Acquire);
+                    }
+                }
+                // We have a valid sampling distribution.
+                // TODO: ReportValue(nProbesPerLookup, nProbes);
+                return dist;
             } else if entry_packed_pos != INVALID_PACKED_POS {
-                println!("TODO: else if entry_packed_pos != INVALID_PACKED_POS");
+                // The hash table entry we're checking has already
+                // been allocated for another voxel. Advance to the
+                // next entry with quadratic probing.
+                hash += step * step;
+                if hash >= self.hash_table_size as u64 {
+                    hash %= self.hash_table_size as u64;
+                }
+                step += 1_u64;
             } else {
                 // We have found an invalid entry. (Though this may
                 // have changed since the load into entryPackedPos
@@ -9603,7 +9641,6 @@ impl LightDistribution for SpatialLightDistribution {
                     Ok(_) => true,
                     Err(x) => false,
                 };
-                println!("DEBUG: compare_exchange_weak(...) returns {}", success);
                 // Success; we've claimed this position for this
                 // voxel's distribution. Now compute the sampling
                 // distribution and add it to the hash table. As long
@@ -9614,11 +9651,12 @@ impl LightDistribution for SpatialLightDistribution {
                 // written.
                 let dist: *mut Distribution1D = &mut self.compute_distribution(pi);
                 entry.distribution.store(dist, Ordering::Release);
+                // TODO: ReportValue(nProbesPerLookup, nProbes);
+                return dist;
             }
-            // WORK
-            step += 1_u64;
         }
-        Distribution1D::default()
+        let ret_p: *const Distribution1D = std::ptr::null();
+        ret_p
     }
 }
 
@@ -9733,7 +9771,7 @@ impl SamplerIntegrator for PathIntegrator {
                 //     continue;
                 // }
                 if let Some(ref light_distribution) = self.light_distribution {
-                    let distrib: Distribution1D = light_distribution.lookup(isect.p);
+                    let distrib: *const Distribution1D = light_distribution.lookup(isect.p);
                 }
             } else {
                 // add emitted light from the environment
