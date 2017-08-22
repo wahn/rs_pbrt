@@ -4119,9 +4119,6 @@ pub trait Interaction {
     fn get_p_error(&self) -> Vector3f;
     fn get_wo(&self) -> Vector3f;
     fn get_n(&self) -> Normal3f;
-    // if is_surface_interaction(&self) return true:
-    fn get_bsdf(&self) -> Option<Arc<Bsdf>>;
-    fn get_shading_n(&self) -> Option<Normal3f>;
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -4397,23 +4394,6 @@ impl<'a, 'b> Interaction for SurfaceInteraction<'a, 'b> {
     }
     fn get_n(&self) -> Normal3f {
         self.n.clone()
-    }
-    // if is_surface_interaction(&self) return true:
-    fn get_bsdf(&self) -> Option<Arc<Bsdf>> {
-        if !self.is_surface_interaction() {
-            return None;
-        }
-        if let Some(ref bsdf) = self.bsdf {
-            Some(bsdf.clone())
-        } else {
-            None
-        }
-    }
-    fn get_shading_n(&self) -> Option<Normal3f> {
-        if !self.is_surface_interaction() {
-            return None;
-        }
-        Some(self.shading.n)
     }
 }
 
@@ -9228,13 +9208,9 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         let mut f: Spectrum = Spectrum::new(0.0);
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
-            if let Some(ref bsdf) = it.get_bsdf() {
-                if let Some(shading_n) = it.get_shading_n() {
-                    f = bsdf.f(it.get_wo(), wi, bsdf_flags) *
-                        Spectrum::new(vec3_abs_dot_nrm(wi, shading_n));
-                } else {
-                    panic!("Can't get shading normal");
-                }
+            if let Some(ref bsdf) = it.bsdf {
+                f = bsdf.f(it.get_wo(), wi, bsdf_flags) *
+                    Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
                 scattering_pdf = bsdf.pdf(it.get_wo(), wi, bsdf_flags);
                 // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
@@ -9274,18 +9250,14 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         if it.is_surface_interaction() {
             // sample scattered direction for surface interactions
             let mut sampled_type: u8 = 0_u8;
-            if let Some(ref bsdf) = it.get_bsdf() {
+            if let Some(ref bsdf) = it.bsdf {
                 f = bsdf.sample_f(it.get_wo(),
                                   &mut wi,
                                   u_scattering,
                                   &mut scattering_pdf,
                                   bsdf_flags,
                                   &mut sampled_type);
-                if let Some(shading_n) = it.get_shading_n() {
-                    f *= Spectrum::new(vec3_abs_dot_nrm(wi, shading_n));
-                } else {
-                    panic!("Can't get shading normal");
-                }
+                f *= Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
                 sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
             } else {
                 println!("TODO: if let Some(ref bsdf) = it.bsdf failed");
