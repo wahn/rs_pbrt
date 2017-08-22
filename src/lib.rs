@@ -4110,42 +4110,32 @@ pub fn quat_normalize(q: Quaternion) -> Quaternion {
 
 // see interaction.h
 
+pub trait Interaction {
+    fn is_surface_interaction(&self) -> bool;
+    fn is_medium_interaction(&self) -> bool;
+    fn spawn_ray(&self, d: Vector3f) -> Ray;
+    fn get_p(&self) -> Point3f;
+    fn get_time(&self) -> Float;
+    fn get_p_error(&self) -> Vector3f;
+    fn get_wo(&self) -> Vector3f;
+    fn get_n(&self) -> Normal3f;
+    // if is_surface_interaction(&self) return true:
+    fn get_bsdf(&self) -> Option<Arc<Bsdf>>;
+    fn get_shading_n(&self) -> Option<Normal3f>;
+}
+
 #[derive(Debug,Default,Copy,Clone)]
-pub struct Interaction {
+pub struct InteractionCommon {
+    // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
     pub p_error: Vector3f,
     pub wo: Vector3f,
-    pub n: Normal3f, // TODO: MediumInterface medium_interface;
+    pub n: Normal3f,
 }
 
-impl Interaction {
-    pub fn new(p: Point3f,
-               n: Normal3f,
-               p_error: Vector3f,
-               wo: Vector3f,
-               time: Float //,
-               // TODO: medium_interface: MediumInterface
-    ) -> Self {
-        Interaction {
-            p: p,
-            time: time,
-            p_error: p_error,
-            wo: wo,
-            n: n,
-        }
-    }
-    pub fn spawn_ray(&self, d: Vector3f) -> Ray {
-        let o: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, d);
-        Ray {
-            o: o,
-            d: d,
-            t_max: std::f32::INFINITY,
-            time: self.time,
-            differential: None,
-        }
-    }
-    pub fn spawn_ray_to(&self, it: Interaction) -> Ray {
+impl InteractionCommon {
+    pub fn spawn_ray_to(&self, it: InteractionCommon) -> Ray {
         let origin: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, it.p - self.p);
         let target: Point3f = pnt3_offset_ray_origin(it.p, it.p_error, it.n, origin - it.p);
         let d: Vector3f = target - origin;
@@ -4361,8 +4351,8 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
     pub fn le(&self, w: Vector3f) -> Spectrum {
         if let Some(primitive) = self.primitive {
             if let Some(area_light) = primitive.get_area_light() {
-                // create Interaction from self
-                let interaction: Interaction = Interaction {
+                // create InteractionCommon from self
+                let interaction: InteractionCommon = InteractionCommon {
                     p: self.p,
                     time: self.time,
                     p_error: self.p_error,
@@ -4374,11 +4364,16 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
         }
         Spectrum::default()
     }
-    // inherited from Interaction
-    pub fn is_surface_interaction(&self) -> bool {
+}
+
+impl<'a, 'b> Interaction for SurfaceInteraction<'a, 'b> {
+    fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }
-    pub fn spawn_ray(&self, d: Vector3f) -> Ray {
+    fn is_medium_interaction(&self) -> bool {
+        !self.is_surface_interaction()
+    }
+    fn spawn_ray(&self, d: Vector3f) -> Ray {
         let o: Point3f = pnt3_offset_ray_origin(self.p, self.p_error, self.n, d);
         Ray {
             o: o,
@@ -4388,8 +4383,37 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
             differential: None,
         }
     }
-    pub fn is_medium_interaction(&self) -> bool {
-        !self.is_surface_interaction()
+    fn get_p(&self) -> Point3f {
+        self.p.clone()
+    }
+    fn get_time(&self) -> Float {
+        self.time
+    }
+    fn get_p_error(&self) -> Vector3f {
+        self.p_error.clone()
+    }
+    fn get_wo(&self) -> Vector3f {
+        self.wo.clone()
+    }
+    fn get_n(&self) -> Normal3f {
+        self.n.clone()
+    }
+    // if is_surface_interaction(&self) return true:
+    fn get_bsdf(&self) -> Option<Arc<Bsdf>> {
+        if !self.is_surface_interaction() {
+            return None;
+        }
+        if let Some(ref bsdf) = self.bsdf {
+            Some(bsdf.clone())
+        } else {
+            None
+        }
+    }
+    fn get_shading_n(&self) -> Option<Normal3f> {
+        if !self.is_surface_interaction() {
+            return None;
+        }
+        Some(self.shading.n)
     }
 }
 
@@ -4403,9 +4427,9 @@ pub trait Shape {
     fn get_reverse_orientation(&self) -> bool;
     fn get_transform_swaps_handedness(&self) -> bool;
     fn area(&self) -> Float;
-    fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction;
-    fn sample_with_ref_point(&self, iref: &Interaction, u: Point2f, pdf: &mut Float) -> Interaction {
-        let intr: Interaction = self.sample(u, pdf);
+    fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon;
+    fn sample_with_ref_point(&self, iref: &InteractionCommon, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+        let intr: InteractionCommon = self.sample(u, pdf);
         let mut wi: Vector3f = intr.p - iref.p;
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
@@ -4428,7 +4452,7 @@ pub trait Shape {
         // scene, where this is used to make an invisible area light.
         if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(iref.p, isect_light.p) /
+            let mut pdf: Float = pnt3_distance_squared(iref.get_p(), isect_light.p) /
                 (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;
@@ -4495,7 +4519,7 @@ impl Primitive for GeometricPrimitive {
     }
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         self.shape.intersect(ray).map(|(mut isect, t_hit)| {
-            isect.primitive = Some(self);
+            isect.primitive = Some(self.clone());
             ray.t_max = t_hit;
             isect
         })
@@ -4717,14 +4741,14 @@ impl Shape for Disk {
         self.phi_max * 0.5 as Float *
         (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
-    fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction {
+    fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let pd: Point2f = concentric_sample_disk(u);
         let p_obj: Point3f = Point3f {
             x: pd.x * self.radius,
             y: pd.y * self.radius,
             z: self.height,
         };
-        let mut it: Interaction = Interaction::default();
+        let mut it: InteractionCommon = InteractionCommon::default();
         it.n = nrm_normalize(self.object_to_world.transform_normal(Normal3f {
             x: 0.0 as Float,
             y: 0.0 as Float,
@@ -5070,10 +5094,10 @@ impl Shape for Sphere {
     fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
-    fn sample(&self, _u: Point2f, _pdf: &mut Float) -> Interaction {
+    fn sample(&self, _u: Point2f, _pdf: &mut Float) -> InteractionCommon {
         // WORK
         // Point3f pObj = Point3f(0, 0, 0) + radius * UniformSampleSphere(u);
-        let it: Interaction = Interaction::default();
+        let it: InteractionCommon = InteractionCommon::default();
         // it.n = Normalize((*ObjectToWorld)(Normal3f(pObj.x, pObj.y, pObj.z)));
         // if (reverseOrientation) it.n *= -1;
         // // Reproject _pObj_ to sphere surface and compute _pObjError_
@@ -5598,13 +5622,13 @@ impl Shape for Triangle {
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         0.5 as Float * vec3_cross_vec3(p1 - p0, p2 - p0).length()
     }
-    fn sample(&self, u: Point2f, pdf: &mut Float) -> Interaction {
+    fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let b: Point2f = uniform_sample_triangle(u);
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
-        let mut it: Interaction = Interaction::default();
+        let mut it: InteractionCommon = InteractionCommon::default();
         it.p = p0 * b[0] + p1 * b[1] + p2* (1.0 as Float - b[0] - b[1]);
         // compute surface normal for sampled point on triangle
         it.n = nrm_normalize(Normal3f::from(vec3_cross_vec3(p1 - p0, p2 - p0)));
@@ -8796,7 +8820,7 @@ pub trait Light {
     /// to the light, assuming there are no occluding objects between
     /// them.
     fn sample_li(&self,
-                 iref: &SurfaceInteraction,
+                 iref: &InteractionCommon,
                  u: Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
@@ -8827,8 +8851,8 @@ pub fn is_delta_light(flags: u8) -> bool {
 /// some computation that is yet to be done.
 #[derive(Debug,Default,Copy,Clone)]
 pub struct VisibilityTester {
-    pub p0: Interaction, // TODO: private
-    pub p1: Interaction, // TODO: private
+    pub p0: InteractionCommon, // TODO: private
+    pub p1: InteractionCommon, // TODO: private
 }
 
 impl VisibilityTester {
@@ -8862,7 +8886,7 @@ impl PointLight {
 
 impl Light for PointLight {
     fn sample_li(&self,
-                 iref: &SurfaceInteraction,
+                 iref: &InteractionCommon,
                  _u: Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
@@ -8872,14 +8896,14 @@ impl Light for PointLight {
         *wi = vec3_normalize(self.p_light - iref.p);
         *pdf = 1.0 as Float;
         *vis = VisibilityTester {
-            p0: Interaction {
+            p0: InteractionCommon {
                 p: iref.p,
                 time: iref.time,
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
             },
-            p1: Interaction {
+            p1: InteractionCommon {
                 p: self.p_light,
                 time: iref.time,
                 p_error: Vector3f::default(),
@@ -8941,7 +8965,7 @@ impl DistantLight {
 
 impl Light for DistantLight {
     fn sample_li(&self,
-                     iref: &SurfaceInteraction,
+                     iref: &InteractionCommon,
                      _u: Point2f,
                      wi: &mut Vector3f,
                      pdf: &mut Float,
@@ -8952,14 +8976,14 @@ impl Light for DistantLight {
         *pdf = 1.0 as Float;
         let p_outside: Point3f = iref.p + self.w_light * (2.0 as Float * *self.world_radius.read().unwrap());
         *vis = VisibilityTester {
-            p0: Interaction {
+            p0: InteractionCommon {
                 p: iref.p,
                 time: iref.time,
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
             },
-            p1: Interaction {
+            p1: InteractionCommon {
                 p: p_outside,
                 time: iref.time,
                 p_error: Vector3f::default(),
@@ -9002,7 +9026,7 @@ impl Light for DistantLight {
 // see light.h
 
 pub trait AreaLight: Light {
-    fn l(&self, intr: &Interaction, w: Vector3f) -> Spectrum;
+    fn l(&self, intr: &InteractionCommon, w: Vector3f) -> Spectrum;
 }
 
 // see diffuse.h
@@ -9044,23 +9068,15 @@ impl DiffuseAreaLight {
 
 impl Light for DiffuseAreaLight {
     fn sample_li(&self,
-                 iref: &SurfaceInteraction,
+                 iref: &InteractionCommon,
                  u: Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
                  -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
-        // create Interaction from SurfaceInteraction
-        let interaction: Interaction = Interaction {
-            p: iref.p,
-            time: iref.time,
-            p_error: iref.p_error,
-            wo: iref.wo,
-            n: iref.n,
-        };
-        let p_shape: Interaction = self.shape.sample_with_ref_point(&interaction, u, pdf);
-        // TODO: interaction.mediumInterface = mediumInterface;
+        let p_shape: InteractionCommon = self.shape.sample_with_ref_point(&iref, u, pdf);
+        // TODO: iref.mediumInterface = mediumInterface;
         if *pdf == 0.0 as Float ||
             (p_shape.p - iref.p).length_squared() == 0.0 as Float {
                 *pdf = 0.0 as Float;
@@ -9068,14 +9084,14 @@ impl Light for DiffuseAreaLight {
             }
         let new_wi: Vector3f = vec3_normalize(p_shape.p - iref.p);
         *wi = new_wi;
-        vis.p0 = Interaction {
+        vis.p0 = InteractionCommon {
             p: iref.p,
             time: iref.time,
             p_error: iref.p_error,
             wo: iref.wo,
             n: iref.n,
         };
-        vis.p1 = Interaction {
+        vis.p1 = InteractionCommon {
             p: p_shape.p,
             time: p_shape.time,
             p_error: p_shape.p_error,
@@ -9103,7 +9119,7 @@ impl Light for DiffuseAreaLight {
 }
 
 impl AreaLight for DiffuseAreaLight {
-    fn l(&self, intr: &Interaction, w: Vector3f) -> Spectrum {
+    fn l(&self, intr: &InteractionCommon, w: Vector3f) -> Spectrum {
         if self.two_sided || nrm_dot_vec3(intr.n, w) > 0.0 as Float {
             self.l_emit
         } else {
@@ -9197,7 +9213,14 @@ pub fn estimate_direct(it: &SurfaceInteraction,
     let mut light_pdf: Float = 0.0 as Float;
     let mut scattering_pdf: Float = 0.0 as Float;
     let mut visibility: VisibilityTester = VisibilityTester::default();
-    let mut li: Spectrum = light.sample_li(it, u_light, &mut wi, &mut light_pdf, &mut visibility);
+    let it_common: InteractionCommon = InteractionCommon {
+        p: it.get_p(),
+        time: it.get_time(),
+        p_error: it.get_p_error(),
+        wo: it.get_wo(),
+        n: it.get_n(),
+    };
+    let mut li: Spectrum = light.sample_li(&it_common, u_light, &mut wi, &mut light_pdf, &mut visibility);
     // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi:
     // {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
     if light_pdf > 0.0 as Float && !li.is_black() {
@@ -9205,10 +9228,14 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         let mut f: Spectrum = Spectrum::new(0.0);
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
-            if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.f(it.wo, wi, bsdf_flags) *
-                    Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
-                scattering_pdf = bsdf.pdf(it.wo, wi, bsdf_flags);
+            if let Some(ref bsdf) = it.get_bsdf() {
+                if let Some(shading_n) = it.get_shading_n() {
+                    f = bsdf.f(it.get_wo(), wi, bsdf_flags) *
+                        Spectrum::new(vec3_abs_dot_nrm(wi, shading_n));
+                } else {
+                    panic!("Can't get shading normal");
+                }
+                scattering_pdf = bsdf.pdf(it.get_wo(), wi, bsdf_flags);
                 // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
         } else {
@@ -9247,14 +9274,18 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         if it.is_surface_interaction() {
             // sample scattered direction for surface interactions
             let mut sampled_type: u8 = 0_u8;
-            if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.sample_f(it.wo,
+            if let Some(ref bsdf) = it.get_bsdf() {
+                f = bsdf.sample_f(it.get_wo(),
                                   &mut wi,
                                   u_scattering,
                                   &mut scattering_pdf,
                                   bsdf_flags,
                                   &mut sampled_type);
-                f *= Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
+                if let Some(shading_n) = it.get_shading_n() {
+                    f *= Spectrum::new(vec3_abs_dot_nrm(wi, shading_n));
+                } else {
+                    panic!("Can't get shading normal");
+                }
                 sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
             } else {
                 println!("TODO: if let Some(ref bsdf) = it.bsdf failed");
@@ -9269,15 +9300,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             // account for light contributions along sampled direction _wi_
             let mut weight: Float = 1.0;
             if !sampled_specular {
-                // create Interaction from SurfaceInteraction
-                let interaction: Interaction = Interaction {
-                    p: it.p,
-                    time: it.time,
-                    p_error: it.p_error,
-                    wo: it.wo,
-                    n: it.n,
-                };
-                light_pdf = light.pdf_li(&interaction, wi);
+                light_pdf = light.pdf_li(it, wi);
                 if light_pdf == 0.0 {
                     return ld;
                 }
@@ -9509,15 +9532,15 @@ impl SpatialLightDistribution {
                 z: radical_inverse(2, i as u64),
             });
             let time: Float = 0.0;
-            let intr: Interaction = Interaction::new(po,
-                                                     Normal3f::default(),
-                                                     Vector3f::default(),
-                                                     Vector3f {
-                                                         x: 1.0,
-                                                         y: 0.0,
-                                                         z: 0.0,
-                                                     },
-                                                     time); // TODO: MediumInterface()
+            // let intr: Interaction = Interaction::new(po,
+            //                                          Normal3f::default(),
+            //                                          Vector3f::default(),
+            //                                          Vector3f {
+            //                                              x: 1.0,
+            //                                              y: 0.0,
+            //                                              z: 0.0,
+            //                                          },
+            //                                          time); // TODO: MediumInterface()
             // Use the next two Halton dimensions to sample a point on the
             // light source.
             let u: Point2f = Point2f {
