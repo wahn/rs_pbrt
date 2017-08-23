@@ -9194,7 +9194,7 @@ pub fn uniform_sample_one_light(it: &SurfaceInteraction,
                                 scene: &Scene,
                                 sampler: &mut ZeroTwoSequenceSampler,
                                 handle_media: bool,
-                                light_distrib: *const Distribution1D)
+                                light_distrib: Option<Arc<Distribution1D>>)
                                 -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
 
@@ -9205,10 +9205,9 @@ pub fn uniform_sample_one_light(it: &SurfaceInteraction,
     }
     let light_num: usize;
     let mut light_pdf: Float = 0.0 as Float;
-    if !light_distrib.is_null() {
-        unsafe {
-            light_num = (*light_distrib).sample_discrete(sampler.get_1d(), &mut light_pdf);
-        }
+    if let Some(light_distribution) = light_distrib {
+        // if !light_distrib.is_null() {
+        light_num = light_distribution.sample_discrete(sampler.get_1d(), &mut light_pdf);
         if light_pdf == 0.0 as Float {
             return Spectrum::default();
         }
@@ -9520,7 +9519,7 @@ pub trait LightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
     /// point.
-    fn lookup(&self, p: Point3f) -> *const Distribution1D;
+    fn lookup(&self, p: Point3f) -> Arc<Distribution1D>;
 }
 
 #[derive(Debug,Default)]
@@ -9674,7 +9673,7 @@ impl SpatialLightDistribution {
 }
 
 impl LightDistribution for SpatialLightDistribution {
-    fn lookup(&self, p: Point3f) -> *const Distribution1D {
+    fn lookup(&self, p: Point3f) -> Arc<Distribution1D> {
         // TODO: ProfilePhase _(Prof::LightDistribLookup);
         // TODO: ++nLookups;
 
@@ -9757,7 +9756,10 @@ impl LightDistribution for SpatialLightDistribution {
                 }
                 // We have a valid sampling distribution.
                 // TODO: ReportValue(nProbesPerLookup, nProbes);
-                return dist;
+                unsafe {
+                    let ref_dist: &Distribution1D = & *dist;
+                    return Arc::new(ref_dist.clone());
+                }
             } else if entry_packed_pos != INVALID_PACKED_POS {
                 // The hash table entry we're checking has already
                 // been allocated for another voxel. Advance to the
@@ -9788,10 +9790,11 @@ impl LightDistribution for SpatialLightDistribution {
                 // looking up the distribution for this voxel will
                 // spin wait until the distribution pointer is
                 // written.
-                let dist: *mut Distribution1D = &mut self.compute_distribution(pi);
-                entry.distribution.store(dist, Ordering::Release);
+                let dist: Distribution1D = self.compute_distribution(pi);
+                let dist_clone: &mut Distribution1D = &mut dist.clone();
+                entry.distribution.store(dist_clone, Ordering::Release);
                 // TODO: ReportValue(nProbesPerLookup, nProbes);
-                return dist;
+                return Arc::new(dist_clone.clone());
             }
         }
     }
@@ -9914,7 +9917,7 @@ impl SamplerIntegrator for PathIntegrator {
                 //     continue;
                 // }
                 if let Some(ref light_distribution) = self.light_distribution {
-                    let distrib: *const Distribution1D = light_distribution.lookup(isect.p);
+                    let distrib: Arc<Distribution1D> = light_distribution.lookup(isect.p);
                     // Sample illumination from lights to find path contribution.
                     // (But skip this for perfectly specular BSDFs.)
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8);
@@ -9925,7 +9928,7 @@ impl SamplerIntegrator for PathIntegrator {
                                                                                scene,
                                                                                sampler,
                                                                                false,
-                                                                               distrib);
+                                                                               Some(distrib));
                             // TODO: println!("Sampled direct lighting Ld = {:?}", ld);
                             // TODO: if ld.is_black() {
                             //     ++zero_radiance_paths;
