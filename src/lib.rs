@@ -9775,26 +9775,28 @@ impl LightDistribution for SpatialLightDistribution {
                 // above.)  Use an atomic compare/exchange to try to
                 // claim this entry for the current position.
                 let invalid: u64 = INVALID_PACKED_POS;
-                let _success = match entry.packed_pos.compare_exchange_weak(invalid,
+                let success = match entry.packed_pos.compare_exchange_weak(invalid,
                                                                             packed_pos,
                                                                             Ordering::SeqCst,
                                                                             Ordering::Relaxed) {
                     Ok(_) => true,
                     Err(_) => false,
                 };
-                // Success; we've claimed this position for this
-                // voxel's distribution. Now compute the sampling
-                // distribution and add it to the hash table. As long
-                // as packedPos has been set but the entry's
-                // distribution pointer is nullptr, any other threads
-                // looking up the distribution for this voxel will
-                // spin wait until the distribution pointer is
-                // written.
-                let dist: Distribution1D = self.compute_distribution(pi);
-                let dist_clone: &mut Distribution1D = &mut dist.clone();
-                entry.distribution.store(dist_clone, Ordering::Release);
-                // TODO: ReportValue(nProbesPerLookup, nProbes);
-                return Arc::new(dist_clone.clone());
+                if success {
+                    // Success; we've claimed this position for this
+                    // voxel's distribution. Now compute the sampling
+                    // distribution and add it to the hash table. As
+                    // long as packedPos has been set but the entry's
+                    // distribution pointer is nullptr, any other
+                    // threads looking up the distribution for this
+                    // voxel will spin wait until the distribution
+                    // pointer is written.
+                    let dist: Distribution1D = self.compute_distribution(pi);
+                    let dist_clone: &mut Distribution1D = &mut dist.clone();
+                    entry.distribution.store(dist_clone, Ordering::Release);
+                    // TODO: ReportValue(nProbesPerLookup, nProbes);
+                    return Arc::new(dist.clone());
+                }
             }
         }
     }
@@ -9901,7 +9903,7 @@ impl SamplerIntegrator for PathIntegrator {
                 if bounces == 0 || specular_bounce {
                     // add emitted light at path vertex
                     l += beta * isect.le(-ray.d);
-                    println!("Added Le -> L = {:?}", l);
+                    // println!("Added Le -> L = {:?}", l);
                 }
                 // terminate path if _maxDepth_ was reached
                 if bounces >= self.max_depth {
@@ -9949,12 +9951,12 @@ impl SamplerIntegrator for PathIntegrator {
                                                         bsdf_flags,
                                                         &mut sampled_type);
 
-                        println!("Sampled BSDF, f = {:?}, pdf = {:?}", f, pdf);
+                        // println!("Sampled BSDF, f = {:?}, pdf = {:?}", f, pdf);
                         if f.is_black() || pdf == 0.0 as Float {
                             break;
                         }
                         beta *= (f * vec3_abs_dot_nrm(wi, isect.shading.n)) / pdf;
-                        println!("Updated beta = {:?}", beta);
+                        // println!("Updated beta = {:?}", beta);
                         assert!(beta.y() >= 0.0 as Float);
                         assert!(!(beta.y().is_infinite()));
                         specular_bounce = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
