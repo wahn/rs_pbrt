@@ -5700,6 +5700,14 @@ impl RGBSpectrum {
         assert!(!ret.has_nans());
         ret
     }
+    pub fn max_component_value(&self) -> Float {
+        let mut m: Float = self.c[0];
+        let n_spectrum_samples: usize = 3; // RGB
+        for i in 1..n_spectrum_samples {
+            m = m.max(self.c[i]);
+        }
+        m
+    }
     pub fn has_nans(&self) -> bool {
         for i in 0..3 {
             if self.c[i].is_nan() {
@@ -6744,7 +6752,6 @@ pub fn radical_inverse(base_index: u16, a: u64) -> Float {
             panic!("TODO: radical_inverse({:?}, {:?})", base_index, a);
         },
     };
-    0.0 as Float // TMP
 }
 
 // see filter.h
@@ -7703,7 +7710,7 @@ impl Bxdf for LambertianReflection {
                 _sampled_type: &mut u8)
                 -> Spectrum {
         *wi = cosine_sample_hemisphere(u);
-        if wo.z > 0.0 as Float {
+        if wo.z < 0.0 as Float {
             wi.z *= -1.0 as Float;
         }
         *pdf = self.pdf(wo, *wi);
@@ -9183,6 +9190,39 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
     l
 }
 
+pub fn uniform_sample_one_light(it: &SurfaceInteraction,
+                                scene: &Scene,
+                                sampler: &mut ZeroTwoSequenceSampler,
+                                handle_media: bool,
+                                light_distrib: *const Distribution1D)
+                                -> Spectrum {
+    // TODO: ProfilePhase p(Prof::DirectLighting);
+
+    // randomly choose a single light to sample, _light_
+    let n_lights: usize = scene.lights.len();
+    if n_lights == 0_usize {
+        return Spectrum::default();
+    }
+    let light_num: usize;
+    let mut light_pdf: Float = 0.0 as Float;
+    if !light_distrib.is_null() {
+        unsafe {
+            light_num = (*light_distrib).sample_discrete(sampler.get_1d(), &mut light_pdf);
+        }
+        if light_pdf == 0.0 as Float {
+            return Spectrum::default();
+        }
+    } else {
+        light_num = std::cmp::min((sampler.get_1d() * n_lights as Float) as usize, n_lights - 1);
+        light_pdf = 1.0 as Float / n_lights as Float;
+    }
+    let light = &scene.lights[light_num];
+    let u_light: Point2f = sampler.get_2d();
+    let u_scattering: Point2f = sampler.get_2d();
+    estimate_direct(it, u_scattering, light.clone(), u_light,
+                    scene, sampler, handle_media, false) / light_pdf
+}
+
 /// Computes a direct lighting estimate for a single light source sample.
 pub fn estimate_direct(it: &SurfaceInteraction,
                        u_scattering: Point2f,
@@ -9359,6 +9399,37 @@ impl Distribution1D {
             func_int: func_int,
         }
     }
+    pub fn sample_discrete(&self, u: Float, pdf: &mut Float /* TODO: Float *uRemapped = nullptr */ ) -> usize {
+        // find surrounding CDF segments and _offset_
+        // let offset: usize = find_interval(cdf.size(),
+        //                           [&](int index) { return cdf[index] <= u; });
+
+        // see pbrt.h (int FindInterval(int size, const Predicate &pred) {...})
+        let mut first: usize = 0;
+        let mut len: usize = self.cdf.len();
+        while len > 0 as usize {
+            let half: usize = len >> 1;
+            let middle: usize = first + half;
+            // bisect range based on value of _pred_ at _middle_
+            if self.cdf[middle] <= u {
+                first = middle + 1;
+                len -= half + 1;
+            } else {
+                len = half;
+            }
+        }
+        let offset: usize = clamp(first as isize - 1_isize, 0 as isize, self.cdf.len() as isize - 2_isize) as usize;
+        // TODO: if (pdf) *pdf = (funcInt > 0) ? func[offset] / (funcInt * Count()) : 0;
+        if self.func_int > 0.0 as Float {
+            *pdf = self.func[offset] / (self.func_int * self.func.len() as Float);
+        } else {
+            *pdf = 0.0;
+        }
+        // TODO: if (uRemapped)
+        //     *uRemapped = (u - cdf[offset]) / (cdf[offset + 1] - cdf[offset]);
+        // if (uRemapped) CHECK(*uRemapped >= 0.f && *uRemapped <= 1.f);
+        offset
+    }
 }
 
 /// Randomly permute an array of *count* sample values, each of which
@@ -9495,7 +9566,7 @@ impl SpatialLightDistribution {
             (4 as i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
         let mut hash_table: Vec<HashEntry> = Vec::new();
         let null: *mut Distribution1D = std::ptr::null_mut();
-        for i in 0..hash_table_size {
+        for _i in 0..hash_table_size {
             let hash_entry: HashEntry = HashEntry {
                 packed_pos: AtomicU64::new(INVALID_PACKED_POS),
                 distribution: AtomicPtr::new(null),
@@ -9632,12 +9703,29 @@ impl LightDistribution for SpatialLightDistribution {
         // http://zimbry.blogspot.ch/2011/09/better-bit-mixing-improving-on.html
         let mut hash: u64 = packed_pos;
         hash ^= hash >> 31;
-        hash *= 0x7fb5d329728ea185;
+        // hash *= 0x7fb5d329728ea185;
+        let (mul, _overflow) = hash.overflowing_mul(0x7fb5d329728ea185);
+        hash = mul;
         hash ^= hash >> 27;
-        hash *= 0x81dadef4bc2dd44d;
+        // hash *= 0x81dadef4bc2dd44d;
+        let (mul, _overflow) = hash.overflowing_mul(0x81dadef4bc2dd44d);
+        hash = mul;
         hash ^= hash >> 33;
         hash %= self.hash_table_size as u64;
-        assert!(hash >= 0_u64, "hash needs to be greater or equal zero");
+        // // hash ^= hash >> 31;
+        // let (shr, _overflow) = hash.overflowing_shr(31);
+        // hash ^= shr;
+        // // hash ^= hash >> 27;
+        // let (shr, _overflow) = hash.overflowing_shr(27);
+        // hash ^= shr;
+        // // hash ^= hash >> 33;
+        // let (shr, _overflow) = hash.overflowing_shr(33);
+        // hash ^= shr;
+        // // hash %= self.hash_table_size as u64;
+        // let (rem, _overflow) = hash.overflowing_rem(self.hash_table_size as u64);
+        // hash = rem;
+        // BELOW: comparison is useless due to type limits
+        // assert!(hash >= 0_u64, "hash needs to be greater or equal zero");
         // Now, see if the hash table already has an entry for the
         // voxel. We'll use quadratic probing when the hash table
         // entry is already used for another value; step stores the
@@ -9685,12 +9773,12 @@ impl LightDistribution for SpatialLightDistribution {
                 // above.)  Use an atomic compare/exchange to try to
                 // claim this entry for the current position.
                 let invalid: u64 = INVALID_PACKED_POS;
-                let success = match entry.packed_pos.compare_exchange_weak(invalid,
-                                                                           packed_pos,
-                                                                           Ordering::SeqCst,
-                                                                           Ordering::Relaxed) {
+                let _success = match entry.packed_pos.compare_exchange_weak(invalid,
+                                                                            packed_pos,
+                                                                            Ordering::SeqCst,
+                                                                            Ordering::Relaxed) {
                     Ok(_) => true,
-                    Err(x) => false,
+                    Err(_) => false,
                 };
                 // Success; we've claimed this position for this
                 // voxel's distribution. Now compute the sampling
@@ -9791,15 +9879,21 @@ impl SamplerIntegrator for PathIntegrator {
         };
         let mut specular_bounce: bool = false;
         let mut bounces: u32 = 0_u32;
+        // Added after book publication: etaScale tracks the
+        // accumulated effect of radiance scaling due to rays passing
+        // through refractive boundaries (see the derivation on p. 527
+        // of the third edition). We track this value in order to
+        // remove it from beta when we apply Russian roulette; this is
+        // worthwhile, since it lets us sometimes avoid terminating
+        // refracted rays that are about to be refracted back out of a
+        // medium and thus have their beta value increased.
+        let mut eta_scale: Float = 1.0;
         loop {
-            bounces += 1_u32;
             // find next path vertex and accumulate contribution
             // println!("Path tracer bounce {:?}, current L = {:?}, beta = {:?}",
             //          bounces, l, beta);
             // intersect _ray_ with scene and store intersection in _isect_
-            let mut found_intersection: bool = false;
             if let Some(mut isect) = scene.intersect(&mut ray) {
-                found_intersection = true;
                 // possibly add emitted light at intersection
                 if bounces == 0 || specular_bounce {
                     // add emitted light at path vertex
@@ -9821,6 +9915,98 @@ impl SamplerIntegrator for PathIntegrator {
                 // }
                 if let Some(ref light_distribution) = self.light_distribution {
                     let distrib: *const Distribution1D = light_distribution.lookup(isect.p);
+                    // Sample illumination from lights to find path contribution.
+                    // (But skip this for perfectly specular BSDFs.)
+                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8);
+                    if let Some(ref bsdf) = isect.bsdf {
+                        if bsdf.num_components(bsdf_flags) > 0 {
+                            // TODO: ++total_paths;
+                            let ld: Spectrum = beta * uniform_sample_one_light(&isect,
+                                                                               scene,
+                                                                               sampler,
+                                                                               false,
+                                                                               distrib);
+                            // TODO: println!("Sampled direct lighting Ld = {:?}", ld);
+                            // TODO: if ld.is_black() {
+                            //     ++zero_radiance_paths;
+                            // }
+                            assert!(ld.y() >= 0.0 as Float);
+                            l += ld;
+                        }
+                        // Sample BSDF to get new path direction
+                        let wo: Vector3f = -ray.d;
+                        let mut wi: Vector3f = Vector3f::default();
+                        let mut pdf: Float = 0.0 as Float;
+                        let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                        let mut sampled_type: u8 = u8::max_value(); // != 0
+                        let f: Spectrum = bsdf.sample_f(wo,
+                                                        &mut wi,
+                                                        sampler.get_2d(),
+                                                        &mut pdf,
+                                                        bsdf_flags,
+                                                        &mut sampled_type);
+
+                        println!("Sampled BSDF, f = {:?}, pdf = {:?}", f, pdf);
+                        if f.is_black() || pdf == 0.0 as Float {
+                            break;
+                        }
+                        beta *= (f * vec3_abs_dot_nrm(wi, isect.shading.n)) / pdf;
+                        println!("Updated beta = {:?}", beta);
+                        assert!(beta.y() >= 0.0 as Float);
+                        assert!(!(beta.y().is_infinite()));
+                        specular_bounce = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+                        if ((sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8) &&
+                            ((sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8)
+                        {
+                            let eta: Float = bsdf.eta;
+                            // Update the term that tracks radiance
+                            // scaling for refraction depending on
+                            // whether the ray is entering or leaving
+                            // the medium.
+                            if vec3_dot_nrm(wo, isect.n) > 0.0 as Float {
+                                eta_scale *= eta * eta;
+                            } else {
+                                eta_scale *= 1.0 as Float / (eta * eta);
+                            }
+                        }
+                        ray = isect.spawn_ray(wi);
+
+                        // Account for subsurface scattering, if applicable
+                        // TODO: if (isect.bssrdf && ((sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8)) {
+                        // Importance sample the BSSRDF
+                        //     SurfaceInteraction pi;
+                        //     Spectrum S = isect.bssrdf->Sample_S(
+                        //         scene, sampler.Get1D(), sampler.Get2D(), arena, &pi, &pdf);
+                        //     DCHECK(!std::isinf(beta.y()));
+                        //     if (S.IsBlack() || pdf == 0) break;
+                        //     beta *= S / pdf;
+                        //     // Account for the direct subsurface scattering component
+                        //     L += beta * UniformSampleOneLight(pi, scene, arena, sampler, false,
+                        //                                       lightDistribution->Lookup(pi.p));
+                        //     // Account for the indirect subsurface scattering component
+                        //     Spectrum f = pi.bsdf->Sample_f(pi.wo, &wi, sampler.Get2D(), &pdf,
+                        //                                    BSDF_ALL, &sampled_type);
+                        //     if (f.IsBlack() || pdf == 0) break;
+                        //     beta *= f * AbsDot(wi, pi.shading.n) / pdf;
+                        //     DCHECK(!std::isinf(beta.y()));
+                        //     specularBounce = (sampled_type & BSDF_SPECULAR) != 0;
+                        //     ray = pi.SpawnRay(wi);
+                        // }
+                    
+                        // Possibly terminate the path with Russian roulette.
+                        // Factor out radiance scaling due to refraction in rr_beta.
+                        let rr_beta: Spectrum = beta * eta_scale;
+                        if rr_beta.max_component_value() < self.rr_threshold && bounces > 3 {
+                            let q: Float = (0.05 as Float).max(1.0 as Float - rr_beta.max_component_value());
+                            if sampler.get_1d() < q {
+                                break;
+                            }
+                            beta = beta / (1.0 as Float - q);
+                            assert!(!(beta.y().is_infinite()));
+                        }
+                    } else {
+                        println!("TODO: if let Some(ref bsdf) = isect.bsdf failed");
+                    }
                 }
             } else {
                 // add emitted light from the environment
@@ -9829,11 +10015,12 @@ impl SamplerIntegrator for PathIntegrator {
                     for light in &scene.infinite_lights {
                         l += beta * light.le(&mut ray);
                     }
-                    println!("Added infinite area lights -> L = {:?}", l);
+                    // println!("Added infinite area lights -> L = {:?}", l);
                 }
                 // terminate path if ray escaped
                 break;
             }
+            bounces += 1_u32;
         }
         l
     }
