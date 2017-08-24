@@ -6562,9 +6562,12 @@ impl Sampler for ZeroTwoSequenceSampler {
             self.current_2d_dimension += 1;
             sample
         } else {
+            // C++ call order for Point2f(rng.UniformFloat(), rng.UniformFloat());
+            let y = self.rng.uniform_float();
+            let x = self.rng.uniform_float();
             Point2f {
-                x: self.rng.uniform_float(),
-                y: self.rng.uniform_float(),
+                x: x,
+                y: y,
             }
         }
     }
@@ -9194,7 +9197,7 @@ pub fn uniform_sample_one_light(it: &SurfaceInteraction,
                                 scene: &Scene,
                                 sampler: &mut ZeroTwoSequenceSampler,
                                 handle_media: bool,
-                                light_distrib: Option<Arc<Distribution1D>>)
+                                light_distrib: Option<&Distribution1D>)
                                 -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
 
@@ -9519,7 +9522,7 @@ pub trait LightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
     /// point.
-    fn lookup(&self, p: Point3f) -> Arc<Distribution1D>;
+    fn lookup<'a>(&self, p: Point3f, distributions: &'a mut Vec<Distribution1D>) -> &'a Distribution1D;
 }
 
 #[derive(Debug,Default)]
@@ -9583,7 +9586,7 @@ impl SpatialLightDistribution {
     }
     /// Compute the sampling distribution for the voxel with integer
     /// coordiantes given by "pi".
-    pub fn compute_distribution(&self, pi: Point3i) -> Distribution1D {
+    pub fn compute_distribution(&self, pi: Point3i, distributions: &mut Vec<Distribution1D>) {
         // Compute the world-space bounding box of the voxel
         // corresponding to |pi|.
         let p0: Point3f = Point3f { x: pi[0] as Float / self.n_voxels[0] as Float,
@@ -9668,12 +9671,13 @@ impl SpatialLightDistribution {
         // println!("Initialized light distribution in voxel pi= {:?}, avg_contrib = {:?}",
         //          pi, avg_contrib);
         // Compute a sampling distribution from the accumulated contributions.
-        Distribution1D::new(light_contrib)
+        let dist: Distribution1D = Distribution1D::new(light_contrib);
+        distributions.push(dist);
     }
 }
 
 impl LightDistribution for SpatialLightDistribution {
-    fn lookup(&self, p: Point3f) -> Arc<Distribution1D> {
+    fn lookup<'a>(&self, p: Point3f, distributions: &'a mut Vec<Distribution1D>) -> &'a Distribution1D {
         // TODO: ProfilePhase _(Prof::LightDistribLookup);
         // TODO: ++nLookups;
 
@@ -9757,8 +9761,7 @@ impl LightDistribution for SpatialLightDistribution {
                 // We have a valid sampling distribution.
                 // TODO: ReportValue(nProbesPerLookup, nProbes);
                 unsafe {
-                    let ref_dist: &Distribution1D = & *dist;
-                    return Arc::new(ref_dist.clone());
+                    return &*dist;
                 }
             } else if entry_packed_pos != INVALID_PACKED_POS {
                 // The hash table entry we're checking has already
@@ -9776,9 +9779,9 @@ impl LightDistribution for SpatialLightDistribution {
                 // claim this entry for the current position.
                 let invalid: u64 = INVALID_PACKED_POS;
                 let success = match entry.packed_pos.compare_exchange_weak(invalid,
-                                                                            packed_pos,
-                                                                            Ordering::SeqCst,
-                                                                            Ordering::Relaxed) {
+                                                                           packed_pos,
+                                                                           Ordering::SeqCst,
+                                                                           Ordering::Relaxed) {
                     Ok(_) => true,
                     Err(_) => false,
                 };
@@ -9791,11 +9794,10 @@ impl LightDistribution for SpatialLightDistribution {
                     // threads looking up the distribution for this
                     // voxel will spin wait until the distribution
                     // pointer is written.
-                    let dist: Distribution1D = self.compute_distribution(pi);
-                    let dist_clone: &mut Distribution1D = &mut dist.clone();
-                    entry.distribution.store(dist_clone, Ordering::Release);
-                    // TODO: ReportValue(nProbesPerLookup, nProbes);
-                    return Arc::new(dist.clone());
+                    self.compute_distribution(pi, distributions); // adds one to the end
+                    let dist: &mut Distribution1D = distributions.last_mut().unwrap(); // grab last entry
+                    entry.distribution.store(dist, Ordering::Release);
+                    return dist;
                 }
             }
         }
@@ -9893,6 +9895,8 @@ impl SamplerIntegrator for PathIntegrator {
         // refracted rays that are about to be refracted back out of a
         // medium and thus have their beta value increased.
         let mut eta_scale: Float = 1.0;
+        // create a vector which can be filled by light_distribution.lookup()
+        let mut distributions: Vec<Distribution1D> = Vec::new();
         loop {
             // find next path vertex and accumulate contribution
             // println!("Path tracer bounce {:?}, current L = {:?}, beta = {:?}",
@@ -9919,7 +9923,7 @@ impl SamplerIntegrator for PathIntegrator {
                 //     continue;
                 // }
                 if let Some(ref light_distribution) = self.light_distribution {
-                    let distrib: Arc<Distribution1D> = light_distribution.lookup(isect.p);
+                    let distrib: &Distribution1D = light_distribution.lookup(isect.p, &mut distributions);
                     // Sample illumination from lights to find path contribution.
                     // (But skip this for perfectly specular BSDFs.)
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8);
@@ -9935,7 +9939,7 @@ impl SamplerIntegrator for PathIntegrator {
                             // TODO: if ld.is_black() {
                             //     ++zero_radiance_paths;
                             // }
-                            assert!(ld.y() >= 0.0 as Float);
+                            assert!(ld.y() >= 0.0 as Float, "ld = {:?}", ld);
                             l += ld;
                         }
                         // Sample BSDF to get new path direction
