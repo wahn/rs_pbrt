@@ -57,6 +57,16 @@ Integrator "directlighting" "integer maxdepth" [10]
 
 ![Cornell Box scene rendered via Rust version of PBRT](https://www.janwalter.org/assets/cornell_box_v0.1.13.png)
 
+With path tracing:
+
+```
+Sampler "lowdiscrepancy" "integer pixelsamples" [512]
+PixelFilter "gaussian" "float xwidth" [2.000000 ] "float ywidth" [2.000000 ]
+Integrator "path"
+```
+
+![Cornell Box scene rendered via Rust version of PBRT](https://www.janwalter.org/assets/cornell_box_v0.2.0_high.png)
+
 With ambient occlusion:
 
 ```
