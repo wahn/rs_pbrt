@@ -1,13 +1,13 @@
 [package]
 name = "pbrt"
-version = "0.1.13"
+version = "0.2.0"
 authors = ["Jan Walter <jan@janwalter.com>"]
 
 [dependencies]
 
 num="*"
 num_cpus = "1.0"
-image="0.14.0"
-crossbeam = "0.2"
+image="0.15.0"
+crossbeam = "0.3"
 getopts="0.2"
 pest = "0.4"
