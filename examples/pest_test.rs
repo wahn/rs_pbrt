@@ -72,7 +72,7 @@ pub enum FloatNode {
 impl_rdp! {
     grammar! {
         pbrt = _{ whitespace? ~ (statement | comment)* ~ last_statement }
-        statement = { look_at | translate | rotate | transform | concat_transform | named_statement | keyword }
+        statement = { look_at | translate | rotate | scale | transform | concat_transform | named_statement | keyword }
         named_statement = { accelerator |
                             camera |
                             pixel_filter |
@@ -117,6 +117,11 @@ impl_rdp! {
         rotate = { ["Rotate"] ~
                    // followed by 4 numbers:
                    number ~ number ~ number ~ number
+        }
+        // Scale x y z
+        scale = { ["Scale"] ~
+                   // followed by 3 numbers:
+                   number ~ number ~ number
         }
         // Transform m00 .. m33
         transform = { (["Transform"] ~ lbrack ~
@@ -201,7 +206,6 @@ impl_rdp! {
              ["ObjectEnd"] |
              ["ObjectInstance"] |
              ["ReverseOrientation"] |
-             ["Scale"] |
              ["StartTime"] |
              ["TransformBegin"] |
              ["TransformEnd"] |
@@ -266,6 +270,7 @@ impl_rdp! {
             (_head: look_at, _tail: _look_at()) => {},
             (_head: translate, _tail: _translate()) => {},
             (_head: rotate, _tail: _rotate()) => {},
+            (_head: scale, _tail: _scale()) => {},
             (_head: transform, _tail: _transform()) => {},
             (_head: concat_transform, _tail: _concat_transform()) => {},
             (_head: named_statement, _tail: _named_statement()) => {},
@@ -312,6 +317,19 @@ impl_rdp! {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * rotate;
                     CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * rotate;
                     // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                }
+                self._pbrt();
+            }
+        }
+        _scale(&self) -> () {
+            (x: _number(), y: _number(), z: _number()) => {
+                println!("Scale {} {} {}",
+                         x, y, z);
+                let scale: Transform = Transform::scale(x, y, z);
+                unsafe {
+                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * scale;
+                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * scale;
+                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                 }
                 self._pbrt();
             }
