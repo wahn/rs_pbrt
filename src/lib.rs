@@ -628,7 +628,7 @@ use std::f32::consts::PI;
 use std::mem;
 use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::path::Path;
-use std::sync::atomic::{AtomicU64, AtomicUsize, AtomicPtr, Ordering};
+use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 use std::sync::mpsc;
 // use copy_arena::{Arena, Allocator};
@@ -1764,6 +1764,11 @@ pub fn spherical_direction(sin_theta: Float, cos_theta: Float, phi: Float) -> Ve
         y: sin_theta * phi.sin(),
         z: cos_theta,
     }
+}
+
+pub fn spherical_direction_vec3(sin_theta: Float, cos_theta: Float, phi: Float,
+                                x: &Vector3f, y: &Vector3f, z: &Vector3f) -> Vector3f {
+    *x * sin_theta * phi.cos() + *y * sin_theta * phi.sin() + *z * cos_theta
 }
 
 #[derive(Debug,Default,Copy,Clone)]
@@ -4409,22 +4414,7 @@ pub trait Shape {
     fn get_transform_swaps_handedness(&self) -> bool;
     fn area(&self) -> Float;
     fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon;
-    fn sample_with_ref_point(&self, iref: &InteractionCommon, u: Point2f, pdf: &mut Float) -> InteractionCommon {
-        let intr: InteractionCommon = self.sample(u, pdf);
-        let mut wi: Vector3f = intr.p - iref.p;
-        if wi.length_squared() == 0.0 as Float {
-            *pdf = 0.0 as Float;
-        } else {
-            wi = vec3_normalize(wi);
-            // convert from area measure, as returned by the Sample()
-            // call above, to solid angle measure.
-            *pdf *= pnt3_distance_squared(iref.p, intr.p) / nrm_abs_dot_vec3(intr.n, -wi);
-            if (*pdf).is_infinite() {
-                *pdf = 0.0 as Float;
-            }
-        }
-        intr
-    }
+    fn sample_with_ref_point(&self, iref: &InteractionCommon, u: Point2f, pdf: &mut Float) -> InteractionCommon;
     fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
         // intersect sample ray with area light geometry
         let ray: Ray = iref.spawn_ray(wi);
@@ -4744,6 +4734,22 @@ impl Shape for Disk {
                                                                    &mut it.p_error);
         *pdf = 1.0 as Float / self.area();
         it
+    }
+    fn sample_with_ref_point(&self, iref: &InteractionCommon, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+        let intr: InteractionCommon = self.sample(u, pdf);
+        let mut wi: Vector3f = intr.p - iref.p;
+        if wi.length_squared() == 0.0 as Float {
+            *pdf = 0.0 as Float;
+        } else {
+            wi = vec3_normalize(wi);
+            // convert from area measure, as returned by the Sample()
+            // call above, to solid angle measure.
+            *pdf *= pnt3_distance_squared(iref.p, intr.p) / nrm_abs_dot_vec3(intr.n, -wi);
+            if (*pdf).is_infinite() {
+                *pdf = 0.0 as Float;
+            }
+        }
+        intr
     }
 }
 
@@ -5075,17 +5081,81 @@ impl Shape for Sphere {
     fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
-    fn sample(&self, _u: Point2f, _pdf: &mut Float) -> InteractionCommon {
-        // WORK
-        // Point3f pObj = Point3f(0, 0, 0) + radius * UniformSampleSphere(u);
-        let it: InteractionCommon = InteractionCommon::default();
-        // it.n = Normalize((*ObjectToWorld)(Normal3f(pObj.x, pObj.y, pObj.z)));
-        // if (reverseOrientation) it.n *= -1;
-        // // Reproject _pObj_ to sphere surface and compute _pObjError_
-        // pObj *= radius / Distance(pObj, Point3f(0, 0, 0));
-        // Vector3f pObjError = gamma(5) * Abs((Vector3f)pObj);
-        // it.p = (*ObjectToWorld)(pObj, pObjError, &it.pError);
-        // *pdf = 1 / Area();
+    fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+        let mut p_obj: Point3f = Point3f::default() + uniform_sample_sphere(u) * self.radius;
+        let mut it: InteractionCommon = InteractionCommon::default();
+        it.n = nrm_normalize(self.object_to_world.transform_normal(Normal3f { x: p_obj.x,
+                                                                              y: p_obj.y,
+                                                                              z: p_obj.z,
+        }));
+        if self.reverse_orientation {
+            it.n *= -1.0 as Float;
+        }
+        // reproject _p_obj_ to sphere surface and compute _p_obj_error_
+        p_obj *= self.radius / pnt3_distance(p_obj, Point3f::default());
+        let p_obj_error: Vector3f = Vector3f::from(p_obj).abs() * gamma(5_i32);
+        it.p = self.object_to_world.transform_point_with_abs_error(p_obj, &p_obj_error, &mut it.p_error);
+        *pdf = 1.0 as Float / self.area();
+        it
+    }
+    fn sample_with_ref_point(&self, iref: &InteractionCommon, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+        let p_center: Point3f = self.object_to_world.transform_point(Point3f::default());
+        // sample uniformly on sphere if $\pt{}$ is inside it
+        let p_origin: Point3f = pnt3_offset_ray_origin(iref.p, iref.p_error, iref.n, p_center - iref.p);
+        if pnt3_distance_squared(p_origin, p_center) <= self.radius * self.radius {
+            let intr: InteractionCommon = self.sample(u, pdf);
+            let mut wi: Vector3f = intr.p - iref.p;
+            if wi.length_squared() == 0.0 as Float {
+                *pdf = 0.0 as Float;
+            } else {
+                // convert from area measure returned by Sample() call
+                // above to solid angle measure.
+                wi = vec3_normalize(wi);
+                *pdf *= pnt3_distance_squared(iref.p, intr.p) / nrm_abs_dot_vec3(intr.n, -wi);
+            }
+            if (*pdf).is_infinite() {
+                *pdf = 0.0 as Float;
+            }
+            return intr;
+        }
+
+        // compute coordinate system for sphere sampling
+        let wc: Vector3f= vec3_normalize(p_center - iref.p);
+        let mut wc_x: Vector3f = Vector3f::default();
+        let mut wc_y: Vector3f = Vector3f::default();
+        vec3_coordinate_system(&wc, &mut wc_x, &mut wc_y);
+        // sample sphere uniformly inside subtended cone
+
+        // compute $\theta$ and $\phi$ values for sample in cone
+        let sin_theta_max2: Float = self.radius * self.radius / pnt3_distance_squared(iref.p, p_center);
+        let cos_theta_max: Float = (0.0 as Float).max(1.0 as Float - sin_theta_max2).sqrt();
+        let cos_theta: Float = (1.0 as Float - u[0]) + u[0] * cos_theta_max;
+        let sin_theta: Float = (0.0 as Float).max(1.0 as Float - cos_theta * cos_theta).sqrt();
+        let phi: Float = u[1] * 2.0 as Float * PI;
+        // compute angle $\alpha$ from center of sphere to sampled point on surface
+        let dc: Float = pnt3_distance(iref.p, p_center);
+        let ds: Float = dc * cos_theta -
+            (0.0 as Float).max(self.radius * self.radius - dc * dc * sin_theta * sin_theta).sqrt();
+        let cos_alpha: Float = (dc * dc + self.radius * self.radius - ds * ds) / (2.0 as Float * dc * self.radius);
+        let sin_alpha: Float = (0.0 as Float).max(1.0 as Float - cos_alpha * cos_alpha).sqrt();
+        // compute surface normal and sampled point on sphere
+        let n_world: Vector3f = spherical_direction_vec3(sin_alpha, cos_alpha, phi,
+                                                         &(-wc_x), &(-wc_y), &(-wc));
+        let p_world: Point3f = p_center + Point3f {
+            x: n_world.x,
+            y: n_world.y,
+            z: n_world.z,
+        } * self.radius;
+        // return _Interaction_ for sampled point on sphere
+        let mut it: InteractionCommon = InteractionCommon::default();
+        it.p = p_world;
+        it.p_error = Vector3f::from(p_world).abs() * gamma(5_i32);
+        it.n = Normal3f::from(n_world);
+        if self.reverse_orientation {
+            it.n *= -1.0 as Float;
+        }
+        // uniform cone PDF.
+        *pdf = 1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max));
         it
     }
 }
@@ -5632,6 +5702,22 @@ impl Shape for Triangle {
                                z: p_abs_sum.z, } * gamma(6);
         *pdf = 1.0 as Float / self.area();
         it
+    }
+    fn sample_with_ref_point(&self, iref: &InteractionCommon, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+        let intr: InteractionCommon = self.sample(u, pdf);
+        let mut wi: Vector3f = intr.p - iref.p;
+        if wi.length_squared() == 0.0 as Float {
+            *pdf = 0.0 as Float;
+        } else {
+            wi = vec3_normalize(wi);
+            // convert from area measure, as returned by the Sample()
+            // call above, to solid angle measure.
+            *pdf *= pnt3_distance_squared(iref.p, intr.p) / nrm_abs_dot_vec3(intr.n, -wi);
+            if (*pdf).is_infinite() {
+                *pdf = 0.0 as Float;
+            }
+        }
+        intr
     }
 }
 
@@ -7970,7 +8056,7 @@ pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Flo
         std::mem::swap(&mut local_eta_i, &mut local_eta_t);
         *cos_theta_i = (*cos_theta_i).abs();
     }
-    // compute _cosThetaT_ using Snell's law
+    // compute _cos_theta_t_ using Snell's law
     let sin_theta_i: Float = (0.0 as Float).max(1.0 as Float - *cos_theta_i * *cos_theta_i).sqrt();
     let sin_theta_t: Float = local_eta_i / local_eta_t * sin_theta_i;
     // handle total internal reflection
@@ -9484,6 +9570,17 @@ pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
 
 pub fn uniform_hemisphere_pdf() -> Float {
     INV_2_PI
+}
+
+pub fn uniform_sample_sphere(u: Point2f) -> Vector3f {
+    let z: Float = 1.0 as Float - 2.0 as Float * u[0];
+    let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
+    let phi: Float = 2.0 as Float * PI * u[1];
+    Vector3f {
+        x: r * phi.cos(),
+        y: r * phi.sin(),
+        z: z,
+    }
 }
 
 /// Uniformly distribute samples over a unit disk.

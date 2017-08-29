@@ -329,7 +329,7 @@ impl_rdp! {
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * scale;
                     CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * scale;
-                    println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
+                    // println!("CUR_TRANSFORM: {:?}", CUR_TRANSFORM);
                 }
                 self._pbrt();
             }
