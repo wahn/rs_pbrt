@@ -2005,7 +2005,7 @@ fn pbrt_shape(param_set: &ParamSet)
             // CreateSphereShape
             let radius: Float = param_set.find_one_float(String::from("radius"), 1.0 as Float);
             let z_min: Float = param_set.find_one_float(String::from("zmin"), -radius);
-            let z_max: Float = param_set.find_one_float(String::from("zmin"), radius);
+            let z_max: Float = param_set.find_one_float(String::from("zmax"), radius);
             let phi_max: Float = param_set.find_one_float(String::from("phimax"), 360.0 as Float);
             let sphere = Arc::new(Sphere::new(obj_to_world,
                                               world_to_obj,

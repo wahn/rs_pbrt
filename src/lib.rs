@@ -4415,24 +4415,7 @@ pub trait Shape {
     fn area(&self) -> Float;
     fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon;
     fn sample_with_ref_point(&self, iref: &InteractionCommon, u: Point2f, pdf: &mut Float) -> InteractionCommon;
-    fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
-        // intersect sample ray with area light geometry
-        let ray: Ray = iref.spawn_ray(wi);
-        // ignore any alpha textures used for trimming the shape when
-        // performing this intersection. Hack for the "San Miguel"
-        // scene, where this is used to make an invisible area light.
-        if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
-            // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(iref.get_p(), isect_light.p) /
-                (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
-            if pdf.is_infinite() {
-                pdf = 0.0 as Float;
-            }
-            pdf
-        } else {
-            0.0 as Float
-        }
-    }
+    fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float;
 }
 
 // see primitive.h
@@ -4750,6 +4733,24 @@ impl Shape for Disk {
             }
         }
         intr
+    }
+    fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
+        // intersect sample ray with area light geometry
+        let ray: Ray = iref.spawn_ray(wi);
+        // ignore any alpha textures used for trimming the shape when
+        // performing this intersection. Hack for the "San Miguel"
+        // scene, where this is used to make an invisible area light.
+        if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
+            // convert light sample weight to solid angle measure
+            let mut pdf: Float = pnt3_distance_squared(iref.get_p(), isect_light.p) /
+                (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
+            if pdf.is_infinite() {
+                pdf = 0.0 as Float;
+            }
+            pdf
+        } else {
+            0.0 as Float
+        }
     }
 }
 
@@ -5157,6 +5158,39 @@ impl Shape for Sphere {
         // uniform cone PDF.
         *pdf = 1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max));
         it
+    }
+    fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
+        let p_center: Point3f = self.object_to_world.transform_point(Point3f::default());
+        // return uniform PDF if point is inside sphere
+        let p_origin: Point3f = pnt3_offset_ray_origin(iref.get_p(),
+                                                       iref.get_p_error(),
+                                                       iref.get_n(),
+                                                       p_center - iref.get_p());
+        if pnt3_distance_squared(p_origin, p_center) <= self.radius * self.radius {
+            // return Shape::Pdf(ref, wi);
+
+            // intersect sample ray with area light geometry
+            let ray: Ray = iref.spawn_ray(wi);
+            // ignore any alpha textures used for trimming the shape when
+            // performing this intersection. Hack for the "San Miguel"
+            // scene, where this is used to make an invisible area light.
+            if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
+                // convert light sample weight to solid angle measure
+                let mut pdf: Float = pnt3_distance_squared(iref.get_p(), isect_light.p) /
+                    (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
+                if pdf.is_infinite() {
+                    pdf = 0.0 as Float;
+                }
+                return pdf;
+            } else {
+                return 0.0 as Float;
+            }
+        }
+        // compute general sphere PDF
+        let sin_theta_max2: Float = self.radius * self.radius / pnt3_distance_squared(iref.get_p(), p_center);
+        let cos_theta_max: Float = (0.0 as Float).max(1.0 as Float - sin_theta_max2).sqrt();
+        return uniform_cone_pdf(cos_theta_max);
+
     }
 }
 
@@ -5718,6 +5752,24 @@ impl Shape for Triangle {
             }
         }
         intr
+    }
+    fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
+        // intersect sample ray with area light geometry
+        let ray: Ray = iref.spawn_ray(wi);
+        // ignore any alpha textures used for trimming the shape when
+        // performing this intersection. Hack for the "San Miguel"
+        // scene, where this is used to make an invisible area light.
+        if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
+            // convert light sample weight to solid angle measure
+            let mut pdf: Float = pnt3_distance_squared(iref.get_p(), isect_light.p) /
+                (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
+            if pdf.is_infinite() {
+                pdf = 0.0 as Float;
+            }
+            pdf
+        } else {
+            0.0 as Float
+        }
     }
 }
 
@@ -9604,6 +9656,10 @@ pub fn concentric_sample_disk(u: Point2f) -> Point2f {
     Point2f { x: theta.cos(), y: theta.sin(), } * r
 }
 
+pub fn uniform_cone_pdf(cos_theta_max: Float) -> Float {
+    1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max))
+}
+
 /// Uniformly distributing samples over isosceles right triangles
 /// actually works for any triangle.
 pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
@@ -10395,7 +10451,11 @@ impl SamplerIntegrator for DirectLightingIntegrator {
                                                    &self.n_light_samples,
                                                    false);
                 } else {
-                    // TODO: l += uniform_sample_one_light();
+                    l += uniform_sample_one_light(&isect,
+                                                  scene,
+                                                  sampler,
+                                                  false,
+                                                  None);
                 }
             }
             if ((depth + 1_i32) as i64) < self.max_depth {

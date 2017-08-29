@@ -1,8 +1,8 @@
 Scale -1 1 1 # swap x-axis direction
 # cam4
-LookAt 25.0 2.5 2.7249999046325684 # position
-       24.014968872070312 2.672380208969116 2.7249999046325684 # target
-       0.0 0.0 1.0 # up
+# LookAt 25.0 2.5 2.7249999046325684 # position
+#        24.014968872070312 2.672380208969116 2.7249999046325684 # target
+#        0.0 0.0 1.0 # up
 # Camera "perspective"
 #   "float fov" [ 45.00000240668388 ]
 # cam3
@@ -18,9 +18,9 @@ LookAt 25.0 2.5 2.7249999046325684 # position
 # Camera "perspective"
 #   "float fov" [ 45.00000240668388 ]
 # cam1
-# LookAt 2.25 0.375 1.0 # position
-#        1.4335033893585205 0.7832483053207397 0.5917516946792603 # target
-#        -0.3651483952999115 0.18257419764995575 0.9128709435462952 # up
+LookAt 2.25 0.375 1.0 # position
+       1.4335033893585205 0.7832483053207397 0.5917516946792603 # target
+       -0.3651483952999115 0.18257419764995575 0.9128709435462952 # up
 Camera "perspective"
   "float fov" [ 45.00000240668388 ]
 Film "image"
@@ -28,11 +28,12 @@ Film "image"
   "integer yresolution" [ 500 ]
 ##  "integer outlierrejection_k" [ 10 ]
 ##Sampler "sobol"
-Sampler "lowdiscrepancy" "integer pixelsamples" [8]
+Sampler "lowdiscrepancy" "integer pixelsamples" [8] # [64]
 ##PixelFilter "blackmanharris"
+PixelFilter "gaussian" "float xwidth" [2.000000 ] "float ywidth" [2.000000 ] 
 ##SurfaceIntegrator "bidirectional"
 Integrator "directlighting" "integer maxdepth" [10]
-##Integrator "path"
+##Integrator "path" # "integer maxdepth" [10]
 WorldBegin
   # blue_plastic
   MakeNamedMaterial "blue_plastic"
@@ -66,66 +67,6 @@ WorldBegin
   MakeNamedMaterial "ground_mat"
     "string type" [ "matte" ]
     "color Kd" [ 0.2800000011920929 0.18000000715255737 0.11999999731779099 ]
-  # Material
-  MakeNamedMaterial "Material"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.001
-  MakeNamedMaterial "Material.001"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.002
-  MakeNamedMaterial "Material.002"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.003
-  MakeNamedMaterial "Material.003"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.004
-  MakeNamedMaterial "Material.004"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.005
-  MakeNamedMaterial "Material.005"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.006
-  MakeNamedMaterial "Material.006"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.007
-  MakeNamedMaterial "Material.007"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.008
-  MakeNamedMaterial "Material.008"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
-  # Material.009
-  MakeNamedMaterial "Material.009"
-    "string type" [ "plastic" ]
-    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
-    "color Ks" [ 0.5 0.5 0.5 ]
-    "float roughness" [ 0.5 ]
   # reflect20
   MakeNamedMaterial "reflect20"
     "string type" [ "mirror" ]
@@ -141,20 +82,20 @@ WorldBegin
     "color Kr" [ 1.0 1.0 1.0 ]
     "color Kt" [ 0.9599999785423279 0.9599999785423279 0.9599999785423279 ]
   # sun
-  AttributeBegin
-    ##LightGroup "sun"
-    Rotate 180 0 0 1
-    LightSource "infinite"
-        "integer samples" [ 4 ]
-        "spectrum L" [ 2.0 2.0 ]
-        "string mapname" "textures/baked_sky.exr"
-    # LightSource "sunsky2"
-    #   "float gain" [ 1.0 ]
-    #   "float importance" [ 1.0 ]
-    #   "integer nsamples" [ 1 ]
-    #   "float turbidity" [ 2.0 ]
-    #   "vector sundir" [ 0.4214090243561426 -0.5935600329452747 0.6856390606443076 ]
-  AttributeEnd
+  # AttributeBegin
+  #   ##LightGroup "sun"
+  #   Rotate 180 0 0 1
+  #   LightSource "infinite"
+  #       "integer samples" [ 4 ]
+  #       "spectrum L" [ 2.0 2.0 ]
+  #       "string mapname" "textures/baked_sky.exr"
+  #   # LightSource "sunsky2"
+  #   #   "float gain" [ 1.0 ]
+  #   #   "float importance" [ 1.0 ]
+  #   #   "integer nsamples" [ 1 ]
+  #   #   "float turbidity" [ 2.0 ]
+  #   #   "vector sundir" [ 0.4214090243561426 -0.5935600329452747 0.6856390606443076 ]
+  # AttributeEnd
   # window
   AttributeBegin
     Transform [
@@ -217,8 +158,8 @@ WorldBegin
     NamedMaterial "bright"
     ##LightGroup "bright"
     AreaLightSource "area"
-      "float power" [ 100.0 ]
-      "color L" [ 1.0 1.0 1.0 ]
+      "color L" [ 2.0 2.0 2.0 ]
+      "integer samples" [ 8 ] # [ 64 ]
     Shape "sphere"
       "float radius" [ 1.0 ]
       "float zmin" [ -1.0 ]
@@ -424,20 +365,20 @@ WorldBegin
       ]
   AttributeEnd
   # fixture_support
-  AttributeBegin
-    Transform [
-      0.050000011920928955 0.0 0.0 0.0
-      0.0 0.050000011920928955 0.0 0.0
-      0.0 0.0 0.1499999761581421 0.0
-      2.0 1.0 1.600000023841858 1.0
-    ]
-    NamedMaterial "chrome"
-    Shape "cylinder"
-      "float radius" [ 1.0 ]
-      "float zmin" [ 0 ]
-      "float zmax" [ 1.0 ]
-      "float phimax" [ 360 ]
-  AttributeEnd
+  # AttributeBegin
+  #   Transform [
+  #     0.050000011920928955 0.0 0.0 0.0
+  #     0.0 0.050000011920928955 0.0 0.0
+  #     0.0 0.0 0.1499999761581421 0.0
+  #     2.0 1.0 1.600000023841858 1.0
+  #   ]
+  #   NamedMaterial "chrome"
+  #   Shape "cylinder"
+  #     "float radius" [ 1.0 ]
+  #     "float zmin" [ 0 ]
+  #     "float zmax" [ 1.0 ]
+  #     "float phimax" [ 360 ]
+  # AttributeEnd
   # ball
   AttributeBegin
     Transform [
