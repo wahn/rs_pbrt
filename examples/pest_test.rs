@@ -7,14 +7,14 @@ extern crate getopts;
 extern crate pbrt;
 
 use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i, BoxFilter, BVHAccel,
-           Checkerboard2DTexture, ConstantTexture, DiffuseAreaLight, DirectLightingIntegrator,
-           Disk, DistantLight, Film, Filter, Float, GaussianFilter, GeometricPrimitive,
-           GlassMaterial, GraphicsState, ImageTexture, ImageWrap, Light, LightStrategy, Material,
-           MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet, PathIntegrator, PerspectiveCamera,
-           PlanarMapping2D, PlasticMaterial, Point2f, Point2i, Point3f, PointLight, RenderOptions,
-           SamplerIntegrator, Scene, Shape, Spectrum, Sphere, SplitMethod, Texture,
-           TextureMapping2D, TextureParams, Transform, TransformSet, Triangle, TriangleMesh,
-           UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+           Checkerboard2DTexture, ConstantTexture, Cylinder, DiffuseAreaLight,
+           DirectLightingIntegrator, Disk, DistantLight, Film, Filter, Float, GaussianFilter,
+           GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture, ImageWrap, Light,
+           LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet,
+           PathIntegrator, PerspectiveCamera, PlanarMapping2D, PlasticMaterial, Point2f, Point2i,
+           Point3f, PointLight, RenderOptions, SamplerIntegrator, Scene, Shape, Spectrum, Sphere,
+           SplitMethod, Texture, TextureMapping2D, TextureParams, Transform, TransformSet,
+           Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::prelude::*;
 // getopts
@@ -2019,7 +2019,20 @@ fn pbrt_shape(param_set: &ParamSet)
             shapes.push(sphere.clone());
             materials.push(mtl.clone());
         } else if param_set.name == String::from("cylinder") {
-            println!("TODO: CreateCylinderShape");
+            let radius: Float = param_set.find_one_float(String::from("radius"), 1.0);
+            let z_min: Float = param_set.find_one_float(String::from("zmin"), -radius);
+            let z_max: Float = param_set.find_one_float(String::from("zmax"), radius);
+            let phi_max: Float = param_set.find_one_float(String::from("phimax"), 360.0 as Float);
+            let cylinder = Arc::new(Cylinder::new(obj_to_world,
+                                                  world_to_obj,
+                                                  false,
+                                                  radius,
+                                                  z_min,
+                                                  z_max,
+                                                  phi_max));
+            let mtl: Arc<Material + Send + Sync> = create_material();
+            shapes.push(cylinder.clone());
+            materials.push(mtl.clone());
         } else if param_set.name == String::from("disk") {
             let height: Float = param_set.find_one_float(String::from("height"), 0.0);
             let radius: Float = param_set.find_one_float(String::from("radius"), 1.0);
@@ -2395,7 +2408,8 @@ fn pbrt_world_end() {
                                         ro.integrator_params
                                             .find_one_string(String::from("lightsamplestrategy"),
                                                              String::from("spatial"));
-                                    let integrator = Arc::new(PathIntegrator::new(max_depth as u32,
+                                    let integrator = Arc::new(PathIntegrator::new(max_depth as
+                                                                                  u32,
                                                                                   &camera,
                                                                                   &sampler,
                                                                                   pixel_bounds,
