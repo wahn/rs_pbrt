@@ -28,12 +28,12 @@ Film "image"
   "integer yresolution" [ 500 ]
 ##  "integer outlierrejection_k" [ 10 ]
 ##Sampler "sobol"
-Sampler "lowdiscrepancy" "integer pixelsamples" [8] # [64]
+Sampler "lowdiscrepancy" "integer pixelsamples" [16] # [64]
 ##PixelFilter "blackmanharris"
 PixelFilter "gaussian" "float xwidth" [2.000000 ] "float ywidth" [2.000000 ] 
 ##SurfaceIntegrator "bidirectional"
-Integrator "directlighting" "integer maxdepth" [10]
-##Integrator "path" # "integer maxdepth" [10]
+##Integrator "directlighting" "integer maxdepth" [10]
+Integrator "path" # "integer maxdepth" [10]
 WorldBegin
   # blue_plastic
   MakeNamedMaterial "blue_plastic"

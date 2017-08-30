@@ -9346,22 +9346,24 @@ pub fn uniform_sample_one_light(it: &SurfaceInteraction,
         return Spectrum::default();
     }
     let light_num: usize;
-    let mut light_pdf: Float = 0.0 as Float;
+    let mut light_pdf: Option<Float> = Some(0.0 as Float);
+    let pdf: Float;
     if let Some(light_distribution) = light_distrib {
         // if !light_distrib.is_null() {
-        light_num = light_distribution.sample_discrete(sampler.get_1d(), &mut light_pdf);
-        if light_pdf == 0.0 as Float {
+        light_num = light_distribution.sample_discrete(sampler.get_1d(), light_pdf.as_mut());
+        pdf = light_pdf.unwrap();
+        if pdf == 0.0 as Float {
             return Spectrum::default();
         }
     } else {
         light_num = std::cmp::min((sampler.get_1d() * n_lights as Float) as usize, n_lights - 1);
-        light_pdf = 1.0 as Float / n_lights as Float;
+        pdf = 1.0 as Float / n_lights as Float;
     }
     let light = &scene.lights[light_num];
     let u_light: Point2f = sampler.get_2d();
     let u_scattering: Point2f = sampler.get_2d();
     estimate_direct(it, u_scattering, light.clone(), u_light,
-                    scene, sampler, handle_media, false) / light_pdf
+                    scene, sampler, handle_media, false) / pdf
 }
 
 /// Computes a direct lighting estimate for a single light source sample.
@@ -9540,7 +9542,10 @@ impl Distribution1D {
             func_int: func_int,
         }
     }
-    pub fn sample_discrete(&self, u: Float, pdf: &mut Float /* TODO: Float *uRemapped = nullptr */ ) -> usize {
+    pub fn sample_discrete(&self,
+                           u: Float,
+                           pdf: Option<&mut Float> /* TODO: Float *uRemapped = nullptr */
+    ) -> usize {
         // find surrounding CDF segments and _offset_
         // let offset: usize = find_interval(cdf.size(),
         //                           [&](int index) { return cdf[index] <= u; });
@@ -9560,11 +9565,12 @@ impl Distribution1D {
             }
         }
         let offset: usize = clamp(first as isize - 1_isize, 0 as isize, self.cdf.len() as isize - 2_isize) as usize;
-        // TODO: if (pdf) *pdf = (funcInt > 0) ? func[offset] / (funcInt * Count()) : 0;
-        if self.func_int > 0.0 as Float {
-            *pdf = self.func[offset] / (self.func_int * self.func.len() as Float);
-        } else {
-            *pdf = 0.0;
+        if pdf.is_some() {
+            if self.func_int > 0.0 as Float {
+                *pdf.unwrap() = self.func[offset] / (self.func_int * self.func.len() as Float);
+            } else {
+                *pdf.unwrap() = 0.0;
+            }
         }
         // TODO: if (uRemapped)
         //     *uRemapped = (u - cdf[offset]) / (cdf[offset + 1] - cdf[offset]);
@@ -9683,6 +9689,25 @@ pub trait LightDistribution {
 struct HashEntry {
     packed_pos: AtomicU64,
     distribution: RwLock<Option<Arc<Distribution1D>>>,
+}
+
+pub struct UniformLightDistribution {
+    pub distrib: Arc<Distribution1D>,
+}
+
+impl UniformLightDistribution {
+    pub fn new(scene: &Scene) -> Self {
+        let prob: Vec<Float> = vec![1.0 as Float; scene.lights.len()];
+        UniformLightDistribution {
+            distrib: Arc::new(Distribution1D::new(prob)),
+        }
+    }
+}
+
+impl LightDistribution for UniformLightDistribution {
+    fn lookup(&self, p: Point3f) -> Arc<Distribution1D> {
+        self.distrib.clone()
+    }
 }
 
 /// A spatially-varying light distribution that adjusts the
@@ -9945,9 +9970,7 @@ const INVALID_PACKED_POS: u64 = 0xffffffffffffffff;
 pub fn create_light_sample_distribution(name: String, scene: &Scene)
                                         -> Option<Arc<LightDistribution + Send + Sync>> {
     if name == String::from("uniform") || scene.lights.len() == 1 {
-        println!("TODO: UniformLightDistribution");
-        // return std::unique_ptr<LightDistribution>{
-        //     new UniformLightDistribution(scene)};
+        return Some(Arc::new(UniformLightDistribution::new(scene)));
     } else if name == String::from("power") {
         println!("TODO: PowerLightDistribution");
         // return std::unique_ptr<LightDistribution>{
