@@ -12,15 +12,15 @@ Scale -1 1 1 # swap x-axis direction
 # Camera "perspective"
 #   "float fov" [ 45.00000240668388 ]
 # cam2
-LookAt 3.931999921798706 0.9160000085830688 0.8930000066757202 # position
-       2.9388058185577393 0.984254002571106 0.9873759150505066 # target
-       0.09415383636951447 -0.0064704143442213535 0.9955365657806396 # up
+# LookAt 3.931999921798706 0.9160000085830688 0.8930000066757202 # position
+#        2.9388058185577393 0.984254002571106 0.9873759150505066 # target
+#        0.09415383636951447 -0.0064704143442213535 0.9955365657806396 # up
 # Camera "perspective"
 #   "float fov" [ 45.00000240668388 ]
 # cam1
-# LookAt 2.25 0.375 1.0 # position
-#        1.4335033893585205 0.7832483053207397 0.5917516946792603 # target
-#        -0.3651483952999115 0.18257419764995575 0.9128709435462952 # up
+LookAt 2.25 0.375 1.0 # position
+       1.4335033893585205 0.7832483053207397 0.5917516946792603 # target
+       -0.3651483952999115 0.18257419764995575 0.9128709435462952 # up
 Camera "perspective"
   "float fov" [ 45.00000240668388 ]
 Film "image"
@@ -32,8 +32,8 @@ Sampler "lowdiscrepancy" "integer pixelsamples" [16] # [64]
 ##PixelFilter "blackmanharris"
 PixelFilter "gaussian" "float xwidth" [2.000000 ] "float ywidth" [2.000000 ] 
 ##SurfaceIntegrator "bidirectional"
-Integrator "directlighting" "integer maxdepth" [10]
-##Integrator "path" # "integer maxdepth" [10]
+##Integrator "directlighting" "integer maxdepth" [10]
+Integrator "path" # "integer maxdepth" [10]
 WorldBegin
   # blue_plastic
   MakeNamedMaterial "blue_plastic"

@@ -618,6 +618,7 @@ extern crate num_cpus;
 // extern crate copy_arena;
 extern crate image;
 extern crate crossbeam;
+extern crate pbr;
 
 // use std::cell::RefCell;
 use std::borrow::Borrow;
@@ -11885,7 +11886,7 @@ pub fn render(scene: &Scene,
             }
             // spawn thread to collect pixels and render image to file
             scope.spawn(move || {
-                for _ in 0..bq.len() {
+                for _ in pbr::PbIter::new(0..bq.len()) {
                     let film_tile = pixel_rx.recv().unwrap();
                     // merge image tile into _Film_
                     film.merge_film_tile(&film_tile);
