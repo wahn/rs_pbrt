@@ -319,12 +319,13 @@ fn main() {
     let mirror = Arc::new(MirrorMaterial::new(kr));
     let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
     let kt = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+    let index = Arc::new(ConstantTexture::new(0.0 as Float));
     let glass = Arc::new(GlassMaterial {
                              kr: kr,
                              kt: kt,
                              u_roughness: 0.0 as Float,
                              v_roughness: 0.0 as Float,
-                             index: 0.0 as Float,
+                             index: index,
                              remap_roughness: true,
                          });
     if matches.opt_present("n") || matches.opt_present("m") {

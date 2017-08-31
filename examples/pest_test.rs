@@ -1878,7 +1878,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     // if let Some(eta) = some_eta {
                     //     println!("some eta");
                     // } else {
-                    //     let eta = mp.get_float_texture(String::from("index"), 1.5);
+                    let eta = mp.get_float_texture(String::from("index"), 1.5);
                     // }
                     // std::shared_ptr<Texture<Float>> roughu =
                     //     mp.GetFloatTexture("uroughness", 0.f);
@@ -1894,7 +1894,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                                              kt: kt,
                                              u_roughness: 0.0 as Float,
                                              v_roughness: 0.0 as Float,
-                                             index: 0.0 as Float,
+                                             index: eta,
                                              remap_roughness: true,
                                          });
                     return glass;

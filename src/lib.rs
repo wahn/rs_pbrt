@@ -8225,6 +8225,91 @@ impl Bxdf for SpecularTransmission {
     }
 }
 
+pub struct FresnelSpecular {
+    pub r: Spectrum,
+    pub t: Spectrum,
+    pub eta_a: Float,
+    pub eta_b: Float,
+    pub mode: TransportMode,
+}
+
+impl FresnelSpecular {
+    pub fn new(r: Spectrum, t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
+        FresnelSpecular {
+            r: r,
+            t: t,
+            eta_a: eta_a,
+            eta_b: eta_b,
+            mode: mode,
+        }
+    }
+}
+
+impl Bxdf for FresnelSpecular {
+    fn f(&self, _wo: Vector3f, _wi: Vector3f) -> Spectrum {
+        Spectrum::new(0.0 as Float)
+    }
+    fn sample_f(&self,
+                wo: Vector3f,
+                wi: &mut Vector3f,
+                sample: Point2f,
+                pdf: &mut Float,
+                sampled_type: &mut u8)
+                -> Spectrum {
+        let mut ct: Float = cos_theta(wo);
+        let f: Float = fr_dielectric(&mut ct, self.eta_a, self.eta_b);
+        if sample[0] < f {
+            // compute specular reflection for _FresnelSpecular_
+
+            // compute perfect specular reflection direction
+            *wi = Vector3f {
+                x: -wo.x,
+                y: -wo.y,
+                z: wo.z,
+            };
+            if *sampled_type != 0_u8 {
+                *sampled_type = self.get_type();
+            }
+            *pdf = f;
+            return self.r * f / abs_cos_theta(*wi);
+        } else {
+            // compute specular transmission for _FresnelSpecular_
+
+            // figure out which $\eta$ is incident and which is transmitted
+            let entering: bool = cos_theta(wo) > 0.0 as Float;
+            let eta_i: Float;
+            if entering {
+                eta_i = self.eta_a;
+            } else {
+                eta_i = self.eta_b;
+            }
+            let eta_t: Float;
+            if entering {
+                eta_t = self.eta_b;
+            } else {
+                eta_t = self.eta_a;
+            }
+            // compute ray direction for specular transmission
+            if !refract(wo, nrm_faceforward_vec3(Normal3f { x: 0.0, y: 0.0, z: 1.0, }, wo), eta_i / eta_t, wi) {
+                return Spectrum::default();
+            }
+            let mut ft: Spectrum = self.t * (1.0 as Float - f);
+            // account for non-symmetry with transmission to different medium
+            if self.mode == TransportMode::Radiance {
+                ft *= Spectrum::new((eta_i * eta_i) / (eta_t * eta_t));
+            }
+            if *sampled_type != 0_u8 {
+                *sampled_type = self.get_type();
+            }
+            *pdf = 1.0 as Float - f;
+            return ft / abs_cos_theta(*wi);
+        }
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfReflection as u8 | BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct LambertianReflection {
     pub r: Spectrum,
@@ -8856,38 +8941,42 @@ pub struct GlassMaterial {
     pub kt: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
     pub u_roughness: Float,
     pub v_roughness: Float,
-    pub index: Float, // TODO: bump_map
+    pub index: Arc<Texture<Float> + Sync + Send>, // TODO: bump_map
     pub remap_roughness: bool,
 }
 
 impl GlassMaterial {
-    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+    pub fn bsdf(&self, si: &SurfaceInteraction, mode: TransportMode, allow_multiple_lobes: bool) -> Bsdf {
         let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let eta: Float = self.index.evaluate(si);
         let mut urough: Float = 0.0; // TODO: uRoughness->Evaluate(*si);
         let mut vrough: Float = 0.0; // TODO: vRoughness->Evaluate(*si);
-        let r: Spectrum = Spectrum::new(1.0 as Float); // TODO: self.kr.evaluate(si);
+        let r: Spectrum = self.kr.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
+        let t: Spectrum = self.kt.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
         let is_specular: bool = self.u_roughness == 0.0 as Float && self.v_roughness == 0.0 as Float;
-        // TODO: if (isSpecular && allowMultipleLobes) { ... }
-        if self.remap_roughness {
-            urough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut urough);
-            vrough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut vrough);
-        }
-        if is_specular {
-            let fresnel = Arc::new(FresnelDielectric {
-                eta_i: 1.0 as Float,
-                eta_t: 1.5 as Float,
-            });
-            // if (isSpecular)
-            bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
-            // TODO: else ... MicrofacetReflection
-            // if (isSpecular)
-            let mode: TransportMode = TransportMode::Radiance;
-            bxdfs.push(Box::new(SpecularTransmission::new(r, 1.0, 1.5, mode)));
-            // TODO: else ... MicrofacetTransmission
+        if is_specular && allow_multiple_lobes {
+            bxdfs.push(Box::new(FresnelSpecular::new(r, t, 1.0 as Float, eta, mode)));
         } else {
-            // TODO: si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetReflection)(R, distrib, fresnel));
+            if self.remap_roughness {
+                urough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut urough);
+                vrough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut vrough);
+            }
+            if is_specular {
+                let fresnel = Arc::new(FresnelDielectric {
+                    eta_i: 1.0 as Float,
+                    eta_t: eta,
+                });
+                // if (isSpecular)
+                bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
+                // TODO: else ... MicrofacetReflection
+                // if (isSpecular)
+                bxdfs.push(Box::new(SpecularTransmission::new(r, 1.0, eta, mode)));
+                // TODO: else ... MicrofacetTransmission
+            } else {
+                // TODO: si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetReflection)(R, distrib, fresnel));
+            }
         }
-        Bsdf::new(si, 1.5, bxdfs)
+        Bsdf::new(si, eta, bxdfs)
     }
 }
 
@@ -8895,9 +8984,9 @@ impl Material for GlassMaterial {
     fn compute_scattering_functions(&self,
                                     si: &mut SurfaceInteraction,
                                     // arena: &mut Arena,
-                                    _mode: TransportMode,
-                                    _allow_multiple_lobes: bool) {
-        si.bsdf = Some(Arc::new(self.bsdf(si)));
+                                    mode: TransportMode,
+                                    allow_multiple_lobes: bool) {
+        si.bsdf = Some(Arc::new(self.bsdf(si, mode, allow_multiple_lobes)));
     }
 }
 
