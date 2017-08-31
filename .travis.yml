@@ -42,10 +42,3 @@ script:
   ILMBASE_DIR="$PWD/ilmbase" OPENEXR_DIR="$PWD/openexr" \
   travis-cargo build --verbose &&
   travis-cargo test --verbose
-
-cache:
-  pip: true
-  cargo: true
-  directories:
-  - ilmbase
-  - openexr
