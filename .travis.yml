@@ -40,9 +40,6 @@ before_script:
 script:
 - |
   ILMBASE_DIR="$PWD/ilmbase" OPENEXR_DIR="$PWD/openexr" \
-  rustc --version &&
-  rustup --version &&
-  cargo --version &&
   travis-cargo build --verbose &&
   travis-cargo test --verbose
 
