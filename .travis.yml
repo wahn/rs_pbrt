@@ -40,11 +40,11 @@ before_script:
 script:
 - |
   ILMBASE_DIR="$PWD/ilmbase" OPENEXR_DIR="$PWD/openexr" \
-  travis-cargo build &&
-  travis-cargo test &&
-  travis-cargo --only stable doc
-after_success:
-- travis-cargo --only stable doc-upload
+  rustc --version &&
+  rustup --version &&
+  cargo --version &&
+  travis-cargo build --verbose &&
+  travis-cargo test --verbose
 
 cache:
   pip: true
