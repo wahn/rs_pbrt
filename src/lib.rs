@@ -619,6 +619,7 @@ extern crate num_cpus;
 extern crate image;
 extern crate crossbeam;
 extern crate pbr;
+extern crate openexr;
 
 // use std::cell::RefCell;
 use std::borrow::Borrow;
@@ -635,6 +636,7 @@ use std::sync::mpsc;
 // use copy_arena::{Arena, Allocator};
 use num::Zero;
 use image::{ImageResult, DynamicImage};
+use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
 
 pub type Float = f32;
 
@@ -7582,6 +7584,8 @@ impl Film {
         println!("Converting image to RGB and computing final weighted pixel values");
         let mut rgb: Vec<Float> =
             vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
+        let mut exr: Vec<(Float, Float, Float)> = // copy data for OpenEXR image
+            vec![(0.0_f32, 0.0_f32, 0.0_f32); self.cropped_pixel_bounds.area() as usize];
         let mut offset: usize = 0;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
@@ -7613,6 +7617,10 @@ impl Film {
             rgb[start + 0] *= self.scale;
             rgb[start + 1] *= self.scale;
             rgb[start + 2] *= self.scale;
+            // copy data for OpenEXR image
+            exr[offset].0 = rgb[start + 0];
+            exr[offset].1 = rgb[start + 1];
+            exr[offset].2 = rgb[start + 2];
             offset += 1;
         }
         let filename = "pbrt.png";
@@ -7626,6 +7634,22 @@ impl Film {
                           self.cropped_pixel_bounds.p_min.x) as u32;
         let height: u32 = (self.cropped_pixel_bounds.p_max.y -
                            self.cropped_pixel_bounds.p_min.y) as u32;
+        // OpenEXR
+        let filename = "pbrt_rust.exr";
+        println!("Writing image {:?} with bounds {:?}",
+                 filename, // TODO: self.filename,
+                 self.cropped_pixel_bounds);
+        let mut file = std::fs::File::create("pbrt_rust.exr").unwrap();
+        let mut output_file = ScanlineOutputFile::new(&mut file,
+                                                      Header::new()
+                                                      .set_resolution(width, height)
+                                                      .add_channel("R", PixelType::FLOAT)
+                                                      .add_channel("G", PixelType::FLOAT)
+                                                      .add_channel("B", PixelType::FLOAT)).unwrap();
+        let mut fb = FrameBuffer::new(width as usize, height as usize);
+        fb.insert_channels(&["R", "G", "B"], &exr);
+        output_file.write_pixels(&fb).unwrap();
+        // OpenEXR
         for y in 0..height {
             for x in 0..width {
                 // red
