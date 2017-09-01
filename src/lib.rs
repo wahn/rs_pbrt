@@ -7621,7 +7621,7 @@ impl Film {
             // exr[offset].0 = rgb[start + 0];
             // exr[offset].1 = rgb[start + 1];
             // exr[offset].2 = rgb[start + 2];
-            // offset += 1;
+            offset += 1;
         }
         let filename = "pbrt.png";
         println!("Writing image {:?} with bounds {:?}",
