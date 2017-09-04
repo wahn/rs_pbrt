@@ -129,9 +129,9 @@ WorldBegin
       0.9144000113010406 0.0 2.255520056943894 1.0
     ]
     NamedMaterial "white_matte"
-    Shape "cone"
-      "float radius" [ 0.08381999376893035 ]
-      "float height" [ 0.08382000285267832 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.08381999376893035 0.0 0.0 ]
+      "point p2" [ 0.05334000429272656 0.0 0.08382000285267832 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_in_2
@@ -143,9 +143,9 @@ WorldBegin
       0.9144000113010406 0.0 2.1945599689865105 1.0
     ]
     NamedMaterial "white_matte"
-    Shape "cone"
-      "float radius" [ 0.20574000617623334 ]
-      "float height" [ 0.06096000166177751 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.20574000617623334 0.0 0.0 ]
+      "point p2" [ 0.08381999376893035 0.0 0.06096000166177751 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_in_1
@@ -157,9 +157,9 @@ WorldBegin
       0.9144000113010406 0.0 2.133600026369095 1.0
     ]
     NamedMaterial "white_matte"
-    Shape "cone"
-      "float radius" [ 0.2209800099980832 ]
-      "float height" [ 0.06096000166177751 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.2209800099980832 0.0 0.0 ]
+      "point p2" [ 0.20574000617623334 0.0 0.06096000166177751 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_in_0
@@ -201,9 +201,9 @@ WorldBegin
       0.9144000113010406 0.0 2.255520056943894 1.0
     ]
     NamedMaterial "green_gloss"
-    Shape "cone"
-      "float radius" [ 0.09144000476360326 ]
-      "float height" [ 0.09144000476360326 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.09144000476360326 0.0 0.0 ]
+      "point p2" [ 0.06095999711990352 0.0 0.09144000476360326 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_out_2
@@ -215,9 +215,9 @@ WorldBegin
       0.9144000113010406 0.0 2.1945599689865105 1.0
     ]
     NamedMaterial "green_gloss"
-    Shape "cone"
-      "float radius" [ 0.2133599990034103 ]
-      "float height" [ 0.06096000166177751 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.2133599990034103 0.0 0.0 ]
+      "point p2" [ 0.09144000476360326 0.0 0.06096000166177751 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_out_1
@@ -229,9 +229,9 @@ WorldBegin
       0.9144000113010406 0.0 2.133600026369095 1.0
     ]
     NamedMaterial "green_gloss"
-    Shape "cone"
-      "float radius" [ 0.22860000282526016 ]
-      "float height" [ 0.06096000166177751 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.22860000282526016 0.0 0.0 ]
+      "point p2" [ 0.2133599990034103 0.0 0.06096000166177751 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # 55w_lightbulb
@@ -275,9 +275,9 @@ WorldBegin
       -0.9144000113010406 0.0 2.255520056943894 1.0
     ]
     NamedMaterial "white_matte"
-    Shape "cone"
-      "float radius" [ 0.08381999376893035 ]
-      "float height" [ 0.08382000285267832 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.08381999376893035 0.0 0.0 ]
+      "point p2" [ 0.05334000429272656 0.0 0.08382000285267832 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_in_2
@@ -289,9 +289,9 @@ WorldBegin
       -0.9144000113010406 0.0 2.1945599689865105 1.0
     ]
     NamedMaterial "white_matte"
-    Shape "cone"
-      "float radius" [ 0.20574000617623334 ]
-      "float height" [ 0.06096000166177751 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.20574000617623334 0.0 0.0 ]
+      "point p2" [ 0.08381999376893035 0.0 0.06096000166177751 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_in_1
@@ -303,9 +303,9 @@ WorldBegin
       -0.9144000113010406 0.0 2.133600026369095 1.0
     ]
     NamedMaterial "white_matte"
-    Shape "cone"
-      "float radius" [ 0.2209800099980832 ]
-      "float height" [ 0.06096000166177751 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.2209800099980832 0.0 0.0 ]
+      "point p2" [ 0.20574000617623334 0.0 0.06096000166177751 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_in_0
@@ -347,9 +347,9 @@ WorldBegin
       -0.9144000113010406 0.0 2.255520056943894 1.0
     ]
     NamedMaterial "green_gloss"
-    Shape "cone"
-      "float radius" [ 0.09144000476360326 ]
-      "float height" [ 0.09144000476360326 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.09144000476360326 0.0 0.0 ]
+      "point p2" [ 0.06095999711990352 0.0 0.09144000476360326 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_out_2
@@ -361,9 +361,9 @@ WorldBegin
       -0.9144000113010406 0.0 2.1945599689865105 1.0
     ]
     NamedMaterial "green_gloss"
-    Shape "cone"
-      "float radius" [ 0.2133599990034103 ]
-      "float height" [ 0.06096000166177751 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.2133599990034103 0.0 0.0 ]
+      "point p2" [ 0.09144000476360326 0.0 0.06096000166177751 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # shade_out_1
@@ -375,9 +375,9 @@ WorldBegin
       -0.9144000113010406 0.0 2.133600026369095 1.0
     ]
     NamedMaterial "green_gloss"
-    Shape "cone"
-      "float radius" [ 0.22860000282526016 ]
-      "float height" [ 0.06096000166177751 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.22860000282526016 0.0 0.0 ]
+      "point p2" [ 0.2133599990034103 0.0 0.06096000166177751 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # baseboard1
@@ -2109,9 +2109,9 @@ WorldBegin
       -0.00026593452834434983 3.058908484345395e-11 1.5316246988762003 1.0
     ]
     NamedMaterial "green3"
-    Shape "cone"
-      "float radius" [ 0.006095994261741566 ]
-      "float height" [ 0.006095999939084051 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.006095994261741566 0.0 0.0 ]
+      "point p2" [ 0.0012192024858475037 0.0 0.006095999939084051 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # roseb
@@ -2138,9 +2138,9 @@ WorldBegin
       0.0 0.0 1.5392400771594055 1.0
     ]
     NamedMaterial "red1"
-    Shape "cone"
-      "float radius" [ 0.006095994261741566 ]
-      "float height" [ 0.022860001190900814 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.006095994261741566 0.0 0.0 ]
+      "point p2" [ 0.0 0.0 0.022860001190900814 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # tile_d
@@ -13413,9 +13413,9 @@ WorldBegin
       0.0 0.0 1.4097000174224377 1.0
     ]
     NamedMaterial "cream_porcelain"
-    Shape "cone"
-      "float radius" [ 0.01828800095272065 ]
-      "float height" [ 0.0076200002077221884 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.01828800095272065 0.0 0.0 ]
+      "point p2" [ 0.00914399139261235 0.0 0.0076200002077221884 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # vase_e
@@ -13442,11 +13442,9 @@ WorldBegin
       0.0 0.0 1.4020799882602688 1.0
     ]
     NamedMaterial "red_porcelain"
-    Translate 0 0 0.0076200002077221884
-    Rotate 180 1 0 0
-    Shape "cone"
-      "float radius" [ 0.024383995214462217 ]
-      "float height" [ 0.0076200002077221884 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.015240003821849868 0.0 0.0 ]
+      "point p2" [ 0.024383995214462217 0.0 0.0076200002077221884 ]
       "float phimax" [ 360 ]
   AttributeEnd
   # vase_c
@@ -13488,9 +13486,9 @@ WorldBegin
       0.0 0.0 1.005839997897148 1.0
     ]
     NamedMaterial "red_porcelain"
-    Shape "cone"
-      "float radius" [ 0.06095999711990352 ]
-      "float height" [ 0.030480000830888754 ]
+    Shape "hyperboloid"
+      "point p1" [ 0.06095999711990352 0.0 0.0 ]
+      "point p2" [ 0.05486400285816195 0.0 0.030480000830888754 ]
       "float phimax" [ 360 ]
   AttributeEnd
 WorldEnd
