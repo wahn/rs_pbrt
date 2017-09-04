@@ -87,7 +87,8 @@ impl_rdp! {
                             make_named_material |
                             named_material |
                             shape }
-        parameter = { float_param |
+        parameter = { bool_param |
+                      float_param |
                       string_param |
                       integer_param |
                       point_param |
@@ -96,6 +97,7 @@ impl_rdp! {
                       rgb_param |
                       spectrum_param |
                       texture_param }
+        bool_param = { (["\"bool"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack) }
         float_param = { (["\"float"] ~ ident ~ ["\""] ~ lbrack ~ number+ ~ rbrack) |
                         (["\"float"] ~ ident ~ ["\""] ~ number) }
         string_param = { (["\"string"] ~ ident ~ ["\""] ~ lbrack ~ string ~ rbrack) |
@@ -846,6 +848,15 @@ impl_rdp! {
         }
         // parameters
         _parameter(&self) -> () {
+            (_head: bool_param, tail: _bool_param()) => {
+                let (string1, string2) = tail;
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_bool(string1, string2);
+                    }
+                }
+                self._parameter();
+            },
             (_head: float_param, tail: _float_param()) => {
                 let (string, numbers) = tail;
                 unsafe {
@@ -1384,6 +1395,22 @@ impl_rdp! {
                 }
             }
         }
+        _bool_param(&self) -> (String, bool) {
+            (&i1: ident, _l: lbrack, _s: string, &i2: ident, _r: rbrack) => {
+                let string1: String = String::from_str(i1).unwrap();
+                let string2: String = String::from_str(i2).unwrap();
+                let b: bool;
+                if string2 == String::from("true") {
+                    b = true;
+                } else if string2 == String::from("false") {
+                    b = false
+                } else {
+                    println!("WARNING: parameter {:?} not well defined, defaulting to false", string1);
+                    b = false
+                }
+                (string1, b)
+            },
+        }
         _float_param(&self) -> (String, Vec<Float>) {
             // single float without brackets
             (&i: ident, &n: number) => {
@@ -1860,10 +1887,9 @@ fn create_material() -> Arc<Material + Send + Sync> {
                                                      Spectrum::new(0.25 as Float));
                     let ks = mp.get_spectrum_texture(String::from("Ks"),
                                                      Spectrum::new(0.25 as Float));
-                    let roughness: Float = 0.1;
-                    // TODO: let roughness = mp.get_float_texture(String::from("roughness"), 0.1 as Float);
+                    let roughness = mp.get_float_texture(String::from("roughness"), 0.1 as Float);
                     // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
-                    let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
+                    let remap_roughness = mp.find_bool(String::from("remaproughness"), true);
                     let plastic =
                         Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
                     return plastic;
@@ -1886,16 +1912,14 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     //     mp.GetFloatTexture("vroughness", 0.f);
                     // std::shared_ptr<Texture<Float>> bumpMap =
                     //     mp.GetFloatTextureOrNull("bumpmap");
-                    // bool remapRoughness = mp.FindBool("remaproughness", true);
-                    // return new GlassMaterial(Kr, Kt, roughu, roughv, eta, bumpMap,
-                    //                          remapRoughness);
+                    let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
                     let glass = Arc::new(GlassMaterial {
                                              kr: kr,
                                              kt: kt,
                                              u_roughness: 0.0 as Float,
                                              v_roughness: 0.0 as Float,
                                              index: eta,
-                                             remap_roughness: true,
+                                             remap_roughness: remap_roughness,
                                          });
                     return glass;
                 } else if graphics_state.material == String::from("mirror") {

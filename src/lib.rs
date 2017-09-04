@@ -7617,7 +7617,7 @@ impl Film {
             rgb[start + 0] *= self.scale;
             rgb[start + 1] *= self.scale;
             rgb[start + 2] *= self.scale;
-            // // copy data for OpenEXR image
+            // copy data for OpenEXR image
             // exr[offset].0 = rgb[start + 0];
             // exr[offset].1 = rgb[start + 1];
             // exr[offset].2 = rgb[start + 2];
@@ -8875,7 +8875,7 @@ impl Material for MatteMaterial {
 pub struct PlasticMaterial {
     pub kd: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
     pub ks: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub roughness: Float, // default: 0.1
+    pub roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.1
     // TODO: bump_map
     pub remap_roughness: bool,
 }
@@ -8883,7 +8883,7 @@ pub struct PlasticMaterial {
 impl PlasticMaterial {
     pub fn new(kd: Arc<Texture<Spectrum> + Send + Sync>,
                ks: Arc<Texture<Spectrum> + Send + Sync>,
-               roughness: Float,
+               roughness: Arc<Texture<Float> + Sync + Send>,
                remap_roughness: bool) -> Self {
         PlasticMaterial {
             kd: kd,
@@ -8907,7 +8907,7 @@ impl PlasticMaterial {
                 eta_t: 1.0 as Float,
             };
             // create microfacet distribution _distrib_ for plastic material
-            let mut rough: Float = self.roughness; // TODO: roughness->Evaluate(*si);
+            let mut rough: Float = self.roughness.evaluate(si);
             if self.remap_roughness {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut rough);
             }
@@ -11062,6 +11062,14 @@ impl ParamSet {
             name: name,
             values: values,
             n_values: n_values,
+            looked_up: false,
+        });
+    }
+    pub fn add_bool(&mut self, name: String, value: bool) {
+        self.bools.push(ParamSetItem::<bool> {
+            name: name,
+            values: vec!(value),
+            n_values: 1_usize,
             looked_up: false,
         });
     }

@@ -1763,9 +1763,10 @@ fn main() {
     // add triangles created above (not meshes)
     let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(0.5, 0.3, 0.8)));
     let ks = Arc::new(ConstantTexture::new(Spectrum::rgb(0.2, 0.2, 0.2)));
-    let plastic1 = Arc::new(PlasticMaterial::new(kd, ks.clone(), 0.1 as Float, true));
+    let roughness = Arc::new(ConstantTexture::new(1.0 as Float));
+    let plastic1 = Arc::new(PlasticMaterial::new(kd, ks.clone(), roughness.clone(), true));
     let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(0.8, 0.5, 0.1)));
-    let plastic2 = Arc::new(PlasticMaterial::new(kd, ks.clone(), 0.1 as Float, true));
+    let plastic2 = Arc::new(PlasticMaterial::new(kd, ks.clone(), roughness.clone(), true));
     let mut triangle_count: usize = 0;
     for triangle in render_options.triangles {
         if triangle_count < 72 {
