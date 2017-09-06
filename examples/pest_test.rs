@@ -2629,6 +2629,18 @@ fn main() {
                                 println!("Rule:    {:?}", pair.as_rule());
                                 println!("Span:    {:?}", pair.clone().into_span());
                                 println!("Text:    {}", pair.clone().into_span().as_str());
+                                for inner_pair in pair.into_inner() {
+                                    match inner_pair.as_rule() {
+                                        Rule::look_at => {
+                                            for look_at in inner_pair.into_inner() {
+                                                match look_at.as_rule() {
+                                                    _ => println!("TODO: {:?}", look_at.as_rule())
+                                                }
+                                            }
+                                        }
+                                        _ => println!("TODO: {:?}", inner_pair.as_rule())
+                                    };
+                                }
                             }
                             // parser.main();
                             println!("done.");
