@@ -1,0 +1,186 @@
+pbrt = _{ whitespace? ~ (statement | comment)* ~ last_statement }
+statement = { look_at | translate | rotate | scale | transform | concat_transform | named_statement | keyword }
+named_statement = { accelerator |
+                    camera |
+                    pixel_filter |
+                    sampler |
+                    film |
+                    integrator |
+                    coord_sys_transform |
+                    area_light_source |
+                    light_source |
+                    texture |
+                    material |
+                    make_named_material |
+                    named_material |
+                    shape }
+parameter = { bool_param |
+              float_param |
+              string_param |
+              integer_param |
+              point_param |
+              vector_param |
+              normal_param |
+              rgb_param |
+              spectrum_param |
+              texture_param }
+bool_param = { ("\"bool" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack) }
+float_param = { ("\"float" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack) |
+                ("\"float" ~ ident ~ "\"" ~ number) }
+string_param = { ("\"string" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack) |
+                 ("\"string" ~ ident ~ "\"" ~ string) }
+integer_param = { "\"integer" ~ ident ~ "\"" ~ lbrack ~ integer+ ~ rbrack }
+point_param = { "\"point" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
+vector_param = { "\"vector" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack }
+normal_param = { "\"normal" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
+rgb_param = { ("\"rgb" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack) |
+              ("\"color" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack) }
+spectrum_param = { "\"spectrum\"" ~ string }
+texture_param = { "\"texture" ~ ident ~ "\"" ~ string }
+// Translate x y z
+translate = { "Translate" ~
+           // followed by 3 numbers:
+           number ~ number ~ number
+}
+// Rotate angle x y z
+rotate = { "Rotate" ~
+           // followed by 4 numbers:
+           number ~ number ~ number ~ number
+}
+// Scale x y z
+scale = { "Scale" ~
+           // followed by 3 numbers:
+           number ~ number ~ number
+}
+// Transform m00 .. m33
+transform = { ("Transform" ~ lbrack ~
+               // followed by 16 numbers:
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~ rbrack) |
+              ("Transform" ~
+               // followed by 16 numbers:
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number)
+}
+// ConcatTransform m00 .. m33
+concat_transform = { ("ConcatTransform" ~ lbrack ~
+                      // followed by 16 numbers:
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~ rbrack) |
+                     ("ConcatTransform" ~
+                      // followed by 16 numbers:
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number)
+}
+// LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
+look_at = { "LookAt" ~
+            // followed by 9 numbers:
+
+            // eye_x eye_y eye_z
+            number ~ number ~ number ~
+            // look_x look_y look_z
+            number ~ number ~ number ~
+            // up_x up_y up_z
+            number ~ number ~ number
+}
+// Accelerator "kdtree" "float emptybonus" 0.1
+accelerator = { "Accelerator" ~ string ~ parameter* }
+// Camera "perspective" "float fov" 90 ...
+camera = { "Camera" ~ string ~ parameter* }
+// PixelFilter "mitchell" "float xwidth" 2 "float ywidth" 2
+pixel_filter = { "PixelFilter" ~ string ~ parameter* }
+// Sampler "halton"
+sampler = { "Sampler" ~ string ~ parameter* }
+// Film "image" "string filename" "..." ...
+film = { "Film" ~ string ~ parameter* }
+// Integrator "path" "integer maxdepth" 5
+integrator = { "Integrator" ~ string ~ parameter* }
+// CoordSysTransform "camera"
+coord_sys_transform = { "CoordSysTransform" ~ string }
+// AreaLightSource "diffuse" "rgb L"  .5 .5 .5 
+area_light_source = { "AreaLightSource" ~ string ~ parameter* }
+// LightSource "point" "rgb I"  .5 .5 .5 
+light_source = { "LightSource" ~ string ~ parameter* }
+// Texture "mydiffuse" "spectrum" "imagemap" "string filename" "image.tga"
+texture = { "Texture" ~ string ~ string ~ string ~ parameter* }
+// Material "matte" "texture Kd" "mydiffuse"
+material = { "Material" ~ string ~ parameter* }
+// MakeNamedMaterial "myplastic" "string type" "plastic" "float roughness" 0.1
+make_named_material = { "MakeNamedMaterial" ~ string ~ parameter* }
+// NamedMaterial "myplastic"
+named_material = { "NamedMaterial" ~ string ~ parameter* }
+// Shape "sphere" "float radius" 0.25
+shape = { "Shape" ~ string ~ parameter* }
+// keywords
+keyword = {
+    ("ActiveTransform" |
+     "All" |
+     attribute_begin |
+     attribute_end |
+     "CoordinateSystem" |
+     "EndTime" |
+     "Identity" |
+     "Include" |
+     "MakeNamedMedium" |
+     "MediumInterface" |
+     "ObjectBegin" |
+     "ObjectEnd" |
+     "ObjectInstance" |
+     "ReverseOrientation" |
+     "StartTime" |
+     "TransformBegin" |
+     "TransformEnd" |
+     "TransformTimes" |
+     world_begin
+    )
+}
+attribute_begin = { "AttributeBegin" }
+attribute_end = { "AttributeEnd" }
+world_begin = { "WorldBegin" }
+// IDENT a-zA-Z_a-zA-Z_0-9*
+ident =  { ('a'..'z' | 'A'..'Z' | "_") ~
+           ('a'..'z' | 'A'..'Z' | "_" | "-" | '0'..'9')* }
+string = { ("\"" ~ ident ~ "\"") | ("\"" ~ filename ~ "\"") }
+filename = { ('a'..'z' | 'A'..'Z' | "_") ~ // TODO: can be a full path
+             ('a'..'z' | 'A'..'Z' | "_" | "-" | "." | "/" | '0'..'9')* }
+// "" { return LBRACK; }
+lbrack = { "[" }
+// "" { return RBRACK; }
+rbrack = { "]" }
+// NUMBER -+?(0-9+|((0-9+\.0-9*)|(\.0-9+)))(eE-+?0-9+)?
+number = @{
+    ("-" | "+")? ~ // optional sign, followed by
+    (
+        (
+            ("." ~ '0'..'9'+) // dot and digits
+                | // or
+            ('0'..'9'+ ~ "." ~ '0'..'9'*) // digits, dot, and (optional digits)
+        )
+            | // or
+        '0'..'9'+ // just digits
+    ) ~ ( // followed by (optional)
+        ("e" | "E") ~ // 'e' or 'E', followed by
+        ("-" | "+")? ~ // optional sign, followed by
+        '0'..'9'+ // digits
+    )?
+}
+integer = @{
+    ("-" | "+")? ~ // optional sign, followed by
+        (
+            '1'..'9' ~ // at least one non-zero digit, followed by
+            '0'..'9'* // just digits
+        )
+            | // or
+        '0'..'9' // single digit
+}
+last_statement = @{ whitespace? ~ "WorldEnd" ~ (whitespace | comment)* }
+whitespace = _{ (" " | "\t" | "\r" | "\n") }
+comment = _{ ( "#" ~ (!("\r" | "\n") ~ any)* ~ ("\n" | "\r\n" | "\r" | eoi) ) }
