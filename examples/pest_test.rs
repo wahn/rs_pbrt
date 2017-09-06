@@ -282,10 +282,10 @@ impl_rdp! {
             (eye_x: _number(), eye_y: _number(), eye_z: _number(),
              look_x: _number(), look_y: _number(), look_z: _number(),
              up_x: _number(), up_y: _number(), up_z: _number()) => {
-                println!("LookAt {} {} {} {} {} {} {} {} {}",
-                         eye_x, eye_y, eye_z,
-                         look_x, look_y, look_z,
-                         up_x, up_y, up_z,);
+                // println!("LookAt {} {} {} {} {} {} {} {} {}",
+                //          eye_x, eye_y, eye_z,
+                //          look_x, look_y, look_z,
+                //          up_x, up_y, up_z,);
                 let pos: Point3f = Point3f { x: eye_x, y: eye_y, z: eye_z, };
                 let look: Point3f = Point3f { x: look_x, y: look_y, z: look_z, };
                 let up: Vector3f = Vector3f { x: up_x, y: up_y, z: up_z, };
@@ -300,7 +300,7 @@ impl_rdp! {
         }
         _translate(&self) -> () {
             (x: _number(), y: _number(), z: _number()) => {
-                println!("Translate {} {} {}", x, y, z);
+                // println!("Translate {} {} {}", x, y, z);
                 let translate: Transform = Transform::translate(Vector3f { x: x, y: y, z: z, });
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * translate;
@@ -312,8 +312,8 @@ impl_rdp! {
         }
         _rotate(&self) -> () {
             (angle: _number(), x: _number(), y: _number(), z: _number()) => {
-                println!("Rotate {} {} {} {}",
-                         angle, x, y, z);
+                // println!("Rotate {} {} {} {}",
+                //          angle, x, y, z);
                 let rotate: Transform = Transform::rotate(angle, Vector3f { x: x, y: y, z: z, });
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * rotate;
@@ -325,8 +325,8 @@ impl_rdp! {
         }
         _scale(&self) -> () {
             (x: _number(), y: _number(), z: _number()) => {
-                println!("Scale {} {} {}",
-                         x, y, z);
+                // println!("Scale {} {} {}",
+                //          x, y, z);
                 let scale: Transform = Transform::scale(x, y, z);
                 unsafe {
                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * scale;
@@ -343,12 +343,12 @@ impl_rdp! {
              m20: _number(), m21: _number(), m22: _number(), m23: _number(),
              m30: _number(), m31: _number(), m32: _number(), m33: _number(),
              _r: rbrack) => {
-                println!("Transform [");
-                println!("  {} {} {} {}", m00, m01, m02, m03);
-                println!("  {} {} {} {}", m10, m11, m12, m13);
-                println!("  {} {} {} {}", m20, m21, m22, m23);
-                println!("  {} {} {} {}", m30, m31, m32, m33);
-                println!("]");
+                // println!("Transform [");
+                // println!("  {} {} {} {}", m00, m01, m02, m03);
+                // println!("  {} {} {} {}", m10, m11, m12, m13);
+                // println!("  {} {} {} {}", m20, m21, m22, m23);
+                // println!("  {} {} {} {}", m30, m31, m32, m33);
+                // println!("]");
                 // INFO: The order in PBRT file is different !!!
                 let transform: Transform = Transform::new(m00, m10, m20, m30,
                                                           m01, m11, m21, m31,
@@ -365,12 +365,12 @@ impl_rdp! {
              m10: _number(), m11: _number(), m12: _number(), m13: _number(),
              m20: _number(), m21: _number(), m22: _number(), m23: _number(),
              m30: _number(), m31: _number(), m32: _number(), m33: _number()) => {
-                println!("Transform [");
-                println!("  {} {} {} {}", m00, m01, m02, m03);
-                println!("  {} {} {} {}", m10, m11, m12, m13);
-                println!("  {} {} {} {}", m20, m21, m22, m23);
-                println!("  {} {} {} {}", m30, m31, m32, m33);
-                println!("]");
+                // println!("Transform [");
+                // println!("  {} {} {} {}", m00, m01, m02, m03);
+                // println!("  {} {} {} {}", m10, m11, m12, m13);
+                // println!("  {} {} {} {}", m20, m21, m22, m23);
+                // println!("  {} {} {} {}", m30, m31, m32, m33);
+                // println!("]");
                 // INFO: The order in PBRT file is different !!!
                 let transform: Transform = Transform::new(m00, m10, m20, m30,
                                                           m01, m11, m21, m31,
@@ -391,12 +391,12 @@ impl_rdp! {
              m20: _number(), m21: _number(), m22: _number(), m23: _number(),
              m30: _number(), m31: _number(), m32: _number(), m33: _number(),
              _r: rbrack) => {
-                println!("ConcatTransform [");
-                println!("  {} {} {} {}", m00, m01, m02, m03);
-                println!("  {} {} {} {}", m10, m11, m12, m13);
-                println!("  {} {} {} {}", m20, m21, m22, m23);
-                println!("  {} {} {} {}", m30, m31, m32, m33);
-                println!("]");
+                // println!("ConcatTransform [");
+                // println!("  {} {} {} {}", m00, m01, m02, m03);
+                // println!("  {} {} {} {}", m10, m11, m12, m13);
+                // println!("  {} {} {} {}", m20, m21, m22, m23);
+                // println!("  {} {} {} {}", m30, m31, m32, m33);
+                // println!("]");
                 // INFO: The order in PBRT file is different !!!
                 let transform: Transform = Transform::new(m00, m10, m20, m30,
                                                           m01, m11, m21, m31,
@@ -413,12 +413,12 @@ impl_rdp! {
              m10: _number(), m11: _number(), m12: _number(), m13: _number(),
              m20: _number(), m21: _number(), m22: _number(), m23: _number(),
              m30: _number(), m31: _number(), m32: _number(), m33: _number()) => {
-                println!("ConcatTransform [");
-                println!("  {} {} {} {}", m00, m01, m02, m03);
-                println!("  {} {} {} {}", m10, m11, m12, m13);
-                println!("  {} {} {} {}", m20, m21, m22, m23);
-                println!("  {} {} {} {}", m30, m31, m32, m33);
-                println!("]");
+                // println!("ConcatTransform [");
+                // println!("  {} {} {} {}", m00, m01, m02, m03);
+                // println!("  {} {} {} {}", m10, m11, m12, m13);
+                // println!("  {} {} {} {}", m20, m21, m22, m23);
+                // println!("  {} {} {} {}", m30, m31, m32, m33);
+                // println!("]");
                 // INFO: The order in PBRT file is different !!!
                 let transform: Transform = Transform::new(m00, m10, m20, m30,
                                                           m01, m11, m21, m31,
@@ -456,7 +456,7 @@ impl_rdp! {
                         ro.accelerator_name = name;
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement {
-                            println!("Accelerator \"{}\" ", ro.accelerator_name);
+                            // println!("Accelerator \"{}\" ", ro.accelerator_name);
                         }
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
@@ -522,7 +522,7 @@ impl_rdp! {
                         ro.filter_name = name;
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement {
-                            println!("PixelFilter \"{}\" ", ro.filter_name);
+                            // println!("PixelFilter \"{}\" ", ro.filter_name);
                         }
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
@@ -550,7 +550,7 @@ impl_rdp! {
                         ro.sampler_name = name;
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement {
-                            println!("Sampler \"{}\" ", ro.sampler_name);
+                            // println!("Sampler \"{}\" ", ro.sampler_name);
                         }
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
@@ -621,7 +621,7 @@ impl_rdp! {
         }
         _coord_sys_transform(&self) -> () {
             (name: _string()) => {
-                println!("CoordSysTransform \"{}\" ", name);
+                // println!("CoordSysTransform \"{}\" ", name);
                 unsafe {
                     if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
                         match named_coordinate_systems.get(name.as_str()) {
@@ -687,10 +687,10 @@ impl_rdp! {
                     if optional_parameters.rule == Rule::statement ||
                         optional_parameters.rule == Rule::last_statement
                     {
-                        println!("Texture \"{}\" \"{}\" \"{}\" ",
-                                 name,
-                                 tex_type,
-                                 tex_name);
+                        // println!("Texture \"{}\" \"{}\" \"{}\" ",
+                        //          name,
+                        //          tex_type,
+                        //          tex_name);
                     }
                     if let Some(ref mut param_set) = PARAM_SET {
                         param_set.reset(String::from("Texture"),
@@ -717,7 +717,7 @@ impl_rdp! {
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement
                         {
-                            println!("Material \"{}\" ", name.clone());
+                            // println!("Material \"{}\" ", name.clone());
                         }
                         // pbrtMaterial (api.cpp:1082)
                         if let Some(ref mut graphics_state) = GRAPHICS_STATE {
@@ -748,7 +748,7 @@ impl_rdp! {
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement
                         {
-                            println!("MakeNamedMaterial \"{}\" ", name.clone());
+                            // println!("MakeNamedMaterial \"{}\" ", name.clone());
                         }
                         // pbrtMakeNamedMaterial (api.cpp:1094)
                         if let Some(ref mut graphics_state) = GRAPHICS_STATE {
@@ -779,7 +779,7 @@ impl_rdp! {
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement
                         {
-                            println!("NamedMaterial \"{}\" ", name.clone());
+                            // println!("NamedMaterial \"{}\" ", name.clone());
                         }
                         // pbrtNamedMaterial (api.cpp:1119)
                         if let Some(ref mut graphics_state) = GRAPHICS_STATE {
@@ -809,7 +809,7 @@ impl_rdp! {
                         if optional_parameters.rule == Rule::statement ||
                             optional_parameters.rule == Rule::last_statement
                         {
-                            println!("Shape \"{}\" ", name);
+                            // println!("Shape \"{}\" ", name);
                             // WARNING: Reset BEFORE calling pbrt_shape() !
                             param_set.reset(String::from("Shape"),
                                             String::from(name),
@@ -982,42 +982,42 @@ impl_rdp! {
                             name.push_str(param_set.name.as_str());
                             if param_set.key_word == String::from("Accelerator") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("Accelerator \"{}\" ", ro.accelerator_name);
+                                    // println!("Accelerator \"{}\" ", ro.accelerator_name);
                                     ro.accelerator_params.copy_from(param_set);
                                     print_params(&ro.accelerator_params);
                                 }
                             } else if param_set.key_word == String::from("Camera") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("Camera \"{}\" ", ro.camera_name);
+                                    // println!("Camera \"{}\" ", ro.camera_name);
                                     ro.camera_params.copy_from(param_set);
                                     print_params(&ro.camera_params);
                                 }
                             } else if param_set.key_word == String::from("PixelFilter") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("PixelFilter \"{}\" ", ro.filter_name);
+                                    // println!("PixelFilter \"{}\" ", ro.filter_name);
                                     ro.filter_params.copy_from(param_set);
                                     print_params(&ro.filter_params);
                                 }
                             } else if param_set.key_word == String::from("Sampler") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("Sampler \"{}\" ", ro.sampler_name);
+                                    // println!("Sampler \"{}\" ", ro.sampler_name);
                                     ro.sampler_params.copy_from(param_set);
                                     print_params(&ro.sampler_params);
                                 }
                             } else if param_set.key_word == String::from("Film") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("Film \"{}\" ", ro.film_name);
+                                    // println!("Film \"{}\" ", ro.film_name);
                                     ro.film_params.copy_from(param_set);
                                     print_params(&ro.film_params);
                                 }
                             } else if param_set.key_word == String::from("Integrator") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("Integrator \"{}\" ", ro.integrator_name);
+                                    // println!("Integrator \"{}\" ", ro.integrator_name);
                                     ro.integrator_params.copy_from(param_set);
                                     print_params(&ro.integrator_params);
                                 }
                             } else if param_set.key_word == String::from("AreaLightSource") {
-                                println!("AreaLightSource \"{}\" ", param_set.name);
+                                // println!("AreaLightSource \"{}\" ", param_set.name);
                                 print_params(&param_set);
                                 // pbrtAreaLightSource (api.cpp:1142)
                                 if let Some(ref mut graphics_state) = GRAPHICS_STATE {
@@ -1026,16 +1026,16 @@ impl_rdp! {
                                 }
                             } else if param_set.key_word == String::from("LightSource") {
                                 if let Some(ref mut ro) = RENDER_OPTIONS {
-                                    println!("LightSource \"{}\" ", param_set.name);
+                                    // println!("LightSource \"{}\" ", param_set.name);
                                     print_params(&param_set);
                                     make_light(&param_set, ro);
                                 }
                                 // let lt = make_light(name, params, CUR_TRANSFORM.t[0]);
                             } else if param_set.key_word == String::from("Texture") {
-                                println!("Texture \"{}\" \"{}\" \"{}\" ",
-                                         param_set.name,
-                                         param_set.tex_type,
-                                         param_set.tex_name);
+                                // println!("Texture \"{}\" \"{}\" \"{}\" ",
+                                //          param_set.name,
+                                //          param_set.tex_type,
+                                //          param_set.tex_name);
                                 print_params(&param_set);
                                 // pbrtTexture (api.cpp:1049)
                                 if let Some(ref mut graphics_state) = GRAPHICS_STATE {
@@ -1236,7 +1236,7 @@ impl_rdp! {
                                 // or
                                 // MakeSpectrumTexture(texname, curTransform[0], tp);
                             } else if param_set.key_word == String::from("Material") {
-                                println!("Material \"{}\" ", param_set.name);
+                                // println!("Material \"{}\" ", param_set.name);
                                 print_params(&param_set);
                                 // pbrtMaterial (api.cpp:1082)
                                 if let Some(ref mut graphics_state) = GRAPHICS_STATE {
@@ -1245,7 +1245,7 @@ impl_rdp! {
                                     graphics_state.current_named_material = String::new();
                                 }
                             } else if param_set.key_word == String::from("MakeNamedMaterial") {
-                                println!("MakeNamedMaterial \"{}\" ", param_set.name);
+                                // println!("MakeNamedMaterial \"{}\" ", param_set.name);
                                 print_params(&param_set);
                                 // pbrtMakeNamedMaterial (api.cpp:1094)
                                 let mat_type: String = param_set.find_one_string(String::from("type"),
@@ -1259,22 +1259,22 @@ impl_rdp! {
                                     let mtl: Arc<Material + Send + Sync> = create_material();
                                     match graphics_state.named_materials.get(mat_type.as_str()) {
                                         Some(_named_material) => {
-                                            println!("Named material \"{}\" redefined",
-                                                     mat_type);
+                                            // println!("Named material \"{}\" redefined",
+                                            //          mat_type);
                                         },
                                         None => {},
                                     }
                                     graphics_state.named_materials.insert(param_set.name.clone(), mtl);
                                 }
                             } else if param_set.key_word == String::from("NamedMaterial") {
-                                println!("NamedMaterial \"{}\" ", param_set.name);
+                                // println!("NamedMaterial \"{}\" ", param_set.name);
                                 print_params(&param_set);
                                 // pbrtNamedMaterial (api.cpp:1119)
                                 if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                                     graphics_state.current_named_material = param_set.name.clone();
                                 }
                             } else if param_set.key_word == String::from("Shape") {
-                                println!("Shape \"{}\" ", param_set.name);
+                                // println!("Shape \"{}\" ", param_set.name);
                                 print_params(&param_set);
                                 // collect area lights
                                 let mut area_lights: Vec<Arc<Light + Send + Sync>> = Vec::new();
@@ -1642,7 +1642,7 @@ impl_rdp! {
         // keywords
         _keyword(&self) -> () {
             (_ab: attribute_begin) => {
-                println!("AttributeBegin");
+                // println!("AttributeBegin");
                 unsafe {
                     if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                         if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
@@ -1679,7 +1679,7 @@ impl_rdp! {
                 self._pbrt();
             },
             (_ae: attribute_end) => {
-                println!("AttributeEnd");
+                // println!("AttributeEnd");
                 unsafe {
                     if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                         if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
@@ -1716,7 +1716,7 @@ impl_rdp! {
                 self._pbrt();
             },
             (_wb: world_begin) => {
-                println!("WorldBegin");
+                // println!("WorldBegin");
                 unsafe {
                     CUR_TRANSFORM.t[0] = Transform::default();
                     CUR_TRANSFORM.t[1] = Transform::default();
@@ -1765,87 +1765,87 @@ fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
 }
 
-fn print_params(params: &ParamSet) {
-    for p in &params.ints {
-        if p.n_values == 1_usize {
-            println!("  \"integer {}\" [{}]", p.name, p.values[0]);
-        } else {
-            print!("  \"integer {}\" [ ", p.name);
-            for i in 0..p.n_values {
-                print!("{} ", p.values[i]);
-            }
-            println!("]");
-        }
-    }
-    for p in &params.floats {
-        if p.n_values == 1_usize {
-            println!("  \"float {}\" [{}]", p.name, p.values[0]);
-        } else {
-            print!("  \"float {}\" [ ", p.name);
-            for i in 0..p.n_values {
-                print!("{} ", p.values[i]);
-            }
-            println!("]");
-        }
-    }
-    for p in &params.point3fs {
-        if p.n_values == 1_usize {
-            println!("  \"point {}\" [{} {} {}]",
-                     p.name,
-                     p.values[0].x,
-                     p.values[0].y,
-                     p.values[0].z);
-        } else {
-            println!("  \"point {}\" [", p.name);
-            for i in 0..p.n_values {
-                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
-            }
-            println!("  ]");
-        }
-    }
-    for p in &params.vector3fs {
-        if p.n_values == 1_usize {
-            println!("  \"vector {}\" [{} {} {}]",
-                     p.name,
-                     p.values[0].x,
-                     p.values[0].y,
-                     p.values[0].z);
-        }
-    }
-    for p in &params.normals {
-        if p.n_values == 1_usize {
-            println!("  \"normal {}\" [{} {} {}]",
-                     p.name,
-                     p.values[0].x,
-                     p.values[0].y,
-                     p.values[0].z);
-        } else {
-            println!("  \"normal {}\" [", p.name);
-            for i in 0..p.n_values {
-                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
-            }
-            println!("  ]");
-        }
-    }
-    for p in &params.spectra {
-        if p.n_values == 1_usize {
-            println!("  \"rgb {}\" [{} {} {}]",
-                     p.name,
-                     p.values[0].c[0],
-                     p.values[0].c[1],
-                     p.values[0].c[2]);
-        }
-    }
-    for p in &params.strings {
-        if p.n_values == 1_usize {
-            println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
-        }
-    }
-    for p in &params.textures {
-        if p.n_values == 1_usize {
-            println!("  \"texture {}\" \"{}\"", p.name, p.values[0]);
-        }
-    }
+fn print_params(_params: &ParamSet) {
+    // for p in &params.ints {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"integer {}\" [{}]", p.name, p.values[0]);
+    //     } else {
+    //         print!("  \"integer {}\" [ ", p.name);
+    //         for i in 0..p.n_values {
+    //             print!("{} ", p.values[i]);
+    //         }
+    //         println!("]");
+    //     }
+    // }
+    // for p in &params.floats {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"float {}\" [{}]", p.name, p.values[0]);
+    //     } else {
+    //         print!("  \"float {}\" [ ", p.name);
+    //         for i in 0..p.n_values {
+    //             print!("{} ", p.values[i]);
+    //         }
+    //         println!("]");
+    //     }
+    // }
+    // for p in &params.point3fs {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"point {}\" [{} {} {}]",
+    //                  p.name,
+    //                  p.values[0].x,
+    //                  p.values[0].y,
+    //                  p.values[0].z);
+    //     } else {
+    //         println!("  \"point {}\" [", p.name);
+    //         for i in 0..p.n_values {
+    //             println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+    //         }
+    //         println!("  ]");
+    //     }
+    // }
+    // for p in &params.vector3fs {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"vector {}\" [{} {} {}]",
+    //                  p.name,
+    //                  p.values[0].x,
+    //                  p.values[0].y,
+    //                  p.values[0].z);
+    //     }
+    // }
+    // for p in &params.normals {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"normal {}\" [{} {} {}]",
+    //                  p.name,
+    //                  p.values[0].x,
+    //                  p.values[0].y,
+    //                  p.values[0].z);
+    //     } else {
+    //         println!("  \"normal {}\" [", p.name);
+    //         for i in 0..p.n_values {
+    //             println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+    //         }
+    //         println!("  ]");
+    //     }
+    // }
+    // for p in &params.spectra {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"rgb {}\" [{} {} {}]",
+    //                  p.name,
+    //                  p.values[0].c[0],
+    //                  p.values[0].c[1],
+    //                  p.values[0].c[2]);
+    //     }
+    // }
+    // for p in &params.strings {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
+    //     }
+    // }
+    // for p in &params.textures {
+    //     if p.n_values == 1_usize {
+    //         println!("  \"texture {}\" \"{}\"", p.name, p.values[0]);
+    //     }
+    // }
 }
 
 fn create_material() -> Arc<Material + Send + Sync> {
@@ -1965,7 +1965,6 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
         // return std::make_shared<PointLight>(l2w, medium, I * sc);
         unsafe {
             let point_light = Arc::new(PointLight::new(&CUR_TRANSFORM.t[0], &i));
-            println!("{:?}", point_light);
             ro.lights.push(point_light);
         }
     } else if param_set.name == String::from("spot") {
@@ -1996,7 +1995,6 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
         // return std::make_shared<DistantLight>(light2world, L * sc, dir);
         unsafe {
             let distant_light = Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
-            println!("{:?}", distant_light);
             ro.lights.push(distant_light);
         }
     } else if param_set.name == String::from("infinite") {
@@ -2178,7 +2176,7 @@ fn pbrt_shape(param_set: &ParamSet)
 }
 
 fn pbrt_world_end() {
-    println!("WorldEnd");
+    // println!("WorldEnd");
     unsafe {
         if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
             assert!(pushed_graphics_states.len() == 0_usize,
