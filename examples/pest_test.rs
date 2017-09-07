@@ -2631,7 +2631,88 @@ fn main() {
                                         for statement_pair in pair.into_inner() {
                                             match statement_pair.as_rule() {
                                                 Rule::concat_transform => println!("TODO: Rule::concat_transform"),
-                                                Rule::keyword => println!("TODO: Rule::keyword"),
+                                                Rule::keyword => {
+                                                    for keyword_pair in statement_pair.into_inner() {
+                                                        match keyword_pair.as_rule() {
+                                                            Rule::attribute_begin => {
+                                                                if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                                                    if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
+                                                                        let mut material_param_set: ParamSet = ParamSet::default();
+                                                                        material_param_set.copy_from(&graphics_state.material_params);
+                                                                        let mut area_light_param_set: ParamSet = ParamSet::default();
+                                                                        area_light_param_set.copy_from(&graphics_state.area_light_params);
+                                                                        pushed_graphics_states.push(GraphicsState {
+                                                                            float_textures: graphics_state.float_textures.clone(),
+                                                                            spectrum_textures: graphics_state.spectrum_textures.clone(),
+                                                                            material_params: material_param_set,
+                                                                            material: String::from(graphics_state.material.as_ref()),
+                                                                            named_materials: graphics_state.named_materials.clone(),
+                                                                            current_named_material: String::from(graphics_state.current_named_material.as_ref()),
+                                                                            area_light_params: area_light_param_set,
+                                                                            area_light: String::from(graphics_state.area_light.as_ref()),
+                                                                        });
+                                                                    }
+                                                                    if let Some(ref mut pt) = PUSHED_TRANSFORMS {
+                                                                        pt.push(TransformSet {
+                                                                            t: [
+                                                                                Transform {
+                                                                                    m: CUR_TRANSFORM.t[0].m,
+                                                                                    m_inv: CUR_TRANSFORM.t[0].m_inv,},
+                                                                                Transform {
+                                                                                    m: CUR_TRANSFORM.t[1].m,
+                                                                                    m_inv: CUR_TRANSFORM.t[1].m_inv,},
+                                                                            ]
+                                                                        });
+                                                                    }
+                                                                    // TODO? pushedActiveTransformBits.push_back(activeTransformBits);
+                                                                }
+                                                            },
+                                                            Rule::attribute_end => {
+                                                                if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                                                    if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
+                                                                        if !(pushed_graphics_states.len() >= 1_usize) {
+                                                                            panic!("Unmatched pbrtAttributeEnd() encountered.")
+                                                                        }
+                                                                        let pgs: GraphicsState = pushed_graphics_states.pop().unwrap();
+                                                                        // material_params
+                                                                        graphics_state.material_params.reset(String::new(),
+                                                                                                             String::from(""),
+                                                                                                             String::from(""),
+                                                                                                             String::new());
+                                                                        graphics_state.material_params.copy_from(&pgs.material_params);
+                                                                        // material
+                                                                        graphics_state.material = String::from(pgs.material.as_ref());
+                                                                        // area_light_params
+                                                                        graphics_state.area_light_params.reset(String::new(),
+                                                                                                               String::from(""),
+                                                                                                               String::from(""),
+                                                                                                               String::new());
+                                                                        graphics_state.area_light_params.copy_from(&pgs.area_light_params);
+                                                                        // area_light
+                                                                        graphics_state.area_light = String::from(pgs.area_light.as_ref());
+                                                                    }
+                                                                    if let Some(ref mut pt) = PUSHED_TRANSFORMS {
+                                                                        let popped_transform_set: TransformSet = pt.pop().unwrap();
+                                                                        CUR_TRANSFORM.t[0] = popped_transform_set.t[0];
+                                                                        CUR_TRANSFORM.t[1] = popped_transform_set.t[1];
+                                                                    }
+                                                                    // TODO? pushedActiveTransformBits.push_back(activeTransformBits);
+                                                                }
+                                                            },
+                                                            Rule::world_begin => {
+                                                                CUR_TRANSFORM.t[0] = Transform::default();
+                                                                CUR_TRANSFORM.t[1] = Transform::default();
+                                                                if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
+                                                                    named_coordinate_systems.insert("world",
+                                                                                                    TransformSet {
+                                                                                                        t: [Transform::default(); 2]
+                                                                                                    });
+                                                                }
+                                                            },
+                                                            _ => unreachable!()
+                                                        }
+                                                    }
+                                                },
                                                 Rule::look_at => {
                                                     let mut numbers: Vec<Float> = Vec::new();
                                                     for look_at_pair in statement_pair.into_inner() {
