@@ -1,29 +1,29 @@
 pbrt = _{ whitespace? ~ (statement | comment)* ~ last_statement }
 statement = { concat_transform | keyword | look_at | named_statement | rotate | scale | transform | translate }
 named_statement = { accelerator |
+                    area_light_source |
                     camera |
-                    pixel_filter |
-                    sampler |
+                    coord_sys_transform |
                     film |
                     integrator |
-                    coord_sys_transform |
-                    area_light_source |
                     light_source |
-                    texture |
-                    material |
                     make_named_material |
+                    material |
                     named_material |
-                    shape }
+                    pixel_filter |
+                    sampler |
+                    shape |
+                    texture }
 parameter = { bool_param |
               float_param |
-              string_param |
               integer_param |
               point_param |
-              vector_param |
               normal_param |
               rgb_param |
               spectrum_param |
-              texture_param }
+              string_param |
+              texture_param |
+              vector_param }
 bool_param = { ("\"bool" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack) }
 float_param = { ("\"float" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack) |
                 ("\"float" ~ ident ~ "\"" ~ number) }

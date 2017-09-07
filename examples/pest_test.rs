@@ -18,6 +18,7 @@ use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i, BoxFilter, BVHAc
            Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::Parser;
+use pest::iterators::Pair;
 // getopts
 use getopts::Options;
 // std
@@ -1770,87 +1771,87 @@ fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
 }
 
-fn print_params(_params: &ParamSet) {
-    // for p in &params.ints {
-    //     if p.n_values == 1_usize {
-    //         println!("  \"integer {}\" [{}]", p.name, p.values[0]);
-    //     } else {
-    //         print!("  \"integer {}\" [ ", p.name);
-    //         for i in 0..p.n_values {
-    //             print!("{} ", p.values[i]);
-    //         }
-    //         println!("]");
-    //     }
-    // }
-    // for p in &params.floats {
-    //     if p.n_values == 1_usize {
-    //         println!("  \"float {}\" [{}]", p.name, p.values[0]);
-    //     } else {
-    //         print!("  \"float {}\" [ ", p.name);
-    //         for i in 0..p.n_values {
-    //             print!("{} ", p.values[i]);
-    //         }
-    //         println!("]");
-    //     }
-    // }
-    // for p in &params.point3fs {
-    //     if p.n_values == 1_usize {
-    //         println!("  \"point {}\" [{} {} {}]",
-    //                  p.name,
-    //                  p.values[0].x,
-    //                  p.values[0].y,
-    //                  p.values[0].z);
-    //     } else {
-    //         println!("  \"point {}\" [", p.name);
-    //         for i in 0..p.n_values {
-    //             println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
-    //         }
-    //         println!("  ]");
-    //     }
-    // }
-    // for p in &params.vector3fs {
-    //     if p.n_values == 1_usize {
-    //         println!("  \"vector {}\" [{} {} {}]",
-    //                  p.name,
-    //                  p.values[0].x,
-    //                  p.values[0].y,
-    //                  p.values[0].z);
-    //     }
-    // }
-    // for p in &params.normals {
-    //     if p.n_values == 1_usize {
-    //         println!("  \"normal {}\" [{} {} {}]",
-    //                  p.name,
-    //                  p.values[0].x,
-    //                  p.values[0].y,
-    //                  p.values[0].z);
-    //     } else {
-    //         println!("  \"normal {}\" [", p.name);
-    //         for i in 0..p.n_values {
-    //             println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
-    //         }
-    //         println!("  ]");
-    //     }
-    // }
-    // for p in &params.spectra {
-    //     if p.n_values == 1_usize {
-    //         println!("  \"rgb {}\" [{} {} {}]",
-    //                  p.name,
-    //                  p.values[0].c[0],
-    //                  p.values[0].c[1],
-    //                  p.values[0].c[2]);
-    //     }
-    // }
-    // for p in &params.strings {
-    //     if p.n_values == 1_usize {
-    //         println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
-    //     }
-    // }
-    // for p in &params.textures {
-    //     if p.n_values == 1_usize {
-    //         println!("  \"texture {}\" \"{}\"", p.name, p.values[0]);
-    //     }
-    // }
+fn print_params(params: &ParamSet) {
+    for p in &params.ints {
+        if p.n_values == 1_usize {
+            println!("  \"integer {}\" [{}]", p.name, p.values[0]);
+        } else {
+            print!("  \"integer {}\" [ ", p.name);
+            for i in 0..p.n_values {
+                print!("{} ", p.values[i]);
+            }
+            println!("]");
+        }
+    }
+    for p in &params.floats {
+        if p.n_values == 1_usize {
+            println!("  \"float {}\" [{}]", p.name, p.values[0]);
+        } else {
+            print!("  \"float {}\" [ ", p.name);
+            for i in 0..p.n_values {
+                print!("{} ", p.values[i]);
+            }
+            println!("]");
+        }
+    }
+    for p in &params.point3fs {
+        if p.n_values == 1_usize {
+            println!("  \"point {}\" [{} {} {}]",
+                     p.name,
+                     p.values[0].x,
+                     p.values[0].y,
+                     p.values[0].z);
+        } else {
+            println!("  \"point {}\" [", p.name);
+            for i in 0..p.n_values {
+                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+            }
+            println!("  ]");
+        }
+    }
+    for p in &params.vector3fs {
+        if p.n_values == 1_usize {
+            println!("  \"vector {}\" [{} {} {}]",
+                     p.name,
+                     p.values[0].x,
+                     p.values[0].y,
+                     p.values[0].z);
+        }
+    }
+    for p in &params.normals {
+        if p.n_values == 1_usize {
+            println!("  \"normal {}\" [{} {} {}]",
+                     p.name,
+                     p.values[0].x,
+                     p.values[0].y,
+                     p.values[0].z);
+        } else {
+            println!("  \"normal {}\" [", p.name);
+            for i in 0..p.n_values {
+                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+            }
+            println!("  ]");
+        }
+    }
+    for p in &params.spectra {
+        if p.n_values == 1_usize {
+            println!("  \"rgb {}\" [{} {} {}]",
+                     p.name,
+                     p.values[0].c[0],
+                     p.values[0].c[1],
+                     p.values[0].c[2]);
+        }
+    }
+    for p in &params.strings {
+        if p.n_values == 1_usize {
+            println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
+        }
+    }
+    for p in &params.textures {
+        if p.n_values == 1_usize {
+            println!("  \"texture {}\" \"{}\"", p.name, p.values[0]);
+        }
+    }
 }
 
 fn create_material() -> Arc<Material + Send + Sync> {
@@ -2008,6 +2009,41 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
         println!("TODO: CreateInfiniteLight");
     } else {
         panic!("MakeLight: unknown name {}", param_set.name);
+    }
+}
+
+fn pbrt_parameter<R, I>(pair: Pair<R, I>) where I: pest::inputs::Input, R: pest::RuleType {
+    for parameter_pair in pair.into_inner() {
+        match parameter_pair.as_rule() {
+            // bool_param => println!("TODO: Rule::bool_param"),
+            float_param => {
+                let mut pairs = parameter_pair.into_inner();
+                // single float with brackets
+                let ident = pairs.next();
+                let string: String =
+                    String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                let lbrack = pairs.next();
+                let number = pairs.next();
+                let number: Float =
+                    f32::from_str(number.unwrap().clone().into_span().as_str()).unwrap();
+                unsafe {
+                    if let Some(ref mut param_set) = PARAM_SET {
+                        param_set.add_float(string, number);
+                    }
+                }
+                // TODO: single float without brackets
+                // TODO: more than one float
+            },
+            integer_param => println!("TODO: Rule::integer_param"),
+            point_param => println!("TODO: Rule::point_param"),
+            normal_param => println!("TODO: Rule::normal_param"),
+            rgb_param => println!("TODO: Rule::rgb_param"),
+            spectrum_param => println!("TODO: Rule::spectrum_param"),
+            string_param => println!("TODO: Rule::string_param"),
+            texture_param => println!("TODO: Rule::texture_param"),
+            vector_param => println!("TODO: Rule::vector_param"),
+            _ => unreachable!()
+        };
     }
 }
 
@@ -2733,10 +2769,53 @@ fn main() {
                                                             Rule::accelerator => println!("TODO: Rule::accelerator"),
                                                             Rule::area_light_source => println!("TODO: Rule::area_light_source"),
                                                             Rule::camera => {
-                                                                println!("TODO: Rule::camera");
-                                                                println!("Rule:    {:?}", named_statement_pair.as_rule());
-                                                                println!("Span:    {:?}", named_statement_pair.clone().into_span());
-                                                                println!("Text:    {}", named_statement_pair.clone().into_span().as_str());
+                                                                for camera_pair in named_statement_pair.into_inner() {
+                                                                    match camera_pair.as_rule() {
+                                                                        Rule::string => {
+                                                                            let name: String = String::from(camera_pair.clone().into_span().as_str());
+                                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                                ro.camera_name = name;
+                                                                                ro.camera_to_world.t[0] =
+                                                                                    Transform::inverse(CUR_TRANSFORM.t[0]);
+                                                                                ro.camera_to_world.t[1] =
+                                                                                    Transform::inverse(CUR_TRANSFORM.t[1]);
+                                                                                if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
+                                                                                    named_coordinate_systems.insert("camera",
+                                                                                                                    TransformSet {
+                                                                                                                        t: [ro.camera_to_world.t[0],
+                                                                                                                            ro.camera_to_world.t[1]]
+                                                                                                                    });
+                                                                                }
+                                                                            } else {
+                                                                                panic!("Can't get render options.");
+                                                                            }
+                                                                            if let Some(ref mut param_set) = PARAM_SET {
+                                                                                param_set.reset(String::from("Camera"),
+                                                                                                String::from(""),
+                                                                                                String::from(""),
+                                                                                                String::from(""));
+                                                                            } else {
+                                                                                panic!("Can't get parameter set.");
+                                                                            }
+                                                                        },
+                                                                        Rule::parameter => {
+                                                                            pbrt_parameter(camera_pair);
+                                                                        },
+                                                                        _ => unreachable!()
+                                                                    }
+                                                                }
+                                                                // we should have the camera parameters by now
+                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                        println!("Camera \"{}\" ", ro.camera_name);
+                                                                        ro.camera_params.copy_from(param_set);
+                                                                        print_params(&ro.camera_params);
+                                                                    } else {
+                                                                        panic!("Can't get render options.");
+                                                                    }
+                                                                } else {
+                                                                    panic!("Can't get parameter set.");
+                                                                }
                                                             },
                                                             Rule::coord_sys_transform => println!("TODO: Rule::coord_sys_transform"),
                                                             Rule::film => println!("TODO: Rule::film"),
@@ -2782,7 +2861,7 @@ fn main() {
                             println!("done.");
                         }
                     }
-                    None => panic!("no input file name"),
+                    None => panic!("No input file name."),
                 }
                 return;
             } else if matches.opt_present("v") {
