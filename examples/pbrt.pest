@@ -1,5 +1,5 @@
 pbrt = _{ whitespace? ~ (statement | comment)* ~ last_statement }
-statement = { look_at | translate | rotate | scale | transform | concat_transform | named_statement | keyword }
+statement = { concat_transform | keyword | look_at | named_statement | rotate | scale | transform | translate }
 named_statement = { accelerator |
                     camera |
                     pixel_filter |

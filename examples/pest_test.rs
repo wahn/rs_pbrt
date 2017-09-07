@@ -2626,20 +2626,37 @@ fn main() {
                             println!("do something with created tokens ...");
                             for pair in pairs {
                                 // a pair is a combination of the rule which matched and a span of input
-                                println!("Rule:    {:?}", pair.as_rule());
-                                println!("Span:    {:?}", pair.clone().into_span());
-                                println!("Text:    {}", pair.clone().into_span().as_str());
-                                for inner_pair in pair.into_inner() {
-                                    match inner_pair.as_rule() {
-                                        Rule::look_at => {
-                                            for look_at in inner_pair.into_inner() {
-                                                match look_at.as_rule() {
-                                                    _ => println!("TODO: {:?}", look_at.as_rule())
-                                                }
-                                            }
+                                match pair.as_rule() {
+                                    Rule::statement => {
+                                        for statement_pair in pair.into_inner() {
+                                            match statement_pair.as_rule() {
+                                                Rule::concat_transform => println!("TODO: Rule::concat_transform"),
+                                                Rule::keyword => println!("TODO: Rule::keyword"),
+                                                Rule::look_at => {
+                                                    let mut numbers: Vec<Float> = Vec::new();
+                                                    for look_at_pair in statement_pair.into_inner() {
+                                                        let number: Float =
+                                                            f32::from_str(look_at_pair.clone().into_span().as_str()).unwrap();
+                                                        numbers.push(number);
+                                                    }
+                                                    let pos: Point3f = Point3f { x: numbers[0], y: numbers[1], z: numbers[2], };
+                                                    let look: Point3f = Point3f { x: numbers[3], y: numbers[4], z: numbers[5], };
+                                                    let up: Vector3f = Vector3f { x: numbers[6], y: numbers[7], z: numbers[8], };
+                                                    let look_at: Transform = Transform::look_at(pos, look, up);
+                                                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
+                                                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
+                                                },
+                                                Rule::named_statement => println!("TODO: Rule::named_statement"),
+                                                Rule::rotate => println!("TODO: Rule::rotate"),
+                                                Rule::scale => println!("TODO: Rule::scale"),
+                                                Rule::transform => println!("TODO: Rule::transform"),
+                                                Rule::translate => println!("TODO: Rule::translate"),
+                                                _ => unreachable!()
+                                            };
                                         }
-                                        _ => println!("TODO: {:?}", inner_pair.as_rule())
-                                    };
+                                    },
+                                    Rule::last_statement => println!("TODO: Rule::last_statement"),
+                                    _ => unreachable!()
                                 }
                             }
                             // parser.main();
