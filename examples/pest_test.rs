@@ -2727,7 +2727,32 @@ fn main() {
                                                     CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
                                                     CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
                                                 },
-                                                Rule::named_statement => println!("TODO: Rule::named_statement"),
+                                                Rule::named_statement => {
+                                                    for named_statement_pair in statement_pair.into_inner() {
+                                                        match named_statement_pair.as_rule() {
+                                                            Rule::accelerator => println!("TODO: Rule::accelerator"),
+                                                            Rule::area_light_source => println!("TODO: Rule::area_light_source"),
+                                                            Rule::camera => {
+                                                                println!("TODO: Rule::camera");
+                                                                println!("Rule:    {:?}", named_statement_pair.as_rule());
+                                                                println!("Span:    {:?}", named_statement_pair.clone().into_span());
+                                                                println!("Text:    {}", named_statement_pair.clone().into_span().as_str());
+                                                            },
+                                                            Rule::coord_sys_transform => println!("TODO: Rule::coord_sys_transform"),
+                                                            Rule::film => println!("TODO: Rule::film"),
+                                                            Rule::integrator => println!("TODO: Rule::integrator"),
+                                                            Rule::light_source => println!("TODO: Rule::light_source"),
+                                                            Rule::make_named_material => println!("TODO: Rule::make_named_material"),
+                                                            Rule::material => println!("TODO: Rule::material"),
+                                                            Rule::named_material => println!("TODO: Rule::named_material"),
+                                                            Rule::pixel_filter => println!("TODO: Rule::pixel_filter"),
+                                                            Rule::sampler => println!("TODO: Rule::sampler"),
+                                                            Rule::shape => println!("TODO: Rule::shape"),
+                                                            Rule::texture => println!("TODO: Rule::texture"),
+                                                            _ => unreachable!()
+                                                        }
+                                                    }
+                                                },
                                                 Rule::rotate => println!("TODO: Rule::rotate"),
                                                 Rule::scale => println!("TODO: Rule::scale"),
                                                 Rule::transform => println!("TODO: Rule::transform"),
