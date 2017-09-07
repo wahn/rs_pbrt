@@ -1150,7 +1150,7 @@ struct PbrtParser;
 //                                                 // HasExtension(filename,
 //                                                 // ".png"));
 //                                                 let gamma: bool = tp.find_bool(String::from("gamma"), true);
-                                                
+
 //                                                 if let Some(mapping) = map {
 //                                                     let st = Arc::new(ImageTexture::new(mapping,
 //                                                                                         filename,
@@ -2650,7 +2650,20 @@ fn main() {
                                                 Rule::rotate => println!("TODO: Rule::rotate"),
                                                 Rule::scale => println!("TODO: Rule::scale"),
                                                 Rule::transform => println!("TODO: Rule::transform"),
-                                                Rule::translate => println!("TODO: Rule::translate"),
+                                                Rule::translate => {
+                                                    let mut numbers: Vec<Float> = Vec::new();
+                                                    for translate_pair in statement_pair.into_inner() {
+                                                        let number: Float =
+                                                            f32::from_str(translate_pair.clone().into_span().as_str()).unwrap();
+                                                        numbers.push(number);
+                                                    }
+                                                    let x: Float = numbers[0];
+                                                    let y: Float = numbers[1];
+                                                    let z: Float = numbers[2];
+                                                    let translate: Transform = Transform::translate(Vector3f { x: x, y: y, z: z, });
+                                                    CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * translate;
+                                                    CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * translate;
+                                                },
                                                 _ => unreachable!()
                                             };
                                         }
