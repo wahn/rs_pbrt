@@ -2012,39 +2012,20 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     }
 }
 
-fn pbrt_parameter<R, I>(pair: Pair<R, I>) where I: pest::inputs::Input, R: pest::RuleType {
-    for parameter_pair in pair.into_inner() {
-        match parameter_pair.as_rule() {
-            // bool_param => println!("TODO: Rule::bool_param"),
-            float_param => {
-                let mut pairs = parameter_pair.into_inner();
-                // single float with brackets
-                let ident = pairs.next();
-                let string: String =
-                    String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                let lbrack = pairs.next();
-                let number = pairs.next();
-                let number: Float =
-                    f32::from_str(number.unwrap().clone().into_span().as_str()).unwrap();
-                unsafe {
-                    if let Some(ref mut param_set) = PARAM_SET {
-                        param_set.add_float(string, number);
-                    }
-                }
-                // TODO: single float without brackets
-                // TODO: more than one float
-            },
-            integer_param => println!("TODO: Rule::integer_param"),
-            point_param => println!("TODO: Rule::point_param"),
-            normal_param => println!("TODO: Rule::normal_param"),
-            rgb_param => println!("TODO: Rule::rgb_param"),
-            spectrum_param => println!("TODO: Rule::spectrum_param"),
-            string_param => println!("TODO: Rule::string_param"),
-            texture_param => println!("TODO: Rule::texture_param"),
-            vector_param => println!("TODO: Rule::vector_param"),
-            _ => unreachable!()
-        };
-    }
+fn pbrt_float_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, Vec<Float>)
+    where I: pest::inputs::Input, R: pest::RuleType
+{
+    let mut floats: Vec<Float> = Vec::new();
+    // single float with brackets
+    let ident = pairs.next();
+    let string: String =
+            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let lbrack = pairs.next();
+    let number = pairs.next();
+    let number: Float =
+        f32::from_str(number.unwrap().clone().into_span().as_str()).unwrap();
+    floats.push(number);
+    (string, floats)
 }
 
 fn pbrt_shape(param_set: &ParamSet)
@@ -2772,7 +2753,10 @@ fn main() {
                                                                 for camera_pair in named_statement_pair.into_inner() {
                                                                     match camera_pair.as_rule() {
                                                                         Rule::string => {
-                                                                            let name: String = String::from(camera_pair.clone().into_span().as_str());
+                                                                            let mut string_pairs = camera_pair.into_inner();
+                                                                            let ident = string_pairs.next();
+                                                                            let name: String =
+                                                                                String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
                                                                             if let Some(ref mut ro) = RENDER_OPTIONS {
                                                                                 ro.camera_name = name;
                                                                                 ro.camera_to_world.t[0] =
@@ -2799,7 +2783,35 @@ fn main() {
                                                                             }
                                                                         },
                                                                         Rule::parameter => {
-                                                                            pbrt_parameter(camera_pair);
+                                                                            for parameter_pair in camera_pair.into_inner() {
+                                                                                match parameter_pair.as_rule() {
+                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::float_param => {
+                                                                                        println!("TODO: Rule::float_param");
+                                                                                        let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let floats: Vec<Float> = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            if floats.len() == 1 {
+                                                                                                param_set.add_float(string, floats[0]);
+                                                                                            } else {
+                                                                                                param_set.add_floats(string, floats);
+                                                                                            }
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
+                                                                                    Rule::integer_param => println!("TODO: Rule::integer_param"),
+                                                                                    Rule::point_param => println!("TODO: Rule::point_param"),
+                                                                                    Rule::normal_param => println!("TODO: Rule::normal_param"),
+                                                                                    Rule::rgb_param => println!("TODO: Rule::rgb_param"),
+                                                                                    Rule::spectrum_param => println!("TODO: Rule::spectrum_param"),
+                                                                                    Rule::string_param => println!("TODO: Rule::string_param"),
+                                                                                    Rule::texture_param => println!("TODO: Rule::texture_param"),
+                                                                                    Rule::vector_param => println!("TODO: Rule::vector_param"),
+                                                                                    _ => unreachable!()
+                                                                                };
+                                                                            }
                                                                         },
                                                                         _ => unreachable!()
                                                                     }
@@ -2818,7 +2830,62 @@ fn main() {
                                                                 }
                                                             },
                                                             Rule::coord_sys_transform => println!("TODO: Rule::coord_sys_transform"),
-                                                            Rule::film => println!("TODO: Rule::film"),
+                                                            Rule::film => {
+                                                                println!("TODO: Rule::film");
+                                                                for film_pair in named_statement_pair.into_inner() {
+                                                                    match film_pair.as_rule() {
+                                                                        Rule::string => {
+                                                                            let mut string_pairs = film_pair.into_inner();
+                                                                            let ident = string_pairs.next();
+                                                                            let name: String =
+                                                                                String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                                ro.film_name = name;
+                                                                            } else {
+                                                                                panic!("Can't get render options.");
+                                                                            }
+                                                                            if let Some(ref mut param_set) = PARAM_SET {
+                                                                                param_set.reset(String::from("Film"),
+                                                                                                String::from(""),
+                                                                                                String::from(""),
+                                                                                                String::from(""));
+                                                                            } else {
+                                                                                panic!("Can't get parameter set.");
+                                                                            }
+                                                                        },
+                                                                        Rule::parameter => {
+                                                                            for parameter_pair in film_pair.into_inner() {
+                                                                                match parameter_pair.as_rule() {
+                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::float_param => println!("TODO: Rule::float_param"),
+                                                                                    Rule::integer_param => println!("TODO: Rule::integer_param"),
+                                                                                    Rule::point_param => println!("TODO: Rule::point_param"),
+                                                                                    Rule::normal_param => println!("TODO: Rule::normal_param"),
+                                                                                    Rule::rgb_param => println!("TODO: Rule::rgb_param"),
+                                                                                    Rule::spectrum_param => println!("TODO: Rule::spectrum_param"),
+                                                                                    Rule::string_param => println!("TODO: Rule::string_param"),
+                                                                                    Rule::texture_param => println!("TODO: Rule::texture_param"),
+                                                                                    Rule::vector_param => println!("TODO: Rule::vector_param"),
+                                                                                    _ => unreachable!()
+                                                                                };
+                                                                            }
+                                                                        },
+                                                                        _ => unreachable!()
+                                                                    }
+                                                                }
+                                                                // we should have the film parameters by now
+                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                        println!("Film \"{}\" ", ro.film_name);
+                                                                        ro.film_params.copy_from(param_set);
+                                                                        print_params(&ro.film_params);
+                                                                    } else {
+                                                                        panic!("Can't get render options.");
+                                                                    }
+                                                                } else {
+                                                                    panic!("Can't get parameter set.");
+                                                                }
+                                                            },
                                                             Rule::integrator => println!("TODO: Rule::integrator"),
                                                             Rule::light_source => println!("TODO: Rule::light_source"),
                                                             Rule::make_named_material => println!("TODO: Rule::make_named_material"),
@@ -2853,7 +2920,10 @@ fn main() {
                                             };
                                         }
                                     },
-                                    Rule::last_statement => println!("TODO: Rule::last_statement"),
+                                    Rule::last_statement => {
+                                        println!("TODO: Rule::last_statement");
+                                        // pbrt_world_end();
+                                    },
                                     _ => unreachable!()
                                 }
                             }
