@@ -319,7 +319,7 @@ fn main() {
     let mirror = Arc::new(MirrorMaterial::new(kr));
     let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
     let kt = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
-    let index = Arc::new(ConstantTexture::new(0.0 as Float));
+    let index = Arc::new(ConstantTexture::new(1.5 as Float));
     let glass = Arc::new(GlassMaterial {
                              kr: kr,
                              kt: kt,
