@@ -2214,6 +2214,42 @@ fn make_texture(param_set: &ParamSet) {
     }
 }
 
+fn pbrt_bool_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, bool)
+    where I: pest::inputs::Input, R: pest::RuleType
+{
+    // single string with or without brackets
+    let ident = pairs.next();
+    let string: String =
+        String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    let string2: String;
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let string = pairs.next();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    } else {
+        // no brackets
+        let string = option.clone();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    }
+    // return boolean (instead of string)
+    let b: bool;
+    if string2 == String::from("true") {
+        b = true;
+    } else if string2 == String::from("false") {
+        b = false
+    } else {
+        println!("WARNING: parameter {:?} not well defined, defaulting to false", string);
+        b = false
+    }
+    (string, b)
+}
+
 fn pbrt_float_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, Vec<Float>)
     where I: pest::inputs::Input, R: pest::RuleType
 {
@@ -2293,15 +2329,26 @@ fn pbrt_string_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Str
 fn pbrt_texture_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, String)
     where I: pest::inputs::Input, R: pest::RuleType
 {
-    // single string without brackets
+    // single string with or without brackets
     let ident = pairs.next();
     let string1: String =
         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-    let string = pairs.next();
-    let pair = string.unwrap().clone();
-    let ident = pair.into_inner().next();
-    let string2: String =
-        String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    let string2: String;
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let string = pairs.next();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    } else {
+        // no brackets
+        let string = option.clone();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    }
     (string1, string2)
 }
 
@@ -3080,7 +3127,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in area_light_source_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -3267,7 +3323,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in camera_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -3468,7 +3533,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in film_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -3645,7 +3719,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in integrator_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -3817,7 +3900,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in light_source_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -3989,7 +4081,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in make_named_material_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -4173,7 +4274,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in material_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -4343,7 +4453,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in named_material_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -4516,7 +4635,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in pixel_filter_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -4693,7 +4821,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in sampler_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -4866,7 +5003,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in shape_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
@@ -5152,7 +5298,16 @@ fn main() {
                                                                         Rule::parameter => {
                                                                             for parameter_pair in texture_pair.into_inner() {
                                                                                 match parameter_pair.as_rule() {
-                                                                                    Rule::bool_param => println!("TODO: Rule::bool_param"),
+                                                                                    Rule::bool_param => {
+                                                                                        let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                                                                                        let string: String = tuple.0;
+                                                                                        let b: bool = tuple.1;
+                                                                                        if let Some(ref mut param_set) = PARAM_SET {
+                                                                                            param_set.add_bool(string, b);
+                                                                                        } else {
+                                                                                            panic!("Can't get parameter set.");
+                                                                                        }
+                                                                                    },
                                                                                     Rule::float_param => {
                                                                                         let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                         let string: String = tuple.0;
