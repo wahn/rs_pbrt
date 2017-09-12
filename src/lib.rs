@@ -4590,10 +4590,10 @@ impl Shape for Cylinder {
         // initialize _EFloat_ ray coordinate values
         let ox = EFloat::new(ray.o.x as f32, o_err.x as f32);
         let oy = EFloat::new(ray.o.y as f32, o_err.y as f32);
-        let oz = EFloat::new(ray.o.z as f32, o_err.z as f32);
+        // let oz = EFloat::new(ray.o.z as f32, o_err.z as f32);
         let dx = EFloat::new(ray.d.x as f32, d_err.x as f32);
         let dy = EFloat::new(ray.d.y as f32, d_err.y as f32);
-        let dz = EFloat::new(ray.d.z as f32, d_err.z as f32);
+        // let dz = EFloat::new(ray.d.z as f32, d_err.z as f32);
         let a: EFloat = dx * dx + dy * dy;
         let b: EFloat = (dx * ox + dy * oy) * 2.0f32;
         let c: EFloat = ox * ox + oy * oy -
@@ -4735,10 +4735,10 @@ impl Shape for Cylinder {
         // initialize _EFloat_ ray coordinate values
         let ox = EFloat::new(ray.o.x as f32, o_err.x as f32);
         let oy = EFloat::new(ray.o.y as f32, o_err.y as f32);
-        let oz = EFloat::new(ray.o.z as f32, o_err.z as f32);
+        // let oz = EFloat::new(ray.o.z as f32, o_err.z as f32);
         let dx = EFloat::new(ray.d.x as f32, d_err.x as f32);
         let dy = EFloat::new(ray.d.y as f32, d_err.y as f32);
-        let dz = EFloat::new(ray.d.z as f32, d_err.z as f32);
+        // let dz = EFloat::new(ray.d.z as f32, d_err.z as f32);
         let a: EFloat = dx * dx + dy * dy;
         let b: EFloat = (dx * ox + dy * oy) * 2.0f32;
         let c: EFloat = ox * ox + oy * oy -
@@ -8949,8 +8949,8 @@ impl GlassMaterial {
     pub fn bsdf(&self, si: &SurfaceInteraction, mode: TransportMode, allow_multiple_lobes: bool) -> Bsdf {
         let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
         let eta: Float = self.index.evaluate(si);
-        let mut urough: Float = 0.0; // TODO: uRoughness->Evaluate(*si);
-        let mut vrough: Float = 0.0; // TODO: vRoughness->Evaluate(*si);
+        // let mut urough: Float = 0.0; // TODO: uRoughness->Evaluate(*si);
+        // let mut vrough: Float = 0.0; // TODO: vRoughness->Evaluate(*si);
         let r: Spectrum = self.kr.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
         let t: Spectrum = self.kt.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
         let is_specular: bool = self.u_roughness == 0.0 as Float && self.v_roughness == 0.0 as Float;
@@ -8958,8 +8958,8 @@ impl GlassMaterial {
             bxdfs.push(Box::new(FresnelSpecular::new(r, t, 1.0 as Float, eta, mode)));
         } else {
             if self.remap_roughness {
-                urough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut urough);
-                vrough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut vrough);
+                // urough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut urough);
+                // vrough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut vrough);
             }
             if is_specular {
                 let fresnel = Arc::new(FresnelDielectric {
@@ -9259,7 +9259,7 @@ impl MipMap {
     pub fn lookup(&self, st: &mut Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> Spectrum {
         if self.do_trilinear {
             let width: Float = dst0.x.abs().max(dst0.y.abs()).max(dst1.x.abs().max(dst1.y.abs()));
-            println!("TODO: Lookup(st, 2 * width);")
+            println!("TODO: Lookup(st, 2 * width) = Lookup({:?}, {:?});", st, 2.0 as Float * width)
         }
         // TODO: ++nEWALookups;
         // TODO: ProfilePhase p(Prof::TexFiltEWA);
@@ -10190,7 +10190,7 @@ impl UniformLightDistribution {
 }
 
 impl LightDistribution for UniformLightDistribution {
-    fn lookup(&self, p: Point3f) -> Arc<Distribution1D> {
+    fn lookup(&self, _p: Point3f) -> Arc<Distribution1D> {
         self.distrib.clone()
     }
 }
@@ -10231,7 +10231,7 @@ impl SpatialLightDistribution {
         let hash_table_size: usize =
             (4 as i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
         let mut hash_table: Vec<HashEntry> = Vec::new();
-        let null: *mut Distribution1D = std::ptr::null_mut();
+        // let null: *mut Distribution1D = std::ptr::null_mut();
         for _i in 0..hash_table_size {
             let hash_entry: HashEntry = HashEntry {
                 packed_pos: AtomicU64::new(INVALID_PACKED_POS),
@@ -11890,7 +11890,7 @@ pub fn render(scene: &Scene,
     //     DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds);
     // create and preprocess sampler
     let integrator_option = Arc::get_mut(&mut integrator);
-    let mut integrator: &mut (SamplerIntegrator + Send + Sync) = integrator_option.unwrap();
+    let integrator: &mut (SamplerIntegrator + Send + Sync) = integrator_option.unwrap();
     integrator.preprocess(scene, &mut sampler);
     // use camera below
     let sample_extent: Vector2i = sample_bounds.diagonal();

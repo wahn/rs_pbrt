@@ -1,4 +1,4 @@
-extern crate pbrt;
+// extern crate pbrt;
 extern crate num_cpus;
 
 // use pbrt::{Bounds2, Point2};
