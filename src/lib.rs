@@ -726,7 +726,21 @@
 //!
 //! ### Point Lights
 //!
-//! TODO
+//! Isotropic point light source that emits the same amount of light
+//! in all directions.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{PointLight, Spectrum, Transform};
+//!
+//! fn main() {
+//!     let i: Spectrum = Spectrum::new(50.0);
+//!     let light_to_world: Transform = Transform::default();
+//!     let point_light: PointLight = PointLight::new(&light_to_world, &i);
+//!     println!("point_light = {:?}", point_light);
+//! }
+//! ```
 //!
 //! #### Spotlights
 //!
@@ -777,6 +791,10 @@
 //! Area lights are light sources defined by one or more **Shapes**
 //! that emit light from their surface, with some directional
 //! distribution of radiance at each point on the surface.
+//!
+//! ### Infinite Area Lights
+//!
+//! TODO
 //!
 //! #### Diffuse Area Lights
 //!
@@ -9891,6 +9909,9 @@ impl Light for DistantLight {
 
 // see light.h
 
+/// Area lights are light sources defined by one or more **Shapes**
+/// that emit light from their surface, with some directional
+/// distribution of radiance at each point on the surface.
 pub trait AreaLight: Light {
     fn l(&self, intr: &InteractionCommon, w: Vector3f) -> Spectrum;
 }
@@ -10724,6 +10745,7 @@ pub fn create_light_sample_distribution(name: String, scene: &Scene)
 
 // see path.h
 
+/// Path Tracing (Global Illumination)
 pub struct PathIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pixel_bounds: Bounds2i,
@@ -10931,6 +10953,7 @@ impl SamplerIntegrator for PathIntegrator {
 
 // see ao.h
 
+/// Ambient Occlusion
 pub struct AOIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pixel_bounds: Bounds2i,
@@ -11026,6 +11049,7 @@ pub enum LightStrategy {
     UniformSampleOne,
 }
 
+/// Direct Lighting (no Global Illumination)
 pub struct DirectLightingIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pixel_bounds: Bounds2i,
