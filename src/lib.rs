@@ -436,6 +436,41 @@
 //! useful to a ray tracer and are a good starting point for general
 //! ray intersection routines.
 //!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{Float, Sphere, Transform, Vector3f};
+//!
+//! fn main() {
+//!     let translate: Transform = Transform::translate(Vector3f {
+//!                                                         x: -1.3,
+//!                                                         y: 0.0,
+//!                                                         z: 0.0,
+//!                                                     });
+//!     let inverse: Transform = Transform::inverse(translate);
+//!     let radius: Float = 1.0;
+//!     let z_min: Float = -1.0;
+//!     let z_max: Float = 1.0;
+//!     let phi_max: Float = 360.0;
+//!     let sphere = Sphere::new(translate,
+//!                              inverse,
+//!                              false,
+//!                              false,
+//!                              radius,
+//!                              z_min,
+//!                              z_max,
+//!                              phi_max);
+//!     println!("translate = {:?}", translate);
+//!     println!("inverse = {:?}", inverse);
+//!     println!("sphere.radius = {:?}", sphere.radius);
+//!     println!("sphere.z_min = {:?}", sphere.z_min);
+//!     println!("sphere.z_max = {:?}", sphere.z_max);
+//!     println!("sphere.theta_min = {:?}", sphere.theta_min);
+//!     println!("sphere.theta_max = {:?}", sphere.theta_max);
+//!     println!("sphere.phi_max = {:?}", sphere.phi_max);
+//! }
+//! ```
+//!
 //! ### Triangle Meshes
 //!
 //! While a natural representation would be to have a **Triangle**
@@ -449,7 +484,8 @@
 //! ```rust
 //! extern crate pbrt;
 //!
-//! use pbrt::{Normal3f, Point2f, Point3f, Transform, TriangleMesh, Vector3f};
+//! use pbrt::{Normal3f, Point2f, Point3f, Transform, Triangle, TriangleMesh, Vector3f};
+//! use std::sync::Arc;
 //!
 //! fn main() {
 //!     let translate: Transform = Transform::translate(Vector3f {
@@ -498,10 +534,17 @@
 //!                                                         s,
 //!                                                         n,
 //!                                                         uv);
-//!
 //!     println!("translate = {:?}", translate);
 //!     println!("inverse = {:?}", inverse);
 //!     println!("triangle_mesh = {:?}", triangle_mesh);
+//!     for id in 0..triangle_mesh.n_triangles {
+//!         let triangle = Triangle::new(triangle_mesh.object_to_world,
+//!                                      triangle_mesh.world_to_object,
+//!                                      triangle_mesh.transform_swaps_handedness,
+//!                                      Arc::new(triangle_mesh.clone()),
+//!                                      id);
+//!         println!("triangle.id = {:?}", triangle.id);
+//!     }
 //! }
 //! ```
 //!
@@ -511,11 +554,79 @@
 //!
 //! ### Disks
 //!
-//! TODO
+//! The disk is an interesting quadric since it has a particularly
+//! straightforward intersection routine that avoids solving the
+//! quadric equation.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{Disk, Float, Transform, Vector3f};
+//!
+//! fn main() {
+//!     let translate: Transform = Transform::translate(Vector3f {
+//!                                                         x: 0.0,
+//!                                                         y: 0.0,
+//!                                                         z: -0.01,
+//!                                                     });
+//!     let inverse: Transform = Transform::inverse(translate);
+//!     let height: Float = 0.0;
+//!     let radius: Float = 30.0;
+//!     let inner_radius: Float = 0.0;
+//!     let phi_max: Float = 360.0;
+//!     let disk = Disk::new(translate,
+//!                          inverse,
+//!                          false,
+//!                          false,
+//!                          height,
+//!                          radius,
+//!                          inner_radius,
+//!                          phi_max);
+//!     println!("translate = {:?}", translate);
+//!     println!("inverse = {:?}", inverse);
+//!     println!("disk.height = {:?}", disk.height);
+//!     println!("disk.radius = {:?}", disk.radius);
+//!     println!("disk.inner_radius = {:?}", disk.inner_radius);
+//!     println!("disk.phi_max = {:?}", disk.phi_max);
+//! }
+//! ```
 //!
 //! ### Cylinders
 //!
-//! TODO
+//! Another useful quadric is the cylinder. Cylinder shapes are
+//! centered around the z axis.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{Cylinder, Float, Transform, Vector3f};
+//!
+//! fn main() {
+//!     let translate: Transform = Transform::translate(Vector3f {
+//!                                                         x: 2.0,
+//!                                                         y: 1.0,
+//!                                                         z: 1.6,
+//!                                                     });
+//!     let inverse: Transform = Transform::inverse(translate);
+//!     let radius: Float = 1.0;
+//!     let z_min: Float = 0.0;
+//!     let z_max: Float = 1.0;
+//!     let phi_max: Float = 360.0;
+//!     let cylinder = Cylinder::new(translate,
+//!                                  inverse,
+//!                                  false,
+//!                                  radius,
+//!                                  z_min,
+//!                                  z_max,
+//!                                  phi_max);
+//!     println!("translate = {:?}", translate);
+//!     println!("inverse = {:?}", inverse);
+//!     println!("cylinder.radius = {:?}", cylinder.radius);
+//!     println!("cylinder.z_min = {:?}", cylinder.z_min);
+//!     println!("cylinder.z_max = {:?}", cylinder.z_max);
+//!     println!("cylinder.phi_max = {:?}", cylinder.phi_max);
+//! }
+//! ```
 //!
 //! ### Hyperboloids
 //!
@@ -554,6 +665,52 @@
 //!     println!("box_filter = {:?}", box_filter);
 //! }
 //! ```
+//! ### TriangleFilter
+//!
+//! TODO
+//!
+//! ### Gaussian Filter
+//!
+//! Unlike the box and triangle filters, the Gaussian filter gives a
+//! reasonably good result in practice. The Gaussian filter does tend
+//! to cause slight blurring of the final image compared to some of
+//! the other filters, but this blurring can actually help mask any
+//! remaining aliasing in the image.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{GaussianFilter, Float, Vector2f};
+//!
+//! fn main() {
+//!     let xw: Float = 2.0;
+//!     let yw: Float = 2.0;
+//!     let alpha: Float = 2.0;
+//!     let exp_x: Float = (-alpha * xw * xw).exp();
+//!     let exp_y: Float = (-alpha * yw * yw).exp();
+//!     let gaussian_filter = GaussianFilter {
+//!         alpha: alpha,
+//!         exp_x: exp_x,
+//!         exp_y: exp_y,
+//!         radius: Vector2f { x: xw, y: yw },
+//!         inv_radius: Vector2f {
+//!             x: 1.0 / xw,
+//!             y: 1.0 / yw,
+//!         },
+//!     };
+//!
+//!     println!("gaussian_filter = {:?}", gaussian_filter);
+//! }
+//! ```
+//!
+//! ### MitchellFilter
+//!
+//! TODO
+//!
+//! ### LanczosSincFilter
+//!
+//! TODO
+//!
 //! ## Film
 //!
 //! The type of film or sensor in a camera has a dramatic effect on
@@ -569,6 +726,18 @@
 //! ## Light Sources
 //!
 //! ### Point Lights
+//!
+//! TODO
+//!
+//! #### Spotlights
+//!
+//! TODO
+//!
+//! #### Texture Projection Lights
+//!
+//! TODO
+//!
+//! #### Goniophotometric Diagram Lights
 //!
 //! TODO
 //!
@@ -601,6 +770,64 @@
 //!     let lsc: Spectrum = l * sc;
 //!     let distant_light: DistantLight = DistantLight::new(&light_to_world, &lsc, &dir);
 //!     println!("distant_light = {:?}", distant_light);
+//! }
+//! ```
+//!
+//! ### Area Lights
+//!
+//! Area lights are light sources defined by one or more **Shapes**
+//! that emit light from their surface, with some directional
+//! distribution of radiance at each point on the surface.
+//!
+//! #### Diffuse Area Lights
+//!
+//! **DiffuseAreaLight** implements a basic area light source with a
+//! uniform spatial and directional radiance distribution. The surface
+//! it emits from is defined by a **Shape**. It only emits light on
+//! the side of the surface with outward-facing surface normal; there
+//! is no emission from the other side.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::{DiffuseAreaLight, Disk, Float, Shape, Spectrum, Transform, Vector3f};
+//! use std::sync::Arc;
+//!
+//! fn main() {
+//!     let t: Transform = Transform::translate(Vector3f {
+//!                                                 x: 2.0,
+//!                                                 y: -4.0,
+//!                                                 z: 4.0,
+//!                                             });
+//!     let theta: Float = -120.0;
+//!     let axis = Vector3f {
+//!         x: 1.0,
+//!         y: 0.0,
+//!         z: 0.0,
+//!     };
+//!     let r: Transform = Transform::rotate(theta, axis);
+//!     let light_to_world: Transform = Transform::default() * r * t;
+//!     let inverse: Transform = Transform::inverse(light_to_world);
+//!     let l_emit: Spectrum = Spectrum::new(8.0);
+//!     let n_samples: i32 = 16;
+//!     let height: Float = 0.0;
+//!     let radius: Float = 2.0;
+//!     let inner_radius: Float = 0.0;
+//!     let phi_max: Float = 360.0;
+//!     let shape: Arc<Shape + Send + Sync> = Arc::new(Disk::new(light_to_world,
+//!                                                              inverse,
+//!                                                              false,
+//!                                                              false,
+//!                                                              height,
+//!                                                              radius,
+//!                                                              inner_radius,
+//!                                                              phi_max));
+//!     let two_sided: bool = false;
+//!     let diffuse_area_light: DiffuseAreaLight =
+//!         DiffuseAreaLight::new(&light_to_world, &l_emit, n_samples, shape, two_sided);
+//!     println!("diffuse_area_light.l_emit = {:?}", diffuse_area_light.l_emit);
+//!     println!("diffuse_area_light.two_sided = {:?}", diffuse_area_light.two_sided);
+//!     println!("diffuse_area_light.area = {:?}", diffuse_area_light.area);
 //! }
 //! ```
 //!
@@ -4504,10 +4731,10 @@ impl Primitive for GeometricPrimitive {
 
 #[derive(Clone)]
 pub struct Cylinder {
-    radius: Float,
-    z_min: Float,
-    z_max: Float,
-    phi_max: Float,
+    pub radius: Float,
+    pub z_min: Float,
+    pub z_max: Float,
+    pub phi_max: Float,
     // inherited from class Shape (see shape.h)
     object_to_world: Transform,
     world_to_object: Transform,
@@ -4875,10 +5102,10 @@ impl Shape for Cylinder {
 
 #[derive(Clone)]
 pub struct Disk {
-    height: Float,
-    radius: Float,
-    inner_radius: Float,
-    phi_max: Float,
+    pub height: Float,
+    pub radius: Float,
+    pub inner_radius: Float,
+    pub phi_max: Float,
     // inherited from class Shape (see shape.h)
     object_to_world: Transform,
     world_to_object: Transform,
@@ -5132,12 +5359,12 @@ impl Shape for Disk {
 
 #[derive(Clone)]
 pub struct Sphere {
-    radius: Float,
-    z_min: Float,
-    z_max: Float,
-    theta_min: Float,
-    theta_max: Float,
-    phi_max: Float,
+    pub radius: Float,
+    pub z_min: Float,
+    pub z_max: Float,
+    pub theta_min: Float,
+    pub theta_max: Float,
+    pub phi_max: Float,
     // inherited from class Shape (see shape.h)
     object_to_world: Transform,
     world_to_object: Transform,
@@ -5628,7 +5855,7 @@ impl TriangleMesh {
 #[derive(Clone)]
 pub struct Triangle {
     mesh: Arc<TriangleMesh>,
-    id: usize,
+    pub id: usize,
     // inherited from class Shape (see shape.h)
     object_to_world: Transform,
     world_to_object: Transform,

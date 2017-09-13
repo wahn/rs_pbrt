@@ -1,6 +1,7 @@
 extern crate pbrt;
 
-use pbrt::{Normal3f, Point2f, Point3f, Transform, TriangleMesh, Vector3f};
+use pbrt::{Normal3f, Point2f, Point3f, Transform, Triangle, TriangleMesh, Vector3f};
+use std::sync::Arc;
 
 fn main() {
     let translate: Transform = Transform::translate(Vector3f {
@@ -49,8 +50,15 @@ fn main() {
                                                         s,
                                                         n,
                                                         uv);
-
     println!("translate = {:?}", translate);
     println!("inverse = {:?}", inverse);
     println!("triangle_mesh = {:?}", triangle_mesh);
+    for id in 0..triangle_mesh.n_triangles {
+        let triangle = Triangle::new(triangle_mesh.object_to_world,
+                                     triangle_mesh.world_to_object,
+                                     triangle_mesh.transform_swaps_handedness,
+                                     Arc::new(triangle_mesh.clone()),
+                                     id);
+        println!("triangle.id = {:?}", triangle.id);
+    }
 }
