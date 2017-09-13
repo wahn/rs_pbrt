@@ -651,7 +651,6 @@
 //! use pbrt::{BoxFilter, Float, Vector2f};
 //!
 //! fn main() {
-//!     // see box.cpp CreateBoxFilter()
 //!     let xw: Float = 0.5;
 //!     let yw: Float = 0.5;
 //!     let box_filter = BoxFilter {
@@ -1988,6 +1987,7 @@ pub fn pnt3_offset_ray_origin(p: Point3f, p_error: Vector3f, n: Normal3f, w: Vec
     po
 }
 
+/// Calculate appropriate direction vector from two angles.
 pub fn spherical_direction(sin_theta: Float, cos_theta: Float, phi: Float) -> Vector3f {
     Vector3f {
         x: sin_theta * phi.cos(),
@@ -1996,6 +1996,9 @@ pub fn spherical_direction(sin_theta: Float, cos_theta: Float, phi: Float) -> Ve
     }
 }
 
+/// Take three basis vectors representing the x, y, and z axes and
+/// return the appropriate direction vector with respect to the
+/// coordinate frame defined by them.
 pub fn spherical_direction_vec3(sin_theta: Float, cos_theta: Float, phi: Float,
                                 x: &Vector3f, y: &Vector3f, z: &Vector3f) -> Vector3f {
     *x * sin_theta * phi.cos() + *y * sin_theta * phi.sin() + *z * cos_theta
@@ -7315,6 +7318,8 @@ impl Sampler for ZeroTwoSequenceSampler {
 
 // see lowdiscrepancy.h
 
+/// The bits of an integer quantity can be efficiently reversed with a
+/// series of logical bit operations.
 pub fn reverse_bits_32(n: u32) -> u32 {
     let mut n = (n << 16) | (n >> 16);
     n = ((n & 0x00ff00ff) << 8) | ((n & 0xff00ff00) >> 8);
@@ -7324,6 +7329,8 @@ pub fn reverse_bits_32(n: u32) -> u32 {
     n
 }
 
+/// The bits of a 64-bit value can be reversed by reversing the two
+/// 32-bit components individually and then interchanging them.
 pub fn reverse_bits_64(n: u64) -> u64 {
     let n0: u64 = reverse_bits_32(n as u32) as u64;
     let n1: u64 = reverse_bits_32((n >> 32) as u32) as u64;
@@ -7449,6 +7456,8 @@ pub fn sobol_2d(n_samples_per_pixel_sample: i32,
 
 // see lowdiscrepancy.cpp
 
+/// Once we have an appropriate prime number, use it to compute the
+/// radical inverse.
 pub fn radical_inverse_specialized(base: u16, a: u64) -> Float {
     let inv_base: Float = 1.0 as Float / base as Float;
     let mut reversed_digits: u64 = 0_u64;
@@ -7465,6 +7474,8 @@ pub fn radical_inverse_specialized(base: u16, a: u64) -> Float {
     (reversed_digits as Float * inv_base_n).min(ONE_MINUS_EPSILON)
 }
 
+/// Map to an appropriate prime number and delegate to another
+/// function to compute the radical inverse.
 pub fn radical_inverse(base_index: u16, a: u64) -> Float {
     match base_index {
         0 => {
@@ -8803,6 +8814,8 @@ pub fn vec3_same_hemisphere_vec3(w: Vector3f, wp: Vector3f) -> bool {
 
 // see reflection.cpp
 
+/// Computes the Fresnel reflection formula for dielectric materials
+/// and unpolarized light.
 pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Float {
     let not_clamped: Float = *cos_theta_i;
     *cos_theta_i = clamp(not_clamped, -1.0, 1.0);
@@ -10044,6 +10057,8 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
     l
 }
 
+/// Estimate direct lighting for only one randomly chosen light and
+/// multiply the result by the number of lights to compensate.
 pub fn uniform_sample_one_light(it: &SurfaceInteraction,
                                 scene: &Scene,
                                 sampler: &mut ZeroTwoSequenceSampler,
@@ -10314,6 +10329,7 @@ pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
     }
 }
 
+/// Returns a weight of cos_theta / PI.
 pub fn cosine_hemisphere_pdf(cos_theta: Float) -> Float {
     cos_theta * INV_PI
 }
@@ -10327,6 +10343,7 @@ pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
 
 // see sampling.cpp
 
+/// Uniformly sample rays in a hemisphere. Choose a direction.
 pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
     let z: Float = u[0_u8];
     let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
@@ -10338,10 +10355,13 @@ pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
     }
 }
 
+/// Uniformly sample rays in a hemisphere. Probability density
+/// function (PDF).
 pub fn uniform_hemisphere_pdf() -> Float {
     INV_2_PI
 }
 
+/// Uniformly sample rays in a full sphere. Choose a direction.
 pub fn uniform_sample_sphere(u: Point2f) -> Vector3f {
     let z: Float = 1.0 as Float - 2.0 as Float * u[0];
     let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
@@ -10374,6 +10394,8 @@ pub fn concentric_sample_disk(u: Point2f) -> Point2f {
     Point2f { x: theta.cos(), y: theta.sin(), } * r
 }
 
+/// Uniformly sample rays in a cone of directions. Probability density
+/// function (PDF).
 pub fn uniform_cone_pdf(cos_theta_max: Float) -> Float {
     1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max))
 }
@@ -10679,6 +10701,8 @@ impl LightDistribution for SpatialLightDistribution {
 
 const INVALID_PACKED_POS: u64 = 0xffffffffffffffff;
 
+/// Decides based on the name and the number of scene lights which
+/// light distribution to return.
 pub fn create_light_sample_distribution(name: String, scene: &Scene)
                                         -> Option<Arc<LightDistribution + Send + Sync>> {
     if name == String::from("uniform") || scene.lights.len() == 1 {
@@ -11748,6 +11772,7 @@ impl TextureParams {
     }
 }
 
+/// Replaces a macro on the C++ side.
 pub fn lookup_one<T>(vec: &Vec<ParamSetItem<T>>, name: String, d: T) -> T
     where T: Clone
 {
@@ -12105,6 +12130,8 @@ pub fn morton2(p: &(u32, u32)) -> u32 {
 	(part1_by1(p.1) << 1) + part1_by1(p.0)
 }
 
+/// **Main function** to **render** a scene mutli-threaded (using all
+/// available cores).
 pub fn render(scene: &Scene,
               camera: Arc<Camera + Send + Sync>,
               mut sampler: &mut ZeroTwoSequenceSampler,
