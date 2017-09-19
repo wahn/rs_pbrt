@@ -6115,10 +6115,10 @@ impl Shape for Triangle {
             // compute shading normal _ns_ for triangle
             let mut ns: Normal3f;
             if !self.mesh.n.is_empty() {
-                ns =
-                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 0]]) * b0 +
-                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 1]]) * b1 +
-                    Normal3::from(self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]]) * b2;
+                let n0 = self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 0]];
+                let n1 = self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 1]];
+                let n2 = self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]];
+                ns = Normal3::from(n0) * b0 + Normal3::from(n1) * b1 + Normal3::from(n2) * b2;
                 if ns.length_squared() > 0.0 {
                     ns = nrm_normalize(ns);
                 } else {
@@ -6130,10 +6130,10 @@ impl Shape for Triangle {
             // compute shading tangent _ss_ for triangle
             let mut ss: Vector3f;
             if !self.mesh.s.is_empty() {
-                ss =
-                    self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 0]] * b0 +
-                    self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 1]] * b1 +
-                    self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 2]] * b2;
+                let s0 = self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 0]];
+                let s1 = self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 1]];
+                let s2 = self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 2]];
+                ss = s0 * b0 + s1 * b1 + s2 * b2;
                 if ss.length_squared() > 0.0 {
                     ss = vec3_normalize(ss);
                 } else {
@@ -6178,6 +6178,13 @@ impl Shape for Triangle {
                 dndv = Normal3f::default();
             }
             si.set_shading_geometry(ss, ts, dndu, dndv, true);
+        }
+        // ensure correct orientation of the geometric normal
+        if !self.mesh.n.is_empty() {
+            si.n = nrm_faceforward_nrm(si.n, si.shading.n);
+        } else if self.reverse_orientation ^ self.transform_swaps_handedness {
+            si.n = -si.n;
+            si.shading.n = -si.n;
         }
         Some((si, t as Float))
     }
@@ -9176,7 +9183,7 @@ impl PlasticMaterial {
             };
             bxdfs.push(Box::new(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
-        Bsdf::new(si, 1.5, bxdfs)
+        Bsdf::new(si, 1.0, bxdfs)
     }
 }
 

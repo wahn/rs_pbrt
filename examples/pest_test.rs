@@ -771,12 +771,24 @@ fn pbrt_shape(param_set: &ParamSet)
             assert!(vi.len() > 0_usize);
             assert!(p.len() > 0_usize);
             let s = param_set.find_vector3f(String::from("S"));
+            let mut s_ws: Vec<Vector3f> = Vec::new();
             if !s.is_empty() {
                 assert!(s.len() == p.len());
+                // transform tangents to world space
+                let n_tangents: usize = s.len();
+                for i in 0..n_tangents {
+                    s_ws.push(obj_to_world.transform_vector(s[i]));
+                }
             }
             let n = param_set.find_normal3f(String::from("N"));
+            let mut n_ws: Vec<Normal3f> = Vec::new();
             if !n.is_empty() {
                 assert!(n.len() == p.len());
+                // transform normals to world space
+                let n_normals: usize = n.len();
+                for i in 0..n_normals {
+                    n_ws.push(obj_to_world.transform_normal(n[i]));
+                }
             }
             for i in 0..vi.len() {
                 if vi[i] as usize >= p.len() {
@@ -806,8 +818,8 @@ fn pbrt_shape(param_set: &ParamSet)
                                                   vertex_indices,
                                                   n_vertices,
                                                   p_ws, // in world space
-                                                  s,
-                                                  n,
+                                                  s_ws, // in world space
+                                                  n_ws, // in world space
                                                   uvs));
             let mtl: Arc<Material + Send + Sync> = create_material();
             for id in 0..mesh.n_triangles {
