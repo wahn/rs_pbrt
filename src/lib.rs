@@ -864,7 +864,6 @@ extern crate image;
 extern crate crossbeam;
 extern crate pbr;
 // extern crate openexr;
-extern crate cpuprofiler;
 
 // use std::cell::RefCell;
 use std::borrow::Borrow;
@@ -882,7 +881,6 @@ use std::sync::mpsc;
 use num::Zero;
 use image::{ImageResult, DynamicImage};
 // use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
-use cpuprofiler::PROFILER;
 
 pub type Float = f32;
 
@@ -6748,7 +6746,6 @@ impl BVHAccel {
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut total_nodes: usize = 0;
         let mut ordered_prims: Vec<Arc<Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
-        PROFILER.lock().unwrap().start("./recursive_build.profile").unwrap();
         let root = BVHAccel::recursive_build(bvh.clone(), // instead of self
                                              // arena,
                                              &mut primitive_info,
@@ -6756,7 +6753,6 @@ impl BVHAccel {
                                              num_prims,
                                              &mut total_nodes,
                                              &mut ordered_prims);
-        PROFILER.lock().unwrap().stop().unwrap();
         // flatten first
         let mut nodes = vec![LinearBVHNode::default(); total_nodes];
         let mut offset: usize = 0;
