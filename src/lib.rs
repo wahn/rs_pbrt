@@ -7018,29 +7018,33 @@ impl BVHAccel {
                                         b <= min_cost_split_bucket
                                     });
                                 mid = start + left.len();
-                                let combined = [left, right].concat();
-                                if combined.len() == primitive_info.len() {
+                                let combined_len = left.len() + right.len();
+                                if combined_len == primitive_info.len() {
+                                    let combined = [left, right].concat();
                                     primitive_info.copy_from_slice(combined.as_slice());
                                 } else {
                                     // can't use above function (copy_from_slice)
                                     let prim_info_len = primitive_info.len();
                                     let mut prim_info_clone = primitive_info.clone();
                                     let (l_prim_info, r_prim_info) = prim_info_clone.split_at_mut(start);
-                                    if combined.len() == r_prim_info.len() {
+                                    if combined_len == r_prim_info.len() {
+                                        let combined = [left, right].concat();
                                         r_prim_info.copy_from_slice(combined.as_slice());
-                                        let combined = [l_prim_info, r_prim_info].concat();
-                                        if combined.len() == prim_info_len {
+                                        let combined_len = l_prim_info.len() + r_prim_info.len();
+                                        if combined_len == prim_info_len {
+                                            let combined = [l_prim_info, r_prim_info].concat();
                                             primitive_info.copy_from_slice(combined.as_slice());
                                         } else {
                                             println!("start({}), mid({}), end({})", start, mid, end);
-                                            println!("combined.len() != prim_info.len(); {} != {}",
-                                                     combined.len(), prim_info_len);
+                                            println!("combined_len != prim_info.len(); {} != {}",
+                                                     combined_len, prim_info_len);
                                         }
                                     } else {
                                         // we have to split at end as well
                                         let (rm_prim_info, rr_prim_info) = r_prim_info.split_at_mut(end - start);
-                                        if combined.len() == rm_prim_info.len() {
+                                        if combined_len == rm_prim_info.len() {
                                             // replace middle part
+                                            let combined = [left, right].concat();
                                             rm_prim_info.copy_from_slice(combined.as_slice());
                                             // combine left, middle, and right
                                             let combined = [l_prim_info, rm_prim_info, rr_prim_info].concat();
@@ -7053,8 +7057,8 @@ impl BVHAccel {
                                             }
                                         } else {
                                             println!("start({}), mid({}), end({})", start, mid, end);
-                                            println!("combined.len() != m_prim_info.len(); {} != {}",
-                                                     combined.len(), rm_prim_info.len());
+                                            println!("combined_len != m_prim_info.len(); {} != {}",
+                                                     combined_len, rm_prim_info.len());
                                         }
                                     }
                                 }
