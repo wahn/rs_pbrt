@@ -857,13 +857,13 @@
 //! specular reflection and transmission effects.
 #![feature(integer_atomics)]
 
+extern crate crossbeam;
+extern crate image;
 extern crate num;
 extern crate num_cpus;
-// extern crate copy_arena;
-extern crate image;
-extern crate crossbeam;
-extern crate pbr;
 // extern crate openexr;
+extern crate pbr;
+extern crate typed_arena;
 
 // use std::cell::RefCell;
 use std::borrow::Borrow;
@@ -878,6 +878,7 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
 use std::sync::mpsc;
 // use copy_arena::{Arena, Allocator};
+use typed_arena::Arena;
 use num::Zero;
 use image::{ImageResult, DynamicImage};
 // use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
@@ -6647,28 +6648,22 @@ impl BVHPrimitiveInfo {
     }
 }
 
-#[derive(Debug,Clone)]
-enum BVHLink {
-    Empty,
-    More(Box<BVHBuildNode>),
+#[derive(Debug)]
+pub struct BVHBuildNode<'a> {
+    pub bounds: Bounds3f,
+    pub child1: Option<&'a mut BVHBuildNode<'a>>,
+    pub child2: Option<&'a mut BVHBuildNode<'a>>,
+    pub split_axis: u8,
+    pub first_prim_offset: usize,
+    pub n_primitives: usize,
 }
 
-#[derive(Debug,Clone)]
-pub struct BVHBuildNode {
-    bounds: Bounds3f,
-    child1: BVHLink,
-    child2: BVHLink,
-    split_axis: u8,
-    first_prim_offset: usize,
-    n_primitives: usize,
-}
-
-impl Default for BVHBuildNode {
+impl<'a> Default for BVHBuildNode<'a> {
     fn default() -> Self {
         BVHBuildNode {
             bounds: Bounds3f::default(),
-            child1: BVHLink::Empty,
-            child2: BVHLink::Empty,
+            child1: None,
+            child2: None,
             split_axis: 0_u8,
             first_prim_offset: 0_usize,
             n_primitives: 0_usize,
@@ -6676,19 +6671,19 @@ impl Default for BVHBuildNode {
     }
 }
 
-impl BVHBuildNode {
+impl<'a> BVHBuildNode<'a> {
     pub fn init_leaf(&mut self, first: usize, n: usize, b: &Bounds3f) {
         self.first_prim_offset = first;
         self.n_primitives = n;
         self.bounds = *b;
-        self.child1 = BVHLink::Empty;
-        self.child2 = BVHLink::Empty;
+        self.child1 = None;
+        self.child2 = None;
     }
-    pub fn init_interior(&mut self, axis: u8, c0: Box<BVHBuildNode>, c1: Box<BVHBuildNode>) {
+    pub fn init_interior(&mut self, axis: u8, c0: &'a mut BVHBuildNode<'a>, c1: &'a mut BVHBuildNode<'a>) {
         self.n_primitives = 0;
         self.bounds = bnd3_union_bnd3(c0.bounds, c1.bounds);
-        self.child1 = BVHLink::More(c0);
-        self.child2 = BVHLink::More(c1);
+        self.child1 = Some(c0);
+        self.child2 = Some(c1);
         self.split_axis = axis;
     }
 }
@@ -6744,10 +6739,11 @@ impl BVHAccel {
             primitive_info[i] = BVHPrimitiveInfo::new(i, world_bound);
         }
         // TODO: if (splitMethod == SplitMethod::HLBVH)
+        let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
         let mut ordered_prims: Vec<Arc<Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
         let root = BVHAccel::recursive_build(bvh.clone(), // instead of self
-                                             // arena,
+                                             &mut arena,
                                              &mut primitive_info,
                                              0,
                                              num_prims,
@@ -6756,7 +6752,7 @@ impl BVHAccel {
         // flatten first
         let mut nodes = vec![LinearBVHNode::default(); total_nodes];
         let mut offset: usize = 0;
-        BVHAccel::flatten_bvh_tree(&root, &mut nodes, &mut offset);
+        BVHAccel::flatten_bvh_tree(root, &mut nodes, &mut offset);
         assert!(nodes.len() == total_nodes);
         // primitives.swap(orderedPrims);
         let bvh_ordered_prims = Arc::new(BVHAccel {
@@ -6892,16 +6888,16 @@ impl BVHAccel {
         }
         false
     }
-    pub fn recursive_build(bvh: Arc<BVHAccel>,
-                           // arena,
-                           primitive_info: &mut Vec<BVHPrimitiveInfo>,
-                           start: usize,
-                           end: usize,
-                           total_nodes: &mut usize,
-                           ordered_prims: &mut Vec<Arc<Primitive + Sync + Send>>)
-                           -> Box<BVHBuildNode> {
+    pub fn recursive_build<'a>(bvh: Arc<BVHAccel>,
+                               arena: &'a Arena<BVHBuildNode<'a>>,
+                               primitive_info: &mut Vec<BVHPrimitiveInfo>,
+                               start: usize,
+                               end: usize,
+                               total_nodes: &mut usize,
+                               ordered_prims: &mut Vec<Arc<Primitive + Sync + Send>>)
+                               -> &'a mut BVHBuildNode<'a> {
         assert_ne!(start, end);
-        let mut node: Box<BVHBuildNode> = Box::new(BVHBuildNode::default());
+        let node: &mut BVHBuildNode<'a> = arena.alloc(BVHBuildNode::default());
         *total_nodes += 1_usize;
         // compute bounds of all primitives in BVH node
         let mut bounds: Bounds3f = Bounds3f::default();
@@ -7077,12 +7073,14 @@ impl BVHAccel {
                 }
                 // make sure we get result for c1 before c0
                 let c1 = BVHAccel::recursive_build(bvh.clone(),
+                                                   arena,
                                                    primitive_info,
                                                    mid,
                                                    end,
                                                    total_nodes,
                                                    ordered_prims);
                 let c0 = BVHAccel::recursive_build(bvh.clone(),
+                                                   arena,
                                                    primitive_info,
                                                    start,
                                                    mid,
@@ -7093,10 +7091,10 @@ impl BVHAccel {
         }
         return node;
     }
-    fn flatten_bvh_tree(node: &Box<BVHBuildNode>,
-                        nodes: &mut Vec<LinearBVHNode>,
-                        offset: &mut usize)
-                        -> usize {
+    fn flatten_bvh_tree<'a>(node: &mut BVHBuildNode<'a>,
+                            nodes: &mut Vec<LinearBVHNode>,
+                            offset: &mut usize)
+                            -> usize {
         let my_offset: usize = *offset;
         *offset += 1;
         if node.n_primitives > 0 {
@@ -7110,22 +7108,18 @@ impl BVHAccel {
             nodes[my_offset] = linear_node;
         } else {
             // interior
-            let child1 = match node.clone().child1 {
-                BVHLink::More(c) => c,
-                _ => Box::new(BVHBuildNode::default()),
-            };
-            let child2 = match node.clone().child2 {
-                BVHLink::More(c) => c,
-                _ => Box::new(BVHBuildNode::default()),
-            };
-            BVHAccel::flatten_bvh_tree(&child1, nodes, offset);
-            let linear_node = LinearBVHNode {
-                bounds: node.bounds,
-                offset: BVHAccel::flatten_bvh_tree(&child2, nodes, offset),
-                n_primitives: 0_usize,
-                axis: node.split_axis,
-            };
-            nodes[my_offset] = linear_node;
+            if let Some(ref mut child1) = node.child1 {
+                BVHAccel::flatten_bvh_tree(child1, nodes, offset);
+            }
+            if let Some(ref mut child2) = node.child2 {
+                let linear_node = LinearBVHNode {
+                    bounds: node.bounds,
+                    offset: BVHAccel::flatten_bvh_tree(child2, nodes, offset),
+                    n_primitives: 0_usize,
+                    axis: node.split_axis,
+                };
+                nodes[my_offset] = linear_node;
+            }
         }
         my_offset
     }
