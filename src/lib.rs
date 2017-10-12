@@ -863,6 +863,7 @@ extern crate num;
 extern crate num_cpus;
 // extern crate openexr;
 extern crate pbr;
+extern crate time;
 extern crate typed_arena;
 
 // use std::cell::RefCell;
@@ -882,6 +883,7 @@ use typed_arena::Arena;
 use num::Zero;
 use image::{ImageResult, DynamicImage};
 // use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
+use time::PreciseTime;
 
 pub type Float = f32;
 
@@ -6742,6 +6744,8 @@ impl BVHAccel {
         let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
         let mut ordered_prims: Vec<Arc<Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
+        println!("BVHAccel::recursive_build(...)");
+        let start = PreciseTime::now();
         let root = BVHAccel::recursive_build(bvh.clone(), // instead of self
                                              &mut arena,
                                              &mut primitive_info,
@@ -6749,10 +6753,16 @@ impl BVHAccel {
                                              num_prims,
                                              &mut total_nodes,
                                              &mut ordered_prims);
+        let end = PreciseTime::now();
+        println!("{} seconds for building BVH ...", start.to(end));
         // flatten first
         let mut nodes = vec![LinearBVHNode::default(); total_nodes];
         let mut offset: usize = 0;
+        println!("BVHAccel::flatten_bvh_tree(...)");
+        let start = PreciseTime::now();
         BVHAccel::flatten_bvh_tree(root, &mut nodes, &mut offset);
+        let end = PreciseTime::now();
+        println!("{} seconds for flattening BVH ...", start.to(end));
         assert!(nodes.len() == total_nodes);
         // primitives.swap(orderedPrims);
         let bvh_ordered_prims = Arc::new(BVHAccel {
