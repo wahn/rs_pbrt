@@ -1,6 +1,6 @@
 [root]
 name = "pbrt"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "crossbeam 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "getopts 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
