@@ -7012,7 +7012,7 @@ impl BVHAccel {
                             // at selected SAH bucket
                             let leaf_cost: Float = n_primitives as Float;
                             if n_primitives > bvh.max_prims_in_node || min_cost < leaf_cost {
-                                let (left, right): (Vec<BVHPrimitiveInfo>, Vec<BVHPrimitiveInfo>) =
+                                let (mut left, mut right): (Vec<BVHPrimitiveInfo>, Vec<BVHPrimitiveInfo>) =
                                     primitive_info[start..end].into_iter()
                                     .partition(|&pi| {
                                         let mut b: usize =
@@ -7026,15 +7026,12 @@ impl BVHAccel {
                                 mid = start + left.len();
                                 let combined_len = left.len() + right.len();
                                 if combined_len == primitive_info.len() {
-                                    let combined = [left, right].concat();
-                                    primitive_info.copy_from_slice(combined.as_slice());
+                                    primitive_info.clear();
+                                    primitive_info.append(&mut left);
+                                    primitive_info.append(&mut right);
                                 } else {
-                                    // can't use above function (copy_from_slice)
-                                    let combined = [&primitive_info[0..start],
-                                                    &left[..],
-                                                    &right[..],
-                                                    &primitive_info[end..]].concat();
-                                    primitive_info.copy_from_slice(combined.as_slice());
+                                    primitive_info.splice(start..mid, left.iter().cloned());
+                                    primitive_info.splice(mid..end, right.iter().cloned());
                                 }
                             } else {
                                 // create leaf _BVHBuildNode_
