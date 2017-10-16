@@ -1052,7 +1052,7 @@ pub fn gamma_correct(value: Float) -> Float {
 }
 
 /// Clamp the given value *val* to lie between the values *low* and *high*.
-pub fn clamp<T>(val: T, low: T, high: T) -> T
+pub fn clamp_t<T>(val: T, low: T, high: T) -> T
     where T: PartialOrd
 {
     let r: T;
@@ -3432,7 +3432,7 @@ impl AnimatedTransform {
         // compute terms of motion derivative function
         if at.has_rotation {
             let cos_theta: Float = quat_dot(at.r[0], at.r[1]);
-            let theta: Float = (clamp(cos_theta, -1.0, 1.0)).acos();
+            let theta: Float = (clamp_t(cos_theta, -1.0, 1.0)).acos();
             let qperp: Quaternion = quat_normalize(at.r[1] - at.r[0] * cos_theta);
             let t0x: Float = at.t[0].x;
             let t0y: Float = at.t[0].y;
@@ -4806,7 +4806,7 @@ impl Cylinder {
             radius: radius,
             z_min: z_min.min(z_max),
             z_max: z_min.max(z_max),
-            phi_max: radians(clamp(phi_max, 0.0, 360.0)),
+            phi_max: radians(clamp_t(phi_max, 0.0, 360.0)),
             material: None,
         }
     }
@@ -5178,7 +5178,7 @@ impl Disk {
             height: height,
             radius: radius,
             inner_radius: inner_radius,
-            phi_max: radians(clamp(phi_max, 0.0, 360.0)),
+            phi_max: radians(clamp_t(phi_max, 0.0, 360.0)),
             material: None,
         }
     }
@@ -5437,11 +5437,11 @@ impl Sphere {
             transform_swaps_handedness: transform_swaps_handedness,
             // Sphere
             radius: radius,
-            z_min: clamp(z_min.min(z_max), -radius, radius),
-            z_max: clamp(z_min.max(z_max), -radius, radius),
-            theta_min: clamp(z_min.min(z_max) / radius, -1.0, 1.0).acos(),
-            theta_max: clamp(z_min.max(z_max) / radius, -1.0, 1.0).acos(),
-            phi_max: radians(clamp(phi_max, 0.0, 360.0)),
+            z_min: clamp_t(z_min.min(z_max), -radius, radius),
+            z_max: clamp_t(z_min.max(z_max), -radius, radius),
+            theta_min: clamp_t(z_min.min(z_max) / radius, -1.0, 1.0).acos(),
+            theta_max: clamp_t(z_min.max(z_max) / radius, -1.0, 1.0).acos(),
+            phi_max: radians(clamp_t(phi_max, 0.0, 360.0)),
             material: None,
         }
     }
@@ -5544,7 +5544,7 @@ impl Shape for Sphere {
         }
         // find parametric representation of sphere hit
         let u: Float = phi / self.phi_max;
-        let theta: Float = clamp(p_hit.z / self.radius, -1.0, 1.0).acos();
+        let theta: Float = clamp_t(p_hit.z / self.radius, -1.0, 1.0).acos();
         let v: Float = (theta - self.theta_min) / (self.theta_max - self.theta_min);
         // compute sphere $\dpdu$ and $\dpdv$
         let z_radius: Float = (p_hit.x * p_hit.x + p_hit.y * p_hit.y).sqrt();
@@ -6468,7 +6468,7 @@ impl RGBSpectrum {
         let mut ret: RGBSpectrum = RGBSpectrum::default();
         let n_spectrum_samples: usize = 3; // RGB
         for i in 0..n_spectrum_samples {
-            ret.c[i] = clamp(self.c[i], low, high);
+            ret.c[i] = clamp_t(self.c[i], low, high);
         }
         assert!(!ret.has_nans());
         ret
@@ -7891,19 +7891,19 @@ impl Film {
             for x in 0..width {
                 // red
                 let index: usize = (3 * (y * width + x) + 0) as usize;
-                buffer[index] = clamp(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                      0.0 as Float,
-                                      255.0 as Float) as u8;
+                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                        0.0 as Float,
+                                        255.0 as Float) as u8;
                 // green
                 let index: usize = (3 * (y * width + x) + 1) as usize;
-                buffer[index] = clamp(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                      0.0 as Float,
-                                      255.0 as Float) as u8;
+                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                        0.0 as Float,
+                                        255.0 as Float) as u8;
                 // blue
                 let index: usize = (3 * (y * width + x) + 2) as usize;
-                buffer[index] = clamp(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                      0.0 as Float,
-                                      255.0 as Float) as u8;
+                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                        0.0 as Float,
+                                        255.0 as Float) as u8;
             }
         }
         // write "pbrt.png" to disk
@@ -8759,7 +8759,7 @@ pub fn cos_phi(w: Vector3f) -> Float {
     if sin_theta == 0.0 as Float {
         1.0 as Float
     } else {
-        clamp(w.x / sin_theta, -1.0, 1.0)
+        clamp_t(w.x / sin_theta, -1.0, 1.0)
     }
 }
 
@@ -8769,7 +8769,7 @@ pub fn sin_phi(w: Vector3f) -> Float {
     if sin_theta == 0.0 as Float {
         0.0 as Float
     } else {
-        clamp(w.y / sin_theta, -1.0, 1.0)
+        clamp_t(w.y / sin_theta, -1.0, 1.0)
     }
 }
 
@@ -8817,7 +8817,7 @@ pub fn vec3_same_hemisphere_vec3(w: Vector3f, wp: Vector3f) -> bool {
 /// and unpolarized light.
 pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Float {
     let not_clamped: Float = *cos_theta_i;
-    *cos_theta_i = clamp(not_clamped, -1.0, 1.0);
+    *cos_theta_i = clamp_t(not_clamped, -1.0, 1.0);
     // potentially swap indices of refraction
     let entering: bool = *cos_theta_i > 0.0;
     // use local copies because of potential swap (otherwise eta_i and
@@ -9328,6 +9328,21 @@ pub trait Texture<T> {
     fn evaluate(&self, si: &SurfaceInteraction) -> T;
 }
 
+pub fn lanczos(x: Float, tau: Float) -> Float {
+    let mut x: Float = x;
+    x = x.abs();
+    if x < 1e-5 as Float {
+        return 1.0 as Float;
+    }
+    if x > 1.0 as Float {
+        return 0.0 as Float;
+    }
+    x *= PI;
+    let s: Float = (x * tau).sin() / (x * tau);
+    let lanczos: Float = x.sin() / x;
+    s * lanczos
+}
+
 // see constant.h
 
 pub struct ConstantTexture<T> {
@@ -9393,6 +9408,12 @@ pub enum ImageWrap {
     Clamp,
 }
 
+#[derive(Debug,Default,Copy,Clone)]
+pub struct ResampleWeight {
+    pub first_texel: i32,
+    pub weight: [Float; 4],
+}
+
 pub struct MipMap {
     // MIPMap Private Data
     pub do_trilinear: bool,
@@ -9410,19 +9431,79 @@ impl MipMap {
                do_trilinear: bool,
                max_anisotropy: Float,
                wrap_mode: ImageWrap) -> Self {
-        let resolution = *res;
-        let resampled_image: Vec<Spectrum> = Vec::new();
+        let mut resolution = *res;
+        let mut resampled_image: Vec<Spectrum> = Vec::new();
         if !is_power_of_2(resolution.x) || !is_power_of_2(resolution.y) {
             // resample image to power-of-two resolution
             let res_pow_2: Point2i = Point2i {
                 x: round_up_pow2_32(resolution.x),
                 y: round_up_pow2_32(resolution.y),
             };
-            println!("TODO: Resampling MIPMap from {:?} to {:?}. Ratio= {:?}",
+            println!("Resampling MIPMap from {:?} to {:?}. Ratio= {:?}",
                      resolution, res_pow_2,
                      (res_pow_2.x * res_pow_2.y) as Float /
                      (resolution.x * resolution.y) as Float);
-            // TODO
+            // resample image in $s$ direction
+            let s_weights: Vec<ResampleWeight> = MipMap::resample_weights(resolution.x, res_pow_2.x);
+            // TODO: resampled_image.reset(new T[resPow2[0] * resPow2[1]]);
+            resampled_image = vec![Spectrum::default(); (res_pow_2.x * res_pow_2.y) as usize];
+            // apply _s_weights_ to zoom in $s$ direction
+            // TODO: ParallelFor([&](int t) {
+            for t in 0..resolution.y { // chunk size 16
+                for s in 0..res_pow_2.x {
+                    // compute texel $(s,t)$ in $s$-zoomed image
+                    resampled_image[(t * res_pow_2.x + s) as usize] = Spectrum::new(0.0 as Float);
+                    for j in 0..4 {
+                        let mut orig_s: i32 = s_weights[s as usize].first_texel + j as i32;
+                        orig_s = match wrap_mode {
+                            ImageWrap::Repeat => mod_t(orig_s, resolution.x),
+                            ImageWrap::Clamp => clamp_t(orig_s, 0_i32, resolution.x - 1_i32),
+                            _ => orig_s,
+                        };
+                        if orig_s >= 0_i32 && orig_s < resolution.x {
+                            resampled_image[(t * res_pow_2.x + s) as usize] +=
+                                img[(t * resolution.x + orig_s) as usize] *
+                                s_weights[s as usize].weight[j];
+
+                        }
+                    }
+                }
+            }
+            // TODO: }, resolution[1], 16);
+            // resample image in $t$ direction
+            let t_weights: Vec<ResampleWeight> = MipMap::resample_weights(resolution.y, res_pow_2.y);
+            // std::vector<T *> resample_bufs;
+            // int nThreads = MaxThreadIndex();
+            // for (int i = 0; i < nThreads; ++i)
+            //     resample_bufs.push_back(new T[resPow2[1]]);
+            // let resampled_bufs: Vec<Spectrum> = vec![Spectrum::default(); res_pow_2.y as usize]; // single-threaded
+            let mut work_data: Vec<Spectrum> = vec![Spectrum::default(); res_pow_2.y as usize]; // single-threaded
+            // TODO: ParallelFor([&](int s) {
+            // T *work_data = resample_bufs[ThreadIndex];
+            for s in 0..res_pow_2.x { // chunk size 32
+                for t in 0..res_pow_2.y {
+                    work_data[t as usize] = Spectrum::new(0.0 as Float);
+                    for j in 0..4 {
+                        let mut offset: i32 = t_weights[t as usize].first_texel + j as i32;
+                        offset = match wrap_mode {
+                            ImageWrap::Repeat => mod_t(offset, resolution.y),
+                            ImageWrap::Clamp => clamp_t(offset, 0_i32, resolution.y - 1_i32),
+                            _ => offset,
+                        };
+                        if offset >= 0_i32 && offset < resolution.y {
+                            work_data[t as usize] += 
+                                resampled_image[(offset * res_pow_2.x + s) as usize] *
+                                t_weights[t as usize].weight[j];
+                        }
+                    }
+                }
+                for t in 0..res_pow_2.y {
+                    resampled_image[(t * res_pow_2.x + s) as usize] = MipMap::clamp(work_data[t as usize]);
+                }
+            }
+            // TODO: }, resPow2[0], 32);
+            // for (auto ptr : resample_bufs) delete[] ptr;
+            resolution = res_pow_2;
         }
         let mut mipmap = MipMap {
             do_trilinear: do_trilinear,
@@ -9481,13 +9562,13 @@ impl MipMap {
             ImageWrap::Repeat => (mod_t(s as usize, u_size as usize),
                                   mod_t(t as usize, v_size as usize)),
             ImageWrap::Clamp => {
-                (clamp(s, 0, u_size - 1) as usize, clamp(t, 0, v_size - 1) as usize)
+                (clamp_t(s, 0, u_size - 1) as usize, clamp_t(t, 0, v_size - 1) as usize)
             }
             ImageWrap::Black => {
                 // TODO: let black: T = num::Zero::zero();
                 if s < 0 || s >= u_size || t < 0 || t >= v_size {
                     // TODO: return &black;
-                    (clamp(s, 0, u_size - 1) as usize, clamp(t, 0, v_size - 1) as usize) // TMP
+                    (clamp_t(s, 0, u_size - 1) as usize, clamp_t(t, 0, v_size - 1) as usize) // TMP
                 } else {
                     (s as usize, t as usize)
                 }
@@ -9533,7 +9614,46 @@ impl MipMap {
         let ret: Spectrum = lerp_rgb(lod - ilod as Float, col1, col2);
         ret
     }
-    pub fn ewa(&self, level: usize, st: Point2f, dst0: Vector2f, dst1: Vector2f) -> Spectrum {
+    fn resample_weights(old_res: i32, new_res: i32) -> Vec<ResampleWeight> {
+        assert!(new_res >= old_res);
+        let mut wt: Vec<ResampleWeight> = Vec::with_capacity(new_res as usize);
+        let filterwidth: Float = 2.0 as Float;
+        for i in 0..new_res {
+            // compute image resampling weights for _i_th texel
+            let center: Float = (i as Float + 0.5 as Float) * old_res as Float / new_res as Float;
+            let mut rw: ResampleWeight = ResampleWeight::default();
+            rw.first_texel = ((center - filterwidth) + 0.5 as Float).floor() as i32;
+            for j in 0..4 {
+                let pos: Float = rw.first_texel as Float + j as Float + 0.5 as Float;
+                rw.weight[j] = lanczos((pos - center) / filterwidth, 2.0 as Float);
+            }
+            // normalize filter weights for texel resampling
+            let inv_sum_wts: Float =
+                1.0 as Float / (rw.weight[0] + rw.weight[1] + rw.weight[2] + rw.weight[3]);
+            for j in 0..4 {
+                rw.weight[j] *= inv_sum_wts;
+            }
+            wt.push(rw); // add to vector
+        }
+        wt
+    }
+    fn clamp(v: Spectrum) -> Spectrum {
+        v.clamp(0.0 as Float, std::f32::INFINITY as Float)
+    }
+    fn triangle(&self, level: usize, st: &Point2f) -> Spectrum {
+        let level: usize = clamp_t(level, 0_usize, self.levels() - 1_usize);
+        let s: Float = st.x * self.pyramid[level].u_size() as Float - 0.5;
+        let t: Float = st.y * self.pyramid[level].v_size() as Float - 0.5;
+        let s0: isize = s.floor() as isize;
+        let t0: isize = t.floor() as isize;
+        let ds: Float = s - s0 as Float;
+        let dt: Float = t - t0 as Float;
+        *self.texel(level, s0, t0) * (1.0 - ds) * (1.0 - dt) +
+        *self.texel(level, s0, t0 + 1) * (1.0 - ds) * dt +
+        *self.texel(level, s0 + 1, t0) * ds * (1.0 - dt) +
+        *self.texel(level, s0 + 1, t0 + 1) * ds * dt
+    }
+    fn ewa(&self, level: usize, st: Point2f, dst0: Vector2f, dst1: Vector2f) -> Spectrum {
         if level >= self.levels() {
             return *self.texel(self.levels() - 1, 0, 0);
         }
@@ -9582,19 +9702,6 @@ impl MipMap {
             }
         }
         sum / sum_wts
-    }
-    pub fn triangle(&self, level: usize, st: &Point2f) -> Spectrum {
-        let level: usize = clamp(level, 0_usize, self.levels() - 1_usize);
-        let s: Float = st.x * self.pyramid[level].u_size() as Float - 0.5;
-        let t: Float = st.y * self.pyramid[level].v_size() as Float - 0.5;
-        let s0: isize = s.floor() as isize;
-        let t0: isize = t.floor() as isize;
-        let ds: Float = s - s0 as Float;
-        let dt: Float = t - t0 as Float;
-        *self.texel(level, s0, t0) * (1.0 - ds) * (1.0 - dt) +
-        *self.texel(level, s0, t0 + 1) * (1.0 - ds) * dt +
-        *self.texel(level, s0 + 1, t0) * ds * (1.0 - dt) +
-        *self.texel(level, s0 + 1, t0 + 1) * ds * dt
     }
 }
 
@@ -10293,7 +10400,7 @@ impl Distribution1D {
                 len = half;
             }
         }
-        let offset: usize = clamp(first as isize - 1_isize, 0 as isize, self.cdf.len() as isize - 2_isize) as usize;
+        let offset: usize = clamp_t(first as isize - 1_isize, 0 as isize, self.cdf.len() as isize - 2_isize) as usize;
         if pdf.is_some() {
             if self.func_int > 0.0 as Float {
                 *pdf.unwrap() = self.func[offset] / (self.func_int * self.func.len() as Float);
@@ -10604,9 +10711,9 @@ impl LightDistribution for SpatialLightDistribution {
             // there to be robust to computed intersection points
             // being slightly outside the scene bounds due to
             // floating-point roundoff error.
-            pi[i] = clamp((offset[i] * self.n_voxels[i as usize] as Float) as i32,
-                          0_i32,
-                          self.n_voxels[i as usize] - 1_i32);
+            pi[i] = clamp_t((offset[i] * self.n_voxels[i as usize] as Float) as i32,
+                            0_i32,
+                            self.n_voxels[i as usize] - 1_i32);
         }
         // pack the 3D integer voxel coordinates into a single 64-bit value.
         let packed_pos: u64 = ((pi[0] as u64) << 40) | ((pi[1] as u64) << 20) | (pi[2] as u64);
