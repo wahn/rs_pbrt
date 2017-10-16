@@ -1099,25 +1099,27 @@ pub fn is_power_of_2<T>(v: T) -> bool
 }
 
 /// Round an integer up to the next higher (or equal) power of 2.
-pub fn round_up_pow2_32(v: &mut i32) -> i32 {
-    *v -= 1_i32;
-    *v |= *v >> 1;
-    *v |= *v >> 2;
-    *v |= *v >> 4;
-    *v |= *v >> 8;
-    *v |= *v >> 16;
-    *v + 1
+pub fn round_up_pow2_32(v: i32) -> i32 {
+    let mut ret: i32 = v; // copy value
+    ret -= 1_i32;
+    ret |= ret >> 1;
+    ret |= ret >> 2;
+    ret |= ret >> 4;
+    ret |= ret >> 8;
+    ret |= ret >> 16;
+    ret + 1
 }
 
 /// Round an integer up to the next higher (or equal) power of 2.
-pub fn round_up_pow2_64(v: &mut i64) -> i64 {
-    *v -= 1_i64;
-    *v |= *v >> 1;
-    *v |= *v >> 2;
-    *v |= *v >> 4;
-    *v |= *v >> 8;
-    *v |= *v >> 16;
-    *v + 1
+pub fn round_up_pow2_64(v: i64) -> i64 {
+    let mut ret: i64 = v; // copy value
+    ret -= 1_i64;
+    ret |= ret >> 1;
+    ret |= ret >> 2;
+    ret |= ret >> 4;
+    ret |= ret >> 8;
+    ret |= ret >> 16;
+    ret + 1
 }
 
 /// Interpolate linearly between two provided values.
@@ -7230,8 +7232,7 @@ impl ZeroTwoSequenceSampler {
         self.array_2d_offset = 0_usize;
     }
     pub fn round_count(&self, count: i32) -> i32 {
-        let mut mut_count: i32 = count;
-        round_up_pow2_32(&mut mut_count)
+        round_up_pow2_32(count)
     }
     // PixelSampler public methods
     pub fn start_next_sample(&mut self) -> bool {
@@ -9409,13 +9410,13 @@ impl MipMap {
                do_trilinear: bool,
                max_anisotropy: Float,
                wrap_mode: ImageWrap) -> Self {
-        let mut resolution = *res;
+        let resolution = *res;
         let resampled_image: Vec<Spectrum> = Vec::new();
         if !is_power_of_2(resolution.x) || !is_power_of_2(resolution.y) {
             // resample image to power-of-two resolution
             let res_pow_2: Point2i = Point2i {
-                x: round_up_pow2_32(&mut resolution.x),
-                y: round_up_pow2_32(&mut resolution.y),
+                x: round_up_pow2_32(resolution.x),
+                y: round_up_pow2_32(resolution.y),
             };
             println!("TODO: Resampling MIPMap from {:?} to {:?}. Ratio= {:?}",
                      resolution, res_pow_2,
