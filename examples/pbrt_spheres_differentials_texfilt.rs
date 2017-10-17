@@ -319,15 +319,17 @@ fn main() {
     let mirror = Arc::new(MirrorMaterial::new(kr));
     let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
     let kt = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+    let u_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
+    let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
     let index = Arc::new(ConstantTexture::new(1.5 as Float));
     let glass = Arc::new(GlassMaterial {
-                             kr: kr,
-                             kt: kt,
-                             u_roughness: 0.0 as Float,
-                             v_roughness: 0.0 as Float,
-                             index: index,
-                             remap_roughness: true,
-                         });
+        kr: kr,
+        kt: kt,
+        u_roughness: u_roughness,
+        v_roughness: v_roughness,
+        index: index,
+        remap_roughness: true,
+    });
     if matches.opt_present("n") || matches.opt_present("m") {
         // use no texture
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));

@@ -8883,10 +8883,11 @@ impl TrowbridgeReitzDistribution {
     /// Beckmann-Spizzichino model, Trowbridge-Reitz has higher tails - it
     /// falls off to zero more slowly for directions far from the surface
     /// normal.
-    pub fn roughness_to_alpha(roughness: &mut Float) -> Float {
+    pub fn roughness_to_alpha(roughness: Float) -> Float {
+        let mut roughness = roughness;
         let limit: Float = 1e-3 as Float;
-        if limit > *roughness {
-            *roughness = limit;
+        if limit > roughness {
+            roughness = limit;
         }
         let x: Float = roughness.ln(); // natural (base e) logarithm
         1.62142 + 0.819955 * x + 0.1734 * x * x + 0.0171201 * x * x * x +
@@ -9148,7 +9149,7 @@ impl PlasticMaterial {
             // create microfacet distribution _distrib_ for plastic material
             let mut rough: Float = self.roughness.evaluate(si);
             if self.remap_roughness {
-                rough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut rough);
+                rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
             let distrib: TrowbridgeReitzDistribution = TrowbridgeReitzDistribution {
                 alpha_x: rough,
@@ -9178,8 +9179,8 @@ impl Material for PlasticMaterial {
 pub struct GlassMaterial {
     pub kr: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
     pub kt: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
-    pub u_roughness: Float,
-    pub v_roughness: Float,
+    pub u_roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.0
+    pub v_roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.0
     pub index: Arc<Texture<Float> + Sync + Send>, // TODO: bump_map
     pub remap_roughness: bool,
 }
@@ -9188,17 +9189,17 @@ impl GlassMaterial {
     pub fn bsdf(&self, si: &SurfaceInteraction, mode: TransportMode, allow_multiple_lobes: bool) -> Bsdf {
         let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
         let eta: Float = self.index.evaluate(si);
-        // let mut urough: Float = 0.0; // TODO: uRoughness->Evaluate(*si);
-        // let mut vrough: Float = 0.0; // TODO: vRoughness->Evaluate(*si);
+        let mut urough: Float = self.u_roughness.evaluate(si);
+        let mut vrough: Float = self.v_roughness.evaluate(si);
         let r: Spectrum = self.kr.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
         let t: Spectrum = self.kt.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let is_specular: bool = self.u_roughness == 0.0 as Float && self.v_roughness == 0.0 as Float;
+        let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;
         if is_specular && allow_multiple_lobes {
             bxdfs.push(Box::new(FresnelSpecular::new(r, t, 1.0 as Float, eta, mode)));
         } else {
             if self.remap_roughness {
-                // urough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut urough);
-                // vrough = TrowbridgeReitzDistribution::roughness_to_alpha(&mut vrough);
+                urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
+                vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
             }
             if is_specular {
                 let fresnel = Arc::new(FresnelDielectric {

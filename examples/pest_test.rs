@@ -224,19 +224,21 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     // }
                     // std::shared_ptr<Texture<Float>> roughu =
                     //     mp.GetFloatTexture("uroughness", 0.f);
+                    let roughu = mp.get_float_texture(String::from("uroughness"), 0.0 as Float);
                     // std::shared_ptr<Texture<Float>> roughv =
                     //     mp.GetFloatTexture("vroughness", 0.f);
+                    let roughv = mp.get_float_texture(String::from("vroughness"), 0.0 as Float);
                     // std::shared_ptr<Texture<Float>> bumpMap =
                     //     mp.GetFloatTextureOrNull("bumpmap");
                     let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
                     let glass = Arc::new(GlassMaterial {
-                                             kr: kr,
-                                             kt: kt,
-                                             u_roughness: 0.0 as Float,
-                                             v_roughness: 0.0 as Float,
-                                             index: eta,
-                                             remap_roughness: remap_roughness,
-                                         });
+                        kr: kr,
+                        kt: kt,
+                        u_roughness: roughu,
+                        v_roughness: roughv,
+                        index: eta,
+                        remap_roughness: remap_roughness,
+                    });
                     return glass;
                 } else if graphics_state.material == String::from("mirror") {
                     let kr = mp.get_spectrum_texture(String::from("Kr"),
