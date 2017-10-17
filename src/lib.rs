@@ -9229,7 +9229,7 @@ impl GlassMaterial {
             }
             if !t.is_black() {
                 if is_specular {
-                    bxdfs.push(Box::new(SpecularTransmission::new(r, 1.0, eta, mode)));
+                    bxdfs.push(Box::new(SpecularTransmission::new(t, 1.0, eta, mode)));
                 } else {
                     // TODO: si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetTransmission)(
                     // T, distrib, 1.f, eta, mode));
