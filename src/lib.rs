@@ -8646,14 +8646,14 @@ impl Bxdf for OrenNayar {
 
 pub struct MicrofacetReflection {
     pub r: Spectrum,
-    pub distribution: TrowbridgeReitzDistribution, // TODO: MicrofacetDistribution,
-    pub fresnel: FresnelDielectric, // TODO: Fresnel,
+    pub distribution: Option<TrowbridgeReitzDistribution>, // TODO: MicrofacetDistribution,
+    pub fresnel: Arc<Fresnel + Send + Sync>,
 }
 
 impl MicrofacetReflection {
     pub fn new(r: Spectrum,
-               distribution: TrowbridgeReitzDistribution,
-               fresnel: FresnelDielectric) -> Self {
+               distribution: Option<TrowbridgeReitzDistribution>,
+               fresnel: Arc<Fresnel + Send + Sync>) -> Self {
         MicrofacetReflection {
             r: r,
             distribution: distribution,
@@ -8677,8 +8677,12 @@ impl Bxdf for MicrofacetReflection {
         wh = vec3_normalize(wh);
         let mut dot: Float = vec3_dot_vec3(wi, wh);
         let f: Spectrum = self.fresnel.evaluate(&mut dot);
-        self.r * self.distribution.d(wh) * self.distribution.g(wo, wi) * f /
-            (4.0 as Float * cos_theta_i * cos_theta_o)
+        if let Some(ref distribution) = self.distribution {
+            return self.r * distribution.d(wh) * distribution.g(wo, wi) * f /
+                (4.0 as Float * cos_theta_i * cos_theta_o);
+        } else {
+            panic!("MicrofacetReflection::f() needs self.distribution");
+        }
     }
     fn sample_f(&self,
                 wo: Vector3f,
@@ -8691,22 +8695,29 @@ impl Bxdf for MicrofacetReflection {
         if wo.z == 0.0 as Float {
             return Spectrum::default();
         }
-        let wh: Vector3f = self.distribution.sample_wh(wo, u);
-        *wi = reflect(wo, wh);
-        if !vec3_same_hemisphere_vec3(wo, *wi) {
-            return Spectrum::default();
+        if let Some(ref distribution) = self.distribution {
+            let wh: Vector3f = distribution.sample_wh(wo, u);
+            *wi = reflect(wo, wh);
+            if !vec3_same_hemisphere_vec3(wo, *wi) {
+                return Spectrum::default();
+            }
+            // compute PDF of _wi_ for microfacet reflection
+            *pdf = distribution.pdf(wo, wh) / (4.0 * vec3_dot_vec3(wo, wh));
+            return self.f(wo, *wi);
+        } else {
+            panic!("MicrofacetReflection::f() needs self.distribution");
         }
-
-        // compute PDF of _wi_ for microfacet reflection
-        *pdf = self.distribution.pdf(wo, wh) / (4.0 * vec3_dot_vec3(wo, wh));
-        self.f(wo, *wi)
     }
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
         if !vec3_same_hemisphere_vec3(wo, wi) {
             return 0.0 as Float;
         }
         let wh: Vector3f = vec3_normalize(wo + wi);
-        self.distribution.pdf(wo, wh) / (4.0 * vec3_dot_vec3(wo, wh))
+        if let Some(ref distribution) = self.distribution {
+            return distribution.pdf(wo, wh) / (4.0 * vec3_dot_vec3(wo, wh));
+        } else {
+            panic!("MicrofacetReflection::f() needs self.distribution");
+        }
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfGlossy as u8
@@ -9142,10 +9153,10 @@ impl PlasticMaterial {
         // initialize specular component of plastic material
         let ks: Spectrum = self.ks.evaluate(si).clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !ks.is_black() {
-            let fresnel: FresnelDielectric = FresnelDielectric {
+            let fresnel = Arc::new(FresnelDielectric {
                 eta_i: 1.5 as Float,
                 eta_t: 1.0 as Float,
-            };
+            });
             // create microfacet distribution _distrib_ for plastic material
             let mut rough: Float = self.roughness.evaluate(si);
             if self.remap_roughness {
@@ -9156,7 +9167,7 @@ impl PlasticMaterial {
                 alpha_y: rough,
                 sample_visible_area: true,
             };
-            bxdfs.push(Box::new(MicrofacetReflection::new(ks, distrib, fresnel)));
+            bxdfs.push(Box::new(MicrofacetReflection::new(ks, Some(distrib), fresnel)));
         }
         Bsdf::new(si, 1.0, bxdfs)
     }
@@ -9201,19 +9212,28 @@ impl GlassMaterial {
                 urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
                 vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
             }
-            if is_specular {
+            let distrib: Option<TrowbridgeReitzDistribution> = match is_specular {
+                true => None,
+                false => Some(TrowbridgeReitzDistribution::new(urough, vrough, true)),
+            };
+            if !r.is_black() {
                 let fresnel = Arc::new(FresnelDielectric {
                     eta_i: 1.0 as Float,
                     eta_t: eta,
                 });
-                // if (isSpecular)
-                bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
-                // TODO: else ... MicrofacetReflection
-                // if (isSpecular)
-                bxdfs.push(Box::new(SpecularTransmission::new(r, 1.0, eta, mode)));
-                // TODO: else ... MicrofacetTransmission
-            } else {
-                // TODO: si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetReflection)(R, distrib, fresnel));
+                if is_specular {
+                    bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
+                } else {
+                    bxdfs.push(Box::new(MicrofacetReflection::new(r, distrib, fresnel)));
+                }
+            }
+            if !t.is_black() {
+                if is_specular {
+                    bxdfs.push(Box::new(SpecularTransmission::new(r, 1.0, eta, mode)));
+                } else {
+                    // TODO: si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetTransmission)(
+                    // T, distrib, 1.f, eta, mode));
+                }
             }
         }
         Bsdf::new(si, eta, bxdfs)
