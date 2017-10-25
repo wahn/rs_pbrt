@@ -1154,6 +1154,13 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
     }
 }
 
+// see fileutil.h
+
+pub fn resolve_filename(filename: String) -> String {
+    // WORK
+    String::from("")
+}
+
 // see efloat.h
 
 /// Find solution(s) of the quadratic equation at^2 + bt + c = 0 using
@@ -10016,6 +10023,63 @@ impl Light for DistantLight {
     }
 }
 
+// see infinte.h
+
+#[derive(Debug)]
+pub struct InfinteLight {
+    // private data (see infinte.h)
+    // TODO: std::unique_ptr<MIPMap<RGBSpectrum>> Lmap;
+    pub world_center: RwLock<Point3f>,
+    pub world_radius: RwLock<Float>,
+    // TODO: std::unique_ptr<Distribution2D> distribution;
+    // inherited from class Light (see light.h)
+    flags: u8,
+    n_samples: i32,
+    // TODO: const MediumInterface mediumInterface;
+    light_to_world: Transform,
+    world_to_light: Transform,
+}
+
+impl InfinteLight {
+    pub fn new(light_to_world: &Transform, l: &Spectrum, n_samples: i32, texmap: String) -> Self {
+        InfinteLight {
+            world_center: RwLock::new(Point3f::default()),
+            world_radius: RwLock::new(0.0),
+            flags: LightFlags::DeltaDirection as u8,
+            n_samples: 1_i32,
+            light_to_world: Transform::default(),
+            world_to_light: Transform::default(),
+        }
+    }
+}
+
+impl Light for InfinteLight {
+    fn sample_li(&self,
+                 iref: &InteractionCommon,
+                 _u: Point2f,
+                 wi: &mut Vector3f,
+                 pdf: &mut Float,
+                 vis: &mut VisibilityTester)
+                 -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+    fn preprocess(&self, scene: &Scene) {
+    }
+    fn le(&self, _ray: &mut Ray) -> Spectrum {
+        Spectrum::new(0.0 as Float)
+    }
+    fn pdf_li(&self, _iref: &Interaction, _wi: Vector3f) -> Float {
+        0.0 as Float
+    }
+    fn get_flags(&self) -> u8 {
+        self.flags
+    }
+    fn get_n_samples(&self) -> i32 {
+        self.n_samples
+    }
+}
+
 // see light.h
 
 /// Area lights are light sources defined by one or more **Shapes**
@@ -11692,11 +11756,14 @@ impl ParamSet {
         d
     }
     pub fn find_one_filename(&self, name: String, d: String) -> String {
-        let filename: String = self.find_one_string(name, String::new());
+        let mut filename: String = self.find_one_string(name, String::new());
         if filename == String::new() {
             return d;
         }
         // TODO: filename = AbsolutePath(ResolveFilename(filename));
+        filename = // AbsolutePath(
+            resolve_filename(filename)// )
+        ;
         filename
     }
     pub fn find_texture(&self, name: String) -> String {

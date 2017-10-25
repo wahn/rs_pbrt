@@ -6,15 +6,20 @@ extern crate pest_derive;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i, BoxFilter, BVHAccel,
-           Checkerboard2DTexture, ConstantTexture, Cylinder, DiffuseAreaLight,
-           DirectLightingIntegrator, Disk, DistantLight, Film, Filter, Float, GaussianFilter,
-           GeometricPrimitive, GlassMaterial, GraphicsState, ImageTexture, ImageWrap, Light,
-           LightStrategy, Material, MatteMaterial, Matrix4x4, MirrorMaterial, Normal3f, ParamSet,
-           PathIntegrator, PerspectiveCamera, PlanarMapping2D, PlasticMaterial, Point2f, Point2i,
-           Point3f, PointLight, RenderOptions, SamplerIntegrator, Scene, Shape, Spectrum, Sphere,
-           SplitMethod, Texture, TextureMapping2D, TextureParams, Transform, TransformSet,
-           Triangle, TriangleMesh, UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i,
+           BoxFilter, BVHAccel, Checkerboard2DTexture,
+           ConstantTexture, Cylinder, DiffuseAreaLight,
+           DirectLightingIntegrator, Disk, DistantLight, Film, Filter,
+           Float, GaussianFilter, GeometricPrimitive, GlassMaterial,
+           GraphicsState, ImageTexture, ImageWrap, InfinteLight,
+           Light, LightStrategy, Material, MatteMaterial, Matrix4x4,
+           MirrorMaterial, Normal3f, ParamSet, PathIntegrator,
+           PerspectiveCamera, PlanarMapping2D, PlasticMaterial,
+           Point2f, Point2i, Point3f, PointLight, RenderOptions,
+           SamplerIntegrator, Scene, Shape, Spectrum, Sphere,
+           SplitMethod, Texture, TextureMapping2D, TextureParams,
+           Transform, TransformSet, Triangle, TriangleMesh,
+           UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::Parser;
 // getopts
@@ -317,6 +322,21 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
         }
     } else if param_set.name == String::from("infinite") {
         println!("TODO: CreateInfiniteLight");
+        let l: Spectrum = param_set
+            .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
+        let sc: Spectrum = param_set
+            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+        let texmap: String = param_set.
+            find_one_filename(String::from("mapname"), String::from(""));
+        let n_samples: i32 = param_set
+            .find_one_int(String::from("nsamples"), 1 as i32);
+        // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
+
+        // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
+        unsafe {
+            let infinte_light = Arc::new(InfinteLight::new(&CUR_TRANSFORM.t[0], &(l * sc), n_samples, texmap));
+            ro.lights.push(infinte_light);
+        }
     } else if param_set.name == String::from("exinfinite") {
         println!("TODO: CreateInfiniteLight");
     } else {
