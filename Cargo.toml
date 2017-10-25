@@ -6,8 +6,8 @@ authors = ["Jan Walter <jan@janwalter.com>"]
 [dependencies]
 
 num="*"
-num_cpus = "1.0"
-image="0.15.0"
+num_cpus = "1.2"
+image="0.17"
 crossbeam = "0.3"
 getopts="0.2"
 pest = "^1.0.0-beta"
