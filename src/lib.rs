@@ -1154,13 +1154,6 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
     }
 }
 
-// see fileutil.h
-
-pub fn resolve_filename(filename: String) -> String {
-    // WORK
-    String::from("")
-}
-
 // see efloat.h
 
 /// Find solution(s) of the quadratic equation at^2 + bt + c = 0 using
@@ -10026,7 +10019,7 @@ impl Light for DistantLight {
 // see infinte.h
 
 #[derive(Debug)]
-pub struct InfinteLight {
+pub struct InfinteAreaLight {
     // private data (see infinte.h)
     // TODO: std::unique_ptr<MIPMap<RGBSpectrum>> Lmap;
     pub world_center: RwLock<Point3f>,
@@ -10040,20 +10033,20 @@ pub struct InfinteLight {
     world_to_light: Transform,
 }
 
-impl InfinteLight {
+impl InfinteAreaLight {
     pub fn new(light_to_world: &Transform, l: &Spectrum, n_samples: i32, texmap: String) -> Self {
-        InfinteLight {
+        InfinteAreaLight {
             world_center: RwLock::new(Point3f::default()),
             world_radius: RwLock::new(0.0),
             flags: LightFlags::DeltaDirection as u8,
-            n_samples: 1_i32,
+            n_samples: std::cmp::max(1_i32, n_samples),
             light_to_world: Transform::default(),
             world_to_light: Transform::default(),
         }
     }
 }
 
-impl Light for InfinteLight {
+impl Light for InfinteAreaLight {
     fn sample_li(&self,
                  iref: &InteractionCommon,
                  _u: Point2f,
@@ -11761,9 +11754,6 @@ impl ParamSet {
             return d;
         }
         // TODO: filename = AbsolutePath(ResolveFilename(filename));
-        filename = // AbsolutePath(
-            resolve_filename(filename)// )
-        ;
         filename
     }
     pub fn find_texture(&self, name: String) -> String {

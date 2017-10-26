@@ -11,7 +11,7 @@ use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i,
            ConstantTexture, Cylinder, DiffuseAreaLight,
            DirectLightingIntegrator, Disk, DistantLight, Film, Filter,
            Float, GaussianFilter, GeometricPrimitive, GlassMaterial,
-           GraphicsState, ImageTexture, ImageWrap, InfinteLight,
+           GraphicsState, ImageTexture, ImageWrap, InfinteAreaLight,
            Light, LightStrategy, Material, MatteMaterial, Matrix4x4,
            MirrorMaterial, Normal3f, ParamSet, PathIntegrator,
            PerspectiveCamera, PlanarMapping2D, PlasticMaterial,
@@ -320,25 +320,32 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
             let distant_light = Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
             ro.lights.push(distant_light);
         }
-    } else if param_set.name == String::from("infinite") {
+    } else if param_set.name == String::from("infinite") || param_set.name == String::from("exinfinite") {
         println!("TODO: CreateInfiniteLight");
         let l: Spectrum = param_set
             .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
         let sc: Spectrum = param_set
             .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
-        let texmap: String = param_set.
+        let mut texmap: String = param_set.
             find_one_filename(String::from("mapname"), String::from(""));
+        unsafe {
+            if let Some(ref search_directory) = SEARCH_DIRECTORY {
+                // texmap = AbsolutePath(ResolveFilename(texmap));
+                let mut path_buf: PathBuf = PathBuf::from("/");
+                path_buf.push(search_directory.as_ref());
+                path_buf.push(texmap);
+                texmap = String::from(path_buf.to_str().unwrap());
+            }
+        }
         let n_samples: i32 = param_set
             .find_one_int(String::from("nsamples"), 1 as i32);
         // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
 
         // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
         unsafe {
-            let infinte_light = Arc::new(InfinteLight::new(&CUR_TRANSFORM.t[0], &(l * sc), n_samples, texmap));
+            let infinte_light = Arc::new(InfinteAreaLight::new(&CUR_TRANSFORM.t[0], &(l * sc), n_samples, texmap));
             ro.lights.push(infinte_light);
         }
-    } else if param_set.name == String::from("exinfinite") {
-        println!("TODO: CreateInfiniteLight");
     } else {
         panic!("MakeLight: unknown name {}", param_set.name);
     }
