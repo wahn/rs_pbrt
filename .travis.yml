@@ -7,3 +7,48 @@ matrix:
   allow_failures:
     - rust: stable
     - rust: beta
+env:
+  global:
+    - MAKEFLAGS="-j 2"
+    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+before_install:
+- |
+  ILMBASE_DIR="$PWD/ilmbase"
+  OPENEXR_DIR="$PWD/openexr"
+  if [ ! -d "$OPENEXR_DIR/include" ]; then
+    wget https://github.com/openexr/openexr/archive/v2.2.0.tar.gz -O- |tar xz
+    pushd openexr-2.2.0
+
+    pushd IlmBase
+    ./bootstrap
+    mkdir build
+    pushd build
+    ../configure --enable-static=yes --enable-shared=no --with-pic --prefix="$ILMBASE_DIR" && make && make install
+    popd
+    popd
+
+    pushd OpenEXR
+    ./bootstrap
+    mkdir build
+    pushd build
+    ../configure --enable-static=yes --enable-shared=no --with-pic --prefix="$OPENEXR_DIR" --with-ilmbase-prefix="$ILMBASE_DIR" && make && make install
+    popd
+    popd
+
+    popd
+  fi
+before_script:
+- |
+  pip install 'travis-cargo<0.2' --user &&
+  export PATH=$HOME/.local/bin:$PATH
+script:
+- |
+  ILMBASE_DIR="$PWD/ilmbase" OPENEXR_DIR="$PWD/openexr" \
+  travis-cargo build &&
+  travis-cargo test
+cache:
+  pip: true
+  cargo: true
+  directories:
+  - ilmbase
+  - openexr

@@ -11,7 +11,7 @@ use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i,
            ConstantTexture, Cylinder, DiffuseAreaLight,
            DirectLightingIntegrator, Disk, DistantLight, Film, Filter,
            Float, GaussianFilter, GeometricPrimitive, GlassMaterial,
-           GraphicsState, ImageTexture, ImageWrap, InfinteAreaLight,
+           GraphicsState, ImageTexture, ImageWrap, InfiniteAreaLight,
            Light, LightStrategy, Material, MatteMaterial, Matrix4x4,
            MirrorMaterial, Normal3f, ParamSet, PathIntegrator,
            PerspectiveCamera, PlanarMapping2D, PlasticMaterial,
@@ -343,7 +343,7 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
 
         // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
         unsafe {
-            let infinte_light = Arc::new(InfinteAreaLight::new(&CUR_TRANSFORM.t[0], &(l * sc), n_samples, texmap));
+            let infinte_light = Arc::new(InfiniteAreaLight::new(&CUR_TRANSFORM.t[0], &(l * sc), n_samples, texmap));
             ro.lights.push(infinte_light);
         }
     } else {
