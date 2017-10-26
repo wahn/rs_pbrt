@@ -851,8 +851,8 @@
 //! ## Direct Lighting
 //!
 //! The **DirectLightingIntegrator** accounts only for direct lighting
-//! - light that has traveled directly from a light source to the
-//! point being shaded - and ignores indirect illumination from
+//! &mdash; light that has traveled directly from a light source to the
+//! point being shaded &mdash; and ignores indirect illumination from
 //! objects that are not themselfes emissive, except for basic
 //! specular reflection and transmission effects.
 #![feature(integer_atomics)]
@@ -1127,7 +1127,7 @@ pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
     (1.0 as Float - t) * v1 + t * v2
 }
 
-/// Find solution(s) of the quadratic equation at^2 + bt + c = 0.
+/// Find solution(s) of the quadratic equation at<sup>2</sup> + bt + c = 0.
 pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -> bool {
     // find quadratic discriminant
     let discrim: f64 = (b as f64) * (b as f64) - 4.0 * (a as f64) * (c as f64);
@@ -1156,7 +1156,7 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
 
 // see efloat.h
 
-/// Find solution(s) of the quadratic equation at^2 + bt + c = 0 using
+/// Find solution(s) of the quadratic equation at<sup>2</sup> + bt + c = 0 using
 /// *EFloat* instead of *Float* for error bounds.
 pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &mut EFloat) -> bool {
     let discrim: f64 = b.v as f64 * b.v as f64 - 4.0f64 * a.v as f64 * c.v as f64;
