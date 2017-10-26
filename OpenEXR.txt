@@ -1,0 +1,30 @@
+# check first if we have OpenEXR (>= 2.0.0)
+
+pkg-config --libs --cflags "OpenEXR >= 2.0.0"
+# should print something like this:
+-I/usr/include/OpenEXR -lIlmImf -lImath -lHalf -lIex -lIexMath -lIlmThread -lpthread
+
+# if not, get OpenEXR
+
+wget https://github.com/openexr/openexr/archive/v2.2.0.tar.gz
+
+# if not already installed on the system
+
+cp v2.2.0.tar.gz /usr/local
+cd /usr/local/
+tar zxfv v2.2.0.tar.gz
+cd openexr-2.2.0
+cd IlmBase
+./configure --enable-static=yes --enable-shared=no --with-pic
+make
+make install
+cd ../OpenEXR
+../configure --enable-static=yes --enable-shared=no --with-pic
+make
+make install
+
+# before running 'make'
+
+setenv OPENEXR_DIR /usr/local
+setenv ILMBASE_DIR /usr/local
+make
