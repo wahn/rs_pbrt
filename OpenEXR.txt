@@ -15,10 +15,12 @@ cd /usr/local/
 tar zxfv v2.2.0.tar.gz
 cd openexr-2.2.0
 cd IlmBase
+./bootstrap
 ./configure --enable-static=yes --enable-shared=no --with-pic
 make
 make install
 cd ../OpenEXR
+./bootstrap
 ../configure --enable-static=yes --enable-shared=no --with-pic
 make
 make install
@@ -27,4 +29,10 @@ make install
 
 setenv OPENEXR_DIR /usr/local
 setenv ILMBASE_DIR /usr/local
+make
+
+# or (using bash)
+
+export OPENEXR_DIR=/usr/local
+export ILMBASE_DIR=/usr/local
 make
