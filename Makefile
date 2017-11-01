@@ -6,27 +6,36 @@ clean:
 clobber: clean
 	-rm -fr target
 
+distclean: clobber
+	-rm -f *.exr *.png master.zip
+	-rm -fr openexr-rs-master
+
 doc:
 	cargo doc
 
 browse: doc
 	firefox ./target/doc/pbrt/index.html
 
-debug:
+debug: master.zip
 	cargo test
 
-release:
+release: master.zip
 	cargo test --release
+
+master.zip:
+	wget https://github.com/cessen/openexr-rs/archive/master.zip
+	unzip master.zip
 
 examples: release
 	./target/release/examples/api_make_camera
-	./target/release/examples/api_pbrt_world_end
 	./target/release/examples/cameras_perspective_generate_ray_differential
+	./target/release/examples/core_lowdiscrepancy_radical_inverse
 	./target/release/examples/core_next_float_down
 	./target/release/examples/core_next_float_up
 	./target/release/examples/core_quadratic
 	./target/release/examples/core_rng_set_sequence
 	./target/release/examples/filters_create_box_filter
+	./target/release/examples/filters_create_gaussian_filter
 	./target/release/examples/geometry_bounds2_unit_cube
 	./target/release/examples/geometry_bounds3_unit_cube
 	./target/release/examples/geometry_length
@@ -38,10 +47,17 @@ examples: release
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
 	./target/release/examples/pbrt
+	./target/release/examples/lights_diffuse_area_light_new
 	./target/release/examples/lights_distant_light_new
+	./target/release/examples/lights_point_light_new
+	./target/release/examples/pbrt
 	./target/release/examples/pbrt_spheres_differentials_texfilt
 	./target/release/examples/pbrt_teapot_area_light
+	./target/release/examples/pest_test
 	./target/release/examples/quaternion_default
+	./target/release/examples/shapes_cylinder_create_cylinder_shape
+	./target/release/examples/shapes_disk_create_disk_shape
+	./target/release/examples/shapes_sphere_create_sphere_shape
 	./target/release/examples/shapes_sphere_intersect
 	./target/release/examples/shapes_sphere_world_bound
 	./target/release/examples/shapes_triangle_create_triangle_mesh
