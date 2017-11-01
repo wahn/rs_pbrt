@@ -15,6 +15,8 @@ before_install:
 - |
   ILMBASE_DIR="$PWD/ilmbase"
   OPENEXR_DIR="$PWD/openexr"
+  wget https://github.com/cessen/openexr-rs/archive/master.zip
+  unzip master.zip
   if [ ! -d "$OPENEXR_DIR/include" ]; then
     wget https://github.com/openexr/openexr/archive/v2.2.0.tar.gz -O- |tar xz
     pushd openexr-2.2.0
@@ -36,9 +38,6 @@ before_install:
     popd
 
     popd
-
-    wget https://github.com/cessen/openexr-rs/archive/master.zip
-    unzip master.zip
   fi
 before_script:
 - |
