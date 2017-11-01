@@ -321,7 +321,6 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
             ro.lights.push(distant_light);
         }
     } else if param_set.name == String::from("infinite") || param_set.name == String::from("exinfinite") {
-        println!("TODO: CreateInfiniteLight");
         let l: Spectrum = param_set
             .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
         let sc: Spectrum = param_set

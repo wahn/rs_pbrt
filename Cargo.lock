@@ -4,10 +4,11 @@ version = "0.2.3"
 dependencies = [
  "crossbeam 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "getopts 0.2.15 (registry+https://github.com/rust-lang/crates.io-index)",
+ "half 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.17.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "openexr 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "openexr 0.5.0",
  "pbr 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pest 1.0.0-beta.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "pest_derive 1.0.0-beta.9 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -220,17 +221,15 @@ dependencies = [
 [[package]]
 name = "openexr"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "half 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
- "openexr-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "openexr-sys 0.5.0",
 ]
 
 [[package]]
 name = "openexr-sys"
 version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "gcc 0.3.54 (registry+https://github.com/rust-lang/crates.io-index)",
  "libc 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -395,8 +394,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum num-rational 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)" = "54ff603b8334a72fbb27fe66948aac0abaaa40231b3cecd189e76162f6f38aaf"
 "checksum num-traits 0.1.36 (registry+https://github.com/rust-lang/crates.io-index)" = "a16a42856a256b39c6d3484f097f6713e14feacd9bfb02290917904fae46c81c"
 "checksum num_cpus 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "55aabf4e2d6271a2e4e4c0f2ea1f5b07cc589cc1a9e9213013b54a76678ca4f3"
-"checksum openexr 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "849a5af32d6b0716cf44a8b18c1b611b8448aec44a9b1c59b6199bf9d22aba94"
-"checksum openexr-sys 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d597730c7049d9098ce64bb97c6eb4e6f96fa55d5ced7eba74a01c224fe0bcc4"
 "checksum pbr 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e048e3afebb6c454bb1c5d0fe73fda54698b4715d78ed8e7302447c37736d23a"
 "checksum pest 1.0.0-beta.9 (registry+https://github.com/rust-lang/crates.io-index)" = "e47b6efa95906cda06988a32b0ba92d7bcd191e3f0eee8c451837d11f3fe3fcf"
 "checksum pest_derive 1.0.0-beta.9 (registry+https://github.com/rust-lang/crates.io-index)" = "efc5b33361b2f4ae45d48e2761b6955507bcd880f9f1f3ce02f69c2c3205e150"

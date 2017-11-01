@@ -858,6 +858,7 @@
 #![feature(integer_atomics)]
 
 extern crate crossbeam;
+extern crate half;
 extern crate image;
 extern crate num;
 extern crate num_cpus;
@@ -882,10 +883,32 @@ use std::sync::mpsc;
 use typed_arena::Arena;
 use num::Zero;
 use image::{ImageResult, DynamicImage};
-use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
+use openexr::{FrameBuffer, FrameBufferMut, Header, InputFile, PixelType, ScanlineOutputFile};
+use half::f16;
 use time::PreciseTime;
 
 pub type Float = f32;
+
+// see https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
+#[inline]
+fn decode_f16(half: u16) -> f32 {
+    let exp: u16 = half >> 10 & 0x1f;
+    let mant: u16 = half & 0x3ff;
+    let val: f32 = if exp == 0 {
+        (mant as f32) * (2.0f32).powi(-24)
+    } else if exp != 31 {
+        (mant as f32 + 1024f32) * (2.0f32).powi(exp as i32 - 25)
+    } else if mant == 0 {
+        ::std::f32::INFINITY
+    } else {
+        ::std::f32::NAN
+    };
+    if half & 0x8000 != 0 {
+        -val
+    } else {
+        val
+    }
+}
 
 // see scene.h
 
@@ -7883,7 +7906,7 @@ impl Film {
                                                       .add_channel("R", PixelType::FLOAT)
                                                       .add_channel("G", PixelType::FLOAT)
                                                       .add_channel("B", PixelType::FLOAT)).unwrap();
-        let mut fb = FrameBuffer::new(width as usize, height as usize);
+        let mut fb = FrameBuffer::new(width as u32, height as u32);
         fb.insert_channels(&["R", "G", "B"], &exr);
         output_file.write_pixels(&fb).unwrap();
 
@@ -9574,6 +9597,12 @@ impl MipMap {
         // TODO: mipMapMemory += (4 * resolution[0] * resolution[1] * sizeof(T)) / 3;
         mipmap
     }
+    pub fn width(&self) -> i32 {
+        self.resolution.x
+    }
+    pub fn height(&self) -> i32 {
+        self.resolution.y
+    }
     pub fn levels(&self) -> usize {
         self.pyramid.len()
     }
@@ -9598,7 +9627,23 @@ impl MipMap {
         };
         &l[(ss, tt)]
     }
-    pub fn lookup(&self, st: &mut Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> Spectrum {
+    pub fn lookup_pnt_flt(&self, st: &Point2f, width: Float) -> Spectrum {
+        // TODO: ++nTrilerpLookups;
+        // TODO: ProfilePhase p(Prof::TexFiltTrilerp);
+        // compute MIPMap level for trilinear filtering
+        let level: Float = self.levels() as Float - 1.0 as Float + width.max(1e-8 as Float).log2();
+        // perform trilinear interpolation at appropriate MIPMap level
+        if level < 0.0 as Float {
+            return self.triangle(0_usize, st);
+        } else if level >= self.levels() as Float - 1 as Float {
+            return *self.texel(self.levels(), 0_isize, 0_isize);
+        } else {
+            let i_level: usize = level.floor() as usize;
+            let delta: Float = level - i_level as Float;
+            return lerp_rgb(delta, self.triangle(i_level, st), self.triangle(i_level + 1_usize, st));
+        }
+    }
+    pub fn lookup_pnt_vec_vec(&self, st: &Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> Spectrum {
         if self.do_trilinear {
             let width: Float = dst0.x.abs().max(dst0.y.abs()).max(dst1.x.abs().max(dst1.y.abs()));
             println!("TODO: Lookup(st, 2 * width) = Lookup({:?}, {:?});", st, 2.0 as Float * width)
@@ -9791,8 +9836,8 @@ impl Texture<Spectrum> for ImageTexture {
         // return ret;
         let mut dstdx: Vector2f = Vector2f::default();
         let mut dstdy: Vector2f = Vector2f::default();
-        let mut st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
-        let mem: Spectrum = self.mipmap.lookup(&mut st, &mut dstdx, &mut dstdy);
+        let st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
+        let mem: Spectrum = self.mipmap.lookup_pnt_vec_vec(&st, &mut dstdx, &mut dstdy);
         let mut ret: Spectrum = Spectrum::new(0.0);
         ImageTexture::convert_out(&mem, &mut ret);
         ret
@@ -10019,13 +10064,12 @@ impl Light for DistantLight {
 
 // see infinte.h
 
-#[derive(Debug)]
 pub struct InfiniteAreaLight {
     // private data (see infinte.h)
-    // TODO: std::unique_ptr<MIPMap<RGBSpectrum>> Lmap;
+    pub lmap: Arc<MipMap>,
     pub world_center: RwLock<Point3f>,
     pub world_radius: RwLock<Float>,
-    // TODO: std::unique_ptr<Distribution2D> distribution;
+    pub distribution: Arc<Distribution2D>,
     // inherited from class Light (see light.h)
     flags: u8,
     n_samples: i32,
@@ -10036,13 +10080,120 @@ pub struct InfiniteAreaLight {
 
 impl InfiniteAreaLight {
     pub fn new(light_to_world: &Transform, l: &Spectrum, n_samples: i32, texmap: String) -> Self {
-        InfiniteAreaLight {
-            world_center: RwLock::new(Point3f::default()),
-            world_radius: RwLock::new(0.0),
-            flags: LightFlags::DeltaDirection as u8,
-            n_samples: std::cmp::max(1_i32, n_samples),
-            light_to_world: Transform::default(),
-            world_to_light: Transform::default(),
+        // read texel data from _texmap_ and initialize _Lmap_
+        if texmap != String::from("") {
+            // https://cessen.github.io/openexr-rs/openexr/index.html
+            let mut resolution: Point2i = Point2i::default();
+            let mut names_and_fills: Vec<(&str, f64)> = Vec::new();
+            // header
+            let mut file = std::fs::File::open(texmap.clone()).unwrap();
+            let mut input_file = InputFile::new(&mut file).unwrap();
+            // get resolution
+            let (width, height) = input_file.header().data_dimensions();
+            resolution.x = width as i32;
+            resolution.y = height as i32;
+            println!("resolution = {:?}", resolution);
+            // make sure the image properties are the same (see incremental_io.rs in github/openexr-rs)
+            for channel_name in ["R", "G", "B"].iter() {
+                let channel = input_file
+                    .header()
+                    .get_channel(channel_name)
+                    .expect(&format!("Didn't find channel {}.", channel_name));
+                assert!(channel.pixel_type == PixelType::HALF);
+                names_and_fills.push((channel_name, 0.0_f64));
+            }
+            let mut pixel_data = vec![(f16::from_f32(0.0), f16::from_f32(0.0), f16::from_f32(0.0)); (resolution.x*resolution.y) as usize];
+            {
+                // read pixels
+                let mut file = std::fs::File::open(texmap.clone()).unwrap();
+                let mut input_file = InputFile::new(&mut file).unwrap();
+                let mut fb = FrameBufferMut::new(resolution.x as u32, resolution.y as u32);
+                fb.insert_channels(&names_and_fills[..], &mut pixel_data);
+                input_file.read_pixels(&mut fb).unwrap();
+            }
+            // convert pixel data into Vec<Spectrum> (and on the way multiply by _l_)
+            let mut texels: Vec<Spectrum> = Vec::new();
+            for i in 0..(resolution.x*resolution.y) {
+                let (r, g, b) = pixel_data[i as usize];
+                texels.push(Spectrum::rgb(decode_f16(r.as_bits()),
+                                          decode_f16(g.as_bits()),
+                                          decode_f16(b.as_bits())) * *l);
+            }
+            // create _MipMap_ from converted texels (see above)
+            let do_trilinear: bool = false;
+            let max_aniso: Float = 8.0 as Float;
+            let wrap_mode: ImageWrap = ImageWrap::Repeat;
+            let lmap = Arc::new(MipMap::new(&resolution, &texels[..], do_trilinear, max_aniso, wrap_mode));
+
+            // initialize sampling PDFs for infinite area light
+
+            // compute scalar-valued image _img_ from environment map
+            let width: i32 = 2_i32 * lmap.width();
+            let height: i32 = 2_i32 * lmap.height();
+            let mut img: Vec<Float> = Vec::new();
+            let fwidth: Float = 0.5 as Float / (width as Float).min(height as Float);
+            // TODO: ParallelFor(...) {...}
+            for v in 0..height {
+                let vp: Float = (v as Float + 0.5 as Float) / height as Float;
+                let sin_theta: Float = (PI * (v as Float + 0.5 as Float) / height as Float).sin();
+                for u in 0..width {
+                    let up: Float = (u as Float + 0.5 as Float) / width as Float;
+                    let st: Point2f = Point2f { x: up, y: vp, };
+                    img.push(lmap.lookup_pnt_flt(&st,
+                                                 fwidth).y() * sin_theta);
+                }
+            }
+            let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
+            InfiniteAreaLight {
+                lmap: lmap,
+                world_center: RwLock::new(Point3f::default()),
+                world_radius: RwLock::new(0.0),
+                distribution: distribution,
+                flags: LightFlags::DeltaDirection as u8,
+                n_samples: std::cmp::max(1_i32, n_samples),
+                light_to_world: Transform::default(),
+                world_to_light: Transform::default(),
+            }
+        } else {
+            let resolution: Point2i = Point2i {
+                x: 1_i32,
+                y: 1_i32,
+            };
+            let texels: Vec<Spectrum> = vec![Spectrum::new(1.0 as Float)];
+            let do_trilinear: bool = false;
+            let max_aniso: Float = 8.0 as Float;
+            let wrap_mode: ImageWrap = ImageWrap::Repeat;
+            let lmap = Arc::new(MipMap::new(&resolution, &texels[..], do_trilinear, max_aniso, wrap_mode));
+
+            // initialize sampling PDFs for infinite area light
+
+            // compute scalar-valued image _img_ from environment map
+            let width: i32 = 2_i32 * lmap.width();
+            let height: i32 = 2_i32 * lmap.height();
+            let mut img: Vec<Float> = Vec::new();
+            let fwidth: Float = 0.5 as Float / (width as Float).min(height as Float);
+            // TODO: ParallelFor(...) {...}
+            for v in 0..height {
+                let vp: Float = (v as Float + 0.5 as Float) / height as Float;
+                let sin_theta: Float = (PI * (v as Float + 0.5 as Float) / height as Float).sin();
+                for u in 0..width {
+                    let up: Float = (u as Float + 0.5 as Float) / width as Float;
+                    let st: Point2f = Point2f { x: up, y: vp, };
+                    img.push(lmap.lookup_pnt_flt(&st,
+                                                 fwidth).y() * sin_theta);
+                }
+            }
+            let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
+            InfiniteAreaLight {
+                lmap: lmap,
+                world_center: RwLock::new(Point3f::default()),
+                world_radius: RwLock::new(0.0),
+                distribution: distribution,
+                flags: LightFlags::DeltaDirection as u8,
+                n_samples: std::cmp::max(1_i32, n_samples),
+                light_to_world: Transform::default(),
+                world_to_light: Transform::default(),
+            }
         }
     }
 }
@@ -10433,14 +10584,14 @@ pub struct Distribution1D {
 impl Distribution1D {
     pub fn new(f: Vec<Float>) -> Self {
         let n: usize = f.len();
-        // Compute integral of step function at $x_i$
+        // compute integral of step function at $x_i$
         let mut cdf: Vec<Float> = Vec::new();
         cdf.push(0.0 as Float);
         for i in 1..(n + 1) {
             let previous: Float = cdf[i - 1];
             cdf.push(previous + f[i - 1] / n as Float);
         }
-        // Transform step function integral into CDF
+        // transform step function integral into CDF
         let func_int: Float = cdf[n];
         if func_int == 0.0 as Float {
             for i in 1..(n + 1) {
@@ -10491,6 +10642,33 @@ impl Distribution1D {
         //     *uRemapped = (u - cdf[offset]) / (cdf[offset + 1] - cdf[offset]);
         // if (uRemapped) CHECK(*uRemapped >= 0.f && *uRemapped <= 1.f);
         offset
+    }
+}
+
+#[derive(Debug,Default,Clone)]
+pub struct Distribution2D {
+    pub p_conditional_v: Vec<Arc<Distribution1D>>,
+    pub p_marginal: Arc<Distribution1D>,
+}
+
+impl Distribution2D {
+    pub fn new(func: Vec<Float>, nu: i32, nv: i32) -> Self {
+        let mut p_conditional_v: Vec<Arc<Distribution1D>> = Vec::new();
+        for v in 0..nv {
+            // compute conditional sampling distribution for $\tilde{v}$
+            let f: Vec<Float> = func[(v * nu) as usize..((v+1) * nu) as usize].to_vec();
+            p_conditional_v.push(Arc::new(Distribution1D::new(f)));
+        }
+        // compute marginal sampling distribution $p[\tilde{v}]$
+        let mut marginal_func: Vec<Float> = Vec::with_capacity(nv as usize);
+        for v in 0..nv {
+            marginal_func.push(p_conditional_v[v as usize].func_int);
+        }
+        let p_marginal: Arc<Distribution1D> = Arc::new(Distribution1D::new(marginal_func));
+        Distribution2D {
+            p_conditional_v: p_conditional_v,
+            p_marginal: p_marginal,
+        }
     }
 }
 

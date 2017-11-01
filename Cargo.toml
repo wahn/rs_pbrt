@@ -7,6 +7,7 @@ authors = ["Jan Walter <jan@janwalter.com>"]
 
 crossbeam = "0.3"
 getopts="0.2.15"
+half="1"
 image="0.17"
 num="*"
 num_cpus = "1.2"
@@ -16,3 +17,6 @@ pest = "^1.0.0-beta"
 pest_derive = "^1.0.0-beta"
 time = "0.1"
 typed-arena = "1.3.0"
+
+[patch.crates-io]
+openexr = { path = "../openexr-rs" }
