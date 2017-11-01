@@ -36,6 +36,9 @@ before_install:
     popd
 
     popd
+
+    wget https://github.com/cessen/openexr-rs/archive/master.zip
+    unzip master.zip
   fi
 before_script:
 - |
@@ -52,3 +55,4 @@ cache:
   directories:
   - ilmbase
   - openexr
+  - openexr-rs-master

@@ -19,4 +19,4 @@ time = "0.1"
 typed-arena = "1.3.0"
 
 [patch.crates-io]
-openexr = { path = "../openexr-rs" }
+openexr = { path = "openexr-rs-master" }
