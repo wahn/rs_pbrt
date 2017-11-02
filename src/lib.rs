@@ -10117,7 +10117,7 @@ impl InfiniteAreaLight {
             let mut names_and_fills: Vec<(&str, f64)> = Vec::new();
             // header
             let mut file = std::fs::File::open(texmap.clone()).unwrap();
-            let mut input_file = InputFile::new(&mut file).unwrap();
+            let input_file = InputFile::new(&mut file).unwrap();
             // get resolution
             let (width, height) = input_file.header().data_dimensions();
             resolution.x = width as i32;
@@ -10181,8 +10181,8 @@ impl InfiniteAreaLight {
                 distribution: distribution,
                 flags: LightFlags::DeltaDirection as u8,
                 n_samples: std::cmp::max(1_i32, n_samples),
-                light_to_world: Transform::default(),
-                world_to_light: Transform::default(),
+                light_to_world: *light_to_world,
+                world_to_light: Transform::inverse(*light_to_world),
             }
         } else {
             let resolution: Point2i = Point2i {
@@ -10231,13 +10231,56 @@ impl InfiniteAreaLight {
 impl Light for InfiniteAreaLight {
     fn sample_li(&self,
                  iref: &InteractionCommon,
-                 _u: Point2f,
+                 u: Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
                  -> Spectrum {
-        // WORK
-        Spectrum::default()
+        // TODO: ProfilePhase _(Prof::LightSample);
+        // find $(u,v)$ sample coordinates in infinite light texture
+        let mut map_pdf: Float = 0.0 as Float;
+        let uv: Point2f = self.distribution.sample_continuous(&u, &mut map_pdf);
+        if map_pdf == 0 as Float {
+            return Spectrum::default();
+        }
+        // convert infinite light sample point to direction
+        let theta: Float = uv[1] * PI;
+        let phi: Float = uv[0] * 2.0 as Float * PI;
+        let cos_theta: Float = theta.cos();
+        let sin_theta: Float = theta.sin();
+        let sin_phi: Float = phi.sin();
+        let cos_phi: Float = phi.cos();
+        let vec: Vector3f = Vector3f {
+            x: sin_theta * cos_phi,
+            y: sin_theta * sin_phi,
+            z: cos_theta,
+        };
+        *wi = self.light_to_world.transform_vector(vec);
+        // compute PDF for sampled infinite light direction
+        *pdf = map_pdf / (2.0 as Float * PI * PI * sin_theta);
+        if sin_theta == 0.0 as Float {
+            *pdf = 0.0 as Float;
+        }
+        // return radiance value for infinite light direction
+        let world_radius: Float = *self.world_radius.read().unwrap();
+        *vis = VisibilityTester {
+            p0: InteractionCommon {
+                p: iref.p,
+                time: iref.time,
+                p_error: iref.p_error,
+                wo: iref.wo,
+                n: iref.n,
+            },
+            p1: InteractionCommon {
+                p: iref.p + *wi * (2.0 as Float * world_radius),
+                time: iref.time,
+                p_error: Vector3f::default(),
+                wo: Vector3f::default(),
+                n: Normal3f::default(),
+            },
+        };
+        // TODO: SpectrumType::Illuminant
+        self.lmap.lookup_pnt_flt(&uv, 0.0 as Float)
     }
     /// Like directional lights, the total power from the infinite
     /// area light is related to the surface area of the scene. Like
@@ -12067,7 +12110,7 @@ impl ParamSet {
         d
     }
     pub fn find_one_filename(&self, name: String, d: String) -> String {
-        let mut filename: String = self.find_one_string(name, String::new());
+        let filename: String = self.find_one_string(name, String::new());
         if filename == String::new() {
             return d;
         }
