@@ -2050,6 +2050,23 @@ pub fn spherical_direction_vec3(sin_theta: Float, cos_theta: Float, phi: Float,
     *x * sin_theta * phi.cos() + *y * sin_theta * phi.sin() + *z * cos_theta
 }
 
+/// Conversion of a direction to spherical angles. Note that
+/// **spherical_theta()** assumes that the vector **v** has been
+/// normalized before being passed in.
+pub fn spherical_theta(v: &Vector3f) -> Float {
+    clamp_t(v.z, -1.0 as Float, 1.0 as Float).acos()
+}
+
+/// Conversion of a direction to spherical angles.
+pub fn spherical_phi(v: &Vector3f) -> Float {
+    let p: Float = v.y.atan2(v.x);
+    if p < 0.0 as Float {
+        p + 2.0 as Float * PI
+    } else {
+        p
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct Normal3<T> {
     pub x: T,
@@ -6432,6 +6449,12 @@ impl Shape for Triangle {
 
 // see spectrum.h
 
+// #[derive(Debug,Clone)]
+// pub enum SpectrumType {
+//     Reflectance,
+//     Illuminant,
+// }
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct RGBSpectrum {
     pub c: [Float; 3],
@@ -10209,13 +10232,46 @@ impl Light for InfiniteAreaLight {
         // WORK
         Spectrum::default()
     }
+    /// Like **DistanceLights**, **InfiniteAreaLights** also need the
+    /// scene bounds; here again, the **preprocess()** method finds
+    /// the scene bounds after all of the scene geometry has been
+    /// created.
     fn preprocess(&self, scene: &Scene) {
+        let mut world_center_ref = self.world_center.write().unwrap();
+        let mut world_radius_ref = self.world_radius.write().unwrap();
+        Bounds3f::bounding_sphere(&scene.world_bound(),
+                                  &mut world_center_ref,
+                                  &mut world_radius_ref);
     }
-    fn le(&self, _ray: &mut Ray) -> Spectrum {
-        Spectrum::new(0.0 as Float)
+    /// Because infinte area lights need to be able to contribute
+    /// radiance to rays that don't hit any geometry in the scene,
+    /// we'll add a method to the base **Light** class that returns
+    /// emitted radiance due to that light along a ray that escapes
+    /// the scene bounds. It's the responsibility of the integrators
+    /// to call this method for these rays.
+    fn le(&self, ray: &mut Ray) -> Spectrum {
+        let w: Vector3f = vec3_normalize(self.world_to_light.transform_vector(ray.d));
+        let st: Point2f = Point2f {
+            x: spherical_phi(&w) * INV_2_PI,
+            y: spherical_theta(&w) * INV_PI,
+        };
+        // TODO: SpectrumType::Illuminant
+        self.lmap.lookup_pnt_flt(&st, 0.0 as Float)
     }
-    fn pdf_li(&self, _iref: &Interaction, _wi: Vector3f) -> Float {
-        0.0 as Float
+    fn pdf_li(&self, _iref: &Interaction, w: Vector3f) -> Float {
+        // TODO: ProfilePhase _(Prof::LightPdf);
+        let wi: Vector3f = self.world_to_light.transform_vector(w);
+        let theta: Float = spherical_theta(&wi);
+        let phi: Float = spherical_phi(&wi);
+        let sin_theta: Float = theta.sin();
+        if sin_theta == 0 as Float {
+            return 0 as Float;
+        }
+        let p: Point2f = Point2f {
+            x: phi * INV_2_PI,
+            y: theta * INV_PI,
+        };
+        self.distribution.pdf(&p) / (2.0 as Float * PI * PI * sin_theta)
     }
     fn get_flags(&self) -> u8 {
         self.flags
@@ -10608,6 +10664,50 @@ impl Distribution1D {
             func_int: func_int,
         }
     }
+    pub fn count(&self) -> usize {
+        self.func.len()
+    }
+    pub fn sample_continuous(&self, u: Float, pdf: Option<&mut Float>, off: Option<&mut usize>) -> Float {
+        // find surrounding CDF segments and _offset_
+        // int offset = find_interval((int)cdf.size(),
+        //                           [&](int index) { return cdf[index] <= u; });
+
+        // see pbrt.h (int FindInterval(int size, const Predicate &pred) {...})
+        let mut first: usize = 0;
+        let mut len: usize = self.cdf.len();
+        while len > 0 as usize {
+            let half: usize = len >> 1;
+            let middle: usize = first + half;
+            // bisect range based on value of _pred_ at _middle_
+            if self.cdf[middle] <= u {
+                first = middle + 1;
+                len -= half + 1;
+            } else {
+                len = half;
+            }
+        }
+        let offset: usize = clamp_t(first as isize - 1_isize, 0 as isize, self.cdf.len() as isize - 2_isize) as usize;
+        if let Some(off_ref) = off {
+            *off_ref = offset;
+        }
+        // compute offset along CDF segment
+        let mut du: Float = u - self.cdf[offset];
+        if (self.cdf[offset + 1] - self.cdf[offset]) > 0.0 as Float {
+            assert!(self.cdf[offset + 1] > self.cdf[offset]);
+            du /= self.cdf[offset + 1] - self.cdf[offset];
+        }
+        assert!(!du.is_nan());
+        // compute PDF for sampled offset
+        if pdf.is_some() {
+            if self.func_int > 0.0 as Float {
+                *pdf.unwrap() = self.func[offset] / self.func_int;
+            } else {
+                *pdf.unwrap() = 0.0;
+            }
+        }
+        // return $x\in{}[0,1)$ corresponding to sample
+        (offset as Float + du) / self.count() as Float
+    }
     pub fn sample_discrete(&self,
                            u: Float,
                            pdf: Option<&mut Float> /* TODO: Float *uRemapped = nullptr */
@@ -10669,6 +10769,26 @@ impl Distribution2D {
             p_conditional_v: p_conditional_v,
             p_marginal: p_marginal,
         }
+    }
+    pub fn sample_continuous(&self, u: &Point2f, pdf: &mut Float) -> Point2f {
+        let mut pdfs: [Float; 2] = [0.0 as Float; 2];
+        let mut v: usize = 0_usize;
+        let d1: Float = self.p_marginal.sample_continuous(u[1], Some(&mut (pdfs[1])), Some(&mut v));
+        let d0: Float = self.p_conditional_v[v].sample_continuous(u[0], Some(&mut (pdfs[0])), None);
+        *pdf = pdfs[0] * pdfs[1];
+        Point2f {
+            x: d0,
+            y: d1,
+        }
+    }
+    pub fn pdf(&self, p: &Point2f) -> Float {
+        let iu: usize = clamp_t((p[0] as usize * self.p_conditional_v[0].count()) as usize,
+                                0_usize,
+                                self.p_conditional_v[0].count() - 1_usize);
+        let iv: usize = clamp_t((p[1] as usize * self.p_marginal.count()) as usize,
+                                0_usize,
+                                self.p_marginal.count() - 1_usize);
+        self.p_conditional_v[iv].func[iu] / self.p_marginal.func_int
     }
 }
 
