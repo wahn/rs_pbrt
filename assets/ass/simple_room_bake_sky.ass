@@ -7,15 +7,8 @@
 options
 {
  AA_samples 3
- outputs 8 1 STRING
-  "RGBA RGBA filter driver"
-  "emission RGB filter driver_emission"
-  "direct_diffuse RGB filter driver_direct_diffuse"
-  "direct_specular RGB filter driver_direct_specular"
-  "reflection RGB filter driver_reflection"
-  "refraction RGB filter driver_refraction"
-  "indirect_diffuse RGB filter driver_indirect_diffuse"
-  "indirect_specular RGB filter driver_indirect_specular"
+ outputs 1 1 STRING
+  "RGBA RGB filter driver"
  # xres 500
  # yres 500
  xres 4096
@@ -106,6 +99,7 @@ driver_exr
 {
  name driver
  filename "arnold.exr"
+ half_precision on
 }
 
 driver_exr
