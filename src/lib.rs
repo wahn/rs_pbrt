@@ -9888,6 +9888,7 @@ pub trait Light {
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
                  -> Spectrum;
+    fn power(&self) -> Spectrum;
     fn preprocess(&self, scene: &Scene);
     fn le(&self, _ray: &mut Ray) -> Spectrum;
     fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float;
@@ -9975,6 +9976,9 @@ impl Light for PointLight {
         };
         self.i / pnt3_distance_squared(self.p_light, iref.p)
     }
+    fn power(&self) -> Spectrum {
+        Spectrum::default()
+    }
     fn preprocess(&self, _scene: &Scene) {
     }
     /// Default implementation returns no emitted radiance for a ray
@@ -10054,6 +10058,9 @@ impl Light for DistantLight {
             },
         };
         self.l
+    }
+    fn power(&self) -> Spectrum {
+        Spectrum::default()
     }
     /// Some of the **DistanceLight** methods need to know the bounds
     /// of the scene. Because lights are created before the scene
@@ -10232,6 +10239,15 @@ impl Light for InfiniteAreaLight {
         // WORK
         Spectrum::default()
     }
+    /// Like directional lights, the total power from the infinite
+    /// area light is related to the surface area of the scene. Like
+    /// many other lights the power computed here is approximate.
+    fn power(&self) -> Spectrum {
+        let p: Point2f = Point2f { x: 0.5, y: 0.5, };
+        let world_radius: Float = *self.world_radius.read().unwrap();
+        // TODO: SpectrumType::Illuminant
+        self.lmap.lookup_pnt_flt(&p, 0.5 as Float) * Spectrum::new(PI * world_radius * world_radius)
+    }
     /// Like **DistanceLights**, **InfiniteAreaLights** also need the
     /// scene bounds; here again, the **preprocess()** method finds
     /// the scene bounds after all of the scene geometry has been
@@ -10360,6 +10376,9 @@ impl Light for DiffuseAreaLight {
             n: p_shape.n,
         };
         self.l(&p_shape, -new_wi)
+    }
+    fn power(&self) -> Spectrum {
+        Spectrum::default()
     }
     fn preprocess(&self, _scene: &Scene) {
         // TODO?
