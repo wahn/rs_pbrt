@@ -701,14 +701,19 @@ fn pbrt_shape(param_set: &ParamSet)
     // TODO: if (!curTransform.IsAnimated()) { ... }
     // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
     unsafe {
-        let obj_to_world: Transform = Transform {
+        let mut obj_to_world: Transform = Transform {
             m: CUR_TRANSFORM.t[0].m,
             m_inv: CUR_TRANSFORM.t[0].m_inv,
         };
-        let world_to_obj: Transform = Transform {
+        let mut world_to_obj: Transform = Transform {
             m: CUR_TRANSFORM.t[0].m_inv,
             m_inv: CUR_TRANSFORM.t[0].m,
         };
+        if CUR_TRANSFORM.is_animated() {
+            // set both transforms to identity
+            obj_to_world = Transform::default();
+            world_to_obj = Transform::default();
+        }
         // MakeShapes (api.cpp:296)
         if param_set.name == String::from("sphere") {
             // CreateSphereShape

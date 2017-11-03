@@ -2422,6 +2422,35 @@ impl<T> Bounds3<T> {
             p_max: p_max,
         }
     }
+    pub fn corner(&self, corner: u8) -> Point3<T>
+        where T: Copy
+    {
+        // assert!(corner >= 0_u8);
+        assert!(corner < 8_u8);
+        let x: T;
+        if corner & 1 == 0 {
+            x = self.p_min.x;
+        } else {
+            x = self.p_max.x;
+        }
+        let y: T;
+        if corner & 2 == 0 {
+            y = self.p_max.y;
+        } else {
+            y = self.p_min.y;
+        }
+        let z: T;
+        if corner & 4 == 0 {
+            z = self.p_max.z;
+        } else {
+            z = self.p_min.z;
+        }
+        Point3::<T> {
+            x: x,
+            y: y,
+            z: z,
+        }
+    }
     pub fn diagonal(&self) -> Vector3<T>
         where T: Copy + Sub<T, Output = T>
     {
@@ -2900,6 +2929,24 @@ impl Transform {
             m_inv: t.m,
         }
     }
+    pub fn is_identity(&self) -> bool {
+        self.m.m[0][0] == 1.0 as Float &&
+            self.m.m[0][1] == 0.0 as Float &&
+            self.m.m[0][2] == 0.0 as Float &&
+            self.m.m[0][3] == 0.0 as Float &&
+            self.m.m[1][0] == 0.0 as Float &&
+            self.m.m[1][1] == 1.0 as Float &&
+            self.m.m[1][2] == 0.0 as Float &&
+            self.m.m[1][3] == 0.0 as Float &&
+            self.m.m[2][0] == 0.0 as Float &&
+            self.m.m[2][1] == 0.0 as Float &&
+            self.m.m[2][2] == 1.0 as Float &&
+            self.m.m[2][3] == 0.0 as Float &&
+            self.m.m[3][0] == 0.0 as Float &&
+            self.m.m[3][1] == 0.0 as Float &&
+            self.m.m[3][2] == 0.0 as Float &&
+            self.m.m[3][3] == 1.0 as Float
+    }
     pub fn translate(delta: Vector3f) -> Transform {
         Transform {
             m: Matrix4x4::new(1.0,
@@ -3185,11 +3232,11 @@ impl Transform {
             z: self.m_inv.m[0][2] * x + self.m_inv.m[1][2] * y + self.m_inv.m[2][2] * z,
         }
     }
-    pub fn transform_ray(&self, r: &mut Ray) {
-        // Ray tr = (*this)(Ray(r));
+    pub fn transform_ray(&self, r: Ray) -> Ray {
         let mut o_error: Vector3f = Vector3f::default();
         let mut o: Point3f = self.transform_point_with_error(r.o, &mut o_error);
         let d: Vector3f = self.transform_vector(r.d);
+        // offset ray origin to edge of error bounds and compute _tMax_
         let length_squared: Float = d.length_squared();
         let mut t_max: Float = r.t_max;
         if length_squared > 0.0 as Float {
@@ -3197,17 +3244,28 @@ impl Transform {
             o += d * dt;
             t_max -= dt;
         }
-        r.o = o;
-        r.d = d;
-        r.t_max = t_max;
-        if let Some(d) = r.differential {
+        if let Some(rd) = r.differential {
             let diff: RayDifferential = RayDifferential {
-                rx_origin: self.transform_point(d.rx_origin),
-                ry_origin: self.transform_point(d.ry_origin),
-                rx_direction: self.transform_vector(d.rx_direction),
-                ry_direction: self.transform_vector(d.ry_direction),
+                rx_origin: self.transform_point(rd.rx_origin),
+                ry_origin: self.transform_point(rd.ry_origin),
+                rx_direction: self.transform_vector(rd.rx_direction),
+                ry_direction: self.transform_vector(rd.ry_direction),
             };
-            r.differential = Some(diff);
+            Ray {
+                o: o,
+                d: d,
+                t_max: t_max,
+                time: 0.0,
+                differential: Some(diff),
+            }
+        } else {
+            Ray {
+                o: o,
+                d: d,
+                t_max: t_max,
+                time: 0.0,
+                differential: None,
+            }
         }
     }
     pub fn transform_bounds(&self, b: Bounds3f) -> Bounds3f {
@@ -3265,6 +3323,42 @@ impl Transform {
                               }));
         ret
     }
+    // pub fn transform_surface_interaction(&self,
+    //                                      si: SurfaceInteraction)
+    //                                      -> SurfaceInteraction {
+    //     SurfaceInteraction ret;
+    //     // transform _p_ and _pError_ in _SurfaceInteraction_
+    //     ret.p = (*this)(si.p, si.pError, &ret.pError);
+    //     // transform remaining members of _SurfaceInteraction_
+    //     const Transform &t = *this;
+    //     ret.n = Normalize(t(si.n));
+    //     ret.wo = Normalize(t(si.wo));
+    //     ret.time = si.time;
+    //     ret.mediumInterface = si.mediumInterface;
+    //     ret.uv = si.uv;
+    //     ret.shape = si.shape;
+    //     ret.dpdu = t(si.dpdu);
+    //     ret.dpdv = t(si.dpdv);
+    //     ret.dndu = t(si.dndu);
+    //     ret.dndv = t(si.dndv);
+    //     ret.shading.n = Normalize(t(si.shading.n));
+    //     ret.shading.dpdu = t(si.shading.dpdu);
+    //     ret.shading.dpdv = t(si.shading.dpdv);
+    //     ret.shading.dndu = t(si.shading.dndu);
+    //     ret.shading.dndv = t(si.shading.dndv);
+    //     ret.dudx = si.dudx;
+    //     ret.dvdx = si.dvdx;
+    //     ret.dudy = si.dudy;
+    //     ret.dvdy = si.dvdy;
+    //     ret.dpdx = t(si.dpdx);
+    //     ret.dpdy = t(si.dpdy);
+    //     ret.bsdf = si.bsdf;
+    //     ret.bssrdf = si.bssrdf;
+    //     ret.primitive = si.primitive;
+    //     // ret.n = Faceforward(ret.n, ret.shading.n);
+    //     ret.shading.n = Faceforward(ret.shading.n, ret.n);
+    //     ret
+    // }
     pub fn transform_point_with_error(&self,
                                       p: Point3<Float>,
                                       p_error: &mut Vector3<Float>)
@@ -3494,6 +3588,7 @@ impl AnimatedTransform {
         at.end_transform = end_transform.clone();
         at.start_time = start_time;
         at.end_time = end_time;
+        at.actually_animated = *start_transform != *end_transform;
         AnimatedTransform::decompose(&start_transform.m, &mut at.t[0], &mut at.r[0], &mut at.s[0]);
         AnimatedTransform::decompose(&end_transform.m, &mut at.t[1], &mut at.r[1], &mut at.s[1]);
         // flip _r[1]_ if needed to select shortest path
@@ -4315,11 +4410,60 @@ impl AnimatedTransform {
         // compute scale _S_ using rotation and original matrix
         *s = mtx_mul(Matrix4x4::inverse(r), *m);
     }
-    pub fn transform_ray(&self, r: &mut Ray) {
+    pub fn interpolate(&self, time: Float, t: &mut Transform) {
+        // handle boundary conditions for matrix interpolation
+        if !self.actually_animated || time <= self.start_time {
+            *t = self.start_transform;
+            return;
+        }
+        if time >= self.end_time {
+            *t = self.end_transform;
+            return;
+        }
+        let dt: Float = (time - self.start_time) / (self.end_time - self.start_time);
+        // interpolate translation at _dt_
+        let trans: Vector3f = self.t[0] * (1.0 as Float - dt) + self.t[1] * dt;
+
+        // interpolate rotation at _dt_
+        let rotate: Quaternion = quat_slerp(dt, self.r[0], self.r[1]);
+
+        // interpolate scale at _dt_
+        let mut scale: Matrix4x4 = Matrix4x4::default();
+        for i in 0..3 {
+            for j in 0..3 {
+                scale.m[i][j] = lerp(dt, self.s[0].m[i][j], self.s[1].m[i][j]);
+            }
+        }
+
+        // compute interpolated matrix as product of interpolated components
+        *t = Transform::translate(trans) * rotate.to_transform() * Transform { m: scale, m_inv: Matrix4x4::inverse(scale), };
+    }
+    pub fn transform_ray(&self, r: Ray) -> Ray {
         // if !self.actually_animated || self.r.time <= self.start_time {
         // } else if ...
         // TODO: above
         self.start_transform.transform_ray(r)
+    }
+    pub fn motion_bounds(&self, b: Bounds3f) -> Bounds3f {
+        if !self.actually_animated {
+            return self.start_transform.transform_bounds(b);
+        }
+        if self.has_rotation == false {
+            return bnd3_union_bnd3(self.start_transform.transform_bounds(b), self.end_transform.transform_bounds(b));
+        }
+        // return motion bounds accounting for animated rotation
+        let mut bounds: Bounds3f = Bounds3f::default();
+        for corner in 0..8 {
+            bounds = bnd3_union_bnd3(bounds, self.bound_point_motion(b.corner(corner)));
+        }
+        bounds
+    }
+    pub fn bound_point_motion(&self, p: Point3f) -> Bounds3f {
+        let bounds: Bounds3f = Bounds3f {
+            p_min: self.start_transform.transform_point(p),
+            p_max: self.end_transform.transform_point(p),
+        };
+        bounds
     }
 }
 
@@ -4336,46 +4480,6 @@ impl Default for Quaternion {
         Quaternion {
             v: Vector3f::default(),
             w: 1.0,
-        }
-    }
-}
-
-impl Sub for Quaternion {
-    type Output = Quaternion;
-    fn sub(self, rhs: Quaternion) -> Quaternion {
-        Quaternion {
-            v: self.v - rhs.v,
-            w: self.w - rhs.w,
-        }
-    }
-}
-
-impl Mul<Float> for Quaternion {
-    type Output = Quaternion;
-    fn mul(self, rhs: Float) -> Quaternion {
-        Quaternion {
-            v: self.v * rhs,
-            w: self.w * rhs,
-        }
-    }
-}
-
-impl Div<Float> for Quaternion {
-    type Output = Quaternion;
-    fn div(self, rhs: Float) -> Quaternion {
-        Quaternion {
-            v: self.v / rhs,
-            w: self.w / rhs,
-        }
-    }
-}
-
-impl Neg for Quaternion {
-    type Output = Quaternion;
-    fn neg(self) -> Quaternion {
-        Quaternion {
-            v: -self.v,
-            w: -self.w,
         }
     }
 }
@@ -4429,6 +4533,96 @@ impl Quaternion {
                 w: w,
             }
         }
+    }
+    pub fn to_transform(&self) -> Transform {
+        let xx: Float = self.v.x * self.v.x;
+        let yy: Float = self.v.y * self.v.y;
+        let zz: Float = self.v.z * self.v.z;
+        let xy: Float = self.v.x * self.v.y;
+        let xz: Float = self.v.x * self.v.z;
+        let yz: Float = self.v.y * self.v.z;
+        let wx: Float = self.v.x * self.w;
+        let wy: Float = self.v.y * self.w;
+        let wz: Float = self.v.z * self.w;
+
+        let mut m: Matrix4x4 = Matrix4x4::default();
+        m.m[0][0] = 1.0 as Float - 2.0 as Float * (yy + zz);
+        m.m[0][1] = 2.0 as Float * (xy + wz);
+        m.m[0][2] = 2.0 as Float * (xz - wy);
+        m.m[1][0] = 2.0 as Float * (xy - wz);
+        m.m[1][1] = 1.0 as Float - 2.0 as Float * (xx + zz);
+        m.m[1][2] = 2.0 as Float * (yz + wx);
+        m.m[2][0] = 2.0 as Float * (xz + wy);
+        m.m[2][1] = 2.0 as Float * (yz - wx);
+        m.m[2][2] = 1.0 as Float - 2.0 as Float * (xx + yy);
+
+        // transpose since we are left-handed
+        Transform {
+            m: Matrix4x4::transpose(m),
+            m_inv: m,
+        }
+    }
+}
+
+impl Add for Quaternion {
+    type Output = Quaternion;
+    fn add(self, rhs: Quaternion) -> Quaternion {
+        Quaternion {
+            v: self.v + rhs.v,
+            w: self.w + rhs.w,
+        }
+    }
+}
+
+impl Sub for Quaternion {
+    type Output = Quaternion;
+    fn sub(self, rhs: Quaternion) -> Quaternion {
+        Quaternion {
+            v: self.v - rhs.v,
+            w: self.w - rhs.w,
+        }
+    }
+}
+
+impl Mul<Float> for Quaternion {
+    type Output = Quaternion;
+    fn mul(self, rhs: Float) -> Quaternion {
+        Quaternion {
+            v: self.v * rhs,
+            w: self.w * rhs,
+        }
+    }
+}
+
+impl Div<Float> for Quaternion {
+    type Output = Quaternion;
+    fn div(self, rhs: Float) -> Quaternion {
+        Quaternion {
+            v: self.v / rhs,
+            w: self.w / rhs,
+        }
+    }
+}
+
+impl Neg for Quaternion {
+    type Output = Quaternion;
+    fn neg(self) -> Quaternion {
+        Quaternion {
+            v: -self.v,
+            w: -self.w,
+        }
+    }
+}
+
+pub fn quat_slerp(t: Float, q1: Quaternion, q2: Quaternion) -> Quaternion {
+    let cos_theta: Float = quat_dot(q1, q2);
+    if cos_theta > 0.9995 as Float {
+        quat_normalize(q1 * (1.0 as Float - t) + q2 * t)
+    } else {
+        let theta: Float = clamp_t(cos_theta, -1.0 as Float, 1.0 as Float).acos();
+        let thetap: Float = theta * t;
+        let qperp: Quaternion = quat_normalize(q2 - q1 * cos_theta);
+        q1 * thetap.cos() + qperp * thetap.sin()
     }
 }
 
@@ -4822,6 +5016,58 @@ impl Primitive for GeometricPrimitive {
         } else {
             None
         }
+    }
+}
+
+pub struct TransformedPrimitive {
+    pub primitive: Arc<Primitive + Sync + Send>,
+    pub primitive_to_world: AnimatedTransform,
+}
+
+impl Primitive for TransformedPrimitive {
+    fn world_bound(&self) -> Bounds3f {
+        self.primitive_to_world.motion_bounds(self.primitive.world_bound())
+    }
+    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
+        // compute _ray_ after transformation by _self.primitive_to_world_
+        let mut interpolated_prim_to_world: Transform = Transform::default();
+        self.primitive_to_world.interpolate(r.time, &mut interpolated_prim_to_world);
+        let mut ray: Ray = Transform::inverse(interpolated_prim_to_world).transform_ray(r.clone());
+        if let Some(isect) = self.primitive.intersect(&mut ray) {
+            r.t_max = ray.t_max;
+            // transform instance's intersection data to world space
+            if !interpolated_prim_to_world.is_identity() {
+                // *isect = interpolated_prim_to_world.transform_(*isect);
+            }
+            // CHECK_GE(Dot(isect->n, isect->shading.n), 0);
+            // return true;
+            None
+        } else {
+            None
+        }
+    }
+    fn intersect_p(&self, r: &Ray) -> bool {
+        // TODO
+        // self.shape.intersect_p(r)
+        false
+    }
+    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
+        // TODO
+        // if let Some(ref material) = self.material {
+        //     Some(material.clone())
+        // } else {
+        //     None
+        // }
+        None
+    }
+    fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
+        // TODO
+        // if let Some(ref area_light) = self.area_light {
+        //     Some(area_light.clone())
+        // } else {
+        //     None
+        // }
+        None
     }
 }
 
@@ -8139,13 +8385,6 @@ impl Camera for PerspectiveCamera {
             y: p_camera.y,
             z: p_camera.z,
         });
-        // *ray = RayDifferential(Point3f(0, 0, 0), dir);
-        ray.o = Point3f::default();
-        ray.d = dir;
-        ray.t_max = std::f32::INFINITY;
-        ray.time = lerp(sample.time, self.shutter_open, self.shutter_close);
-        // TODO: modify ray for depth of field
-        // TODO: if (lensRadius > 0) { ... } else {
         let diff: RayDifferential = RayDifferential {
             rx_origin: ray.o,
             ry_origin: ray.o,
@@ -8160,11 +8399,18 @@ impl Camera for PerspectiveCamera {
                 z: p_camera.z,
             } + self.dy_camera),
         };
+        // *ray = RayDifferential(Point3f(0, 0, 0), dir);
+        let in_ray: Ray = Ray {
+            o: Point3f::default(),
+            d: dir,
+            t_max: std::f32::INFINITY,
+            time: lerp(sample.time, self.shutter_open, self.shutter_close),
+            differential: Some(diff),
+        };
+        // TODO: modify ray for depth of field
+        // TODO: if (lensRadius > 0) { ... } else {
         // TODO: ray->medium = medium;
-        // TODO: *ray = CameraToWorld(*ray);
-        // ray->hasDifferentials = true;
-        ray.differential = Some(diff);
-        self.camera_to_world.transform_ray(ray);
+        *ray = self.camera_to_world.transform_ray(in_ray);
         1.0
     }
     fn get_film(&self) -> Arc<Film> {
@@ -9591,7 +9837,7 @@ impl MipMap {
                             _ => offset,
                         };
                         if offset >= 0_i32 && offset < resolution.y {
-                            work_data[t as usize] += 
+                            work_data[t as usize] +=
                                 resampled_image[(offset * res_pow_2.x + s) as usize] *
                                 t_weights[t as usize].weight[j];
                         }
