@@ -53,11 +53,13 @@ static mut CUR_TRANSFORM: TransformSet = TransformSet {
         },
     }; 2],
 };
+static mut ACTIVE_TRANSFORM_BITS: u8 = 3_u8; // 0x11 for MaxTransforms = 2
 static mut NAMED_COORDINATE_SYSTEMS: Option<Box<HashMap<&str, TransformSet>>> = None;
 static mut RENDER_OPTIONS: Option<Box<RenderOptions>> = None;
 static mut GRAPHICS_STATE: Option<Box<GraphicsState>> = None;
 static mut PUSHED_GRAPHICS_STATES: Option<Box<Vec<GraphicsState>>> = None;
 static mut PUSHED_TRANSFORMS: Option<Box<Vec<TransformSet>>> = None;
+static mut PUSHED_ACTIVE_TRANSFORM_BITS: Option<Box<Vec<u8>>> = None;
 // not used in original C++ code:
 static mut PARAM_SET: Option<Box<ParamSet>> = None;
 
@@ -1306,6 +1308,7 @@ fn main() {
                     GRAPHICS_STATE = Some(Box::new(GraphicsState::default()));
                     PUSHED_GRAPHICS_STATES = Some(Box::new(Vec::new()));
                     PUSHED_TRANSFORMS = Some(Box::new(Vec::new()));
+                    PUSHED_ACTIVE_TRANSFORM_BITS = Some(Box::new(Vec::new()));
                     PARAM_SET = Some(Box::new(ParamSet::default()));
                     // parser
                     let pairs = PbrtParser::parse_str(Rule::pbrt, &str_buf).unwrap_or_else(|e| panic!("{}", e));
@@ -1319,6 +1322,25 @@ fn main() {
                             Rule::statement => {
                                 for statement_pair in pair.into_inner() {
                                     match statement_pair.as_rule() {
+                                        Rule::active_transform => {
+                                            for active_transform_pair in statement_pair.into_inner() {
+                                                match active_transform_pair.as_rule() {
+                                                    Rule::all => {
+                                                        // println!("ActiveTransform All");
+                                                        ACTIVE_TRANSFORM_BITS = 3_u8 // 0x11
+                                                    },
+                                                    Rule::start_time => {
+                                                        // println!("ActiveTransform StartTime");
+                                                        ACTIVE_TRANSFORM_BITS = 1_u8 // 0x01
+                                                    },
+                                                    Rule::end_time => {
+                                                        // println!("ActiveTransform EndTime");
+                                                        ACTIVE_TRANSFORM_BITS = 2_u8 // 0x10
+                                                    },
+                                                    _ => unreachable!()
+                                                }
+                                            }
+                                        },
                                         Rule::concat_transform => {
                                             let mut numbers: Vec<Float> = Vec::new();
                                             for concat_transform_pair in statement_pair.into_inner() {
@@ -1351,9 +1373,13 @@ fn main() {
                                                                                       m01, m11, m21, m31,
                                                                                       m02, m12, m22, m32,
                                                                                       m03, m13, m23, m33);
-                                            CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
-                                            CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
-                                        },
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                                CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
+                                            }
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                                CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
+                                            }
+                                        }
                                         Rule::keyword => {
                                             for keyword_pair in statement_pair.into_inner() {
                                                 match keyword_pair.as_rule() {
@@ -1387,7 +1413,9 @@ fn main() {
                                                                     ]
                                                                 });
                                                             }
-                                                            // TODO? pushedActiveTransformBits.push_back(activeTransformBits);
+                                                            if let Some(ref mut patb) = PUSHED_ACTIVE_TRANSFORM_BITS {
+                                                                patb.push(ACTIVE_TRANSFORM_BITS);
+                                                            }
                                                         }
                                                     },
                                                     Rule::attribute_end => {
@@ -1419,13 +1447,17 @@ fn main() {
                                                                 CUR_TRANSFORM.t[0] = popped_transform_set.t[0];
                                                                 CUR_TRANSFORM.t[1] = popped_transform_set.t[1];
                                                             }
-                                                            // TODO? pushedActiveTransformBits.push_back(activeTransformBits);
+                                                            if let Some(ref mut patb) = PUSHED_ACTIVE_TRANSFORM_BITS {
+                                                                let active_transform_bits: u8 = patb.pop().unwrap();
+                                                                ACTIVE_TRANSFORM_BITS = active_transform_bits;
+                                                            }
                                                         }
                                                     },
                                                     Rule::world_begin => {
                                                         println!("WorldBegin");
                                                         CUR_TRANSFORM.t[0] = Transform::default();
                                                         CUR_TRANSFORM.t[1] = Transform::default();
+                                                        ACTIVE_TRANSFORM_BITS = 3_u8; // 0x11
                                                         if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
                                                             named_coordinate_systems.insert("world",
                                                                                             TransformSet {
@@ -1448,8 +1480,12 @@ fn main() {
                                             let look: Point3f = Point3f { x: numbers[3], y: numbers[4], z: numbers[5], };
                                             let up: Vector3f = Vector3f { x: numbers[6], y: numbers[7], z: numbers[8], };
                                             let look_at: Transform = Transform::look_at(pos, look, up);
-                                            CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
-                                            CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                                CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
+                                            }
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                                CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
+                                            }
                                         },
                                         Rule::named_statement => {
                                             for named_statement_pair in statement_pair.into_inner() {
@@ -3822,8 +3858,12 @@ fn main() {
                                             let y: Float = numbers[2];
                                             let z: Float = numbers[3];
                                             let rotate: Transform = Transform::rotate(angle, Vector3f { x: x, y: y, z: z, });
-                                            CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * rotate;
-                                            CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * rotate;
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                                CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * rotate;
+                                            }
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                                CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * rotate;
+                                            }
                                         },
                                         Rule::scale => {
                                             let mut numbers: Vec<Float> = Vec::new();
@@ -3836,8 +3876,12 @@ fn main() {
                                             let y: Float = numbers[1];
                                             let z: Float = numbers[2];
                                             let scale: Transform = Transform::scale(x, y, z);
-                                            CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * scale;
-                                            CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * scale;
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                                CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * scale;
+                                            }
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                                CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * scale;
+                                            }
                                         },
                                         Rule::transform => {
                                             let mut numbers: Vec<Float> = Vec::new();
@@ -3871,8 +3915,30 @@ fn main() {
                                                                                       m01, m11, m21, m31,
                                                                                       m02, m12, m22, m32,
                                                                                       m03, m13, m23, m33);
-                                            CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
-                                            CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                                CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
+                                            }
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                                CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
+                                            }
+                                        },
+                                        Rule::transform_times => {
+                                            let mut numbers: Vec<Float> = Vec::new();
+                                            for transform_times_pair in statement_pair.into_inner() {
+                                                let number: Float =
+                                                    f32::from_str(transform_times_pair.clone().into_span().as_str()).unwrap();
+                                                numbers.push(number);
+                                            }
+                                            let start: Float = numbers[0];
+                                            let end: Float = numbers[1];
+                                            if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                // TODO: VERIFY_OPTIONS("TransformTimes");
+                                                ro.transform_start_time = start;
+                                                ro.transform_end_time = end;
+                                                println!("TransformTimes {} {}",
+                                                         ro.transform_start_time,
+                                                         ro.transform_end_time);
+                                            }
                                         },
                                         Rule::translate => {
                                             let mut numbers: Vec<Float> = Vec::new();
@@ -3885,8 +3951,12 @@ fn main() {
                                             let y: Float = numbers[1];
                                             let z: Float = numbers[2];
                                             let translate: Transform = Transform::translate(Vector3f { x: x, y: y, z: z, });
-                                            CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * translate;
-                                            CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * translate;
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                                CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * translate;
+                                            }
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                                CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * translate;
+                                            }
                                         },
                                         _ => unreachable!()
                                     };

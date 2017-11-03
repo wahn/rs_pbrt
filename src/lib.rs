@@ -2771,6 +2771,29 @@ impl Matrix4x4 {
     }
 }
 
+impl PartialEq for Matrix4x4 {
+    fn eq(&self, rhs: &Matrix4x4) -> bool {
+        for i in 0..4 {
+            for j in 0..4 {
+                if self.m[i][j] != rhs.m[i][j] {
+                    return false;
+                }
+            }
+        }
+        true
+    }
+    fn ne(&self, rhs: &Matrix4x4) -> bool {
+        for i in 0..4 {
+            for j in 0..4 {
+                if self.m[i][j] != rhs.m[i][j] {
+                    return true;
+                }
+            }
+        }
+        false
+    }
+}
+
 // see transform.cpp
 
 /// Finds the closed-form solution of a 2x2 linear system.
@@ -2814,16 +2837,6 @@ impl Default for Transform {
         Transform {
             m: Matrix4x4::default(),
             m_inv: Matrix4x4::default(),
-        }
-    }
-}
-
-impl Mul for Transform {
-    type Output = Transform;
-    fn mul(self, rhs: Transform) -> Transform {
-        Transform {
-            m: mtx_mul(self.m, rhs.m),
-            m_inv: mtx_mul(rhs.m_inv, self.m_inv),
         }
     }
 }
@@ -3422,6 +3435,25 @@ impl Transform {
         ret.primitive = None; // TODO? si.primitive;
         ret.shading.n = nrm_faceforward_nrm(ret.shading.n, ret.n);
         ret
+    }
+}
+
+impl PartialEq for Transform {
+    fn eq(&self, rhs: &Transform) -> bool {
+        rhs.m == self.m && rhs.m_inv == self.m_inv
+    }
+    fn ne(&self, rhs: &Transform) -> bool {
+        rhs.m != self.m || rhs.m_inv != self.m_inv
+    }
+}
+
+impl Mul for Transform {
+    type Output = Transform;
+    fn mul(self, rhs: Transform) -> Transform {
+        Transform {
+            m: mtx_mul(self.m, rhs.m),
+            m_inv: mtx_mul(rhs.m_inv, self.m_inv),
+        }
     }
 }
 
@@ -12341,6 +12373,21 @@ pub fn lookup_one<T>(vec: &Vec<ParamSetItem<T>>, name: String, d: T) -> T
 #[derive(Debug,Default,Copy,Clone)]
 pub struct TransformSet {
     pub t: [Transform; 2],
+}
+
+impl TransformSet {
+    pub fn is_animated(&self) -> bool {
+        // for (int i = 0; i < MaxTransforms - 1; ++i)
+        //     if (t[i] != t[i + 1]) return true;
+        // return false;
+
+        // we have only 2 transforms
+        if self.t[0] != self.t[1] {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 pub struct RenderOptions {

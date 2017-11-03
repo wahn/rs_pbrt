@@ -1,5 +1,14 @@
 pbrt = _{ whitespace? ~ (statement | comment)* ~ last_statement }
-statement = { concat_transform | keyword | look_at | named_statement | rotate | scale | transform | translate }
+statement = { active_transform |
+              concat_transform |
+              keyword |
+              look_at |
+              named_statement |
+              rotate |
+              scale |
+              transform |
+              transform_times |
+              translate }
 named_statement = { accelerator |
                     area_light_source |
                     camera |
@@ -67,6 +76,16 @@ transform = { ("Transform" ~ lbrack ~
                number ~ number ~ number ~ number ~
                number ~ number ~ number ~ number)
 }
+// TransformTimes start end
+transform_times = { "TransformTimes" ~
+           // followed by 2 numbers:
+           number ~ number
+}
+// ActiveTransform [ StartTime | EndTime | All ]
+active_transform = { ("ActiveTransform" ~ all) |
+                     ("ActiveTransform" ~ start_time) |
+                     ("ActiveTransform" ~ end_time)
+}
 // ConcatTransform m00 .. m33
 concat_transform = { ("ConcatTransform" ~ lbrack ~
                       // followed by 16 numbers:
@@ -106,9 +125,9 @@ film = { "Film" ~ string ~ parameter* }
 integrator = { "Integrator" ~ string ~ parameter* }
 // CoordSysTransform "camera"
 coord_sys_transform = { "CoordSysTransform" ~ string }
-// AreaLightSource "diffuse" "rgb L"  .5 .5 .5 
+// AreaLightSource "diffuse" "rgb L"  .5 .5 .5
 area_light_source = { "AreaLightSource" ~ string ~ parameter* }
-// LightSource "point" "rgb I"  .5 .5 .5 
+// LightSource "point" "rgb I"  .5 .5 .5
 light_source = { "LightSource" ~ string ~ parameter* }
 // Texture "mydiffuse" "spectrum" "imagemap" "string filename" "image.tga"
 texture = { "Texture" ~ string ~ string ~ string ~ parameter* }
@@ -122,12 +141,9 @@ named_material = { "NamedMaterial" ~ string ~ parameter* }
 shape = { "Shape" ~ string ~ parameter* }
 // keywords
 keyword = {
-    ("ActiveTransform" |
-     "All" |
-     attribute_begin |
+    (attribute_begin |
      attribute_end |
      "CoordinateSystem" |
-     "EndTime" |
      "Identity" |
      "Include" |
      "MakeNamedMedium" |
@@ -136,15 +152,16 @@ keyword = {
      "ObjectEnd" |
      "ObjectInstance" |
      "ReverseOrientation" |
-     "StartTime" |
      "TransformBegin" |
      "TransformEnd" |
-     "TransformTimes" |
      world_begin
     )
 }
+all = { "All" }
 attribute_begin = { "AttributeBegin" }
 attribute_end = { "AttributeEnd" }
+end_time = { "EndTime" }
+start_time = { "StartTime" }
 world_begin = { "WorldBegin" }
 // IDENT a-zA-Z_a-zA-Z_0-9*
 ident =  { ('a'..'z' | 'A'..'Z' | "_") ~
