@@ -3323,42 +3323,6 @@ impl Transform {
                               }));
         ret
     }
-    // pub fn transform_surface_interaction(&self,
-    //                                      si: SurfaceInteraction)
-    //                                      -> SurfaceInteraction {
-    //     SurfaceInteraction ret;
-    //     // transform _p_ and _pError_ in _SurfaceInteraction_
-    //     ret.p = (*this)(si.p, si.pError, &ret.pError);
-    //     // transform remaining members of _SurfaceInteraction_
-    //     const Transform &t = *this;
-    //     ret.n = Normalize(t(si.n));
-    //     ret.wo = Normalize(t(si.wo));
-    //     ret.time = si.time;
-    //     ret.mediumInterface = si.mediumInterface;
-    //     ret.uv = si.uv;
-    //     ret.shape = si.shape;
-    //     ret.dpdu = t(si.dpdu);
-    //     ret.dpdv = t(si.dpdv);
-    //     ret.dndu = t(si.dndu);
-    //     ret.dndv = t(si.dndv);
-    //     ret.shading.n = Normalize(t(si.shading.n));
-    //     ret.shading.dpdu = t(si.shading.dpdu);
-    //     ret.shading.dpdv = t(si.shading.dpdv);
-    //     ret.shading.dndu = t(si.shading.dndu);
-    //     ret.shading.dndv = t(si.shading.dndv);
-    //     ret.dudx = si.dudx;
-    //     ret.dvdx = si.dvdx;
-    //     ret.dudy = si.dudy;
-    //     ret.dvdy = si.dvdy;
-    //     ret.dpdx = t(si.dpdx);
-    //     ret.dpdy = t(si.dpdy);
-    //     ret.bsdf = si.bsdf;
-    //     ret.bssrdf = si.bssrdf;
-    //     ret.primitive = si.primitive;
-    //     // ret.n = Faceforward(ret.n, ret.shading.n);
-    //     ret.shading.n = Faceforward(ret.shading.n, ret.n);
-    //     ret
-    // }
     pub fn transform_point_with_error(&self,
                                       p: Point3<Float>,
                                       p_error: &mut Vector3<Float>)
@@ -5037,10 +5001,12 @@ impl Primitive for TransformedPrimitive {
             r.t_max = ray.t_max;
             // transform instance's intersection data to world space
             if !interpolated_prim_to_world.is_identity() {
-                // *isect = interpolated_prim_to_world.transform_(*isect);
+                let new_isect = interpolated_prim_to_world.transform_surface_interaction(&isect);
+                assert!(nrm_dot_nrm(new_isect.n, new_isect.shading.n) >= 0.0 as Float);
+                return Some(SurfaceInteraction::new(new_isect.p, new_isect.p_error, new_isect.uv, new_isect.wo,
+                                                    new_isect.dpdu, new_isect.dpdv, new_isect.dndu, new_isect.dndv,
+                                                    new_isect.time, None));
             }
-            // CHECK_GE(Dot(isect->n, isect->shading.n), 0);
-            // return true;
             None
         } else {
             None
