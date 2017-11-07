@@ -3552,6 +3552,7 @@ fn main() {
                                                             // println!("Shape \"{}\" ", param_set.name);
                                                             // print_params(&param_set);
                                                             // collect area lights
+                                                            let mut prims: Vec<Arc<Primitive + Send + Sync>> = Vec::new();
                                                             let mut area_lights: Vec<Arc<Light + Send + Sync>> = Vec::new();
                                                             // possibly create area light for shape (see pbrtShape())
                                                             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
@@ -3597,9 +3598,7 @@ fn main() {
                                                                             let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
                                                                                                                             material.clone(),
                                                                                                                             Some(area_light.clone())));
-                                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                                ro.primitives.push(geo_prim.clone());
-                                                                            }
+                                                                            prims.push(geo_prim.clone());
                                                                         }
                                                                     }
                                                                 } else {
@@ -3612,9 +3611,7 @@ fn main() {
                                                                         let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
                                                                                                                         material.clone(),
                                                                                                                         None));
-                                                                        if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                            ro.primitives.push(geo_prim.clone());
-                                                                        }
+                                                                        prims.push(geo_prim.clone());
                                                                     }
                                                                     // animated?
                                                                     if CUR_TRANSFORM.is_animated() {
@@ -3624,16 +3621,16 @@ fn main() {
                                                                                                        ro.transform_start_time,
                                                                                                        &CUR_TRANSFORM.t[1],
                                                                                                        ro.transform_end_time);
-                                                                            if ro.primitives.len() > 1 {
-                                                                                println!("TODO: ro.primitives.len() > 1");
-                                                                                // let bvh: Arc<Primitive + Send + Sync> = Arc::new(BVHAccel::new(ro.primitives.clone(), 4, SplitMethod::SAH));
-                                                                                // ro.primitives.clear();
-                                                                                // ro.primitives.push(bvh);
+                                                                            if prims.len() > 1 {
+                                                                                println!("TODO: prims.len() > 1");
+                                                                                let bvh: Arc<Primitive + Send + Sync> = Arc::new(BVHAccel::new(prims.clone(), 4, SplitMethod::SAH));
+                                                                                prims.clear();
+                                                                                prims.push(bvh.clone());
                                                                             } else {
-                                                                                if let Some(primitive) = ro.primitives.pop() {
+                                                                                if let Some(primitive) = prims.pop() {
                                                                                     let geo_prim = Arc::new(TransformedPrimitive::new(primitive,
                                                                                                                                       animated_object_to_world));
-                                                                                    ro.primitives.push(geo_prim);
+                                                                                    prims.push(geo_prim.clone());
                                                                                 }
                                                                             }
                                                                         }
@@ -3649,9 +3646,7 @@ fn main() {
                                                                     let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
                                                                                                                     material.clone(),
                                                                                                                     None));
-                                                                    if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                        ro.primitives.push(geo_prim.clone());
-                                                                    }
+                                                                    prims.push(geo_prim.clone());
                                                                 }
                                                             }
                                                             // add _prims_ and _areaLights_ to scene or current instance
@@ -3662,6 +3657,11 @@ fn main() {
                                                             //         renderOptions->currentInstance->end(), prims.begin(), prims.end());
                                                             // } else {
                                                             if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                // renderOptions->primitives.insert(renderOptions->primitives.end(),
+                                                                //     prims.begin(), prims.end());
+                                                                for prim in prims {
+                                                                    ro.primitives.push(prim.clone());
+                                                                }
                                                                 // ro.primitives.insert(ro.primitives.end(),
                                                                 //                      prims.begin(), prims.end());
                                                                 if area_lights.len() > 0 {

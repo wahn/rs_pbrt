@@ -5013,9 +5013,15 @@ impl Primitive for TransformedPrimitive {
             if !interpolated_prim_to_world.is_identity() {
                 let new_isect = interpolated_prim_to_world.transform_surface_interaction(&isect);
                 assert!(nrm_dot_nrm(new_isect.n, new_isect.shading.n) >= 0.0 as Float);
-                return Some(SurfaceInteraction::new(new_isect.p, new_isect.p_error, new_isect.uv, new_isect.wo,
-                                                    new_isect.dpdu, new_isect.dpdv, new_isect.dndu, new_isect.dndv,
-                                                    new_isect.time, None));
+                let mut is: SurfaceInteraction =
+                    SurfaceInteraction::new(new_isect.p, new_isect.p_error, new_isect.uv, new_isect.wo,
+                                            new_isect.dpdu, new_isect.dpdv, new_isect.dndu, new_isect.dndv,
+                                            new_isect.time, None);
+                // we need to preserve the primitive pointer
+                if let Some(primitive) = isect.primitive {
+                    is.primitive = Some(primitive);
+                }
+                return Some(is);
             }
             None
         } else {
@@ -7065,130 +7071,6 @@ impl BVHAccel {
         let unwrapped = Arc::try_unwrap(bvh_ordered_prims);
         unwrapped.ok().unwrap()
     }
-    pub fn world_bound(&self) -> Bounds3f {
-        if self.nodes.len() > 0 {
-            self.nodes[0].bounds
-        } else {
-            Bounds3f::default()
-        }
-    }
-    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
-        if self.nodes.len() == 0 {
-            return None;
-        }
-        // TODO: ProfilePhase p(Prof::AccelIntersect);
-        let mut hit: bool = false;
-        let inv_dir: Vector3f = Vector3f {
-            x: 1.0 / ray.d.x,
-            y: 1.0 / ray.d.y,
-            z: 1.0 / ray.d.z,
-        };
-        let dir_is_neg: [u8; 3] =
-            [(inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8];
-        // follow ray through BVH nodes to find primitive intersections
-        let mut to_visit_offset: u32 = 0;
-        let mut current_node_index: u32 = 0;
-        let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
-        let mut si: SurfaceInteraction = SurfaceInteraction::default();
-        loop {
-            let node: LinearBVHNode = self.nodes[current_node_index as usize];
-            // check ray against BVH node
-            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
-            if intersects {
-                if node.n_primitives > 0 {
-                    // intersect ray with primitives in leaf BVH node
-                    for i in 0..node.n_primitives {
-                        // see primitive.h GeometricPrimitive::Intersect() ...
-                        if let Some(isect) = self.primitives[node.offset + i].intersect(ray) {
-                            // TODO: CHECK_GE(...)
-                            si = isect;
-                            hit = true;
-                        }
-                    }
-                    if to_visit_offset == 0_u32 {
-                        break;
-                    }
-                    to_visit_offset -= 1_u32;
-                    current_node_index = nodes_to_visit[to_visit_offset as usize];
-                } else {
-                    // put far BVH node on _nodesToVisit_ stack,
-                    // advance to near node
-                    if dir_is_neg[node.axis as usize] == 1_u8 {
-                        nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
-                        to_visit_offset += 1_u32;
-                        current_node_index = node.offset as u32;
-                    } else {
-                        nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
-                        to_visit_offset += 1_u32;
-                        current_node_index += 1_u32;
-                    }
-                }
-            } else {
-                if to_visit_offset == 0_u32 {
-                    break;
-                }
-                to_visit_offset -= 1_u32;
-                current_node_index = nodes_to_visit[to_visit_offset as usize];
-            }
-        }
-        if hit {
-            Some(si)
-        } else {
-            None
-        }
-    }
-    pub fn intersect_p(&self, ray: &mut Ray) -> bool {
-        if self.nodes.len() == 0 {
-            return false;
-        }
-        // TODO: ProfilePhase p(Prof::AccelIntersectP);
-        let inv_dir: Vector3f = Vector3f {
-            x: 1.0 / ray.d.x,
-            y: 1.0 / ray.d.y,
-            z: 1.0 / ray.d.z,
-        };
-        let dir_is_neg: [u8; 3] =
-            [(inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8];
-        let mut to_visit_offset: u32 = 0;
-        let mut current_node_index: u32 = 0;
-        let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
-        loop {
-            let node: LinearBVHNode = self.nodes[current_node_index as usize];
-            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
-            if intersects {
-                // process BVH node _node_ for traversal
-                if node.n_primitives > 0 {
-                    for i in 0..node.n_primitives {
-                        if self.primitives[node.offset + i].intersect_p(ray) {
-                            return true;
-                        }
-                    }
-                    if to_visit_offset == 0_u32 {
-                        break;
-                    }
-                    to_visit_offset -= 1_u32;
-                    current_node_index = nodes_to_visit[to_visit_offset as usize];
-                } else {
-                    if dir_is_neg[node.axis as usize] == 1_u8 {
-                        nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
-                        to_visit_offset += 1_u32;
-                        current_node_index = node.offset as u32;
-                    } else {
-                        nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
-                        to_visit_offset += 1_u32;
-                        current_node_index += 1_u32;
-                    }
-                }
-            } else {
-                if to_visit_offset == 0_u32 {
-                    break;
-                }
-                to_visit_offset -= 1_u32;
-                current_node_index = nodes_to_visit[to_visit_offset as usize];
-            }
-        }
-        false
-    }
     pub fn recursive_build<'a>(bvh: Arc<BVHAccel>,
                                arena: &'a Arena<BVHBuildNode<'a>>,
                                primitive_info: &mut Vec<BVHPrimitiveInfo>,
@@ -7388,6 +7270,139 @@ impl BVHAccel {
             }
         }
         my_offset
+    }
+}
+
+impl Primitive for BVHAccel {
+    fn world_bound(&self) -> Bounds3f {
+        if self.nodes.len() > 0 {
+            self.nodes[0].bounds
+        } else {
+            Bounds3f::default()
+        }
+    }
+    fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+        if self.nodes.len() == 0 {
+            return None;
+        }
+        // TODO: ProfilePhase p(Prof::AccelIntersect);
+        let mut hit: bool = false;
+        let inv_dir: Vector3f = Vector3f {
+            x: 1.0 / ray.d.x,
+            y: 1.0 / ray.d.y,
+            z: 1.0 / ray.d.z,
+        };
+        let dir_is_neg: [u8; 3] =
+            [(inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8];
+        // follow ray through BVH nodes to find primitive intersections
+        let mut to_visit_offset: u32 = 0;
+        let mut current_node_index: u32 = 0;
+        let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
+        let mut si: SurfaceInteraction = SurfaceInteraction::default();
+        loop {
+            let node: LinearBVHNode = self.nodes[current_node_index as usize];
+            // check ray against BVH node
+            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
+            if intersects {
+                if node.n_primitives > 0 {
+                    // intersect ray with primitives in leaf BVH node
+                    for i in 0..node.n_primitives {
+                        // see primitive.h GeometricPrimitive::Intersect() ...
+                        if let Some(isect) = self.primitives[node.offset + i].intersect(ray) {
+                            // TODO: CHECK_GE(...)
+                            si = isect;
+                            hit = true;
+                        }
+                    }
+                    if to_visit_offset == 0_u32 {
+                        break;
+                    }
+                    to_visit_offset -= 1_u32;
+                    current_node_index = nodes_to_visit[to_visit_offset as usize];
+                } else {
+                    // put far BVH node on _nodesToVisit_ stack,
+                    // advance to near node
+                    if dir_is_neg[node.axis as usize] == 1_u8 {
+                        nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
+                        to_visit_offset += 1_u32;
+                        current_node_index = node.offset as u32;
+                    } else {
+                        nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
+                        to_visit_offset += 1_u32;
+                        current_node_index += 1_u32;
+                    }
+                }
+            } else {
+                if to_visit_offset == 0_u32 {
+                    break;
+                }
+                to_visit_offset -= 1_u32;
+                current_node_index = nodes_to_visit[to_visit_offset as usize];
+            }
+        }
+        if hit {
+            Some(si)
+        } else {
+            None
+        }
+    }
+    fn intersect_p(&self, ray: & Ray) -> bool {
+        if self.nodes.len() == 0 {
+            return false;
+        }
+        // TODO: ProfilePhase p(Prof::AccelIntersectP);
+        let inv_dir: Vector3f = Vector3f {
+            x: 1.0 / ray.d.x,
+            y: 1.0 / ray.d.y,
+            z: 1.0 / ray.d.z,
+        };
+        let dir_is_neg: [u8; 3] =
+            [(inv_dir.x < 0.0) as u8, (inv_dir.y < 0.0) as u8, (inv_dir.z < 0.0) as u8];
+        let mut to_visit_offset: u32 = 0;
+        let mut current_node_index: u32 = 0;
+        let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
+        loop {
+            let node: LinearBVHNode = self.nodes[current_node_index as usize];
+            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
+            if intersects {
+                // process BVH node _node_ for traversal
+                if node.n_primitives > 0 {
+                    for i in 0..node.n_primitives {
+                        if self.primitives[node.offset + i].intersect_p(ray) {
+                            return true;
+                        }
+                    }
+                    if to_visit_offset == 0_u32 {
+                        break;
+                    }
+                    to_visit_offset -= 1_u32;
+                    current_node_index = nodes_to_visit[to_visit_offset as usize];
+                } else {
+                    if dir_is_neg[node.axis as usize] == 1_u8 {
+                        nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
+                        to_visit_offset += 1_u32;
+                        current_node_index = node.offset as u32;
+                    } else {
+                        nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
+                        to_visit_offset += 1_u32;
+                        current_node_index += 1_u32;
+                    }
+                }
+            } else {
+                if to_visit_offset == 0_u32 {
+                    break;
+                }
+                to_visit_offset -= 1_u32;
+                current_node_index = nodes_to_visit[to_visit_offset as usize];
+            }
+        }
+        false
+    }
+    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
+        None
+    }
+    fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
+        None
     }
 }
 
