@@ -3255,7 +3255,7 @@ impl Transform {
                 o: o,
                 d: d,
                 t_max: t_max,
-                time: 0.0,
+                time: r.time,
                 differential: Some(diff),
             }
         } else {
@@ -3263,7 +3263,7 @@ impl Transform {
                 o: o,
                 d: d,
                 t_max: t_max,
-                time: 0.0,
+                time: r.time,
                 differential: None,
             }
         }
@@ -4403,10 +4403,15 @@ impl AnimatedTransform {
         *t = Transform::translate(trans) * rotate.to_transform() * Transform { m: scale, m_inv: Matrix4x4::inverse(scale), };
     }
     pub fn transform_ray(&self, r: Ray) -> Ray {
-        // if !self.actually_animated || self.r.time <= self.start_time {
-        // } else if ...
-        // TODO: above
-        self.start_transform.transform_ray(r)
+        if !self.actually_animated || r.time <= self.start_time {
+            self.start_transform.transform_ray(r)
+        } else if r.time >= self.end_time {
+            self.end_transform.transform_ray(r)
+        } else {
+            let mut t: Transform = Transform::default();
+            self.interpolate(r.time, &mut t);
+            t.transform_ray(r)
+        }
     }
     pub fn motion_bounds(&self, b: Bounds3f) -> Bounds3f {
         if !self.actually_animated {
