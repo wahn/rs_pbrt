@@ -4988,6 +4988,16 @@ pub struct TransformedPrimitive {
     pub primitive_to_world: AnimatedTransform,
 }
 
+impl TransformedPrimitive {
+    pub fn new(primitive: Arc<Primitive + Sync + Send>,
+               primitive_to_world: AnimatedTransform) -> Self {
+        TransformedPrimitive {
+            primitive: primitive,
+            primitive_to_world: primitive_to_world,
+        }
+    }
+}
+
 impl Primitive for TransformedPrimitive {
     fn world_bound(&self) -> Bounds3f {
         self.primitive_to_world.motion_bounds(self.primitive.world_bound())
@@ -5013,26 +5023,15 @@ impl Primitive for TransformedPrimitive {
         }
     }
     fn intersect_p(&self, r: &Ray) -> bool {
-        // TODO
-        // self.shape.intersect_p(r)
-        false
+        let mut interpolated_prim_to_world: Transform = Transform::default();
+        self.primitive_to_world.interpolate(r.time, &mut interpolated_prim_to_world);
+        interpolated_prim_to_world = Transform::inverse(interpolated_prim_to_world);
+        self.primitive.intersect_p(&interpolated_prim_to_world.transform_ray(*r))
     }
     fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
-        // TODO
-        // if let Some(ref material) = self.material {
-        //     Some(material.clone())
-        // } else {
-        //     None
-        // }
         None
     }
     fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
-        // TODO
-        // if let Some(ref area_light) = self.area_light {
-        //     Some(area_light.clone())
-        // } else {
-        //     None
-        // }
         None
     }
 }

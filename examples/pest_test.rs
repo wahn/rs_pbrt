@@ -15,11 +15,12 @@ use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i,
            Light, LightStrategy, Material, MatteMaterial, Matrix4x4,
            MirrorMaterial, Normal3f, ParamSet, PathIntegrator,
            PerspectiveCamera, PlanarMapping2D, PlasticMaterial,
-           Point2f, Point2i, Point3f, PointLight, RenderOptions,
-           SamplerIntegrator, Scene, Shape, Spectrum, Sphere,
-           SplitMethod, Texture, TextureMapping2D, TextureParams,
-           Transform, TransformSet, Triangle, TriangleMesh,
-           UVMapping2D, Vector2f, Vector3f, ZeroTwoSequenceSampler};
+           Point2f, Point2i, Point3f, PointLight, Primitive,
+           RenderOptions, SamplerIntegrator, Scene, Shape, Spectrum,
+           Sphere, SplitMethod, Texture, TextureMapping2D,
+           TextureParams, Transform, TransformedPrimitive,
+           TransformSet, Triangle, TriangleMesh, UVMapping2D,
+           Vector2f, Vector3f, ZeroTwoSequenceSampler};
 // parser
 use pest::Parser;
 // getopts
@@ -710,6 +711,12 @@ fn pbrt_shape(param_set: &ParamSet)
             m_inv: CUR_TRANSFORM.t[0].m,
         };
         if CUR_TRANSFORM.is_animated() {
+            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                if graphics_state.area_light != String::from("") {
+                    println!("WARNING: Ignoring currently set area light when creating animated shape");
+                }
+            }
+            // WORK
             // set both transforms to identity
             obj_to_world = Transform::default();
             world_to_obj = Transform::default();
@@ -3607,6 +3614,28 @@ fn main() {
                                                                                                                         None));
                                                                         if let Some(ref mut ro) = RENDER_OPTIONS {
                                                                             ro.primitives.push(geo_prim.clone());
+                                                                        }
+                                                                    }
+                                                                    // animated?
+                                                                    if CUR_TRANSFORM.is_animated() {
+                                                                        if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                            let animated_object_to_world: AnimatedTransform =
+                                                                                AnimatedTransform::new(&CUR_TRANSFORM.t[0],
+                                                                                                       ro.transform_start_time,
+                                                                                                       &CUR_TRANSFORM.t[1],
+                                                                                                       ro.transform_end_time);
+                                                                            if ro.primitives.len() > 1 {
+                                                                                println!("TODO: ro.primitives.len() > 1");
+                                                                                // let bvh: Arc<Primitive + Send + Sync> = Arc::new(BVHAccel::new(ro.primitives.clone(), 4, SplitMethod::SAH));
+                                                                                // ro.primitives.clear();
+                                                                                // ro.primitives.push(bvh);
+                                                                            } else {
+                                                                                if let Some(primitive) = ro.primitives.pop() {
+                                                                                    let geo_prim = Arc::new(TransformedPrimitive::new(primitive,
+                                                                                                                                      animated_object_to_world));
+                                                                                    ro.primitives.push(geo_prim);
+                                                                                }
+                                                                            }
                                                                         }
                                                                     }
                                                                 }
