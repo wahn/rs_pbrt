@@ -3523,6 +3523,12 @@ pub struct DerivativeTerm {
     kz: Float,
 }
 
+impl DerivativeTerm {
+    pub fn eval(&self, p: Point3f) -> Float {
+        self.kc + self.kx * p.x + self.ky * p.y + self.kz * p.z
+    }
+}
+
 #[derive(Debug,Default,Copy,Clone)]
 pub struct AnimatedTransform {
     start_transform: Transform,
@@ -3556,13 +3562,13 @@ impl AnimatedTransform {
         AnimatedTransform::decompose(&start_transform.m, &mut at.t[0], &mut at.r[0], &mut at.s[0]);
         AnimatedTransform::decompose(&end_transform.m, &mut at.t[1], &mut at.r[1], &mut at.s[1]);
         // flip _r[1]_ if needed to select shortest path
-        if quat_dot(at.r[0], at.r[1]) < 0.0 {
+        if quat_dot_quat(at.r[0], at.r[1]) < 0.0 {
             at.r[1] = -at.r[1];
         }
-        at.has_rotation = quat_dot(at.r[0], at.r[1]) < 0.9995;
+        at.has_rotation = quat_dot_quat(at.r[0], at.r[1]) < 0.9995;
         // compute terms of motion derivative function
         if at.has_rotation {
-            let cos_theta: Float = quat_dot(at.r[0], at.r[1]);
+            let cos_theta: Float = quat_dot_quat(at.r[0], at.r[1]);
             let theta: Float = (clamp_t(cos_theta, -1.0, 1.0)).acos();
             let qperp: Quaternion = quat_normalize(at.r[1] - at.r[0] * cos_theta);
             let t0x: Float = at.t[0].x;
@@ -4413,6 +4419,17 @@ impl AnimatedTransform {
             t.transform_ray(r)
         }
     }
+    pub fn transform_point(&self, time: Float, p: Point3<Float>) -> Point3<Float> {
+        if !self.actually_animated || time <= self.start_time {
+            self.start_transform.transform_point(p)
+        } else if time >= self.end_time {
+            self.end_transform.transform_point(p)
+        } else {
+            let mut t: Transform = Transform::default();
+            self.interpolate(time, &mut t);
+            t.transform_point(p)
+        }
+    }
     pub fn motion_bounds(&self, b: Bounds3f) -> Bounds3f {
         if !self.actually_animated {
             return self.start_transform.transform_bounds(b);
@@ -4428,11 +4445,170 @@ impl AnimatedTransform {
         bounds
     }
     pub fn bound_point_motion(&self, p: Point3f) -> Bounds3f {
-        let bounds: Bounds3f = Bounds3f {
+        if !self.actually_animated {
+            // set both to start
+            let bounds: Bounds3f = Bounds3f {
+                p_min: self.start_transform.transform_point(p),
+                p_max: self.start_transform.transform_point(p),
+            };
+            return bounds;
+        }
+        let mut bounds: Bounds3f = Bounds3f {
             p_min: self.start_transform.transform_point(p),
             p_max: self.end_transform.transform_point(p),
         };
+        let cos_theta: Float = quat_dot_quat(self.r[0], self.r[1]);
+        let theta: Float = clamp_t(cos_theta, -1.0 as Float, 1.0 as Float).acos();
+        for c in 0..3 {
+            // find any motion derivative zeros for the component _c_
+            let mut zeros: Vec<Float> = Vec::new();
+            interval_find_zeros(self.c1[c].eval(p),
+                                self.c2[c].eval(p),
+                                self.c3[c].eval(p),
+                                self.c4[c].eval(p),
+                                self.c5[c].eval(p),
+                                theta,
+                                Interval::new(0.0 as Float, 1.0 as Float),
+                                &mut zeros,
+                                8_usize);
+            // expand bounding box for any motion derivative zeros found
+            for i in 0..zeros.len() {
+                let pz: Point3f = self.transform_point(lerp(zeros[i], self.start_time, self.end_time), p);
+                bounds = bnd3_union_pnt3(bounds, pz);
+            }
+        }
         bounds
+    }
+}
+
+#[derive(Debug,Default,Copy,Clone)]
+pub struct Interval {
+    pub low: Float,
+    pub high: Float,
+}
+
+impl Interval {
+    pub fn new(v0: Float, v1: Float) -> Self {
+        Interval {
+            low: v0.min(v1),
+            high: v0.max(v1),
+        }
+    }
+}
+
+impl Add for Interval {
+    type Output = Interval;
+    fn add(self, rhs: Interval) -> Interval {
+        Interval {
+            low: self.low + rhs.low,
+            high: self.high + rhs.high,
+        }
+    }
+}
+
+impl Mul for Interval {
+    type Output = Interval;
+    fn mul(self, rhs: Interval) -> Interval {
+        let min_rhs_low: Float = (self.low * rhs.low).min(self.high * rhs.low);
+        let min_rhs_high: Float = (self.low * rhs.high).min(self.high * rhs.high);
+        let max_rhs_low: Float = (self.low * rhs.low).max(self.high * rhs.low);
+        let max_rhs_high: Float = (self.low * rhs.high).max(self.high * rhs.high);
+        let low: Float = min_rhs_low.min(min_rhs_high);
+        let high: Float = max_rhs_low.max(max_rhs_high);
+        Interval {
+            low: low,
+            high: high,
+        }
+    }
+}
+
+pub fn interval_sin(i: Interval) -> Interval {
+    assert!(i.low >= 0.0 as Float);
+    assert!(i.high <= 2.0001 as Float * PI);
+    let mut sin_low: Float = i.low.sin();
+    let mut sin_high: Float = i.high.sin();
+    if sin_low > sin_high {
+        std::mem::swap(&mut sin_low, &mut sin_high);
+    }
+    if i.low < PI / 2.0 as Float && i.high > PI / 2.0 as Float {
+        sin_high = 1.0 as Float;
+    }
+    if i.low < (3.0 as Float / 2.0 as Float) * PI && i.high > (3.0 as Float / 2.0 as Float) * PI {
+        sin_low = -1.0 as Float;
+    }
+    Interval {
+        low: sin_low,
+        high: sin_high,
+    }
+}
+
+pub fn interval_cos(i: Interval) -> Interval {
+    assert!(i.low >= 0.0 as Float);
+    assert!(i.high <= 2.0001 as Float * PI);
+    let mut cos_low: Float = i.low.cos();
+    let mut cos_high: Float = i.high.cos();
+    if cos_low > cos_high {
+        std::mem::swap(&mut cos_low, &mut cos_high);
+    }
+    if i.low < PI && i.high > PI {
+        cos_low = -1.0 as Float;
+    }
+    Interval {
+        low: cos_low,
+        high: cos_high,
+    }
+}
+
+pub fn interval_find_zeros(c1: Float,
+                           c2: Float,
+                           c3: Float,
+                           c4: Float,
+                           c5: Float,
+                           theta: Float,
+                           t_interval: Interval,
+                           zeros: &mut Vec<Float>,
+                           // int *zeroCount,
+                           depth: usize) {
+    // evaluate motion derivative in interval form, return if no zeros
+    let two_theta: Float = 2.0 as Float * theta;
+    let range: Interval =
+        Interval::new(c1, c1) +
+        (Interval::new(c2, c2) + Interval::new(c3, c3) * t_interval) *
+        interval_cos(Interval::new(two_theta, two_theta) * t_interval) +
+        (Interval::new(c4, c4) + Interval::new(c5, c5) * t_interval) *
+        interval_sin(Interval::new(two_theta, two_theta) * t_interval);
+    if range.low > 0.0 as Float || range.high < 0.0 as Float || range.low == range.high {
+        return;
+    }
+    if depth > 0_usize {
+        // split _t_interval_ and check both resulting intervals
+        let mid: Float = (t_interval.low + t_interval.high) * 0.5 as Float;
+        interval_find_zeros(c1, c2, c3, c4, c5, theta,
+                            Interval::new(t_interval.low, mid), zeros,
+                            depth - 1_usize);
+        interval_find_zeros(c1, c2, c3, c4, c5, theta,
+                            Interval::new(mid, t_interval.high), zeros,
+                            depth - 1_usize);
+    } else {
+        // use Newton's method to refine zero
+        let mut t_newton: Float = (t_interval.low + t_interval.high) * 0.5 as Float;
+        for _i in 0..4 {
+            let f_newton: Float =
+                c1 + (c2 + c3 * t_newton) * (2.0 as Float * theta * t_newton).cos() +
+                (c4 + c5 * t_newton) * (2.0 as Float * theta * t_newton).sin();
+            let f_prime_newton: Float =
+                (c3 + 2.0 as Float * (c4 + c5 * t_newton) * theta) *
+                (2.0 as Float * t_newton * theta).cos() +
+                (c5 - 2.0 as Float * (c2 + c3 * t_newton) * theta) *
+                (2.0 as Float * t_newton * theta).sin();
+            if f_newton == 0.0 as Float || f_prime_newton == 0.0 as Float {
+                break;
+            }
+            t_newton = t_newton - f_newton / f_prime_newton;
+        }
+        if t_newton >= t_interval.low - 1e-3 as Float && t_newton < t_interval.high + 1e-3 as Float {
+            zeros.push(t_newton);
+        }
     }
 }
 
@@ -4584,7 +4760,7 @@ impl Neg for Quaternion {
 }
 
 pub fn quat_slerp(t: Float, q1: Quaternion, q2: Quaternion) -> Quaternion {
-    let cos_theta: Float = quat_dot(q1, q2);
+    let cos_theta: Float = quat_dot_quat(q1, q2);
     if cos_theta > 0.9995 as Float {
         quat_normalize(q1 * (1.0 as Float - t) + q2 * t)
     } else {
@@ -4596,13 +4772,13 @@ pub fn quat_slerp(t: Float, q1: Quaternion, q2: Quaternion) -> Quaternion {
 }
 
 /// The inner product of two quaterions.
-pub fn quat_dot(q1: Quaternion, q2: Quaternion) -> Float {
+pub fn quat_dot_quat(q1: Quaternion, q2: Quaternion) -> Float {
     vec3_dot_vec3(q1.v, q2.v) + q1.w * q2.w
 }
 
 /// A quaternion can be normalized by dividing by its length.
 pub fn quat_normalize(q: Quaternion) -> Quaternion {
-    q / quat_dot(q, q)
+    q / quat_dot_quat(q, q)
 }
 
 // see interaction.h
@@ -12987,6 +13163,7 @@ pub fn render(scene: &Scene,
     println!("Rendering");
     let num_cores: usize = num_cpus::get();
     // DEBUG: let num_cores: usize = 1; // TMP
+    let num_cores: usize = 1; // TMP
     {
         let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
                                            (n_tiles.y * tile_size) as u32),
