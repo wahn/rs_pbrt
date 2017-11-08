@@ -3197,7 +3197,7 @@ impl Transform {
         let wp: Float = self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z +
             self.m.m[3][3];
         assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
-        if wp == 1. {
+        if wp == 1.0 as Float {
             Point3::<Float> {
                 x: xp,
                 y: yp,
@@ -4447,16 +4447,12 @@ impl AnimatedTransform {
     pub fn bound_point_motion(&self, p: Point3f) -> Bounds3f {
         if !self.actually_animated {
             // set both to start
-            let bounds: Bounds3f = Bounds3f {
-                p_min: self.start_transform.transform_point(p),
-                p_max: self.start_transform.transform_point(p),
-            };
+            let bounds: Bounds3f = Bounds3f::new(self.start_transform.transform_point(p),
+                                                 self.start_transform.transform_point(p));
             return bounds;
         }
-        let mut bounds: Bounds3f = Bounds3f {
-            p_min: self.start_transform.transform_point(p),
-            p_max: self.end_transform.transform_point(p),
-        };
+        let mut bounds: Bounds3f = Bounds3f::new(self.start_transform.transform_point(p),
+                                                 self.end_transform.transform_point(p));
         let cos_theta: Float = quat_dot_quat(self.r[0], self.r[1]);
         let theta: Float = clamp_t(cos_theta, -1.0 as Float, 1.0 as Float).acos();
         for c in 0..3 {
@@ -13140,7 +13136,8 @@ pub fn morton2(p: &(u32, u32)) -> u32 {
 pub fn render(scene: &Scene,
               camera: Arc<Camera + Send + Sync>,
               mut sampler: &mut ZeroTwoSequenceSampler,
-              mut integrator: &mut Arc<SamplerIntegrator + Send + Sync>) {
+              mut integrator: &mut Arc<SamplerIntegrator + Send + Sync>,
+              num_threads: u8) {
     // SamplerIntegrator::Render (integrator.cpp)
     let film = camera.get_film();
     let sample_bounds: Bounds2i = film.get_sample_bounds();
@@ -13160,10 +13157,13 @@ pub fn render(scene: &Scene,
     let n_tiles: Point2i = Point2i { x: x, y: y };
     println!("n_tiles = {:?}", n_tiles);
     // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
-    println!("Rendering");
-    let num_cores: usize = num_cpus::get();
-    // DEBUG: let num_cores: usize = 1; // TMP
-    let num_cores: usize = 1; // TMP
+    let num_cores: usize;
+    if num_threads == 0_u8 {
+        num_cores = num_cpus::get();
+    } else {
+        num_cores = num_threads as usize;
+    }
+    println!("Rendering with {:?} thread(s) ...", num_cores);
     {
         let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
                                            (n_tiles.y * tile_size) as u32),

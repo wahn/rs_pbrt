@@ -37,6 +37,7 @@ use std::sync::Arc;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+static mut NUMBER_OF_THREADS: u8 = 0_u8;
 static mut SEARCH_DIRECTORY: Option<Box<PathBuf>> = None;
 static mut CUR_TRANSFORM: TransformSet = TransformSet {
     t: [Transform {
@@ -1237,7 +1238,8 @@ fn pbrt_world_end() {
                                                                       ro.lights.clone());
                                         // TODO: primitives.erase(primitives.begin(), primitives.end());
                                         // TODO: lights.erase(lights.begin(), lights.end());
-                                        pbrt::render(&scene, camera, &mut sampler, &mut integrator);
+                                        let num_threads: u8 = NUMBER_OF_THREADS;
+                                        pbrt::render(&scene, camera, &mut sampler, &mut integrator, num_threads);
                                     } else if ro.accelerator_name == String::from("kdtree") {
                                         // println!("TODO: CreateKdTreeAccelerator");
                                         // WARNING: Use BVHAccel for now !!!
@@ -1250,7 +1252,8 @@ fn pbrt_world_end() {
                                                                       ro.lights.clone());
                                         // TODO: primitives.erase(primitives.begin(), primitives.end());
                                         // TODO: lights.erase(lights.begin(), lights.end());
-                                        pbrt::render(&scene, camera, &mut sampler, &mut integrator);
+                                        let num_threads: u8 = NUMBER_OF_THREADS;
+                                        pbrt::render(&scene, camera, &mut sampler, &mut integrator, num_threads);
                                     } else {
                                         panic!("Accelerator \"{}\" unknown.", ro.accelerator_name);
                                     }
@@ -1282,6 +1285,7 @@ fn main() {
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
     opts.optopt("i", "", "parse an input file", "FILE");
+    opts.optopt("t", "nthreads", "use specified number of threads for rendering", "NUM");
     opts.optflag("v", "version", "print version number");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1291,6 +1295,21 @@ fn main() {
         print_usage(&program, opts);
         return;
     } else if matches.opt_present("i") {
+        if matches.opt_present("t") {
+            let nthreads = matches.opt_str("t");
+            match nthreads {
+                Some(x) => {
+                    let number_result = x.parse::<u8>();
+                    assert!(!number_result.is_err(), "ERROR: 8 bit unsigned integer expected");
+                    let num_threads: u8 = number_result.unwrap();
+                    println!("nthreads = {:?}" , num_threads);
+                    unsafe {
+                        NUMBER_OF_THREADS = num_threads;
+                    }
+                }
+                None => panic!("No argument for number of threads given."),
+            }
+        }
         let infile = matches.opt_str("i");
         match infile {
             Some(x) => {

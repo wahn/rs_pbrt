@@ -1851,5 +1851,5 @@ fn main() {
         Arc::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
                                                10,
                                                sample_bounds));
-    pbrt::render(&scene, camera, &mut sampler, &mut integrator);
+    pbrt::render(&scene, camera, &mut sampler, &mut integrator, 0_u8);
 }
