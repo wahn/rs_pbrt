@@ -2435,15 +2435,15 @@ impl<T> Bounds3<T> {
         }
         let y: T;
         if corner & 2 == 0 {
-            y = self.p_max.y;
-        } else {
             y = self.p_min.y;
+        } else {
+            y = self.p_max.y;
         }
         let z: T;
         if corner & 4 == 0 {
-            z = self.p_max.z;
-        } else {
             z = self.p_min.z;
+        } else {
+            z = self.p_max.z;
         }
         Point3::<T> {
             x: x,
