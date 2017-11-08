@@ -4774,7 +4774,7 @@ pub fn quat_dot_quat(q1: Quaternion, q2: Quaternion) -> Float {
 
 /// A quaternion can be normalized by dividing by its length.
 pub fn quat_normalize(q: Quaternion) -> Quaternion {
-    q / quat_dot_quat(q, q)
+    q / quat_dot_quat(q, q).sqrt()
 }
 
 // see interaction.h
