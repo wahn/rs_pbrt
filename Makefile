@@ -22,6 +22,9 @@ debug: master.zip
 release: master.zip
 	cargo test --release
 
+without-exr:
+	cargo test --release --no-default-features
+
 master.zip:
 	wget https://github.com/cessen/openexr-rs/archive/master.zip
 	unzip master.zip

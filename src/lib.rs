@@ -858,10 +858,12 @@
 #![feature(integer_atomics)]
 
 extern crate crossbeam;
+#[cfg(feature="openexr")]
 extern crate half;
 extern crate image;
 extern crate num;
 extern crate num_cpus;
+#[cfg(feature="openexr")]
 extern crate openexr;
 extern crate pbr;
 extern crate time;
@@ -883,14 +885,17 @@ use std::sync::mpsc;
 use typed_arena::Arena;
 use num::Zero;
 use image::{ImageResult, DynamicImage};
-use openexr::{FrameBuffer, FrameBufferMut, Header, InputFile, PixelType, ScanlineOutputFile};
+#[cfg(feature="openexr")]
 use half::f16;
 use time::PreciseTime;
+#[cfg(feature="openexr")]
+use openexr::{FrameBuffer, FrameBufferMut, Header, InputFile, PixelType, ScanlineOutputFile};
 
 pub type Float = f32;
 
 // see https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
 #[inline]
+#[cfg(feature="openexr")]
 fn decode_f16(half: u16) -> f32 {
     let exp: u16 = half >> 10 & 0x1f;
     let mant: u16 = half & 0x3ff;
@@ -8298,6 +8303,83 @@ impl Film {
             pixels_write[offset as usize] = merge_pixel;
         }
     }
+    #[cfg(not(feature="openexr"))]
+    pub fn write_image(&self, splat_scale: Float) {
+        println!("Converting image to RGB and computing final weighted pixel values");
+        let mut rgb: Vec<Float> =
+            vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
+        let mut offset: usize = 0;
+        for p in &self.cropped_pixel_bounds {
+            // convert pixel XYZ color to RGB
+            let pixel: Pixel = self.get_pixel(p);
+            let start = 3 * offset;
+            let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
+            xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
+            rgb[start + 0] = rgb_array[0];
+            rgb[start + 1] = rgb_array[1];
+            rgb[start + 2] = rgb_array[2];
+            // normalize pixel with weight sum
+            let filter_weight_sum: Float = pixel.filter_weight_sum;
+            if filter_weight_sum != 0.0 as Float {
+                let inv_wt: Float = 1.0 as Float / filter_weight_sum;
+                rgb[start + 0] = (rgb[start + 0] * inv_wt).max(0.0 as Float);
+                rgb[start + 1] = (rgb[start + 1] * inv_wt).max(0.0 as Float);
+                rgb[start + 2] = (rgb[start + 2] * inv_wt).max(0.0 as Float);
+            }
+            // add splat value at pixel
+            let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
+            let splat_xyz: [Float; 3] = [Float::from(pixel.splat_xyz[0]),
+                                         Float::from(pixel.splat_xyz[1]),
+                                         Float::from(pixel.splat_xyz[2])];
+            xyz_to_rgb(&splat_xyz, &mut splat_rgb);
+            rgb[start + 0] += splat_scale * splat_rgb[0];
+            rgb[start + 1] += splat_scale * splat_rgb[1];
+            rgb[start + 2] += splat_scale * splat_rgb[2];
+            // scale pixel value by _scale_
+            rgb[start + 0] *= self.scale;
+            rgb[start + 1] *= self.scale;
+            rgb[start + 2] *= self.scale;
+            offset += 1;
+        }
+        let filename = "pbrt.png";
+        println!("Writing image {:?} with bounds {:?}",
+                 filename, // TODO: self.filename,
+                 self.cropped_pixel_bounds);
+        // TODO: pbrt::WriteImage(filename, &rgb[0], croppedPixelBounds, fullResolution);
+        let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * self.cropped_pixel_bounds.area()) as usize];
+        // 8-bit format; apply gamma (see WriteImage(...) in imageio.cpp)
+        let width: u32 = (self.cropped_pixel_bounds.p_max.x -
+                          self.cropped_pixel_bounds.p_min.x) as u32;
+        let height: u32 = (self.cropped_pixel_bounds.p_max.y -
+                           self.cropped_pixel_bounds.p_min.y) as u32;
+        for y in 0..height {
+            for x in 0..width {
+                // red
+                let index: usize = (3 * (y * width + x) + 0) as usize;
+                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                        0.0 as Float,
+                                        255.0 as Float) as u8;
+                // green
+                let index: usize = (3 * (y * width + x) + 1) as usize;
+                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                        0.0 as Float,
+                                        255.0 as Float) as u8;
+                // blue
+                let index: usize = (3 * (y * width + x) + 2) as usize;
+                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                                        0.0 as Float,
+                                        255.0 as Float) as u8;
+            }
+        }
+        // write "pbrt.png" to disk
+        image::save_buffer(&Path::new("pbrt.png"),
+                           &buffer,
+                           width,
+                           height,
+                           image::RGB(8))
+            .unwrap();
+    }
+    #[cfg(feature="openexr")]
     pub fn write_image(&self, splat_scale: Float) {
         println!("Converting image to RGB and computing final weighted pixel values");
         let mut rgb: Vec<Float> =
@@ -10544,6 +10626,50 @@ pub struct InfiniteAreaLight {
 }
 
 impl InfiniteAreaLight {
+    #[cfg(not(feature="openexr"))]
+    pub fn new(_light_to_world: &Transform, _l: &Spectrum, n_samples: i32, _texmap: String) -> Self {
+        println!("WARNING: InfiniteAreaLight::new() ... no OpenEXR support !!!");
+        let resolution: Point2i = Point2i {
+            x: 1_i32,
+            y: 1_i32,
+        };
+        let texels: Vec<Spectrum> = vec![Spectrum::new(1.0 as Float)];
+        let do_trilinear: bool = false;
+        let max_aniso: Float = 8.0 as Float;
+        let wrap_mode: ImageWrap = ImageWrap::Repeat;
+        let lmap = Arc::new(MipMap::new(&resolution, &texels[..], do_trilinear, max_aniso, wrap_mode));
+
+        // initialize sampling PDFs for infinite area light
+
+        // compute scalar-valued image _img_ from environment map
+        let width: i32 = 2_i32 * lmap.width();
+        let height: i32 = 2_i32 * lmap.height();
+        let mut img: Vec<Float> = Vec::new();
+        let fwidth: Float = 0.5 as Float / (width as Float).min(height as Float);
+        // TODO: ParallelFor(...) {...}
+        for v in 0..height {
+            let vp: Float = (v as Float + 0.5 as Float) / height as Float;
+            let sin_theta: Float = (PI * (v as Float + 0.5 as Float) / height as Float).sin();
+            for u in 0..width {
+                let up: Float = (u as Float + 0.5 as Float) / width as Float;
+                let st: Point2f = Point2f { x: up, y: vp, };
+                img.push(lmap.lookup_pnt_flt(&st,
+                                             fwidth).y() * sin_theta);
+            }
+        }
+        let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
+        InfiniteAreaLight {
+            lmap: lmap,
+            world_center: RwLock::new(Point3f::default()),
+            world_radius: RwLock::new(0.0),
+            distribution: distribution,
+            flags: LightFlags::Infinite as u8,
+            n_samples: std::cmp::max(1_i32, n_samples),
+            light_to_world: Transform::default(),
+            world_to_light: Transform::default(),
+        }
+    }
+    #[cfg(feature="openexr")]
     pub fn new(light_to_world: &Transform, l: &Spectrum, n_samples: i32, texmap: String) -> Self {
         // read texel data from _texmap_ and initialize _Lmap_
         if texmap != String::from("") {
