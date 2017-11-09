@@ -10,12 +10,22 @@ Current **Rust** documentation:
 
 https://www.janwalter.org/doc/rust/pbrt/index.html
 
+## Conference Room
+
 ![Conference room rendered by
 rs_pbrt](https://www.janwalter.org/assets/conference_room_pbrt_rust_current.png)
 
+## Theater
+
+![Theater rendered by
+rs_pbrt](https://www.janwalter.org/assets/theater_pbrt_rust_corner.png)
+
+![Theater rendered by
+rs_pbrt](https://www.janwalter.org/assets/theater_pbrt_rust_stage.png)
+
 For more info look at the [Wiki][wiki] page or the [release notes][release-notes].
 
-If you look for a more complete Rust implementation:
+Here you find another Rust implementation:
 
 https://bitbucket.org/abusch/rustracer
 
