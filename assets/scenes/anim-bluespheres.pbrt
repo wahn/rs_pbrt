@@ -6,14 +6,14 @@ Film "image" "integer xresolution" [800] "integer yresolution" [400]
      "string filename" "anim-bluespheres.exr"
 
 ##Sampler "sobol" "integer pixelsamples" [1024]
-Sampler "lowdiscrepancy" "integer pixelsamples" [1024]
+Sampler "lowdiscrepancy" "integer pixelsamples" [64] # [1024]
 Integrator "path"
 
 WorldBegin
 
 AttributeBegin
 Rotate -90 1 0 0
-LightSource "infinite" "string mapname" ["textures/skylight-day.exr"]
+LightSource "infinite" "string mapname" ["textures/skylight-day.hdr"]
 AttributeEnd
 
 Texture "lines-tex" "color" "imagemap" "string filename" "textures/lines.png"

@@ -875,6 +875,7 @@ use std::cmp::PartialEq;
 use std::collections::HashMap;
 use std::default::Default;
 use std::f32::consts::PI;
+use std::io::BufReader;
 use std::mem;
 use std::ops::{BitAnd, Add, AddAssign, Sub, Mul, MulAssign, Div, DivAssign, Neg, Index, IndexMut};
 use std::path::Path;
@@ -10627,8 +10628,164 @@ pub struct InfiniteAreaLight {
 
 impl InfiniteAreaLight {
     #[cfg(not(feature="openexr"))]
-    pub fn new(_light_to_world: &Transform, _l: &Spectrum, n_samples: i32, _texmap: String) -> Self {
+    pub fn new(light_to_world: &Transform, l: &Spectrum, n_samples: i32, texmap: String) -> Self {
+        InfiniteAreaLight::new_hdr(light_to_world, l, n_samples, texmap)
+    }
+    #[cfg(feature="openexr")]
+    pub fn new(light_to_world: &Transform, l: &Spectrum, n_samples: i32, texmap: String) -> Self {
+        // read texel data from _texmap_ and initialize _Lmap_
+        if texmap != String::from("") {
+            // https://cessen.github.io/openexr-rs/openexr/index.html
+            let mut resolution: Point2i = Point2i::default();
+            let mut names_and_fills: Vec<(&str, f64)> = Vec::new();
+            // header
+            let file_result = std::fs::File::open(texmap.clone());
+            if file_result.is_ok() {
+                let mut file = file_result.unwrap();
+                let input_file_result = InputFile::new(&mut file);
+                if input_file_result.is_ok() {
+                    let input_file = input_file_result.unwrap();
+                    // get resolution
+                    let (width, height) = input_file.header().data_dimensions();
+                    resolution.x = width as i32;
+                    resolution.y = height as i32;
+                    println!("resolution = {:?}", resolution);
+                    // make sure the image properties are the same (see incremental_io.rs in github/openexr-rs)
+                    for channel_name in ["R", "G", "B"].iter() {
+                        let channel = input_file
+                            .header()
+                            .get_channel(channel_name)
+                            .expect(&format!("Didn't find channel {}.", channel_name));
+                        assert!(channel.pixel_type == PixelType::HALF);
+                        names_and_fills.push((channel_name, 0.0_f64));
+                    }
+                    let mut pixel_data = vec![(f16::from_f32(0.0), f16::from_f32(0.0), f16::from_f32(0.0)); (resolution.x*resolution.y) as usize];
+                    {
+                        // read pixels
+                        let mut file = std::fs::File::open(texmap.clone()).unwrap();
+                        let mut input_file = InputFile::new(&mut file).unwrap();
+                        let mut fb = FrameBufferMut::new(resolution.x as u32, resolution.y as u32);
+                        fb.insert_channels(&names_and_fills[..], &mut pixel_data);
+                        input_file.read_pixels(&mut fb).unwrap();
+                    }
+                    // convert pixel data into Vec<Spectrum> (and on the way multiply by _l_)
+                    let mut texels: Vec<Spectrum> = Vec::new();
+                    for i in 0..(resolution.x*resolution.y) {
+                        let (r, g, b) = pixel_data[i as usize];
+                        texels.push(Spectrum::rgb(decode_f16(r.as_bits()),
+                                                  decode_f16(g.as_bits()),
+                                                  decode_f16(b.as_bits())) * *l);
+                    }
+                    // create _MipMap_ from converted texels (see above)
+                    let do_trilinear: bool = false;
+                    let max_aniso: Float = 8.0 as Float;
+                    let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                    let lmap = Arc::new(MipMap::new(&resolution, &texels[..], do_trilinear, max_aniso, wrap_mode));
+
+                    // initialize sampling PDFs for infinite area light
+
+                    // compute scalar-valued image _img_ from environment map
+                    let width: i32 = 2_i32 * lmap.width();
+                    let height: i32 = 2_i32 * lmap.height();
+                    let mut img: Vec<Float> = Vec::new();
+                    let fwidth: Float = 0.5 as Float / (width as Float).min(height as Float);
+                    // TODO: ParallelFor(...) {...}
+                    for v in 0..height {
+                        let vp: Float = (v as Float + 0.5 as Float) / height as Float;
+                        let sin_theta: Float = (PI * (v as Float + 0.5 as Float) / height as Float).sin();
+                        for u in 0..width {
+                            let up: Float = (u as Float + 0.5 as Float) / width as Float;
+                            let st: Point2f = Point2f { x: up, y: vp, };
+                            img.push(lmap.lookup_pnt_flt(&st,
+                                                         fwidth).y() * sin_theta);
+                        }
+                    }
+                    let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
+                    InfiniteAreaLight {
+                        lmap: lmap,
+                        world_center: RwLock::new(Point3f::default()),
+                        world_radius: RwLock::new(0.0),
+                        distribution: distribution,
+                        flags: LightFlags::Infinite as u8,
+                        n_samples: std::cmp::max(1_i32, n_samples),
+                        light_to_world: *light_to_world,
+                        world_to_light: Transform::inverse(*light_to_world),
+                    }
+                } else {
+                    // try to open an HDR image instead (TODO: check extension upfront)
+                    InfiniteAreaLight::new_hdr(light_to_world, l, n_samples, texmap)
+                }
+            } else {
+                // try to open an HDR image instead (TODO: check extension upfront)
+                InfiniteAreaLight::new_hdr(light_to_world, l, n_samples, texmap)
+            }
+        } else {
+            InfiniteAreaLight::default(n_samples)
+        }
+    }
+    pub fn new_hdr(light_to_world: &Transform, _l: &Spectrum, n_samples: i32, texmap: String) -> Self {
+        // read texel data from _texmap_ and initialize _Lmap_
+        if texmap != String::from("") {
+            let file = std::fs::File::open(texmap.clone()).unwrap();
+            let reader = BufReader::new(file);
+            let img_result = image::hdr::HDRDecoder::with_strictness(reader, false);
+            if img_result.is_ok() {
+                if let Some(hdr) = img_result.ok() {
+                    let meta = hdr.metadata();
+                    let mut resolution: Point2i = Point2i {
+                        x: meta.width as i32,
+                        y: meta.height as i32,
+                    };
+                    println!("resolution = {:?}", resolution);
+                    let img_result = hdr.read_image_transform(|p| {
+                        let rgb = p.to_hdr();
+                        Spectrum::rgb(rgb[0], rgb[1], rgb[2])
+                    });
+                    if img_result.is_ok() {
+                        let texels = img_result.ok().unwrap();
+                        // create _MipMap_ from converted texels (see above)
+                        let do_trilinear: bool = false;
+                        let max_aniso: Float = 8.0 as Float;
+                        let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                        let lmap = Arc::new(MipMap::new(&resolution, &texels[..], do_trilinear, max_aniso, wrap_mode));
+
+                        // initialize sampling PDFs for infinite area light
+
+                        // compute scalar-valued image _img_ from environment map
+                        let width: i32 = 2_i32 * lmap.width();
+                        let height: i32 = 2_i32 * lmap.height();
+                        let mut img: Vec<Float> = Vec::new();
+                        let fwidth: Float = 0.5 as Float / (width as Float).min(height as Float);
+                        // TODO: ParallelFor(...) {...}
+                        for v in 0..height {
+                            let vp: Float = (v as Float + 0.5 as Float) / height as Float;
+                            let sin_theta: Float = (PI * (v as Float + 0.5 as Float) / height as Float).sin();
+                            for u in 0..width {
+                                let up: Float = (u as Float + 0.5 as Float) / width as Float;
+                                let st: Point2f = Point2f { x: up, y: vp, };
+                                img.push(lmap.lookup_pnt_flt(&st,
+                                                             fwidth).y() * sin_theta);
+                            }
+                        }
+                        let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
+                        return InfiniteAreaLight {
+                            lmap: lmap,
+                            world_center: RwLock::new(Point3f::default()),
+                            world_radius: RwLock::new(0.0),
+                            distribution: distribution,
+                            flags: LightFlags::Infinite as u8,
+                            n_samples: std::cmp::max(1_i32, n_samples),
+                            light_to_world: *light_to_world,
+                            world_to_light: Transform::inverse(*light_to_world),
+                        };
+                    }
+                }
+            }
+        }
         println!("WARNING: InfiniteAreaLight::new() ... no OpenEXR support !!!");
+        InfiniteAreaLight::default(n_samples)
+    }
+    fn default(n_samples: i32) -> Self {
         let resolution: Point2i = Point2i {
             x: 1_i32,
             y: 1_i32,
@@ -10667,124 +10824,6 @@ impl InfiniteAreaLight {
             n_samples: std::cmp::max(1_i32, n_samples),
             light_to_world: Transform::default(),
             world_to_light: Transform::default(),
-        }
-    }
-    #[cfg(feature="openexr")]
-    pub fn new(light_to_world: &Transform, l: &Spectrum, n_samples: i32, texmap: String) -> Self {
-        // read texel data from _texmap_ and initialize _Lmap_
-        if texmap != String::from("") {
-            // https://cessen.github.io/openexr-rs/openexr/index.html
-            let mut resolution: Point2i = Point2i::default();
-            let mut names_and_fills: Vec<(&str, f64)> = Vec::new();
-            // header
-            let mut file = std::fs::File::open(texmap.clone()).unwrap();
-            let input_file = InputFile::new(&mut file).unwrap();
-            // get resolution
-            let (width, height) = input_file.header().data_dimensions();
-            resolution.x = width as i32;
-            resolution.y = height as i32;
-            println!("resolution = {:?}", resolution);
-            // make sure the image properties are the same (see incremental_io.rs in github/openexr-rs)
-            for channel_name in ["R", "G", "B"].iter() {
-                let channel = input_file
-                    .header()
-                    .get_channel(channel_name)
-                    .expect(&format!("Didn't find channel {}.", channel_name));
-                assert!(channel.pixel_type == PixelType::HALF);
-                names_and_fills.push((channel_name, 0.0_f64));
-            }
-            let mut pixel_data = vec![(f16::from_f32(0.0), f16::from_f32(0.0), f16::from_f32(0.0)); (resolution.x*resolution.y) as usize];
-            {
-                // read pixels
-                let mut file = std::fs::File::open(texmap.clone()).unwrap();
-                let mut input_file = InputFile::new(&mut file).unwrap();
-                let mut fb = FrameBufferMut::new(resolution.x as u32, resolution.y as u32);
-                fb.insert_channels(&names_and_fills[..], &mut pixel_data);
-                input_file.read_pixels(&mut fb).unwrap();
-            }
-            // convert pixel data into Vec<Spectrum> (and on the way multiply by _l_)
-            let mut texels: Vec<Spectrum> = Vec::new();
-            for i in 0..(resolution.x*resolution.y) {
-                let (r, g, b) = pixel_data[i as usize];
-                texels.push(Spectrum::rgb(decode_f16(r.as_bits()),
-                                          decode_f16(g.as_bits()),
-                                          decode_f16(b.as_bits())) * *l);
-            }
-            // create _MipMap_ from converted texels (see above)
-            let do_trilinear: bool = false;
-            let max_aniso: Float = 8.0 as Float;
-            let wrap_mode: ImageWrap = ImageWrap::Repeat;
-            let lmap = Arc::new(MipMap::new(&resolution, &texels[..], do_trilinear, max_aniso, wrap_mode));
-
-            // initialize sampling PDFs for infinite area light
-
-            // compute scalar-valued image _img_ from environment map
-            let width: i32 = 2_i32 * lmap.width();
-            let height: i32 = 2_i32 * lmap.height();
-            let mut img: Vec<Float> = Vec::new();
-            let fwidth: Float = 0.5 as Float / (width as Float).min(height as Float);
-            // TODO: ParallelFor(...) {...}
-            for v in 0..height {
-                let vp: Float = (v as Float + 0.5 as Float) / height as Float;
-                let sin_theta: Float = (PI * (v as Float + 0.5 as Float) / height as Float).sin();
-                for u in 0..width {
-                    let up: Float = (u as Float + 0.5 as Float) / width as Float;
-                    let st: Point2f = Point2f { x: up, y: vp, };
-                    img.push(lmap.lookup_pnt_flt(&st,
-                                                 fwidth).y() * sin_theta);
-                }
-            }
-            let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
-            InfiniteAreaLight {
-                lmap: lmap,
-                world_center: RwLock::new(Point3f::default()),
-                world_radius: RwLock::new(0.0),
-                distribution: distribution,
-                flags: LightFlags::Infinite as u8,
-                n_samples: std::cmp::max(1_i32, n_samples),
-                light_to_world: *light_to_world,
-                world_to_light: Transform::inverse(*light_to_world),
-            }
-        } else {
-            let resolution: Point2i = Point2i {
-                x: 1_i32,
-                y: 1_i32,
-            };
-            let texels: Vec<Spectrum> = vec![Spectrum::new(1.0 as Float)];
-            let do_trilinear: bool = false;
-            let max_aniso: Float = 8.0 as Float;
-            let wrap_mode: ImageWrap = ImageWrap::Repeat;
-            let lmap = Arc::new(MipMap::new(&resolution, &texels[..], do_trilinear, max_aniso, wrap_mode));
-
-            // initialize sampling PDFs for infinite area light
-
-            // compute scalar-valued image _img_ from environment map
-            let width: i32 = 2_i32 * lmap.width();
-            let height: i32 = 2_i32 * lmap.height();
-            let mut img: Vec<Float> = Vec::new();
-            let fwidth: Float = 0.5 as Float / (width as Float).min(height as Float);
-            // TODO: ParallelFor(...) {...}
-            for v in 0..height {
-                let vp: Float = (v as Float + 0.5 as Float) / height as Float;
-                let sin_theta: Float = (PI * (v as Float + 0.5 as Float) / height as Float).sin();
-                for u in 0..width {
-                    let up: Float = (u as Float + 0.5 as Float) / width as Float;
-                    let st: Point2f = Point2f { x: up, y: vp, };
-                    img.push(lmap.lookup_pnt_flt(&st,
-                                                 fwidth).y() * sin_theta);
-                }
-            }
-            let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
-            InfiniteAreaLight {
-                lmap: lmap,
-                world_center: RwLock::new(Point3f::default()),
-                world_radius: RwLock::new(0.0),
-                distribution: distribution,
-                flags: LightFlags::Infinite as u8,
-                n_samples: std::cmp::max(1_i32, n_samples),
-                light_to_world: Transform::default(),
-                world_to_light: Transform::default(),
-            }
         }
     }
 }
