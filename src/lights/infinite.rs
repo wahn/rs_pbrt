@@ -177,7 +177,7 @@ impl InfiniteAreaLight {
             if img_result.is_ok() {
                 if let Some(hdr) = img_result.ok() {
                     let meta = hdr.metadata();
-                    let mut resolution: Point2i = Point2i {
+                    let resolution: Point2i = Point2i {
                         x: meta.width as i32,
                         y: meta.height as i32,
                     };
