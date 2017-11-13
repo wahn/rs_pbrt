@@ -1,6 +1,9 @@
 extern crate pbrt;
 
-use pbrt::{Cylinder, Float, Transform, Vector3f};
+use pbrt::core::pbrt::Float;
+use pbrt::core::transform::Transform;
+use pbrt::geometry::Vector3f;
+use pbrt::shapes::cylinder::Cylinder;
 
 fn main() {
     let translate: Transform = Transform::translate(Vector3f {

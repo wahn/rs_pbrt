@@ -1,6 +1,10 @@
 extern crate pbrt;
 
-use pbrt::{Bounds3f, Float, Shape, Sphere, Transform, Vector3f};
+use pbrt::core::pbrt::Float;
+use pbrt::core::transform::Transform;
+use pbrt::geometry::{Bounds3f, Vector3f};
+use pbrt::shapes::Shape;
+use pbrt::shapes::sphere::Sphere;
 
 fn main() {
     let radius: Float = 1.0;

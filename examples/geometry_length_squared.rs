@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Vector2, Vector3, Normal3};
+use pbrt::geometry::{Vector2, Vector3, Normal3};
 
 fn main() {
     let int_vec2 = Vector2 { x: 1, y: 2 };

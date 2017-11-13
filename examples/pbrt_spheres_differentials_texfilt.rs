@@ -1,15 +1,32 @@
 extern crate pbrt;
 extern crate getopts;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera,
-           Checkerboard2DTexture,
-           ConstantTexture, DirectLightingIntegrator, DistantLight, Film, Filter, Float,
-           GeometricPrimitive, GlassMaterial,
-           ImageTexture, ImageWrap, Light, LightStrategy, MatteMaterial, MirrorMaterial, Normal3f,
-           PerspectiveCamera, PlanarMapping2D, Point2f, Point2i, Point3f, Primitive,
-           SamplerIntegrator, Scene,
-           Spectrum, Sphere, SplitMethod, Transform, Triangle, TriangleMesh, UVMapping2D,
-           Vector2f, Vector3f, ZeroTwoSequenceSampler};
+use pbrt::accelerators::{BVHAccel, SplitMethod};
+use pbrt::cameras::PerspectiveCamera;
+use pbrt::core::camera::Camera;
+use pbrt::core::integrator::SamplerIntegrator;
+use pbrt::core::light::Light;
+use pbrt::core::mipmap::ImageWrap;
+use pbrt::core::pbrt::{Float, Spectrum};
+use pbrt::core::primitive::{GeometricPrimitive, Primitive};
+use pbrt::core::transform::{AnimatedTransform, Transform};
+use pbrt::core::film::Film;
+use pbrt::core::scene::Scene;
+use pbrt::filters::Filter;
+use pbrt::filters::boxfilter::BoxFilter;
+use pbrt::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
+use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::lights::distant::DistantLight;
+use pbrt::materials::glass::GlassMaterial;
+use pbrt::materials::matte::MatteMaterial;
+use pbrt::materials::mirror::MirrorMaterial;
+use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
+use pbrt::shapes::sphere::Sphere;
+use pbrt::shapes::triangle::{Triangle, TriangleMesh};
+use pbrt::textures::constant::ConstantTexture;
+use pbrt::textures::checkerboard::Checkerboard2DTexture;
+use pbrt::textures::imagemap::ImageTexture;
+use pbrt::textures::{PlanarMapping2D, UVMapping2D};
 use std::env;
 use std::string::String;
 use std::sync::Arc;
@@ -323,13 +340,13 @@ fn main() {
     let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
     let index = Arc::new(ConstantTexture::new(1.5 as Float));
     let glass = Arc::new(GlassMaterial {
-        kr: kr,
-        kt: kt,
-        u_roughness: u_roughness,
-        v_roughness: v_roughness,
-        index: index,
-        remap_roughness: true,
-    });
+                             kr: kr,
+                             kt: kt,
+                             u_roughness: u_roughness,
+                             v_roughness: v_roughness,
+                             index: index,
+                             remap_roughness: true,
+                         });
     if matches.opt_present("n") || matches.opt_present("m") {
         // use no texture
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
@@ -517,8 +534,6 @@ fn main() {
     let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
     let sample_bounds: Bounds2i = film.get_sample_bounds();
     let mut integrator: Arc<SamplerIntegrator + Send + Sync> =
-        Arc::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
-                                               10,
-                                               sample_bounds));
+        Arc::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds));
     pbrt::render(&scene, camera, &mut sampler, &mut integrator, 0_u8);
 }

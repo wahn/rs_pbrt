@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::Rng;
+use pbrt::core::rng::Rng;
 
 fn main() {
     let mut rng: Rng = Rng::new();

@@ -1,7 +1,13 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, BoxFilter, Camera, CameraSample, Film, Filter, Float,
-           PerspectiveCamera, Point2f, Point2i, Point3f, Ray, Transform, Vector2f, Vector3f};
+use pbrt::cameras::PerspectiveCamera;
+use pbrt::core::camera::{Camera, CameraSample};
+use pbrt::core::film::Film;
+use pbrt::core::pbrt::Float;
+use pbrt::core::transform::{AnimatedTransform, Transform};
+use pbrt::filters::Filter;
+use pbrt::filters::boxfilter::BoxFilter;
+use pbrt::geometry::{Bounds2f, Point2f, Point2i, Point3f, Ray, Vector2f, Vector3f};
 use std::sync::Arc;
 
 fn main() {
@@ -25,12 +31,12 @@ fn main() {
     let xw: Float = 0.5;
     let yw: Float = 0.5;
     let filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
-        radius: Vector2f { x: xw, y: yw },
-        inv_radius: Vector2f {
-            x: 1.0 / xw,
-            y: 1.0 / yw,
-        },
-    });
+                                                         radius: Vector2f { x: xw, y: yw },
+                                                         inv_radius: Vector2f {
+                                                             x: 1.0 / xw,
+                                                             y: 1.0 / yw,
+                                                         },
+                                                     });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
     let xres = 1000;
     let yres = 500;

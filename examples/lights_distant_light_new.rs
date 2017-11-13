@@ -1,6 +1,9 @@
 extern crate pbrt;
 
-use pbrt::{DistantLight, Point3f, Spectrum, Transform, Vector3f};
+use pbrt::core::pbrt::Spectrum;
+use pbrt::core::transform::Transform;
+use pbrt::geometry::{Point3f, Vector3f};
+use pbrt::lights::distant::DistantLight;
 
 fn main() {
     let l: Spectrum = Spectrum::new(3.141593);

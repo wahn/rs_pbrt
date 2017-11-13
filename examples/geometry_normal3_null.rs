@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::Normal3;
+use pbrt::geometry::Normal3;
 
 fn main() {
     let int_null = Normal3 { x: 0, y: 0, z: 0 };

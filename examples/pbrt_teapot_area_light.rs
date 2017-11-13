@@ -1,13 +1,26 @@
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, Bounds2f, Bounds2i, BoxFilter, BVHAccel, Camera, ConstantTexture,
-           DirectLightingIntegrator, Film,
-           Filter, Float, GeometricPrimitive, Light, LightStrategy, MatteMaterial, Normal3f,
-           PlasticMaterial,
-           PerspectiveCamera, Point2f, Point2i, Point3f, PointLight, Primitive, SamplerIntegrator,
-           Scene, Spectrum,
-           Disk, SplitMethod, Transform, Triangle, TriangleMesh, Vector2f, Vector3f,
-           ZeroTwoSequenceSampler};
+use pbrt::accelerators::{BVHAccel, SplitMethod};
+use pbrt::cameras::PerspectiveCamera;
+use pbrt::core::camera::Camera;
+use pbrt::core::integrator::SamplerIntegrator;
+use pbrt::core::light::Light;
+use pbrt::core::pbrt::{Float, Spectrum};
+use pbrt::core::primitive::{GeometricPrimitive, Primitive};
+use pbrt::core::transform::{AnimatedTransform, Transform};
+use pbrt::core::film::Film;
+use pbrt::core::scene::Scene;
+use pbrt::filters::Filter;
+use pbrt::filters::boxfilter::BoxFilter;
+use pbrt::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
+use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::materials::matte::MatteMaterial;
+use pbrt::materials::plastic::PlasticMaterial;
+use pbrt::lights::point::PointLight;
+use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
+use pbrt::shapes::disk::Disk;
+use pbrt::shapes::triangle::{Triangle, TriangleMesh};
+use pbrt::textures::constant::ConstantTexture;
 use std::sync::Arc;
 
 struct SceneDescription {
@@ -1848,8 +1861,6 @@ fn main() {
     let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
     let sample_bounds: Bounds2i = film.get_sample_bounds();
     let mut integrator: Arc<SamplerIntegrator + Send + Sync> =
-        Arc::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll,
-                                               10,
-                                               sample_bounds));
+        Arc::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds));
     pbrt::render(&scene, camera, &mut sampler, &mut integrator, 0_u8);
 }

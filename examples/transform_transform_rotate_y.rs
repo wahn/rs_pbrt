@@ -1,6 +1,7 @@
 extern crate pbrt;
 
-use pbrt::{Float, Transform};
+use pbrt::core::pbrt::Float;
+use pbrt::core::transform::Transform;
 
 fn main() {
     let theta_y: Float = 45.0;

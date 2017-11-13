@@ -1,6 +1,8 @@
 extern crate pbrt;
 
-use pbrt::{GaussianFilter, Float, Vector2f};
+use pbrt::core::pbrt::Float;
+use pbrt::filters::gaussian::GaussianFilter;
+use pbrt::geometry::Vector2f;
 
 fn main() {
     let xw: Float = 2.0;

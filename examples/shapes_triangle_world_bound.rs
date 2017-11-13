@@ -1,7 +1,9 @@
 extern crate pbrt;
 
-use pbrt::{Bounds3f, Normal3f, Point2f, Point3f, Shape, Transform, Triangle, TriangleMesh,
-           Vector3f};
+use pbrt::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Vector3f};
+use pbrt::shapes::Shape;
+use pbrt::shapes::triangle::{Triangle, TriangleMesh};
+use pbrt::core::transform::Transform;
 use std::sync::Arc;
 
 fn main() {

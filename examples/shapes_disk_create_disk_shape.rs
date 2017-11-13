@@ -1,6 +1,9 @@
 extern crate pbrt;
 
-use pbrt::{Disk, Float, Transform, Vector3f};
+use pbrt::core::pbrt::Float;
+use pbrt::core::transform::Transform;
+use pbrt::geometry::Vector3f;
+use pbrt::shapes::disk::Disk;
 
 fn main() {
     let translate: Transform = Transform::translate(Vector3f {

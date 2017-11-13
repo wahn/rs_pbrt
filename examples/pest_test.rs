@@ -6,21 +6,47 @@ extern crate pest_derive;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::{AnimatedTransform, AOIntegrator, Bounds2f, Bounds2i,
-           BoxFilter, BVHAccel, Checkerboard2DTexture,
-           ConstantTexture, Cylinder, DiffuseAreaLight,
-           DirectLightingIntegrator, Disk, DistantLight, Film, Filter,
-           Float, GaussianFilter, GeometricPrimitive, GlassMaterial,
-           GraphicsState, ImageTexture, ImageWrap, InfiniteAreaLight,
-           Light, LightStrategy, Material, MatteMaterial, Matrix4x4,
-           MirrorMaterial, Normal3f, ParamSet, PathIntegrator,
-           PerspectiveCamera, PlanarMapping2D, PlasticMaterial,
-           Point2f, Point2i, Point3f, PointLight, Primitive,
-           RenderOptions, SamplerIntegrator, Scene, Shape, Spectrum,
-           Sphere, SplitMethod, Texture, TextureMapping2D,
-           TextureParams, Transform, TransformedPrimitive,
-           TransformSet, Triangle, TriangleMesh, UVMapping2D,
-           Vector2f, Vector3f, ZeroTwoSequenceSampler};
+use pbrt::accelerators::{BVHAccel, SplitMethod};
+use pbrt::cameras::PerspectiveCamera;
+use pbrt::core::api::{GraphicsState, RenderOptions, TransformSet};
+use pbrt::core::integrator::SamplerIntegrator;
+use pbrt::core::light::Light;
+use pbrt::core::mipmap::ImageWrap;
+use pbrt::core::paramset::{ParamSet, TextureParams};
+use pbrt::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
+use pbrt::core::pbrt::{Float, Spectrum};
+use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
+use pbrt::core::film::Film;
+use pbrt::core::scene::Scene;
+use pbrt::filters::Filter;
+use pbrt::filters::boxfilter::BoxFilter;
+use pbrt::filters::gaussian::GaussianFilter;
+use pbrt::geometry::{Bounds2f, Bounds2i, Normal3f,
+                     Point2f, Point2i, Point3f,
+                     Vector2f, Vector3f};
+use pbrt::integrators::ao::AOIntegrator;
+use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::integrators::path::PathIntegrator;
+use pbrt::materials::glass::GlassMaterial;
+use pbrt::materials::matte::MatteMaterial;
+use pbrt::materials::mirror::MirrorMaterial;
+use pbrt::materials::plastic::PlasticMaterial;
+use pbrt::materials::Material;
+use pbrt::lights::diffuse::DiffuseAreaLight;
+use pbrt::lights::distant::DistantLight;
+use pbrt::lights::infinite::InfiniteAreaLight;
+use pbrt::lights::point::PointLight;
+use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
+use pbrt::shapes::cylinder::Cylinder;
+use pbrt::shapes::disk::Disk;
+use pbrt::shapes::sphere::Sphere;
+use pbrt::shapes::triangle::{Triangle, TriangleMesh};
+use pbrt::shapes::Shape;
+use pbrt::textures::checkerboard::Checkerboard2DTexture;
+use pbrt::textures::constant::ConstantTexture;
+use pbrt::textures::imagemap::ImageTexture;
+use pbrt::textures::{PlanarMapping2D, Texture, TextureMapping2D, UVMapping2D};
+
 // parser
 use pest::Parser;
 // getopts
@@ -241,13 +267,13 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     //     mp.GetFloatTextureOrNull("bumpmap");
                     let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
                     let glass = Arc::new(GlassMaterial {
-                        kr: kr,
-                        kt: kt,
-                        u_roughness: roughu,
-                        v_roughness: roughv,
-                        index: eta,
-                        remap_roughness: remap_roughness,
-                    });
+                                             kr: kr,
+                                             kt: kt,
+                                             u_roughness: roughu,
+                                             v_roughness: roughv,
+                                             index: eta,
+                                             remap_roughness: remap_roughness,
+                                         });
                     return glass;
                 } else if graphics_state.material == String::from("mirror") {
                     let kr = mp.get_spectrum_texture(String::from("Kr"),
@@ -324,13 +350,14 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
             let distant_light = Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
             ro.lights.push(distant_light);
         }
-    } else if param_set.name == String::from("infinite") || param_set.name == String::from("exinfinite") {
+    } else if param_set.name == String::from("infinite") ||
+              param_set.name == String::from("exinfinite") {
         let l: Spectrum = param_set
             .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
-        let sc: Spectrum = param_set
-            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
-        let mut texmap: String = param_set.
-            find_one_filename(String::from("mapname"), String::from(""));
+        let sc: Spectrum =
+            param_set.find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+        let mut texmap: String = param_set
+            .find_one_filename(String::from("mapname"), String::from(""));
         unsafe {
             if let Some(ref search_directory) = SEARCH_DIRECTORY {
                 // texmap = AbsolutePath(ResolveFilename(texmap));
@@ -340,13 +367,13 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
                 texmap = String::from(path_buf.to_str().unwrap());
             }
         }
-        let n_samples: i32 = param_set
-            .find_one_int(String::from("nsamples"), 1 as i32);
+        let n_samples: i32 = param_set.find_one_int(String::from("nsamples"), 1 as i32);
         // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
 
         // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
         unsafe {
-            let infinte_light = Arc::new(InfiniteAreaLight::new(&CUR_TRANSFORM.t[0], &(l * sc), n_samples, texmap));
+            let infinte_light =
+                Arc::new(InfiniteAreaLight::new(&CUR_TRANSFORM.t[0], &(l * sc), n_samples, texmap));
             ro.lights.push(infinte_light);
         }
     } else {
@@ -371,185 +398,169 @@ fn make_texture(param_set: &ParamSet) {
             if param_set.tex_type == String::from("float") {
                 println!("TODO: MakeFloatTexture");
             } else if param_set.tex_type == String::from("color") ||
-                param_set.tex_type == String::from("spectrum") {
-                    match graphics_state.spectrum_textures.get(param_set.name.as_str()) {
-                        Some(_spectrum_texture) => {
-                            println!("Texture \"{}\" being redefined",
-                                     param_set.name);
-                        },
-                        None => {},
+                      param_set.tex_type == String::from("spectrum") {
+                match graphics_state
+                          .spectrum_textures
+                          .get(param_set.name.as_str()) {
+                    Some(_spectrum_texture) => {
+                        println!("Texture \"{}\" being redefined", param_set.name);
                     }
-                    // MakeSpectrumTexture(texname, curTransform[0], tp);
-                    if param_set.tex_name == String::from("constant") {
-                        println!("TODO: CreateConstantSpectrumTexture");
-                    } else if param_set.tex_name == String::from("scale") {
-                        println!("TODO: CreateScaleSpectrumTexture");
-                    } else if param_set.tex_name == String::from("mix") {
-                        println!("TODO: CreateMixSpectrumTexture");
-                    } else if param_set.tex_name == String::from("bilerp") {
-                        println!("TODO: CreateBilerpSpectrumTexture");
-                    } else if param_set.tex_name == String::from("imagemap") {
-                        // CreateImageSpectrumTexture
+                    None => {}
+                }
+                // MakeSpectrumTexture(texname, curTransform[0], tp);
+                if param_set.tex_name == String::from("constant") {
+                    println!("TODO: CreateConstantSpectrumTexture");
+                } else if param_set.tex_name == String::from("scale") {
+                    println!("TODO: CreateScaleSpectrumTexture");
+                } else if param_set.tex_name == String::from("mix") {
+                    println!("TODO: CreateMixSpectrumTexture");
+                } else if param_set.tex_name == String::from("bilerp") {
+                    println!("TODO: CreateBilerpSpectrumTexture");
+                } else if param_set.tex_name == String::from("imagemap") {
+                    // CreateImageSpectrumTexture
+                    let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+                    let mapping: String = tp.find_string(String::from("mapping"),
+                                                         String::from("uv"));
+                    if mapping == String::from("uv") {
+                        let su: Float = tp.find_float(String::from("uscale"), 1.0);
+                        let sv: Float = tp.find_float(String::from("vscale"), 1.0);
+                        let du: Float = tp.find_float(String::from("udelta"), 0.0);
+                        let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
+                        map = Some(Box::new(UVMapping2D {
+                                                su: su,
+                                                sv: sv,
+                                                du: du,
+                                                dv: dv,
+                                            }));
+                    } else if mapping == String::from("spherical") {
+                        println!("TODO: SphericalMapping2D");
+                    } else if mapping == String::from("cylindrical") {
+                        println!("TODO: CylindricalMapping2D");
+                    } else if mapping == String::from("planar") {
+                        map = Some(Box::new(PlanarMapping2D {
+                                                vs: tp.find_vector3f(String::from("v1"),
+                                                                     Vector3f {
+                                                                         x: 1.0,
+                                                                         y: 0.0,
+                                                                         z: 0.0,
+                                                                     }),
+                                                vt: tp.find_vector3f(String::from("v2"),
+                                                                     Vector3f {
+                                                                         x: 0.0,
+                                                                         y: 1.0,
+                                                                         z: 0.0,
+                                                                     }),
+                                                ds: tp.find_float(String::from("udelta"), 0.0),
+                                                dt: tp.find_float(String::from("vdelta"), 0.0),
+                                            }));
+                    } else {
+                        panic!("2D texture mapping \"{}\" unknown", mapping);
+                    }
+                    // initialize _ImageTexture_ parameters
+                    let max_aniso: Float = tp.find_float(String::from("maxanisotropy"), 8.0);
+                    let do_trilinear: bool = tp.find_bool(String::from("trilinear"), false);
+                    let wrap: String = tp.find_string(String::from("wrap"), String::from("repeat"));
+                    let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
+                    if wrap == String::from("black") {
+                        wrap_mode = ImageWrap::Black;
+                    } else if wrap == String::from("clamp") {
+                        wrap_mode = ImageWrap::Clamp;
+                    }
+                    let scale: Float = tp.find_float(String::from("scale"), 1.0);
+                    let mut filename: String =
+                        tp.find_filename(String::from("filename"), String::new());
+                    if let Some(ref search_directory) = SEARCH_DIRECTORY {
+                        // filename = AbsolutePath(ResolveFilename(filename));
+                        let mut path_buf: PathBuf = PathBuf::from("/");
+                        path_buf.push(search_directory.as_ref());
+                        path_buf.push(filename);
+                        filename = String::from(path_buf.to_str().unwrap());
+                    }
+                    // TODO: default depends on:
+                    // HasExtension(filename,
+                    // ".tga") ||
+                    // HasExtension(filename,
+                    // ".png"));
+                    let gamma: bool = tp.find_bool(String::from("gamma"), true);
+
+                    if let Some(mapping) = map {
+                        let st = Arc::new(ImageTexture::new(mapping,
+                                                            filename,
+                                                            do_trilinear,
+                                                            max_aniso,
+                                                            wrap_mode,
+                                                            scale,
+                                                            gamma));
+                        graphics_state
+                            .spectrum_textures
+                            .insert(param_set.name.clone(), st);
+                    }
+                } else if param_set.tex_name == String::from("uv") {
+                    println!("TODO: CreateUVSpectrumTexture");
+                } else if param_set.tex_name == String::from("checkerboard") {
+                    // CreateCheckerboardSpectrumTexture
+                    let dim: i32 = tp.find_int(String::from("dimension"), 2);
+                    if dim != 2 && dim != 3 {
+                        panic!("{} dimensional checkerboard texture not supported", dim);
+                    }
+                    let tex1: Arc<Texture<Spectrum> + Send + Sync> =
+                        tp.get_spectrum_texture(String::from("tex1"), Spectrum::new(1.0));
+                    let tex2: Arc<Texture<Spectrum> + Send + Sync> =
+                        tp.get_spectrum_texture(String::from("tex2"), Spectrum::new(0.0));
+                    if dim == 2 {
                         let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
                         let mapping: String =
                             tp.find_string(String::from("mapping"), String::from("uv"));
                         if mapping == String::from("uv") {
-                            let su: Float = tp.find_float(String::from("uscale"), 1.0);
-                            let sv: Float = tp.find_float(String::from("vscale"), 1.0);
-                            let du: Float = tp.find_float(String::from("udelta"), 0.0);
-                            let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
-                            map = Some(Box::new(UVMapping2D {
-                                su: su,
-                                sv: sv,
-                                du: du,
-                                dv: dv,
-                            }));
+                            println!("TODO: UVMapping2D");
                         } else if mapping == String::from("spherical") {
                             println!("TODO: SphericalMapping2D");
                         } else if mapping == String::from("cylindrical") {
                             println!("TODO: CylindricalMapping2D");
                         } else if mapping == String::from("planar") {
                             map = Some(Box::new(PlanarMapping2D {
-                                vs: tp.find_vector3f(String::from("v1"),
-                                                     Vector3f {
-                                                         x: 1.0,
-                                                         y: 0.0,
-                                                         z: 0.0
-                                                     }),
-                                vt: tp.find_vector3f(String::from("v2"),
-                                                     Vector3f {
-                                                         x: 0.0,
-                                                         y: 1.0,
-                                                         z: 0.0
-                                                     }),
-                                ds: tp.find_float(String::from("udelta"),
-                                                  0.0),
-                                dt: tp.find_float(String::from("vdelta"),
-                                                  0.0),
-                            }));
+                                                    vs: tp.find_vector3f(String::from("v1"),
+                                                                         Vector3f {
+                                                                             x: 1.0,
+                                                                             y: 0.0,
+                                                                             z: 0.0,
+                                                                         }),
+                                                    vt: tp.find_vector3f(String::from("v2"),
+                                                                         Vector3f {
+                                                                             x: 0.0,
+                                                                             y: 1.0,
+                                                                             z: 0.0,
+                                                                         }),
+                                                    ds: tp.find_float(String::from("udelta"), 0.0),
+                                                    dt: tp.find_float(String::from("vdelta"), 0.0),
+                                                }));
                         } else {
-                            panic!("2D texture mapping \"{}\" unknown",
-                                   mapping);
+                            panic!("2D texture mapping \"{}\" unknown", mapping);
                         }
-                        // initialize _ImageTexture_ parameters
-                        let max_aniso: Float =
-                            tp.find_float(String::from("maxanisotropy"), 8.0);
-                        let do_trilinear: bool =
-                            tp.find_bool(String::from("trilinear"), false);
-                        let wrap: String =
-                            tp.find_string(String::from("wrap"),
-                                           String::from("repeat"));
-                        let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
-                        if wrap == String::from("black") {
-                            wrap_mode = ImageWrap::Black;
-                        }
-                        else if wrap == String::from("clamp") {
-                            wrap_mode = ImageWrap::Clamp;
-                        }
-                        let scale: Float =
-                            tp.find_float(String::from("scale"), 1.0);
-                        let mut filename: String =
-                            tp.find_filename(String::from("filename"),
-                                             String::new());
-                        if let Some(ref search_directory) = SEARCH_DIRECTORY {
-                            // filename = AbsolutePath(ResolveFilename(filename));
-                            let mut path_buf: PathBuf = PathBuf::from("/");
-                            path_buf.push(search_directory.as_ref());
-                            path_buf.push(filename);
-                            filename = String::from(path_buf.to_str().unwrap());
-                        }
-                        // TODO: default depends on:
-                        // HasExtension(filename,
-                        // ".tga") ||
-                        // HasExtension(filename,
-                        // ".png"));
-                        let gamma: bool = tp.find_bool(String::from("gamma"), true);
-
+                        // TODO: aamode
                         if let Some(mapping) = map {
-                            let st = Arc::new(ImageTexture::new(mapping,
-                                                                filename,
-                                                                do_trilinear,
-                                                                max_aniso,
-                                                                wrap_mode,
-                                                                scale,
-                                                                gamma));
-                            graphics_state.spectrum_textures.insert(
-                                param_set.name.clone(), st);
+                            Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
                         }
-                    } else if param_set.tex_name == String::from("uv") {
-                        println!("TODO: CreateUVSpectrumTexture");
-                    } else if param_set.tex_name == String::from("checkerboard") {
-                        // CreateCheckerboardSpectrumTexture
-                        let dim: i32 = tp.find_int(String::from("dimension"), 2);
-                        if dim != 2 && dim != 3 {
-                            panic!("{} dimensional checkerboard texture not supported",
-                                   dim);
-                        }
-                        let tex1: Arc<Texture<Spectrum> + Send + Sync> =
-                            tp.get_spectrum_texture(String::from("tex1"),
-                                                    Spectrum::new(1.0));
-                        let tex2: Arc<Texture<Spectrum> + Send + Sync> =
-                            tp.get_spectrum_texture(String::from("tex2"),
-                                                    Spectrum::new(0.0));
-                        if dim == 2 {
-                            let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
-                            let mapping: String =
-                                tp.find_string(String::from("mapping"), String::from("uv"));
-                            if mapping == String::from("uv") {
-                                println!("TODO: UVMapping2D");
-                            } else if mapping == String::from("spherical") {
-                                println!("TODO: SphericalMapping2D");
-                            } else if mapping == String::from("cylindrical") {
-                                println!("TODO: CylindricalMapping2D");
-                            } else if mapping == String::from("planar") {
-                                map = Some(Box::new(PlanarMapping2D {
-                                    vs: tp.find_vector3f(String::from("v1"),
-                                                         Vector3f {
-                                                             x: 1.0,
-                                                             y: 0.0,
-                                                             z: 0.0
-                                                         }),
-                                    vt: tp.find_vector3f(String::from("v2"),
-                                                         Vector3f {
-                                                             x: 0.0,
-                                                             y: 1.0,
-                                                             z: 0.0
-                                                         }),
-                                    ds: tp.find_float(String::from("udelta"),
-                                                      0.0),
-                                    dt: tp.find_float(String::from("vdelta"),
-                                                      0.0),
-                                }));
-                            } else {
-                                panic!("2D texture mapping \"{}\" unknown",
-                                       mapping);
-                            }
-                            // TODO: aamode
-                            if let Some(mapping) = map {
-                                Arc::new(Checkerboard2DTexture::new(mapping,
-                                                                    tex1,
-                                                                    tex2));
-                            }
-                        } else { // dim == 3
-                            println!("TODO: TextureMapping3D");
-                        }
-                    } else if param_set.tex_name == String::from("dots") {
-                        println!("TODO: CreateDotsSpectrumTexture");
-                    } else if param_set.tex_name == String::from("fbm") {
-                        println!("TODO: CreateFBmSpectrumTexture");
-                    } else if param_set.tex_name == String::from("wrinkled") {
-                        println!("TODO: CreateWrinkledSpectrumTexture");
-                    } else if param_set.tex_name == String::from("marble") {
-                        println!("TODO: CreateMarbleSpectrumTexture");
-                    } else if param_set.tex_name == String::from("windy") {
-                        println!("TODO: CreateWindySpectrumTexture");
                     } else {
-                        println!("Spectrum texture \"{}\" unknown.",
-                                 param_set.tex_name);
+                        // dim == 3
+                        println!("TODO: TextureMapping3D");
                     }
+                } else if param_set.tex_name == String::from("dots") {
+                    println!("TODO: CreateDotsSpectrumTexture");
+                } else if param_set.tex_name == String::from("fbm") {
+                    println!("TODO: CreateFBmSpectrumTexture");
+                } else if param_set.tex_name == String::from("wrinkled") {
+                    println!("TODO: CreateWrinkledSpectrumTexture");
+                } else if param_set.tex_name == String::from("marble") {
+                    println!("TODO: CreateMarbleSpectrumTexture");
+                } else if param_set.tex_name == String::from("windy") {
+                    println!("TODO: CreateWindySpectrumTexture");
                 } else {
-                    panic!("Texture type \"{}\" unknown.", param_set.tex_type);
+                    println!("Spectrum texture \"{}\" unknown.", param_set.tex_name);
                 }
+            } else {
+                panic!("Texture type \"{}\" unknown.", param_set.tex_type);
+            }
         }
         // MakeFloatTexture(texname, curTransform[0], tp);
         // or
@@ -558,12 +569,12 @@ fn make_texture(param_set: &ParamSet) {
 }
 
 fn pbrt_bool_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, bool)
-    where I: pest::inputs::Input, R: pest::RuleType
+    where I: pest::inputs::Input,
+          R: pest::RuleType
 {
     // single string with or without brackets
     let ident = pairs.next();
-    let string: String =
-        String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
@@ -587,20 +598,21 @@ fn pbrt_bool_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Strin
     } else if string2 == String::from("false") {
         b = false
     } else {
-        println!("WARNING: parameter {:?} not well defined, defaulting to false", string);
+        println!("WARNING: parameter {:?} not well defined, defaulting to false",
+                 string);
         b = false
     }
     (string, b)
 }
 
 fn pbrt_float_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, Vec<Float>)
-    where I: pest::inputs::Input, R: pest::RuleType
+    where I: pest::inputs::Input,
+          R: pest::RuleType
 {
     let mut floats: Vec<Float> = Vec::new();
     // single float or several floats using brackets
     let ident = pairs.next();
-    let string: String =
-        String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
     let _lbrack = pairs.next(); // assume opening bracket
     let mut number = pairs.next();
     while number.is_some() {
@@ -609,8 +621,7 @@ fn pbrt_float_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Stri
             // closing bracket found
             break;
         } else {
-            let float: Float =
-                f32::from_str(pair.into_span().as_str()).unwrap();
+            let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
             floats.push(float);
         }
         number = pairs.next();
@@ -619,13 +630,13 @@ fn pbrt_float_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Stri
 }
 
 fn pbrt_integer_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, Vec<i32>)
-    where I: pest::inputs::Input, R: pest::RuleType
+    where I: pest::inputs::Input,
+          R: pest::RuleType
 {
     let mut integers: Vec<i32> = Vec::new();
     // single integer or several integers using brackets
     let ident = pairs.next();
-    let string: String =
-        String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
     let _lbrack = pairs.next(); // assume opening bracket
     let mut number = pairs.next();
     while number.is_some() {
@@ -634,8 +645,7 @@ fn pbrt_integer_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (St
             // closing bracket found
             break;
         } else {
-            let integer: i32 =
-                i32::from_str(pair.into_span().as_str()).unwrap();
+            let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
             integers.push(integer);
         }
         number = pairs.next();
@@ -644,12 +654,12 @@ fn pbrt_integer_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (St
 }
 
 fn pbrt_string_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, String)
-    where I: pest::inputs::Input, R: pest::RuleType
+    where I: pest::inputs::Input,
+          R: pest::RuleType
 {
     // single string with or without brackets
     let ident = pairs.next();
-    let string1: String =
-        String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string1: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
@@ -670,12 +680,12 @@ fn pbrt_string_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Str
 }
 
 fn pbrt_texture_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, String)
-    where I: pest::inputs::Input, R: pest::RuleType
+    where I: pest::inputs::Input,
+          R: pest::RuleType
 {
     // single string with or without brackets
     let ident = pairs.next();
-    let string1: String =
-        String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string1: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
@@ -714,7 +724,7 @@ fn pbrt_shape(param_set: &ParamSet)
         if CUR_TRANSFORM.is_animated() {
             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                 if graphics_state.area_light != String::from("") {
-                    println!("WARNING: Ignoring currently set area light when creating animated shape");
+                    println!("WARNING: Ignoring currently set area light when creating animated shape",);
                 }
             }
             // WORK
@@ -1239,7 +1249,11 @@ fn pbrt_world_end() {
                                         // TODO: primitives.erase(primitives.begin(), primitives.end());
                                         // TODO: lights.erase(lights.begin(), lights.end());
                                         let num_threads: u8 = NUMBER_OF_THREADS;
-                                        pbrt::render(&scene, camera, &mut sampler, &mut integrator, num_threads);
+                                        pbrt::render(&scene,
+                                                     camera,
+                                                     &mut sampler,
+                                                     &mut integrator,
+                                                     num_threads);
                                     } else if ro.accelerator_name == String::from("kdtree") {
                                         // println!("TODO: CreateKdTreeAccelerator");
                                         // WARNING: Use BVHAccel for now !!!
@@ -1253,7 +1267,11 @@ fn pbrt_world_end() {
                                         // TODO: primitives.erase(primitives.begin(), primitives.end());
                                         // TODO: lights.erase(lights.begin(), lights.end());
                                         let num_threads: u8 = NUMBER_OF_THREADS;
-                                        pbrt::render(&scene, camera, &mut sampler, &mut integrator, num_threads);
+                                        pbrt::render(&scene,
+                                                     camera,
+                                                     &mut sampler,
+                                                     &mut integrator,
+                                                     num_threads);
                                     } else {
                                         panic!("Accelerator \"{}\" unknown.", ro.accelerator_name);
                                     }
@@ -1285,7 +1303,10 @@ fn main() {
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
     opts.optopt("i", "", "parse an input file", "FILE");
-    opts.optopt("t", "nthreads", "use specified number of threads for rendering", "NUM");
+    opts.optopt("t",
+                "nthreads",
+                "use specified number of threads for rendering",
+                "NUM");
     opts.optflag("v", "version", "print version number");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1300,9 +1321,10 @@ fn main() {
             match nthreads {
                 Some(x) => {
                     let number_result = x.parse::<u8>();
-                    assert!(!number_result.is_err(), "ERROR: 8 bit unsigned integer expected");
+                    assert!(!number_result.is_err(),
+                            "ERROR: 8 bit unsigned integer expected");
                     let num_threads: u8 = number_result.unwrap();
-                    println!("nthreads = {:?}" , num_threads);
+                    println!("nthreads = {:?}", num_threads);
                     unsafe {
                         NUMBER_OF_THREADS = num_threads;
                     }
@@ -1342,7 +1364,8 @@ fn main() {
                     PUSHED_ACTIVE_TRANSFORM_BITS = Some(Box::new(Vec::new()));
                     PARAM_SET = Some(Box::new(ParamSet::default()));
                     // parser
-                    let pairs = PbrtParser::parse_str(Rule::pbrt, &str_buf).unwrap_or_else(|e| panic!("{}", e));
+                    let pairs = PbrtParser::parse_str(Rule::pbrt, &str_buf)
+                        .unwrap_or_else(|e| panic!("{}", e));
                     // assert!(parser.pbrt());
                     // assert!(parser.end());
                     // println!("{:?}", parser.queue());
@@ -1354,27 +1377,29 @@ fn main() {
                                 for statement_pair in pair.into_inner() {
                                     match statement_pair.as_rule() {
                                         Rule::active_transform => {
-                                            for active_transform_pair in statement_pair.into_inner() {
+                                            for active_transform_pair in
+                                                statement_pair.into_inner() {
                                                 match active_transform_pair.as_rule() {
                                                     Rule::all => {
                                                         // println!("ActiveTransform All");
                                                         ACTIVE_TRANSFORM_BITS = 3_u8 // 0x11
-                                                    },
+                                                    }
                                                     Rule::start_time => {
                                                         // println!("ActiveTransform StartTime");
                                                         ACTIVE_TRANSFORM_BITS = 1_u8 // 0x01
-                                                    },
+                                                    }
                                                     Rule::end_time => {
                                                         // println!("ActiveTransform EndTime");
                                                         ACTIVE_TRANSFORM_BITS = 2_u8 // 0x10
-                                                    },
-                                                    _ => unreachable!()
+                                                    }
+                                                    _ => unreachable!(),
                                                 }
                                             }
-                                        },
+                                        }
                                         Rule::concat_transform => {
                                             let mut numbers: Vec<Float> = Vec::new();
-                                            for concat_transform_pair in statement_pair.into_inner() {
+                                            for concat_transform_pair in
+                                                statement_pair.into_inner() {
                                                 // ignore brackets
                                                 let not_opening: bool = concat_transform_pair.as_str() != String::from("[");
                                                 let not_closing: bool = concat_transform_pair.as_str() != String::from("]");
@@ -1404,10 +1429,12 @@ fn main() {
                                                                                       m01, m11, m21, m31,
                                                                                       m02, m12, m22, m32,
                                                                                       m03, m13, m23, m33);
-                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
+                                                // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
                                             }
-                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 {
+                                                // 0x1?
                                                 CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
                                             }
                                         }
@@ -1415,7 +1442,8 @@ fn main() {
                                             for keyword_pair in statement_pair.into_inner() {
                                                 match keyword_pair.as_rule() {
                                                     Rule::attribute_begin => {
-                                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                                        if let Some(ref mut graphics_state) =
+                                                            GRAPHICS_STATE {
                                                             if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
                                                                 let mut material_param_set: ParamSet = ParamSet::default();
                                                                 material_param_set.copy_from(&graphics_state.material_params);
@@ -1432,7 +1460,8 @@ fn main() {
                                                                     area_light: String::from(graphics_state.area_light.as_ref()),
                                                                 });
                                                             }
-                                                            if let Some(ref mut pt) = PUSHED_TRANSFORMS {
+                                                            if let Some(ref mut pt) =
+                                                                PUSHED_TRANSFORMS {
                                                                 pt.push(TransformSet {
                                                                     t: [
                                                                         Transform {
@@ -1444,13 +1473,15 @@ fn main() {
                                                                     ]
                                                                 });
                                                             }
-                                                            if let Some(ref mut patb) = PUSHED_ACTIVE_TRANSFORM_BITS {
+                                                            if let Some(ref mut patb) =
+                                                                PUSHED_ACTIVE_TRANSFORM_BITS {
                                                                 patb.push(ACTIVE_TRANSFORM_BITS);
                                                             }
                                                         }
-                                                    },
+                                                    }
                                                     Rule::attribute_end => {
-                                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                                        if let Some(ref mut graphics_state) =
+                                                            GRAPHICS_STATE {
                                                             if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
                                                                 if !(pushed_graphics_states.len() >= 1_usize) {
                                                                     panic!("Unmatched pbrtAttributeEnd() encountered.")
@@ -1473,17 +1504,22 @@ fn main() {
                                                                 // area_light
                                                                 graphics_state.area_light = String::from(pgs.area_light.as_ref());
                                                             }
-                                                            if let Some(ref mut pt) = PUSHED_TRANSFORMS {
+                                                            if let Some(ref mut pt) =
+                                                                PUSHED_TRANSFORMS {
                                                                 let popped_transform_set: TransformSet = pt.pop().unwrap();
-                                                                CUR_TRANSFORM.t[0] = popped_transform_set.t[0];
-                                                                CUR_TRANSFORM.t[1] = popped_transform_set.t[1];
+                                                                CUR_TRANSFORM.t[0] =
+                                                                    popped_transform_set.t[0];
+                                                                CUR_TRANSFORM.t[1] =
+                                                                    popped_transform_set.t[1];
                                                             }
-                                                            if let Some(ref mut patb) = PUSHED_ACTIVE_TRANSFORM_BITS {
+                                                            if let Some(ref mut patb) =
+                                                                PUSHED_ACTIVE_TRANSFORM_BITS {
                                                                 let active_transform_bits: u8 = patb.pop().unwrap();
-                                                                ACTIVE_TRANSFORM_BITS = active_transform_bits;
+                                                                ACTIVE_TRANSFORM_BITS =
+                                                                    active_transform_bits;
                                                             }
                                                         }
-                                                    },
+                                                    }
                                                     Rule::world_begin => {
                                                         println!("WorldBegin");
                                                         CUR_TRANSFORM.t[0] = Transform::default();
@@ -1495,11 +1531,11 @@ fn main() {
                                                                                                 t: [Transform::default(); 2]
                                                                                             });
                                                         }
-                                                    },
-                                                    _ => unreachable!()
+                                                    }
+                                                    _ => unreachable!(),
                                                 }
                                             }
-                                        },
+                                        }
                                         Rule::look_at => {
                                             let mut numbers: Vec<Float> = Vec::new();
                                             for look_at_pair in statement_pair.into_inner() {
@@ -1511,22 +1547,30 @@ fn main() {
                                             let look: Point3f = Point3f { x: numbers[3], y: numbers[4], z: numbers[5], };
                                             let up: Vector3f = Vector3f { x: numbers[6], y: numbers[7], z: numbers[8], };
                                             let look_at: Transform = Transform::look_at(pos, look, up);
-                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
+                                                // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
                                             }
-                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 {
+                                                // 0x1?
                                                 CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
                                             }
-                                        },
+                                        }
                                         Rule::named_statement => {
-                                            for named_statement_pair in statement_pair.into_inner() {
+                                            for named_statement_pair in
+                                                statement_pair.into_inner() {
                                                 match named_statement_pair.as_rule() {
-                                                    Rule::accelerator => println!("TODO: Rule::accelerator"),
+                                                    Rule::accelerator => {
+                                                        println!("TODO: Rule::accelerator")
+                                                    }
                                                     Rule::area_light_source => {
-                                                        for area_light_source_pair in named_statement_pair.into_inner() {
+                                                        for area_light_source_pair in
+                                                            named_statement_pair.into_inner() {
                                                             match area_light_source_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = area_light_source_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        area_light_source_pair
+                                                                            .into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
@@ -1538,10 +1582,13 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in area_light_source_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        area_light_source_pair
+                                                                            .into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1551,7 +1598,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1565,7 +1612,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1579,7 +1626,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1598,7 +1645,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1617,7 +1664,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1630,7 +1677,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1643,7 +1690,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -1653,7 +1700,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -1663,7 +1710,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1682,35 +1729,43 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the area_light_source parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            println!("AreaLightSource \"{}\" ", param_set.name);
+                                                            println!("AreaLightSource \"{}\" ",
+                                                                     param_set.name);
                                                             print_params(&param_set);
-                                                            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                                                graphics_state.area_light = param_set.name.clone();
-                                                                graphics_state.area_light_params.copy_from(&param_set);
+                                                            if let Some(ref mut graphics_state) =
+                                                                GRAPHICS_STATE {
+                                                                graphics_state.area_light =
+                                                                    param_set.name.clone();
+                                                                graphics_state
+                                                                    .area_light_params
+                                                                    .copy_from(&param_set);
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::camera => {
-                                                        for camera_pair in named_statement_pair.into_inner() {
+                                                        for camera_pair in named_statement_pair
+                                                                .into_inner() {
                                                             match camera_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = camera_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        camera_pair.into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                    if let Some(ref mut ro) =
+                                                                        RENDER_OPTIONS {
                                                                         ro.camera_name = name;
                                                                         ro.camera_to_world.t[0] =
                                                                             Transform::inverse(CUR_TRANSFORM.t[0]);
@@ -1734,10 +1789,12 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in camera_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        camera_pair.into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1747,7 +1804,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1761,7 +1818,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1775,7 +1832,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1794,7 +1851,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1813,7 +1870,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1826,7 +1883,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1839,7 +1896,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -1849,7 +1906,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -1859,7 +1916,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1878,19 +1935,22 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the camera parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                println!("Camera \"{}\" ", ro.camera_name);
-                                                                ro.camera_params.copy_from(param_set);
+                                                            if let Some(ref mut ro) =
+                                                                RENDER_OPTIONS {
+                                                                println!("Camera \"{}\" ",
+                                                                         ro.camera_name);
+                                                                ro.camera_params
+                                                                    .copy_from(param_set);
                                                                 print_params(&ro.camera_params);
                                                             } else {
                                                                 panic!("Can't get render options.");
@@ -1898,12 +1958,16 @@ fn main() {
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::coord_sys_transform => {
-                                                        for coord_sys_transform_pair in named_statement_pair.into_inner() {
-                                                            match coord_sys_transform_pair.as_rule() {
+                                                        for coord_sys_transform_pair in
+                                                            named_statement_pair.into_inner() {
+                                                            match coord_sys_transform_pair
+                                                                      .as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = coord_sys_transform_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        coord_sys_transform_pair
+                                                                            .into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
@@ -1918,20 +1982,23 @@ fn main() {
                                                                             },
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
-                                                    },
+                                                    }
                                                     Rule::film => {
-                                                        for film_pair in named_statement_pair.into_inner() {
+                                                        for film_pair in named_statement_pair
+                                                                .into_inner() {
                                                             match film_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = film_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        film_pair.into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                    if let Some(ref mut ro) =
+                                                                        RENDER_OPTIONS {
                                                                         ro.film_name = name;
                                                                     } else {
                                                                         panic!("Can't get render options.");
@@ -1944,10 +2011,12 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in film_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        film_pair.into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1957,7 +2026,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1971,7 +2040,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1985,7 +2054,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2004,7 +2073,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2023,7 +2092,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2036,7 +2105,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2049,7 +2118,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2059,7 +2128,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2069,7 +2138,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2088,18 +2157,20 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the film parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                println!("Film \"{}\" ", ro.film_name);
+                                                            if let Some(ref mut ro) =
+                                                                RENDER_OPTIONS {
+                                                                println!("Film \"{}\" ",
+                                                                         ro.film_name);
                                                                 ro.film_params.copy_from(param_set);
                                                                 print_params(&ro.film_params);
                                                             } else {
@@ -2108,16 +2179,20 @@ fn main() {
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::integrator => {
-                                                        for integrator_pair in named_statement_pair.into_inner() {
+                                                        for integrator_pair in
+                                                            named_statement_pair.into_inner() {
                                                             match integrator_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = integrator_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        integrator_pair
+                                                                            .into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                    if let Some(ref mut ro) =
+                                                                        RENDER_OPTIONS {
                                                                         ro.integrator_name = name;
                                                                     } else {
                                                                         panic!("Can't get render options.");
@@ -2130,10 +2205,12 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in integrator_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        integrator_pair.into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2143,7 +2220,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2157,7 +2234,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2171,7 +2248,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2190,7 +2267,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2209,7 +2286,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2222,7 +2299,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2235,7 +2312,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2245,7 +2322,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2255,7 +2332,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2274,19 +2351,22 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the integrator parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                println!("Integrator \"{}\" ", ro.integrator_name);
-                                                                ro.integrator_params.copy_from(param_set);
+                                                            if let Some(ref mut ro) =
+                                                                RENDER_OPTIONS {
+                                                                println!("Integrator \"{}\" ",
+                                                                         ro.integrator_name);
+                                                                ro.integrator_params
+                                                                    .copy_from(param_set);
                                                                 print_params(&ro.integrator_params);
                                                             } else {
                                                                 panic!("Can't get render options.");
@@ -2294,12 +2374,15 @@ fn main() {
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::light_source => {
-                                                        for light_source_pair in named_statement_pair.into_inner() {
+                                                        for light_source_pair in
+                                                            named_statement_pair.into_inner() {
                                                             match light_source_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = light_source_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        light_source_pair
+                                                                            .into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
@@ -2311,10 +2394,13 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in light_source_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        light_source_pair
+                                                                            .into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2324,7 +2410,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2338,7 +2424,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2352,7 +2438,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2371,7 +2457,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2390,7 +2476,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2403,7 +2489,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2416,7 +2502,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2426,7 +2512,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2436,7 +2522,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2455,18 +2541,20 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the light_source parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                println!("LightSource \"{}\" ", param_set.name);
+                                                            if let Some(ref mut ro) =
+                                                                RENDER_OPTIONS {
+                                                                println!("LightSource \"{}\" ",
+                                                                         param_set.name);
                                                                 print_params(&param_set);
                                                                 make_light(&param_set, ro);
                                                             } else {
@@ -2475,12 +2563,16 @@ fn main() {
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::make_named_material => {
-                                                        for make_named_material_pair in named_statement_pair.into_inner() {
-                                                            match make_named_material_pair.as_rule() {
+                                                        for make_named_material_pair in
+                                                            named_statement_pair.into_inner() {
+                                                            match make_named_material_pair
+                                                                      .as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = make_named_material_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        make_named_material_pair
+                                                                            .into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
@@ -2492,10 +2584,13 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in make_named_material_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        make_named_material_pair
+                                                                            .into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2505,7 +2600,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2519,7 +2614,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2533,7 +2628,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2552,7 +2647,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2571,7 +2666,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2584,7 +2679,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2597,7 +2692,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2607,7 +2702,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2617,7 +2712,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2636,12 +2731,12 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the make_named_material parameters by now
@@ -2651,9 +2746,13 @@ fn main() {
                                                             if mat_type == String::new() {
                                                                 panic!("No parameter string \"type\" found in MakeNamedMaterial");
                                                             }
-                                                            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                                                graphics_state.material = mat_type.clone();
-                                                                graphics_state.material_params.copy_from(&param_set);
+                                                            if let Some(ref mut graphics_state) =
+                                                                GRAPHICS_STATE {
+                                                                graphics_state.material =
+                                                                    mat_type.clone();
+                                                                graphics_state
+                                                                    .material_params
+                                                                    .copy_from(&param_set);
                                                                 graphics_state.current_named_material = String::new();
                                                                 let mtl: Arc<Material + Send + Sync> = create_material();
                                                                 match graphics_state.named_materials.get(mat_type.as_str()) {
@@ -2663,17 +2762,22 @@ fn main() {
                                                                     },
                                                                     None => {},
                                                                 }
-                                                                graphics_state.named_materials.insert(param_set.name.clone(), mtl);
+                                                                graphics_state
+                                                                    .named_materials
+                                                                    .insert(param_set.name.clone(),
+                                                                            mtl);
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::material => {
-                                                        for material_pair in named_statement_pair.into_inner() {
+                                                        for material_pair in named_statement_pair
+                                                                .into_inner() {
                                                             match material_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = material_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        material_pair.into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
@@ -2685,10 +2789,12 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in material_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        material_pair.into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2698,7 +2804,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2712,7 +2818,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2726,7 +2832,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2745,7 +2851,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2764,7 +2870,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2777,7 +2883,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2790,7 +2896,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2800,7 +2906,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2810,7 +2916,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2829,30 +2935,37 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the material parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                                                graphics_state.material = param_set.name.clone();
-                                                                graphics_state.material_params.copy_from(&param_set);
+                                                            if let Some(ref mut graphics_state) =
+                                                                GRAPHICS_STATE {
+                                                                graphics_state.material =
+                                                                    param_set.name.clone();
+                                                                graphics_state
+                                                                    .material_params
+                                                                    .copy_from(&param_set);
                                                                 graphics_state.current_named_material = String::new();
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::named_material => {
-                                                        for named_material_pair in named_statement_pair.into_inner() {
+                                                        for named_material_pair in
+                                                            named_statement_pair.into_inner() {
                                                             match named_material_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = named_material_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        named_material_pair
+                                                                            .into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
@@ -2864,10 +2977,13 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in named_material_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        named_material_pair
+                                                                            .into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2877,7 +2993,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2891,7 +3007,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2905,7 +3021,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2924,7 +3040,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2943,7 +3059,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2956,7 +3072,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2969,7 +3085,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2979,7 +3095,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -2989,7 +3105,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3008,32 +3124,37 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the named_material parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                                            if let Some(ref mut graphics_state) =
+                                                                GRAPHICS_STATE {
                                                                 graphics_state.current_named_material = param_set.name.clone();
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::pixel_filter => {
-                                                        for pixel_filter_pair in named_statement_pair.into_inner() {
+                                                        for pixel_filter_pair in
+                                                            named_statement_pair.into_inner() {
                                                             match pixel_filter_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = pixel_filter_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        pixel_filter_pair
+                                                                            .into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                    if let Some(ref mut ro) =
+                                                                        RENDER_OPTIONS {
                                                                         ro.filter_name = name;
                                                                     } else {
                                                                         panic!("Can't get render options.");
@@ -3046,10 +3167,13 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in pixel_filter_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        pixel_filter_pair
+                                                                            .into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3059,7 +3183,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3073,7 +3197,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3087,7 +3211,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3106,7 +3230,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3125,7 +3249,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3138,7 +3262,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3151,7 +3275,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -3161,7 +3285,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -3171,7 +3295,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3190,19 +3314,22 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the pixel_filter parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                println!("PixelFilter \"{}\" ", ro.filter_name);
-                                                                ro.filter_params.copy_from(param_set);
+                                                            if let Some(ref mut ro) =
+                                                                RENDER_OPTIONS {
+                                                                println!("PixelFilter \"{}\" ",
+                                                                         ro.filter_name);
+                                                                ro.filter_params
+                                                                    .copy_from(param_set);
                                                                 print_params(&ro.filter_params);
                                                             } else {
                                                                 panic!("Can't get render options.");
@@ -3210,16 +3337,19 @@ fn main() {
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::sampler => {
-                                                        for sampler_pair in named_statement_pair.into_inner() {
+                                                        for sampler_pair in named_statement_pair
+                                                                .into_inner() {
                                                             match sampler_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = sampler_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        sampler_pair.into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                    if let Some(ref mut ro) =
+                                                                        RENDER_OPTIONS {
                                                                         ro.sampler_name = name;
                                                                     } else {
                                                                         panic!("Can't get render options.");
@@ -3232,10 +3362,12 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in sampler_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        sampler_pair.into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3245,7 +3377,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3259,7 +3391,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3273,7 +3405,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3292,7 +3424,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3311,7 +3443,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3324,7 +3456,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3337,7 +3469,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -3347,7 +3479,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -3357,7 +3489,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3376,19 +3508,22 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the sampler parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
-                                                                println!("Sampler \"{}\" ", ro.sampler_name);
-                                                                ro.sampler_params.copy_from(param_set);
+                                                            if let Some(ref mut ro) =
+                                                                RENDER_OPTIONS {
+                                                                println!("Sampler \"{}\" ",
+                                                                         ro.sampler_name);
+                                                                ro.sampler_params
+                                                                    .copy_from(param_set);
                                                                 print_params(&ro.sampler_params);
                                                             } else {
                                                                 panic!("Can't get render options.");
@@ -3396,12 +3531,14 @@ fn main() {
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::shape => {
-                                                        for shape_pair in named_statement_pair.into_inner() {
+                                                        for shape_pair in named_statement_pair
+                                                                .into_inner() {
                                                             match shape_pair.as_rule() {
                                                                 Rule::string => {
-                                                                    let mut string_pairs = shape_pair.into_inner();
+                                                                    let mut string_pairs =
+                                                                        shape_pair.into_inner();
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
@@ -3414,10 +3551,12 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in shape_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        shape_pair.into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3427,7 +3566,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3441,7 +3580,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3455,7 +3594,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3474,7 +3613,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3493,7 +3632,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3506,7 +3645,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3519,7 +3658,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -3529,7 +3668,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -3539,7 +3678,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3558,12 +3697,12 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the shape parameters by now
@@ -3574,18 +3713,24 @@ fn main() {
                                                             let mut prims: Vec<Arc<Primitive + Send + Sync>> = Vec::new();
                                                             let mut area_lights: Vec<Arc<Light + Send + Sync>> = Vec::new();
                                                             // possibly create area light for shape (see pbrtShape())
-                                                            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                                                if graphics_state.area_light != String::new() {
+                                                            if let Some(ref mut graphics_state) =
+                                                                GRAPHICS_STATE {
+                                                                if graphics_state.area_light !=
+                                                                   String::new() {
                                                                     // MakeAreaLight
-                                                                    if graphics_state.area_light == String::from("area") ||
-                                                                        graphics_state.area_light == String::from("diffuse")
-                                                                    {
+                                                                    if graphics_state.area_light ==
+                                                                       String::from("area") ||
+                                                                       graphics_state.area_light ==
+                                                                       String::from("diffuse") {
                                                                         // first create the shape
-                                                                        let (shapes, materials) = pbrt_shape(&param_set);
-                                                                        assert_eq!(shapes.len(), materials.len());
+                                                                        let (shapes, materials) =
+                                                                            pbrt_shape(&param_set);
+                                                                        assert_eq!(shapes.len(),
+                                                                                   materials.len());
                                                                         for i in 0..shapes.len() {
                                                                             let shape = &shapes[i];
-                                                                            let material = &materials[i];
+                                                                            let material =
+                                                                                &materials[i];
                                                                             // CreateDiffuseAreaLight
                                                                             let light_to_world: Transform = CUR_TRANSFORM.t[0];
                                                                             let l: Spectrum =
@@ -3622,19 +3767,24 @@ fn main() {
                                                                     }
                                                                 } else {
                                                                     // continue with shape itself
-                                                                    let (shapes, materials) = pbrt_shape(&param_set);
-                                                                    assert_eq!(shapes.len(), materials.len());
+                                                                    let (shapes, materials) =
+                                                                        pbrt_shape(&param_set);
+                                                                    assert_eq!(shapes.len(),
+                                                                               materials.len());
                                                                     for i in 0..shapes.len() {
                                                                         let shape = &shapes[i];
-                                                                        let material = &materials[i];
+                                                                        let material = &materials
+                                                                                            [i];
                                                                         let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
                                                                                                                         material.clone(),
                                                                                                                         None));
-                                                                        prims.push(geo_prim.clone());
+                                                                        prims
+                                                                            .push(geo_prim.clone());
                                                                     }
                                                                     // animated?
                                                                     if CUR_TRANSFORM.is_animated() {
-                                                                        if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                                        if let Some(ref mut ro) =
+                                                                            RENDER_OPTIONS {
                                                                             let animated_object_to_world: AnimatedTransform =
                                                                                 AnimatedTransform::new(&CUR_TRANSFORM.t[0],
                                                                                                        ro.transform_start_time,
@@ -3657,8 +3807,10 @@ fn main() {
                                                                 }
                                                             } else {
                                                                 // continue with shape itself
-                                                                let (shapes, materials) = pbrt_shape(&param_set);
-                                                                assert_eq!(shapes.len(), materials.len());
+                                                                let (shapes, materials) =
+                                                                    pbrt_shape(&param_set);
+                                                                assert_eq!(shapes.len(),
+                                                                           materials.len());
                                                                 for i in 0..shapes.len() {
                                                                     let shape = &shapes[i];
                                                                     let material = &materials[i];
@@ -3675,11 +3827,13 @@ fn main() {
                                                             //     renderOptions->currentInstance->insert(
                                                             //         renderOptions->currentInstance->end(), prims.begin(), prims.end());
                                                             // } else {
-                                                            if let Some(ref mut ro) = RENDER_OPTIONS {
+                                                            if let Some(ref mut ro) =
+                                                                RENDER_OPTIONS {
                                                                 // renderOptions->primitives.insert(renderOptions->primitives.end(),
                                                                 //     prims.begin(), prims.end());
                                                                 for prim in prims {
-                                                                    ro.primitives.push(prim.clone());
+                                                                    ro.primitives
+                                                                        .push(prim.clone());
                                                                 }
                                                                 // ro.primitives.insert(ro.primitives.end(),
                                                                 //                      prims.begin(), prims.end());
@@ -3692,32 +3846,42 @@ fn main() {
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
+                                                    }
                                                     Rule::texture => {
                                                         let mut counter: u8 = 0_u8;
                                                         let mut name: String = String::from("undefined");
                                                         let mut tex_type: String = String::from("undefined");
                                                         let mut tex_name;
-                                                        for texture_pair in named_statement_pair.into_inner() {
+                                                        for texture_pair in named_statement_pair
+                                                                .into_inner() {
                                                             match texture_pair.as_rule() {
                                                                 Rule::string => {
                                                                     match counter {
                                                                         0 => {
                                                                             // name
-                                                                            let mut string_pairs = texture_pair.into_inner();
-                                                                            let ident = string_pairs.next();
+                                                                            let mut string_pairs =
+                                                                                texture_pair
+                                                                                    .into_inner();
+                                                                            let ident =
+                                                                                string_pairs.next();
                                                                             name = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                        },
+                                                                        }
                                                                         1 => {
                                                                             // tex_type
-                                                                            let mut string_pairs = texture_pair.into_inner();
-                                                                            let ident = string_pairs.next();
+                                                                            let mut string_pairs =
+                                                                                texture_pair
+                                                                                    .into_inner();
+                                                                            let ident =
+                                                                                string_pairs.next();
                                                                             tex_type = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                        },
+                                                                        }
                                                                         2 => {
                                                                             // tex_name
-                                                                            let mut string_pairs = texture_pair.into_inner();
-                                                                            let ident = string_pairs.next();
+                                                                            let mut string_pairs =
+                                                                                texture_pair
+                                                                                    .into_inner();
+                                                                            let ident =
+                                                                                string_pairs.next();
                                                                             tex_name = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
                                                                             if let Some(ref mut param_set) = PARAM_SET {
                                                                                 param_set.reset(String::from("Texture"),
@@ -3727,14 +3891,16 @@ fn main() {
                                                                             } else {
                                                                                 panic!("Can't get parameter set.");
                                                                             }
-                                                                        },
-                                                                        _ => unreachable!()
+                                                                        }
+                                                                        _ => unreachable!(),
                                                                     };
                                                                     counter += 1_u8;
-                                                                },
+                                                                }
                                                                 Rule::parameter => {
-                                                                    for parameter_pair in texture_pair.into_inner() {
-                                                                        match parameter_pair.as_rule() {
+                                                                    for parameter_pair in
+                                                                        texture_pair.into_inner() {
+                                                                        match parameter_pair
+                                                                                  .as_rule() {
                                                                             Rule::bool_param => {
                                                                                 let tuple: (String, bool) = pbrt_bool_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3744,7 +3910,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3758,7 +3924,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::integer_param => {
                                                                                 let tuple: (String, Vec<i32>) = pbrt_integer_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3772,7 +3938,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::point_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3791,7 +3957,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::normal_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3810,7 +3976,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::rgb_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3823,7 +3989,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::spectrum_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3836,7 +4002,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::string_param => {
                                                                                 let tuple: (String, String) = pbrt_string_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -3846,7 +4012,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::texture_param => {
                                                                                 let tuple: (String, String) = pbrt_texture_parameter(&mut parameter_pair.into_inner());
                                                                                 let string1: String = tuple.0;
@@ -3856,7 +4022,7 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
+                                                                            }
                                                                             Rule::vector_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3875,12 +4041,12 @@ fn main() {
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
-                                                                            },
-                                                                            _ => unreachable!()
+                                                                            }
+                                                                            _ => unreachable!(),
                                                                         };
                                                                     }
-                                                                },
-                                                                _ => unreachable!()
+                                                                }
+                                                                _ => unreachable!(),
                                                             }
                                                         }
                                                         // we should have the texture parameters by now
@@ -3894,11 +4060,11 @@ fn main() {
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
-                                                    },
-                                                    _ => unreachable!()
+                                                    }
+                                                    _ => unreachable!(),
                                                 }
                                             }
-                                        },
+                                        }
                                         Rule::rotate => {
                                             let mut numbers: Vec<Float> = Vec::new();
                                             for rotate_pair in statement_pair.into_inner() {
@@ -3911,13 +4077,15 @@ fn main() {
                                             let y: Float = numbers[2];
                                             let z: Float = numbers[3];
                                             let rotate: Transform = Transform::rotate(angle, Vector3f { x: x, y: y, z: z, });
-                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
+                                                // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * rotate;
                                             }
-                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 {
+                                                // 0x1?
                                                 CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * rotate;
                                             }
-                                        },
+                                        }
                                         Rule::scale => {
                                             let mut numbers: Vec<Float> = Vec::new();
                                             for scale_pair in statement_pair.into_inner() {
@@ -3929,13 +4097,15 @@ fn main() {
                                             let y: Float = numbers[1];
                                             let z: Float = numbers[2];
                                             let scale: Transform = Transform::scale(x, y, z);
-                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
+                                                // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * scale;
                                             }
-                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 {
+                                                // 0x1?
                                                 CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * scale;
                                             }
-                                        },
+                                        }
                                         Rule::transform => {
                                             let mut numbers: Vec<Float> = Vec::new();
                                             for transform_pair in statement_pair.into_inner() {
@@ -3968,16 +4138,19 @@ fn main() {
                                                                                       m01, m11, m21, m31,
                                                                                       m02, m12, m22, m32,
                                                                                       m03, m13, m23, m33);
-                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
+                                                // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
                                             }
-                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 {
+                                                // 0x1?
                                                 CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
                                             }
-                                        },
+                                        }
                                         Rule::transform_times => {
                                             let mut numbers: Vec<Float> = Vec::new();
-                                            for transform_times_pair in statement_pair.into_inner() {
+                                            for transform_times_pair in
+                                                statement_pair.into_inner() {
                                                 let number: Float =
                                                     f32::from_str(transform_times_pair.clone().into_span().as_str()).unwrap();
                                                 numbers.push(number);
@@ -3992,7 +4165,7 @@ fn main() {
                                                          ro.transform_start_time,
                                                          ro.transform_end_time);
                                             }
-                                        },
+                                        }
                                         Rule::translate => {
                                             let mut numbers: Vec<Float> = Vec::new();
                                             for translate_pair in statement_pair.into_inner() {
@@ -4004,22 +4177,24 @@ fn main() {
                                             let y: Float = numbers[1];
                                             let z: Float = numbers[2];
                                             let translate: Transform = Transform::translate(Vector3f { x: x, y: y, z: z, });
-                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 { // 0x?1
+                                            if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
+                                                // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * translate;
                                             }
-                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 { // 0x1?
+                                            if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 {
+                                                // 0x1?
                                                 CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * translate;
                                             }
-                                        },
-                                        _ => unreachable!()
+                                        }
+                                        _ => unreachable!(),
                                     };
                                 }
-                            },
+                            }
                             Rule::last_statement => {
                                 println!("WorldEnd");
                                 pbrt_world_end();
-                            },
-                            _ => unreachable!()
+                            }
+                            _ => unreachable!(),
                         }
                     }
                     // parser.main();

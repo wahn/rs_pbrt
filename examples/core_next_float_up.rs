@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::next_float_up;
+use pbrt::core::pbrt::next_float_up;
 
 fn main() {
     let v: f32 = -0.999999583;

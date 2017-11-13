@@ -1,9 +1,9 @@
 extern crate pbrt;
 
-use pbrt::Transform;
+use pbrt::core::transform::Transform;
 
 fn main() {
     let identity: Transform = Transform::default();
 
-    println!("identity matrix = {:?}", identity);
+    println!("identity transform = {:?}", identity);
 }

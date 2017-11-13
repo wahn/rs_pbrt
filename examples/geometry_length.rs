@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::{Vector2, Vector3, Normal3};
+use pbrt::geometry::{Vector2, Vector3, Normal3};
 
 fn main() {
     let float_vec2_f32 = Vector2 {

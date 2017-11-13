@@ -1,6 +1,11 @@
 extern crate pbrt;
 
-use pbrt::{DiffuseAreaLight, Disk, Float, Shape, Spectrum, Transform, Vector3f};
+use pbrt::core::pbrt::{Float, Spectrum};
+use pbrt::core::transform::Transform;
+use pbrt::geometry::Vector3f;
+use pbrt::lights::diffuse::DiffuseAreaLight;
+use pbrt::shapes::Shape;
+use pbrt::shapes::disk::Disk;
 use std::sync::Arc;
 
 fn main() {

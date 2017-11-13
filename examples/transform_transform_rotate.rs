@@ -1,6 +1,8 @@
 extern crate pbrt;
 
-use pbrt::{Float, Transform, Vector3f};
+use pbrt::core::pbrt::Float;
+use pbrt::core::transform::Transform;
+use pbrt::geometry::Vector3f;
 
 fn main() {
     let theta: Float = 30.0;

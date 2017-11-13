@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::radical_inverse;
+use pbrt::core::lowdiscrepancy::radical_inverse;
 
 fn main() {
     for a in 0..128 {

@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::Transform;
+use pbrt::core::transform::Transform;
 
 fn main() {
     let t: Transform = Transform::new(2.0,

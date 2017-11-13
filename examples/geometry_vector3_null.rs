@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::Vector3;
+use pbrt::geometry::Vector3;
 
 fn main() {
     let int_null = Vector3 { x: 0, y: 0, z: 0 };

@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::Matrix4x4;
+use pbrt::core::transform::Matrix4x4;
 
 fn main() {
     let m: Matrix4x4 = Matrix4x4::new(1.0,

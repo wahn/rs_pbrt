@@ -1,6 +1,10 @@
 extern crate pbrt;
 
-use pbrt::{Float, Point3f, Ray, Shape, Sphere, Transform, Vector3f};
+use pbrt::core::pbrt::Float;
+use pbrt::core::transform::Transform;
+use pbrt::geometry::{Point3f, Ray, Vector3f};
+use pbrt::shapes::Shape;
+use pbrt::shapes::sphere::Sphere;
 
 fn main() {
     // see CreateSphereShape() in sphere.cpp
