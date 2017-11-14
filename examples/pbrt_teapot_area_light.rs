@@ -2,13 +2,13 @@ extern crate pbrt;
 
 use pbrt::accelerators::{BVHAccel, SplitMethod};
 use pbrt::cameras::PerspectiveCamera;
-use pbrt::core::camera::Camera;
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::core::film::Film;
+use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
 use pbrt::filters::Filter;
 use pbrt::filters::boxfilter::BoxFilter;
@@ -1850,17 +1850,17 @@ fn main() {
                                              filename,
                                              1.0,
                                              std::f32::INFINITY));
-    let camera: Arc<Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(animated_cam_to_world,
-                                                                            screen,
-                                                                            shutteropen,
-                                                                            shutterclose,
-                                                                            lensradius,
-                                                                            focaldistance,
-                                                                            fov,
-                                                                            film.clone()));
-    let mut sampler: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler::default();
+    let camera = Box::new(PerspectiveCamera::new(animated_cam_to_world,
+                                                 screen,
+                                                 shutteropen,
+                                                 shutterclose,
+                                                 lensradius,
+                                                 focaldistance,
+                                                 fov,
+                                                 film.clone()));
+    let mut sampler: Box<Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::default());
     let sample_bounds: Bounds2i = film.get_sample_bounds();
-    let mut integrator: Arc<SamplerIntegrator + Send + Sync> =
-        Arc::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds));
+    let mut integrator: Box<SamplerIntegrator + Send + Sync> =
+        Box::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds));
     pbrt::render(&scene, camera, &mut sampler, &mut integrator, 0_u8);
 }

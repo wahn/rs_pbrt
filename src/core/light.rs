@@ -60,3 +60,10 @@ impl VisibilityTester {
         !scene.intersect_p(&mut self.p0.spawn_ray_to(self.p1))
     }
 }
+
+/// Area lights are light sources defined by one or more **Shapes**
+/// that emit light from their surface, with some directional
+/// distribution of radiance at each point on the surface.
+pub trait AreaLight: Light {
+    fn l(&self, intr: &InteractionCommon, w: Vector3f) -> Spectrum;
+}

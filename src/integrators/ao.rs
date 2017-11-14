@@ -1,15 +1,14 @@
 // pbrt
-use cameras::PerspectiveCamera;
 use core::integrator::SamplerIntegrator;
 use core::interaction::Interaction;
 use core::material::TransportMode;
 use core::pbrt::{Float, Spectrum};
+use core::sampler::Sampler;
 use core::sampling::{cosine_hemisphere_pdf, cosine_sample_hemisphere, uniform_hemisphere_pdf,
                      uniform_sample_hemisphere};
 use core::scene::Scene;
 use geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
 use geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_normalize};
-use samplers::zerotwosequence::ZeroTwoSequenceSampler;
 
 // see ao.h
 
@@ -25,8 +24,8 @@ pub struct AOIntegrator {
 impl AOIntegrator {
     pub fn new(cos_sample: bool,
                n_samples: i32,
-               _perspective_camera: &PerspectiveCamera,
-               _sampler: &ZeroTwoSequenceSampler,
+               // _perspective_camera: &PerspectiveCamera,
+               // _sampler: &mut Box<Sampler + Send + Sync>,
                pixel_bounds: Bounds2i)
                -> Self {
         AOIntegrator {
@@ -38,13 +37,13 @@ impl AOIntegrator {
 }
 
 impl SamplerIntegrator for AOIntegrator {
-    fn preprocess(&mut self, _scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+    fn preprocess(&mut self, _scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) {
         sampler.request_2d_array(self.n_samples);
     }
     fn li(&self,
           r: &mut Ray,
           scene: &Scene,
-          sampler: &mut ZeroTwoSequenceSampler,
+          sampler: &mut Box<Sampler + Send + Sync>,
           // arena: &mut Arena,
           _depth: i32)
           -> Spectrum {

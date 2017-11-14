@@ -14,17 +14,16 @@ use core::sampling::power_heuristic;
 use core::scene::Scene;
 use geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use geometry::vec3_abs_dot_nrm;
-use samplers::zerotwosequence::ZeroTwoSequenceSampler;
 
 // see integrator.h
 
 pub trait SamplerIntegrator {
     // TODO: use Sampler trait
-    fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler);
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>);
     fn li(&self,
           ray: &mut Ray,
           scene: &Scene,
-          sampler: &mut ZeroTwoSequenceSampler,
+          sampler: &mut Box<Sampler + Send + Sync>,
           // arena: &mut Arena,
           depth: i32)
           -> Spectrum;
@@ -36,7 +35,7 @@ pub trait SamplerIntegrator {
 /// Most basic direct lighting strategy.
 pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
                                  scene: &Scene,
-                                 sampler: &mut ZeroTwoSequenceSampler,
+                                 sampler: &mut Box<Sampler + Send + Sync>,
                                  n_light_samples: &Vec<i32>,
                                  handle_media: bool)
                                  -> Spectrum {
@@ -83,7 +82,7 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
 /// multiply the result by the number of lights to compensate.
 pub fn uniform_sample_one_light(it: &SurfaceInteraction,
                                 scene: &Scene,
-                                sampler: &mut ZeroTwoSequenceSampler,
+                                sampler: &mut Box<Sampler + Send + Sync>,
                                 handle_media: bool,
                                 light_distrib: Option<&Distribution1D>)
                                 -> Spectrum {
@@ -128,7 +127,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                        light: Arc<Light + Send + Sync>,
                        u_light: Point2f,
                        scene: &Scene,
-                       _sampler: &mut ZeroTwoSequenceSampler,
+                       _sampler: &mut Box<Sampler + Send + Sync>,
                        // TODO: arena
                        handle_media: bool,
                        specular: bool)

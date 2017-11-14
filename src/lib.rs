@@ -26,7 +26,6 @@ extern crate typed_arena;
 // use std::cell::RefCell;
 use std::default::Default;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 use std::sync::mpsc;
 
 pub mod accelerators;
@@ -45,10 +44,10 @@ pub mod textures;
 use core::camera::{Camera, CameraSample};
 use core::integrator::SamplerIntegrator;
 use core::pbrt::{Float, Spectrum};
+use core::sampler::Sampler;
 use core::scene::Scene;
 use geometry::{Bounds2i, Point2i, Ray, Vector2i};
 use geometry::pnt2_inside_exclusive;
-use samplers::zerotwosequence::ZeroTwoSequenceSampler;
 
 // see github/tray_rust/src/sampler/block_queue.rs
 
@@ -160,9 +159,9 @@ fn morton2(p: &(u32, u32)) -> u32 {
 /// **Main function** to **render** a scene mutli-threaded (using all
 /// available cores).
 pub fn render(scene: &Scene,
-              camera: Arc<Camera + Send + Sync>,
-              mut sampler: &mut ZeroTwoSequenceSampler,
-              mut integrator: &mut Arc<SamplerIntegrator + Send + Sync>,
+              camera: Box<Camera + Send + Sync>,
+              sampler: &mut Box<Sampler + Send + Sync>,
+              integrator: &mut Box<SamplerIntegrator + Send + Sync>,
               num_threads: u8) {
     // SamplerIntegrator::Render (integrator.cpp)
     let film = camera.get_film();
@@ -171,9 +170,10 @@ pub fn render(scene: &Scene,
     // let mut integrator: DirectLightingIntegrator =
     //     DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds);
     // create and preprocess sampler
-    let integrator_option = Arc::get_mut(&mut integrator);
-    let integrator: &mut (SamplerIntegrator + Send + Sync) = integrator_option.unwrap();
-    integrator.preprocess(scene, &mut sampler);
+    // let integrator_option = Arc::get_mut(&mut integrator);
+    // let integrator: &mut (SamplerIntegrator + Send + Sync) = integrator_option.unwrap();
+    // integrator.preprocess(scene, &mut sampler);
+    integrator.preprocess(scene, sampler);
     // use camera below
     let sample_extent: Vector2i = sample_bounds.diagonal();
     println!("sample_extent = {:?}", sample_extent);
@@ -198,7 +198,7 @@ pub fn render(scene: &Scene,
         println!("block_queue.len() = {}", block_queue.len());
         let integrator = &integrator;
         let bq = &block_queue;
-        let sampler = &sampler;
+        let sampler = sampler;
         let camera = &camera;
         let film = &film;
         let pixel_bounds = integrator.get_pixel_bounds().clone();
@@ -207,6 +207,7 @@ pub fn render(scene: &Scene,
             // spawn worker threads
             for _ in 0..num_cores {
                 let pixel_tx = pixel_tx.clone();
+                let mut tile_sampler = sampler.clone();
                 scope.spawn(move || {
                     while let Some((x, y)) = bq.next() {
                         let tile: Point2i = Point2i {
@@ -215,9 +216,11 @@ pub fn render(scene: &Scene,
                         };
                         let seed: i32 = tile.y * n_tiles.x + tile.x;
                         // don't use ZeroTwoSequenceSampler::Clone(int seed)
-                        let mut tile_sampler = ZeroTwoSequenceSampler::clone(sampler);
-                        // adjust the seed here
-                        tile_sampler.rng.set_sequence(seed as u64);
+                        // let mut tile_sampler = sampler.clone_with_seed(seed as u64);
+                        tile_sampler.reseed(seed as u64);
+                        // let mut tile_sampler = ZeroTwoSequenceSampler::clone(sampler);
+                        // // adjust the seed here
+                        // tile_sampler.rng.set_sequence(seed as u64);
                         let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                         let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                         let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
@@ -244,7 +247,7 @@ pub fn render(scene: &Scene,
                                 let ray_weight: Float = camera
                                         .generate_ray_differential(&camera_sample, &mut ray);
                                 ray.scale_differentials(1.0 as Float /
-                                                        (tile_sampler.samples_per_pixel as Float)
+                                                        (tile_sampler.get_samples_per_pixel() as Float)
                                     .sqrt());
                                 // TODO: ++nCameraRays;
                                 // evaluate radiance along camera ray

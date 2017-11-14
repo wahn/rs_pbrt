@@ -2,7 +2,6 @@
 use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
-use cameras::PerspectiveCamera;
 use core::integrator::SamplerIntegrator;
 use core::integrator::uniform_sample_one_light;
 use core::interaction::Interaction;
@@ -16,7 +15,6 @@ use core::sampling::Distribution1D;
 use core::scene::Scene;
 use geometry::{Bounds2i, Ray, Vector3f};
 use geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
-use samplers::zerotwosequence::ZeroTwoSequenceSampler;
 
 // see path.h
 
@@ -34,8 +32,8 @@ pub struct PathIntegrator {
 
 impl PathIntegrator {
     pub fn new(max_depth: u32,
-               _perspective_camera: &PerspectiveCamera,
-               _sampler: &ZeroTwoSequenceSampler,
+               // _perspective_camera: &PerspectiveCamera,
+               // _sampler: &mut Box<Sampler + Send + Sync>,
                pixel_bounds: Bounds2i,
                rr_threshold: Float,
                light_sample_strategy: String)
@@ -51,14 +49,14 @@ impl PathIntegrator {
 }
 
 impl SamplerIntegrator for PathIntegrator {
-    fn preprocess(&mut self, scene: &Scene, _sampler: &mut ZeroTwoSequenceSampler) {
+    fn preprocess(&mut self, scene: &Scene, _sampler: &mut Box<Sampler + Send + Sync>) {
         self.light_distribution =
             create_light_sample_distribution(self.light_sample_strategy.clone(), scene);
     }
     fn li(&self,
           r: &mut Ray,
           scene: &Scene,
-          sampler: &mut ZeroTwoSequenceSampler,
+          sampler: &mut Box<Sampler + Send + Sync>,
           // arena: &mut Arena,
           _depth: i32)
           -> Spectrum {

@@ -135,22 +135,7 @@
 //! ```
 //!
 
-// pbrt
-use core::interaction::InteractionCommon;
-use core::light::Light;
-use core::pbrt::Spectrum;
-use geometry::Vector3f;
-
 pub mod diffuse;
 pub mod distant;
 pub mod infinite;
 pub mod point;
-
-// see light.h
-
-/// Area lights are light sources defined by one or more **Shapes**
-/// that emit light from their surface, with some directional
-/// distribution of radiance at each point on the surface.
-pub trait AreaLight: Light {
-    fn l(&self, intr: &InteractionCommon, w: Vector3f) -> Spectrum;
-}

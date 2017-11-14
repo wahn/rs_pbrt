@@ -2,12 +2,12 @@
 use std::sync::Arc;
 // pbrt
 use core::interaction::SurfaceInteraction;
+use core::light::AreaLight;
 use core::material::TransportMode;
 use core::pbrt::Float;
 use core::transform::{AnimatedTransform, Transform};
 use geometry::{Bounds3f, Ray};
 use geometry::nrm_dot_nrm;
-use lights::AreaLight;
 use materials::Material;
 use shapes::Shape;
 

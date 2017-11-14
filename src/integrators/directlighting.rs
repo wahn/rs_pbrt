@@ -7,7 +7,6 @@ use core::pbrt::{Float, Spectrum};
 use core::reflection::BxdfType;
 use core::sampler::Sampler;
 use core::scene::Scene;
-use samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
 use geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 
@@ -42,7 +41,7 @@ impl DirectLightingIntegrator {
                             ray: &Ray,
                             isect: &SurfaceInteraction,
                             scene: &Scene,
-                            sampler: &mut ZeroTwoSequenceSampler,
+                            sampler: &mut Box<Sampler + Send + Sync>,
                             // arena: &mut Arena,
                             depth: i32)
                             -> Spectrum {
@@ -99,7 +98,7 @@ impl DirectLightingIntegrator {
                              ray: &Ray,
                              isect: &SurfaceInteraction,
                              scene: &Scene,
-                             sampler: &mut ZeroTwoSequenceSampler,
+                             sampler: &mut Box<Sampler + Send + Sync>,
                              // arena: &mut Arena,
                              depth: i32)
                              -> Spectrum {
@@ -160,7 +159,7 @@ impl DirectLightingIntegrator {
 }
 
 impl SamplerIntegrator for DirectLightingIntegrator {
-    fn preprocess(&mut self, scene: &Scene, sampler: &mut ZeroTwoSequenceSampler) {
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) {
         if self.strategy == LightStrategy::UniformSampleAll {
             // compute number of samples to use for each light
             for li in 0..scene.lights.len() {
@@ -180,7 +179,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
     fn li(&self,
           ray: &mut Ray,
           scene: &Scene,
-          sampler: &mut ZeroTwoSequenceSampler,
+          sampler: &mut Box<Sampler + Send + Sync>,
           // arena: &mut Arena,
           depth: i32)
           -> Spectrum {

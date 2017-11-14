@@ -3,13 +3,12 @@ use std;
 use std::sync::Arc;
 // pbrt
 use core::interaction::{Interaction, InteractionCommon};
-use core::light::{Light, LightFlags, VisibilityTester};
+use core::light::{AreaLight, Light, LightFlags, VisibilityTester};
 use core::pbrt::{Float, Spectrum};
 use core::scene::Scene;
 use core::transform::Transform;
 use geometry::{Point2f, Ray, Vector3f};
 use geometry::{nrm_dot_vec3, vec3_normalize};
-use lights::AreaLight;
 use shapes::Shape;
 
 // see diffuse.h
