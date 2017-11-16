@@ -38,6 +38,7 @@ use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
 use pbrt::lights::point::PointLight;
+use pbrt::samplers::halton::HaltonSampler;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::cylinder::Cylinder;
 use pbrt::shapes::disk::Disk;
@@ -1058,10 +1059,11 @@ fn pbrt_world_end() {
                                 // MakeSampler
                                 let mut some_sampler: Option<Box<Sampler + Sync + Send>> = None;
                                 if ro.sampler_name == String::from("lowdiscrepancy") ||
-                                   ro.sampler_name == String::from("02sequence") {
+                                    ro.sampler_name == String::from("02sequence")
+                                {
                                     let nsamp: i32 =
                                         ro.sampler_params
-                                            .find_one_int(String::from("pixelsamples"), 16);
+                                        .find_one_int(String::from("pixelsamples"), 16);
                                     let sd: i32 = ro.sampler_params
                                         .find_one_int(String::from("dimensions"), 4);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
@@ -1071,15 +1073,17 @@ fn pbrt_world_end() {
                                 } else if ro.sampler_name == String::from("maxmindist") {
                                     println!("TODO: CreateMaxMinDistSampler");
                                 } else if ro.sampler_name == String::from("halton") {
-                                    // println!("TODO: CreateHaltonSampler");
-                                    // int nsamp = params.FindOneInt("pixelsamples", 16);
-                                    // if (PbrtOptions.quickRender) nsamp = 1;
-                                    // bool sampleAtCenter = params.FindOneBool("samplepixelcenter", false);
-                                    // return new HaltonSampler(nsamp, sampleBounds, sampleAtCenter);
-                                    // WARNING: Use ZeroTwoSequenceSampler for now !!!
-                                    let nsamp: i64 = 16;
-                                    let sd: i64 = 4;
-                                    let sampler = Box::new(ZeroTwoSequenceSampler::new(nsamp, sd));
+                                    let nsamp: i32 =
+                                        ro.sampler_params
+                                        .find_one_int(String::from("pixelsamples"), 16);
+                                    // TODO: if (PbrtOptions.quickRender) nsamp = 1;
+                                    let sample_at_center: bool =
+                                        ro.integrator_params
+                                            .find_one_bool(String::from("samplepixelcenter"), false);
+                                    let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                                    let sampler = Box::new(HaltonSampler::new(nsamp as i64,
+                                                                              sample_bounds,
+                                                                              sample_at_center));
                                     some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("sobol") {
                                     println!("TODO: CreateSobolSampler");

@@ -217,6 +217,27 @@ impl<T> Vector2<T> {
     }
 }
 
+impl<T> Index<u8> for Vector2<T> {
+    type Output = T;
+    fn index(&self, index: u8) -> &T {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            _ => panic!("Check failed: i >= 0 && i <= 1"),
+        }
+    }
+}
+
+impl<T> IndexMut<u8> for Vector2<T> {
+    fn index_mut(&mut self, index: u8) -> &mut T {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            _ => panic!("Check failed: i >= 0 && i <= 1"),
+        }
+    }
+}
+
 impl<T> MulAssign<T> for Vector2<T>
     where T: Copy + MulAssign
 {
@@ -241,6 +262,28 @@ pub struct Vector3<T> {
     pub x: T,
     pub y: T,
     pub z: T,
+}
+
+impl<T> Vector3<T> {
+    pub fn abs(&self) -> Vector3<T>
+        where T: num::Float
+    {
+        Vector3::<T> {
+            x: self.x.abs(),
+            y: self.y.abs(),
+            z: self.z.abs(),
+        }
+    }
+    pub fn length_squared(&self) -> T
+        where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+    {
+        self.x * self.x + self.y * self.y + self.z * self.z
+    }
+    pub fn length(&self) -> T
+        where T: num::Float
+    {
+        self.length_squared().sqrt()
+    }
 }
 
 impl<T> Add for Vector3<T>
@@ -309,28 +352,6 @@ impl<T> Neg for Vector3<T>
             y: -self.y,
             z: -self.z,
         }
-    }
-}
-
-impl<T> Vector3<T> {
-    pub fn abs(&self) -> Vector3<T>
-        where T: num::Float
-    {
-        Vector3::<T> {
-            x: self.x.abs(),
-            y: self.y.abs(),
-            z: self.z.abs(),
-        }
-    }
-    pub fn length_squared(&self) -> T
-        where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
-    {
-        self.x * self.x + self.y * self.y + self.z * self.z
-    }
-    pub fn length(&self) -> T
-        where T: num::Float
-    {
-        self.length_squared().sqrt()
     }
 }
 
@@ -593,6 +614,16 @@ impl<T> Index<u8> for Point2<T> {
         match index {
             0 => &self.x,
             1 => &self.y,
+            _ => panic!("Check failed: i >= 0 && i <= 1"),
+        }
+    }
+}
+
+impl<T> IndexMut<u8> for Point2<T> {
+    fn index_mut(&mut self, index: u8) -> &mut T {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
             _ => panic!("Check failed: i >= 0 && i <= 1"),
         }
     }

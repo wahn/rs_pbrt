@@ -3,15 +3,38 @@ use std::sync::RwLock;
 // pbrt
 use core::camera::CameraSample;
 use core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
-use core::lowdiscrepancy::{inverse_radical_inverse, scrambled_radical_inverse, radical_inverse};
+use core::lowdiscrepancy::{compute_radical_inverse_permutations, inverse_radical_inverse,
+                           scrambled_radical_inverse, radical_inverse};
 use core::pbrt::Float;
 use core::pbrt::mod_t;
 use core::sampler::Sampler;
-use geometry::{Point2f, Point2i};
+use core::rng::Rng;
+use geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 
 // see halton.h
 
 pub const K_MAX_RESOLUTION: i32 = 128_i32;
+
+fn multiplicative_inverse(a: i64, n: i64) -> u64 {
+    let mut x: i64 = 0;
+    let mut y: i64 = 0;
+    extended_gcd(a as u64, n as u64, &mut x, &mut y);
+    mod_t(x, n) as u64
+}
+
+fn extended_gcd(a: u64, b: u64, x: &mut i64, y: &mut i64) {
+    if b == 0_u64 {
+        *x = 1_i64;
+        *y = 0_i64;
+    } else {
+        let d: i64 = a as i64 / b as i64;
+        let mut xp: i64 = 0;
+        let mut yp: i64 = 0;
+        extended_gcd(b, a % b, &mut xp, &mut yp);
+        *x = yp;
+        *y = xp - (d * yp);
+    }
+}
 
 pub struct HaltonSampler {
     pub samples_per_pixel: i64,
@@ -40,6 +63,65 @@ pub struct HaltonSampler {
 }
 
 impl HaltonSampler {
+    pub fn new(samples_per_pixel: i64,
+               sample_bounds: Bounds2i,
+               sample_at_pixel_center: bool)
+               -> Self {
+        // generate random digit permutations for Halton sampler
+        // if (radical_Inverse_Permutations.empty()) {
+        let mut rng: Rng = Rng::new();
+        let radical_inverse_permutations: Vec<u16> = compute_radical_inverse_permutations(&mut rng);
+        // }
+        // find radical inverse base scales and exponents that cover sampling area
+        let res: Vector2i = sample_bounds.p_max - sample_bounds.p_min;
+        let mut base_scales: Point2i = Point2i::default();
+        let mut base_exponents: Point2i = Point2i::default();
+        for i in 0..2 {
+            let base: i32;
+            if i == 0 {
+                base = 2;
+            } else {
+                base = 3;
+            }
+            let mut scale: i32 = 1_i32;
+            let mut exp: i32 = 0_i32;
+            while scale < res[i].min(K_MAX_RESOLUTION) {
+                scale *= base;
+                exp += 1;
+            }
+            base_scales[i] = scale;
+            base_exponents[i] = exp;
+        }
+        // compute stride in samples for visiting each pixel area
+        let sample_stride: u64 = base_scales[0] as u64 * base_scales[1] as u64;
+        // compute multiplicative inverses for _baseScales_
+        let mult_inverse: [i64; 2] =
+            [multiplicative_inverse(base_scales[1] as i64, base_scales[0] as i64) as i64,
+             multiplicative_inverse(base_scales[0] as i64, base_scales[1] as i64) as i64];
+        HaltonSampler {
+            samples_per_pixel: samples_per_pixel,
+            radical_inverse_permutations: radical_inverse_permutations.iter().cloned().collect(),
+            base_scales: base_scales,
+            base_exponents: base_exponents,
+            sample_stride: sample_stride,
+            mult_inverse: mult_inverse,
+            pixel_for_offset: RwLock::new(Point2i::default()),
+            offset_for_current_pixel: RwLock::new(0_u64),
+            sample_at_pixel_center: sample_at_pixel_center,
+            dimension: 0_i64,
+            interval_sample_index: 0_u64,
+            array_start_dim: 0_i64,
+            array_end_dim: 0_i64,
+            current_pixel: Point2i::default(),
+            current_pixel_sample_index: 0_i64,
+            samples_1d_array_sizes: Vec::new(),
+            samples_2d_array_sizes: Vec::new(),
+            sample_array_1d: Vec::new(),
+            sample_array_2d: Vec::new(),
+            array_1d_offset: 0_usize,
+            array_2d_offset: 0_usize,
+        }
+    }
     pub fn get_index_for_sample(&self, sample_num: u64) -> u64 {
         let pixel_for_offset: Point2i = *self.pixel_for_offset.read().unwrap();
         if self.current_pixel != pixel_for_offset {
@@ -178,7 +260,8 @@ impl Sampler for HaltonSampler {
     }
     fn start_next_sample(&mut self) -> bool {
         self.dimension = 0_i64;
-        self.interval_sample_index = self.get_index_for_sample(self.current_pixel_sample_index as u64 + 1_u64);
+        self.interval_sample_index =
+            self.get_index_for_sample(self.current_pixel_sample_index as u64 + 1_u64);
         // Sampler::StartNextSample();
         // reset array offsets for next pixel sample
         self.array_1d_offset = 0_usize;
