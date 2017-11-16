@@ -26,6 +26,19 @@ pub fn reverse_bits_64(n: u64) -> u64 {
     (n0 << 32) | n1
 }
 
+
+/// Compute the inverse of the radical inverse function.
+pub fn inverse_radical_inverse(base: u8, inverse: u64, n_digits: u64) -> u64 {
+    let mut inverse: u64 = inverse;
+    let mut index: u64 = 0_64;
+    for _i in 0..n_digits {
+        let digit: u64 = inverse % base as u64;
+        inverse /= base as u64;
+        index = index * base as u64 + digit;
+    }
+    index
+}
+
 /// Takes a generator matrix *c*, a number of 1D samples to generate
 /// *n*, and stores the corresponding samples in memory at the
 /// location pointed to by *p*.

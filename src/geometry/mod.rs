@@ -508,6 +508,21 @@ pub struct Point2<T> {
     pub y: T,
 }
 
+impl<T> PartialEq for Point2<T>
+    where T: std::cmp::PartialOrd
+{
+    fn eq(&self, rhs: &Point2<T>) -> bool {
+        if self.x == rhs.x && self.y == rhs.y {
+            true
+        } else {
+            false
+        }
+    }
+    fn ne(&self, rhs: &Point2<T>) -> bool {
+        !self.eq(rhs)
+    }
+}
+
 impl<T> Add<Point2<T>> for Point2<T>
     where T: Add<T, Output = T>
 {

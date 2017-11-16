@@ -5,7 +5,7 @@ use geometry::{Point2f, Point2i};
 
 // see sampler.h
 
-pub trait Sampler {
+pub trait Sampler: SamplerClone {
     fn start_pixel(&mut self, p: Point2i);
     fn get_1d(&mut self) -> Float;
     fn get_2d(&mut self) -> Point2f;
@@ -15,9 +15,20 @@ pub trait Sampler {
     fn start_next_sample(&mut self) -> bool;
     fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample;
     fn reseed(&mut self, seed: u64);
-    fn box_clone(&self) -> Box<Sampler + Send + Sync>;
     fn get_current_sample_number(&self) -> i64;
     fn get_samples_per_pixel(&self) -> i64;
+}
+
+pub trait SamplerClone {
+    fn box_clone(&self) -> Box<Sampler + Send + Sync>;
+}
+
+impl<T> SamplerClone for T
+    where T: 'static + Sampler + Clone + Send + Sync
+{
+    fn box_clone(&self) -> Box<Sampler + Send + Sync> {
+        Box::new(self.clone())
+    }
 }
 
 impl Clone for Box<Sampler + Send + Sync> {

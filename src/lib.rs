@@ -207,7 +207,7 @@ pub fn render(scene: &Scene,
             // spawn worker threads
             for _ in 0..num_cores {
                 let pixel_tx = pixel_tx.clone();
-                let mut tile_sampler = sampler.clone();
+                let mut tile_sampler: Box<Sampler + Send + Sync> = sampler.box_clone();
                 scope.spawn(move || {
                     while let Some((x, y)) = bq.next() {
                         let tile: Point2i = Point2i {
