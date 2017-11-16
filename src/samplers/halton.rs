@@ -2,7 +2,8 @@
 use std::sync::RwLock;
 // pbrt
 use core::camera::CameraSample;
-use core::lowdiscrepancy::inverse_radical_inverse;
+use core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
+use core::lowdiscrepancy::{inverse_radical_inverse, scrambled_radical_inverse, radical_inverse};
 use core::pbrt::Float;
 use core::pbrt::mod_t;
 use core::sampler::Sampler;
@@ -14,12 +15,14 @@ pub const K_MAX_RESOLUTION: i32 = 128_i32;
 
 pub struct HaltonSampler {
     pub samples_per_pixel: i64,
+    pub radical_inverse_permutations: Vec<u16>,
     pub base_scales: Point2i,
     pub base_exponents: Point2i,
     pub sample_stride: u64,
     pub mult_inverse: [i64; 2],
     pub pixel_for_offset: RwLock<Point2i>,
     pub offset_for_current_pixel: RwLock<u64>,
+    pub sample_at_pixel_center: bool, // default: false
     // inherited from class GlobalSampler (see sampler.h)
     pub dimension: i64,
     pub interval_sample_index: u64,
@@ -30,8 +33,8 @@ pub struct HaltonSampler {
     pub current_pixel_sample_index: i64,
     pub samples_1d_array_sizes: Vec<i32>,
     pub samples_2d_array_sizes: Vec<i32>,
-    pub samples_1d_array: Vec<Vec<Float>>,
-    pub samples_2d_array: Vec<Vec<Point2f>>,
+    pub sample_array_1d: Vec<Vec<Float>>,
+    pub sample_array_2d: Vec<Vec<Point2f>>,
     pub array_1d_offset: usize,
     pub array_2d_offset: usize,
 }
@@ -69,6 +72,25 @@ impl HaltonSampler {
         let offset_for_current_pixel: u64 = *self.offset_for_current_pixel.read().unwrap();
         offset_for_current_pixel + sample_num * self.sample_stride
     }
+    pub fn sample_dimension(&self, index: u64, dim: i64) -> Float {
+        if self.sample_at_pixel_center && (dim == 0 || dim == 1) {
+            return 0.5 as Float;
+        }
+        if dim == 0 {
+            radical_inverse(dim as u16, index >> self.base_exponents[0] as u64)
+        } else if dim == 1 {
+            radical_inverse(dim as u16, index / self.base_scales[1] as u64)
+        } else {
+            scrambled_radical_inverse(dim as u16, index, self.permutation_for_dimension(dim))
+        }
+    }
+    fn permutation_for_dimension(&self, dim: i64) -> Vec<u16> {
+        if dim >= PRIME_TABLE_SIZE as i64 {
+            panic!("FATAL: HaltonSampler can only sample {:?} dimensions.",
+                   PRIME_TABLE_SIZE);
+        }
+        self.radical_inverse_permutations[PRIME_SUMS[dim as usize] as usize..].to_vec()
+    }
 }
 
 impl Sampler for HaltonSampler {
@@ -82,31 +104,30 @@ impl Sampler for HaltonSampler {
         // GlobalSampler::StartPixel(p);
         self.dimension = 0_i64;
         self.interval_sample_index = self.get_index_for_sample(0_u64);
-        // // Compute _arrayEndDim_ for dimensions used for array samples
-        // arrayEndDim =
-        //     arrayStartDim + sampleArray1D.size() + 2 * sampleArray2D.size();
-
-        // // Compute 1D array samples for _GlobalSampler_
-        // for (size_t i = 0; i < samples1DArraySizes.size(); ++i) {
-        //     int nSamples = samples1DArraySizes[i] * samplesPerPixel;
-        //     for (int j = 0; j < nSamples; ++j) {
-        //         int64_t index = GetIndexForSample(j);
-        //         sampleArray1D[i][j] = SampleDimension(index, arrayStartDim + i);
-        //     }
-        // }
-
-        // // Compute 2D array samples for _GlobalSampler_
-        // int dim = arrayStartDim + samples1DArraySizes.size();
-        // for (size_t i = 0; i < samples2DArraySizes.size(); ++i) {
-        //     int nSamples = samples2DArraySizes[i] * samplesPerPixel;
+        // compute _self.array_end_dim_ for dimensions used for array samples
+        self.array_end_dim = self.array_start_dim + self.sample_array_1d.len() as i64 +
+                             2_i64 * self.sample_array_2d.len() as i64;
+        // compute 1D array samples for _GlobalSampler_
+        for i in 0..self.samples_1d_array_sizes.len() {
+            let n_samples = self.samples_1d_array_sizes[i] * self.samples_per_pixel as i32;
+            for j in 0..n_samples {
+                let index: u64 = self.get_index_for_sample(j as u64);
+                self.sample_array_1d[i as usize][j as usize] =
+                    self.sample_dimension(index, self.array_start_dim + i as i64);
+            }
+        }
+        // compute 2D array samples for _GlobalSampler_
+        // int dim = self.array_start_dim + self.samples_1d_array_sizes.len();
+        // for (size_t i = 0; i < samples2DArraySizes.len(); ++i) {
+        //     int nSamples = samples2DArraySizes[i] * self.samples_per_pixel;
         //     for (int j = 0; j < nSamples; ++j) {
         //         int64_t idx = GetIndexForSample(j);
-        //         sampleArray2D[i][j].x = SampleDimension(idx, dim);
-        //         sampleArray2D[i][j].y = SampleDimension(idx, dim + 1);
+        //         self.sample_array_2d[i][j].x = SampleDimension(idx, dim);
+        //         self.sample_array_2d[i][j].y = SampleDimension(idx, dim + 1);
         //     }
         //     dim += 2;
         // }
-        // CHECK_EQ(arrayEndDim, dim);
+        // CHECK_EQ(self.array_end_dim, dim);
     }
     fn get_1d(&mut self) -> Float {
         // WORK
@@ -157,12 +178,17 @@ impl Clone for HaltonSampler {
         let offset_for_current_pixel: u64 = *self.offset_for_current_pixel.read().unwrap();
         HaltonSampler {
             samples_per_pixel: self.samples_per_pixel,
+            radical_inverse_permutations: self.radical_inverse_permutations
+                .iter()
+                .cloned()
+                .collect(),
             base_scales: self.base_scales,
             base_exponents: self.base_exponents,
             sample_stride: self.sample_stride,
             mult_inverse: self.mult_inverse,
             pixel_for_offset: RwLock::new(pixel_for_offset),
             offset_for_current_pixel: RwLock::new(offset_for_current_pixel),
+            sample_at_pixel_center: self.sample_at_pixel_center,
             dimension: self.dimension,
             interval_sample_index: self.interval_sample_index,
             array_start_dim: self.array_start_dim,
@@ -171,8 +197,8 @@ impl Clone for HaltonSampler {
             current_pixel_sample_index: self.current_pixel_sample_index,
             samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
             samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
-            samples_1d_array: self.samples_1d_array.iter().cloned().collect(),
-            samples_2d_array: self.samples_2d_array.iter().cloned().collect(),
+            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
+            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
             array_1d_offset: self.array_1d_offset,
             array_2d_offset: self.array_2d_offset,
         }

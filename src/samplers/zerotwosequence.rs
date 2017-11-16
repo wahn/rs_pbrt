@@ -24,8 +24,8 @@ pub struct ZeroTwoSequenceSampler {
     pub current_pixel_sample_index: i64,
     pub samples_1d_array_sizes: Vec<i32>,
     pub samples_2d_array_sizes: Vec<i32>,
-    pub samples_1d_array: Vec<Vec<Float>>,
-    pub samples_2d_array: Vec<Vec<Point2f>>,
+    pub sample_array_1d: Vec<Vec<Float>>,
+    pub sample_array_2d: Vec<Vec<Point2f>>,
     pub array_1d_offset: usize,
     pub array_2d_offset: usize,
 }
@@ -44,8 +44,8 @@ impl Default for ZeroTwoSequenceSampler {
             current_pixel_sample_index: 0_i64,
             samples_1d_array_sizes: Vec::new(),
             samples_2d_array_sizes: Vec::new(),
-            samples_1d_array: Vec::new(),
-            samples_2d_array: Vec::new(),
+            sample_array_1d: Vec::new(),
+            sample_array_2d: Vec::new(),
             array_1d_offset: 0_usize,
             array_2d_offset: 0_usize,
         };
@@ -74,8 +74,8 @@ impl ZeroTwoSequenceSampler {
             current_pixel_sample_index: 0_i64,
             samples_1d_array_sizes: Vec::new(),
             samples_2d_array_sizes: Vec::new(),
-            samples_1d_array: Vec::new(),
-            samples_2d_array: Vec::new(),
+            sample_array_1d: Vec::new(),
+            sample_array_2d: Vec::new(),
             array_1d_offset: 0_usize,
             array_2d_offset: 0_usize,
         };
@@ -105,14 +105,14 @@ impl Sampler for ZeroTwoSequenceSampler {
         }
         // generate 1D and 2D array samples using $(0,2)$-sequence
         for i in 0..self.samples_1d_array_sizes.len() {
-            let samples: &mut [Float] = self.samples_1d_array[i].as_mut_slice();
+            let samples: &mut [Float] = self.sample_array_1d[i].as_mut_slice();
             van_der_corput(self.samples_1d_array_sizes[i],
                            self.samples_per_pixel as i32,
                            samples,
                            &mut self.rng);
         }
         for i in 0..self.samples_2d_array_sizes.len() {
-            let samples: &mut [Point2f] = self.samples_2d_array[i].as_mut_slice();
+            let samples: &mut [Point2f] = self.sample_array_2d[i].as_mut_slice();
             sobol_2d(self.samples_2d_array_sizes[i],
                      self.samples_per_pixel as i32,
                      samples,
@@ -163,14 +163,14 @@ impl Sampler for ZeroTwoSequenceSampler {
         self.samples_2d_array_sizes.push(n);
         let size: usize = (n * self.samples_per_pixel as i32) as usize;
         let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
-        self.samples_2d_array.push(additional_points);
+        self.sample_array_2d.push(additional_points);
     }
     fn round_count(&self, count: i32) -> i32 {
         round_up_pow2_32(count)
     }
     fn get_2d_array(&mut self, n: i32) -> Vec<Point2f> {
         let mut samples: Vec<Point2f> = Vec::new();
-        if self.array_2d_offset == self.samples_2d_array.len() {
+        if self.array_2d_offset == self.sample_array_2d.len() {
             return samples;
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
@@ -180,7 +180,7 @@ impl Sampler for ZeroTwoSequenceSampler {
                 self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
-        samples = self.samples_2d_array[self.array_2d_offset][start..end].to_vec();
+        samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
         self.array_2d_offset += 1;
         samples
     }
