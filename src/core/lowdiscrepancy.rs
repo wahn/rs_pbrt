@@ -356,10 +356,10 @@ pub fn scrambled_radical_inverse_specialized(base: u16, perm: Vec<u16>, a: u64) 
         a = next;
     }
     assert!((inv_base_n *
-             (reversed_digits as Float * inv_base_n * perm[0] as Float /
+             (reversed_digits as Float + inv_base * perm[0] as Float /
               (1.0 as Float - inv_base))) < 1.00001 as Float);
     (inv_base_n *
-     (reversed_digits as Float * inv_base_n * perm[0] as Float / (1.0 as Float - inv_base)))
+     (reversed_digits as Float + inv_base * perm[0] as Float / (1.0 as Float - inv_base)))
             .min(ONE_MINUS_EPSILON)
 }
 

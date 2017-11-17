@@ -167,12 +167,6 @@ pub fn render(scene: &Scene,
     let film = camera.get_film();
     let sample_bounds: Bounds2i = film.get_sample_bounds();
     println!("sample_bounds = {:?}", sample_bounds);
-    // let mut integrator: DirectLightingIntegrator =
-    //     DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds);
-    // create and preprocess sampler
-    // let integrator_option = Arc::get_mut(&mut integrator);
-    // let integrator: &mut (SamplerIntegrator + Send + Sync) = integrator_option.unwrap();
-    // integrator.preprocess(scene, &mut sampler);
     integrator.preprocess(scene, sampler);
     // use camera below
     let sample_extent: Vector2i = sample_bounds.diagonal();
@@ -215,12 +209,7 @@ pub fn render(scene: &Scene,
                             y: y as i32,
                         };
                         let seed: i32 = tile.y * n_tiles.x + tile.x;
-                        // don't use ZeroTwoSequenceSampler::Clone(int seed)
-                        // let mut tile_sampler = sampler.clone_with_seed(seed as u64);
                         tile_sampler.reseed(seed as u64);
-                        // let mut tile_sampler = ZeroTwoSequenceSampler::clone(sampler);
-                        // // adjust the seed here
-                        // tile_sampler.rng.set_sequence(seed as u64);
                         let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                         let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                         let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
@@ -296,12 +285,12 @@ pub fn render(scene: &Scene,
             }
             // spawn thread to collect pixels and render image to file
             scope.spawn(move || {
-                            for _ in pbr::PbIter::new(0..bq.len()) {
-                                let film_tile = pixel_rx.recv().unwrap();
-                                // merge image tile into _Film_
-                                film.merge_film_tile(&film_tile);
-                            }
-                        });
+                for _ in pbr::PbIter::new(0..bq.len()) {
+                    let film_tile = pixel_rx.recv().unwrap();
+                    // merge image tile into _Film_
+                    film.merge_film_tile(&film_tile);
+                }
+            });
         });
     }
     println!("Rendering finished");

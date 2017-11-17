@@ -110,7 +110,7 @@ impl HaltonSampler {
             sample_at_pixel_center: sample_at_pixel_center,
             dimension: 0_i64,
             interval_sample_index: 0_u64,
-            array_start_dim: 0_i64,
+            array_start_dim: 5_i64, // static const int arrayStartDim = 5;
             array_end_dim: 0_i64,
             current_pixel: Point2i::default(),
             current_pixel_sample_index: 0_i64,
@@ -217,17 +217,23 @@ impl Sampler for HaltonSampler {
         if self.dimension >= self.array_start_dim && self.dimension < self.array_end_dim {
             self.dimension = self.array_end_dim;
         }
+        // call first (in C++: return SampleDimension(intervalSampleIndex, dimension++));
+        let ret: Float = self.sample_dimension(self.interval_sample_index, self.dimension);
         self.dimension += 1;
-        self.sample_dimension(self.interval_sample_index, self.dimension)
+        // then return
+        ret
     }
     fn get_2d(&mut self) -> Point2f {
         // TODO: ProfilePhase _(Prof::GetSample);
         if self.dimension + 1 >= self.array_start_dim && self.dimension < self.array_end_dim {
             self.dimension = self.array_end_dim;
         }
+        // C++: call y first
+        let y = self.sample_dimension(self.interval_sample_index, self.dimension + 1);
+        let x = self.sample_dimension(self.interval_sample_index, self.dimension);
         let p: Point2f = Point2f {
-            x: self.sample_dimension(self.interval_sample_index, self.dimension),
-            y: self.sample_dimension(self.interval_sample_index, self.dimension + 1),
+            x: x,
+            y: y,
         };
         self.dimension += 2;
         return p;
