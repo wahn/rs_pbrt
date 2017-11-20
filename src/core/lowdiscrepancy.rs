@@ -342,7 +342,7 @@ pub fn radical_inverse_specialized(base: u16, a: u64) -> Float {
 /// Compute the radical inverse, but put each pixel through the
 /// permutation table for the given base. Deal with a special case
 /// that can arise.
-pub fn scrambled_radical_inverse_specialized(base: u16, perm: Vec<u16>, a: u64) -> Float {
+pub fn scrambled_radical_inverse_specialized(base: u16, perm: &[u16], a: u64) -> Float {
     let inv_base: Float = 1.0 as Float / base as Float;
     let mut reversed_digits: u64 = 0_u64;
     let mut inv_base_n: Float = 1.0 as Float;
@@ -422,7 +422,7 @@ pub fn compute_radical_inverse_permutations(mut rng: &mut Rng) -> Vec<u16> {
 
 /// Compute the radical inverse, but put each pixel through the
 /// permutation table for the given base.
-pub fn scrambled_radical_inverse(base_index: u16, a: u64, perm: Vec<u16>) -> Float {
+pub fn scrambled_radical_inverse(base_index: u16, a: u64, perm: &[u16]) -> Float {
     match base_index {
         0 => {
             return scrambled_radical_inverse_specialized(2_u16, perm, a);

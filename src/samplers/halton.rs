@@ -166,12 +166,12 @@ impl HaltonSampler {
             scrambled_radical_inverse(dim as u16, index, self.permutation_for_dimension(dim))
         }
     }
-    fn permutation_for_dimension(&self, dim: i64) -> Vec<u16> {
+    fn permutation_for_dimension(&self, dim: i64) -> &[u16] {
         if dim >= PRIME_TABLE_SIZE as i64 {
             panic!("FATAL: HaltonSampler can only sample {:?} dimensions.",
                    PRIME_TABLE_SIZE);
         }
-        self.radical_inverse_permutations[PRIME_SUMS[dim as usize] as usize..].to_vec()
+        &self.radical_inverse_permutations[PRIME_SUMS[dim as usize] as usize..]
     }
 }
 
