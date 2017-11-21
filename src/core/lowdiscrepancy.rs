@@ -3,6 +3,7 @@ use core::pbrt::Float;
 use core::rng::ONE_MINUS_EPSILON;
 use core::rng::Rng;
 use core::sampling::shuffle;
+use core::sobolmatrices::VD_C_SOBOL_MATRICES;
 use geometry::{Point2i, Point2f};
 
 // see lowdiscrepancy.h
@@ -317,6 +318,37 @@ pub fn sobol_2d(n_samples_per_pixel_sample: i32,
             n_pixel_samples,
             n_samples_per_pixel_sample,
             rng);
+}
+
+/// Returns the index of the _frame_th sample in the pixel p, if the
+/// sampling domain has be scaled to cover the pixel sampling area.
+pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
+    if m == 0_u32 {
+        return 0_u64;
+    }
+    let m2: u32 = m << 1;
+    let mut index: u64 = frame << m2;
+    let mut delta: u64 = 0;
+    let mut c: i32 = 0;
+    let mut frame: u64 = frame;
+    while frame > 0_u64 {  
+        if frame & 1 > 0_u64 { // add flipped column m + c + 1.
+            delta ^= VD_C_SOBOL_MATRICES[(m - 1) as usize][c as usize];
+        }
+        frame = frame >> 1;
+        c += 1_i32;
+    }
+    // flipped b
+    let mut b: u64 = (((p.x as u32) << m) as u64 | (p.y as u64)) ^ delta;
+    c = 0;
+    while b > 0_u64 {
+        if b & 1 > 0_u64  { // add column 2 * m - c.
+            index ^= VD_C_SOBOL_MATRICES[(m - 1) as usize][c as usize];
+        }
+        b = b >> 1;
+        c += 1_i32;
+    }
+    return index;
 }
 
 // see lowdiscrepancy.cpp

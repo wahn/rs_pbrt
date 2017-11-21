@@ -22,4 +22,5 @@ pub mod sampler;
 pub mod sampling;
 pub mod scene;
 pub mod spectrum;
+pub mod sobolmatrices;
 pub mod transform;

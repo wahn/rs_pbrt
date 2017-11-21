@@ -151,6 +151,17 @@ pub fn degrees(rad: Float) -> Float {
     (180.0 / PI) * rad
 }
 
+/// Compute an integer base-2 logarithm function.
+pub fn log_2_int_u32(v: u32) -> i32 {
+    // C++: return 31 - __builtin_clz(v);
+    31_i32 - v.leading_zeros() as i32
+}
+
+/// Compute an integer base-2 logarithm function.
+pub fn log_2_int_i32(v: i32) -> i32 {
+    log_2_int_u32(v as u32)
+}
+
 /// Determine if a given integer is an exact power of 2.
 pub fn is_power_of_2<T>(v: T) -> bool
     where T: num::Zero + num::One + Copy + PartialOrd + BitAnd<T, Output = T> + Sub<T, Output = T>
