@@ -10,7 +10,7 @@ Film "image"
   "integer yresolution" [ 500 ]
 ##  "integer outlierrejection_k" [ 10 ]
 ##Sampler "sobol"
-Sampler "halton" "integer pixelsamples" [8]
+Sampler "sobol" "integer pixelsamples" [8]
 ##PixelFilter "blackmanharris"
 ##SurfaceIntegrator "bidirectional"
 ##Integrator "directlighting" "integer maxdepth" [10]

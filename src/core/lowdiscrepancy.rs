@@ -1,9 +1,10 @@
 // pbrt
 use core::pbrt::Float;
-use core::rng::ONE_MINUS_EPSILON;
+use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::rng::Rng;
 use core::sampling::shuffle;
-use core::sobolmatrices::VD_C_SOBOL_MATRICES;
+use core::sobolmatrices::{NUM_SOBOL_DIMENSIONS, SOBOL_MATRICES_32, SOBOL_MATRIX_SIZE,
+                          VD_C_SOBOL_MATRICES};
 use geometry::{Point2i, Point2f};
 
 // see lowdiscrepancy.h
@@ -210,7 +211,7 @@ pub fn gray_code_sample_1d(c: [u32; 32], n: u32, scramble: u32, p: &mut [Float])
     let mut v: u32 = scramble;
     for i in 0..n as usize {
         // 1/2^32
-        p[i] = (v as Float * 2.3283064365386963e-10 as Float).min(ONE_MINUS_EPSILON);
+        p[i] = (v as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
         v ^= c[(i + 1).trailing_zeros() as usize];
     }
 }
@@ -221,8 +222,8 @@ pub fn gray_code_sample_1d(c: [u32; 32], n: u32, scramble: u32, p: &mut [Float])
 pub fn gray_code_sample_2d(c0: &[u32], c1: &[u32], n: u32, scramble: &Point2i, p: &mut [Point2f]) {
     let mut v: [u32; 2] = [scramble.x as u32, scramble.y as u32];
     for i in 0..n as usize {
-        p[i].x = (v[0] as Float * 2.3283064365386963e-10 as Float).min(ONE_MINUS_EPSILON);
-        p[i].y = (v[1] as Float * 2.3283064365386963e-10 as Float).min(ONE_MINUS_EPSILON);
+        p[i].x = (v[0] as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        p[i].y = (v[1] as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
         v[0] ^= c0[(i + 1).trailing_zeros() as usize];
         v[1] ^= c1[(i + 1).trailing_zeros() as usize];
     }
@@ -331,8 +332,9 @@ pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
     let mut delta: u64 = 0;
     let mut c: i32 = 0;
     let mut frame: u64 = frame;
-    while frame > 0_u64 {  
-        if frame & 1 > 0_u64 { // add flipped column m + c + 1.
+    while frame > 0_u64 {
+        if frame & 1 > 0_u64 {
+            // add flipped column m + c + 1.
             delta ^= VD_C_SOBOL_MATRICES[(m - 1) as usize][c as usize];
         }
         frame = frame >> 1;
@@ -342,13 +344,40 @@ pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
     let mut b: u64 = (((p.x as u32) << m) as u64 | (p.y as u64)) ^ delta;
     c = 0;
     while b > 0_u64 {
-        if b & 1 > 0_u64  { // add column 2 * m - c.
+        if b & 1 > 0_u64 {
+            // add column 2 * m - c.
             index ^= VD_C_SOBOL_MATRICES[(m - 1) as usize][c as usize];
         }
         b = b >> 1;
         c += 1_i32;
     }
     return index;
+}
+
+pub fn sobol_sample(index: i64, dimension: i32, scramble: u64) -> Float {
+    // #ifdef PBRT_FLOAT_AS_DOUBLE
+    //     return SobolSampleDouble(index, dimension, scramble);
+    sobol_sample_float(index, dimension, scramble as u32)
+}
+
+pub fn sobol_sample_float(a: i64, dimension: i32, scramble: u32) -> Float {
+    assert!(dimension < NUM_SOBOL_DIMENSIONS as i32,
+            "Integrator has consumed too many Sobol' dimensions; \
+             you may want to use a Sampler without a dimension limit like \"02sequence.\"");
+    let mut a: i64 = a;
+    let mut v: u32 = scramble;
+    // for (int i = dimension * SobolMatrixSize; a != 0; a >>= 1, i++)
+    let mut i: usize = dimension as usize * SOBOL_MATRIX_SIZE as usize;
+    while a != 0 {
+        if a & 1 > 0 {
+            v ^= SOBOL_MATRICES_32[i];
+        }
+        a = a >> 1;
+        i += 1_usize;
+    }
+    // TODO: #ifndef PBRT_HAVE_HEX_FP_CONSTANTS
+    let x = (2.0 as f32).powi(-32 as i32); // 0x1p-32f: 1/2^32
+    (v as Float * x).min(FLOAT_ONE_MINUS_EPSILON)
 }
 
 // see lowdiscrepancy.cpp
@@ -368,7 +397,7 @@ pub fn radical_inverse_specialized(base: u16, a: u64) -> Float {
         a = next;
     }
     assert!(reversed_digits as Float * inv_base_n < 1.00001 as Float);
-    (reversed_digits as Float * inv_base_n).min(ONE_MINUS_EPSILON)
+    (reversed_digits as Float * inv_base_n).min(FLOAT_ONE_MINUS_EPSILON)
 }
 
 /// Compute the radical inverse, but put each pixel through the
@@ -388,11 +417,11 @@ pub fn scrambled_radical_inverse_specialized(base: u16, perm: &[u16], a: u64) ->
         a = next;
     }
     assert!((inv_base_n *
-             (reversed_digits as Float + inv_base * perm[0] as Float /
-              (1.0 as Float - inv_base))) < 1.00001 as Float);
+             (reversed_digits as Float + inv_base * perm[0] as Float / (1.0 as Float - inv_base))) <
+            1.00001 as Float);
     (inv_base_n *
      (reversed_digits as Float + inv_base * perm[0] as Float / (1.0 as Float - inv_base)))
-            .min(ONE_MINUS_EPSILON)
+            .min(FLOAT_ONE_MINUS_EPSILON)
 }
 
 /// Map to an appropriate prime number and delegate to another

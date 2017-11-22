@@ -1,9 +1,12 @@
 // pbrt
 use core::camera::CameraSample;
+use core::lowdiscrepancy::{sobol_interval_to_index, sobol_sample};
 use core::pbrt::Float;
-use core::pbrt::{is_power_of_2, log_2_int_u32, round_up_pow2_32, round_up_pow2_64};
+use core::pbrt::{clamp_t, is_power_of_2, log_2_int_u32, round_up_pow2_32, round_up_pow2_64};
+use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::sampler::Sampler;
-use geometry::{Bounds2i, Point2f, Point2i};
+use core::sobolmatrices::NUM_SOBOL_DIMENSIONS;
+use geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 
 // see sobol.h
 
@@ -62,25 +65,25 @@ impl SobolSampler {
         }
     }
     pub fn get_index_for_sample(&self, sample_num: u64) -> u64 {
-        // return SobolIntervalToIndex(log2Resolution, sample_num,
-        //                             Point2i(currentPixel - sampleBounds.pMin));
-        // WORK
-        0_u64
+        let v: Vector2i = self.current_pixel - self.sample_bounds.p_min;
+        sobol_interval_to_index(self.log_2_resolution as u32,
+                                sample_num,
+                                &Point2i { x: v.x, y: v.y })
     }
     pub fn sample_dimension(&self, index: u64, dim: i64) -> Float {
-        // if (dim >= NumSobolDimensions)
-        //     LOG(FATAL) << StringPrintf("SobolSampler can only sample up to %d "
-        //                                "dimensions! Exiting.",
-        //                                NumSobolDimensions);
-        // Float s = SobolSample(index, dim);
-        // // Remap Sobol$'$ dimensions used for pixel samples
-        // if (dim == 0 || dim == 1) {
-        //     s = s * resolution + sampleBounds.pMin[dim];
-        //     s = Clamp(s - currentPixel[dim], (Float)0, OneMinusEpsilon);
-        // }
-        // return s;
-        // WORK
-        0 as Float
+        if dim >= NUM_SOBOL_DIMENSIONS as i64 {
+            panic!("SobolSampler can only sample up to {} dimensions! Exiting.",
+                   NUM_SOBOL_DIMENSIONS);
+        }
+        let mut s: Float = sobol_sample(index as i64, dim as i32, 0_u64);
+        // remap Sobol$'$ dimensions used for pixel samples
+        if dim == 0 || dim == 1 {
+            s = s * self.resolution as Float + self.sample_bounds.p_min[dim as u8] as Float;
+            s = clamp_t(s - self.current_pixel[dim as u8] as Float,
+                        0.0 as Float,
+                        FLOAT_ONE_MINUS_EPSILON);
+        }
+        s
     }
 }
 

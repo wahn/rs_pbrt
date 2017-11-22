@@ -3,7 +3,7 @@ use core::pbrt::Float;
 
 // see rng.h
 
-pub const ONE_MINUS_EPSILON: Float = 0.99999994;
+pub const FLOAT_ONE_MINUS_EPSILON: Float = 0.99999994;
 pub const PCG32_DEFAULT_STATE: u64 = 0x853c49e6748fea9b;
 pub const PCG32_DEFAULT_STREAM: u64 = 0xda3e39cb94b95bdb;
 pub const PCG32_MULT: u64 = 0x5851f42d4c957f2d;
@@ -59,6 +59,6 @@ impl Rng {
         }
     }
     pub fn uniform_float(&mut self) -> Float {
-        (self.uniform_uint32() as Float * 2.3283064365386963e-10 as Float).min(ONE_MINUS_EPSILON)
+        (self.uniform_uint32() as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON)
     }
 }

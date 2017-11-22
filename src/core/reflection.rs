@@ -8,7 +8,7 @@ use core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use core::pbrt::INV_PI;
 use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, radians};
-use core::rng::ONE_MINUS_EPSILON;
+use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::sampling::cosine_sample_hemisphere;
 use geometry::{Normal3f, Point2f, Vector3f};
 use geometry::{nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3,
@@ -133,7 +133,7 @@ impl Bsdf {
 
             // remap _BxDF_ sample _u_ to $[0,1)^2$
             let u_remapped: Point2f = Point2f {
-                x: (u[0] * matching_comps as Float - comp as Float).min(ONE_MINUS_EPSILON),
+                x: (u[0] * matching_comps as Float - comp as Float).min(FLOAT_ONE_MINUS_EPSILON),
                 y: u[1],
             };
             // sample chosen _BxDF_
