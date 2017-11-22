@@ -5,8 +5,7 @@ Camera "perspective" "float fov" [22]
 Film "image" "integer xresolution" [800] "integer yresolution" [400]
      "string filename" "anim-bluespheres.exr"
 
-##Sampler "sobol" "integer pixelsamples" [1024]
-Sampler "lowdiscrepancy" "integer pixelsamples" [64] # [1024]
+Sampler "sobol" "integer pixelsamples" [64] # [1024]
 Integrator "path"
 
 WorldBegin
