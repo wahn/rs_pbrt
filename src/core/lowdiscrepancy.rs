@@ -4,7 +4,7 @@ use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::rng::Rng;
 use core::sampling::shuffle;
 use core::sobolmatrices::{NUM_SOBOL_DIMENSIONS, SOBOL_MATRICES_32, SOBOL_MATRIX_SIZE,
-                          VD_C_SOBOL_MATRICES};
+                          VD_C_SOBOL_MATRICES, VD_C_SOBOL_MATRICES_INV};
 use geometry::{Point2i, Point2f};
 
 // see lowdiscrepancy.h
@@ -346,7 +346,7 @@ pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
     while b > 0_u64 {
         if b & 1 > 0_u64 {
             // add column 2 * m - c.
-            index ^= VD_C_SOBOL_MATRICES[(m - 1) as usize][c as usize];
+            index ^= VD_C_SOBOL_MATRICES_INV[(m - 1) as usize][c as usize];
         }
         b = b >> 1;
         c += 1_i32;
@@ -354,12 +354,14 @@ pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
     return index;
 }
 
+/// Takes different paths for 32- and 64-bit floating point values.
 pub fn sobol_sample(index: i64, dimension: i32, scramble: u64) -> Float {
     // #ifdef PBRT_FLOAT_AS_DOUBLE
     //     return SobolSampleDouble(index, dimension, scramble);
     sobol_sample_float(index, dimension, scramble as u32)
 }
 
+/// Takes a 64 bit index and 32x52 matrices to calculate sample values.
 pub fn sobol_sample_float(a: i64, dimension: i32, scramble: u32) -> Float {
     assert!(dimension < NUM_SOBOL_DIMENSIONS as i32,
             "Integrator has consumed too many Sobol' dimensions; \
