@@ -23,9 +23,7 @@ use pbrt::core::scene::Scene;
 use pbrt::filters::Filter;
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::filters::gaussian::GaussianFilter;
-use pbrt::geometry::{Bounds2f, Bounds2i, Normal3f,
-                     Point2f, Point2i, Point3f,
-                     Vector2f, Vector3f};
+use pbrt::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
 use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::integrators::path::PathIntegrator;
@@ -43,6 +41,7 @@ use pbrt::samplers::sobol::SobolSampler;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::cylinder::Cylinder;
 use pbrt::shapes::disk::Disk;
+use pbrt::shapes::plymesh::create_ply_mesh;
 use pbrt::shapes::sphere::Sphere;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::shapes::Shape;
@@ -888,6 +887,10 @@ fn pbrt_shape(param_set: &ParamSet)
             }
         } else if param_set.name == String::from("plymesh") {
             println!("TODO: CreatePLYMesh");
+            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                create_ply_mesh(obj_to_world, world_to_obj, false, // reverse_orientation
+                                param_set, graphics_state.float_textures.clone());
+            }
         } else if param_set.name == String::from("heightfield") {
             println!("TODO: CreateHeightfield");
         } else if param_set.name == String::from("loopsubdiv") {
@@ -1038,14 +1041,15 @@ fn pbrt_world_end() {
                                 //     ro.camera_params.find_one_float(String::from("halffov"), -1.0);
                                 // TODO: if (halffov > 0.f)
                                 // TODO: let perspective_camera: Arc<Camera + Sync + Send> =
-                                let camera = Box::new(PerspectiveCamera::new(animated_cam_to_world,
-                                                                             screen,
-                                                                             shutteropen,
-                                                                             shutterclose,
-                                                                             lensradius,
-                                                                             focaldistance,
-                                                                             fov,
-                                                                             film));
+                                let camera =
+                                    Box::new(PerspectiveCamera::new(animated_cam_to_world,
+                                                                    screen,
+                                                                    shutteropen,
+                                                                    shutterclose,
+                                                                    lensradius,
+                                                                    focaldistance,
+                                                                    fov,
+                                                                    film));
                                 some_camera = Some(camera);
                             } else if ro.camera_name == String::from("orthographic") {
                                 println!("TODO: CreateOrthographicCamera");
@@ -1060,15 +1064,15 @@ fn pbrt_world_end() {
                                 // MakeSampler
                                 let mut some_sampler: Option<Box<Sampler + Sync + Send>> = None;
                                 if ro.sampler_name == String::from("lowdiscrepancy") ||
-                                    ro.sampler_name == String::from("02sequence")
-                                {
+                                   ro.sampler_name == String::from("02sequence") {
                                     let nsamp: i32 =
                                         ro.sampler_params
-                                        .find_one_int(String::from("pixelsamples"), 16);
+                                            .find_one_int(String::from("pixelsamples"), 16);
                                     let sd: i32 = ro.sampler_params
                                         .find_one_int(String::from("dimensions"), 4);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-                                    let sampler = Box::new(ZeroTwoSequenceSampler::new(nsamp as i64,
+                                    let sampler = Box::new(ZeroTwoSequenceSampler::new(nsamp as
+                                                                                       i64,
                                                                                        sd as i64));
                                     some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("maxmindist") {
@@ -1076,12 +1080,14 @@ fn pbrt_world_end() {
                                 } else if ro.sampler_name == String::from("halton") {
                                     let nsamp: i32 =
                                         ro.sampler_params
-                                        .find_one_int(String::from("pixelsamples"), 16);
+                                            .find_one_int(String::from("pixelsamples"), 16);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
                                     let sample_at_center: bool =
                                         ro.integrator_params
-                                            .find_one_bool(String::from("samplepixelcenter"), false);
-                                    let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                                            .find_one_bool(String::from("samplepixelcenter"),
+                                                           false);
+                                    let sample_bounds: Bounds2i =
+                                        camera.get_film().get_sample_bounds();
                                     let sampler = Box::new(HaltonSampler::new(nsamp as i64,
                                                                               sample_bounds,
                                                                               sample_at_center));
@@ -1089,8 +1095,9 @@ fn pbrt_world_end() {
                                 } else if ro.sampler_name == String::from("sobol") {
                                     let nsamp: i32 =
                                         ro.sampler_params
-                                        .find_one_int(String::from("pixelsamples"), 16);
-                                    let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                                            .find_one_int(String::from("pixelsamples"), 16);
+                                    let sample_bounds: Bounds2i =
+                                        camera.get_film().get_sample_bounds();
                                     let sampler = Box::new(SobolSampler::new(nsamp as i64,
                                                                              sample_bounds));
                                     some_sampler = Some(sampler);
@@ -1100,7 +1107,7 @@ fn pbrt_world_end() {
                                     println!("TODO: CreateStratifiedSampler");
                                 } else {
                                     panic!("Sampler \"{}\" unknown.", ro.sampler_name);
-                                   }
+                                }
                                 if let Some(mut sampler) = some_sampler {
                                     // MakeIntegrator
                                     // if let Some(mut sampler) = some_sampler {
@@ -1111,7 +1118,7 @@ fn pbrt_world_end() {
                                         // CreateDirectLightingIntegrator
                                         let max_depth: i32 =
                                             ro.integrator_params
-                                            .find_one_int(String::from("maxdepth"), 5);
+                                                .find_one_int(String::from("maxdepth"), 5);
                                         let st: String = ro.integrator_params
                                             .find_one_string(String::from("strategy"),
                                                              String::from("all"));
@@ -1121,7 +1128,8 @@ fn pbrt_world_end() {
                                         } else if st == String::from("all") {
                                             strategy = LightStrategy::UniformSampleAll;
                                         } else {
-                                            panic!("Strategy \"{}\" for direct lighting unknown.", st);
+                                            panic!("Strategy \"{}\" for direct lighting unknown.",
+                                                   st);
                                         }
                                         // TODO: const int *pb = params.FindInt("pixelbounds", &np);
                                         let pixel_bounds: Bounds2i = Bounds2i {
@@ -1130,14 +1138,15 @@ fn pbrt_world_end() {
                                         };
                                         let integrator =
                                             Box::new(DirectLightingIntegrator::new(strategy,
-                                                                                   max_depth as i64,
+                                                                                   max_depth as
+                                                                                   i64,
                                                                                    pixel_bounds));
                                         some_integrator = Some(integrator);
                                     } else if ro.integrator_name == String::from("path") {
                                         // CreatePathIntegrator
                                         let max_depth: i32 =
                                             ro.integrator_params
-                                            .find_one_int(String::from("maxdepth"), 5);
+                                                .find_one_int(String::from("maxdepth"), 5);
                                         let pb: Vec<i32> = ro.integrator_params
                                             .find_int(String::from("pixelbounds"));
                                         let np: usize = pb.len();
@@ -1165,11 +1174,11 @@ fn pbrt_world_end() {
                                             ro.integrator_params
                                             .find_one_string(String::from("lightsamplestrategy"),
                                                              String::from("spatial"));
-                                        let integrator = Box::new(PathIntegrator::new(max_depth as
-                                                                                      u32,
-                                                                                      pixel_bounds,
-                                                                                      rr_threshold,
-                                                                                      light_strategy));
+                                        let integrator =
+                                            Box::new(PathIntegrator::new(max_depth as u32,
+                                                                         pixel_bounds,
+                                                                         rr_threshold,
+                                                                         light_strategy));
                                         some_integrator = Some(integrator);
                                     } else if ro.integrator_name == String::from("volpath") {
                                         println!("TODO: CreateVolPathIntegrator");
@@ -1177,7 +1186,8 @@ fn pbrt_world_end() {
                                         println!("TODO: CreateBDPTIntegrator");
                                     } else if ro.integrator_name == String::from("mlt") {
                                         println!("TODO: CreateMLTIntegrator");
-                                    } else if ro.integrator_name == String::from("ambientocclusion") {
+                                    } else if ro.integrator_name ==
+                                              String::from("ambientocclusion") {
                                         // CreateAOIntegrator
                                         let pb: Vec<i32> = ro.integrator_params
                                             .find_int(String::from("pixelbounds"));
@@ -1207,7 +1217,7 @@ fn pbrt_world_end() {
                                         // int nSamples = params.Find_One_Int("nsamples", 64);
                                         let n_samples: i32 =
                                             ro.integrator_params
-                                            .find_one_int(String::from("nsamples"), 64 as i32);
+                                                .find_one_int(String::from("nsamples"), 64 as i32);
                                         // return new AOIntegrator(cosSample, nSamples, camera, sampler, pixelBounds);
 
                                         let integrator = Box::new(AOIntegrator::new(cos_sample,
@@ -1266,10 +1276,10 @@ fn pbrt_world_end() {
                                         } else if ro.accelerator_name == String::from("kdtree") {
                                             // println!("TODO: CreateKdTreeAccelerator");
                                             // WARNING: Use BVHAccel for now !!!
-                                            let accelerator = Arc::new(BVHAccel::new(ro.primitives
-                                                                                     .clone(),
-                                                                                     4,
-                                                                                     SplitMethod::SAH));
+                                            let accelerator =
+                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
+                                                                       4,
+                                                                       SplitMethod::SAH));
                                             // MakeScene
                                             let scene: Scene = Scene::new(accelerator.clone(),
                                                                           ro.lights.clone());
@@ -1282,7 +1292,8 @@ fn pbrt_world_end() {
                                                          &mut integrator,
                                                          num_threads);
                                         } else {
-                                            panic!("Accelerator \"{}\" unknown.", ro.accelerator_name);
+                                            panic!("Accelerator \"{}\" unknown.",
+                                                   ro.accelerator_name);
                                         }
                                     } else {
                                         panic!("Unable to create integrator.");

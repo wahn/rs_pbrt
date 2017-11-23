@@ -233,6 +233,7 @@ use geometry::{Bounds3f, Point2f, Ray, Vector3f};
 
 pub mod cylinder;
 pub mod disk;
+pub mod plymesh;
 pub mod sphere;
 pub mod triangle;
 
