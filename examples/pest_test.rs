@@ -888,8 +888,12 @@ fn pbrt_shape(param_set: &ParamSet)
         } else if param_set.name == String::from("plymesh") {
             println!("TODO: CreatePLYMesh");
             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                if let Some(ref search_directory) = SEARCH_DIRECTORY {
                 create_ply_mesh(obj_to_world, world_to_obj, false, // reverse_orientation
-                                param_set, graphics_state.float_textures.clone());
+                                param_set,
+                                graphics_state.float_textures.clone(),
+                                Some(search_directory));
+                }
             }
         } else if param_set.name == String::from("heightfield") {
             println!("TODO: CreateHeightfield");

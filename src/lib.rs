@@ -20,6 +20,7 @@ extern crate num_cpus;
 #[cfg(feature="openexr")]
 extern crate openexr;
 extern crate pbr;
+extern crate ply_rs;
 extern crate time;
 extern crate typed_arena;
 
