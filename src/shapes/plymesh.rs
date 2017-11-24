@@ -15,43 +15,16 @@ use ply_rs::ply;
 use core::paramset::ParamSet;
 use core::pbrt::Float;
 use core::transform::Transform;
-use geometry::{Normal3f, Point2f, Point3f};
+use geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use shapes::Shape;
+use shapes::triangle::{Triangle, TriangleMesh};
 use textures::Texture;
-
-#[derive(Debug)]
-struct Vertex {
-    p: Point3f,
-    n: Normal3f,
-    uv: Point2f,
-}
-
-impl ply::PropertyAccess for Vertex {
-    fn new() -> Vertex {
-        Vertex {
-            p: Point3f::default(),
-            n: Normal3f::default(),
-            uv: Point2f::default(),
-        }
-    }
-}
-
-#[derive(Debug)]
-struct Face {
-    vertex_indices: Vec<i32>,
-}
-
-impl ply::PropertyAccess for Face {
-    fn new() -> Face {
-        Face { vertex_indices: Vec::new() }
-    }
-}
 
 pub fn create_ply_mesh(o2w: Transform,
                        w2o: Transform,
                        reverse_orientation: bool,
                        params: &ParamSet,
-                       float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
+                       _float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
                        search_directory: Option<&Box<PathBuf>>)
                        -> Vec<Arc<Shape + Send + Sync>> {
     let mut filename: String = params.find_one_string(String::from("filename"), String::new());
@@ -74,17 +47,17 @@ pub fn create_ply_mesh(o2w: Transform,
         panic!("Unable to read the header of PLY file  {:?}", filename);
     }
     let header = result.unwrap();
-    println!("header = {:?}", header);
+    // println!("header = {:?}", header);
     // payload
     let result = p.read_payload(&mut buf_reader, &header);
     if result.is_err() {
         panic!("Unable to read the payload of PLY file  {:?}", filename);
     }
     let payload = result.unwrap();
-    println!("payload = {:?}", payload);
+    // println!("payload = {:?}", payload);
     let mut p: Vec<Point3f> = Vec::new();
+    let mut tm_vertex_indices: Vec<usize> = Vec::new();
     for (name, list) in payload.into_iter() {
-        println!("name = {:?}", name);
         match name.as_ref() {
             "vertex" => {
                 for elem in list.into_iter() {
@@ -113,7 +86,40 @@ pub fn create_ply_mesh(o2w: Transform,
                 }
             }
             "face" => {
-                // println!("list = {:?}", list);
+                for elem in list.into_iter() {
+                    for (name2, list2) in elem.into_iter() {
+                        match name2.as_ref() {
+                            "vertex_indices" => {
+                                if let ply::Property::ListInt(li) = list2 {
+                                    let mut vertex_indices: Vec<usize> = Vec::new();
+                                    for i in li.into_iter() {
+                                        vertex_indices.push(i as usize);
+                                    }
+                                    println!("vertex_indices = {:?}", vertex_indices);
+                                    if vertex_indices.len() != 3 {
+                                        if vertex_indices.len() == 4 {
+                                            // handle quads (split it into 2 triangles)
+                                            let v1 = vertex_indices[0];
+                                            let v3 = vertex_indices[2];
+                                            let v4 = vertex_indices[3];
+                                            vertex_indices.push(v1);
+                                            vertex_indices.push(v3);
+                                            vertex_indices.push(v4);
+                                        } else {
+                                            panic!("plymesh: Ignoring face with {} vertices (only triangles and quads are supported!)",
+                                                   vertex_indices.len());
+                                        }
+                                    }
+                                    // now we can add the indices to the triangle mesh vertex indices
+                                    for vi in vertex_indices {
+                                        tm_vertex_indices.push(vi);
+                                    }
+                                }
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                }
             }
             _ => unreachable!(),
         }
@@ -121,6 +127,35 @@ pub fn create_ply_mesh(o2w: Transform,
     for i in 0..p.len() {
         println!("{:?}: {:?}", i, p[i]);
     }
-    // WORK
-    Vec::new()
+    println!("tm_vertex_indices = {:?}", tm_vertex_indices);
+    // transform mesh vertices to world space
+    let mut p_ws: Vec<Point3f> = Vec::new();
+    let n_vertices: usize = p.len();
+    for i in 0..n_vertices {
+        p_ws.push(o2w.transform_point(p[i]));
+    }
+    let s_ws: Vec<Vector3f> = Vec::new(); // TODO
+    let n_ws: Vec<Normal3f> = Vec::new(); // TODO
+    let uvs: Vec<Point2f> = Vec::new(); // TODO
+    let mesh = Arc::new(TriangleMesh::new(o2w,
+                                          w2o,
+                                          reverse_orientation,
+                                          false, // transform_swaps_handedness
+                                          tm_vertex_indices.len() / 3, // n_triangles
+                                          tm_vertex_indices,
+                                          n_vertices,
+                                          p_ws, // in world space
+                                          s_ws, // in world space
+                                          n_ws, // in world space
+                                          uvs));
+    let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+    for id in 0..mesh.n_triangles {
+        let triangle = Arc::new(Triangle::new(mesh.object_to_world,
+                                              mesh.world_to_object,
+                                              mesh.transform_swaps_handedness,
+                                              mesh.clone(),
+                                              id));
+        shapes.push(triangle.clone());
+    }
+    shapes
 }

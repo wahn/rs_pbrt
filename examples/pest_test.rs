@@ -886,13 +886,19 @@ fn pbrt_shape(param_set: &ParamSet)
                 materials.push(mtl.clone());
             }
         } else if param_set.name == String::from("plymesh") {
-            println!("TODO: CreatePLYMesh");
             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                 if let Some(ref search_directory) = SEARCH_DIRECTORY {
-                create_ply_mesh(obj_to_world, world_to_obj, false, // reverse_orientation
-                                param_set,
-                                graphics_state.float_textures.clone(),
-                                Some(search_directory));
+                    let mtl: Arc<Material + Send + Sync> = create_material();
+                    let ply_shapes: Vec<Arc<Shape + Send + Sync>> =
+                        create_ply_mesh(obj_to_world, world_to_obj, false, // reverse_orientation
+                                        param_set,
+                                        graphics_state.float_textures.clone(),
+                                        // additional parameters:
+                                        Some(search_directory));
+                    for shape in ply_shapes {
+                        shapes.push(shape.clone());
+                        materials.push(mtl.clone());
+                    }
                 }
             }
         } else if param_set.name == String::from("heightfield") {

@@ -1,6 +1,6 @@
 Integrator "path" "integer maxdepth" [1]
 
-Sampler "random" "integer pixelsamples" [128]
+Sampler "sobol" "integer pixelsamples" [128]
 
 PixelFilter "gaussian"
 
