@@ -60,11 +60,19 @@ pub fn create_ply_mesh(o2w: Transform,
         filename = String::from(path_buf.to_str().unwrap());
     }
     // header
-    let f = File::open(&filename).unwrap();
+    let result = File::open(&filename);
+    if result.is_err() {
+        panic!("Couldn't open PLY file {:?}", filename);
+    }
+    let f = result.unwrap();
     let mut f = BufReader::new(f);
     let vertex_parser = parser::Parser::<Vertex>::new();
     let face_parser = parser::Parser::<Face>::new();
-    let header = vertex_parser.read_header(&mut f).unwrap();
+    let result = vertex_parser.read_header(&mut f);
+    if result.is_err() {
+        panic!("Unable to read the header of PLY file  {:?}", filename);
+    }
+    let header = result.unwrap();
     println!("header = {:?}", header);
     // WORK
     Vec::new()
