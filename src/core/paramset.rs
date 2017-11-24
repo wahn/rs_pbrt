@@ -196,6 +196,19 @@ impl ParamSet {
         self.key_word = param_set.key_word.clone();
         // self.name = param_set.name.clone();
         self.bools.clear();
+        for b in &param_set.bools {
+            let mut values: Vec<bool> = Vec::new();
+            for ix in 0..b.n_values {
+                values.push(b.values[ix]);
+            }
+            self.bools
+                .push(ParamSetItem::<bool> {
+                          name: b.name.clone(),
+                          values: values,
+                          n_values: b.n_values,
+                          looked_up: false,
+                      });
+        }
         self.ints.clear();
         for i in &param_set.ints {
             let mut values: Vec<i32> = Vec::new();

@@ -120,6 +120,17 @@ fn print_version(program: &str) {
 }
 
 fn print_params(params: &ParamSet) {
+    for p in &params.bools {
+        if p.n_values == 1_usize {
+            println!("  \"bool {}\" [{}]", p.name, p.values[0]);
+        } else {
+            print!("  \"bool {}\" [ ", p.name);
+            for i in 0..p.n_values {
+                print!("{} ", p.values[i]);
+            }
+            println!("]");
+        }
+    }
     for p in &params.ints {
         if p.n_values == 1_usize {
             println!("  \"integer {}\" [{}]", p.name, p.values[0]);
@@ -243,7 +254,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                                                      Spectrum::new(0.25 as Float));
                     let roughness = mp.get_float_texture(String::from("roughness"), 0.1 as Float);
                     // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
-                    let remap_roughness = mp.find_bool(String::from("remaproughness"), true);
+                    let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
                     let plastic =
                         Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
                     return plastic;
