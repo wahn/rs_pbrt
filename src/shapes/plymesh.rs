@@ -19,6 +19,7 @@ use geometry::{Normal3f, Point2f, Point3f};
 use shapes::Shape;
 use textures::Texture;
 
+#[derive(Debug)]
 struct Vertex {
     p: Point3f,
     n: Normal3f,
@@ -35,6 +36,7 @@ impl ply::PropertyAccess for Vertex {
     }
 }
 
+#[derive(Debug)]
 struct Face {
     vertex_indices: Vec<i32>,
 }
@@ -59,21 +61,66 @@ pub fn create_ply_mesh(o2w: Transform,
         path_buf.push(filename);
         filename = String::from(path_buf.to_str().unwrap());
     }
-    // header
     let result = File::open(&filename);
     if result.is_err() {
         panic!("Couldn't open PLY file {:?}", filename);
     }
     let f = result.unwrap();
-    let mut f = BufReader::new(f);
-    let vertex_parser = parser::Parser::<Vertex>::new();
-    let face_parser = parser::Parser::<Face>::new();
-    let result = vertex_parser.read_header(&mut f);
+    let mut buf_reader = BufReader::new(f);
+    let p = parser::Parser::<ply::DefaultElement>::new();
+    // header
+    let result = p.read_header(&mut buf_reader);
     if result.is_err() {
         panic!("Unable to read the header of PLY file  {:?}", filename);
     }
     let header = result.unwrap();
     println!("header = {:?}", header);
+    // payload
+    let result = p.read_payload(&mut buf_reader, &header);
+    if result.is_err() {
+        panic!("Unable to read the payload of PLY file  {:?}", filename);
+    }
+    let payload = result.unwrap();
+    println!("payload = {:?}", payload);
+    let mut p: Vec<Point3f> = Vec::new();
+    for (name, list) in payload.into_iter() {
+        println!("name = {:?}", name);
+        match name.as_ref() {
+            "vertex" => {
+                for elem in list.into_iter() {
+                    let mut pnt: Point3f = Point3f::default();
+                    for (name2, list2) in elem.into_iter() {
+                        match name2.as_ref() {
+                            "x" => {
+                                if let ply::Property::Float(x) = list2 {
+                                    pnt.x = x;
+                                }
+                            }
+                            "y" => {
+                                if let ply::Property::Float(y) = list2 {
+                                    pnt.y = y;
+                                }
+                            }
+                            "z" => {
+                                if let ply::Property::Float(z) = list2 {
+                                    pnt.z = z;
+                                }
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    p.push(pnt);
+                }
+            }
+            "face" => {
+                // println!("list = {:?}", list);
+            }
+            _ => unreachable!(),
+        }
+    }
+    for i in 0..p.len() {
+        println!("{:?}: {:?}", i, p[i]);
+    }
     // WORK
     Vec::new()
 }
