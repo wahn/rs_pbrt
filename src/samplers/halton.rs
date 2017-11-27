@@ -1,13 +1,12 @@
 // std
 use std::sync::RwLock;
 // pbrt
-use core::camera::CameraSample;
 use core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
 use core::lowdiscrepancy::{compute_radical_inverse_permutations, inverse_radical_inverse,
                            scrambled_radical_inverse, radical_inverse};
 use core::pbrt::Float;
 use core::pbrt::mod_t;
-use core::sampler::Sampler;
+use core::sampler::{GlobalSampler, Sampler};
 use core::rng::Rng;
 use geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 
@@ -275,16 +274,6 @@ impl Sampler for HaltonSampler {
         self.current_pixel_sample_index += 1_i64;
         self.current_pixel_sample_index < self.samples_per_pixel
     }
-    fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
-        let mut cs: CameraSample = CameraSample::default();
-        cs.p_film = Point2f {
-            x: p_raster.x as Float,
-            y: p_raster.y as Float,
-        } + self.get_2d();
-        cs.time = self.get_1d();
-        cs.p_lens = self.get_2d();
-        cs
-    }
     fn reseed(&mut self, _seed: u64) {
         // do nothing
     }
@@ -294,6 +283,9 @@ impl Sampler for HaltonSampler {
     fn get_samples_per_pixel(&self) -> i64 {
         self.samples_per_pixel
     }
+}
+
+impl GlobalSampler for HaltonSampler {
 }
 
 impl Clone for HaltonSampler {

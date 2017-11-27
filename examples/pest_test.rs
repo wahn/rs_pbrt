@@ -37,6 +37,7 @@ use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
 use pbrt::lights::point::PointLight;
 use pbrt::samplers::halton::HaltonSampler;
+use pbrt::samplers::random::RandomSampler;
 use pbrt::samplers::sobol::SobolSampler;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::cylinder::Cylinder;
@@ -1123,7 +1124,11 @@ fn pbrt_world_end() {
                                                                              sample_bounds));
                                     some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("random") {
-                                    println!("TODO: CreateRandomSampler");
+                                    let nsamp: i32 =
+                                        ro.sampler_params
+                                            .find_one_int(String::from("pixelsamples"), 4);
+                                    let sampler = Box::new(RandomSampler::new(nsamp as i64));
+                                    some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("stratified") {
                                     println!("TODO: CreateStratifiedSampler");
                                 } else {
