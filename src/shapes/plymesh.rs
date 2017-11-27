@@ -56,33 +56,78 @@ pub fn create_ply_mesh(o2w: Transform,
     let payload = result.unwrap();
     // println!("payload = {:?}", payload);
     let mut p: Vec<Point3f> = Vec::new();
+    let mut n: Vec<Normal3f> = Vec::new();
+    let mut uvs: Vec<Point2f> = Vec::new();
+    let mut has_normals: bool = false;
+    let mut has_uvs: bool = false;
     let mut tm_vertex_indices: Vec<usize> = Vec::new();
     for (name, list) in payload.into_iter() {
         match name.as_ref() {
             "vertex" => {
                 for elem in list.into_iter() {
                     let mut pnt: Point3f = Point3f::default();
+                    let mut nrm: Normal3f = Normal3f::default();
+                    let mut pt2: Point2f = Point2f::default();
                     for (name2, list2) in elem.into_iter() {
                         match name2.as_ref() {
                             "x" => {
                                 if let ply::Property::Float(x) = list2 {
                                     pnt.x = x;
                                 }
-                            }
+                            },
                             "y" => {
                                 if let ply::Property::Float(y) = list2 {
                                     pnt.y = y;
                                 }
-                            }
+                            },
                             "z" => {
                                 if let ply::Property::Float(z) = list2 {
                                     pnt.z = z;
                                 }
-                            }
-                            _ => unreachable!(),
+                            },
+                            "nx" => {
+                                has_normals = true;
+                                if let ply::Property::Float(x) = list2 {
+                                    nrm.x = x;
+                                }
+                            },
+                            "ny" => {
+                                has_normals = true;
+                                if let ply::Property::Float(y) = list2 {
+                                    nrm.y = y;
+                                }
+                            },
+                            "nz" => {
+                                has_normals = true;
+                                if let ply::Property::Float(z) = list2 {
+                                    nrm.z = z;
+                                }
+                            },
+                            "u" => {
+                                has_uvs = true;
+                                if let ply::Property::Float(x) = list2 {
+                                    pt2.x = x;
+                                }
+                            },
+                            "v" => {
+                                has_uvs = true;
+                                if let ply::Property::Float(y) = list2 {
+                                    pt2.y = y;
+                                }
+                            },
+                            _ => {
+                                println!("name2 = {:?}", name2);
+                                unreachable!();
+                            },
                         }
                     }
                     p.push(pnt);
+                    if has_normals {
+                        n.push(nrm);
+                    }
+                    if has_uvs {
+                        uvs.push(pt2);
+                    }
                 }
             }
             "face" => {
@@ -95,7 +140,7 @@ pub fn create_ply_mesh(o2w: Transform,
                                     for i in li.into_iter() {
                                         vertex_indices.push(i as usize);
                                     }
-                                    println!("vertex_indices = {:?}", vertex_indices);
+                                    // println!("vertex_indices = {:?}", vertex_indices);
                                     if vertex_indices.len() != 3 {
                                         if vertex_indices.len() == 4 {
                                             // handle quads (split it into 2 triangles)
@@ -124,10 +169,19 @@ pub fn create_ply_mesh(o2w: Transform,
             _ => unreachable!(),
         }
     }
-    for i in 0..p.len() {
-        println!("{:?}: {:?}", i, p[i]);
+    // for i in 0..p.len() {
+    //     println!("{:?}: {:?}", i, p[i]);
+    // }
+    // println!("tm_vertex_indices = {:?}", tm_vertex_indices);
+    let mut n_ws: Vec<Normal3f> = Vec::new();
+    if !n.is_empty() {
+        assert!(n.len() == p.len());
+        // transform normals to world space
+        let n_normals: usize = n.len();
+        for i in 0..n_normals {
+            n_ws.push(o2w.transform_normal(n[i]));
+        }
     }
-    println!("tm_vertex_indices = {:?}", tm_vertex_indices);
     // transform mesh vertices to world space
     let mut p_ws: Vec<Point3f> = Vec::new();
     let n_vertices: usize = p.len();
