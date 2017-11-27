@@ -628,18 +628,31 @@ fn pbrt_float_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Stri
     // single float or several floats using brackets
     let ident = pairs.next();
     let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-    let _lbrack = pairs.next(); // assume opening bracket
-    let mut number = pairs.next();
-    while number.is_some() {
-        let pair = number.unwrap().clone();
-        if pair.as_str() == String::from("]") {
-            // closing bracket found
-            break;
-        } else {
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let mut number = pairs.next();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            if pair.as_str() == String::from("]") {
+                // closing bracket found
+                break;
+            } else {
+                let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
+                floats.push(float);
+            }
+            number = pairs.next();
+        }
+    } else {
+        // no brackets
+        let mut number = option.clone();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
             let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
             floats.push(float);
+            number = pairs.next();
         }
-        number = pairs.next();
     }
     (string, floats)
 }
@@ -652,18 +665,31 @@ fn pbrt_integer_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (St
     // single integer or several integers using brackets
     let ident = pairs.next();
     let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-    let _lbrack = pairs.next(); // assume opening bracket
-    let mut number = pairs.next();
-    while number.is_some() {
-        let pair = number.unwrap().clone();
-        if pair.as_str() == String::from("]") {
-            // closing bracket found
-            break;
-        } else {
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let mut number = pairs.next();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            if pair.as_str() == String::from("]") {
+                // closing bracket found
+                break;
+            } else {
+                let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
+                integers.push(integer);
+            }
+            number = pairs.next();
+        }
+    } else {
+        // no brackets
+        let mut number = option.clone();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
             let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
             integers.push(integer);
+            number = pairs.next();
         }
-        number = pairs.next();
     }
     (string, integers)
 }
