@@ -38,7 +38,8 @@ float_param = { ("\"float" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack) |
                 ("\"float" ~ ident ~ "\"" ~ number) }
 string_param = { "\"string" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack |
                  "\"string" ~ ident ~ "\"" ~ string }
-integer_param = { "\"integer" ~ ident ~ "\"" ~ lbrack ~ integer+ ~ rbrack }
+integer_param = { ("\"integer" ~ ident ~ "\"" ~ lbrack ~ integer+ ~ rbrack) |
+                  ("\"integer" ~ ident ~ "\"" ~ integer) }
 point_param = { "\"point" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
 vector_param = { "\"vector" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack }
 normal_param = { "\"normal" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
