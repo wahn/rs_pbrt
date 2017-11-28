@@ -264,6 +264,19 @@ pub trait Fresnel {
 }
 
 #[derive(Debug,Default,Copy,Clone)]
+pub struct FresnelConductor {
+    pub eta_i: Spectrum,
+    pub eta_t: Spectrum,
+    pub k: Spectrum,
+}
+
+impl Fresnel for FresnelConductor {
+    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum {
+        fr_conductor(cos_theta_i, self.eta_i, self.eta_t, self.k)
+    }
+}
+
+#[derive(Debug,Default,Copy,Clone)]
 pub struct FresnelDielectric {
     pub eta_i: Float,
     pub eta_t: Float,
@@ -799,4 +812,27 @@ pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Flo
     let r_perp: Float = ((local_eta_i * *cos_theta_i) - (local_eta_t * cos_theta_t)) /
                         ((local_eta_i * *cos_theta_i) + (local_eta_t * cos_theta_t));
     (r_parl * r_parl + r_perp * r_perp) / 2.0
+}
+
+/// Computes the Fresnel reflectance formula at the boundary between a
+/// conductor and a dielectric medium.
+pub fn fr_conductor(cos_theta_i: &mut Float, eta_i: Spectrum, eta_t: Spectrum, k: Spectrum) -> Spectrum {
+    let not_clamped: Float = *cos_theta_i;
+    let cos_theta_i: Float = clamp_t(not_clamped, -1.0, 1.0);
+    let eta: Spectrum = eta_t / eta_i;
+    let eta_k: Spectrum = k / eta_i;
+    let cos_theta_i2: Float = cos_theta_i * cos_theta_i;
+    let sin_theta_i2: Float = 1.0 as Float - cos_theta_i2;
+    let eta_2: Spectrum = eta * eta;
+    let eta_k2: Spectrum = eta_k * eta_k;
+    let t0: Spectrum = eta_2 - eta_k2 - Spectrum::new(sin_theta_i2);
+    let a2_plus_b2: Spectrum = (t0 * t0 + eta_2 * eta_k2 * Spectrum::new(4 as Float)).sqrt();
+    let t1: Spectrum = a2_plus_b2 + Spectrum::new(cos_theta_i2);
+    let a: Spectrum = ((a2_plus_b2 + t0) * 0.5 as Float).sqrt();
+    let t2: Spectrum = a * 2.0 as Float * cos_theta_i;
+    let rs: Spectrum = (t1 - t2) / (t1 + t2);
+    let t3: Spectrum = a2_plus_b2 * cos_theta_i2  + Spectrum::new(sin_theta_i2 * sin_theta_i2);
+    let t4: Spectrum = t2 * sin_theta_i2;
+    let rp: Spectrum = rs * (t3 - t4) / (t3 + t4);
+    (rp + rs) * Spectrum::new(0.5 as Float)
 }

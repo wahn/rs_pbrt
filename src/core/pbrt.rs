@@ -194,6 +194,26 @@ pub fn round_up_pow2_64(v: i64) -> i64 {
     ret + 1
 }
 
+/// Helper function which emulates the behavior of std::upper_bound().
+pub fn find_interval<P>(size: usize, pred: P) -> usize
+    where P: Fn(usize) -> bool
+{
+    let mut first = 0;
+    let mut len = size;
+    while len > 0 {
+        let half = len >> 1;
+        let middle = first + half;
+        // bisect range based on value of _pred_ at _middle_
+        if pred(middle) {
+            first = middle + 1;
+            len -= half + 1;
+        } else {
+            len = half;
+        }
+    }
+    clamp_t(first - 1, 0, size - 2)
+}
+
 /// Interpolate linearly between two provided values.
 pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
     (1.0 as Float - t) * v1 + t * v2

@@ -4,7 +4,7 @@ use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Sub};
 use num::Zero;
 // pbrt
 use core::pbrt::{Float, Spectrum};
-use core::pbrt::clamp_t;
+use core::pbrt::{clamp_t, find_interval, lerp};
 
 // see spectrum.h
 
@@ -1466,6 +1466,7 @@ pub const CIE_LAMBDA: [Float; N_CIE_SAMPLES as usize] =
      802.0, 803.0, 804.0, 805.0, 806.0, 807.0, 808.0, 809.0, 810.0, 811.0, 812.0, 813.0, 814.0,
      815.0, 816.0, 817.0, 818.0, 819.0, 820.0, 821.0, 822.0, 823.0, 824.0, 825.0, 826.0, 827.0,
      828.0, 829.0, 830.0];
+pub const CIE_Y_INTEGRAL: Float = 106.856895;
 
 #[derive(Debug,Clone)]
 pub enum SpectrumType {
@@ -1515,7 +1516,7 @@ impl RGBSpectrum {
     pub fn to_xyz(&self, xyz: &mut [Float; 3]) {
         rgb_to_xyz(&self.c, xyz);
     }
-    pub fn from_xyz(xyz: &[Float; 3], spectrum_type: SpectrumType) -> RGBSpectrum {
+    pub fn from_xyz(xyz: &[Float; 3], _spectrum_type: SpectrumType) -> RGBSpectrum {
         let mut r: RGBSpectrum = RGBSpectrum::new(0.0 as Float);
         xyz_to_rgb(xyz, &mut r.c);
         r
@@ -1527,24 +1528,24 @@ impl RGBSpectrum {
     pub fn from_sampled(lambda: &[Float], v: &[Float], n: i32) -> RGBSpectrum {
         // sort samples if unordered, use sorted for returned spectrum
         if !spectrum_samples_sorted(lambda, v, n) {
+            panic!("TODO: if !spectrum_samples_sorted(...) {...}");
             // std::vector<Float> slambda(&lambda[0], &lambda[n]);
             // std::vector<Float> sv(&v[0], &v[n]);
             // SortSpectrumSamples(&slambda[0], &sv[0], n);
             // return FromSampled(&slambda[0], &sv[0], n);
         }
-        // Float xyz[3] = {0, 0, 0};
         let mut xyz: [Float; 3] = [0.0 as Float; 3];
-        // for (int i = 0; i < N_CIE_SAMPLES; ++i) {
-        //     Float val = InterpolateSpectrumSamples(lambda, v, n, CIE_lambda[i]);
-        //     xyz[0] += val * CIE_X[i];
-        //     xyz[1] += val * CIE_Y[i];
-        //     xyz[2] += val * CIE_Z[i];
-        // }
-        // Float scale = Float(CIE_lambda[N_CIE_SAMPLES - 1] - CIE_lambda[0]) /
-        //               Float(CIE_Y_integral * N_CIE_SAMPLES);
-        // xyz[0] *= scale;
-        // xyz[1] *= scale;
-        // xyz[2] *= scale;
+        for i in 0..N_CIE_SAMPLES {
+            let val: Float = interpolate_spectrum_samples(lambda, v, n, CIE_LAMBDA[i as usize]);
+            xyz[0] += val * CIE_X[i as usize];
+            xyz[1] += val * CIE_Y[i as usize];
+            xyz[2] += val * CIE_Z[i as usize];
+        }
+        let scale: Float = (CIE_LAMBDA[(N_CIE_SAMPLES - 1) as usize] - CIE_LAMBDA[0]) as Float /
+                           (CIE_Y_INTEGRAL * N_CIE_SAMPLES as Float);
+        xyz[0] *= scale;
+        xyz[1] *= scale;
+        xyz[2] *= scale;
         RGBSpectrum::from_xyz(&xyz, SpectrumType::Reflectance)
     }
     // from CoefficientSpectrum
@@ -1555,6 +1556,9 @@ impl RGBSpectrum {
             }
         }
         true
+    }
+    pub fn sqrt(&self) -> RGBSpectrum {
+        RGBSpectrum::rgb(self.c[0].sqrt(), self.c[1].sqrt(), self.c[2].sqrt())
     }
     pub fn clamp(&self, low: Float, high: Float) -> RGBSpectrum {
         let mut ret: RGBSpectrum = RGBSpectrum::default();
@@ -1735,11 +1739,30 @@ pub fn lerp_rgb(t: Float, s1: Spectrum, s2: Spectrum) -> Spectrum {
 
 // see spectrum.cpp
 
-pub fn spectrum_samples_sorted(lambda: &[Float], vals: &[Float], n: i32) -> bool {
+/// Are the values sorted by wavelength?
+pub fn spectrum_samples_sorted(lambda: &[Float], _vals: &[Float], n: i32) -> bool {
     for i in 0..(n - 1) {
         if lambda[i as usize] > lambda[(i + 1) as usize] {
             return false;
         }
     }
     true
+}
+
+/// Find responsible interval and linearly interpolate between the two
+/// sample values.
+pub fn interpolate_spectrum_samples(lambda: &[Float], vals: &[Float], n: i32, l: Float) -> Float {
+    for i in 0..(n - 1) {
+        assert!(lambda[(i + 1) as usize] > lambda[i as usize]);
+    }
+    if l <= lambda[0] {
+        return vals[0];
+    }
+    if l >= lambda[(n - 1) as usize] {
+        return vals[(n - 1) as usize];
+    }
+    let offset: usize = find_interval(n as usize, |index| lambda[index as usize] <= l);
+    assert!(l >= lambda[offset] && l <= lambda[offset + 1]);
+    let t: Float = (l - lambda[offset]) / (lambda[offset + 1] - lambda[offset]);
+    lerp(t, vals[offset], vals[offset + 1])
 }
