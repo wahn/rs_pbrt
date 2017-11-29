@@ -29,6 +29,7 @@ use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy}
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::matte::MatteMaterial;
+use pbrt::materials::metal::MetalMaterial;
 use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::materials::plastic::PlasticMaterial;
 use pbrt::materials::Material;
@@ -301,7 +302,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 } else if graphics_state.material == String::from("mix") {
                     println!("TODO: CreateMixMaterial");
                 } else if graphics_state.material == String::from("metal") {
-                    println!("TODO: CreateMetalMaterial");
+                    return MetalMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("substrate") {
                     println!("TODO: CreateSubstrateMaterial");
                 } else if graphics_state.material == String::from("uber") {
