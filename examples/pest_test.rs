@@ -929,7 +929,9 @@ fn pbrt_shape(param_set: &ParamSet)
                 if let Some(ref search_directory) = SEARCH_DIRECTORY {
                     let mtl: Arc<Material + Send + Sync> = create_material();
                     let ply_shapes: Vec<Arc<Shape + Send + Sync>> =
-                        create_ply_mesh(obj_to_world, world_to_obj, false, // reverse_orientation
+                        create_ply_mesh(obj_to_world,
+                                        world_to_obj,
+                                        false, // reverse_orientation
                                         param_set,
                                         graphics_state.float_textures.clone(),
                                         // additional parameters:
@@ -1052,53 +1054,10 @@ fn pbrt_world_end() {
                                                        &ro.camera_to_world.t[1],
                                                        ro.transform_end_time);
                             if ro.camera_name == String::from("perspective") {
-                                let shutteropen: Float =
-                                    ro.camera_params
-                                        .find_one_float(String::from("shutteropen"), 0.0);
-                                let shutterclose: Float =
-                                    ro.camera_params
-                                        .find_one_float(String::from("shutterclose"), 1.0);
-                                // TODO: std::swap(shutterclose, shutteropen);
-                                assert!(shutterclose >= shutteropen);
-                                let lensradius: Float =
-                                    ro.camera_params
-                                        .find_one_float(String::from("lensradius"), 0.0);
-                                let focaldistance: Float =
-                                    ro.camera_params
-                                        .find_one_float(String::from("focaldistance"), 1e6);
-                                let frame: Float =
-                                    ro.camera_params
-                                        .find_one_float(String::from("frameaspectratio"),
-                                                        (film.full_resolution.x as Float) /
-                                                        (film.full_resolution.y as Float));
-                                let mut screen: Bounds2f = Bounds2f::default();
-                                if frame > 1.0 {
-                                    screen.p_min.x = -frame;
-                                    screen.p_max.x = frame;
-                                    screen.p_min.y = -1.0;
-                                    screen.p_max.y = 1.0;
-                                } else {
-                                    screen.p_min.x = -1.0;
-                                    screen.p_max.x = 1.0;
-                                    screen.p_min.y = -1.0 / frame;
-                                    screen.p_max.y = 1.0 / frame;
-                                }
-                                // TODO: const Float *sw = params.FindFloat("screenwindow", &swi);
-                                let fov: Float =
-                                    ro.camera_params.find_one_float(String::from("fov"), 90.0);
-                                // let halffov: Float =
-                                //     ro.camera_params.find_one_float(String::from("halffov"), -1.0);
-                                // TODO: if (halffov > 0.f)
-                                // TODO: let perspective_camera: Arc<Camera + Sync + Send> =
-                                let camera =
-                                    Box::new(PerspectiveCamera::new(animated_cam_to_world,
-                                                                    screen,
-                                                                    shutteropen,
-                                                                    shutterclose,
-                                                                    lensradius,
-                                                                    focaldistance,
-                                                                    fov,
-                                                                    film));
+                                let camera: Box<Camera + Send + Sync> =
+                                    PerspectiveCamera::create(&ro.camera_params,
+                                                              animated_cam_to_world,
+                                    film);
                                 some_camera = Some(camera);
                             } else if ro.camera_name == String::from("orthographic") {
                                 println!("TODO: CreateOrthographicCamera");
