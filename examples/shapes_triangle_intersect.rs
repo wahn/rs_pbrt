@@ -1,7 +1,7 @@
 extern crate pbrt;
 
+use pbrt::core::shape::Shape;
 use pbrt::core::transform::Transform;
-use pbrt::shapes::Shape;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use std::sync::Arc;

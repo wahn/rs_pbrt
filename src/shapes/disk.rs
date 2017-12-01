@@ -7,10 +7,10 @@ use core::material::Material;
 use core::pbrt::Float;
 use core::pbrt::{clamp_t, radians};
 use core::sampling::concentric_sample_disk;
+use core::shape::Shape;
 use core::transform::Transform;
 use geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use geometry::{nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared, vec3_normalize};
-use shapes::Shape;
 
 // see disk.h
 

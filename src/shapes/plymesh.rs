@@ -14,9 +14,9 @@ use ply_rs::ply;
 // pbrt
 use core::paramset::ParamSet;
 use core::pbrt::Float;
+use core::shape::Shape;
 use core::transform::Transform;
 use geometry::{Normal3f, Point2f, Point3f, Vector3f};
-use shapes::Shape;
 use shapes::triangle::{Triangle, TriangleMesh};
 use textures::Texture;
 

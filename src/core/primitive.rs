@@ -5,10 +5,10 @@ use core::interaction::SurfaceInteraction;
 use core::light::AreaLight;
 use core::material::{Material, TransportMode};
 use core::pbrt::Float;
+use core::shape::Shape;
 use core::transform::{AnimatedTransform, Transform};
 use geometry::{Bounds3f, Ray};
 use geometry::nrm_dot_nrm;
-use shapes::Shape;
 
 // see primitive.h
 

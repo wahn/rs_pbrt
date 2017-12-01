@@ -18,11 +18,11 @@ use core::pbrt::{Float, Spectrum};
 use core::material::TransportMode;
 use core::primitive::{GeometricPrimitive, Primitive};
 use core::reflection::Bsdf;
+use core::shape::Shape;
 use core::transform::solve_linear_system_2x2;
 use geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use geometry::{nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3,
                vec3_dot_vec3, vec3_normalize};
-use shapes::Shape;
 
 // see interaction.h
 
