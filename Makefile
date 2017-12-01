@@ -1,4 +1,4 @@
-all: release
+all: without-exr
 
 clean:
 	-rm -f *~ examples/*~ src/*~ examples/*.rs.bk src/*.rs.bk
