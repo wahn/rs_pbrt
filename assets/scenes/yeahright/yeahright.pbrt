@@ -18,7 +18,7 @@ Integrator "path"
 WorldBegin
 
 LightSource "infinite" 
-        "string mapname" [ "textures/glacier_latlong.hdr" ] 
+        "string mapname" [ "textures/glacier_latlong.hdr" ]
 Material "metal" 
         "float roughness" [ 0.0010000000 ] 
         "rgb eta" [ 1.6539409161 0.8784987926 0.5201226473 ] 
