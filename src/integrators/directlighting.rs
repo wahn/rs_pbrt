@@ -1,4 +1,6 @@
 // pbrt
+use core::geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
+use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 use core::integrator::SamplerIntegrator;
 use core::integrator::{uniform_sample_all_lights, uniform_sample_one_light};
 use core::interaction::{Interaction, SurfaceInteraction};
@@ -7,8 +9,6 @@ use core::pbrt::{Float, Spectrum};
 use core::reflection::BxdfType;
 use core::sampler::Sampler;
 use core::scene::Scene;
-use geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
-use geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 
 // see directlighting.h
 

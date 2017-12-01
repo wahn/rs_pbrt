@@ -2,6 +2,11 @@
 use std::mem;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Bounds3f, Normal3, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
+use core::geometry::{bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, nrm_normalize,
+                     pnt3_abs, pnt3_distance_squared, pnt3_permute, vec3_max_component,
+                     vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3, vec3_max_dimension,
+                     vec3_permute, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::pbrt::Float;
@@ -9,11 +14,6 @@ use core::pbrt::gamma;
 use core::sampling::uniform_sample_triangle;
 use core::shape::Shape;
 use core::transform::Transform;
-use geometry::{Bounds3f, Normal3, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
-use geometry::{bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, nrm_normalize, pnt3_abs,
-               pnt3_distance_squared, pnt3_permute, vec3_max_component, vec3_coordinate_system,
-               vec3_cross_nrm, vec3_cross_vec3, vec3_max_dimension, vec3_permute,
-               vec3_normalize};
 
 // see triangle.h
 

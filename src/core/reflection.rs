@@ -2,6 +2,9 @@
 use std;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Normal3f, Point2f, Vector3f};
+use core::geometry::{nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm,
+                     vec3_dot_vec3, vec3_normalize};
 use core::interaction::SurfaceInteraction;
 use core::material::TransportMode;
 use core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
@@ -10,9 +13,6 @@ use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, radians};
 use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::sampling::cosine_sample_hemisphere;
-use geometry::{Normal3f, Point2f, Vector3f};
-use geometry::{nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3,
-               vec3_normalize};
 
 // see reflection.h
 

@@ -5,9 +5,9 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::transform::Matrix4x4;
-//! 
+//!
 //! fn main() {
 //!     let identity: Matrix4x4 = Matrix4x4::default();
 //!     let m: Matrix4x4 = Matrix4x4::new(0.0,
@@ -26,7 +26,7 @@
 //!                                       3.1,
 //!                                       3.2,
 //!                                       3.3);
-//! 
+//!
 //!     println!("identity matrix = {:?}", identity);
 //!     println!("m = {:?}", m);
 //! }
@@ -41,9 +41,9 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::transform::Transform;
-//! 
+//!
 //! fn main() {
 //!     let identity: Transform = Transform::default();
 //!     let t: Transform = Transform::new(2.0,
@@ -62,7 +62,7 @@
 //!                                       0.0,
 //!                                       0.0,
 //!                                       1.0);
-//! 
+//!
 //!     println!("t = {:?}", t);
 //!     println!("identity transform = {:?}", identity);
 //! }
@@ -76,17 +76,17 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::Vector3f;
-//! 
+//! use pbrt::core::geometry::Vector3f;
+//!
 //! fn main() {
 //!     let t: Transform = Transform::translate(Vector3f {
 //!         x: -1.25,
 //!         y: 3.5,
 //!         z: 7.875,
 //!     });
-//! 
+//!
 //!     println!("t = {:?}", t);
 //! }
 //! ```
@@ -100,12 +100,12 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::transform::Transform;
-//! 
+//!
 //! fn main() {
 //!     let t: Transform = Transform::scale(2.0, -8.0, 1.0);
-//! 
+//!
 //!     println!("t = {:?}", t);
 //! }
 //! ```
@@ -117,10 +117,10 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::core::transform::Transform;
-//! 
+//!
 //! fn main() {
 //!     let theta_x: Float = 30.0;
 //!     let theta_y: Float = 45.0;
@@ -128,7 +128,7 @@
 //!     let t_x: Transform = Transform::rotate_x(theta_x);
 //!     let t_y: Transform = Transform::rotate_y(theta_y);
 //!     let t_z: Transform = Transform::rotate_z(theta_z);
-//! 
+//!
 //!     println!("Transform::rotate_x({}) = {:?}", theta_x, t_x);
 //!     println!("Transform::rotate_y({}) = {:?}", theta_y, t_y);
 //!     println!("Transform::rotate_z({}) = {:?}", theta_z, t_z);
@@ -142,11 +142,11 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::Vector3f;
-//! 
+//! use pbrt::core::geometry::Vector3f;
+//!
 //! fn main() {
 //!     let theta: Float = 30.0;
 //!     let axis = Vector3f {
@@ -155,7 +155,7 @@
 //!         z: 3.0,
 //!     };
 //!     let t: Transform = Transform::rotate(theta, axis);
-//! 
+//!
 //!     println!("Transform::rotate({}, {:?}) = {:?}", theta, axis, t);
 //! }
 //! ```
@@ -172,10 +172,10 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::{Point3f, Vector3f};
-//! 
+//! use pbrt::core::geometry::{Point3f, Vector3f};
+//!
 //! fn main() {
 //!     // LookAt 2 2 5  0 -.4 0  0 1 0 (see spheres-differentials-texfilt.pbrt)
 //!     let pos = Point3f {
@@ -194,7 +194,7 @@
 //!         z: 0.0,
 //!     };
 //!     let t: Transform = Transform::look_at(pos, look, up);
-//! 
+//!
 //!     println!("Transform::look_at({:?}, {:?}, {:?}) = {:?}",
 //!              pos,
 //!              look,
@@ -211,12 +211,12 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::quaternion::Quaternion;
-//! 
+//!
 //! fn main() {
 //!     let default_quaternion: Quaternion = Quaternion::default();
-//! 
+//!
 //!     println!("default quaternion = {:?}", default_quaternion);
 //! }
 //! ```
@@ -227,9 +227,9 @@ use std;
 use std::f32::consts::PI;
 use std::ops::{Add, Mul};
 // pbrt
-use geometry::{Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f};
-use geometry::{bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, nrm_normalize,
-               vec3_cross_vec3, vec3_dot_vec3, vec3_normalize};
+use core::geometry::{Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f};
+use core::geometry::{bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, nrm_normalize,
+                     vec3_cross_vec3, vec3_dot_vec3, vec3_normalize};
 use core::interaction::SurfaceInteraction;
 use core::pbrt::Float;
 use core::pbrt::{clamp_t, gamma, lerp, radians};

@@ -2,6 +2,8 @@
 use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Bounds2i, Ray, Vector3f};
+use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 use core::integrator::SamplerIntegrator;
 use core::integrator::uniform_sample_one_light;
 use core::interaction::Interaction;
@@ -13,8 +15,6 @@ use core::reflection::BxdfType;
 use core::sampler::Sampler;
 use core::sampling::Distribution1D;
 use core::scene::Scene;
-use geometry::{Bounds2i, Ray, Vector3f};
-use geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 
 // see path.h
 

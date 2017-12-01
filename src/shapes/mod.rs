@@ -20,7 +20,7 @@
 //! 
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::Vector3f;
+//! use pbrt::core::geometry::Vector3f;
 //! use pbrt::shapes::sphere::Sphere;
 //! 
 //! fn main() {
@@ -66,7 +66,7 @@
 //! extern crate pbrt;
 //! 
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::{Normal3f, Point2f, Point3f, Vector3f};
+//! use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 //! use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 //! use std::sync::Arc;
 //! 
@@ -146,7 +146,7 @@
 //! 
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::Vector3f;
+//! use pbrt::core::geometry::Vector3f;
 //! use pbrt::shapes::disk::Disk;
 //! 
 //! fn main() {
@@ -187,7 +187,7 @@
 //! 
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::Vector3f;
+//! use pbrt::core::geometry::Vector3f;
 //! use pbrt::shapes::cylinder::Cylinder;
 //! 
 //! fn main() {

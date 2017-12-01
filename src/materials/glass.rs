@@ -8,7 +8,7 @@ use core::microfacet::TrowbridgeReitzDistribution;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, Bxdf, FresnelDielectric, FresnelSpecular, MicrofacetReflection,
                        SpecularReflection, SpecularTransmission};
-use textures::Texture;
+use core::texture::Texture;
 
 // see glass.h
 

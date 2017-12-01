@@ -3,6 +3,7 @@ use std;
 use std::sync::{Arc, RwLock};
 use std::sync::atomic::{AtomicU64, Ordering};
 // pbrt
+use core::geometry::{Bounds3f, Normal3f, Point2f, Point3i, Point3f, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::lowdiscrepancy::radical_inverse;
@@ -10,7 +11,6 @@ use core::pbrt::{Float, Spectrum};
 use core::pbrt::clamp_t;
 use core::scene::Scene;
 use core::sampling::Distribution1D;
-use geometry::{Bounds3f, Normal3f, Point2f, Point3i, Point3f, Vector3f};
 
 // see lightdistrib.h
 

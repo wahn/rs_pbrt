@@ -12,7 +12,7 @@
 //! 
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::filters::boxfilter::BoxFilter;
-//! use pbrt::geometry::Vector2f;
+//! use pbrt::core::geometry::Vector2f;
 //! 
 //! fn main() {
 //!     let xw: Float = 0.5;
@@ -46,7 +46,7 @@
 //! 
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::filters::gaussian::GaussianFilter;
-//! use pbrt::geometry::Vector2f;
+//! use pbrt::core::geometry::Vector2f;
 //! 
 //! fn main() {
 //!     let xw: Float = 2.0;
@@ -78,16 +78,5 @@
 //! TODO
 //!
 
-// pbrt
-use core::pbrt::Float;
-use geometry::{Point2f, Vector2f};
-
 pub mod boxfilter;
 pub mod gaussian;
-
-// see filter.h
-
-pub trait Filter {
-    fn evaluate(&self, p: Point2f) -> Float;
-    fn get_radius(&self) -> Vector2f;
-}

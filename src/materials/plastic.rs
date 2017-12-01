@@ -7,7 +7,7 @@ use core::material::{Material, TransportMode};
 use core::microfacet::TrowbridgeReitzDistribution;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, Bxdf, FresnelDielectric, LambertianReflection, MicrofacetReflection};
-use textures::Texture;
+use core::texture::Texture;
 
 // see plastic.h
 

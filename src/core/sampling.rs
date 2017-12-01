@@ -2,11 +2,11 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Point2f, Vector2f, Vector3f};
 use core::pbrt::{INV_2_PI, INV_PI, PI_OVER_2, PI_OVER_4};
 use core::pbrt::Float;
 use core::pbrt::clamp_t;
 use core::rng::Rng;
-use geometry::{Point2f, Vector2f, Vector3f};
 
 // see sampling.h
 

@@ -2,9 +2,9 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Normal3f, Point2f, Point3f, Vector2f, Vector3f};
 use core::pbrt::{Float, Spectrum};
-use geometry::{Normal3f, Point2f, Point3f, Vector2f, Vector3f};
-use textures::Texture;
+use core::texture::Texture;
 use textures::constant::ConstantTexture;
 
 // see paramset.h

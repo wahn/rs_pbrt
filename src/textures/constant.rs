@@ -1,6 +1,6 @@
 // pbrt
 use core::interaction::SurfaceInteraction;
-use textures::Texture;
+use core::texture::Texture;
 
 // see constant.h
 

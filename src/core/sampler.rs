@@ -1,7 +1,7 @@
 // pbrt
 use core::camera::CameraSample;
+use core::geometry::{Point2f, Point2i};
 use core::pbrt::Float;
-use geometry::{Point2f, Point2i};
 
 // see sampler.h
 

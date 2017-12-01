@@ -8,7 +8,7 @@
 //! ```rust
 //! extern crate pbrt;
 //! 
-//! use pbrt::geometry::Vector3;
+//! use pbrt::core::geometry::Vector3;
 //! 
 //! fn main() {
 //!     let int_null = Vector3 { x: 0, y: 0, z: 0 };
@@ -36,7 +36,7 @@
 //! ```rust
 //! extern crate pbrt;
 //! 
-//! use pbrt::geometry::Point3;
+//! use pbrt::core::geometry::Point3;
 //! 
 //! fn main() {
 //!     let int_origin = Point3 { x: 0, y: 0, z: 0 };
@@ -66,7 +66,7 @@
 //! ```rust
 //! extern crate pbrt;
 //! 
-//! use pbrt::geometry::Normal3;
+//! use pbrt::core::geometry::Normal3;
 //! 
 //! fn main() {
 //!     let int_null = Normal3 { x: 0, y: 0, z: 0 };
@@ -93,7 +93,7 @@
 //! ```rust
 //! extern crate pbrt;
 //! 
-//! use pbrt::geometry::{Ray, Point3f, Vector3f};
+//! use pbrt::core::geometry::{Ray, Point3f, Vector3f};
 //! 
 //! fn main() {
 //!     let origin = Point3f {
@@ -147,7 +147,7 @@
 //! ```rust
 //! extern crate pbrt;
 //! 
-//! use pbrt::geometry::{Bounds3, Point3};
+//! use pbrt::core::geometry::{Bounds3, Point3};
 //! 
 //! fn main() {
 //!     let int_origin = Point3 { x: 0, y: 0, z: 0 };

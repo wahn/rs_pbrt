@@ -1,10 +1,10 @@
 // pbrt
+use core::geometry::{Point2i, Point2f};
 use core::lowdiscrepancy::{sobol_2d, van_der_corput};
 use core::pbrt::Float;
 use core::pbrt::round_up_pow2_32;
 use core::rng::Rng;
 use core::sampler::{PixelSampler, Sampler};
-use geometry::{Point2i, Point2f};
 
 // see zerotwosequence.h
 

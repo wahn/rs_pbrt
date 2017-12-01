@@ -1,8 +1,8 @@
 extern crate pbrt;
 
+use pbrt::core::geometry::Vector2f;
 use pbrt::core::pbrt::Float;
 use pbrt::filters::boxfilter::BoxFilter;
-use pbrt::geometry::Vector2f;
 
 fn main() {
     let xw: Float = 0.5;

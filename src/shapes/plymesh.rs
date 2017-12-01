@@ -12,13 +12,13 @@ use std::vec::Vec;
 use ply_rs::parser;
 use ply_rs::ply;
 // pbrt
+use core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use core::paramset::ParamSet;
 use core::pbrt::Float;
 use core::shape::Shape;
+use core::texture::Texture;
 use core::transform::Transform;
-use geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use shapes::triangle::{Triangle, TriangleMesh};
-use textures::Texture;
 
 pub fn create_ply_mesh(o2w: Transform,
                        w2o: Transform,

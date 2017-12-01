@@ -2,7 +2,7 @@ extern crate pbrt;
 
 use pbrt::core::pbrt::Float;
 use pbrt::core::transform::Transform;
-use pbrt::geometry::Vector3f;
+use pbrt::core::geometry::Vector3f;
 use pbrt::shapes::sphere::Sphere;
 
 fn main() {

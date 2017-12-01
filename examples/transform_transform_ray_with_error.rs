@@ -1,7 +1,7 @@
 extern crate pbrt;
 
+use pbrt::core::geometry::{Point3f, Ray, Vector3f};
 use pbrt::core::transform::Transform;
-use pbrt::geometry::{Point3f, Ray, Vector3f};
 
 fn main() {
     let t: Transform = Transform::translate(Vector3f {

@@ -1,12 +1,12 @@
 // std
 use std;
 // pbrt
+use core::geometry::{Point2f, Point2i, Vector2f};
 use core::memory::BlockedArray;
 use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, is_power_of_2, mod_t, round_up_pow2_32};
 use core::spectrum::lerp_rgb;
-use geometry::{Point2f, Point2i, Vector2f};
-use textures::lanczos;
+use core::texture::lanczos;
 
 // see mipmap.h
 

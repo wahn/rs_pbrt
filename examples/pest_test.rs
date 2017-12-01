@@ -6,10 +6,12 @@ extern crate pest_derive;
 extern crate getopts;
 extern crate pbrt;
 
-use pbrt::accelerators::{BVHAccel, SplitMethod};
+use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::api::{GraphicsState, RenderOptions, TransformSet};
 use pbrt::core::camera::Camera;
+use pbrt::core::filter::Filter;
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
@@ -22,10 +24,9 @@ use pbrt::core::film::Film;
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
 use pbrt::core::shape::Shape;
-use pbrt::filters::Filter;
+use pbrt::core::texture::{PlanarMapping2D, Texture, TextureMapping2D, UVMapping2D};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::filters::gaussian::GaussianFilter;
-use pbrt::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
 use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::integrators::path::PathIntegrator;
@@ -50,7 +51,6 @@ use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::checkerboard::Checkerboard2DTexture;
 use pbrt::textures::constant::ConstantTexture;
 use pbrt::textures::imagemap::ImageTexture;
-use pbrt::textures::{PlanarMapping2D, Texture, TextureMapping2D, UVMapping2D};
 
 // parser
 use pest::Parser;

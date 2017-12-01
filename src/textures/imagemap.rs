@@ -6,11 +6,11 @@ use std::sync::Arc;
 // others
 use image::{ImageResult, DynamicImage};
 // pbrt
+use core::geometry::{Point2f, Point2i, Vector2f};
 use core::interaction::SurfaceInteraction;
 use core::mipmap::{ImageWrap, MipMap};
 use core::pbrt::{Float, Spectrum};
-use textures::{Texture, TextureMapping2D};
-use geometry::{Point2f, Point2i, Vector2f};
+use core::texture::{Texture, TextureMapping2D};
 
 // see imagemap.h
 

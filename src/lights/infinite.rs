@@ -11,6 +11,8 @@ use half::f16;
 #[cfg(feature="openexr")]
 use openexr::{FrameBufferMut, InputFile, PixelType};
 // pbrt
+use core::geometry::{Bounds3f, Normal3f, Point2i, Point2f, Point3f, Ray, Vector3f};
+use core::geometry::{spherical_phi, spherical_theta, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::mipmap::{ImageWrap, MipMap};
 use core::light::{Light, LightFlags, VisibilityTester};
@@ -19,8 +21,6 @@ use core::pbrt::{Float, Spectrum};
 use core::sampling::Distribution2D;
 use core::scene::Scene;
 use core::transform::Transform;
-use geometry::{Bounds3f, Normal3f, Point2i, Point2f, Point3f, Ray, Vector3f};
-use geometry::{spherical_phi, spherical_theta, vec3_normalize};
 
 // see https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
 #[inline]

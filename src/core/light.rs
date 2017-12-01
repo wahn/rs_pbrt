@@ -1,8 +1,8 @@
 // pbrt
+use core::geometry::{Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::pbrt::{Float, Spectrum};
 use core::scene::Scene;
-use geometry::{Point2f, Ray, Vector3f};
 
 // see light.h
 

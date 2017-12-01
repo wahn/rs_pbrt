@@ -2,14 +2,14 @@
 use std;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Point2f, Ray, Vector3f};
+use core::geometry::{nrm_dot_vec3, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{AreaLight, Light, LightFlags, VisibilityTester};
 use core::pbrt::{Float, Spectrum};
 use core::scene::Scene;
 use core::shape::Shape;
 use core::transform::Transform;
-use geometry::{Point2f, Ray, Vector3f};
-use geometry::{nrm_dot_vec3, vec3_normalize};
 
 // see diffuse.h
 

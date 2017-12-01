@@ -1,4 +1,6 @@
 // pbrt
+use core::geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
+use core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_normalize};
 use core::integrator::SamplerIntegrator;
 use core::interaction::Interaction;
 use core::material::TransportMode;
@@ -7,8 +9,6 @@ use core::sampler::Sampler;
 use core::sampling::{cosine_hemisphere_pdf, cosine_sample_hemisphere, uniform_hemisphere_pdf,
                      uniform_sample_hemisphere};
 use core::scene::Scene;
-use geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
-use geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_normalize};
 
 // see ao.h
 

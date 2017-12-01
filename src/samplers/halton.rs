@@ -1,6 +1,7 @@
 // std
 use std::sync::RwLock;
 // pbrt
+use core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 use core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
 use core::lowdiscrepancy::{compute_radical_inverse_permutations, inverse_radical_inverse,
                            scrambled_radical_inverse, radical_inverse};
@@ -8,7 +9,6 @@ use core::pbrt::Float;
 use core::pbrt::mod_t;
 use core::sampler::{GlobalSampler, Sampler};
 use core::rng::Rng;
-use geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 
 // see halton.h
 

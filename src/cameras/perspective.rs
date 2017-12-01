@@ -4,13 +4,13 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
+use core::geometry::{Bounds2f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f};
+use core::geometry::vec3_normalize;
 use core::paramset::ParamSet;
 use core::pbrt::Float;
 use core::pbrt::lerp;
 use core::sampling::concentric_sample_disk;
 use core::transform::{AnimatedTransform, Transform};
-use geometry::{Bounds2f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f};
-use geometry::vec3_normalize;
 
 // see perspective.h
 

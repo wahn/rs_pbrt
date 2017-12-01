@@ -3,11 +3,11 @@ extern crate pbrt;
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::{Camera, CameraSample};
 use pbrt::core::film::Film;
+use pbrt::core::filter::Filter;
+use pbrt::core::geometry::{Bounds2f, Point2f, Point2i, Point3f, Ray, Vector2f, Vector3f};
 use pbrt::core::pbrt::Float;
 use pbrt::core::transform::{AnimatedTransform, Transform};
-use pbrt::filters::Filter;
 use pbrt::filters::boxfilter::BoxFilter;
-use pbrt::geometry::{Bounds2f, Point2f, Point2i, Point3f, Ray, Vector2f, Vector3f};
 use std::sync::Arc;
 
 fn main() {

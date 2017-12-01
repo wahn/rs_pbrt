@@ -1,7 +1,7 @@
 // pbrt
+use core::filter::Filter;
+use core::geometry::{Point2f, Vector2f};
 use core::pbrt::Float;
-use filters::Filter;
-use geometry::{Point2f, Vector2f};
 
 // see box.h
 

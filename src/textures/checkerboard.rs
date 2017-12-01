@@ -1,9 +1,9 @@
 // std
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Point2f, Vector2f};
 use core::interaction::SurfaceInteraction;
-use textures::{Texture, TextureMapping2D};
-use geometry::{Point2f, Vector2f};
+use core::texture::{Texture, TextureMapping2D};
 
 // checkerboard.h
 

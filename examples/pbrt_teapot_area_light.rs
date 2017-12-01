@@ -1,7 +1,9 @@
 extern crate pbrt;
 
-use pbrt::accelerators::{BVHAccel, SplitMethod};
+use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
+use pbrt::core::filter::Filter;
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::pbrt::{Float, Spectrum};
@@ -10,9 +12,7 @@ use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::core::film::Film;
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
-use pbrt::filters::Filter;
 use pbrt::filters::boxfilter::BoxFilter;
-use pbrt::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::plastic::PlasticMaterial;

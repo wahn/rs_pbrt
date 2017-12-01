@@ -1,7 +1,7 @@
 extern crate pbrt;
 
+use pbrt::core::geometry::{Point3f, Vector3f};
 use pbrt::core::transform::Transform;
-use pbrt::geometry::{Point3f, Vector3f};
 
 fn main() {
     // LookAt 2 2 5  0 -.4 0  0 1 0 (see spheres-differentials-texfilt.pbrt)

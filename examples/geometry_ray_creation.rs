@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::geometry::{Ray, Point3f, Vector3f};
+use pbrt::core::geometry::{Ray, Point3f, Vector3f};
 
 fn main() {
     let origin = Point3f {

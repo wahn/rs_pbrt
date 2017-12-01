@@ -1,11 +1,11 @@
 // pbrt
+use core::geometry::{Point2i, Point2f};
 use core::pbrt::Float;
 use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::rng::Rng;
 use core::sampling::shuffle;
 use core::sobolmatrices::{NUM_SOBOL_DIMENSIONS, SOBOL_MATRICES_32, SOBOL_MATRIX_SIZE,
                           VD_C_SOBOL_MATRICES, VD_C_SOBOL_MATRICES_INV};
-use geometry::{Point2i, Point2f};
 
 // see lowdiscrepancy.h
 

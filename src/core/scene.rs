@@ -8,11 +8,11 @@
 // std
 use std::sync::Arc;
 // pbrt
-use accelerators::BVHAccel;
+use accelerators::bvh::BVHAccel;
+use core::geometry::{Bounds3f, Ray, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::light::{Light, LightFlags};
 use core::primitive::Primitive;
-use geometry::{Bounds3f, Ray, Vector3f};
 
 // see scene.h
 

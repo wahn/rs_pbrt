@@ -1,8 +1,8 @@
 extern crate pbrt;
 
+use pbrt::core::geometry::{Point3f, Ray, Vector3f};
 use pbrt::core::pbrt::Float;
 use pbrt::core::pbrt::quadratic;
-use pbrt::geometry::{Point3f, Ray, Vector3f};
 
 fn main() {
     // see bool Sphere::Intersect(...) in sphere.cpp

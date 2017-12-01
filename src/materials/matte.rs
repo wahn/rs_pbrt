@@ -6,7 +6,7 @@ use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, Bxdf, LambertianReflection, OrenNayar};
-use textures::Texture;
+use core::texture::Texture;
 
 // see matte.h
 

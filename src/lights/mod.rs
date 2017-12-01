@@ -43,7 +43,7 @@
 //! 
 //! use pbrt::core::pbrt::Spectrum;
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::{Point3f, Vector3f};
+//! use pbrt::core::geometry::{Point3f, Vector3f};
 //! use pbrt::lights::distant::DistantLight;
 //! 
 //! fn main() {
@@ -91,7 +91,7 @@
 //! use pbrt::core::pbrt::{Float, Spectrum};
 //! use pbrt::core::shape::Shape;
 //! use pbrt::core::transform::Transform;
-//! use pbrt::geometry::Vector3f;
+//! use pbrt::core::geometry::Vector3f;
 //! use pbrt::lights::diffuse::DiffuseAreaLight;
 //! use pbrt::shapes::disk::Disk;
 //! use std::sync::Arc;

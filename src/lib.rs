@@ -33,7 +33,6 @@ pub mod accelerators;
 pub mod cameras;
 pub mod core;
 pub mod filters;
-pub mod geometry;
 pub mod integrators;
 pub mod lights;
 pub mod materials;
@@ -43,12 +42,12 @@ pub mod textures;
 
 // pbrt
 use core::camera::{Camera, CameraSample};
+use core::geometry::{Bounds2i, Point2i, Ray, Vector2i};
+use core::geometry::pnt2_inside_exclusive;
 use core::integrator::SamplerIntegrator;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 use core::scene::Scene;
-use geometry::{Bounds2i, Point2i, Ray, Vector2i};
-use geometry::pnt2_inside_exclusive;
 
 // see github/tray_rust/src/sampler/block_queue.rs
 

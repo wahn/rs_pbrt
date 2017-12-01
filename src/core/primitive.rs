@@ -1,14 +1,14 @@
 // std
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Bounds3f, Ray};
+use core::geometry::nrm_dot_nrm;
 use core::interaction::SurfaceInteraction;
 use core::light::AreaLight;
 use core::material::{Material, TransportMode};
 use core::pbrt::Float;
 use core::shape::Shape;
 use core::transform::{AnimatedTransform, Transform};
-use geometry::{Bounds3f, Ray};
-use geometry::nrm_dot_nrm;
 
 // see primitive.h
 

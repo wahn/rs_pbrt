@@ -2,6 +2,8 @@
 use std;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
+use core::geometry::vec3_abs_dot_nrm;
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::light::{Light, VisibilityTester};
 use core::light::is_delta_light;
@@ -12,8 +14,6 @@ use core::sampler::Sampler;
 use core::sampling::Distribution1D;
 use core::sampling::power_heuristic;
 use core::scene::Scene;
-use geometry::{Bounds2i, Point2f, Ray, Vector3f};
-use geometry::vec3_abs_dot_nrm;
 
 // see integrator.h
 

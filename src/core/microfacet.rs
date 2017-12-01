@@ -1,11 +1,11 @@
 // std
 use std::f32::consts::PI;
 // pbrt
+use core::geometry::{Point2f, Vector3f};
+use core::geometry::{spherical_direction, vec3_abs_dot_vec3, vec3_normalize};
 use core::pbrt::Float;
 use core::reflection::{abs_cos_theta, cos_2_phi, cos_2_theta, cos_phi, cos_theta, sin_2_phi,
                        sin_phi, tan_2_theta, tan_theta, vec3_same_hemisphere_vec3};
-use geometry::{Point2f, Vector3f};
-use geometry::{spherical_direction, vec3_abs_dot_vec3, vec3_normalize};
 
 // see microfacet.h
 

@@ -1,8 +1,8 @@
 extern crate pbrt;
 
+use pbrt::core::geometry::Vector3f;
 use pbrt::core::pbrt::Float;
 use pbrt::core::transform::Transform;
-use pbrt::geometry::Vector3f;
 use pbrt::shapes::cylinder::Cylinder;
 
 fn main() {

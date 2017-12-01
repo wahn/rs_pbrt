@@ -7,8 +7,8 @@ use core::material::Material;
 use core::paramset::ParamSet;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
+use core::texture::Texture;
 use core::transform::{Matrix4x4, Transform};
-use textures::Texture;
 
 // see api.cpp
 

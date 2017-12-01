@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::geometry::Point3;
+use pbrt::core::geometry::Point3;
 
 fn main() {
     let int_origin = Point3 { x: 0, y: 0, z: 0 };

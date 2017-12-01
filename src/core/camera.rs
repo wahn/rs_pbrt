@@ -2,8 +2,8 @@
 use std::sync::Arc;
 // pbrt
 use core::film::Film;
+use core::geometry::{Point2f, Ray};
 use core::pbrt::Float;
-use geometry::{Point2f, Ray};
 
 // see camera.h
 

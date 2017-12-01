@@ -1,11 +1,11 @@
 // pbrt
+use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
+use core::geometry::{pnt3_distance_squared, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::pbrt::{Float, Spectrum};
 use core::scene::Scene;
 use core::transform::Transform;
-use geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
-use geometry::{pnt3_distance_squared, vec3_normalize};
 
 // see point.h
 
