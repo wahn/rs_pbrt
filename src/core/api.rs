@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 // pbrt
 use core::light::Light;
+use core::material::Material;
 use core::paramset::ParamSet;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::transform::{Matrix4x4, Transform};
-use materials::Material;
 use textures::Texture;
 
 // see api.cpp

@@ -5,13 +5,13 @@ use std::sync::Arc;
 use core::efloat::EFloat;
 use core::efloat::quadratic_efloat;
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
+use core::material::Material;
 use core::pbrt::Float;
 use core::pbrt::{clamp_t, gamma, lerp, radians};
 use core::transform::Transform;
 use geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use geometry::{nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared, vec3_cross_vec3,
                vec3_dot_vec3, vec3_normalize};
-use materials::Material;
 use shapes::Shape;
 
 // see cylinder.h

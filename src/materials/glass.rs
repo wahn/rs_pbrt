@@ -3,12 +3,11 @@ use std;
 use std::sync::Arc;
 // pbrt
 use core::interaction::SurfaceInteraction;
-use core::material::TransportMode;
+use core::material::{Material, TransportMode};
 use core::microfacet::TrowbridgeReitzDistribution;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, Bxdf, FresnelDielectric, FresnelSpecular, MicrofacetReflection,
                        SpecularReflection, SpecularTransmission};
-use materials::Material;
 use textures::Texture;
 
 // see glass.h

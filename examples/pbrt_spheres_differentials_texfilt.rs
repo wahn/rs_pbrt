@@ -2,7 +2,7 @@ extern crate pbrt;
 extern crate getopts;
 
 use pbrt::accelerators::{BVHAccel, SplitMethod};
-use pbrt::cameras::PerspectiveCamera;
+use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::mipmap::ImageWrap;

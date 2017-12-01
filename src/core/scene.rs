@@ -20,12 +20,14 @@ use geometry::{Bounds3f, Ray, Vector3f};
 pub struct Scene {
     pub lights: Vec<Arc<Light + Sync + Send>>,
     pub infinite_lights: Vec<Arc<Light + Sync + Send>>,
-    aggregate: Arc<BVHAccel>, // TODO: Primitive,
-    world_bound: Bounds3f,
+    pub aggregate: Arc<BVHAccel>, // TODO: Primitive,
+    pub world_bound: Bounds3f,
 }
 
 impl Scene {
-    pub fn new(aggregate: Arc<BVHAccel>, lights: Vec<Arc<Light + Sync + Send>>) -> Self {
+    pub fn new(aggregate: Arc<BVHAccel>,
+               lights: Vec<Arc<Light + Sync + Send>>)
+               -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
         let scene: Scene = Scene {
             lights: Vec::new(),

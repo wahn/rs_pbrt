@@ -7,11 +7,11 @@ use typed_arena::Arena;
 // pbrt
 use core::interaction::SurfaceInteraction;
 use core::light::AreaLight;
+use core::material::Material;
 use core::pbrt::Float;
 use core::primitive::Primitive;
 use geometry::{Bounds3f, Point3f, Ray, Vector3f};
 use geometry::{bnd3_union_bnd3, bnd3_union_pnt3};
-use materials::Material;
 
 // see bvh.h
 
