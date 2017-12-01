@@ -21,6 +21,3 @@ pest_derive = "^1.0.0-beta"
 ply-rs = "0.1.1"
 time = "0.1"
 typed-arena = "1.3.0"
-
-[patch.crates-io]
-openexr = { path = "openexr-rs-master", optional = true }
