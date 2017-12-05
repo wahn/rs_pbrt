@@ -367,20 +367,23 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
             ro.lights.push(distant_light);
         }
     } else if param_set.name == String::from("infinite") ||
-              param_set.name == String::from("exinfinite") {
+        param_set.name == String::from("exinfinite")
+    {
         let l: Spectrum = param_set
             .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
         let sc: Spectrum =
             param_set.find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
         let mut texmap: String = param_set
             .find_one_filename(String::from("mapname"), String::from(""));
-        unsafe {
-            if let Some(ref search_directory) = SEARCH_DIRECTORY {
-                // texmap = AbsolutePath(ResolveFilename(texmap));
-                let mut path_buf: PathBuf = PathBuf::from("/");
-                path_buf.push(search_directory.as_ref());
+        if texmap != String::from("") {
+            unsafe {
+                if let Some(ref search_directory) = SEARCH_DIRECTORY {
+                    // texmap = AbsolutePath(ResolveFilename(texmap));
+                    let mut path_buf: PathBuf = PathBuf::from("/");
+                    path_buf.push(search_directory.as_ref());
                 path_buf.push(texmap);
-                texmap = String::from(path_buf.to_str().unwrap());
+                    texmap = String::from(path_buf.to_str().unwrap());
+                }
             }
         }
         let n_samples: i32 = param_set.find_one_int(String::from("nsamples"), 1 as i32);
@@ -528,7 +531,16 @@ fn make_texture(param_set: &ParamSet) {
                         let mapping: String =
                             tp.find_string(String::from("mapping"), String::from("uv"));
                         if mapping == String::from("uv") {
-                            println!("TODO: UVMapping2D");
+                            let su: Float = tp.find_float(String::from("uscale"), 1.0);
+                            let sv: Float = tp.find_float(String::from("vscale"), 1.0);
+                            let du: Float = tp.find_float(String::from("udelta"), 0.0);
+                            let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
+                            map = Some(Box::new(UVMapping2D {
+                                su: su,
+                                sv: sv,
+                                du: du,
+                                dv: dv,
+                            }));
                         } else if mapping == String::from("spherical") {
                             println!("TODO: SphericalMapping2D");
                         } else if mapping == String::from("cylindrical") {
@@ -555,7 +567,10 @@ fn make_texture(param_set: &ParamSet) {
                         }
                         // TODO: aamode
                         if let Some(mapping) = map {
-                            Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
+                            let st = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
+                            graphics_state
+                                .spectrum_textures
+                                .insert(param_set.name.clone(), st);
                         }
                     } else {
                         // dim == 3
@@ -1631,6 +1646,16 @@ fn main() {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
                                                                             }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -1833,6 +1858,16 @@ fn main() {
                                                                                 let b: bool = tuple.1;
                                                                                 if let Some(ref mut param_set) = PARAM_SET {
                                                                                     param_set.add_bool(string, b);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
@@ -2059,6 +2094,16 @@ fn main() {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
                                                                             }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2253,6 +2298,16 @@ fn main() {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
                                                                             }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2443,6 +2498,16 @@ fn main() {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
                                                                             }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -2629,6 +2694,16 @@ fn main() {
                                                                                 let b: bool = tuple.1;
                                                                                 if let Some(ref mut param_set) = PARAM_SET {
                                                                                     param_set.add_bool(string, b);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
@@ -2837,6 +2912,16 @@ fn main() {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
                                                                             }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3022,6 +3107,16 @@ fn main() {
                                                                                 let b: bool = tuple.1;
                                                                                 if let Some(ref mut param_set) = PARAM_SET {
                                                                                     param_set.add_bool(string, b);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
@@ -3212,6 +3307,16 @@ fn main() {
                                                                                 let b: bool = tuple.1;
                                                                                 if let Some(ref mut param_set) = PARAM_SET {
                                                                                     param_set.add_bool(string, b);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
@@ -3410,6 +3515,16 @@ fn main() {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
                                                                             }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
                                                                             Rule::float_param => {
                                                                                 let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
                                                                                 let string: String = tuple.0;
@@ -3595,6 +3710,16 @@ fn main() {
                                                                                 let b: bool = tuple.1;
                                                                                 if let Some(ref mut param_set) = PARAM_SET {
                                                                                     param_set.add_bool(string, b);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }
@@ -3939,6 +4064,16 @@ fn main() {
                                                                                 let b: bool = tuple.1;
                                                                                 if let Some(ref mut param_set) = PARAM_SET {
                                                                                     param_set.add_bool(string, b);
+                                                                                } else {
+                                                                                    panic!("Can't get parameter set.");
+                                                                                }
+                                                                            }
+                                                                            Rule::blackbody_param => {
+                                                                                let tuple: (String, Vec<Float>) = pbrt_float_parameter(&mut parameter_pair.into_inner());
+                                                                                let string: String = tuple.0;
+                                                                                let floats: Vec<Float> = tuple.1;
+                                                                                if let Some(ref mut param_set) = PARAM_SET {
+                                                                                    param_set.add_blackbody_spectrum(string, floats);
                                                                                 } else {
                                                                                     panic!("Can't get parameter set.");
                                                                                 }

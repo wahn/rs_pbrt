@@ -1468,6 +1468,36 @@ pub const CIE_LAMBDA: [Float; N_CIE_SAMPLES as usize] =
      828.0, 829.0, 830.0];
 pub const CIE_Y_INTEGRAL: Float = 106.856895;
 
+pub fn blackbody(lambda: &[Float], n: usize, t: Float, le: &mut Vec<Float>) {
+    if t <= 0.0 as Float {
+        for _i in 0..n {
+            le.push(0.0 as Float);
+        }
+        return;
+    }
+    let c: Float = 299792458.0 as Float;
+    let h: Float = 6.62606957e-34 as Float;
+    let kb: Float = 1.3806488e-23 as Float;
+    for i in 0..n {
+        let l: Float = lambda[i] * 1.0e-9 as Float;
+        let lambda5: Float = (l * l) * (l* l) * l;
+        let lei: Float = (2.0 as Float * h * c * c) / (lambda5 * (((h * c) / (l * kb * t)).exp() - 1.0 as Float));
+        assert!(!lei.is_nan());
+        le.push(lei);
+    }
+}
+
+pub fn blackbody_normalized(lambda: &[Float], n: usize, t: Float, le: &mut Vec<Float>) {
+    blackbody(lambda, n, t, le);
+    // normalize _Le_ values based on maximum blackbody radiance
+    let lambda_max: [Float; 1] = [2.8977721e-3 as Float / t * 1.0e9 as Float];
+    let mut max_l: Vec<Float> = Vec::new();
+    blackbody(&lambda_max, 1, t, &mut max_l);
+    for i in 0..n {
+        le[i] /= max_l[0];
+    }
+}
+
 #[derive(Debug,Clone)]
 pub enum SpectrumType {
     Reflectance,

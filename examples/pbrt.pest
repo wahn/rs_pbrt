@@ -24,6 +24,7 @@ named_statement = { accelerator |
                     shape |
                     texture }
 parameter = { bool_param |
+              blackbody_param |
               float_param |
               integer_param |
               point_param |
@@ -34,6 +35,7 @@ parameter = { bool_param |
               texture_param |
               vector_param }
 bool_param = { ("\"bool" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack) }
+blackbody_param = { ("\"blackbody" ~ ident ~ "\"" ~ lbrack ~ number ~ number+ ~ rbrack) }
 float_param = { ("\"float" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack) |
                 ("\"float" ~ ident ~ "\"" ~ number) }
 string_param = { "\"string" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack |

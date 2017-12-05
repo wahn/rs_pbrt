@@ -161,11 +161,11 @@ impl InfiniteAreaLight {
                 InfiniteAreaLight::new_hdr(light_to_world, l, n_samples, texmap)
             }
         } else {
-            InfiniteAreaLight::default(n_samples)
+            InfiniteAreaLight::default(n_samples, l)
         }
     }
     pub fn new_hdr(light_to_world: &Transform,
-                   _l: &Spectrum,
+                   l: &Spectrum,
                    n_samples: i32,
                    texmap: String)
                    -> Self {
@@ -234,11 +234,11 @@ impl InfiniteAreaLight {
             }
         }
         println!("WARNING: InfiniteAreaLight::new() ... no OpenEXR support !!!");
-        InfiniteAreaLight::default(n_samples)
+        InfiniteAreaLight::default(n_samples, l)
     }
-    fn default(n_samples: i32) -> Self {
+    fn default(n_samples: i32, l: &Spectrum) -> Self {
         let resolution: Point2i = Point2i { x: 1_i32, y: 1_i32 };
-        let texels: Vec<Spectrum> = vec![Spectrum::new(1.0 as Float)];
+        let texels: Vec<Spectrum> = vec![*l];
         let do_trilinear: bool = false;
         let max_aniso: Float = 8.0 as Float;
         let wrap_mode: ImageWrap = ImageWrap::Repeat;

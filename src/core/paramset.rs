@@ -4,6 +4,8 @@ use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Point3f, Vector2f, Vector3f};
 use core::pbrt::{Float, Spectrum};
+use core::spectrum::{CIE_LAMBDA, N_CIE_SAMPLES};
+use core::spectrum::blackbody_normalized;
 use core::texture::Texture;
 use textures::constant::ConstantTexture;
 
@@ -177,20 +179,38 @@ impl ParamSet {
         }
         self.normals
             .push(ParamSetItem::<Normal3f> {
-                      name: name,
-                      values: p_values,
-                      n_values: n_normals,
-                      looked_up: false,
-                  });
+                name: name,
+                values: p_values,
+                n_values: n_normals,
+                looked_up: false,
+            });
     }
     pub fn add_rgb_spectrum(&mut self, name: String, value: Spectrum) {
         self.spectra
             .push(ParamSetItem::<Spectrum> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+                name: name,
+                values: vec![value],
+                n_values: 1_usize,
+                looked_up: false,
+            });
+    }
+    pub fn add_blackbody_spectrum(&mut self, name: String, values: Vec<Float>) {
+        assert!(values.len() % 2 == 0);
+        // temperature (K), scale, ...
+        let n_values: usize = values.len() / 2_usize;
+        let mut s: Vec<Spectrum> = Vec::with_capacity(n_values);
+        let mut v: Vec<Float> = Vec::with_capacity(N_CIE_SAMPLES as usize);
+        for i in 0..n_values {
+            blackbody_normalized(&CIE_LAMBDA, N_CIE_SAMPLES as usize, values[2 * i], &mut v);
+            s.push(Spectrum::from_sampled(&CIE_LAMBDA, &v, N_CIE_SAMPLES as i32) * values[2 * i + 1]);
+        }
+        self.spectra
+            .push(ParamSetItem::<Spectrum> {
+                name: name,
+                values: s,
+                n_values: n_values,
+                looked_up: false,
+            });
     }
     pub fn copy_from(&mut self, param_set: &ParamSet) {
         self.key_word = param_set.key_word.clone();
@@ -203,11 +223,11 @@ impl ParamSet {
             }
             self.bools
                 .push(ParamSetItem::<bool> {
-                          name: b.name.clone(),
-                          values: values,
-                          n_values: b.n_values,
-                          looked_up: false,
-                      });
+                    name: b.name.clone(),
+                    values: values,
+                    n_values: b.n_values,
+                    looked_up: false,
+                });
         }
         self.ints.clear();
         for i in &param_set.ints {
