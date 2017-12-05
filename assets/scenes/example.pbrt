@@ -1,25 +1,37 @@
-LookAt 0 10 100   0 -1 0 0 1 0
-Camera "perspective" "float fov" [30]
-PixelFilter "mitchell" "float xwidth" [2] "float ywidth" [2]
-Sampler "halton"
-Film "image" "string filename" ["simple.png"]
-     "integer xresolution" [200] "integer yresolution" [200]
+LookAt 3 4 1.5  # eye
+       .5 .5 0  # look at point
+       0 0 1    # up vector
+Camera "perspective" "float fov" 45
+
+Sampler "halton" "integer pixelsamples" 128
+Integrator "path"
+Film "image" "string filename" "simple.png"
+     "integer xresolution" [400] "integer yresolution" [400]
 
 WorldBegin
+
+# uniform blue-ish illumination from all directions
+LightSource "infinite" "rgb L" [.4 .45 .5]
+
+# approximate the sun
+LightSource "distant"  "point from" [ -30 40  100 ]
+   "blackbody L" [3000 1.5]
+
 AttributeBegin
-  CoordSysTransform "camera"
-  LightSource "distant"
-              "point from" [0 0 0] "point to"   [0 0 1]
-              "rgb L"    [3 3 3]
+  Material "glass"
+  Shape "sphere" "float radius" 1
 AttributeEnd
 
 AttributeBegin
-  Rotate 135 1 0 0
   Texture "checks" "spectrum" "checkerboard"
-          "float uscale" [4] "float vscale" [4]
-          "rgb tex1" [1 0 0] "rgb tex2" [0 0 1]
-  Material "matte"
-           "texture Kd" "checks"
-  Shape "disk" "float radius" [20] "float height" [-1]
+          "float uscale" [8] "float vscale" [8]
+          "rgb tex1" [.1 .1 .1] "rgb tex2" [.8 .8 .8]
+  Material "matte" "texture Kd" "checks"
+  Translate 0 0 -1
+  Shape "trianglemesh"
+      "integer indices" [0 1 2 0 2 3]
+      "point P" [ -20 -20 0   20 -20 0   20 20 0   -20 20 0 ]
+      "float st" [ 0 0   1 0    1 1   0 1 ]
 AttributeEnd
+
 WorldEnd
