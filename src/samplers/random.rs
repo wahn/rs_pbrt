@@ -68,9 +68,9 @@ impl Sampler for RandomSampler {
     fn get_2d(&mut self) -> Point2f {
         // TODO: ProfilePhase _(Prof::GetSample);
         assert!(self.current_pixel_sample_index < self.samples_per_pixel);
-        // C++: call y first
-        let y = self.rng.uniform_float();
+        // C++: call x first
         let x = self.rng.uniform_float();
+        let y = self.rng.uniform_float();
         Point2f {
             x: x,
             y: y,

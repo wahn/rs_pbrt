@@ -1,4 +1,4 @@
-//! Perspective Camera
+//! # Perspective Camera
 //!
 //! The two most characteristic features of perspective are that
 //! objects are smaller as their distance from the observer increases;
