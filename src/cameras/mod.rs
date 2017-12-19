@@ -1,4 +1,15 @@
-//! # Perspective Camera
+//! # Cameras
+//!
+//! The abstract **Camera** base class holds generic camera options
+//! and defines the interface that all camera implementations must
+//! provide.
+//!
+//! - EnvironmentCamera
+//! - OrthographicCamera
+//! - PerspectiveCamera
+//! - RealisticCamera
+//!
+//! ## Perspective Camera
 //!
 //! The two most characteristic features of perspective are that
 //! objects are smaller as their distance from the observer increases;

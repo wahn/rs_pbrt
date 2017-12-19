@@ -1,4 +1,17 @@
-//! # Halton Sampler
+//! # Samplers
+//!
+//! The **Sampler** base class not only defines the interface to
+//! samplers but also provides some common functionality for use by
+//! **Sampler** implementations.
+//!
+//! - HaltonSampler
+//! - MaxMinDistSampler
+//! - RandomSampler
+//! - SobolSampler
+//! - StratifiedSampler
+//! - ZeroTwoSequenceSampler
+//!
+//! ## Halton Sampler
 //!
 //! The Halton Sampler generates not only points that are guaranteed
 //! to not clump too closely together, but also generates points that
@@ -7,7 +20,7 @@
 //!
 //! ![halton](https://www.janwalter.org/assets/pbrt_rust_halton.png)
 //!
-//! # Random Sampler
+//! ## Random Sampler
 //!
 //! The Random Sampler is using the random number generetor class
 //! **RNG** based on an unpublished manuscript by O'Neill: A family of
@@ -16,7 +29,7 @@
 //!
 //! ![random](https://www.janwalter.org/assets/pbrt_rust_random.png)
 //!
-//! # Sobol Sampler
+//! ## Sobol Sampler
 //!
 //! The Sobol Sampler is very efficient to implement while also being
 //! extremly well distributed over all dimensions of the sample
@@ -25,7 +38,7 @@
 //!
 //! ![sobol](https://www.janwalter.org/assets/pbrt_rust_sobol.png)
 //!
-//! # (0,2)-Sequence Sampler
+//! ## (0,2)-Sequence Sampler
 //!
 //! Certain low-discrepancy sequences allow us to satisfy two
 //! desirable properties of samples: they generate sample vectors for

@@ -1,5 +1,17 @@
 //! # Light Sources
 //!
+//! In order for objects in a scene to be visible, there must be a
+//! source of illumination so that some light is reflected from them
+//! to the camera sensor.
+//!
+//! - DiffuseAreaLight
+//! - DistantLight
+//! - GonioPhotometricLight
+//! - InfiniteAreaLight
+//! - PointLight
+//! - ProjectionLight
+//! - SpotLight
+//!
 //! ## Point Lights
 //!
 //! Isotropic point light source that emits the same amount of light

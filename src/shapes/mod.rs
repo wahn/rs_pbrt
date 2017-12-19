@@ -8,6 +8,15 @@
 //! the underlying shape. This makes it possible to separate the
 //! geometric and the shading subsystem of pbrt.
 //!
+//! - Cone
+//! - Curve
+//! - Cylinder
+//! - Disk
+//! - Hyperboloid
+//! - Paraboloid
+//! - Sphere
+//! - Triangle
+//!
 //! ## Spheres
 //!
 //! Spheres are a special case of a general type of surfaces called

@@ -1,4 +1,13 @@
-//! # Ambient Occlusion (AO)
+//! # Integrators
+//!
+//! **Integrator** is an abstract base class that defines the
+//! **render()** method that must be provided by all integrators.
+//!
+//! - AOIntegrator
+//! - DirectLightingIntegrator
+//! - PathIntegrator
+//!
+//! ## Ambient Occlusion (AO)
 //!
 //! Ambient Occlusion is most often calculated by casting rays in
 //! every direction from the surface. Rays which reach the background
@@ -10,7 +19,7 @@
 //!
 //! ![Ambient Occlusion](https://www.janwalter.org/assets/cornell_box_pbrt_rust_ao.png)
 //!
-//! # Direct Lighting
+//! ## Direct Lighting
 //!
 //! The **DirectLightingIntegrator** accounts only for direct lighting
 //! &mdash; light that has traveled directly from a light source to the
@@ -20,7 +29,7 @@
 //!
 //! ![Direct Lighting](https://www.janwalter.org/assets/cornell_box_v0.1.13.png)
 //!
-//! # Path Tracing
+//! ## Path Tracing
 //!
 //! Path tracing incrementally generates paths of scattering events
 //! starting at the camera and ending at light sources in the scene.

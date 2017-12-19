@@ -1,5 +1,15 @@
 //! # Filters
 //!
+//! All filter implementations are derived from an abstract **Filter**
+//! class, which provides the interface for the functions used in
+//! filtering.
+//!
+//! - BoxFilter
+//! - GaussianFilter
+//! - MitchellFilter
+//! - LanczosSincFilter
+//! - TriangleFilter
+//!
 //! ## Box Filter
 //!
 //! One of the most commonly used filters in graphics is the box

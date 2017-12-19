@@ -1,3 +1,5 @@
+//! All the code for the PBRT core.
+
 pub mod api;
 pub mod camera;
 pub mod efloat;
