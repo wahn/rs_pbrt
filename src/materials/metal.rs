@@ -127,7 +127,7 @@ impl MetalMaterial {
         Arc::new(MetalMaterial::new(eta, k, roughness, u_roughness, v_roughness, remap_roughness))
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
-        let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let mut u_rough: Float;
         if let Some(ref u_roughness) = self.u_roughness {
             u_rough = u_roughness.evaluate(si);
@@ -152,7 +152,7 @@ impl MetalMaterial {
         let distrib: Option<TrowbridgeReitzDistribution> =
             Some(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
         bxdfs
-            .push(Box::new(MicrofacetReflection::new(Spectrum::new(1.0 as Float), distrib, fr_mf)));
+            .push(Arc::new(MicrofacetReflection::new(Spectrum::new(1.0 as Float), distrib, fr_mf)));
         Bsdf::new(si, 1.0, bxdfs)
     }
 }

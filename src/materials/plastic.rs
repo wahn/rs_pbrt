@@ -35,13 +35,13 @@ impl PlasticMaterial {
         }
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
-        let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         // initialize diffuse component of plastic material
         let kd: Spectrum = self.kd
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kd.is_black() {
-            bxdfs.push(Box::new(LambertianReflection::new(kd)));
+            bxdfs.push(Arc::new(LambertianReflection::new(kd)));
         }
         // initialize specular component of plastic material
         let ks: Spectrum = self.ks
@@ -62,7 +62,7 @@ impl PlasticMaterial {
                 alpha_y: rough,
                 sample_visible_area: true,
             };
-            bxdfs.push(Box::new(MicrofacetReflection::new(ks, Some(distrib), fresnel)));
+            bxdfs.push(Arc::new(MicrofacetReflection::new(ks, Some(distrib), fresnel)));
         }
         Bsdf::new(si, 1.0, bxdfs)
     }

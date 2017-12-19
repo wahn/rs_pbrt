@@ -25,15 +25,15 @@ impl MatteMaterial {
         }
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
-        let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let r: Spectrum = self.kd
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !r.is_black() {
             if self.sigma == 0.0 {
-                bxdfs.push(Box::new(LambertianReflection::new(r)));
+                bxdfs.push(Arc::new(LambertianReflection::new(r)));
             } else {
-                bxdfs.push(Box::new(OrenNayar::new(r, self.sigma)));
+                bxdfs.push(Arc::new(OrenNayar::new(r, self.sigma)));
             }
         }
         Bsdf::new(si, 1.5, bxdfs)

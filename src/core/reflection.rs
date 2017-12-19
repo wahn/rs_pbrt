@@ -24,11 +24,11 @@ pub struct Bsdf {
     pub ng: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub bxdfs: Vec<Box<Bxdf + Sync + Send>>,
+    pub bxdfs: Vec<Arc<Bxdf + Sync + Send>>,
 }
 
 impl Bsdf {
-    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Box<Bxdf + Sync + Send>>) -> Self {
+    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Arc<Bxdf + Sync + Send>>) -> Self {
         let ss = vec3_normalize(si.shading.dpdu);
         Bsdf {
             eta: eta,
@@ -105,7 +105,7 @@ impl Bsdf {
         let comp: u8 = std::cmp::min((u[0] * matching_comps as Float).floor() as u8,
                                      matching_comps - 1_u8);
         // get _BxDF_ pointer for chosen component
-        let mut bxdf: Option<&Box<Bxdf + Sync + Send>> = None;
+        let mut bxdf: Option<&Arc<Bxdf + Sync + Send>> = None;
         let mut count: i8 = comp as i8;
         let n_bxdfs: usize = self.bxdfs.len();
         let mut bxdf_index: usize = 0_usize;
@@ -257,6 +257,39 @@ pub trait Bxdf {
         }
     }
     fn get_type(&self) -> u8;
+}
+
+pub struct ScaledBxDF {
+    pub bxdf: Arc<Bxdf + Sync + Send>,
+    pub scale: Spectrum,
+}
+
+impl ScaledBxDF {
+    pub fn new(bxdf: Arc<Bxdf + Send + Sync>, scale: Spectrum) -> Self {
+        ScaledBxDF {
+            bxdf: bxdf,
+            scale: scale,
+        }
+    }
+}
+
+impl Bxdf for ScaledBxDF {
+    fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
+        self.scale * self.bxdf.f(wo, wi)
+    }
+    fn sample_f(&self,
+                wo: Vector3f,
+                wi: &mut Vector3f,
+                sample: Point2f,
+                pdf: &mut Float,
+                sampled_type: &mut u8)
+                -> Spectrum {
+        let f: Spectrum = self.bxdf.sample_f(wo, wi, sample, pdf, sampled_type);
+        self.scale * f
+    }
+    fn get_type(&self) -> u8 {
+        self.bxdf.get_type()
+    }
 }
 
 pub trait Fresnel {

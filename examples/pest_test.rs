@@ -34,6 +34,7 @@ use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::metal::MetalMaterial;
 use pbrt::materials::mirror::MirrorMaterial;
+use pbrt::materials::mixmat::MixMaterial;
 use pbrt::materials::plastic::PlasticMaterial;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::distant::DistantLight;
@@ -300,7 +301,30 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 } else if graphics_state.material == String::from("hair") {
                     println!("TODO: CreateHairMaterial");
                 } else if graphics_state.material == String::from("mix") {
-                    println!("TODO: CreateMixMaterial");
+                    let m1: String = mp.find_string(String::from("namedmaterial1"),
+                                                    String::from(""));
+                    let m2: String = mp.find_string(String::from("namedmaterial2"),
+                                                    String::from(""));
+                    let mat1 = match graphics_state.named_materials.get(&m1) {
+                        Some(named_material) => {
+                            named_material
+                        },
+                        None => {
+                            panic!("Material \"{}\" unknown.", m1);
+                        },
+                    };
+                    let mat2 = match graphics_state.named_materials.get(&m2) {
+                        Some(named_material) => {
+                            named_material
+                        },
+                        None => {
+                            panic!("Material \"{}\" unknown.", m2);
+                        },
+                    };
+                    let scale: Arc<Texture<Spectrum> + Send + Sync> =
+                        mp.get_spectrum_texture(String::from("scale"), Spectrum::new(0.5));
+                    let mix = Arc::new(MixMaterial::new(mat1.clone(), mat2.clone(), scale));
+                    return mix;
                 } else if graphics_state.material == String::from("metal") {
                     return MetalMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("substrate") {

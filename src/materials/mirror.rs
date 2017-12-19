@@ -21,12 +21,12 @@ impl MirrorMaterial {
         MirrorMaterial { kr: kr }
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
-        let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let r: Spectrum = self.kr
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let fresnel = Arc::new(FresnelNoOp {});
-        bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
+        bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
         Bsdf::new(si, 1.5, bxdfs)
     }
 }

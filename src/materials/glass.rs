@@ -29,7 +29,7 @@ impl GlassMaterial {
                 mode: TransportMode,
                 allow_multiple_lobes: bool)
                 -> Bsdf {
-        let mut bxdfs: Vec<Box<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let eta: Float = self.index.evaluate(si);
         let mut urough: Float = self.u_roughness.evaluate(si);
         let mut vrough: Float = self.v_roughness.evaluate(si);
@@ -41,7 +41,7 @@ impl GlassMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;
         if is_specular && allow_multiple_lobes {
-            bxdfs.push(Box::new(FresnelSpecular::new(r, t, 1.0 as Float, eta, mode)));
+            bxdfs.push(Arc::new(FresnelSpecular::new(r, t, 1.0 as Float, eta, mode)));
         } else {
             if self.remap_roughness {
                 urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
@@ -57,14 +57,14 @@ impl GlassMaterial {
                                            eta_t: eta,
                                        });
                 if is_specular {
-                    bxdfs.push(Box::new(SpecularReflection::new(r, fresnel)));
+                    bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
                 } else {
-                    bxdfs.push(Box::new(MicrofacetReflection::new(r, distrib, fresnel)));
+                    bxdfs.push(Arc::new(MicrofacetReflection::new(r, distrib, fresnel)));
                 }
             }
             if !t.is_black() {
                 if is_specular {
-                    bxdfs.push(Box::new(SpecularTransmission::new(t, 1.0, eta, mode)));
+                    bxdfs.push(Arc::new(SpecularTransmission::new(t, 1.0, eta, mode)));
                 } else {
                     // TODO: si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetTransmission)(
                     // T, distrib, 1.f, eta, mode));
