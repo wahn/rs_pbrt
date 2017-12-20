@@ -20,6 +20,9 @@ use core::scene::Scene;
 pub trait SamplerIntegrator {
     // TODO: use Sampler trait
     fn preprocess(&mut self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>);
+    /// Returns the incident radiance at the origin of a given
+    /// ray. Uses the scene's intersect routine to calculate a
+    /// **SurfaceInteraction** and spawns rays if necessary.
     fn li(&self,
           ray: &mut Ray,
           scene: &Scene,
