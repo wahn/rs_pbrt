@@ -322,7 +322,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                         },
                     };
                     let scale: Arc<Texture<Spectrum> + Send + Sync> =
-                        mp.get_spectrum_texture(String::from("scale"), Spectrum::new(0.5));
+                        mp.get_spectrum_texture(String::from("amount"), Spectrum::new(0.5));
                     let mix = Arc::new(MixMaterial::new(mat1.clone(), mat2.clone(), scale));
                     return mix;
                 } else if graphics_state.material == String::from("metal") {
