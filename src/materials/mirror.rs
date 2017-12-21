@@ -27,7 +27,7 @@ impl MirrorMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let fresnel = Arc::new(FresnelNoOp {});
         bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
-        Bsdf::new(si, 1.5, bxdfs)
+        Bsdf::new(si, 1.0, bxdfs)
     }
 }
 

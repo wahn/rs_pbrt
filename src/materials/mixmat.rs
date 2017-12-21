@@ -50,7 +50,7 @@ impl MixMaterial {
                                                                   si.dndu,
                                                                   si.dndv,
                                                                   si.time,
-                                                                  None);
+                                                                  si.shape);
         self.m1
             .compute_scattering_functions(si, mode.clone(), allow_multiple_lobes);
         self.m2

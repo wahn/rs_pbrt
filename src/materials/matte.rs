@@ -36,7 +36,7 @@ impl MatteMaterial {
                 bxdfs.push(Arc::new(OrenNayar::new(r, self.sigma)));
             }
         }
-        Bsdf::new(si, 1.5, bxdfs)
+        Bsdf::new(si, 1.0, bxdfs)
     }
 }
 

@@ -249,13 +249,7 @@ pub trait Bxdf {
                 pdf: &mut Float,
                 sampled_type: &mut u8)
                 -> Spectrum;
-    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
-        if vec3_same_hemisphere_vec3(wo, wi) {
-            abs_cos_theta(wi) * INV_PI
-        } else {
-            0.0 as Float
-        }
-    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float;
     fn get_type(&self) -> u8;
 }
 
@@ -286,6 +280,9 @@ impl Bxdf for ScaledBxDF {
                 -> Spectrum {
         let f: Spectrum = self.bxdf.sample_f(wo, wi, sample, pdf, sampled_type);
         self.scale * f
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        self.bxdf.pdf(wo, wi)
     }
     fn get_type(&self) -> u8 {
         self.bxdf.get_type()
@@ -366,6 +363,13 @@ impl Bxdf for SpecularReflection {
         let mut cos_theta_i: Float = cos_theta(*wi);
         self.fresnel.evaluate(&mut cos_theta_i) * self.r / abs_cos_theta(*wi)
     }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0 as Float
+        }
+    }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
     }
@@ -435,6 +439,13 @@ impl Bxdf for SpecularTransmission {
             ft *= Spectrum::new((eta_i * eta_i) / (eta_t * eta_t));
         }
         ft / abs_cos_theta(*wi)
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0 as Float
+        }
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8
@@ -529,6 +540,13 @@ impl Bxdf for FresnelSpecular {
             return ft / abs_cos_theta(*wi);
         }
     }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0 as Float
+        }
+    }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfTransmission as u8 |
         BxdfType::BsdfSpecular as u8
@@ -563,6 +581,13 @@ impl Bxdf for LambertianReflection {
         }
         *pdf = self.pdf(wo, *wi);
         self.f(wo, *wi)
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0 as Float
+        }
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
@@ -626,6 +651,13 @@ impl Bxdf for OrenNayar {
         }
         *pdf = self.pdf(wo, *wi);
         self.f(wo, *wi)
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0 as Float
+        }
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
