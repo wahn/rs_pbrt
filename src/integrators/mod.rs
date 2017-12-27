@@ -4,8 +4,13 @@
 //! **render()** method that must be provided by all integrators.
 //!
 //! - AOIntegrator
+//! - BDPTIntegrator
 //! - DirectLightingIntegrator
+//! - MLTIntegrator
 //! - PathIntegrator
+//! - SPPMIntegrator
+//! - VolPathIntegrator
+//! - WhittedIntegrator
 //!
 //! ## Ambient Occlusion (AO)
 //!

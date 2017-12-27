@@ -350,7 +350,8 @@ fn main() {
     if matches.opt_present("n") || matches.opt_present("m") {
         // use no texture
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
-        let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
+        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+        let matte = Arc::new(MatteMaterial::new(kd, sigma));
         for triangle in render_options.triangles {
             let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
             render_options.primitives.push(geo_prim.clone());
@@ -394,7 +395,8 @@ fn main() {
                                    dt: 1.0 as Float,
                                });
         let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
-        let matte = Arc::new(MatteMaterial::new(checker, 0.0 as Float));
+        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+        let matte = Arc::new(MatteMaterial::new(checker, sigma));
         for triangle in render_options.triangles {
             let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
             render_options.primitives.push(geo_prim.clone());
@@ -435,7 +437,8 @@ fn main() {
                                                    wrap_mode,
                                                    scale,
                                                    gamma));
-        let matte = Arc::new(MatteMaterial::new(lines_tex, 0.0 as Float));
+        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+        let matte = Arc::new(MatteMaterial::new(lines_tex, sigma));
         for triangle in render_options.triangles {
             let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
             render_options.primitives.push(geo_prim.clone());

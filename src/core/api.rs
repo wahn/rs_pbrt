@@ -4,11 +4,12 @@ use std::sync::Arc;
 // pbrt
 use core::light::Light;
 use core::material::Material;
-use core::paramset::ParamSet;
+use core::paramset::{ParamSet, TextureParams};
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::texture::Texture;
 use core::transform::{Matrix4x4, Transform};
+use materials::matte::MatteMaterial;
 
 // see api.cpp
 
@@ -107,8 +108,34 @@ pub struct GraphicsState {
     pub material_params: ParamSet,
     pub material: String,
     pub named_materials: HashMap<String, Arc<Material + Send + Sync>>,
-    pub current_named_material: String,
+    pub current_material: String,
     pub area_light_params: ParamSet,
     pub area_light: String,
     // bool reverseOrientation = false;
+}
+
+impl GraphicsState {
+    pub fn new() -> Self {
+        let float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>> = HashMap::new();
+        let spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>> =
+            HashMap::new();
+        let mut tp: TextureParams = TextureParams::new(ParamSet::default(),
+                                                       ParamSet::default(),
+                                                       float_textures.clone(),
+                                                       spectrum_textures.clone());
+        let mtl: Arc<Material + Send + Sync> = MatteMaterial::create(&mut tp);
+        let mut named_materials: HashMap<String, Arc<Material + Send + Sync>> = HashMap::new();
+        named_materials.insert(String::from("matte"), mtl);
+        let current_material: String = String::from("matte");
+        GraphicsState {
+            float_textures: float_textures.clone(),
+            spectrum_textures: spectrum_textures.clone(),
+            material_params: ParamSet::default(),
+            material: String::from(""),
+            named_materials: named_materials,
+            current_material: current_material,
+            area_light_params: ParamSet::default(),
+            area_light: String::from(""),
+        }
+    }
 }

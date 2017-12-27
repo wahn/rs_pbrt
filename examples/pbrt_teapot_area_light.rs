@@ -1793,7 +1793,8 @@ fn main() {
     }
     println!("triangle_count = {}", triangle_count);
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.0)));
-    let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
+    let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+    let matte = Arc::new(MatteMaterial::new(kd, sigma));
     for disk in render_options.disks {
         let geo_prim = Arc::new(GeometricPrimitive::new(disk, matte.clone(), None));
         render_options.primitives.push(geo_prim.clone());

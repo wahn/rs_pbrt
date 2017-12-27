@@ -179,20 +179,20 @@ impl ParamSet {
         }
         self.normals
             .push(ParamSetItem::<Normal3f> {
-                name: name,
-                values: p_values,
-                n_values: n_normals,
-                looked_up: false,
-            });
+                      name: name,
+                      values: p_values,
+                      n_values: n_normals,
+                      looked_up: false,
+                  });
     }
     pub fn add_rgb_spectrum(&mut self, name: String, value: Spectrum) {
         self.spectra
             .push(ParamSetItem::<Spectrum> {
-                name: name,
-                values: vec![value],
-                n_values: 1_usize,
-                looked_up: false,
-            });
+                      name: name,
+                      values: vec![value],
+                      n_values: 1_usize,
+                      looked_up: false,
+                  });
     }
     pub fn add_blackbody_spectrum(&mut self, name: String, values: Vec<Float>) {
         assert!(values.len() % 2 == 0);
@@ -202,15 +202,16 @@ impl ParamSet {
         let mut v: Vec<Float> = Vec::with_capacity(N_CIE_SAMPLES as usize);
         for i in 0..n_values {
             blackbody_normalized(&CIE_LAMBDA, N_CIE_SAMPLES as usize, values[2 * i], &mut v);
-            s.push(Spectrum::from_sampled(&CIE_LAMBDA, &v, N_CIE_SAMPLES as i32) * values[2 * i + 1]);
+            s.push(Spectrum::from_sampled(&CIE_LAMBDA, &v, N_CIE_SAMPLES as i32) *
+                   values[2 * i + 1]);
         }
         self.spectra
             .push(ParamSetItem::<Spectrum> {
-                name: name,
-                values: s,
-                n_values: n_values,
-                looked_up: false,
-            });
+                      name: name,
+                      values: s,
+                      n_values: n_values,
+                      looked_up: false,
+                  });
     }
     pub fn copy_from(&mut self, param_set: &ParamSet) {
         self.key_word = param_set.key_word.clone();
@@ -223,11 +224,11 @@ impl ParamSet {
             }
             self.bools
                 .push(ParamSetItem::<bool> {
-                    name: b.name.clone(),
-                    values: values,
-                    n_values: b.n_values,
-                    looked_up: false,
-                });
+                          name: b.name.clone(),
+                          values: values,
+                          n_values: b.n_values,
+                          looked_up: false,
+                      });
         }
         self.ints.clear();
         for i in &param_set.ints {
@@ -495,6 +496,18 @@ pub struct TextureParams {
 }
 
 impl TextureParams {
+    pub fn new(geom_params: ParamSet,
+               material_params: ParamSet,
+               f_tex: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
+               s_tex: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>)
+               -> Self {
+        TextureParams {
+            float_textures: f_tex,
+            spectrum_textures: s_tex,
+            geom_params: geom_params,
+            material_params: material_params,
+        }
+    }
     pub fn get_spectrum_texture(&mut self,
                                 n: String,
                                 def: Spectrum)

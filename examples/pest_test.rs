@@ -228,16 +228,16 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 geom_params: ParamSet::default(),
                 material_params: material_params,
             };
-            if graphics_state.current_named_material != String::new() {
+            if graphics_state.current_material != String::new() {
                 match graphics_state
                           .named_materials
-                          .get(graphics_state.current_named_material.as_str()) {
+                          .get(graphics_state.current_material.as_str()) {
                     Some(named_material) => {
                         return named_material.clone();
                     }
                     None => {
                         println!("WARNING: Named material \"{}\" not defined. Using \"matte\".",
-                                 graphics_state.current_named_material);
+                                 graphics_state.current_material);
                     }
                 }
             } else {
@@ -245,11 +245,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 assert_ne!(graphics_state.material, String::new());
                 assert_ne!(graphics_state.material, String::from("none"));
                 if graphics_state.material == String::from("matte") {
-                    let kd = mp.get_spectrum_texture(String::from("Kd"),
-                                                     Spectrum::new(0.5 as Float));
-                    // TODO: std::shared_ptr<Texture<Float>> sigma = mp.GetFloatTexture("sigma", 0.f);
-                    let matte = Arc::new(MatteMaterial::new(kd, 0.0 as Float));
-                    return matte;
+                    return MatteMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("plastic") {
                     let kd = mp.get_spectrum_texture(String::from("Kd"),
                                                      Spectrum::new(0.25 as Float));
@@ -344,7 +340,8 @@ fn create_material() -> Arc<Material + Send + Sync> {
         }
     }
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
-    Arc::new(MatteMaterial::new(kd, 0.0 as Float))
+    let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+    Arc::new(MatteMaterial::new(kd, sigma))
 }
 
 fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
@@ -1429,7 +1426,7 @@ fn main() {
                     // render options
                     NAMED_COORDINATE_SYSTEMS = Some(Box::new(HashMap::new()));
                     RENDER_OPTIONS = Some(Box::new(RenderOptions::default()));
-                    GRAPHICS_STATE = Some(Box::new(GraphicsState::default()));
+                    GRAPHICS_STATE = Some(Box::new(GraphicsState::new()));
                     PUSHED_GRAPHICS_STATES = Some(Box::new(Vec::new()));
                     PUSHED_TRANSFORMS = Some(Box::new(Vec::new()));
                     PUSHED_ACTIVE_TRANSFORM_BITS = Some(Box::new(Vec::new()));
@@ -1526,7 +1523,7 @@ fn main() {
                                                                     material_params: material_param_set,
                                                                     material: String::from(graphics_state.material.as_ref()),
                                                                     named_materials: graphics_state.named_materials.clone(),
-                                                                    current_named_material: String::from(graphics_state.current_named_material.as_ref()),
+                                                                    current_material: String::from(graphics_state.current_material.as_ref()),
                                                                     area_light_params: area_light_param_set,
                                                                     area_light: String::from(graphics_state.area_light.as_ref()),
                                                                 });
@@ -2884,7 +2881,7 @@ fn main() {
                                                                 graphics_state
                                                                     .material_params
                                                                     .copy_from(&param_set);
-                                                                graphics_state.current_named_material = String::new();
+                                                                graphics_state.current_material = String::new();
                                                                 let mtl: Arc<Material + Send + Sync> = create_material();
                                                                 match graphics_state.named_materials.get(mat_type.as_str()) {
                                                                     Some(_named_material) => {
@@ -3093,7 +3090,7 @@ fn main() {
                                                                 graphics_state
                                                                     .material_params
                                                                     .copy_from(&param_set);
-                                                                graphics_state.current_named_material = String::new();
+                                                                graphics_state.current_material = String::new();
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
@@ -3287,7 +3284,7 @@ fn main() {
                                                         if let Some(ref mut param_set) = PARAM_SET {
                                                             if let Some(ref mut graphics_state) =
                                                                 GRAPHICS_STATE {
-                                                                graphics_state.current_named_material = param_set.name.clone();
+                                                                graphics_state.current_material = param_set.name.clone();
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
