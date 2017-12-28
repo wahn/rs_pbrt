@@ -1,5 +1,6 @@
 // std
 use std;
+use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Vector3f};
@@ -745,6 +746,96 @@ impl Bxdf for MicrofacetReflection {
     }
 }
 
+pub struct FresnelBlend {
+    pub rd: Spectrum,
+    pub rs: Spectrum,
+    pub distribution: Option<TrowbridgeReitzDistribution>, // TODO: MicrofacetDistribution,
+}
+
+impl FresnelBlend {
+    pub fn new(rd: Spectrum,
+               rs: Spectrum,
+               distribution: Option<TrowbridgeReitzDistribution>)
+               -> Self {
+        FresnelBlend {
+            rd: rd,
+            rs: rs,
+            distribution: distribution,
+        }
+    }
+    pub fn schlick_fresnel(&self, cos_theta: Float) -> Spectrum {
+        self.rs + (Spectrum::new(1.0) - self.rs) * pow5(1.0 - cos_theta)
+    }
+}
+
+impl Bxdf for FresnelBlend {
+    fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
+        let diffuse: Spectrum = self.rd * (Spectrum::new(1.0 as Float) - self.rs) *
+                                (28.0 as Float / (23.0 as Float * PI)) *
+                                (1.0 - pow5(1.0 - 0.5 * abs_cos_theta(wi))) *
+                                (1.0 - pow5(1.0 - 0.5 * abs_cos_theta(wo)));
+        let mut wh: Vector3f = wi + wo;
+        if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 {
+            return Spectrum::new(0.0 as Float);
+        }
+        wh = vec3_normalize(wh);
+        if let Some(ref distribution) = self.distribution {
+            let specular: Spectrum = self.schlick_fresnel(vec3_dot_vec3(wi, wh)) *
+                                     (distribution.d(wh) /
+                                      (4.0 * vec3_dot_vec3(wi, wh).abs() *
+                                       f32::max(abs_cos_theta(wi), abs_cos_theta(wo))));
+            diffuse + specular
+        } else {
+            diffuse
+        }
+    }
+    fn sample_f(&self,
+                wo: Vector3f,
+                wi: &mut Vector3f,
+                sample: Point2f,
+                pdf: &mut Float,
+                _sampled_type: &mut u8)
+                -> Spectrum {
+        let mut u: Point2f = sample;
+        if u[0] < 0.5 as Float {
+            u[0] = Float::min(2.0 * u[0], FLOAT_ONE_MINUS_EPSILON);
+            // cosine-sample the hemisphere, flipping the direction if necessary
+            *wi = cosine_sample_hemisphere(u);
+            if wo.z < 0.0 as Float {
+                wi.z *= -1.0 as Float;
+            }
+        } else {
+            u[0] = Float::min(2.0 * (u[0] - 0.5 as Float), FLOAT_ONE_MINUS_EPSILON);
+            // sample microfacet orientation $\wh$ and reflected direction $\wi$
+            if let Some(ref distribution) = self.distribution {
+                let wh: Vector3f = distribution.sample_wh(wo, u);
+                *wi = reflect(wo, wh);
+                if !vec3_same_hemisphere_vec3(wo, *wi) {
+                    return Spectrum::new(0.0);
+                }
+            }
+        }
+        *pdf = self.pdf(wo, *wi);
+        self.f(wo, *wi)
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        // if (!SameHemisphere(wo, wi)) return 0;
+        if !vec3_same_hemisphere_vec3(wo, wi) {
+            return 0.0 as Float;
+        }
+        let wh: Vector3f = vec3_normalize(wo + wi);
+        if let Some(ref distribution) = self.distribution {
+            let pdf_wh: Float = distribution.pdf(wo, wh);
+            0.5 as Float * (abs_cos_theta(wi) * INV_PI + pdf_wh / (4.0 * vec3_dot_vec3(wo, wh)))
+        } else {
+            0.0 as Float
+        }
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfReflection as u8 | BxdfType::BsdfGlossy as u8
+    }
+}
+
 /// Utility function to calculate cosine via spherical coordinates.
 pub fn cos_theta(w: Vector3f) -> Float {
     w.z
@@ -904,4 +995,9 @@ pub fn fr_conductor(cos_theta_i: &mut Float,
     let t4: Spectrum = t2 * sin_theta_i2;
     let rp: Spectrum = rs * (t3 - t4) / (t3 + t4);
     (rp + rs) * Spectrum::new(0.5 as Float)
+}
+
+#[inline]
+fn pow5(v: Float) -> Float {
+    (v * v) * (v * v) * v
 }

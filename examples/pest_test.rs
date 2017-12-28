@@ -36,6 +36,7 @@ use pbrt::materials::metal::MetalMaterial;
 use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::materials::mixmat::MixMaterial;
 use pbrt::materials::plastic::PlasticMaterial;
+use pbrt::materials::substrate::SubstrateMaterial;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
@@ -324,7 +325,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 } else if graphics_state.material == String::from("metal") {
                     return MetalMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("substrate") {
-                    println!("TODO: CreateSubstrateMaterial");
+                    return SubstrateMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("uber") {
                     println!("TODO: CreateUberMaterial");
                 } else if graphics_state.material == String::from("subsurface") {
@@ -1574,6 +1575,8 @@ fn main() {
                                                                 graphics_state.area_light_params.copy_from(&pgs.area_light_params);
                                                                 // area_light
                                                                 graphics_state.area_light = String::from(pgs.area_light.as_ref());
+                                                                // reverse_orientation
+                                                                graphics_state.reverse_orientation = pgs.reverse_orientation;
                                                             }
                                                             if let Some(ref mut pt) =
                                                                 PUSHED_TRANSFORMS {
