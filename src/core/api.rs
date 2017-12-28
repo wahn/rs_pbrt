@@ -111,7 +111,7 @@ pub struct GraphicsState {
     pub current_material: String,
     pub area_light_params: ParamSet,
     pub area_light: String,
-    // bool reverseOrientation = false;
+    pub reverse_orientation: bool,
 }
 
 impl GraphicsState {
@@ -136,6 +136,7 @@ impl GraphicsState {
             current_material: current_material,
             area_light_params: ParamSet::default(),
             area_light: String::from(""),
+            reverse_orientation: false,
         }
     }
 }

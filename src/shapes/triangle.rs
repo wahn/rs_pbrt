@@ -37,7 +37,7 @@ pub struct TriangleMesh {
     // inherited from class Shape (see shape.h)
     pub object_to_world: Transform, // TODO: not pub?
     pub world_to_object: Transform, // TODO: not pub?
-    reverse_orientation: bool,
+    pub reverse_orientation: bool,
     pub transform_swaps_handedness: bool, // TODO: not pub?
 }
 
@@ -393,8 +393,8 @@ impl Shape for Triangle {
         if !self.mesh.n.is_empty() {
             si.n = nrm_faceforward_nrm(si.n, si.shading.n);
         } else if self.reverse_orientation ^ self.transform_swaps_handedness {
-            si.n = -si.n;
             si.shading.n = -si.n;
+            si.n = -si.n;
         }
         Some((si, t as Float))
     }

@@ -154,7 +154,7 @@ keyword = {
      "ObjectBegin" |
      "ObjectEnd" |
      "ObjectInstance" |
-     "ReverseOrientation" |
+     reverse_orientation |
      "TransformBegin" |
      "TransformEnd" |
      world_begin
@@ -165,6 +165,7 @@ attribute_begin = { "AttributeBegin" }
 attribute_end = { "AttributeEnd" }
 end_time = { "EndTime" }
 start_time = { "StartTime" }
+reverse_orientation = { "ReverseOrientation" }
 world_begin = { "WorldBegin" }
 // IDENT a-zA-Z_a-zA-Z_0-9*
 ident =  { ('a'..'z' | 'A'..'Z' | "_") ~

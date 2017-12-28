@@ -939,26 +939,28 @@ fn pbrt_shape(param_set: &ParamSet)
             for i in 0..vi.len() {
                 vertex_indices.push(vi[i] as usize);
             }
-            let mesh = Arc::new(TriangleMesh::new(obj_to_world,
-                                                  world_to_obj,
-                                                  false, // reverse_orientation
-                                                  false, // transform_swaps_handedness
-                                                  vi.len() / 3, // n_triangles
-                                                  vertex_indices,
-                                                  n_vertices,
-                                                  p_ws, // in world space
-                                                  s_ws, // in world space
-                                                  n_ws, // in world space
-                                                  uvs));
-            let mtl: Arc<Material + Send + Sync> = create_material();
-            for id in 0..mesh.n_triangles {
-                let triangle = Arc::new(Triangle::new(mesh.object_to_world,
-                                                      mesh.world_to_object,
-                                                      mesh.transform_swaps_handedness,
-                                                      mesh.clone(),
-                                                      id));
-                shapes.push(triangle.clone());
-                materials.push(mtl.clone());
+            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                let mesh = Arc::new(TriangleMesh::new(obj_to_world,
+                                                      world_to_obj,
+                                                      graphics_state.reverse_orientation,
+                                                      false, // transform_swaps_handedness
+                                                      vi.len() / 3, // n_triangles
+                                                      vertex_indices,
+                                                      n_vertices,
+                                                      p_ws, // in world space
+                                                      s_ws, // in world space
+                                                      n_ws, // in world space
+                                                      uvs));
+                let mtl: Arc<Material + Send + Sync> = create_material();
+                for id in 0..mesh.n_triangles {
+                    let triangle = Arc::new(Triangle::new(mesh.object_to_world,
+                                                          mesh.world_to_object,
+                                                          mesh.reverse_orientation,
+                                                          mesh.clone(),
+                                                          id));
+                    shapes.push(triangle.clone());
+                    materials.push(mtl.clone());
+                }
             }
         } else if param_set.name == String::from("plymesh") {
             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
@@ -1526,6 +1528,7 @@ fn main() {
                                                                     current_material: String::from(graphics_state.current_material.as_ref()),
                                                                     area_light_params: area_light_param_set,
                                                                     area_light: String::from(graphics_state.area_light.as_ref()),
+                                                                    reverse_orientation: graphics_state.reverse_orientation,
                                                                 });
                                                             }
                                                             if let Some(ref mut pt) =
@@ -1587,6 +1590,12 @@ fn main() {
                                                                     active_transform_bits;
                                                             }
                                                         }
+                                                    }
+                                                    Rule::reverse_orientation => {
+                                                        println!("ReverseOrientation");
+                                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                                            graphics_state.reverse_orientation = !graphics_state.reverse_orientation;
+                                                        }                                                        
                                                     }
                                                     Rule::world_begin => {
                                                         println!("WorldBegin");
