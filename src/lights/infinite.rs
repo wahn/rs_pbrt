@@ -185,7 +185,7 @@ impl InfiniteAreaLight {
                     let img_result =
                         hdr.read_image_transform(|p| {
                                                      let rgb = p.to_hdr();
-                                                     Spectrum::rgb(rgb[0], rgb[1], rgb[2])
+                                                     Spectrum::rgb(rgb[0], rgb[1], rgb[2]) * *l
                                                  });
                     if img_result.is_ok() {
                         let texels = img_result.ok().unwrap();
