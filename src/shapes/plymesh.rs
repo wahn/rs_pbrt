@@ -189,8 +189,6 @@ pub fn create_ply_mesh(o2w: Transform,
         p_ws.push(o2w.transform_point(p[i]));
     }
     let s_ws: Vec<Vector3f> = Vec::new(); // TODO
-    let n_ws: Vec<Normal3f> = Vec::new(); // TODO
-    let uvs: Vec<Point2f> = Vec::new(); // TODO
     let mesh = Arc::new(TriangleMesh::new(o2w,
                                           w2o,
                                           reverse_orientation,
