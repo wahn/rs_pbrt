@@ -10,6 +10,13 @@ Current **Rust** documentation:
 
 https://www.janwalter.org/doc/rust/pbrt/index.html
 
+## Ganesha Statue
+
+Very detailed scan of a small statue with over 4.3 million triangles,
+illuminated by a few area light sources.
+
+![Ganesha Statue](https://www.janwalter.org/assets/ganesha.png)
+
 ## Conference Room
 
 ![Conference room rendered by
