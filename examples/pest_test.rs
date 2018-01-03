@@ -11,7 +11,7 @@ use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::api::{GraphicsState, RenderOptions, TransformSet};
 use pbrt::core::camera::Camera;
 use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
@@ -27,6 +27,7 @@ use pbrt::core::shape::Shape;
 use pbrt::core::texture::{PlanarMapping2D, Texture, TextureMapping2D, UVMapping2D};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::filters::gaussian::GaussianFilter;
+use pbrt::filters::triangle::TriangleFilter;
 use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::integrators::path::PathIntegrator;
@@ -1006,48 +1007,15 @@ fn pbrt_world_end() {
                     // MakeFilter
                     let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
                     if ro.filter_name == String::from("box") {
-                        let xw: Float = ro.filter_params.find_one_float(String::from("xwidth"),
-                                                                        0.5);
-                        let yw: Float = ro.filter_params.find_one_float(String::from("ywidth"),
-                                                                        0.5);
-                        let box_filter: Arc<Filter + Sync + Send> =
-                            Arc::new(BoxFilter {
-                                         radius: Vector2f { x: xw, y: yw },
-                                         inv_radius: Vector2f {
-                                             x: 1.0 / xw,
-                                             y: 1.0 / yw,
-                                         },
-                                     });
-                        some_filter = Some(box_filter);
+                        some_filter = Some(BoxFilter::create(&mut ro.filter_params));
                     } else if ro.filter_name == String::from("gaussian") {
-                        // println!("TODO: CreateGaussianFilter");
-                        let xw: Float = ro.filter_params.find_one_float(String::from("xwidth"),
-                                                                        2.0);
-                        let yw: Float = ro.filter_params.find_one_float(String::from("ywidth"),
-                                                                        2.0);
-                        let alpha: Float = ro.filter_params.find_one_float(String::from("alpha"),
-                                                                           2.0);
-                        // see gaussian.h (GaussianFilter constructor)
-                        let exp_x: Float = (-alpha * xw * xw).exp();
-                        let exp_y: Float = (-alpha * yw * yw).exp();
-                        let gaussian_filter: Arc<Filter + Sync + Send> =
-                            Arc::new(GaussianFilter {
-                                         alpha: alpha,
-                                         exp_x: exp_x,
-                                         exp_y: exp_y,
-                                         radius: Vector2f { x: xw, y: yw },
-                                         inv_radius: Vector2f {
-                                             x: 1.0 / xw,
-                                             y: 1.0 / yw,
-                                         },
-                                     });
-                        some_filter = Some(gaussian_filter);
+                        some_filter = Some(GaussianFilter::create(&mut ro.filter_params));
                     } else if ro.filter_name == String::from("mitchell") {
                         println!("TODO: CreateMitchellFilter");
                     } else if ro.filter_name == String::from("sinc") {
                         println!("TODO: CreateSincFilter");
                     } else if ro.filter_name == String::from("triangle") {
-                        println!("TODO: CreateTriangleFilter");
+                        some_filter = Some(TriangleFilter::create(&mut ro.filter_params));
                     } else {
                         panic!("Filter \"{}\" unknown.", ro.filter_name);
                     }

@@ -6,46 +6,34 @@ use core::geometry::{Point2f, Vector2f};
 use core::paramset::ParamSet;
 use core::pbrt::Float;
 
-// see gaussian.h
+// see triangle.h
 
 #[derive(Debug, Default, Copy, Clone)]
-pub struct GaussianFilter {
-    pub alpha: Float,
-    pub exp_x: Float,
-    pub exp_y: Float,
+pub struct TriangleFilter {
     // inherited from Filter (see filter.h)
     pub radius: Vector2f,
     pub inv_radius: Vector2f,
 }
 
-impl GaussianFilter {
+impl TriangleFilter {
     pub fn create(ps: &mut ParamSet) -> Arc<Filter + Sync + Send> {
         let xw: Float = ps.find_one_float(String::from("xwidth"), 2.0);
         let yw: Float = ps.find_one_float(String::from("ywidth"), 2.0);
-        let alpha: Float = ps.find_one_float(String::from("alpha"), 2.0);
-        // see gaussian.h (GaussianFilter constructor)
-        let exp_x: Float = (-alpha * xw * xw).exp();
-        let exp_y: Float = (-alpha * yw * yw).exp();
-        let gaussian_filter: Arc<Filter + Sync + Send> = Arc::new(GaussianFilter {
-            alpha: alpha,
-            exp_x: exp_x,
-            exp_y: exp_y,
+        let triangle_filter: Arc<Filter + Sync + Send> = Arc::new(TriangleFilter {
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
                 x: 1.0 / xw,
                 y: 1.0 / yw,
             },
         });
-        gaussian_filter
-    }
-    pub fn gaussian(&self, d: Float, expv: Float) -> Float {
-        (0.0 as Float).max((-self.alpha * d * d).exp() - expv)
+        triangle_filter
     }
 }
 
-impl Filter for GaussianFilter {
+impl Filter for TriangleFilter {
     fn evaluate(&self, p: Point2f) -> Float {
-        self.gaussian(p.x, self.exp_x) * self.gaussian(p.y, self.exp_y)
+        (0.0 as Float).max((self.radius.x - p.x.abs()) as Float)
+            * (0.0 as Float).max((self.radius.y - p.y.abs()) as Float)
     }
     fn get_radius(&self) -> Vector2f {
         Vector2f {

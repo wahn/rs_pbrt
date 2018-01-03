@@ -19,11 +19,11 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::filters::boxfilter::BoxFilter;
 //! use pbrt::core::geometry::Vector2f;
-//! 
+//!
 //! fn main() {
 //!     let xw: Float = 0.5;
 //!     let yw: Float = 0.5;
@@ -34,14 +34,34 @@
 //!             y: 1.0 / yw,
 //!         },
 //!     };
-//! 
+//!
 //!     println!("box_filter = {:?}", box_filter);
 //! }
 //! ```
 //!
 //! ## TriangleFilter
 //!
-//! TODO
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::core::geometry::Vector2f;
+//! use pbrt::core::pbrt::Float;
+//! use pbrt::filters::triangle::TriangleFilter;
+//!
+//! fn main() {
+//!     let xw: Float = 2.0;
+//!     let yw: Float = 2.0;
+//!     let triangle_filter = TriangleFilter {
+//!         radius: Vector2f { x: xw, y: yw },
+//!         inv_radius: Vector2f {
+//!             x: 1.0 / xw,
+//!             y: 1.0 / yw,
+//!         },
+//!     };
+//!
+//!     println!("triangle_filter = {:?}", triangle_filter);
+//! }
+//! ```
 //!
 //! ## Gaussian Filter
 //!
@@ -53,11 +73,11 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::filters::gaussian::GaussianFilter;
 //! use pbrt::core::geometry::Vector2f;
-//! 
+//!
 //! fn main() {
 //!     let xw: Float = 2.0;
 //!     let yw: Float = 2.0;
@@ -74,7 +94,7 @@
 //!             y: 1.0 / yw,
 //!         },
 //!     };
-//! 
+//!
 //!     println!("gaussian_filter = {:?}", gaussian_filter);
 //! }
 //! ```
@@ -90,3 +110,4 @@
 
 pub mod boxfilter;
 pub mod gaussian;
+pub mod triangle;
