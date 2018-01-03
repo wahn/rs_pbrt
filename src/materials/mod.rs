@@ -17,6 +17,10 @@
 //! - SubsurfaceMaterial
 //! - TranslucentMaterial
 //! - UberMaterial
+//!
+//! ## SubstrateMaterial
+//!
+//! ![SubstrateMaterial](https://www.janwalter.org/assets/ganesha.png)
 
 pub mod glass;
 pub mod matte;

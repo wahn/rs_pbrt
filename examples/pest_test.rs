@@ -2895,7 +2895,7 @@ fn main() {
                                                                     .copy_from(&param_set);
                                                                 graphics_state.current_material = String::new();
                                                                 let mtl: Arc<Material + Send + Sync> = create_material();
-                                                                match graphics_state.named_materials.get(mat_type.as_str()) {
+                                                                match graphics_state.named_materials.get(param_set.name.as_str()) {
                                                                     Some(_named_material) => {
                                                                         println!("Named material \"{}\" redefined",
                                                                                  mat_type);
