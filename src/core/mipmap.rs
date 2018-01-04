@@ -229,9 +229,7 @@ impl MipMap {
                 .abs()
                 .max(dst0.y.abs())
                 .max(dst1.x.abs().max(dst1.y.abs()));
-            println!("TODO: Lookup(st, 2 * width) = Lookup({:?}, {:?});",
-                     st,
-                     2.0 as Float * width)
+            return self.lookup_pnt_flt(st, width);
         }
         // TODO: ++nEWALookups;
         // TODO: ProfilePhase p(Prof::TexFiltEWA);
