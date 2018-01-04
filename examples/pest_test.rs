@@ -38,6 +38,7 @@ use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::materials::mixmat::MixMaterial;
 use pbrt::materials::plastic::PlasticMaterial;
 use pbrt::materials::substrate::SubstrateMaterial;
+use pbrt::materials::uber::UberMaterial;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
@@ -328,7 +329,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 } else if graphics_state.material == String::from("substrate") {
                     return SubstrateMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("uber") {
-                    println!("TODO: CreateUberMaterial");
+                    return UberMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("subsurface") {
                     println!("TODO: CreateSubsurfaceMaterial");
                 } else if graphics_state.material == String::from("kdsubsurface") {

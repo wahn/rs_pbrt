@@ -12,6 +12,7 @@
 //!
 
 // std
+#[cfg(feature="openexr")]
 use std;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
