@@ -780,7 +780,9 @@ impl Bxdf for FresnelBlend {
         }
         wh = vec3_normalize(wh);
         if let Some(ref distribution) = self.distribution {
-            let specular: Spectrum = self.schlick_fresnel(vec3_dot_vec3(wi, wh)) *
+            let schlick_fresnel: Spectrum = self.schlick_fresnel(vec3_dot_vec3(wi, wh));
+            assert!(schlick_fresnel.c[0] >= 0.0, "wi = {:?}; wh = {:?}", wi, wh);
+            let specular: Spectrum = schlick_fresnel *
                                      (distribution.d(wh) /
                                       (4.0 * vec3_dot_vec3(wi, wh).abs() *
                                        f32::max(abs_cos_theta(wi), abs_cos_theta(wo))));
