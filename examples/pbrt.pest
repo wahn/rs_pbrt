@@ -155,14 +155,16 @@ keyword = {
      "ObjectEnd" |
      "ObjectInstance" |
      reverse_orientation |
-     "TransformBegin" |
-     "TransformEnd" |
+     transform_begin |
+     transform_end |
      world_begin
     )
 }
 all = { "All" }
 attribute_begin = { "AttributeBegin" }
 attribute_end = { "AttributeEnd" }
+transform_begin = { "TransformBegin" }
+transform_end = { "TransformEnd" }
 end_time = { "EndTime" }
 start_time = { "StartTime" }
 reverse_orientation = { "ReverseOrientation" }

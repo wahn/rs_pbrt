@@ -1563,6 +1563,41 @@ fn main() {
                                                             }
                                                         }
                                                     }
+                                                    Rule::transform_begin => {
+                                                        if let Some(ref mut pt) =
+                                                            PUSHED_TRANSFORMS {
+                                                                pt.push(TransformSet {
+                                                                    t: [
+                                                                        Transform {
+                                                                            m: CUR_TRANSFORM.t[0].m,
+                                                                            m_inv: CUR_TRANSFORM.t[0].m_inv,},
+                                                                        Transform {
+                                                                            m: CUR_TRANSFORM.t[1].m,
+                                                                            m_inv: CUR_TRANSFORM.t[1].m_inv,},
+                                                                    ]
+                                                                });
+                                                            }
+                                                        if let Some(ref mut patb) =
+                                                            PUSHED_ACTIVE_TRANSFORM_BITS {
+                                                                patb.push(ACTIVE_TRANSFORM_BITS);
+                                                            }
+                                                    }
+                                                    Rule::transform_end => {
+                                                        if let Some(ref mut pt) =
+                                                            PUSHED_TRANSFORMS {
+                                                                let popped_transform_set: TransformSet = pt.pop().unwrap();
+                                                                CUR_TRANSFORM.t[0] =
+                                                                    popped_transform_set.t[0];
+                                                                CUR_TRANSFORM.t[1] =
+                                                                    popped_transform_set.t[1];
+                                                            }
+                                                        if let Some(ref mut patb) =
+                                                            PUSHED_ACTIVE_TRANSFORM_BITS {
+                                                                let active_transform_bits: u8 = patb.pop().unwrap();
+                                                                ACTIVE_TRANSFORM_BITS =
+                                                                    active_transform_bits;
+                                                            }
+                                                    }
                                                     Rule::reverse_orientation => {
                                                         println!("ReverseOrientation");
                                                         if let Some(ref mut graphics_state) = GRAPHICS_STATE {
