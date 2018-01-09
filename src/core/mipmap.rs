@@ -210,7 +210,7 @@ impl MipMap {
         if level < 0.0 as Float {
             return self.triangle(0_usize, st);
         } else if level >= self.levels() as Float - 1 as Float {
-            return *self.texel(self.levels(), 0_isize, 0_isize);
+            return *self.texel(self.levels() - 1, 0_isize, 0_isize);
         } else {
             let i_level: usize = level.floor() as usize;
             let delta: Float = level - i_level as Float;

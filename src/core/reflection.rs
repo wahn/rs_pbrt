@@ -186,7 +186,7 @@ impl Bsdf {
                 for i in 0..n_bxdfs {
                     if self.bxdfs[i].matches_flags(bsdf_flags) &&
                        ((reflect && (bxdf.get_type() & BxdfType::BsdfReflection as u8) != 0_u8) ||
-                        (reflect && (bxdf.get_type() & BxdfType::BsdfTransmission as u8) == 0_u8)) {
+                        (!reflect && (bxdf.get_type() & BxdfType::BsdfTransmission as u8) != 0_u8)) {
                         f += self.bxdfs[i].f(wo, wi);
                     }
                 }
