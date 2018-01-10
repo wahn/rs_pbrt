@@ -7,9 +7,9 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::geometry::Vector3;
-//! 
+//!
 //! fn main() {
 //!     let int_null = Vector3 { x: 0, y: 0, z: 0 };
 //!     let float_null = Vector3 {
@@ -17,7 +17,7 @@
 //!         y: 0.0,
 //!         z: 0.0,
 //!     };
-//! 
+//!
 //!     println!("int   {:?}", int_null);
 //!     println!("float {:?}", float_null);
 //! }
@@ -35,9 +35,9 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::geometry::Point3;
-//! 
+//!
 //! fn main() {
 //!     let int_origin = Point3 { x: 0, y: 0, z: 0 };
 //!     let float_origin = Point3 {
@@ -45,7 +45,7 @@
 //!         y: 0.0,
 //!         z: 0.0,
 //!     };
-//! 
+//!
 //!     println!("int   {:?}", int_origin);
 //!     println!("float {:?}", float_origin);
 //! }
@@ -65,9 +65,9 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::geometry::Normal3;
-//! 
+//!
 //! fn main() {
 //!     let int_null = Normal3 { x: 0, y: 0, z: 0 };
 //!     let float_null = Normal3 {
@@ -75,7 +75,7 @@
 //!         y: 0.0,
 //!         z: 0.0,
 //!     };
-//! 
+//!
 //!     println!("int   {:?}", int_null);
 //!     println!("float {:?}", float_null);
 //! }
@@ -92,9 +92,9 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::geometry::{Ray, Point3f, Vector3f};
-//! 
+//!
 //! fn main() {
 //!     let origin = Point3f {
 //!         x: -5.5,
@@ -113,7 +113,7 @@
 //!         time: 0.0,
 //!         differential: None,
 //!     };
-//! 
+//!
 //!     println!("{:?}", ray);
 //! }
 //! ```
@@ -146,9 +146,9 @@
 //!
 //! ```rust
 //! extern crate pbrt;
-//! 
+//!
 //! use pbrt::core::geometry::{Bounds3, Point3};
-//! 
+//!
 //! fn main() {
 //!     let int_origin = Point3 { x: 0, y: 0, z: 0 };
 //!     let int_xyz111 = Point3 { x: 1, y: 1, z: 1 };
@@ -170,7 +170,7 @@
 //!         p_min: float_origin,
 //!         p_max: float_xyz111,
 //!     };
-//! 
+//!
 //!     println!("int   {:?}", int_unit_cube);
 //!     println!("float {:?}", float_unit_cube);
 //! }
@@ -198,7 +198,7 @@ pub type Vector3f = Vector3<Float>;
 pub type Vector3i = Vector3<i32>;
 pub type Normal3f = Normal3<Float>;
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Vector2<T> {
     pub x: T,
     pub y: T,
@@ -206,12 +206,14 @@ pub struct Vector2<T> {
 
 impl<T> Vector2<T> {
     pub fn length_squared(&self) -> T
-        where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+    where
+        T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
     {
         self.x * self.x + self.y * self.y
     }
     pub fn length(&self) -> T
-        where T: num::Float
+    where
+        T: num::Float,
     {
         self.length_squared().sqrt()
     }
@@ -239,7 +241,8 @@ impl<T> IndexMut<u8> for Vector2<T> {
 }
 
 impl<T> MulAssign<T> for Vector2<T>
-    where T: Copy + MulAssign
+where
+    T: Copy + MulAssign,
 {
     fn mul_assign(&mut self, rhs: T) {
         self.x *= rhs;
@@ -252,12 +255,13 @@ impl<T> MulAssign<T> for Vector2<T>
 /// both vectors are orthogonal, a value if one means they are
 /// codirectional.
 pub fn vec2_dot<T>(v1: Vector2<T>, v2: Vector2<T>) -> T
-    where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+where
+    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
     v1.x * v2.x + v1.y * v2.y
 }
 
-#[derive(Debug,Default,Copy,Clone,PartialEq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
 pub struct Vector3<T> {
     pub x: T,
     pub y: T,
@@ -266,7 +270,8 @@ pub struct Vector3<T> {
 
 impl<T> Vector3<T> {
     pub fn abs(&self) -> Vector3<T>
-        where T: num::Float
+    where
+        T: num::Float,
     {
         Vector3::<T> {
             x: self.x.abs(),
@@ -275,19 +280,22 @@ impl<T> Vector3<T> {
         }
     }
     pub fn length_squared(&self) -> T
-        where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+    where
+        T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
     {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
     pub fn length(&self) -> T
-        where T: num::Float
+    where
+        T: num::Float,
     {
         self.length_squared().sqrt()
     }
 }
 
 impl<T> Add for Vector3<T>
-    where T: Copy + Add<T, Output = T>
+where
+    T: Copy + Add<T, Output = T>,
 {
     type Output = Vector3<T>;
     fn add(self, rhs: Vector3<T>) -> Vector3<T> {
@@ -300,7 +308,8 @@ impl<T> Add for Vector3<T>
 }
 
 impl<T> Sub for Vector3<T>
-    where T: Copy + Sub<T, Output = T>
+where
+    T: Copy + Sub<T, Output = T>,
 {
     type Output = Vector3<T>;
     fn sub(self, rhs: Vector3<T>) -> Vector3<T> {
@@ -313,11 +322,13 @@ impl<T> Sub for Vector3<T>
 }
 
 impl<T> Mul<T> for Vector3<T>
-    where T: Copy + Mul<T, Output = T>
+where
+    T: Copy + Mul<T, Output = T>,
 {
     type Output = Vector3<T>;
     fn mul(self, rhs: T) -> Vector3<T>
-        where T: Copy + Mul<T, Output = T>
+    where
+        T: Copy + Mul<T, Output = T>,
     {
         Vector3::<T> {
             x: self.x * rhs,
@@ -343,7 +354,8 @@ impl Div<Float> for Vector3<f32> {
 }
 
 impl<T> Neg for Vector3<T>
-    where T: Copy + Neg<Output = T>
+where
+    T: Copy + Neg<Output = T>,
 {
     type Output = Vector3<T>;
     fn neg(self) -> Vector3<T> {
@@ -403,7 +415,8 @@ impl<T> From<Normal3<T>> for Vector3<T> {
 /// both vectors are orthogonal, a value if one means they are
 /// codirectional.
 pub fn vec3_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
-    where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+where
+    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
     v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
@@ -412,23 +425,25 @@ pub fn vec3_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
 /// the cosine of the angle between them. A return value of zero means
 /// both are orthogonal, a value if one means they are codirectional.
 pub fn vec3_dot_nrm<T>(v1: Vector3<T>, n2: Normal3<T>) -> T
-    where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+where
+    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
     // DCHECK(!v1.HasNaNs() && !n2.HasNaNs());
     return v1.x * n2.x + v1.y * n2.y + v1.z * n2.z;
 }
 
-
 /// Computes the absolute value of the dot product.
 pub fn vec3_abs_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
-    where T: num::Float
+where
+    T: num::Float,
 {
     vec3_dot_vec3(v1, v2).abs()
 }
 
 /// Computes the absolute value of the dot product.
 pub fn vec3_abs_dot_nrm<T>(v1: Vector3<T>, n2: Normal3<T>) -> T
-    where T: num::Float
+where
+    T: num::Float,
 {
     vec3_dot_nrm(v1, n2).abs()
 }
@@ -473,26 +488,37 @@ pub fn vec3_normalize(v: Vector3f) -> Vector3f {
 
 /// Return the largest coordinate value.
 pub fn vec3_max_component<T>(v: Vector3<T>) -> T
-    where T: num::Float
+where
+    T: num::Float,
 {
     v.x.max(v.y.max(v.z))
 }
 
 /// Return the index of the component with the largest value.
 pub fn vec3_max_dimension<T>(v: Vector3<T>) -> usize
-    where T: std::cmp::PartialOrd
+where
+    T: std::cmp::PartialOrd,
 {
     if v.x > v.y {
-        if v.x > v.z { 0_usize } else { 2_usize }
+        if v.x > v.z {
+            0_usize
+        } else {
+            2_usize
+        }
     } else {
-        if v.y > v.z { 1_usize } else { 2_usize }
+        if v.y > v.z {
+            1_usize
+        } else {
+            2_usize
+        }
     }
 }
 
 /// Permute the coordinate values according to the povided
 /// permutation.
 pub fn vec3_permute<T>(v: Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T>
-    where T: Copy
+where
+    T: Copy,
 {
     let v3: Vec<T> = vec![v.x, v.y, v.z];
     let xp: T = v3[x];
@@ -523,14 +549,15 @@ pub fn vec3_coordinate_system(v1: &Vector3f, v2: &mut Vector3f, v3: &mut Vector3
     *v3 = vec3_cross_vec3(*v1, *v2);
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Point2<T> {
     pub x: T,
     pub y: T,
 }
 
 impl<T> PartialEq for Point2<T>
-    where T: std::cmp::PartialOrd
+where
+    T: std::cmp::PartialOrd,
 {
     fn eq(&self, rhs: &Point2<T>) -> bool {
         if self.x == rhs.x && self.y == rhs.y {
@@ -545,7 +572,8 @@ impl<T> PartialEq for Point2<T>
 }
 
 impl<T> Add<Point2<T>> for Point2<T>
-    where T: Add<T, Output = T>
+where
+    T: Add<T, Output = T>,
 {
     type Output = Point2<T>;
     fn add(self, rhs: Point2<T>) -> Point2<T> {
@@ -558,7 +586,8 @@ impl<T> Add<Point2<T>> for Point2<T>
 }
 
 impl<T> Add<Vector2<T>> for Point2<T>
-    where T: Add<T, Output = T>
+where
+    T: Add<T, Output = T>,
 {
     type Output = Point2<T>;
     fn add(self, rhs: Vector2<T>) -> Point2<T> {
@@ -571,7 +600,8 @@ impl<T> Add<Vector2<T>> for Point2<T>
 }
 
 impl<T> Sub<Point2<T>> for Point2<T>
-    where T: Sub<T, Output = T>
+where
+    T: Sub<T, Output = T>,
 {
     type Output = Vector2<T>;
     fn sub(self, rhs: Point2<T>) -> Vector2<T> {
@@ -583,7 +613,8 @@ impl<T> Sub<Point2<T>> for Point2<T>
 }
 
 impl<T> Sub<Vector2<T>> for Point2<T>
-    where T: Sub<T, Output = T>
+where
+    T: Sub<T, Output = T>,
 {
     type Output = Point2<T>;
     fn sub(self, rhs: Vector2<T>) -> Point2<T> {
@@ -595,11 +626,13 @@ impl<T> Sub<Vector2<T>> for Point2<T>
 }
 
 impl<T> Mul<T> for Point2<T>
-    where T: Copy + Mul<T, Output = T>
+where
+    T: Copy + Mul<T, Output = T>,
 {
     type Output = Point2<T>;
     fn mul(self, rhs: T) -> Point2<T>
-        where T: Copy + Mul<T, Output = T>
+    where
+        T: Copy + Mul<T, Output = T>,
     {
         Point2::<T> {
             x: self.x * rhs,
@@ -631,7 +664,8 @@ impl<T> IndexMut<u8> for Point2<T> {
 
 /// Apply floor operation component-wise.
 pub fn pnt2_floor<T>(p: Point2<T>) -> Point2<T>
-    where T: num::Float
+where
+    T: num::Float,
 {
     Point2 {
         x: p.x.floor(),
@@ -641,7 +675,8 @@ pub fn pnt2_floor<T>(p: Point2<T>) -> Point2<T>
 
 /// Apply ceil operation component-wise.
 pub fn pnt2_ceil<T>(p: Point2<T>) -> Point2<T>
-    where T: num::Float
+where
+    T: num::Float,
 {
     Point2 {
         x: p.x.ceil(),
@@ -651,7 +686,8 @@ pub fn pnt2_ceil<T>(p: Point2<T>) -> Point2<T>
 
 /// Apply std::cmp::min operation component-wise.
 pub fn pnt2_min_pnt2<T>(pa: Point2<T>, pb: Point2<T>) -> Point2<T>
-    where T: Ord
+where
+    T: Ord,
 {
     Point2 {
         x: std::cmp::min(pa.x, pb.x),
@@ -661,7 +697,8 @@ pub fn pnt2_min_pnt2<T>(pa: Point2<T>, pb: Point2<T>) -> Point2<T>
 
 /// Apply std::cmp::max operation component-wise.
 pub fn pnt2_max_pnt2<T>(pa: Point2<T>, pb: Point2<T>) -> Point2<T>
-    where T: Ord
+where
+    T: Ord,
 {
     Point2 {
         x: std::cmp::max(pa.x, pb.x),
@@ -671,12 +708,13 @@ pub fn pnt2_max_pnt2<T>(pa: Point2<T>, pb: Point2<T>) -> Point2<T>
 
 /// Is a 2D point inside a 2D bound?
 pub fn pnt2_inside_exclusive<T>(pt: Point2<T>, b: Bounds2<T>) -> bool
-    where T: PartialOrd
+where
+    T: PartialOrd,
 {
     pt.x >= b.p_min.x && pt.x < b.p_max.x && pt.y >= b.p_min.y && pt.y < b.p_max.y
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Point3<T> {
     pub x: T,
     pub y: T,
@@ -684,7 +722,8 @@ pub struct Point3<T> {
 }
 
 impl<T> Add<Point3<T>> for Point3<T>
-    where T: Add<T, Output = T>
+where
+    T: Add<T, Output = T>,
 {
     type Output = Point3<T>;
     fn add(self, rhs: Point3<T>) -> Point3<T> {
@@ -698,7 +737,8 @@ impl<T> Add<Point3<T>> for Point3<T>
 }
 
 impl<T> Add<Vector3<T>> for Point3<T>
-    where T: Add<T, Output = T>
+where
+    T: Add<T, Output = T>,
 {
     type Output = Point3<T>;
     fn add(self, rhs: Vector3<T>) -> Point3<T> {
@@ -712,7 +752,8 @@ impl<T> Add<Vector3<T>> for Point3<T>
 }
 
 impl<T> AddAssign<Vector3<T>> for Point3<T>
-    where T: AddAssign
+where
+    T: AddAssign,
 {
     fn add_assign(&mut self, rhs: Vector3<T>) {
         self.x += rhs.x;
@@ -722,7 +763,8 @@ impl<T> AddAssign<Vector3<T>> for Point3<T>
 }
 
 impl<T> Sub<Point3<T>> for Point3<T>
-    where T: Sub<T, Output = T>
+where
+    T: Sub<T, Output = T>,
 {
     type Output = Vector3<T>;
     fn sub(self, rhs: Point3<T>) -> Vector3<T> {
@@ -735,7 +777,8 @@ impl<T> Sub<Point3<T>> for Point3<T>
 }
 
 impl<T> Sub<Vector3<T>> for Point3<T>
-    where T: Sub<T, Output = T>
+where
+    T: Sub<T, Output = T>,
 {
     type Output = Point3<T>;
     fn sub(self, rhs: Vector3<T>) -> Point3<T> {
@@ -748,11 +791,13 @@ impl<T> Sub<Vector3<T>> for Point3<T>
 }
 
 impl<T> Mul<T> for Point3<T>
-    where T: Copy + Mul<T, Output = T>
+where
+    T: Copy + Mul<T, Output = T>,
 {
     type Output = Point3<T>;
     fn mul(self, rhs: T) -> Point3<T>
-        where T: Copy + Mul<T, Output = T>
+    where
+        T: Copy + Mul<T, Output = T>,
     {
         Point3::<T> {
             x: self.x * rhs,
@@ -763,7 +808,8 @@ impl<T> Mul<T> for Point3<T>
 }
 
 impl<T> MulAssign<T> for Point3<T>
-    where T: Copy + MulAssign
+where
+    T: Copy + MulAssign,
 {
     fn mul_assign(&mut self, rhs: T) {
         self.x *= rhs;
@@ -825,7 +871,8 @@ impl<T> IndexMut<u8> for Point3<T> {
 /// Permute the coordinate values according to the povided
 /// permutation.
 pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
-    where T: Copy
+where
+    T: Copy,
 {
     let v3: Vec<T> = vec![v.x, v.y, v.z];
     let xp: T = v3[x];
@@ -838,9 +885,15 @@ pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
     }
 }
 
+/// Interpolate linearly between two provided points.
+pub fn pnt3_lerp(t: Float, p0: Point3f, p1: Point3f) -> Point3f {
+    p0 * (1.0 as Float - t) as Float + p1 * t
+}
+
 /// Apply floor operation component-wise.
 pub fn pnt3_floor<T>(p: Point3<T>) -> Point3<T>
-    where T: num::Float
+where
+    T: num::Float,
 {
     Point3 {
         x: p.x.floor(),
@@ -851,7 +904,8 @@ pub fn pnt3_floor<T>(p: Point3<T>) -> Point3<T>
 
 /// Apply ceil operation component-wise.
 pub fn pnt3_ceil<T>(p: Point3<T>) -> Point3<T>
-    where T: num::Float
+where
+    T: num::Float,
 {
     Point3 {
         x: p.x.ceil(),
@@ -862,7 +916,8 @@ pub fn pnt3_ceil<T>(p: Point3<T>) -> Point3<T>
 
 /// Apply abs operation component-wise.
 pub fn pnt3_abs<T>(p: Point3<T>) -> Point3<T>
-    where T: num::Float
+where
+    T: num::Float,
 {
     Point3 {
         x: p.x.abs(),
@@ -874,7 +929,8 @@ pub fn pnt3_abs<T>(p: Point3<T>) -> Point3<T>
 /// The distance between two points is the length of the vector
 /// between them.
 pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
-    where T: num::Float + Sub<T, Output = T>
+where
+    T: num::Float + Sub<T, Output = T>,
 {
     (p1 - p2).length()
 }
@@ -882,7 +938,8 @@ pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
 /// The distance squared between two points is the length of the
 /// vector between them squared.
 pub fn pnt3_distance_squared<T>(p1: Point3<T>, p2: Point3<T>) -> T
-    where T: num::Float + Sub<T, Output = T>
+where
+    T: num::Float + Sub<T, Output = T>,
 {
     (p1 - p2).length_squared()
 }
@@ -930,13 +987,14 @@ pub fn spherical_direction(sin_theta: Float, cos_theta: Float, phi: Float) -> Ve
 /// Take three basis vectors representing the x, y, and z axes and
 /// return the appropriate direction vector with respect to the
 /// coordinate frame defined by them.
-pub fn spherical_direction_vec3(sin_theta: Float,
-                                cos_theta: Float,
-                                phi: Float,
-                                x: &Vector3f,
-                                y: &Vector3f,
-                                z: &Vector3f)
-                                -> Vector3f {
+pub fn spherical_direction_vec3(
+    sin_theta: Float,
+    cos_theta: Float,
+    phi: Float,
+    x: &Vector3f,
+    y: &Vector3f,
+    z: &Vector3f,
+) -> Vector3f {
     *x * sin_theta * phi.cos() + *y * sin_theta * phi.sin() + *z * cos_theta
 }
 
@@ -957,7 +1015,7 @@ pub fn spherical_phi(v: &Vector3f) -> Float {
     }
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Normal3<T> {
     pub x: T,
     pub y: T,
@@ -965,7 +1023,8 @@ pub struct Normal3<T> {
 }
 
 impl<T> Add for Normal3<T>
-    where T: Copy + Add<T, Output = T>
+where
+    T: Copy + Add<T, Output = T>,
 {
     type Output = Normal3<T>;
     fn add(self, rhs: Normal3<T>) -> Normal3<T> {
@@ -978,7 +1037,8 @@ impl<T> Add for Normal3<T>
 }
 
 impl<T> Sub for Normal3<T>
-    where T: Copy + Sub<T, Output = T>
+where
+    T: Copy + Sub<T, Output = T>,
 {
     type Output = Normal3<T>;
     fn sub(self, rhs: Normal3<T>) -> Normal3<T> {
@@ -991,11 +1051,13 @@ impl<T> Sub for Normal3<T>
 }
 
 impl<T> Mul<T> for Normal3<T>
-    where T: Copy + Mul<T, Output = T>
+where
+    T: Copy + Mul<T, Output = T>,
 {
     type Output = Normal3<T>;
     fn mul(self, rhs: T) -> Normal3<T>
-        where T: Copy + Mul<T, Output = T>
+    where
+        T: Copy + Mul<T, Output = T>,
     {
         Normal3::<T> {
             x: self.x * rhs,
@@ -1006,7 +1068,8 @@ impl<T> Mul<T> for Normal3<T>
 }
 
 impl<T> MulAssign<T> for Normal3<T>
-    where T: Copy + MulAssign
+where
+    T: Copy + MulAssign,
 {
     fn mul_assign(&mut self, rhs: T) {
         self.x *= rhs;
@@ -1016,7 +1079,8 @@ impl<T> MulAssign<T> for Normal3<T>
 }
 
 impl<T> Neg for Normal3<T>
-    where T: Copy + Neg<Output = T>
+where
+    T: Copy + Neg<Output = T>,
 {
     type Output = Normal3<T>;
     fn neg(self) -> Normal3<T> {
@@ -1030,19 +1094,22 @@ impl<T> Neg for Normal3<T>
 
 impl<T> Normal3<T> {
     pub fn length_squared(&self) -> T
-        where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+    where
+        T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
     {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
     pub fn length(&self) -> T
-        where T: num::Float
+    where
+        T: num::Float,
     {
         self.length_squared().sqrt()
     }
 }
 
 impl<T> PartialEq for Normal3<T>
-    where T: std::cmp::PartialOrd
+where
+    T: std::cmp::PartialOrd,
 {
     fn eq(&self, rhs: &Normal3<T>) -> bool {
         if self.x == rhs.x && self.y == rhs.y && self.z == rhs.z {
@@ -1109,7 +1176,8 @@ pub fn nrm_normalize(n: Normal3f) -> Normal3f {
 /// of zero means both are orthogonal, a value if one means they are
 /// codirectional.
 pub fn nrm_dot_nrm<T>(n1: Normal3<T>, n2: Normal3<T>) -> T
-    where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+where
+    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
     // TODO: DCHECK(!n1.HasNaNs() && !n2.HasNaNs());
     n1.x * n2.x + n1.y * n2.y + n1.z * n2.z
@@ -1119,7 +1187,8 @@ pub fn nrm_dot_nrm<T>(n1: Normal3<T>, n2: Normal3<T>) -> T
 /// the cosine of the angle between them. A return value of zero means
 /// both are orthogonal, a value if one means they are codirectional.
 pub fn nrm_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
-    where T: Copy + Add<T, Output = T> + Mul<T, Output = T>
+where
+    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
     // TODO: DCHECK(!n1.HasNaNs() && !v2.HasNaNs());
     n1.x * v2.x + n1.y * v2.y + n1.z * v2.z
@@ -1127,14 +1196,16 @@ pub fn nrm_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
 
 /// Computes the absolute value of the dot product.
 pub fn nrm_abs_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
-    where T: num::Float
+where
+    T: num::Float,
 {
     nrm_dot_vec3(n1, v2).abs()
 }
 
 /// Return normal with the absolute value of each coordinate.
 pub fn nrm_abs<T>(n: Normal3<T>) -> Normal3<T>
-    where T: num::Float
+where
+    T: num::Float,
 {
     Normal3::<T> {
         x: n.x.abs(),
@@ -1168,7 +1239,7 @@ pub type Bounds2i = Bounds2<i32>;
 pub type Bounds3f = Bounds3<Float>;
 pub type Bounds3i = Bounds3<i32>;
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Bounds2<T> {
     pub p_min: Point2<T>,
     pub p_max: Point2<T>,
@@ -1176,7 +1247,8 @@ pub struct Bounds2<T> {
 
 impl<T> Bounds2<T> {
     pub fn new(p1: Point2<T>, p2: Point2<T>) -> Self
-        where T: Copy + Ord
+    where
+        T: Copy + Ord,
     {
         let p_min: Point2<T> = Point2::<T> {
             x: std::cmp::min(p1.x, p2.x),
@@ -1192,12 +1264,14 @@ impl<T> Bounds2<T> {
         }
     }
     pub fn diagonal(&self) -> Vector2<T>
-        where T: Copy + Sub<T, Output = T>
+    where
+        T: Copy + Sub<T, Output = T>,
     {
         self.p_max - self.p_min
     }
     pub fn area(&self) -> T
-        where T: Copy + Sub<T, Output = T> + Mul<T, Output = T>
+    where
+        T: Copy + Sub<T, Output = T> + Mul<T, Output = T>,
     {
         let d: Vector2<T> = self.p_max - self.p_min;
         d.x * d.y
@@ -1247,7 +1321,8 @@ impl<'a> IntoIterator for &'a Bounds2i {
 /// the maximum of their two respective minimum coordinates and the
 /// minimum of their maximum coordinates.
 pub fn bnd2_intersect_bnd2<T>(b1: Bounds2<T>, b2: Bounds2<T>) -> Bounds2<T>
-    where T: Copy + Ord
+where
+    T: Copy + Ord,
 {
     Bounds2::<T> {
         p_min: Point2::<T> {
@@ -1261,7 +1336,7 @@ pub fn bnd2_intersect_bnd2<T>(b1: Bounds2<T>, b2: Bounds2<T>) -> Bounds2<T>
     }
 }
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Bounds3<T> {
     pub p_min: Point3<T>,
     pub p_max: Point3<T>,
@@ -1291,7 +1366,8 @@ impl Default for Bounds3<f32> {
 
 impl<T> Bounds3<T> {
     pub fn new(p1: Point3<T>, p2: Point3<T>) -> Self
-        where T: num::Float
+    where
+        T: num::Float,
     {
         let p_min: Point3<T> = Point3::<T> {
             x: p1.x.min(p2.x),
@@ -1309,7 +1385,8 @@ impl<T> Bounds3<T> {
         }
     }
     pub fn corner(&self, corner: u8) -> Point3<T>
-        where T: Copy
+    where
+        T: Copy,
     {
         // assert!(corner >= 0_u8);
         assert!(corner < 8_u8);
@@ -1334,12 +1411,14 @@ impl<T> Bounds3<T> {
         Point3::<T> { x: x, y: y, z: z }
     }
     pub fn diagonal(&self) -> Vector3<T>
-        where T: Copy + Sub<T, Output = T>
+    where
+        T: Copy + Sub<T, Output = T>,
     {
         self.p_max - self.p_min
     }
     pub fn surface_area(&self) -> T
-        where T: Copy + Add<T, Output = T> + Sub<T, Output = T> + Mul<T, Output = T>
+    where
+        T: Copy + Add<T, Output = T> + Sub<T, Output = T> + Mul<T, Output = T>,
     {
         let d: Vector3<T> = self.diagonal();
         // 2 * (d.x * d.y + d.x * d.z + d.y * d.z)
@@ -1347,7 +1426,8 @@ impl<T> Bounds3<T> {
         r + r // avoid '2 *'
     }
     pub fn maximum_extent(&self) -> u8
-        where T: Copy + std::cmp::PartialOrd + Sub<T, Output = T>
+    where
+        T: Copy + std::cmp::PartialOrd + Sub<T, Output = T>,
     {
         let d: Vector3<T> = self.diagonal();
         if d.x > d.y && d.x > d.z {
@@ -1359,7 +1439,8 @@ impl<T> Bounds3<T> {
         }
     }
     pub fn offset(&self, p: Point3<T>) -> Vector3<T>
-        where T: Copy + std::cmp::PartialOrd + Sub<T, Output = T> + DivAssign<T>
+    where
+        T: Copy + std::cmp::PartialOrd + Sub<T, Output = T> + DivAssign<T>,
     {
         let mut o: Vector3<T> = p - self.p_min;
         if self.p_max.x > self.p_min.x {
@@ -1463,7 +1544,8 @@ impl<T> Index<u8> for Bounds3<T> {
 /// function returns a new bounding box that encompasses that point as
 /// well as the original box.
 pub fn bnd3_union_pnt3<T>(b: Bounds3<T>, p: Point3<T>) -> Bounds3<T>
-    where T: num::Float
+where
+    T: num::Float,
 {
     let p_min: Point3<T> = Point3::<T> {
         x: b.p_min.x.min(p.x),
@@ -1481,7 +1563,8 @@ pub fn bnd3_union_pnt3<T>(b: Bounds3<T>, p: Point3<T>) -> Bounds3<T>
 /// Construct a new box that bounds the space encompassed by two other
 /// bounding boxes.
 pub fn bnd3_union_bnd3<T>(b1: Bounds3<T>, b2: Bounds3<T>) -> Bounds3<T>
-    where T: num::Float
+where
+    T: num::Float,
 {
     let p_min: Point3<T> = Point3::<T> {
         x: b1.p_min.x.min(b2.p_min.x),
@@ -1498,11 +1581,11 @@ pub fn bnd3_union_bnd3<T>(b1: Bounds3<T>, b2: Bounds3<T>) -> Bounds3<T>
 
 /// Determine if a given point is inside the bounding box.
 pub fn pnt3_inside_bnd3(p: Point3f, b: Bounds3f) -> bool {
-    p.x >= b.p_min.x && p.x <= b.p_max.x && p.y >= b.p_min.y && p.y <= b.p_max.y &&
-    p.z >= b.p_min.z && p.z <= b.p_max.z
+    p.x >= b.p_min.x && p.x <= b.p_max.x && p.y >= b.p_min.y && p.y <= b.p_max.y && p.z >= b.p_min.z
+        && p.z <= b.p_max.z
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Ray {
     /// origin
     pub o: Point3f,
@@ -1532,7 +1615,7 @@ impl Ray {
     }
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct RayDifferential {
     pub rx_origin: Point3f,
     pub ry_origin: Point3f,

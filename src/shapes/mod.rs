@@ -17,6 +17,14 @@
 //! - Sphere
 //! - Triangle
 //!
+//! ## Cones
+//!
+//! TODO
+//!
+//! ## Curves
+//!
+//! TODO
+//!
 //! ## Spheres
 //!
 //! Spheres are a special case of a general type of surfaces called
@@ -140,10 +148,6 @@
 //! }
 //! ```
 //!
-//! ## Cones
-//!
-//! TODO
-//!
 //! ## Disks
 //!
 //! The disk is an interesting quadric since it has a particularly
@@ -235,6 +239,7 @@
 //! TODO
 //!
 
+pub mod curve;
 pub mod cylinder;
 pub mod disk;
 pub mod plymesh;
