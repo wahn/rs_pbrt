@@ -1585,6 +1585,22 @@ pub fn pnt3_inside_bnd3(p: Point3f, b: Bounds3f) -> bool {
         && p.z <= b.p_max.z
 }
 
+/// Pads the bounding box by a constant factor in both dimensions.
+pub fn bnd3_expand(b: Bounds3f, delta: Float) -> Bounds3f {
+    Bounds3f::new(
+        b.p_min - Vector3f {
+            x: delta,
+            y: delta,
+            z: delta,
+        },
+        b.p_max + Vector3f {
+            x: delta,
+            y: delta,
+            z: delta,
+        },
+    )
+}
+
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Ray {
     /// origin
