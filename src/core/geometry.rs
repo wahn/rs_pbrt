@@ -641,6 +641,19 @@ where
     }
 }
 
+impl<T> Neg for Vector2<T>
+where
+    T: Copy + Neg<Output = T>,
+{
+    type Output = Vector2<T>;
+    fn neg(self) -> Vector2<T> {
+        Vector2::<T> {
+            x: -self.x,
+            y: -self.y,
+        }
+    }
+}
+
 impl<T> Index<u8> for Point2<T> {
     type Output = T;
     fn index(&self, index: u8) -> &T {
