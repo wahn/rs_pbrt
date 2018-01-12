@@ -1,4 +1,5 @@
 // std
+use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
@@ -12,7 +13,7 @@ use core::geometry::{nrm_dot_nrm, nrm_normalize, bnd3_expand, bnd3_union_bnd3, n
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::pbrt::Float;
-use core::pbrt::{clamp_t, gamma, lerp, radians};
+use core::pbrt::{clamp_t, float_to_bits, gamma, lerp, radians};
 use core::sampling::{uniform_cone_pdf, uniform_sample_sphere};
 use core::shape::Shape;
 use core::transform::Transform;
@@ -164,6 +165,107 @@ impl Shape for Curve {
         self.object_to_world.transform_bounds(self.object_bound())
     }
     fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+        // TODO: ProfilePhase p(isect ? Prof::CurveIntersect : Prof::CurveIntersectP);
+        // TODO: ++nTests;
+        // transform _Ray_ to object space
+        let mut o_err: Vector3f = Vector3f::default();
+        let mut d_err: Vector3f = Vector3f::default();
+        let ray: Ray = self.world_to_object
+            .transform_ray_with_error(r, &mut o_err, &mut d_err);
+
+        // compute object-space control points for curve segment, _cpObj_
+
+        let mut cp_obj: [Point3f; 4] = [Point3f::default(); 4];
+        cp_obj[0] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_min);
+        cp_obj[1] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_max);
+        cp_obj[2] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_max, self.u_max);
+        cp_obj[3] = blossom_bezier(&self.common.cp_obj, self.u_max, self.u_max, self.u_max);
+
+        // project curve control points to plane perpendicular to ray
+
+        // Be careful to set the "up" direction passed to LookAt() to
+        // equal the vector from the first to the last control points.
+        // In turn, this helps orient the curve to be roughly parallel
+        // to the x axis in the ray coordinate system.
+
+        // In turn (especially for curves that are approaching stright
+        // lines), we get curve bounds with minimal extent in y, which
+        // in turn lets us early out more quickly in
+        // recursiveIntersect().
+
+        // Vector3f dx = Cross(ray.d, cpObj[3] - cpObj[0]);
+        let mut dx: Vector3f = vec3_cross_vec3(ray.d, cp_obj[3] - cp_obj[0]);
+        if dx.length_squared() == 0.0 as Float {
+            // if the ray and the vector between the first and last
+            // control points are parallel, dx will be zero.  Generate
+            // an arbitrary xy orientation for the ray coordinate
+            // system so that intersection tests can proceeed in this
+            // unusual case.
+            let mut dy: Vector3f = Vector3f::default();
+            vec3_coordinate_system(&ray.d, &mut dx, &mut dy);
+        }
+
+        let object_to_ray: Transform = Transform::look_at(ray.o, ray.o + ray.d, dx);
+        let mut cp: [Point3f; 4] = [
+            object_to_ray.transform_point(cp_obj[0]),
+            object_to_ray.transform_point(cp_obj[1]),
+            object_to_ray.transform_point(cp_obj[2]),
+            object_to_ray.transform_point(cp_obj[3]),
+        ];
+
+        // Before going any further, see if the ray's bounding box
+        // intersects the curve's bounding box. We start with the y
+        // dimension, since the y extent is generally the smallest
+        // (and is often tiny) due to our careful orientation of the
+        // ray coordinate ysstem above.
+
+        let max_width: Float = lerp(self.u_min, self.common.width[0], self.common.width[1])
+            .max(lerp(self.u_max, self.common.width[0], self.common.width[1]));
+        if cp[0].y.max(cp[1].y).max(cp[2].y.max(cp[3].y)) + 0.5 as Float * max_width < 0.0 as Float
+            || cp[0].y.min(cp[1].y).min(cp[2].y.min(cp[3].y)) - 0.5 as Float * max_width
+                > 0.0 as Float
+        {
+            return None;
+        }
+
+        // check for non-overlap in x.
+        if cp[0].x.max(cp[1].x).max(cp[2].x.max(cp[3].x)) + 0.5 as Float * max_width < 0.0 as Float
+            || cp[0].x.min(cp[1].x).min(cp[2].x.min(cp[3].x)) - 0.5 as Float * max_width
+                > 0.0 as Float
+        {
+            return None;
+        }
+
+        // check for non-overlap in z.
+        let ray_length: Float = ray.d.length();
+        let z_max: Float = ray_length * ray.t_max;
+        if cp[0].z.max(cp[1].z).max(cp[2].z.max(cp[3].z)) + 0.5 as Float * max_width < 0.0 as Float
+            || cp[0].z.min(cp[1].z).min(cp[2].z.min(cp[3].z)) - 0.5 as Float * max_width > z_max
+        {
+            return None;
+        }
+
+        // compute refinement depth for curve, _maxDepth_
+        let mut l0: Float = 0.0 as Float;
+        for i in 0..2 {
+            l0 = l0.max(
+                ((cp[i].x - 2.0 as Float * cp[i + 1].x + cp[i + 2].x)
+                    .abs()
+                    .max((cp[i].y - 2.0 as Float * cp[i + 1].y + cp[i + 2].y).abs())
+                    .max((cp[i].z - 2.0 as Float * cp[i + 1].z + cp[i + 2].z).abs())),
+            );
+        }
+
+        // width / 20
+        let eps: Float = self.common.width[0].max(self.common.width[1]) * 0.05 as Float;
+        // compute log base 4 by dividing log2 in half.
+        let r0: i32 =
+            log2(1.41421356237 as Float * 6.0 as Float * l0 / (8.0 as Float * eps)) / 2_i32;
+        let max_depth: i32 = clamp_t(r0, 0_i32, 10_i32);
+        // TODO: ReportValue(refinementLevel, maxDepth);
+
+        // return recursiveIntersect(ray, tHit, isect, cp, Inverse(object_to_ray), uMin,
+        //                           uMax, maxDepth);
         // TODO
         None
     }
@@ -219,8 +321,22 @@ impl Shape for Curve {
         intr
     }
     fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
-        // TODO
-        0.0 as Float
+        // intersect sample ray with area light geometry
+        let ray: Ray = iref.spawn_ray(wi);
+        // ignore any alpha textures used for trimming the shape when
+        // performing this intersection. Hack for the "San Miguel"
+        // scene, where this is used to make an invisible area light.
+        if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
+            // convert light sample weight to solid angle measure
+            let mut pdf: Float = pnt3_distance_squared(iref.get_p(), isect_light.p)
+                / (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
+            if pdf.is_infinite() {
+                pdf = 0.0 as Float;
+            }
+            pdf
+        } else {
+            0.0 as Float
+        }
     }
 }
 
@@ -234,4 +350,21 @@ fn blossom_bezier(p: &[Point3f; 4], u0: Float, u1: Float, u2: Float) -> Point3f 
     ];
     let b: [Point3f; 2] = [pnt3_lerp(u1, a[0], a[1]), pnt3_lerp(u1, a[1], a[2])];
     pnt3_lerp(u2, b[0], b[1])
+}
+
+fn log2(v: Float) -> i32 {
+    if v < 1.0 as Float {
+        return 0_i32;
+    }
+    let bits: i32 = float_to_bits(v) as i32;
+
+    // https://graphics.stanford.edu/~seander/bithacks.html#IntegerLog
+
+    // (With an additional add so get round-to-nearest rather than
+    // round down.)
+    let mut one_or_zero: i32 = 0_i32;
+    if (1 << 22) > 0 {
+        one_or_zero = 1_i32;
+    }
+    (bits >> 23) - 127 + (bits & one_or_zero)
 }
