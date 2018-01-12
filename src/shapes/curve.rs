@@ -172,12 +172,10 @@ impl Shape for Curve {
         false
     }
     fn get_reverse_orientation(&self) -> bool {
-        // TODO
-        false
+        self.reverse_orientation
     }
     fn get_transform_swaps_handedness(&self) -> bool {
-        // TODO
-        false
+        self.transform_swaps_handedness
     }
     fn area(&self) -> Float {
         // compute object-space control points for curve segment, _cpObj_
@@ -205,8 +203,20 @@ impl Shape for Curve {
         u: Point2f,
         pdf: &mut Float,
     ) -> InteractionCommon {
-        // TODO
-        InteractionCommon::default()
+        let intr: InteractionCommon = self.sample(u, pdf);
+        let mut wi: Vector3f = intr.p - iref.p;
+        if wi.length_squared() == 0.0 as Float {
+            *pdf = 0.0 as Float;
+        } else {
+            wi = vec3_normalize(wi);
+            // convert from area measure, as returned by the Sample()
+            // call above, to solid angle measure.
+            *pdf *= pnt3_distance_squared(iref.p, intr.p) / nrm_abs_dot_vec3(intr.n, -wi);
+            if (*pdf).is_infinite() {
+                *pdf = 0.0 as Float;
+            }
+        }
+        intr
     }
     fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
         // TODO
