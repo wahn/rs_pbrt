@@ -47,6 +47,7 @@ use pbrt::samplers::halton::HaltonSampler;
 use pbrt::samplers::random::RandomSampler;
 use pbrt::samplers::sobol::SobolSampler;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
+use pbrt::shapes::curve::create_curve_shape;
 use pbrt::shapes::cylinder::Cylinder;
 use pbrt::shapes::disk::Disk;
 use pbrt::shapes::plymesh::create_ply_mesh;
@@ -869,7 +870,20 @@ fn pbrt_shape(param_set: &ParamSet)
         } else if param_set.name == String::from("hyperboloid") {
             println!("TODO: CreateHyperboloidShape");
         } else if param_set.name == String::from("curve") {
-            println!("TODO: CreateCurveShape");
+            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                if let Some(ref search_directory) = SEARCH_DIRECTORY {
+                    let mtl: Arc<Material + Send + Sync> = create_material();
+                    let ply_shapes: Vec<Arc<Shape + Send + Sync>> =
+                        create_curve_shape(obj_to_world,
+                                           world_to_obj,
+                                           false, // reverse_orientation
+                                           param_set);
+                    for shape in ply_shapes {
+                        shapes.push(shape.clone());
+                        materials.push(mtl.clone());
+                    }
+                }
+            }
         } else if param_set.name == String::from("trianglemesh") {
             let vi = param_set.find_int(String::from("indices"));
             let p = param_set.find_point3f(String::from("P"));

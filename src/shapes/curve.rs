@@ -1,20 +1,15 @@
 // std
-use std;
-use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::efloat::EFloat;
-use core::efloat::quadratic_efloat;
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use core::geometry::{nrm_dot_nrm, nrm_normalize, bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3,
-                     nrm_cross_vec3, pnt3_distance, pnt3_distance_squared, pnt3_lerp,
-                     pnt3_offset_ray_origin, spherical_direction_vec3, vec2_dot,
-                     vec3_coordinate_system, vec3_cross_vec3, vec3_dot_vec3, vec3_normalize};
+                     nrm_cross_vec3, pnt3_distance, pnt3_distance_squared, pnt3_lerp, vec2_dot,
+                     vec3_coordinate_system, vec3_cross_vec3, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
+use core::paramset::ParamSet;
 use core::pbrt::Float;
-use core::pbrt::{clamp_t, float_to_bits, gamma, lerp, radians};
-use core::sampling::{uniform_cone_pdf, uniform_sample_sphere};
+use core::pbrt::{clamp_t, float_to_bits, lerp};
 use core::shape::Shape;
 use core::transform::Transform;
 
@@ -322,11 +317,6 @@ impl Curve {
                 }
                 dpdv = ray_to_object.transform_vector(dpdv_plane);
             }
-            // *isect = (*ObjectToWorld)(SurfaceInteraction(
-            //     ray(pc.z), p_error, Point2f(u, v), -ray.d, dpdu, dpdv,
-            //     Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time, this));
-
-            // }
             let si: SurfaceInteraction = SurfaceInteraction::new(
                 ray.position(pc.z),
                 p_error,
@@ -339,10 +329,12 @@ impl Curve {
                 ray.time,
                 None,
             );
-            let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
+            let mut isect: SurfaceInteraction =
+                self.object_to_world.transform_surface_interaction(&si);
             if let Some(_shape) = si.shape {
                 isect.shape = si.shape;
             }
+            // }
             // TODO: ++n_hits;
             // return true;
             hit = Some((isect, t_hit));
@@ -415,7 +407,7 @@ impl Shape for Curve {
         }
 
         let object_to_ray: Transform = Transform::look_at(ray.o, ray.o + ray.d, dx);
-        let mut cp: [Point3f; 4] = [
+        let cp: [Point3f; 4] = [
             object_to_ray.transform_point(cp_obj[0]),
             object_to_ray.transform_point(cp_obj[1]),
             object_to_ray.transform_point(cp_obj[2]),
@@ -472,11 +464,13 @@ impl Shape for Curve {
             log2(1.41421356237 as Float * 6.0 as Float * l0 / (8.0 as Float * eps)) / 2_i32;
         let max_depth: i32 = clamp_t(r0, 0_i32, 10_i32);
         // TODO: ReportValue(refinementLevel, maxDepth);
-
-        // return recursiveIntersect(ray, t_hit, isect, cp, Inverse(object_to_ray), uMin,
-        //                           uMax, maxDepth);
-        // TODO
-        None
+        self.recursive_intersect(
+            &ray,
+            &[cp[0], cp[1], cp[2], cp[3]],
+            &Transform::inverse(object_to_ray),
+            self.u_min,
+            self.u_max,
+            max_depth)
     }
     fn intersect_p(&self, r: &Ray) -> bool {
         // TODO
@@ -504,7 +498,7 @@ impl Shape for Curve {
         }
         approx_length * avg_width
     }
-    fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+    fn sample(&self, _u: Point2f, _pdf: &mut Float) -> InteractionCommon {
         println!("FATAL: Curve::sample not implemented.");
         InteractionCommon::default()
     }
@@ -546,6 +540,80 @@ impl Shape for Curve {
         } else {
             0.0 as Float
         }
+    }
+}
+
+pub fn create_curve_shape(
+    o2w: Transform,
+    w2o: Transform,
+    reverse_orientation: bool,
+    params: &ParamSet,
+) -> Vec<Arc<Shape + Send + Sync>> {
+    let width: Float = params.find_one_float(String::from("width"), 1.0 as Float);
+    let width0: Float = params.find_one_float(String::from("width0"), width);
+    let width1: Float = params.find_one_float(String::from("width1"), width);
+    let cp = params.find_point3f(String::from("P"));
+    if cp.len() != 4_usize {
+        panic!(
+            "Must provide 4 control points for \"curve\" primitive. ((Provided {:?}).",
+            cp.len()
+        );
+    }
+    let curve_type_string: String =
+        params.find_one_string(String::from("type"), String::from("flat"));
+    let mut curve_type: CurveType = CurveType::Flat;
+    if curve_type_string == String::from("flat") {
+        curve_type = CurveType::Flat;
+    } else if curve_type_string == String::from("ribbon") {
+        curve_type = CurveType::Ribbon;
+    } else if curve_type_string == String::from("cylinder") {
+        curve_type = CurveType::Cylinder;
+    } else {
+        println!(
+            "ERROR: Unknown curve type \"{:?}\". Using \"flat\".",
+            curve_type_string
+        );
+    }
+    let mut n: Vec<Normal3f> = params.find_normal3f(String::from("N"));
+    if !n.is_empty() {
+        if curve_type_string != String::from("ribbon") {
+            println!("WARNING: Curve normals are only used with \"ribbon\" type curves.");
+            n = Vec::new();
+        } else if n.len() != 2_usize {
+            panic!(
+                "Must provide two normals with \"N\" parameter for ribbon curves. (Provided {:?}).",
+                n.len()
+            );
+        }
+    }
+    let sd: i32 = params.find_one_int(String::from("splitdepth"), 3_i32);
+    if curve_type == CurveType::Ribbon && n.is_empty() {
+        panic!("Must provide normals \"N\" at curve endpoints with ribbon curves.");
+    }
+    if n.is_empty() {
+        Curve::create(
+            o2w,
+            w2o,
+            reverse_orientation,
+            &[cp[0], cp[1], cp[2], cp[3]],
+            width0,
+            width1,
+            curve_type,
+            None,
+            sd,
+        )
+    } else {
+        Curve::create(
+            o2w,
+            w2o,
+            reverse_orientation,
+            &[cp[0], cp[1], cp[2], cp[3]],
+            width0,
+            width1,
+            curve_type,
+            Some([n[0], n[1]]),
+            sd,
+        )
     }
 }
 
