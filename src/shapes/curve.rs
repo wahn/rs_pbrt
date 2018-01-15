@@ -7,9 +7,9 @@ use core::efloat::EFloat;
 use core::efloat::quadratic_efloat;
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use core::geometry::{nrm_dot_nrm, nrm_normalize, bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3,
-                     pnt3_distance, pnt3_distance_squared, pnt3_lerp, pnt3_offset_ray_origin,
-                     spherical_direction_vec3, vec2_dot, vec3_coordinate_system, vec3_cross_vec3,
-                     vec3_dot_vec3, vec3_normalize};
+                     nrm_cross_vec3, pnt3_distance, pnt3_distance_squared, pnt3_lerp,
+                     pnt3_offset_ray_origin, spherical_direction_vec3, vec2_dot,
+                     vec3_coordinate_system, vec3_cross_vec3, vec3_dot_vec3, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::pbrt::Float;
@@ -149,6 +149,7 @@ impl Curve {
         u1: Float,
         depth: i32,
     ) -> Option<(SurfaceInteraction, Float)> {
+        let mut hit: Option<(SurfaceInteraction, Float)> = None;
         let ray_length: Float = ray.d.length();
 
         if depth > 0_i32 {
@@ -160,11 +161,8 @@ impl Curve {
             // box overlaps the segment before recursively checking
             // for intersection with it.
 
-            let hit: bool = false;
             let u: [Float; 3] = [u0, (u0 + u1) / 2.0 as Float, u1];
             // pointer to the 4 control points for the current segment.
-            //     const Point3f *cps = cp_split;
-            // for (int seg = 0; seg < 2; ++seg, cps += 3) {
             for seg in 0..2 {
                 let cps: &[Point3f] = &cp_split[seg * 3..seg * 3 + 3];
                 let max_width: Float = lerp(u[seg], self.common.width[0], self.common.width[1])
@@ -198,23 +196,24 @@ impl Curve {
                     continue;
                 }
 
-                //     hit |= recursiveIntersect(ray, tHit, isect, cps, rayToObject,
-                //                               u[seg], u[seg + 1], depth - 1);
-
-                // let hit_option = self.recursive_intersect(
-                //     ray,
-                //     &cps[0..4],
-                //     ray_to_object,
-                //     u[seg],
-                //     u[seg + 1],
-                //     depth - 1,
-                // );
-
-                //     // If we found an intersection and this is a shadow ray,
-                //     // we can exit out immediately.
-                //     if (hit && !tHit) return true;
+                if let Some((isect, t_hit)) = self.recursive_intersect(
+                    ray,
+                    &[cps[0], cps[1], cps[2], cps[3]],
+                    ray_to_object,
+                    u[seg],
+                    u[seg + 1],
+                    depth - 1,
+                ) {
+                    // If we found an intersection and this is a shadow ray,
+                    // we can exit out immediately.
+                    if t_hit == 0.0 as Float {
+                        return Some((isect, t_hit));
+                    } else {
+                        hit = Some((isect, t_hit));
+                    }
+                }
             }
-        //     return hit;
+            return hit;
         } else {
             // intersect ray with curve segment
 
@@ -254,7 +253,7 @@ impl Curve {
 
             // compute $u$ coordinate of curve intersection point and _hitWidth_
             let u: Float = clamp_t(lerp(w, u0, u1), u0, u1);
-            let hit_width: Float = lerp(u, self.common.width[0], self.common.width[1]);
+            let mut hit_width: Float = lerp(u, self.common.width[0], self.common.width[1]);
             let mut n_hit: Normal3f = Normal3f::default();
             if self.common.curve_type == CurveType::Ribbon {
                 // scale _hitWidth_ based on ribbon orientation
@@ -263,7 +262,7 @@ impl Curve {
                 let sin1: Float =
                     (u * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
                 n_hit = self.common.n[0] * sin0 + self.common.n[1] * sin1;
-                // hit_width *= AbsDot(n_hit, ray.d) / ray_length;
+                hit_width *= nrm_abs_dot_vec3(n_hit, ray.d) / ray_length;
             }
 
             // test intersection point against curve width
@@ -290,45 +289,71 @@ impl Curve {
             }
 
             // compute hit _t_ and partial derivatives for curve intersection
-            //     if (tHit != nullptr) {
-            //         // FIXME: this tHit isn't quite right for ribbons...
-            //         *tHit = pc.z / ray_length;
-            //         // Compute error bounds for curve intersection
-            //         Vector3f pError(2 * hit_width, 2 * hit_width, 2 * hit_width);
+            // if (t_hit != nullptr) {
+            // FIXME: this t_hit isn't quite right for ribbons...
+            let t_hit: Float = pc.z / ray_length;
+            // compute error bounds for curve intersection
+            let p_error: Vector3f = Vector3f {
+                x: 2.0 as Float * hit_width,
+                y: 2.0 as Float * hit_width,
+                z: 2.0 as Float * hit_width,
+            };
 
-            //         // Compute $\dpdu$ and $\dpdv$ for curve intersection
-            //         Vector3f dpdu, dpdv;
-            //         eval_bezier(self.common.cpObj, u, &dpdu);
-            //         if (self.common.type == CurveType::Ribbon)
-            //             dpdv = Normalize(Cross(n_hit, dpdu)) * hit_width;
-            //         else {
-            //             // Compute curve $\dpdv$ for flat and cylinder curves
-            //             Vector3f dpduPlane = (Inverse(rayToObject))(dpdu);
-            //             Vector3f dpdvPlane =
-            //                 Normalize(Vector3f(-dpduPlane.y, dpduPlane.x, 0)) *
-            //                 hit_width;
-            //             if (self.common.type == CurveType::Cylinder) {
-            //                 // Rotate _dpdvPlane_ to give cylindrical appearance
-            //                 Float theta = Lerp(v, -90., 90.);
-            //                 Transform rot = Rotate(-theta, dpduPlane);
-            //                 dpdvPlane = rot(dpdvPlane);
-            //             }
-            //             dpdv = rayToObject(dpdvPlane);
-            //         }
-            //         *isect = (*ObjectToWorld)(SurfaceInteraction(
-            //             ray(pc.z), pError, Point2f(u, v), -ray.d, dpdu, dpdv,
-            //             Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time, this));
-            //     }
-            //     ++n_hits;
-            //     return true;
+            // compute $\dpdu$ and $\dpdv$ for curve intersection
+            let mut dpdu: Vector3f = Vector3f::default();
+            let mut dpdv: Vector3f = Vector3f::default();
+            eval_bezier(&self.common.cp_obj, u, Some(&mut dpdu));
+            if self.common.curve_type == CurveType::Ribbon {
+                dpdv = vec3_normalize(nrm_cross_vec3(n_hit, dpdu)) * hit_width;
+            } else {
+                // compute curve $\dpdv$ for flat and cylinder curves
+                let dpdu_plane: Vector3f =
+                    Transform::inverse(*ray_to_object).transform_vector(dpdu);
+                let mut dpdv_plane: Vector3f = vec3_normalize(Vector3f {
+                    x: -dpdu_plane.y,
+                    y: dpdu_plane.x,
+                    z: 0.0,
+                }) * hit_width;
+                if self.common.curve_type == CurveType::Cylinder {
+                    // rotate _dpdvPlane_ to give cylindrical appearance
+                    let theta: Float = lerp(v, -90.0 as Float, 90.0 as Float);
+                    let rot: Transform = Transform::rotate(-theta, dpdu_plane);
+                    dpdv_plane = rot.transform_vector(dpdv_plane);
+                }
+                dpdv = ray_to_object.transform_vector(dpdv_plane);
+            }
+            // *isect = (*ObjectToWorld)(SurfaceInteraction(
+            //     ray(pc.z), p_error, Point2f(u, v), -ray.d, dpdu, dpdv,
+            //     Normal3f(0, 0, 0), Normal3f(0, 0, 0), ray.time, this));
+
+            // }
+            let si: SurfaceInteraction = SurfaceInteraction::new(
+                ray.position(pc.z),
+                p_error,
+                Point2f { x: u, y: v },
+                -ray.d,
+                dpdu,
+                dpdv,
+                Normal3f::default(),
+                Normal3f::default(),
+                ray.time,
+                None,
+            );
+            let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
+            if let Some(_shape) = si.shape {
+                isect.shape = si.shape;
+            }
+            // TODO: ++n_hits;
+            // return true;
+            hit = Some((isect, t_hit));
         }
-        None
+        return hit;
     }
 }
 
 impl Shape for Curve {
     fn object_bound(&self) -> Bounds3f {
-        // compute object-space control points for curve segment, _cpObj_
+        // compute object-space control points for curve segment, _cp_obj_
         let mut cp_obj: [Point3f; 4] = [Point3f::default(); 4];
         cp_obj[0] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_min);
         cp_obj[1] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_max);
@@ -357,7 +382,7 @@ impl Shape for Curve {
         let ray: Ray = self.world_to_object
             .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
-        // compute object-space control points for curve segment, _cpObj_
+        // compute object-space control points for curve segment, _cp_obj_
 
         let mut cp_obj: [Point3f; 4] = [Point3f::default(); 4];
         cp_obj[0] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_min);
@@ -377,7 +402,7 @@ impl Shape for Curve {
         // in turn lets us early out more quickly in
         // recursiveIntersect().
 
-        // Vector3f dx = Cross(ray.d, cpObj[3] - cpObj[0]);
+        // Vector3f dx = Cross(ray.d, cp_obj[3] - cp_obj[0]);
         let mut dx: Vector3f = vec3_cross_vec3(ray.d, cp_obj[3] - cp_obj[0]);
         if dx.length_squared() == 0.0 as Float {
             // if the ray and the vector between the first and last
@@ -448,7 +473,7 @@ impl Shape for Curve {
         let max_depth: i32 = clamp_t(r0, 0_i32, 10_i32);
         // TODO: ReportValue(refinementLevel, maxDepth);
 
-        // return recursiveIntersect(ray, tHit, isect, cp, Inverse(object_to_ray), uMin,
+        // return recursiveIntersect(ray, t_hit, isect, cp, Inverse(object_to_ray), uMin,
         //                           uMax, maxDepth);
         // TODO
         None
@@ -464,7 +489,7 @@ impl Shape for Curve {
         self.transform_swaps_handedness
     }
     fn area(&self) -> Float {
-        // compute object-space control points for curve segment, _cpObj_
+        // compute object-space control points for curve segment, _cp_obj_
         let mut cp_obj: [Point3f; 4] = [Point3f::default(); 4];
         cp_obj[0] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_min);
         cp_obj[1] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_max);
