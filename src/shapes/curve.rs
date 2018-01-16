@@ -159,7 +159,7 @@ impl Curve {
             let u: [Float; 3] = [u0, (u0 + u1) / 2.0 as Float, u1];
             // pointer to the 4 control points for the current segment.
             for seg in 0..2 {
-                let cps: &[Point3f] = &cp_split[seg * 3..seg * 3 + 3];
+                let cps: &[Point3f] = &cp_split[seg * 3..seg * 3 + 4];
                 let max_width: Float = lerp(u[seg], self.common.width[0], self.common.width[1])
                     .max(lerp(u[seg + 1], self.common.width[0], self.common.width[1]));
 
