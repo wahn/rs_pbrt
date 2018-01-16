@@ -473,8 +473,11 @@ impl Shape for Curve {
             max_depth)
     }
     fn intersect_p(&self, r: &Ray) -> bool {
-        // TODO
-        false
+        if let Some((isect, t_hit)) = self.intersect(r) {
+            true
+        } else {
+            false
+        }
     }
     fn get_reverse_orientation(&self) -> bool {
         self.reverse_orientation
