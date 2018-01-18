@@ -473,7 +473,7 @@ impl Shape for Curve {
             max_depth)
     }
     fn intersect_p(&self, r: &Ray) -> bool {
-        if let Some((isect, t_hit)) = self.intersect(r) {
+        if let Some((_isect, _t_hit)) = self.intersect(r) {
             true
         } else {
             false
