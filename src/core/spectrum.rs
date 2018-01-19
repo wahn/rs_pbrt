@@ -1590,6 +1590,9 @@ impl RGBSpectrum {
     pub fn sqrt(&self) -> RGBSpectrum {
         RGBSpectrum::rgb(self.c[0].sqrt(), self.c[1].sqrt(), self.c[2].sqrt())
     }
+    /// Clamp spectrum to lie between the values low and high. Use
+    /// (0.0 as Float, std::f32::INFINITY as Float) if there are no
+    /// specific values.
     pub fn clamp(&self, low: Float, high: Float) -> RGBSpectrum {
         let mut ret: RGBSpectrum = RGBSpectrum::default();
         let n_spectrum_samples: usize = 3; // RGB

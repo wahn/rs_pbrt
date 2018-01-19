@@ -1,4 +1,5 @@
 //std
+use std;
 use std::sync::Arc;
 // pbrt
 use core::interaction::SurfaceInteraction;
@@ -6,6 +7,7 @@ use core::material::{Material, TransportMode};
 use core::microfacet::TrowbridgeReitzDistribution;
 use core::paramset::TextureParams;
 use core::pbrt::{Float, Spectrum};
+use core::pbrt::radians;
 use core::reflection::{Bsdf, Bxdf, FresnelConductor, MicrofacetReflection};
 use core::texture::Texture;
 use textures::constant::ConstantTexture;
@@ -121,23 +123,51 @@ impl HairMaterial {
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
-        // WORK
+        let bm: Float = self.beta_m.evaluate(si);
+        let bn: Float = self.beta_n.evaluate(si);
+        let a: Float = radians(self.alpha.evaluate(si));
+        let e: Float = self.eta.evaluate(si);
+        let sig_a: Spectrum;
+        if let Some(ref sigma_a) = self.sigma_a {
+            sig_a = sigma_a.evaluate(si);
+        } else if let Some(ref color) = self.color {
+            let c: Spectrum = color
+                .evaluate(si)
+                .clamp(0.0 as Float, std::f32::INFINITY as Float);
+            sig_a = HairBSDF::sigma_a_from_reflectance(c, bn);
+        } else {
+            let mut ce: Float = 0.0 as Float;
+            let mut cp: Float = 0.0 as Float;
+            if let Some(ref eumelanin) = self.eumelanin {
+                ce = (0.0 as Float).max(eumelanin.evaluate(si));
+                if let Some(ref pheomelanin) = self.pheomelanin {
+                    cp = (0.0 as Float).max(pheomelanin.evaluate(si));
+                }
+            } else {
+                if let Some(ref pheomelanin) = self.pheomelanin {
+                    cp = (0.0 as Float).max(pheomelanin.evaluate(si));
+                }
+            }
+            sig_a = HairBSDF::sigma_a_from_concentration(ce, cp);
+        }
+        // TODO: bxdfs.push(Arc::new(HairBSDF::new(h, e, sig_a, bm, bn, a)));
         Bsdf::new(si, 1.0, bxdfs)
     }
 }
 
 impl Material for HairMaterial {
-    fn compute_scattering_functions(&self,
-                                    si: &mut SurfaceInteraction,
-                                    // arena: &mut Arena,
-                                    _mode: TransportMode,
-                                    _allow_multiple_lobes: bool) {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
         si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }
 
-pub struct HairBSDF {
-}
+pub struct HairBSDF {}
 
 impl HairBSDF {
     pub fn sigma_a_from_concentration(ce: Float, cp: Float) -> Spectrum {
@@ -148,5 +178,20 @@ impl HairBSDF {
             sigma_a[i] = (ce * eumelanin_sigma_a[i] + cp * pheomelanin_sigma_a[i]);
         }
         Spectrum::from_rgb(&sigma_a)
+    }
+    pub fn sigma_a_from_reflectance(c: Spectrum, beta_n: Float) -> Spectrum {
+        let mut sigma_a: Spectrum = Spectrum::default();
+        for i in 0..3 {
+            let sqr: Float = beta_n * beta_n;
+            let pow3: Float = sqr * beta_n;
+            let pow4: Float = pow3 * beta_n;
+            let pow5: Float = pow4 * beta_n;
+            let f: Float = c.c[i].ln()
+                / (5.969 as Float - 0.215 as Float * beta_n + 2.532 as Float * sqr
+                    - 10.73 as Float * pow3 + 5.574 as Float * pow4
+                    + 0.245 as Float * pow5);
+            sigma_a.c[i] = f * f;
+        }
+        sigma_a
     }
 }
