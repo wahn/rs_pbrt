@@ -485,6 +485,19 @@ impl ParamSet {
         }
         values
     }
+    pub fn find_spectrum(&self, name: String) -> Vec<Spectrum> {
+        let mut values: Vec<Spectrum> = Vec::new();
+        for v in &self.spectra {
+            if v.name == name {
+                let n_values = v.n_values;
+                // v.looked_up = true;
+                for i in 0..n_values {
+                    values.push(v.values[i]);
+                }
+            }
+        }
+        values
+    }
 }
 
 #[derive(Default)]
@@ -531,6 +544,34 @@ impl TextureParams {
         let mut val: Spectrum = self.material_params.find_one_spectrum(n.clone(), def);
         val = self.geom_params.find_one_spectrum(n.clone(), val);
         Arc::new(ConstantTexture { value: val })
+    }
+    pub fn get_spectrum_texture_or_null(&mut self,
+                                        n: String)
+                                        -> Option<Arc<Texture<Spectrum> + Send + Sync>> {
+        let mut name: String = self.geom_params.find_texture(n.clone());
+        if name == String::new() {
+            name = self.material_params.find_texture(n.clone());
+        }
+        if name != String::new() {
+            match self.spectrum_textures.get(name.as_str()) {
+                Some(_spectrum_texture) => {}
+                None => {
+                    println!("Couldn't find spectrum texture named \"{}\" for parameter \"{}\"",
+                             name,
+                             n);
+                    return None;
+                }
+            }
+        }
+        let mut val: Vec<Spectrum> = self.material_params.find_spectrum(n.clone());
+        if val.len() == 0_usize {
+            val = self.geom_params.find_spectrum(n.clone());
+        }
+        if val.len() == 0_usize {
+            None
+        } else {
+            Some(Arc::new(ConstantTexture { value: val[0] }))
+        }
     }
     pub fn get_float_texture(&mut self,
                              n: String,

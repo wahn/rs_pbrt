@@ -23,6 +23,7 @@
 //! ![SubstrateMaterial](https://www.janwalter.org/assets/ganesha.png)
 
 pub mod glass;
+pub mod hair;
 pub mod matte;
 pub mod metal;
 pub mod mirror;
