@@ -2,13 +2,14 @@
 use std;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Point2f, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
 use core::microfacet::TrowbridgeReitzDistribution;
 use core::paramset::TextureParams;
 use core::pbrt::{Float, Spectrum};
-use core::pbrt::radians;
-use core::reflection::{Bsdf, Bxdf, FresnelConductor, MicrofacetReflection};
+use core::pbrt::{clamp_t, radians};
+use core::reflection::{Bsdf, Bxdf, BxdfType, FresnelConductor, MicrofacetReflection};
 use core::texture::Texture;
 use textures::constant::ConstantTexture;
 
@@ -167,9 +168,93 @@ impl Material for HairMaterial {
     }
 }
 
-pub struct HairBSDF {}
+pub const P_MAX: u8 = 3_u8;
+pub const SQRT_PI_OVER_8: Float = 0.626657069 as Float;
+
+pub struct HairBSDF {
+    pub h: Float,
+    pub gamma_o: Float,
+    pub eta: Float,
+    pub sigma_a: Spectrum,
+    pub beta_m: Float,
+    pub beta_n: Float,
+    pub v: [Float; (P_MAX + 1) as usize],
+    pub s: Float,
+    pub sin_2k_alpha: [Float; 3],
+    pub cos_2k_alpha: [Float; 3],
+}
 
 impl HairBSDF {
+    pub fn new(
+        h: Float,
+        eta: Float,
+        sigma_a: Spectrum,
+        beta_m: Float,
+        beta_n: Float,
+        alpha: Float,
+    ) -> Self {
+        assert!(h >= -1.0 as Float && h <= 1.0 as Float);
+        assert!(beta_m >= 0.0 as Float && beta_m <= 1.0 as Float);
+        assert!(beta_n >= 0.0 as Float && beta_n <= 1.0 as Float);
+        // gamma_o(SafeASin(h))
+        assert!(h >= -1.0001 as Float && h <= 1.0001 as Float);
+        let gamma_o: Float = clamp_t(h, -1.0 as Float, 1.0 as Float).asin();
+        // compute longitudinal variance from $\beta_m$
+        assert!(
+            P_MAX >= 3_u8,
+            "Longitudinal variance code must be updated to handle low P_MAX"
+        );
+        let mut v: [Float; (P_MAX + 1) as usize] = [0.0 as Float; (P_MAX + 1) as usize];
+        let beta_m_2: Float = beta_m * beta_m;
+        let beta_m_4: Float = beta_m_2 * beta_m_2;
+        let beta_m_8: Float = beta_m_4 * beta_m_4;
+        let beta_m_16: Float = beta_m_8 * beta_m_8;
+        let beta_m_20: Float = beta_m_16 * beta_m_4;
+        let f: Float =
+            0.726 as Float * beta_m + 0.812 as Float * beta_m_2 + 3.7 as Float * beta_m_20;
+        v[0] = f * f;
+        v[1] = 0.25 as Float * v[0];
+        v[2] = 4.0 as Float * v[0];
+        for p in 3..P_MAX {
+            // TODO: is there anything better here?
+            v[p as usize] = v[2];
+        }
+        // compute azimuthal logistic scale factor from $\beta_n$
+        let beta_n_2: Float = beta_n * beta_n;
+        let beta_n_4: Float = beta_n_2 * beta_n_2;
+        let beta_n_8: Float = beta_n_4 * beta_n_4;
+        let beta_n_16: Float = beta_n_8 * beta_n_8;
+        let beta_n_22: Float = beta_n_16 * beta_n_4 * beta_n_2;
+        let s: Float = SQRT_PI_OVER_8
+            * (0.265 as Float * beta_n + 1.194 as Float * beta_n_2 + 5.372 as Float * beta_n_22);
+        assert!(!s.is_nan());
+        // compute $\alpha$ terms for hair scales
+        let mut sin_2k_alpha: [Float; 3] = [0.0 as Float; 3];
+        sin_2k_alpha[0] = radians(alpha).sin();
+        // cos_2k_alpha[0] = SafeSqrt(1 - Sqr(sin_2k_alpha[0]));
+        let mut cos_2k_alpha: [Float; 3] = [0.0 as Float; 3];
+        let sqr: Float = sin_2k_alpha[0] * sin_2k_alpha[0];
+        let one_minus_sqr: Float = 1.0 as Float - sqr;
+        assert!(one_minus_sqr >= -1e-4);
+        cos_2k_alpha[0] = (0.0 as Float).max(one_minus_sqr).sqrt();
+        for i in 1..3 {
+            sin_2k_alpha[i] = 2.0 as Float * cos_2k_alpha[i - 1] * sin_2k_alpha[i - 1];
+            cos_2k_alpha[i] = (cos_2k_alpha[i - 1] * cos_2k_alpha[i - 1])
+                - (sin_2k_alpha[i - 1] * sin_2k_alpha[i - 1]);
+        }
+        HairBSDF {
+            h: h,
+            gamma_o: gamma_o,
+            eta: eta,
+            sigma_a: sigma_a,
+            beta_m: beta_m,
+            beta_n: beta_n,
+            v: v,
+            s: s,
+            sin_2k_alpha: sin_2k_alpha,
+            cos_2k_alpha: cos_2k_alpha,
+        }
+    }
     pub fn sigma_a_from_concentration(ce: Float, cp: Float) -> Spectrum {
         let mut sigma_a: [Float; 3] = [0.0 as Float; 3];
         let eumelanin_sigma_a: [Float; 3] = [0.419 as Float, 0.697 as Float, 1.37 as Float];
@@ -193,5 +278,31 @@ impl HairBSDF {
             sigma_a.c[i] = f * f;
         }
         sigma_a
+    }
+}
+
+impl Bxdf for HairBSDF {
+    fn f(&self, _wo: Vector3f, _wi: Vector3f) -> Spectrum {
+        // TODO
+        Spectrum::new(0.0 as Float)
+    }
+    fn sample_f(
+        &self,
+        wo: Vector3f,
+        wi: &mut Vector3f,
+        _sample: Point2f,
+        pdf: &mut Float,
+        _sampled_type: &mut u8,
+    ) -> Spectrum {
+        // TODO
+        Spectrum::new(0.0 as Float)
+    }
+    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+        // TODO
+        0.0 as Float
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfGlossy as u8 | BxdfType::BsdfReflection as u8
+            | BxdfType::BsdfTransmission as u8
     }
 }
