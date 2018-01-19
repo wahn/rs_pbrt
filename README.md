@@ -17,6 +17,11 @@ illuminated by a few area light sources.
 
 ![Ganesha Statue](https://www.janwalter.org/assets/ganesha.png)
 
+## Classroom
+
+![Classroom room rendered by
+rs_pbrt](https://www.janwalter.org/assets/classroom_pbrt_rust.png)
+
 ## Conference Room
 
 ![Conference room rendered by
