@@ -1,5 +1,6 @@
 //std
 use std;
+use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Point2f, Vector3f};
@@ -10,6 +11,7 @@ use core::paramset::TextureParams;
 use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, radians};
 use core::reflection::{Bsdf, Bxdf, BxdfType, FresnelConductor, MicrofacetReflection};
+use core::reflection::{abs_cos_theta, fr_dielectric};
 use core::texture::Texture;
 use textures::constant::ConstantTexture;
 
@@ -282,9 +284,93 @@ impl HairBSDF {
 }
 
 impl Bxdf for HairBSDF {
-    fn f(&self, _wo: Vector3f, _wi: Vector3f) -> Spectrum {
-        // TODO
-        Spectrum::new(0.0 as Float)
+    fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
+        // compute hair coordinate system terms related to _wo_
+        let sin_theta_o: Float = wo.x;
+        // Float cosThetaO = SafeSqrt(1 - Sqr(sinThetaO));
+        let x: Float = 1.0 as Float - (sin_theta_o * sin_theta_o);
+        assert!(x >= -1e-4);
+        let cos_theta_o: Float = (0.0 as Float).max(x).sqrt();
+        let phi_o: Float = wo.z.atan2(wo.y);
+        // compute hair coordinate system terms related to _wi_
+        let sin_theta_i: Float = wi.x;
+        // Float cosThetaI = SafeSqrt(1 - Sqr(sinThetaI));
+        let x: Float = 1.0 as Float - (sin_theta_i * sin_theta_i);
+        assert!(x >= -1e-4);
+        let cos_theta_i: Float = (0.0 as Float).max(x).sqrt();
+        let phi_i: Float = wi.z.atan2(wi.y);
+        // compute $\cos \thetat$ for refracted ray
+        let sin_theta_t: Float = sin_theta_o / self.eta;
+        // Float cosThetaT = SafeSqrt(1 - Sqr(sinThetaT));
+        let x: Float = 1.0 as Float - (sin_theta_t * sin_theta_t);
+        assert!(x >= -1e-4);
+        let cos_theta_t: Float = (0.0 as Float).max(x).sqrt();
+        // compute $\gammat$ for refracted ray
+        let etap: Float = (self.eta * self.eta - (sin_theta_o * sin_theta_o)).sqrt() / cos_theta_o;
+        let sin_gamma_t: Float = self.h / etap;
+        // Float cosGammaT = SafeSqrt(1 - Sqr(sinGammaT));
+        let x: Float = 1.0 as Float - (sin_gamma_t * sin_gamma_t);
+        assert!(x >= -1e-4);
+        let cos_gamma_t: Float = (0.0 as Float).max(x).sqrt();
+        // Float gammaT = SafeASin(sinGammaT);
+        let x: Float = sin_gamma_t;
+        assert!(x >= -1.0001 && x <= 1.0001);
+        let gamma_t: Float = clamp_t(x, -1.0 as Float, 1.0 as Float).asin();
+        // compute the transmittance _t_ of a single path through the cylinder
+        let t: Spectrum = (-self.sigma_a * (2.0 as Float * cos_gamma_t / cos_theta_t)).exp();
+        // evaluate hair BSDF
+        let phi: Float = phi_i - phi_o;
+        let ap: [Spectrum; (P_MAX + 1) as usize] = ap(cos_theta_o, self.eta, self.h, t);
+        let mut fsum: Spectrum = Spectrum::default();
+        // for (int p = 0; p < pMax; ++p) {
+        for p in 0..P_MAX {
+            // compute $\sin \thetai$ and $\cos \thetai$ terms accounting for scales
+            let mut sin_theta_ip: Float = 0.0 as Float;
+            let mut cos_theta_ip: Float = 0.0 as Float;
+            if p == 0 {
+                sin_theta_ip =
+                    sin_theta_i * self.cos_2k_alpha[1] + cos_theta_i * self.sin_2k_alpha[1];
+                cos_theta_ip =
+                    cos_theta_i * self.cos_2k_alpha[1] - sin_theta_i * self.sin_2k_alpha[1];
+            } else if (p == 1) {
+                sin_theta_ip =
+                    sin_theta_i * self.cos_2k_alpha[0] - cos_theta_i * self.sin_2k_alpha[0];
+                cos_theta_ip =
+                    cos_theta_i * self.cos_2k_alpha[0] + sin_theta_i * self.sin_2k_alpha[0];
+            } else if (p == 2) {
+                sin_theta_ip =
+                    sin_theta_i * self.cos_2k_alpha[2] - cos_theta_i * self.sin_2k_alpha[2];
+                cos_theta_ip =
+                    cos_theta_i * self.cos_2k_alpha[2] + sin_theta_i * self.sin_2k_alpha[2];
+            } else {
+                sin_theta_ip = sin_theta_i;
+                cos_theta_ip = cos_theta_i;
+            }
+            // handle out-of-range $\cos \thetai$ from scale adjustment
+            cos_theta_ip = cos_theta_ip.abs();
+            fsum += ap[p as usize]
+                * mp(
+                    cos_theta_ip,
+                    cos_theta_o,
+                    sin_theta_ip,
+                    sin_theta_o,
+                    self.v[p as usize],
+                ) * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
+        }
+        // compute contribution of remaining terms after _pMax_
+        fsum += ap[P_MAX as usize]
+            * mp(
+                cos_theta_i,
+                cos_theta_o,
+                sin_theta_i,
+                sin_theta_o,
+                self.v[P_MAX as usize],
+            ) / (2.0 as Float * PI);
+        if abs_cos_theta(wi) > 0.0 as Float {
+            fsum = fsum / abs_cos_theta(wi);
+        }
+        assert!(!fsum.y().is_infinite() && !fsum.y().is_nan());
+        fsum
     }
     fn sample_f(
         &self,
@@ -305,4 +391,115 @@ impl Bxdf for HairBSDF {
         BxdfType::BsdfGlossy as u8 | BxdfType::BsdfReflection as u8
             | BxdfType::BsdfTransmission as u8
     }
+}
+
+// Hair Local Functions
+
+fn mp(
+    cos_theta_i: Float,
+    cos_theta_o: Float,
+    sin_theta_i: Float,
+    sin_theta_o: Float,
+    v: Float,
+) -> Float {
+    let a: Float = cos_theta_i * cos_theta_o / v;
+    let b: Float = sin_theta_i * sin_theta_o / v;
+    let mut mp: Float = 0.0 as Float;
+    if v <= 0.1 as Float {
+        mp = log_i0(a)
+    } else {
+    }
+    mp
+}
+
+#[inline]
+fn i0(x: Float) -> Float {
+    let mut val: Float = 0.0 as Float;
+    let mut x2i: Float = 1.0 as Float;
+    let mut ifact: i32 = 1_i32;
+    let mut i4: i32 = 1_i32;
+    // i0(x) \approx Sum_i x^(2i) / (4^i (i!)^2)
+    for i in 0..10 {
+        if i as i32 > 1_i32 {
+            ifact *= i as i32;
+        }
+        val += x2i / (i4 * (ifact * ifact)) as Float;
+        x2i *= x * x;
+        i4 *= 4_i32;
+    }
+    val
+}
+
+#[inline]
+fn log_i0(x: Float) -> Float {
+    if x > 12.0 as Float {
+        x
+            + 0.5
+                * (-((2.0 as Float * PI).ln()) + (1.0 as Float / x).ln()
+                    + 1.0 as Float / (8.0 as Float * x))
+    } else {
+        i0(x).ln()
+    }
+}
+
+fn ap(cos_theta_o: Float, eta: Float, h: Float, t: Spectrum) -> [Spectrum; (P_MAX + 1) as usize] {
+    let mut ap: [Spectrum; (P_MAX + 1) as usize] = [Spectrum::default(); (P_MAX + 1) as usize];
+    // compute $p=0$ attenuation at initial cylinder intersection
+    // Float cosGammaO = SafeSqrt(1 - h * h);
+    let x: Float = 1.0 as Float - (h * h);
+    assert!(x >= -1e-4);
+    let cos_gamma_o: Float = (0.0 as Float).max(x).sqrt();
+    let mut cos_theta: Float = cos_theta_o * cos_gamma_o;
+    let f: Float = fr_dielectric(&mut cos_theta, 1.0 as Float, eta);
+    ap[0] = Spectrum::new(f);
+    // compute $p=1$ attenuation term
+    let one_minus_f: Float = 1.0 as Float - f;
+    ap[1] = t * (one_minus_f * one_minus_f);
+    // compute attenuation terms up to $p=_P_MAX_$
+    for p in 2..P_MAX {
+        // TODO: is there anything better here?
+        ap[p as usize] = ap[(p - 1) as usize] * t * f;
+    }
+    // compute attenuation term accounting for remaining orders of scattering
+    ap[P_MAX as usize] = ap[(P_MAX - 1) as usize] * t * f / (Spectrum::new(1.0 as Float) - t * f);
+    ap
+}
+
+#[inline]
+fn phi_fn(p: i32, gamma_o: Float, gamma_t: Float) -> Float {
+    2.0 as Float * p as Float * gamma_t - 2.0 as Float * gamma_o + p as Float * PI
+}
+
+#[inline]
+fn logistic(x: Float, s: Float) -> Float {
+    let x: Float = x.abs();
+    let e: Float = (-x / s).exp();
+    let one_plus_e: Float = 1.0 as Float + e;
+    e / (s * (one_plus_e * one_plus_e))
+}
+
+#[inline]
+fn logistic_cdf(x: Float, s: Float) -> Float {
+    let e: Float = (-x / s).exp();
+    let one_plus_e: Float = 1.0 as Float + e;
+    1.0 as Float / one_plus_e
+}
+
+#[inline]
+fn trimmed_logistic(x: Float, s: Float, a: Float, b: Float) -> Float {
+    assert!(a < b);
+    logistic(x, s) / (logistic_cdf(b, s) - logistic_cdf(a, s))
+}
+
+#[inline]
+fn np(phi: Float, p: i32, s: Float, gamma_o: Float, gamma_t: Float) -> Float {
+    let mut dphi: Float = phi - phi_fn(p, gamma_o, gamma_t);
+    // remap _dphi_ to $[-\pi,\pi]$
+    while dphi > PI {
+        dphi -= 2.0 as Float * PI;
+    }
+    while dphi < -PI {
+        dphi += 2.0 as Float * PI;
+    }
+    return trimmed_logistic(dphi, s, -PI, PI);
 }
