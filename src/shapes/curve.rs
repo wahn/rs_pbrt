@@ -296,7 +296,7 @@ impl Curve {
 
             // compute $\dpdu$ and $\dpdv$ for curve intersection
             let mut dpdu: Vector3f = Vector3f::default();
-            let mut dpdv: Vector3f = Vector3f::default();
+            let dpdv: Vector3f;
             eval_bezier(&self.common.cp_obj, u, Some(&mut dpdu));
             if self.common.curve_type == CurveType::Ribbon {
                 dpdv = vec3_normalize(nrm_cross_vec3(n_hit, dpdu)) * hit_width;
@@ -450,10 +450,10 @@ impl Shape for Curve {
         let mut l0: Float = 0.0 as Float;
         for i in 0..2 {
             l0 = l0.max(
-                ((cp[i].x - 2.0 as Float * cp[i + 1].x + cp[i + 2].x)
+                (cp[i].x - 2.0 as Float * cp[i + 1].x + cp[i + 2].x)
                     .abs()
                     .max((cp[i].y - 2.0 as Float * cp[i + 1].y + cp[i + 2].y).abs())
-                    .max((cp[i].z - 2.0 as Float * cp[i + 1].z + cp[i + 2].z).abs())),
+                    .max((cp[i].z - 2.0 as Float * cp[i + 1].z + cp[i + 2].z).abs()),
             );
         }
 
@@ -470,7 +470,8 @@ impl Shape for Curve {
             &Transform::inverse(object_to_ray),
             self.u_min,
             self.u_max,
-            max_depth)
+            max_depth,
+        )
     }
     fn intersect_p(&self, r: &Ray) -> bool {
         if let Some((_isect, _t_hit)) = self.intersect(r) {

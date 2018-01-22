@@ -6,11 +6,10 @@ use std::sync::Arc;
 use core::geometry::{Point2f, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
-use core::microfacet::TrowbridgeReitzDistribution;
 use core::paramset::TextureParams;
 use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, radians};
-use core::reflection::{Bsdf, Bxdf, BxdfType, FresnelConductor, MicrofacetReflection};
+use core::reflection::{Bsdf, Bxdf, BxdfType};
 use core::reflection::{abs_cos_theta, fr_dielectric};
 use core::texture::Texture;
 use textures::constant::ConstantTexture;
@@ -153,7 +152,8 @@ impl HairMaterial {
             }
             sig_a = HairBSDF::sigma_a_from_concentration(ce, cp);
         }
-        // TODO: bxdfs.push(Arc::new(HairBSDF::new(h, e, sig_a, bm, bn, a)));
+        let h: Float = -1.0 as Float + 2.0 as Float * si.uv[1];
+        bxdfs.push(Arc::new(HairBSDF::new(h, e, sig_a, bm, bn, a)));
         Bsdf::new(si, 1.0, bxdfs)
     }
 }
@@ -292,7 +292,7 @@ impl HairBSDF {
         let eumelanin_sigma_a: [Float; 3] = [0.419 as Float, 0.697 as Float, 1.37 as Float];
         let pheomelanin_sigma_a: [Float; 3] = [0.187 as Float, 0.4 as Float, 1.05 as Float];
         for i in 0..3 {
-            sigma_a[i] = (ce * eumelanin_sigma_a[i] + cp * pheomelanin_sigma_a[i]);
+            sigma_a[i] = ce * eumelanin_sigma_a[i] + cp * pheomelanin_sigma_a[i];
         }
         Spectrum::from_rgb(&sigma_a)
     }
@@ -354,8 +354,8 @@ impl Bxdf for HairBSDF {
         let mut fsum: Spectrum = Spectrum::default();
         for p in 0..P_MAX {
             // compute $\sin \thetai$ and $\cos \thetai$ terms accounting for scales
-            let mut sin_theta_ip: Float = 0.0 as Float;
-            let mut cos_theta_ip: Float = 0.0 as Float;
+            let mut sin_theta_ip: Float;
+            let mut cos_theta_ip: Float;
             if p == 0 {
                 sin_theta_ip =
                     sin_theta_i * self.cos_2k_alpha[1] + cos_theta_i * self.sin_2k_alpha[1];
@@ -463,7 +463,7 @@ impl Bxdf for HairBSDF {
         let sin_gamma_t: Float = self.h / etap;
         assert!(sin_gamma_t >= -1.0001 as Float && sin_gamma_t <= 1.0001 as Float);
         let gamma_t: Float = clamp_t(sin_gamma_t, -1.0 as Float, 1.0 as Float).asin();
-        let mut dphi: Float = 0.0 as Float;
+        let dphi: Float;
         if p < P_MAX as usize {
             dphi = phi_fn(p as i32, self.gamma_o, gamma_t)
                 + sample_trimmed_logistic(u[0][1], self.s, -PI, PI);
@@ -525,8 +525,72 @@ impl Bxdf for HairBSDF {
         self.f(wo, *wi)
     }
     fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
-        // TODO
-        0.0 as Float
+        // compute hair coordinate system terms related to _wo_
+        let sin_theta_o: Float = wo.x;
+        let x: Float = 1.0 as Float - (sin_theta_o * sin_theta_o);
+        assert!(x >= -1e-4);
+        let cos_theta_o: Float = (0.0 as Float).max(x).sqrt();
+        let phi_o: Float = wo.z.atan2(wo.y);
+        // compute hair coordinate system terms related to _wi_
+        let sin_theta_i: Float = wi.x;
+        let x: Float = 1.0 as Float - (sin_theta_i * sin_theta_i);
+        assert!(x >= -1e-4);
+        let cos_theta_i: Float = (0.0 as Float).max(x).sqrt();
+        let phi_i: Float = wi.z.atan2(wi.y);
+        // compute $\gammat$ for refracted ray
+        let etap: Float = (self.eta * self.eta - (sin_theta_o * sin_theta_o)).sqrt() / cos_theta_o;
+        let sin_gamma_t: Float = self.h / etap;
+        let x: Float = sin_gamma_t;
+        assert!(x >= -1.0001 && x <= 1.0001);
+        let gamma_t: Float = clamp_t(x, -1.0 as Float, 1.0 as Float).asin();
+        // compute PDF for $A_p$ terms
+        let ap_pdf: [Float; (P_MAX + 1) as usize] = self.compute_ap_pdf(cos_theta_o);
+        // compute PDF sum for hair scattering events
+        let phi: Float = phi_i - phi_o;
+        let mut pdf: Float = 0.0 as Float;
+        for p in 0..P_MAX {
+            // compute $\sin \thetai$ and $\cos \thetai$ terms accounting for scales
+            let mut sin_theta_ip: Float;
+            let mut cos_theta_ip: Float;
+            if p == 0 {
+                sin_theta_ip =
+                    sin_theta_i * self.cos_2k_alpha[1] + cos_theta_i * self.sin_2k_alpha[1];
+                cos_theta_ip =
+                    cos_theta_i * self.cos_2k_alpha[1] - sin_theta_i * self.sin_2k_alpha[1];
+            } else if p == 1 {
+                sin_theta_ip =
+                    sin_theta_i * self.cos_2k_alpha[0] - cos_theta_i * self.sin_2k_alpha[0];
+                cos_theta_ip =
+                    cos_theta_i * self.cos_2k_alpha[0] + sin_theta_i * self.sin_2k_alpha[0];
+            } else if p == 2 {
+                sin_theta_ip =
+                    sin_theta_i * self.cos_2k_alpha[2] - cos_theta_i * self.sin_2k_alpha[2];
+                cos_theta_ip =
+                    cos_theta_i * self.cos_2k_alpha[2] + sin_theta_i * self.sin_2k_alpha[2];
+            } else {
+                sin_theta_ip = sin_theta_i;
+                cos_theta_ip = cos_theta_i;
+            }
+            // handle out-of-range $\cos \thetai$ from scale adjustment
+            cos_theta_ip = cos_theta_ip.abs();
+            pdf += ap_pdf[p as usize]
+                * mp(
+                    cos_theta_ip,
+                    cos_theta_o,
+                    sin_theta_ip,
+                    sin_theta_o,
+                    self.v[p as usize],
+                ) * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
+        }
+        pdf += ap_pdf[P_MAX as usize]
+            * mp(
+                cos_theta_i,
+                cos_theta_o,
+                sin_theta_i,
+                sin_theta_o,
+                self.v[P_MAX as usize],
+            ) * (1.0 as Float / (2.0 as Float * PI));
+        pdf
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfGlossy as u8 | BxdfType::BsdfReflection as u8
@@ -573,10 +637,11 @@ fn mp(
 ) -> Float {
     let a: Float = cos_theta_i * cos_theta_o / v;
     let b: Float = sin_theta_i * sin_theta_o / v;
-    let mut mp: Float = 0.0 as Float;
+    let mp: Float;
     if v <= 0.1 as Float {
-        mp = log_i0(a)
+        mp = (log_i0(a) - b - 1.0 as Float / v + 0.6931 as Float + (1.0 as Float / (2. as Float * v)).ln()).exp();
     } else {
+        mp = ((-b).exp() * i0(a)) / ((1.0 as Float / v).sinh() * 2.0 as Float * v);
     }
     mp
 }
