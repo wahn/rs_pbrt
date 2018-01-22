@@ -32,6 +32,7 @@ use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::materials::glass::GlassMaterial;
+use pbrt::materials::hair::HairMaterial;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::metal::MetalMaterial;
 use pbrt::materials::mirror::MirrorMaterial;
@@ -299,7 +300,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     let mirror = Arc::new(MirrorMaterial { kr: kr });
                     return mirror;
                 } else if graphics_state.material == String::from("hair") {
-                    println!("TODO: CreateHairMaterial");
+                    return HairMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("mix") {
                     let m1: String = mp.find_string(String::from("namedmaterial1"),
                                                     String::from(""));
