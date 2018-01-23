@@ -217,7 +217,7 @@ impl HairBSDF {
         v[0] = f * f;
         v[1] = 0.25 as Float * v[0];
         v[2] = 4.0 as Float * v[0];
-        for p in 3..P_MAX {
+        for p in 3..(P_MAX + 1) {
             // TODO: is there anything better here?
             v[p as usize] = v[2];
         }
@@ -657,7 +657,7 @@ fn i0(x: Float) -> Float {
         if i as i32 > 1_i32 {
             ifact *= i as i32;
         }
-        val += x2i / (i4 * (ifact * ifact)) as Float;
+        val += x2i / (i4 as Float * (ifact as Float * ifact as Float));
         x2i *= x * x;
         i4 *= 4_i32;
     }
