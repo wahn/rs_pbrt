@@ -19,6 +19,7 @@ use pbrt::core::mipmap::ImageWrap;
 use pbrt::core::paramset::{ParamSet, TextureParams};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
 use pbrt::core::pbrt::{Float, Spectrum};
+use pbrt::core::pbrt::clamp_t;
 use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
 use pbrt::core::film::Film;
 use pbrt::core::sampler::Sampler;
@@ -1042,11 +1043,20 @@ fn pbrt_world_end() {
                             .find_one_int(String::from("yresolution"), 720);
                         // TODO: if (PbrtOptions.quickRender) xres = std::max(1, xres / 4);
                         // TODO: if (PbrtOptions.quickRender) yres = std::max(1, yres / 4);
-                        let crop: Bounds2f = Bounds2f {
+                        let mut crop: Bounds2f = Bounds2f {
                             p_min: Point2f { x: 0.0, y: 0.0 },
                             p_max: Point2f { x: 1.0, y: 1.0 },
                         };
                         // TODO: const Float *cr = params.FindFloat("cropwindow", &cwi);
+                        let cr: Vec<Float> = ro.film_params.find_float(String::from("cropwindow"));
+                        if cr.len() == 4 {
+                            crop.p_min.x = clamp_t(cr[0].min(cr[1]), 0.0, 1.0);
+                            crop.p_max.x = clamp_t(cr[0].max(cr[1]), 0.0, 1.0);
+                            crop.p_min.y = clamp_t(cr[2].min(cr[3]), 0.0, 1.0);
+                            crop.p_max.y = clamp_t(cr[2].max(cr[3]), 0.0, 1.0);
+                        } else {
+                            panic!("{:?} values supplied for \"cropwindow\". Expected 4.", cr.len());
+                        }
                         let scale: Float = ro.film_params.find_one_float(String::from("scale"),
                                                                          1.0);
                         let diagonal: Float = ro.film_params
@@ -1613,7 +1623,7 @@ fn main() {
                                                         println!("ReverseOrientation");
                                                         if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                                                             graphics_state.reverse_orientation = !graphics_state.reverse_orientation;
-                                                        }                                                        
+                                                        }
                                                     }
                                                     Rule::world_begin => {
                                                         println!("WorldBegin");
