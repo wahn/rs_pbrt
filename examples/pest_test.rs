@@ -1054,7 +1054,7 @@ fn pbrt_world_end() {
                             crop.p_max.x = clamp_t(cr[0].max(cr[1]), 0.0, 1.0);
                             crop.p_min.y = clamp_t(cr[2].min(cr[3]), 0.0, 1.0);
                             crop.p_max.y = clamp_t(cr[2].max(cr[3]), 0.0, 1.0);
-                        } else {
+                        } else if cr.len() != 0 {
                             panic!("{:?} values supplied for \"cropwindow\". Expected 4.", cr.len());
                         }
                         let scale: Float = ro.film_params.find_one_float(String::from("scale"),
