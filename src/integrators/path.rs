@@ -148,7 +148,11 @@ impl SamplerIntegrator for PathIntegrator {
                         beta *= (f * vec3_abs_dot_nrm(wi, isect.shading.n)) / pdf;
                         // println!("Updated beta = {:?}", beta);
                         assert!(beta.y() >= 0.0 as Float);
-                        assert!(!(beta.y().is_infinite()));
+                        assert!(!(beta.y().is_infinite()),
+                                "[{:#?}, {:?}] = ({:#?} * dot({:#?}, {:#?})) / {:?}",
+                                sampler.get_current_pixel(),
+                                sampler.get_current_sample_number(),
+                                f, wi, isect.shading.n, pdf);
                         specular_bounce = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
                         if ((sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8) &&
                            ((sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8) {

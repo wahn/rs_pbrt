@@ -196,6 +196,9 @@ impl Sampler for ZeroTwoSequenceSampler {
     fn reseed(&mut self, seed: u64) {
         self.rng.set_sequence(seed);
     }
+    fn get_current_pixel(&self) -> Point2i {
+        self.current_pixel
+    }
     fn get_current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index
     }

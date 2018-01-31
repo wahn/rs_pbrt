@@ -277,6 +277,9 @@ impl Sampler for HaltonSampler {
     fn reseed(&mut self, _seed: u64) {
         // do nothing
     }
+    fn get_current_pixel(&self) -> Point2i {
+        self.current_pixel
+    }
     fn get_current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index
     }

@@ -282,7 +282,7 @@ impl HairBSDF {
         for i in 0..(P_MAX + 1) {
             sum_y += ap[i as usize].y();
         }
-        for i in 0..P_MAX {
+        for i in 0..(P_MAX + 1) {
             ap_pdf[i as usize] = ap[i as usize].y() / sum_y;
         }
         ap_pdf

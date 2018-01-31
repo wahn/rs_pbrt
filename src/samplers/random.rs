@@ -112,6 +112,9 @@ impl Sampler for RandomSampler {
         self.current_pixel_sample_index += 1_i64;
         self.current_pixel_sample_index < self.samples_per_pixel
     }
+    fn get_current_pixel(&self) -> Point2i {
+        self.current_pixel
+    }
     fn get_current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index
     }
