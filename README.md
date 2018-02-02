@@ -53,6 +53,6 @@ https://bitbucket.org/abusch/rustracer
 
 [wiki]:          https://github.com/wahn/rs_pbrt/wiki
 [release-notes]: https://github.com/wahn/rs_pbrt/wiki/Release-Notes
-[novazeeke]:     https://www.blendswap.com/users/view/NovaZeeke
+[novazeeke]:     https://www.blendswap.com/user/NovaZeeke
 [jay-artist]:    https://www.blendswap.com/user/Jay-Artist
-[wig42]:         https://www.blendswap.com/users/view/Wig42
+[wig42]:         https://www.blendswap.com/user/Wig42
