@@ -20,6 +20,13 @@ illuminated by a few area light sources.
 The scene can be found within the repository
 (`assets/scenes/ganesha.tar.gz`).
 
+## Hair
+
+The [hair scattering][hair-scattering] model in action:
+
+![Curly and straight hair rendered by Rust version of
+PBRT](https://www.janwalter.org/assets/hair_rust_pbrt.png)
+
 ## Japanes Classroom by NovaZeeke
 
 ![Classroom room rendered by
@@ -74,3 +81,4 @@ https://bitbucket.org/abusch/rustracer
 [staircase_pbrt]:       https://www.janwalter.org/Download/Scenes/PBRT/staircase_pbrt.tar.gz
 [conference_room_pbrt]: https://www.janwalter.org/Download/Scenes/conference_room_pbrt.tar.gz
 [theater_pbrt]:         https://www.janwalter.org/Download/Scenes/theater_pbrt.tar.gz
+[hair-scattering]:      http://www.pbrt.org/hair.pdf
