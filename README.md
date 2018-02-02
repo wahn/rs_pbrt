@@ -17,17 +17,27 @@ illuminated by a few area light sources.
 
 ![Ganesha Statue](https://www.janwalter.org/assets/ganesha.png)
 
-## Classroom
+## Japanes Classroom by [NovaZeeke][novazeeke]
 
 ![Classroom room rendered by
 rs_pbrt](https://www.janwalter.org/assets/classroom_pbrt_rust.png)
 
-## Conference Room
+## Country Kitchen by [Jay-Artist][jay-artist]
+
+![Kitchen rendered by
+rs_pbrt](https://www.janwalter.org/assets/kitchen_pbrt_rust.png)
+
+## The Wooden Staircase by [Wig42][wig42]
+
+![Kitchen rendered by
+rs_pbrt](https://www.janwalter.org/assets/staircase_pbrt_rust.png)
+
+## Conference Room by Anat Grynberg and Greg Ward
 
 ![Conference room rendered by
 rs_pbrt](https://www.janwalter.org/assets/conference_room_pbrt_rust_current.png)
 
-## Theater
+## Theater by Charles Ehrlich and Greg Ward
 
 ![Theater rendered by
 rs_pbrt](https://www.janwalter.org/assets/theater_pbrt_rust_corner.png)
@@ -43,3 +53,6 @@ https://bitbucket.org/abusch/rustracer
 
 [wiki]:          https://github.com/wahn/rs_pbrt/wiki
 [release-notes]: https://github.com/wahn/rs_pbrt/wiki/Release-Notes
+[novazeeke]:     https://www.blendswap.com/users/view/NovaZeeke
+[jay-artist]:    https://www.blendswap.com/user/Jay-Artist
+[wig42]:         https://www.blendswap.com/users/view/Wig42
