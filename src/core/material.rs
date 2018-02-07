@@ -1,3 +1,6 @@
+//! The abstract **Material** class defines the interface that
+//! material implementations must provide.
+
 // pbrt
 use core::interaction::SurfaceInteraction;
 

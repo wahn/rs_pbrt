@@ -1,5 +1,3 @@
-//! # Film
-//!
 //! The type of film or sensor in a camera has a dramatic effect on
 //! the way that incident light is transformed into colors in an
 //! image. In **pbrt**, the **Film** class models the sensing device

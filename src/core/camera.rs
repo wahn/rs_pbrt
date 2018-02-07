@@ -1,3 +1,7 @@
+//! The abstract **Camera** base class holds generic camera options
+//! and defines the interface that all camera implementations must
+//! provide.
+
 // std
 use std::sync::Arc;
 // pbrt

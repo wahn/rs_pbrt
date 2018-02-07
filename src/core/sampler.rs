@@ -1,3 +1,7 @@
+//! The **Sampler** base class not only defines the interface to
+//! samplers but also provides some common functionality for use by
+//! **Sampler** implementations.
+
 // pbrt
 use core::camera::CameraSample;
 use core::geometry::{Point2f, Point2i};

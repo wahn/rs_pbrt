@@ -1,5 +1,3 @@
-//! # Surface Interaction
-//!
 //! The geometry of a particular point on a surface is represented by
 //! a **SurfaceInteraction**. Having this abstraction lets most of the
 //! system work with points on surfaces without needing to consider

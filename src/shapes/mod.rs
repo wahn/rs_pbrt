@@ -1,5 +1,3 @@
-//! # Shapes
-//!
 //! Careful abstraction of geometric shapes in a ray tracer is a key
 //! component of a clean system design, and shapes are the ideal
 //! candidate for an object-oriented approach. All geometric

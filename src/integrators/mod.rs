@@ -1,5 +1,3 @@
-//! # Integrators
-//!
 //! **Integrator** is an abstract base class that defines the
 //! **render()** method that must be provided by all integrators.
 //!

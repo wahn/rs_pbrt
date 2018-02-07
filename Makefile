@@ -53,6 +53,7 @@ examples: release
 	./target/release/examples/pbrt
 	./target/release/examples/lights_diffuse_area_light_new
 	./target/release/examples/lights_distant_light_new
+	./target/release/examples/lights_infinite_area_light_new
 	./target/release/examples/lights_point_light_new
 	./target/release/examples/pbrt
 	./target/release/examples/pbrt_spheres_differentials_texfilt

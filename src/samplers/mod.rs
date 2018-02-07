@@ -1,5 +1,3 @@
-//! # Samplers
-//!
 //! The **Sampler** base class not only defines the interface to
 //! samplers but also provides some common functionality for use by
 //! **Sampler** implementations.

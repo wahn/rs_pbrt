@@ -1,5 +1,3 @@
-//! # Materials
-//!
 //! The abstract **Material** class defines the interface that
 //! material implementations must provide.
 //!

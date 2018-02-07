@@ -1,27 +1,6 @@
-//! # Vectors
-//!
-//! **pbrt** provides both 2D and 3D **vector** classes. Both are
-//! parameterized by the type of the underlying vector element, thus
-//! making it easy to instantiate vectors of both integer and
-//! floating-point types.
-//!
-//! ```rust
-//! extern crate pbrt;
-//!
-//! use pbrt::core::geometry::Vector3;
-//!
-//! fn main() {
-//!     let int_null = Vector3 { x: 0, y: 0, z: 0 };
-//!     let float_null = Vector3 {
-//!         x: 0.0,
-//!         y: 0.0,
-//!         z: 0.0,
-//!     };
-//!
-//!     println!("int   {:?}", int_null);
-//!     println!("float {:?}", float_null);
-//! }
-//! ```
+//! Almost all nontrivial graphics programs are built on a foundation
+//! of geometric classes. These classes represent mathematical
+//! constructs like points, vectors, and rays.
 //!
 //! # Points
 //!
@@ -48,6 +27,31 @@
 //!
 //!     println!("int   {:?}", int_origin);
 //!     println!("float {:?}", float_origin);
+//! }
+//! ```
+//!
+//! # Vectors
+//!
+//! **pbrt** provides both 2D and 3D **vector** classes. Both are
+//! parameterized by the type of the underlying vector element, thus
+//! making it easy to instantiate vectors of both integer and
+//! floating-point types.
+//!
+//! ```rust
+//! extern crate pbrt;
+//!
+//! use pbrt::core::geometry::Vector3;
+//!
+//! fn main() {
+//!     let int_null = Vector3 { x: 0, y: 0, z: 0 };
+//!     let float_null = Vector3 {
+//!         x: 0.0,
+//!         y: 0.0,
+//!         z: 0.0,
+//!     };
+//!
+//!     println!("int   {:?}", int_null);
+//!     println!("float {:?}", float_null);
 //! }
 //! ```
 //!

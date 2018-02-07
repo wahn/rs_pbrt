@@ -1,5 +1,3 @@
-//! # Scene
-//!
 //! As the scene file is parsed, objects are created that represent
 //! the lights and geometric primitives in the scene. These are all
 //! stored in the **Scene** object.

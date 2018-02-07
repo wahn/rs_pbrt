@@ -1,3 +1,6 @@
+//! In general, transformations make it possible to work in the most
+//! convenient coordinate space.
+//!
 //! ## 4 x 4 Matrices
 //!
 //! The **Matrix4x4** structure provides a low-level representation of

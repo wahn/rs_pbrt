@@ -1,5 +1,3 @@
-//! # Accelerators
-//!
 //! Acceleration structures are one of the components at the heart of
 //! any ray tracer. Without algorithms to reduce the number of
 //! unnecessary ray intersection tests, tracing a single ray through a

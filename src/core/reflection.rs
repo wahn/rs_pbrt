@@ -1,3 +1,9 @@
+//! When light is incident on the surface, the surface scatters the
+//! light, reflecting some of it back into the environment. There are
+//! two main effects that need to be described to model this
+//! reflection: the spectral distribution of the reflected light and
+//! its directional distribution.
+
 // std
 use std;
 use std::f32::consts::PI;

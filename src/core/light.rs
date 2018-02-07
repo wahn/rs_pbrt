@@ -1,3 +1,7 @@
+//! In order for objects in a scene to be visible, there must be a
+//! source of illumination so that some light is reflected from them
+//! to the camera sensor.
+
 // pbrt
 use core::geometry::{Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};

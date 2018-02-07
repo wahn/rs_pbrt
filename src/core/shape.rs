@@ -1,3 +1,11 @@
+//! Careful abstraction of geometric shapes in a ray tracer is a key
+//! component of a clean system design, and shapes are the ideal
+//! candidate for an object-oriented approach. All geometric
+//! primitives implement a common interface, and the rest of the
+//! renderer can use this interface without needing any details about
+//! the underlying shape. This makes it possible to separate the
+//! geometric and the shading subsystem of pbrt.
+
 // pbrt
 use core::geometry::{Bounds3f, Point2f, Ray, Vector3f};
 use core::pbrt::Float;

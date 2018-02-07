@@ -1,3 +1,7 @@
+//! All filter implementations are derived from an abstract **Filter**
+//! class, which provides the interface for the functions used in
+//! filtering.
+
 // pbrt
 use core::geometry::{Point2f, Vector2f};
 use core::pbrt::Float;
