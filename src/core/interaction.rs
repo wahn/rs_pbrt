@@ -46,7 +46,7 @@ pub struct InteractionCommon {
 }
 
 impl InteractionCommon {
-    pub fn spawn_ray_to(&self, it: InteractionCommon) -> Ray {
+    pub fn spawn_ray_to(&self, it: &InteractionCommon) -> Ray {
         let origin: Point3f =
             pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, &(it.p - self.p));
         let target: Point3f = pnt3_offset_ray_origin(&it.p, &it.p_error, &it.n, &(origin - it.p));
@@ -271,7 +271,7 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
             self.dpdy = Vector3f::default();
         }
     }
-    pub fn le(&self, w: Vector3f) -> Spectrum {
+    pub fn le(&self, w: &Vector3f) -> Spectrum {
         if let Some(primitive) = self.primitive {
             if let Some(area_light) = primitive.get_area_light() {
                 // create InteractionCommon from self
@@ -282,7 +282,7 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
                     wo: self.wo,
                     n: self.n,
                 };
-                return area_light.l(&interaction, w);
+                return area_light.l(&interaction, *w);
             }
         }
         Spectrum::default()

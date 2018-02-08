@@ -78,13 +78,13 @@ impl<'a> FilmTile<'a> {
             max_sample_luminance: max_sample_luminance,
         }
     }
-    pub fn add_sample(&mut self, p_film: Point2f, l: &mut Spectrum, sample_weight: Float) {
+    pub fn add_sample(&mut self, p_film: &Point2f, l: &mut Spectrum, sample_weight: Float) {
         // TODO: ProfilePhase _(Prof::AddFilmSample);
         if l.y() > self.max_sample_luminance {
             *l *= Spectrum::new(self.max_sample_luminance / l.y());
         }
         // compute sample's raster bounds
-        let p_film_discrete: Point2f = p_film - Vector2f { x: 0.5, y: 0.5 };
+        let p_film_discrete: Point2f = *p_film - Vector2f { x: 0.5, y: 0.5 };
         let p0f: Point2f = pnt2_ceil(&(p_film_discrete - self.filter_radius));
         let mut p0: Point2i = Point2i {
             x: p0f.x as i32,
@@ -231,7 +231,7 @@ impl Film {
             },
         }
     }
-    pub fn get_film_tile(&self, sample_bounds: Bounds2i) -> FilmTile {
+    pub fn get_film_tile(&self, sample_bounds: &Bounds2i) -> FilmTile {
         // bound image pixels that samples in _sample_bounds_ contribute to
         let half_pixel: Vector2f = Vector2f { x: 0.5, y: 0.5 };
         let float_bounds: Bounds2f = Bounds2f {
@@ -303,7 +303,7 @@ impl Film {
         let mut offset: usize = 0;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            let pixel: Pixel = self.get_pixel(p);
+            let pixel: Pixel = self.get_pixel(&p);
             let start = 3 * offset;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
             xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.

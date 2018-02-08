@@ -3,7 +3,7 @@ use std;
 use std::sync::{Arc, RwLock};
 use std::sync::atomic::{AtomicU64, Ordering};
 // pbrt
-use core::geometry::{Bounds3f, Normal3f, Point2f, Point3i, Point3f, Vector3f};
+use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::lowdiscrepancy::radical_inverse;
@@ -18,10 +18,10 @@ pub trait LightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
     /// point.
-    fn lookup(&self, p: Point3f) -> Arc<Distribution1D>;
+    fn lookup(&self, p: &Point3f) -> Arc<Distribution1D>;
 }
 
-#[derive(Debug,Default)]
+#[derive(Debug, Default)]
 struct HashEntry {
     packed_pos: AtomicU64,
     distribution: RwLock<Option<Arc<Distribution1D>>>,
@@ -34,12 +34,14 @@ pub struct UniformLightDistribution {
 impl UniformLightDistribution {
     pub fn new(scene: &Scene) -> Self {
         let prob: Vec<Float> = vec![1.0 as Float; scene.lights.len()];
-        UniformLightDistribution { distrib: Arc::new(Distribution1D::new(prob)) }
+        UniformLightDistribution {
+            distrib: Arc::new(Distribution1D::new(prob)),
+        }
     }
 }
 
 impl LightDistribution for UniformLightDistribution {
-    fn lookup(&self, _p: Point3f) -> Arc<Distribution1D> {
+    fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
         self.distrib.clone()
     }
 }
@@ -67,9 +69,10 @@ impl SpatialLightDistribution {
         let bmax: Float = diag[b.maximum_extent()];
         let mut n_voxels: [i32; 3] = [0_i32; 3];
         for i in 0..3 {
-            n_voxels[i] = std::cmp::max(1 as i32,
-                                        (diag[i as u8] / bmax * max_voxels as Float).round() as
-                                        i32);
+            n_voxels[i] = std::cmp::max(
+                1 as i32,
+                (diag[i as u8] / bmax * max_voxels as Float).round() as i32,
+            );
             // in the Lookup() method, we require that 20 or fewer
             // bits be sufficient to represent each coordinate
             // value. It's fairly hard to imagine that this would ever
@@ -86,11 +89,10 @@ impl SpatialLightDistribution {
             };
             hash_table.push(hash_entry);
         }
-        println!("SpatialLightDistribution: scene bounds {:?}, voxel res ({:?}, {:?}, {:?})",
-                 b,
-                 n_voxels[0],
-                 n_voxels[1],
-                 n_voxels[2]);
+        println!(
+            "SpatialLightDistribution: scene bounds {:?}, voxel res ({:?}, {:?}, {:?})",
+            b, n_voxels[0], n_voxels[1], n_voxels[2]
+        );
         SpatialLightDistribution {
             scene: scene.clone(),
             n_voxels: n_voxels,
@@ -114,8 +116,8 @@ impl SpatialLightDistribution {
             z: (pi[2] + 1) as Float / self.n_voxels[2] as Float,
         };
         let voxel_bounds: Bounds3f = Bounds3f {
-            p_min: self.scene.world_bound().lerp(p0),
-            p_max: self.scene.world_bound().lerp(p1),
+            p_min: self.scene.world_bound().lerp(&p0),
+            p_max: self.scene.world_bound().lerp(&p1),
         };
         // Compute the sampling distribution. Sample a number of
         // points inside voxelBounds using a 3D Halton sequence; at
@@ -127,11 +129,11 @@ impl SpatialLightDistribution {
         let n_samples: usize = 128;
         let mut light_contrib: Vec<Float> = vec![0.0 as Float; self.scene.lights.len()];
         for i in 0..n_samples {
-            let po: Point3f = voxel_bounds.lerp(Point3f {
-                                                    x: radical_inverse(0, i as u64),
-                                                    y: radical_inverse(1, i as u64),
-                                                    z: radical_inverse(2, i as u64),
-                                                });
+            let po: Point3f = voxel_bounds.lerp(&Point3f {
+                x: radical_inverse(0, i as u64),
+                y: radical_inverse(1, i as u64),
+                z: radical_inverse(2, i as u64),
+            });
             let time: Float = 0.0;
             let intr: InteractionCommon = InteractionCommon {
                 p: po,
@@ -154,8 +156,8 @@ impl SpatialLightDistribution {
                 let mut pdf: Float = 0.0 as Float;
                 let mut wi: Vector3f = Vector3f::default();
                 let mut vis: VisibilityTester = VisibilityTester::default();
-                let li: Spectrum = self.scene.lights[j]
-                    .sample_li(&intr, &u, &mut wi, &mut pdf, &mut vis);
+                let li: Spectrum =
+                    self.scene.lights[j].sample_li(&intr, &u, &mut wi, &mut pdf, &mut vis);
                 if pdf > 0.0 as Float {
                     // TODO: look at tracing shadow rays / computing
                     // beam transmittance. Probably shouldn't give
@@ -193,22 +195,24 @@ impl SpatialLightDistribution {
 }
 
 impl LightDistribution for SpatialLightDistribution {
-    fn lookup(&self, p: Point3f) -> Arc<Distribution1D> {
+    fn lookup(&self, p: &Point3f) -> Arc<Distribution1D> {
         // TODO: ProfilePhase _(Prof::LightDistribLookup);
         // TODO: ++nLookups;
 
         // first, compute integer voxel coordinates for the given
         // point |p| with respect to the overall voxel grid.
-        let offset: Vector3f = self.scene.world_bound().offset(p); // offset in [0,1].
+        let offset: Vector3f = self.scene.world_bound().offset(&p); // offset in [0,1].
         let mut pi: Point3i = Point3i::default();
         for i in 0..3 {
             // the clamp should almost never be necessary, but is
             // there to be robust to computed intersection points
             // being slightly outside the scene bounds due to
             // floating-point roundoff error.
-            pi[i] = clamp_t((offset[i] * self.n_voxels[i as usize] as Float) as i32,
-                            0_i32,
-                            self.n_voxels[i as usize] - 1_i32);
+            pi[i] = clamp_t(
+                (offset[i] * self.n_voxels[i as usize] as Float) as i32,
+                0_i32,
+                self.n_voxels[i as usize] - 1_i32,
+            );
         }
         // pack the 3D integer voxel coordinates into a single 64-bit value.
         let packed_pos: u64 = ((pi[0] as u64) << 40) | ((pi[1] as u64) << 20) | (pi[2] as u64);
@@ -279,12 +283,12 @@ impl LightDistribution for SpatialLightDistribution {
                 // above.)  Use an atomic compare/exchange to try to
                 // claim this entry for the current position.
                 let invalid: u64 = INVALID_PACKED_POS;
-                let success = match entry
-                          .packed_pos
-                          .compare_exchange_weak(invalid,
-                                                 packed_pos,
-                                                 Ordering::SeqCst,
-                                                 Ordering::Relaxed) {
+                let success = match entry.packed_pos.compare_exchange_weak(
+                    invalid,
+                    packed_pos,
+                    Ordering::SeqCst,
+                    Ordering::Relaxed,
+                ) {
                     Ok(_) => true,
                     Err(_) => false,
                 };
@@ -309,20 +313,23 @@ const INVALID_PACKED_POS: u64 = 0xffffffffffffffff;
 
 /// Decides based on the name and the number of scene lights which
 /// light distribution to return.
-pub fn create_light_sample_distribution(name: String,
-                                        scene: &Scene)
-                                        -> Option<Arc<LightDistribution + Send + Sync>> {
+pub fn create_light_sample_distribution(
+    name: String,
+    scene: &Scene,
+) -> Option<Arc<LightDistribution + Send + Sync>> {
     if name == String::from("uniform") || scene.lights.len() == 1 {
         return Some(Arc::new(UniformLightDistribution::new(scene)));
     } else if name == String::from("power") {
         println!("TODO: PowerLightDistribution");
-        // return std::unique_ptr<LightDistribution>{
-        //     new PowerLightDistribution(scene)};
+    // return std::unique_ptr<LightDistribution>{
+    //     new PowerLightDistribution(scene)};
     } else if name == String::from("spatial") {
         return Some(Arc::new(SpatialLightDistribution::new(scene, 64)));
     } else {
-        println!("Light sample distribution type \"{:?}\" unknown. Using \"spatial\".",
-                 name);
+        println!(
+            "Light sample distribution type \"{:?}\" unknown. Using \"spatial\".",
+            name
+        );
         // return std::unique_ptr<LightDistribution>{
         //     new SpatialLightDistribution(scene)};
     }

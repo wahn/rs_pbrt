@@ -193,7 +193,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             // if (!isect.bsdf)
             //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
             let wo: Vector3f = isect.wo;
-            l += isect.le(wo);
+            l += isect.le(&wo);
             if scene.lights.len() > 0 {
                 // compute direct lighting for _DirectLightingIntegrator_ integrator
                 if self.strategy == LightStrategy::UniformSampleAll {

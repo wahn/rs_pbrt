@@ -549,7 +549,7 @@ impl Shape for Triangle {
         0.5 as Float * vec3_cross_vec3(&(p1 - p0), &(p2 - p0)).length()
     }
     fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
-        let b: Point2f = uniform_sample_triangle(*u);
+        let b: Point2f = uniform_sample_triangle(u);
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];

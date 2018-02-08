@@ -10,10 +10,10 @@ use core::pbrt::Float;
 // see sampler.h
 
 pub trait Sampler: SamplerClone {
-    fn start_pixel(&mut self, p: Point2i);
+    fn start_pixel(&mut self, p: &Point2i);
     fn get_1d(&mut self) -> Float;
     fn get_2d(&mut self) -> Point2f;
-    fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
+    fn get_camera_sample(&mut self, p_raster: &Point2i) -> CameraSample {
         let mut cs: CameraSample = CameraSample::default();
         cs.p_film = Point2f {
             x: p_raster.x as Float,

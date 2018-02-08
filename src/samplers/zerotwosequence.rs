@@ -93,7 +93,7 @@ impl ZeroTwoSequenceSampler {
 }
 
 impl Sampler for ZeroTwoSequenceSampler {
-    fn start_pixel(&mut self, p: Point2i) {
+    fn start_pixel(&mut self, p: &Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         // generate 1D and 2D pixel sample components using $(0,2)$-sequence
         for samples in &mut self.samples_1d {
@@ -118,7 +118,7 @@ impl Sampler for ZeroTwoSequenceSampler {
                      &mut self.rng);
         }
         // PixelSampler::StartPixel(p);
-        self.current_pixel = p;
+        self.current_pixel = *p;
         self.current_pixel_sample_index = 0_i64;
         // reset array offsets for next pixel sample
         self.array_1d_offset = 0_usize;

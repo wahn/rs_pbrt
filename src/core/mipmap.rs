@@ -215,8 +215,8 @@ impl MipMap {
             let i_level: usize = level.floor() as usize;
             let delta: Float = level - i_level as Float;
             return lerp_rgb(delta,
-                            self.triangle(i_level, st),
-                            self.triangle(i_level + 1_usize, st));
+                            &self.triangle(i_level, st),
+                            &self.triangle(i_level + 1_usize, st));
         }
     }
     pub fn lookup_pnt_vec_vec(&self,
@@ -265,7 +265,7 @@ impl MipMap {
         let ilod: usize = lod.floor() as usize;
         let col2: Spectrum = self.ewa(ilod + 1, st.clone(), dst0.clone(), dst1.clone());
         let col1: Spectrum = self.ewa(ilod, st.clone(), dst0.clone(), dst1.clone());
-        let ret: Spectrum = lerp_rgb(lod - ilod as Float, col1, col2);
+        let ret: Spectrum = lerp_rgb(lod - ilod as Float, &col1, &col2);
         ret
     }
     fn resample_weights(old_res: i32, new_res: i32) -> Vec<ResampleWeight> {

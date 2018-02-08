@@ -217,9 +217,9 @@ pub fn render(scene: &Scene,
                         let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
                                                                   Point2i { x: x1, y: y1 });
                         // println!("Starting image tile {:?}", tile_bounds);
-                        let mut film_tile = film.get_film_tile(tile_bounds);
+                        let mut film_tile = film.get_film_tile(&tile_bounds);
                         for pixel in &tile_bounds {
-                            tile_sampler.start_pixel(pixel);
+                            tile_sampler.start_pixel(&pixel);
                             if !pnt2_inside_exclusive(&pixel, &pixel_bounds) {
                                 continue;
                             }
@@ -230,7 +230,7 @@ pub fn render(scene: &Scene,
 
                                 // initialize _CameraSample_ for current sample
                                 let camera_sample: CameraSample =
-                                    tile_sampler.get_camera_sample(pixel);
+                                    tile_sampler.get_camera_sample(&pixel);
                                 // generate camera ray for current sample
                                 let mut ray: Ray = Ray::default();
                                 let ray_weight: Float = camera
@@ -274,7 +274,7 @@ pub fn render(scene: &Scene,
                                 // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
                                 //          camera_sample, ray, l);
                                 // add camera ray's contribution to image
-                                film_tile.add_sample(camera_sample.p_film, &mut l, ray_weight);
+                                film_tile.add_sample(&camera_sample.p_film, &mut l, ray_weight);
                                 done = !tile_sampler.start_next_sample();
                             } // arena is dropped here !
                         }

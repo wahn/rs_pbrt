@@ -258,7 +258,7 @@ where
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
 /// codirectional.
-pub fn vec2_dot<T>(v1: Vector2<T>, v2: Vector2<T>) -> T
+pub fn vec2_dot<T>(v1: &Vector2<T>, v2: &Vector2<T>) -> T
 where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
@@ -1455,11 +1455,11 @@ impl<T> Bounds3<T> {
             2_u8
         }
     }
-    pub fn offset(&self, p: Point3<T>) -> Vector3<T>
+    pub fn offset(&self, p: &Point3<T>) -> Vector3<T>
     where
         T: Copy + std::cmp::PartialOrd + Sub<T, Output = T> + DivAssign<T>,
     {
-        let mut o: Vector3<T> = p - self.p_min;
+        let mut o: Vector3<T> = *p - self.p_min;
         if self.p_max.x > self.p_min.x {
             o.x /= self.p_max.x - self.p_min.x;
         }
@@ -1487,7 +1487,7 @@ impl<T> Bounds3<T> {
 }
 
 impl Bounds3<Float> {
-    pub fn lerp(&self, t: Point3f) -> Point3f {
+    pub fn lerp(&self, t: &Point3f) -> Point3f {
         Point3f {
             x: lerp(t.x, self.p_min.x as Float, self.p_max.x as Float),
             y: lerp(t.y, self.p_min.y as Float, self.p_max.y as Float),

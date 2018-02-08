@@ -243,7 +243,7 @@ impl BVHAccel {
                             // initialize _BucketInfo_ for SAH partition buckets
                             for i in start..end {
                                 let mut b: usize = (n_buckets as Float
-                                    * centroid_bounds.offset(primitive_info[i].centroid)[dim])
+                                    * centroid_bounds.offset(&primitive_info[i].centroid)[dim])
                                     as usize;
                                 if b == n_buckets {
                                     b = n_buckets - 1;
@@ -292,7 +292,7 @@ impl BVHAccel {
                                     Vec<BVHPrimitiveInfo>,
                                 ) = primitive_info[start..end].into_iter().partition(|&pi| {
                                     let mut b: usize = (n_buckets as Float
-                                        * centroid_bounds.offset(pi.centroid)[dim])
+                                        * centroid_bounds.offset(&pi.centroid)[dim])
                                         as usize;
                                     if b == n_buckets {
                                         b = n_buckets - 1;

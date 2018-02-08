@@ -361,7 +361,7 @@ impl Shape for Sphere {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
     fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
-        let mut p_obj: Point3f = Point3f::default() + uniform_sample_sphere(*u) * self.radius;
+        let mut p_obj: Point3f = Point3f::default() + uniform_sample_sphere(u) * self.radius;
         let mut it: InteractionCommon = InteractionCommon::default();
         it.n = nrm_normalize(&self.object_to_world.transform_normal(&Normal3f {
             x: p_obj.x,

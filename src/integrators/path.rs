@@ -90,7 +90,7 @@ impl SamplerIntegrator for PathIntegrator {
                 // possibly add emitted light at intersection
                 if bounces == 0 || specular_bounce {
                     // add emitted light at path vertex
-                    l += beta * isect.le(-ray.d);
+                    l += beta * isect.le(&-ray.d);
                     // println!("Added Le -> L = {:?}", l);
                 }
                 // terminate path if _maxDepth_ was reached
@@ -107,7 +107,7 @@ impl SamplerIntegrator for PathIntegrator {
                 //     continue;
                 // }
                 if let Some(ref light_distribution) = self.light_distribution {
-                    let distrib: Arc<Distribution1D> = light_distribution.lookup(isect.p);
+                    let distrib: Arc<Distribution1D> = light_distribution.lookup(&isect.p);
                     // Sample illumination from lights to find path contribution.
                     // (But skip this for perfectly specular BSDFs.)
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8);

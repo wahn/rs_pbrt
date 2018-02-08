@@ -239,11 +239,11 @@ impl Curve {
                 return None;
             }
             let w: Float = vec2_dot(
-                -Vector2f {
+                &-Vector2f {
                     x: cp[0].x,
                     y: cp[0].y,
                 },
-                segment_direction,
+                &segment_direction,
             ) / denom;
 
             // compute $u$ coordinate of curve intersection point and _hitWidth_

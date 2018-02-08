@@ -214,7 +214,7 @@ impl Shape for Disk {
             * (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
     fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
-        let pd: Point2f = concentric_sample_disk(*u);
+        let pd: Point2f = concentric_sample_disk(u);
         let p_obj: Point3f = Point3f {
             x: pd.x * self.radius,
             y: pd.y * self.radius,

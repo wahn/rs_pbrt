@@ -1797,8 +1797,8 @@ pub fn rgb_to_xyz(rgb: &[Float; 3], xyz: &mut [Float; 3]) {
 }
 
 /// Interpolate linearly between two provided values.
-pub fn lerp_rgb(t: Float, s1: Spectrum, s2: Spectrum) -> Spectrum {
-    s1 * (1.0 as Float - t) + s2 * t
+pub fn lerp_rgb(t: Float, s1: &Spectrum, s2: &Spectrum) -> Spectrum {
+    *s1 * (1.0 as Float - t) + *s2 * t
 }
 
 // see spectrum.cpp

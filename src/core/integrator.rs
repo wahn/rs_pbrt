@@ -267,7 +267,7 @@ pub fn estimate_direct(
                             let pa = &*area_light as *const _ as *const usize;
                             let pl = &*light as *const _ as *const usize;
                             if pa == pl {
-                                li = light_isect.le(-wi);
+                                li = light_isect.le(&-wi);
                             }
                         }
                     }

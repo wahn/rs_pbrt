@@ -602,7 +602,7 @@ impl Bxdf for LambertianReflection {
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(*u);
+        *wi = cosine_sample_hemisphere(u);
         if wo.z < 0.0 as Float {
             wi.z *= -1.0 as Float;
         }
@@ -673,7 +673,7 @@ impl Bxdf for OrenNayar {
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(*u);
+        *wi = cosine_sample_hemisphere(u);
         if wo.z > 0.0 as Float {
             wi.z *= -1.0 as Float;
         }
@@ -833,7 +833,7 @@ impl Bxdf for FresnelBlend {
         if u[0] < 0.5 as Float {
             u[0] = Float::min(2.0 * u[0], FLOAT_ONE_MINUS_EPSILON);
             // cosine-sample the hemisphere, flipping the direction if necessary
-            *wi = cosine_sample_hemisphere(u);
+            *wi = cosine_sample_hemisphere(&u);
             if wo.z < 0.0 as Float {
                 wi.z *= -1.0 as Float;
             }
