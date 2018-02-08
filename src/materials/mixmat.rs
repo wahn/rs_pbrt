@@ -41,14 +41,14 @@ impl MixMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let s2: Spectrum = (Spectrum::new(1.0 as Float) - s1)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let mut si2: SurfaceInteraction = SurfaceInteraction::new(si.p,
-                                                                  si.p_error,
-                                                                  si.uv,
-                                                                  si.wo,
-                                                                  si.dpdu,
-                                                                  si.dpdv,
-                                                                  si.dndu,
-                                                                  si.dndv,
+        let mut si2: SurfaceInteraction = SurfaceInteraction::new(&si.p,
+                                                                  &si.p_error,
+                                                                  &si.uv,
+                                                                  &si.wo,
+                                                                  &si.dpdu,
+                                                                  &si.dpdv,
+                                                                  &si.dndu,
+                                                                  &si.dndv,
                                                                   si.time,
                                                                   si.shape);
         self.m1

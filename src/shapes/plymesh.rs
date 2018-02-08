@@ -20,8 +20,8 @@ use core::texture::Texture;
 use core::transform::Transform;
 use shapes::triangle::{Triangle, TriangleMesh};
 
-pub fn create_ply_mesh(o2w: Transform,
-                       w2o: Transform,
+pub fn create_ply_mesh(o2w: &Transform,
+                       w2o: &Transform,
                        reverse_orientation: bool,
                        params: &ParamSet,
                        _float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
@@ -179,18 +179,18 @@ pub fn create_ply_mesh(o2w: Transform,
         // transform normals to world space
         let n_normals: usize = n.len();
         for i in 0..n_normals {
-            n_ws.push(o2w.transform_normal(n[i]));
+            n_ws.push(o2w.transform_normal(&n[i]));
         }
     }
     // transform mesh vertices to world space
     let mut p_ws: Vec<Point3f> = Vec::new();
     let n_vertices: usize = p.len();
     for i in 0..n_vertices {
-        p_ws.push(o2w.transform_point(p[i]));
+        p_ws.push(o2w.transform_point(&p[i]));
     }
     let s_ws: Vec<Vector3f> = Vec::new(); // TODO
-    let mesh = Arc::new(TriangleMesh::new(o2w,
-                                          w2o,
+    let mesh = Arc::new(TriangleMesh::new(*o2w,
+                                          *w2o,
                                           reverse_orientation,
                                           false, // transform_swaps_handedness
                                           tm_vertex_indices.len() / 3, // n_triangles

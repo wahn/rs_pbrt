@@ -23,25 +23,27 @@ pub trait SamplerIntegrator {
     /// Returns the incident radiance at the origin of a given
     /// ray. Uses the scene's intersect routine to calculate a
     /// **SurfaceInteraction** and spawns rays if necessary.
-    fn li(&self,
-          ray: &mut Ray,
-          scene: &Scene,
-          sampler: &mut Box<Sampler + Send + Sync>,
-          // arena: &mut Arena,
-          depth: i32)
-          -> Spectrum;
+    fn li(
+        &self,
+        ray: &mut Ray,
+        scene: &Scene,
+        sampler: &mut Box<Sampler + Send + Sync>,
+        // arena: &mut Arena,
+        depth: i32,
+    ) -> Spectrum;
     fn get_pixel_bounds(&self) -> Bounds2i;
 }
 
 // see integrator.cpp
 
 /// Most basic direct lighting strategy.
-pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
-                                 scene: &Scene,
-                                 sampler: &mut Box<Sampler + Send + Sync>,
-                                 n_light_samples: &Vec<i32>,
-                                 handle_media: bool)
-                                 -> Spectrum {
+pub fn uniform_sample_all_lights(
+    it: &SurfaceInteraction,
+    scene: &Scene,
+    sampler: &mut Box<Sampler + Send + Sync>,
+    n_light_samples: &Vec<i32>,
+    handle_media: bool,
+) -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
     let mut l: Spectrum = Spectrum::new(0.0);
     for j in 0..scene.lights.len() {
@@ -54,26 +56,30 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
             // use a single sample for illumination from _light_
             let u_light: Point2f = sampler.get_2d();
             let u_scattering: Point2f = sampler.get_2d();
-            l += estimate_direct(it,
-                                 u_scattering,
-                                 light.clone(),
-                                 u_light,
-                                 scene,
-                                 sampler, // arena,
-                                 handle_media,
-                                 false);
+            l += estimate_direct(
+                it,
+                &u_scattering,
+                light.clone(),
+                &u_light,
+                scene,
+                sampler, // arena,
+                handle_media,
+                false,
+            );
         } else {
             // estimate direct lighting using sample arrays
             let mut ld: Spectrum = Spectrum::new(0.0);
             for k in 0..n_samples {
-                ld += estimate_direct(it,
-                                      u_scattering_array[k as usize],
-                                      light.clone(),
-                                      u_light_array[k as usize],
-                                      scene,
-                                      sampler, // arena,
-                                      handle_media,
-                                      false);
+                ld += estimate_direct(
+                    it,
+                    &u_scattering_array[k as usize],
+                    light.clone(),
+                    &u_light_array[k as usize],
+                    scene,
+                    sampler, // arena,
+                    handle_media,
+                    false,
+                );
             }
             l += ld / n_samples as Float;
         }
@@ -83,12 +89,13 @@ pub fn uniform_sample_all_lights(it: &SurfaceInteraction,
 
 /// Estimate direct lighting for only one randomly chosen light and
 /// multiply the result by the number of lights to compensate.
-pub fn uniform_sample_one_light(it: &SurfaceInteraction,
-                                scene: &Scene,
-                                sampler: &mut Box<Sampler + Send + Sync>,
-                                handle_media: bool,
-                                light_distrib: Option<&Distribution1D>)
-                                -> Spectrum {
+pub fn uniform_sample_one_light(
+    it: &SurfaceInteraction,
+    scene: &Scene,
+    sampler: &mut Box<Sampler + Send + Sync>,
+    handle_media: bool,
+    light_distrib: Option<&Distribution1D>,
+) -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
 
     // randomly choose a single light to sample, _light_
@@ -107,34 +114,39 @@ pub fn uniform_sample_one_light(it: &SurfaceInteraction,
             return Spectrum::default();
         }
     } else {
-        light_num = std::cmp::min((sampler.get_1d() * n_lights as Float) as usize,
-                                  n_lights - 1);
+        light_num = std::cmp::min(
+            (sampler.get_1d() * n_lights as Float) as usize,
+            n_lights - 1,
+        );
         pdf = 1.0 as Float / n_lights as Float;
     }
     let light = &scene.lights[light_num];
     let u_light: Point2f = sampler.get_2d();
     let u_scattering: Point2f = sampler.get_2d();
-    estimate_direct(it,
-                    u_scattering,
-                    light.clone(),
-                    u_light,
-                    scene,
-                    sampler,
-                    handle_media,
-                    false) / pdf
+    estimate_direct(
+        it,
+        &u_scattering,
+        light.clone(),
+        &u_light,
+        scene,
+        sampler,
+        handle_media,
+        false,
+    ) / pdf
 }
 
 /// Computes a direct lighting estimate for a single light source sample.
-pub fn estimate_direct(it: &SurfaceInteraction,
-                       u_scattering: Point2f,
-                       light: Arc<Light + Send + Sync>,
-                       u_light: Point2f,
-                       scene: &Scene,
-                       _sampler: &mut Box<Sampler + Send + Sync>,
-                       // TODO: arena
-                       handle_media: bool,
-                       specular: bool)
-                       -> Spectrum {
+pub fn estimate_direct(
+    it: &SurfaceInteraction,
+    u_scattering: &Point2f,
+    light: Arc<Light + Send + Sync>,
+    u_light: &Point2f,
+    scene: &Scene,
+    _sampler: &mut Box<Sampler + Send + Sync>,
+    // TODO: arena
+    handle_media: bool,
+    specular: bool,
+) -> Spectrum {
     let mut bsdf_flags: u8 = BxdfType::BsdfAll as u8;
     if !specular {
         // bitwise not in Rust is ! (not the ~ operator like in C)
@@ -153,11 +165,13 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         wo: it.get_wo(),
         n: it.get_n(),
     };
-    let mut li: Spectrum = light.sample_li(&it_common,
-                                           u_light,
-                                           &mut wi,
-                                           &mut light_pdf,
-                                           &mut visibility);
+    let mut li: Spectrum = light.sample_li(
+        &it_common,
+        u_light,
+        &mut wi,
+        &mut light_pdf,
+        &mut visibility,
+    );
     // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi:
     // {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
     if light_pdf > 0.0 as Float && !li.is_black() {
@@ -166,9 +180,9 @@ pub fn estimate_direct(it: &SurfaceInteraction,
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
             if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.f(it.get_wo(), wi, bsdf_flags) *
-                    Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
-                scattering_pdf = bsdf.pdf(it.get_wo(), wi, bsdf_flags);
+                f = bsdf.f(&it.get_wo(), &wi, bsdf_flags)
+                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &it.shading.n));
+                scattering_pdf = bsdf.pdf(&it.get_wo(), &wi, bsdf_flags);
                 // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
             }
         } else {
@@ -208,13 +222,15 @@ pub fn estimate_direct(it: &SurfaceInteraction,
             // sample scattered direction for surface interactions
             let mut sampled_type: u8 = 0_u8;
             if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.sample_f(it.get_wo(),
-                                  &mut wi,
-                                  u_scattering,
-                                  &mut scattering_pdf,
-                                  bsdf_flags,
-                                  &mut sampled_type);
-                f *= Spectrum::new(vec3_abs_dot_nrm(wi, it.shading.n));
+                f = bsdf.sample_f(
+                    &it.get_wo(),
+                    &mut wi,
+                    u_scattering,
+                    &mut scattering_pdf,
+                    bsdf_flags,
+                    &mut sampled_type,
+                );
+                f *= Spectrum::new(vec3_abs_dot_nrm(&wi, &it.shading.n));
                 sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
             } else {
                 println!("TODO: if let Some(ref bsdf) = it.bsdf failed");
@@ -236,7 +252,7 @@ pub fn estimate_direct(it: &SurfaceInteraction,
                 weight = power_heuristic(1, scattering_pdf, 1, light_pdf);
             }
             // find intersection and compute transmittance
-            let mut ray: Ray = it.spawn_ray(wi);
+            let mut ray: Ray = it.spawn_ray(&wi);
             let tr: Spectrum = Spectrum::new(1.0 as Float);
             let mut found_surface_interaction: bool = false;
             // add light contribution from material sampling

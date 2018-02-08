@@ -20,7 +20,7 @@ fn main() {
         y: 1.0,
         z: 0.0,
     };
-    let t: Transform = Transform::look_at(pos, look, up);
+    let t: Transform = Transform::look_at(&pos, &look, &up);
     let it: Transform = Transform {
         m: t.m_inv.clone(),
         m_inv: t.m.clone(),

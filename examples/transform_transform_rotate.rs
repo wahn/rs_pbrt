@@ -11,7 +11,7 @@ fn main() {
         y: 2.0,
         z: 3.0,
     };
-    let t: Transform = Transform::rotate(theta, axis);
+    let t: Transform = Transform::rotate(theta, &axis);
 
     println!("Transform::rotate({}, {:?}) = {:?}", theta, axis, t);
 }

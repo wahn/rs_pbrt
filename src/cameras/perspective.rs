@@ -35,68 +35,71 @@ pub struct PerspectiveCamera {
 }
 
 impl PerspectiveCamera {
-    pub fn new(camera_to_world: AnimatedTransform,
-               screen_window: Bounds2f,
-               shutter_open: Float,
-               shutter_close: Float,
-               lens_radius: Float,
-               focal_distance: Float,
-               fov: Float,
-               film: Arc<Film> /* const Medium *medium */)
-               -> Self {
+    pub fn new(
+        camera_to_world: AnimatedTransform,
+        screen_window: Bounds2f,
+        shutter_open: Float,
+        shutter_close: Float,
+        lens_radius: Float,
+        focal_distance: Float,
+        fov: Float,
+        film: Arc<Film>, /* const Medium *medium */
+    ) -> Self {
         // see perspective.cpp
         let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
         // see camera.h
         // compute projective camera screen transformations
-        let scale1 = Transform::scale(film.full_resolution.x as Float,
-                                      film.full_resolution.y as Float,
-                                      1.0);
-        let scale2 = Transform::scale(1.0 / (screen_window.p_max.x - screen_window.p_min.x),
-                                      1.0 / (screen_window.p_min.y - screen_window.p_max.y),
-                                      1.0);
-        let translate = Transform::translate(Vector3f {
-                                                 x: -screen_window.p_min.x,
-                                                 y: -screen_window.p_max.y,
-                                                 z: 0.0,
-                                             });
+        let scale1 = Transform::scale(
+            film.full_resolution.x as Float,
+            film.full_resolution.y as Float,
+            1.0,
+        );
+        let scale2 = Transform::scale(
+            1.0 / (screen_window.p_max.x - screen_window.p_min.x),
+            1.0 / (screen_window.p_min.y - screen_window.p_max.y),
+            1.0,
+        );
+        let translate = Transform::translate(&Vector3f {
+            x: -screen_window.p_min.x,
+            y: -screen_window.p_max.y,
+            z: 0.0,
+        });
         let screen_to_raster = scale1 * scale2 * translate;
-        let raster_to_screen = Transform::inverse(screen_to_raster);
-        let raster_to_camera = Transform::inverse(camera_to_screen) * raster_to_screen;
+        let raster_to_screen = Transform::inverse(&screen_to_raster);
+        let raster_to_camera = Transform::inverse(&camera_to_screen) * raster_to_screen;
         // see perspective.cpp
         // compute differential changes in origin for perspective camera rays
-        let dx_camera: Vector3f = raster_to_camera.transform_point(Point3f {
-                                                                       x: 1.0,
-                                                                       y: 0.0,
-                                                                       z: 0.0,
-                                                                   }) -
-                                  raster_to_camera.transform_point(Point3f {
-                                                                       x: 0.0,
-                                                                       y: 0.0,
-                                                                       z: 0.0,
-                                                                   });
-        let dy_camera: Vector3f = raster_to_camera.transform_point(Point3f {
-                                                                       x: 0.0,
-                                                                       y: 1.0,
-                                                                       z: 0.0,
-                                                                   }) -
-                                  raster_to_camera.transform_point(Point3f {
-                                                                       x: 0.0,
-                                                                       y: 0.0,
-                                                                       z: 0.0,
-                                                                   });
+        let dx_camera: Vector3f = raster_to_camera.transform_point(&Point3f {
+            x: 1.0,
+            y: 0.0,
+            z: 0.0,
+        }) - raster_to_camera.transform_point(&Point3f {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
+        let dy_camera: Vector3f = raster_to_camera.transform_point(&Point3f {
+            x: 0.0,
+            y: 1.0,
+            z: 0.0,
+        }) - raster_to_camera.transform_point(&Point3f {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
         // compute image plane bounds at $z=1$ for _PerspectiveCamera_
         let res: Point2i = film.full_resolution;
-        let mut p_min: Point3f = raster_to_camera.transform_point(Point3f {
-                                                                      x: 0.0,
-                                                                      y: 0.0,
-                                                                      z: 0.0,
-                                                                  });
+        let mut p_min: Point3f = raster_to_camera.transform_point(&Point3f {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        });
         // Point3f p_max = RasterToCamera(Point3f(res.x, res.y, 0));
-        let mut p_max: Point3f = raster_to_camera.transform_point(Point3f {
-                                                                      x: res.x as Float,
-                                                                      y: res.y as Float,
-                                                                      z: 0.0,
-                                                                  });
+        let mut p_max: Point3f = raster_to_camera.transform_point(&Point3f {
+            x: res.x as Float,
+            y: res.y as Float,
+            z: 0.0,
+        });
         p_min /= p_min.z;
         p_max /= p_max.z;
         // let a: Float = ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs();
@@ -117,20 +120,21 @@ impl PerspectiveCamera {
             // a: a,
         }
     }
-    pub fn create(params: &ParamSet,
-                  cam2world: AnimatedTransform,
-                  film: Arc<Film> /* const Medium *medium */)
-                  -> Box<Camera + Send + Sync> {
+    pub fn create(
+        params: &ParamSet,
+        cam2world: AnimatedTransform,
+        film: Arc<Film>, /* const Medium *medium */
+    ) -> Box<Camera + Send + Sync> {
         let shutteropen: Float = params.find_one_float(String::from("shutteropen"), 0.0);
         let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
         assert!(shutterclose >= shutteropen);
         let lensradius: Float = params.find_one_float(String::from("lensradius"), 0.0);
         let focaldistance: Float = params.find_one_float(String::from("focaldistance"), 1e6);
-        let frame: Float =
-            params.find_one_float(String::from("frameaspectratio"),
-                                  (film.full_resolution.x as Float) /
-                                  (film.full_resolution.y as Float));
+        let frame: Float = params.find_one_float(
+            String::from("frameaspectratio"),
+            (film.full_resolution.x as Float) / (film.full_resolution.y as Float),
+        );
         let mut screen: Bounds2f = Bounds2f::default();
         if frame > 1.0 {
             screen.p_min.x = -frame;
@@ -149,14 +153,16 @@ impl PerspectiveCamera {
         //     params.find_one_float(String::from("halffov"), -1.0);
         // TODO: if (halffov > 0.f)
         // TODO: let perspective_camera: Arc<Camera + Sync + Send> =
-        let camera = Box::new(PerspectiveCamera::new(cam2world,
-                                                     screen,
-                                                     shutteropen,
-                                                     shutterclose,
-                                                     lensradius,
-                                                     focaldistance,
-                                                     fov,
-                                                     film));
+        let camera = Box::new(PerspectiveCamera::new(
+            cam2world,
+            screen,
+            shutteropen,
+            shutterclose,
+            lensradius,
+            focaldistance,
+            fov,
+            film,
+        ));
         camera
     }
 }
@@ -170,27 +176,29 @@ impl Camera for PerspectiveCamera {
             y: sample.p_film.y,
             z: 0.0,
         };
-        let p_camera: Point3f = self.raster_to_camera.transform_point(p_film);
-        let dir: Vector3f = vec3_normalize(Vector3f {
-                                               x: p_camera.x,
-                                               y: p_camera.y,
-                                               z: p_camera.z,
-                                           });
+        let p_camera: Point3f = self.raster_to_camera.transform_point(&p_film);
+        let dir: Vector3f = vec3_normalize(&Vector3f {
+            x: p_camera.x,
+            y: p_camera.y,
+            z: p_camera.z,
+        });
         let mut diff: RayDifferential = RayDifferential {
             rx_origin: ray.o,
             ry_origin: ray.o,
-            rx_direction: vec3_normalize(Vector3f {
-                                             x: p_camera.x,
-                                             y: p_camera.y,
-                                             z: p_camera.z,
-                                         } +
-                                         self.dx_camera),
-            ry_direction: vec3_normalize(Vector3f {
-                                             x: p_camera.x,
-                                             y: p_camera.y,
-                                             z: p_camera.z,
-                                         } +
-                                         self.dy_camera),
+            rx_direction: vec3_normalize(
+                &(Vector3f {
+                    x: p_camera.x,
+                    y: p_camera.y,
+                    z: p_camera.z,
+                } + self.dx_camera),
+            ),
+            ry_direction: vec3_normalize(
+                &(Vector3f {
+                    x: p_camera.x,
+                    y: p_camera.y,
+                    z: p_camera.z,
+                } + self.dy_camera),
+            ),
         };
         // *ray = RayDifferential(Point3f(0, 0, 0), dir);
         let mut in_ray: Ray = Ray {
@@ -213,7 +221,7 @@ impl Camera for PerspectiveCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            in_ray.d = vec3_normalize(p_focus - in_ray.o);
+            in_ray.d = vec3_normalize(&(p_focus - in_ray.o));
         }
         // compute offset rays for _PerspectiveCamera_ ray differentials
         if self.lens_radius > 0.0 as Float {
@@ -221,7 +229,7 @@ impl Camera for PerspectiveCamera {
 
             // sample point on lens
             let p_lens: Point2f = concentric_sample_disk(sample.p_lens) * self.lens_radius;
-            let dx: Vector3f = vec3_normalize(Vector3f::from(p_camera + self.dx_camera));
+            let dx: Vector3f = vec3_normalize(&Vector3f::from(p_camera + self.dx_camera));
             let ft: Float = self.focal_distance / dx.z;
             let p_focus: Point3f = Point3f::default() + (dx * ft);
             diff.rx_origin = Point3f {
@@ -229,8 +237,8 @@ impl Camera for PerspectiveCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            diff.rx_direction = vec3_normalize(p_focus - diff.rx_origin);
-            let dy: Vector3f = vec3_normalize(Vector3f::from(p_camera + self.dy_camera));
+            diff.rx_direction = vec3_normalize(&(p_focus - diff.rx_origin));
+            let dy: Vector3f = vec3_normalize(&Vector3f::from(p_camera + self.dy_camera));
             let ft: Float = self.focal_distance / dy.z;
             let p_focus: Point3f = Point3f::default() + (dy * ft);
             diff.ry_origin = Point3f {
@@ -238,12 +246,12 @@ impl Camera for PerspectiveCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            diff.ry_direction = vec3_normalize(p_focus - diff.ry_origin);
+            diff.ry_direction = vec3_normalize(&(p_focus - diff.ry_origin));
             // replace differential
             in_ray.differential = Some(diff);
         }
         // TODO: ray->medium = medium;
-        *ray = self.camera_to_world.transform_ray(in_ray);
+        *ray = self.camera_to_world.transform_ray(&in_ray);
         1.0
     }
     fn get_film(&self) -> Arc<Film> {

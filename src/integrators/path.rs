@@ -134,9 +134,9 @@ impl SamplerIntegrator for PathIntegrator {
                         let mut pdf: Float = 0.0 as Float;
                         let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
                         let mut sampled_type: u8 = u8::max_value(); // != 0
-                        let f: Spectrum = bsdf.sample_f(wo,
+                        let f: Spectrum = bsdf.sample_f(&wo,
                                                         &mut wi,
-                                                        sampler.get_2d(),
+                                                        &sampler.get_2d(),
                                                         &mut pdf,
                                                         bsdf_flags,
                                                         &mut sampled_type);
@@ -145,7 +145,7 @@ impl SamplerIntegrator for PathIntegrator {
                         if f.is_black() || pdf == 0.0 as Float {
                             break;
                         }
-                        beta *= (f * vec3_abs_dot_nrm(wi, isect.shading.n)) / pdf;
+                        beta *= (f * vec3_abs_dot_nrm(&wi, &isect.shading.n)) / pdf;
                         // println!("Updated beta = {:?}", beta);
                         assert!(beta.y() >= 0.0 as Float);
                         assert!(!(beta.y().is_infinite()),
@@ -161,13 +161,13 @@ impl SamplerIntegrator for PathIntegrator {
                             // scaling for refraction depending on
                             // whether the ray is entering or leaving
                             // the medium.
-                            if vec3_dot_nrm(wo, isect.n) > 0.0 as Float {
+                            if vec3_dot_nrm(&wo, &isect.n) > 0.0 as Float {
                                 eta_scale *= eta * eta;
                             } else {
                                 eta_scale *= 1.0 as Float / (eta * eta);
                             }
                         }
-                        ray = isect.spawn_ray(wi);
+                        ray = isect.spawn_ray(&wi);
 
                         // Account for subsurface scattering, if applicable
                         // TODO: if (isect.bssrdf && ((sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8)) {

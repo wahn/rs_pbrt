@@ -418,7 +418,7 @@ impl<T> From<Normal3<T>> for Vector3<T> {
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
 /// codirectional.
-pub fn vec3_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
+pub fn vec3_dot_vec3<T>(v1: &Vector3<T>, v2: &Vector3<T>) -> T
 where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
@@ -428,7 +428,7 @@ where
 /// Product of the Euclidean magnitudes of a vector (and a normal) and
 /// the cosine of the angle between them. A return value of zero means
 /// both are orthogonal, a value if one means they are codirectional.
-pub fn vec3_dot_nrm<T>(v1: Vector3<T>, n2: Normal3<T>) -> T
+pub fn vec3_dot_nrm<T>(v1: &Vector3<T>, n2: &Normal3<T>) -> T
 where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
@@ -437,7 +437,7 @@ where
 }
 
 /// Computes the absolute value of the dot product.
-pub fn vec3_abs_dot_vec3<T>(v1: Vector3<T>, v2: Vector3<T>) -> T
+pub fn vec3_abs_dot_vec3<T>(v1: &Vector3<T>, v2: &Vector3<T>) -> T
 where
     T: num::Float,
 {
@@ -445,7 +445,7 @@ where
 }
 
 /// Computes the absolute value of the dot product.
-pub fn vec3_abs_dot_nrm<T>(v1: Vector3<T>, n2: Normal3<T>) -> T
+pub fn vec3_abs_dot_nrm<T>(v1: &Vector3<T>, n2: &Normal3<T>) -> T
 where
     T: num::Float,
 {
@@ -454,7 +454,7 @@ where
 
 /// Given two vectors in 3D, the cross product is a vector that is
 /// perpendicular to both of them.
-pub fn vec3_cross_vec3(v1: Vector3f, v2: Vector3f) -> Vector3f {
+pub fn vec3_cross_vec3(v1: &Vector3f, v2: &Vector3f) -> Vector3f {
     let v1x: f64 = v1.x as f64;
     let v1y: f64 = v1.y as f64;
     let v1z: f64 = v1.z as f64;
@@ -470,7 +470,7 @@ pub fn vec3_cross_vec3(v1: Vector3f, v2: Vector3f) -> Vector3f {
 
 /// Given a vectors and a normal in 3D, the cross product is a vector
 /// that is perpendicular to both of them.
-pub fn vec3_cross_nrm(v1: Vector3f, v2: Normal3f) -> Vector3f {
+pub fn vec3_cross_nrm(v1: &Vector3f, v2: &Normal3f) -> Vector3f {
     let v1x: f64 = v1.x as f64;
     let v1y: f64 = v1.y as f64;
     let v1z: f64 = v1.z as f64;
@@ -486,12 +486,12 @@ pub fn vec3_cross_nrm(v1: Vector3f, v2: Normal3f) -> Vector3f {
 
 /// Compute a new vector pointing in the same direction but with unit
 /// length.
-pub fn vec3_normalize(v: Vector3f) -> Vector3f {
-    v / v.length()
+pub fn vec3_normalize(v: &Vector3f) -> Vector3f {
+    *v / v.length()
 }
 
 /// Return the largest coordinate value.
-pub fn vec3_max_component<T>(v: Vector3<T>) -> T
+pub fn vec3_max_component<T>(v: &Vector3<T>) -> T
 where
     T: num::Float,
 {
@@ -499,7 +499,7 @@ where
 }
 
 /// Return the index of the component with the largest value.
-pub fn vec3_max_dimension<T>(v: Vector3<T>) -> usize
+pub fn vec3_max_dimension<T>(v: &Vector3<T>) -> usize
 where
     T: std::cmp::PartialOrd,
 {
@@ -520,7 +520,7 @@ where
 
 /// Permute the coordinate values according to the povided
 /// permutation.
-pub fn vec3_permute<T>(v: Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T>
+pub fn vec3_permute<T>(v: &Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T>
 where
     T: Copy,
 {
@@ -550,7 +550,7 @@ pub fn vec3_coordinate_system(v1: &Vector3f, v2: &mut Vector3f, v3: &mut Vector3
             z: -v1.y,
         } / (v1.y * v1.y + v1.z * v1.z).sqrt();
     }
-    *v3 = vec3_cross_vec3(*v1, *v2);
+    *v3 = vec3_cross_vec3(v1, &*v2);
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -680,7 +680,7 @@ impl<T> IndexMut<u8> for Point2<T> {
 }
 
 /// Apply floor operation component-wise.
-pub fn pnt2_floor<T>(p: Point2<T>) -> Point2<T>
+pub fn pnt2_floor<T>(p: &Point2<T>) -> Point2<T>
 where
     T: num::Float,
 {
@@ -691,7 +691,7 @@ where
 }
 
 /// Apply ceil operation component-wise.
-pub fn pnt2_ceil<T>(p: Point2<T>) -> Point2<T>
+pub fn pnt2_ceil<T>(p: &Point2<T>) -> Point2<T>
 where
     T: num::Float,
 {
@@ -724,7 +724,7 @@ where
 }
 
 /// Is a 2D point inside a 2D bound?
-pub fn pnt2_inside_exclusive<T>(pt: Point2<T>, b: Bounds2<T>) -> bool
+pub fn pnt2_inside_exclusive<T>(pt: &Point2<T>, b: &Bounds2<T>) -> bool
 where
     T: PartialOrd,
 {
@@ -887,7 +887,7 @@ impl<T> IndexMut<u8> for Point3<T> {
 
 /// Permute the coordinate values according to the povided
 /// permutation.
-pub fn pnt3_permute<T>(v: Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
+pub fn pnt3_permute<T>(v: &Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
 where
     T: Copy,
 {
@@ -903,12 +903,12 @@ where
 }
 
 /// Interpolate linearly between two provided points.
-pub fn pnt3_lerp(t: Float, p0: Point3f, p1: Point3f) -> Point3f {
-    p0 * (1.0 as Float - t) as Float + p1 * t
+pub fn pnt3_lerp(t: Float, p0: &Point3f, p1: &Point3f) -> Point3f {
+    *p0 * (1.0 as Float - t) as Float + *p1 * t
 }
 
 /// Apply floor operation component-wise.
-pub fn pnt3_floor<T>(p: Point3<T>) -> Point3<T>
+pub fn pnt3_floor<T>(p: &Point3<T>) -> Point3<T>
 where
     T: num::Float,
 {
@@ -920,7 +920,7 @@ where
 }
 
 /// Apply ceil operation component-wise.
-pub fn pnt3_ceil<T>(p: Point3<T>) -> Point3<T>
+pub fn pnt3_ceil<T>(p: &Point3<T>) -> Point3<T>
 where
     T: num::Float,
 {
@@ -932,7 +932,7 @@ where
 }
 
 /// Apply abs operation component-wise.
-pub fn pnt3_abs<T>(p: Point3<T>) -> Point3<T>
+pub fn pnt3_abs<T>(p: &Point3<T>) -> Point3<T>
 where
     T: num::Float,
 {
@@ -945,40 +945,40 @@ where
 
 /// The distance between two points is the length of the vector
 /// between them.
-pub fn pnt3_distance<T>(p1: Point3<T>, p2: Point3<T>) -> T
+pub fn pnt3_distance<T>(p1: &Point3<T>, p2: &Point3<T>) -> T
 where
     T: num::Float + Sub<T, Output = T>,
 {
-    (p1 - p2).length()
+    (*p1 - *p2).length()
 }
 
 /// The distance squared between two points is the length of the
 /// vector between them squared.
-pub fn pnt3_distance_squared<T>(p1: Point3<T>, p2: Point3<T>) -> T
+pub fn pnt3_distance_squared<T>(p1: &Point3<T>, p2: &Point3<T>) -> T
 where
     T: num::Float + Sub<T, Output = T>,
 {
-    (p1 - p2).length_squared()
+    (*p1 - *p2).length_squared()
 }
 
 /// When tracing spawned rays leaving the intersection point p, we
 /// offset their origins enough to ensure that they are past the
 /// boundary of the error box and thus won't incorrectly re-intersect
 /// the surface.
-pub fn pnt3_offset_ray_origin(p: Point3f, p_error: Vector3f, n: Normal3f, w: Vector3f) -> Point3f {
+pub fn pnt3_offset_ray_origin(p: &Point3f, p_error: &Vector3f, n: &Normal3f, w: &Vector3f) -> Point3f {
     //     Float d = Dot(Abs(n), pError);
-    let d: Float = nrm_dot_vec3(nrm_abs(n), p_error);
+    let d: Float = nrm_dot_vec3(&nrm_abs(n), p_error);
     // #ifdef PBRT_FLOAT_AS_DOUBLE
     //     // We have tons of precision; for now bump up the offset a bunch just
     //     // to be extra sure that we start on the right side of the surface
     //     // (In case of any bugs in the epsilons code...)
     //     d *= 1024.;
     // #endif
-    let mut offset: Vector3f = Vector3f::from(n) * d;
+    let mut offset: Vector3f = Vector3f::from(*n) * d;
     if vec3_dot_nrm(w, n) < 0.0 as Float {
         offset = -offset;
     }
-    let mut po: Point3f = p + offset;
+    let mut po: Point3f = *p + offset;
     // round offset point _po_ away from _p_
     for i in 0..3 {
         if offset[i] > 0.0 as Float {
@@ -1168,7 +1168,7 @@ impl<T> From<Vector3<T>> for Normal3<T> {
 
 /// Given a normal and a vector in 3D, the cross product is a vector
 /// that is perpendicular to both of them.
-pub fn nrm_cross_vec3(n1: Normal3f, v2: Vector3f) -> Vector3f {
+pub fn nrm_cross_vec3(n1: &Normal3f, v2: &Vector3f) -> Vector3f {
     let n1x: f64 = n1.x as f64;
     let n1y: f64 = n1.y as f64;
     let n1z: f64 = n1.z as f64;
@@ -1184,15 +1184,15 @@ pub fn nrm_cross_vec3(n1: Normal3f, v2: Vector3f) -> Vector3f {
 
 /// Compute a new normal pointing in the same direction but with unit
 /// length.
-pub fn nrm_normalize(n: Normal3f) -> Normal3f {
-    n / n.length()
+pub fn nrm_normalize(n: &Normal3f) -> Normal3f {
+    *n / n.length()
 }
 
 /// Product of the Euclidean magnitudes of a normal (and another
 /// normal) and the cosine of the angle between them. A return value
 /// of zero means both are orthogonal, a value if one means they are
 /// codirectional.
-pub fn nrm_dot_nrm<T>(n1: Normal3<T>, n2: Normal3<T>) -> T
+pub fn nrm_dot_nrm<T>(n1: &Normal3<T>, n2: &Normal3<T>) -> T
 where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
@@ -1203,7 +1203,7 @@ where
 /// Product of the Euclidean magnitudes of a normal (and a vector) and
 /// the cosine of the angle between them. A return value of zero means
 /// both are orthogonal, a value if one means they are codirectional.
-pub fn nrm_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
+pub fn nrm_dot_vec3<T>(n1: &Normal3<T>, v2: &Vector3<T>) -> T
 where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
@@ -1212,7 +1212,7 @@ where
 }
 
 /// Computes the absolute value of the dot product.
-pub fn nrm_abs_dot_vec3<T>(n1: Normal3<T>, v2: Vector3<T>) -> T
+pub fn nrm_abs_dot_vec3<T>(n1: &Normal3<T>, v2: &Vector3<T>) -> T
 where
     T: num::Float,
 {
@@ -1220,7 +1220,7 @@ where
 }
 
 /// Return normal with the absolute value of each coordinate.
-pub fn nrm_abs<T>(n: Normal3<T>) -> Normal3<T>
+pub fn nrm_abs<T>(n: &Normal3<T>) -> Normal3<T>
 where
     T: num::Float,
 {
@@ -1233,21 +1233,21 @@ where
 
 /// Flip a surface normal so that it lies in the same hemisphere as a
 /// given vector.
-pub fn nrm_faceforward_vec3(n: Normal3f, v: Vector3f) -> Normal3f {
+pub fn nrm_faceforward_vec3(n: &Normal3f, v: &Vector3f) -> Normal3f {
     if nrm_dot_vec3(n, v) < 0.0 as Float {
-        -n
+        -(*n)
     } else {
-        n
+        *n
     }
 }
 
 /// Flip a surface normal so that it lies in the same hemisphere as a
 /// given normal.
-pub fn nrm_faceforward_nrm(n: Normal3f, n2: Normal3f) -> Normal3f {
+pub fn nrm_faceforward_nrm(n: &Normal3f, n2: &Normal3f) -> Normal3f {
     if nrm_dot_nrm(n, n2) < 0.0 as Float {
-        -n
+        -(*n)
     } else {
-        n
+        *n
     }
 }
 
@@ -1337,7 +1337,7 @@ impl<'a> IntoIterator for &'a Bounds2i {
 /// The intersection of two bounding boxes can be found by computing
 /// the maximum of their two respective minimum coordinates and the
 /// minimum of their maximum coordinates.
-pub fn bnd2_intersect_bnd2<T>(b1: Bounds2<T>, b2: Bounds2<T>) -> Bounds2<T>
+pub fn bnd2_intersect_bnd2<T>(b1: &Bounds2<T>, b2: &Bounds2<T>) -> Bounds2<T>
 where
     T: Copy + Ord,
 {
@@ -1477,9 +1477,9 @@ impl<T> Bounds3<T> {
         let sum: Point3f = p_min + p_max;
         *center = sum / 2.0;
         let center_copy: Point3f = *center as Point3f;
-        let is_inside: bool = pnt3_inside_bnd3(center_copy, *b);
+        let is_inside: bool = pnt3_inside_bnd3(&center_copy, b);
         if is_inside {
-            *radius = pnt3_distance(center_copy, p_max);
+            *radius = pnt3_distance(&center_copy, &p_max);
         } else {
             *radius = 0.0;
         }
@@ -1560,7 +1560,7 @@ impl<T> Index<u8> for Bounds3<T> {
 /// Given a bounding box and a point, the **bnd3_union_pnt3()**
 /// function returns a new bounding box that encompasses that point as
 /// well as the original box.
-pub fn bnd3_union_pnt3<T>(b: Bounds3<T>, p: Point3<T>) -> Bounds3<T>
+pub fn bnd3_union_pnt3<T>(b: &Bounds3<T>, p: &Point3<T>) -> Bounds3<T>
 where
     T: num::Float,
 {
@@ -1579,7 +1579,7 @@ where
 
 /// Construct a new box that bounds the space encompassed by two other
 /// bounding boxes.
-pub fn bnd3_union_bnd3<T>(b1: Bounds3<T>, b2: Bounds3<T>) -> Bounds3<T>
+pub fn bnd3_union_bnd3<T>(b1: &Bounds3<T>, b2: &Bounds3<T>) -> Bounds3<T>
 where
     T: num::Float,
 {
@@ -1597,13 +1597,13 @@ where
 }
 
 /// Determine if a given point is inside the bounding box.
-pub fn pnt3_inside_bnd3(p: Point3f, b: Bounds3f) -> bool {
+pub fn pnt3_inside_bnd3(p: &Point3f, b: &Bounds3f) -> bool {
     p.x >= b.p_min.x && p.x <= b.p_max.x && p.y >= b.p_min.y && p.y <= b.p_max.y && p.z >= b.p_min.z
         && p.z <= b.p_max.z
 }
 
 /// Pads the bounding box by a constant factor in both dimensions.
-pub fn bnd3_expand(b: Bounds3f, delta: Float) -> Bounds3f {
+pub fn bnd3_expand(b: &Bounds3f, delta: Float) -> Bounds3f {
     Bounds3f::new(
         b.p_min - Vector3f {
             x: delta,

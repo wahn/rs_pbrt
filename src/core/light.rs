@@ -24,7 +24,7 @@ pub trait Light {
     /// them.
     fn sample_li(&self,
                  iref: &InteractionCommon,
-                 u: Point2f,
+                 u: &Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)

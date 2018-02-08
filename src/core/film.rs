@@ -10,19 +10,19 @@
 //!
 
 // std
-#[cfg(feature="openexr")]
+#[cfg(feature = "openexr")]
 use std;
 use std::path::Path;
 use std::sync::{Arc, RwLock};
 // others
 use image;
-#[cfg(feature="openexr")]
+#[cfg(feature = "openexr")]
 use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
 // pbrt
 use core::filter::Filter;
-use core::geometry::{Bounds2i, Bounds2f, Point2i, Point2f, Vector2f};
-use core::geometry::{bnd2_intersect_bnd2, pnt2_inside_exclusive, pnt2_max_pnt2, pnt2_min_pnt2,
-                     pnt2_ceil, pnt2_floor};
+use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2f};
+use core::geometry::{bnd2_intersect_bnd2, pnt2_ceil, pnt2_floor, pnt2_inside_exclusive,
+                     pnt2_max_pnt2, pnt2_min_pnt2};
 use core::parallel::AtomicFloat;
 use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, gamma_correct};
@@ -32,7 +32,7 @@ use core::spectrum::xyz_to_rgb;
 
 const FILTER_TABLE_WIDTH: usize = 16;
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Pixel {
     xyz: [Float; 3],
     filter_weight_sum: Float,
@@ -40,7 +40,7 @@ pub struct Pixel {
     pad: Float,
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct FilmTilePixel {
     contrib_sum: Spectrum,
     filter_weight_sum: Float,
@@ -57,12 +57,13 @@ pub struct FilmTile<'a> {
 }
 
 impl<'a> FilmTile<'a> {
-    pub fn new(pixel_bounds: Bounds2i,
-               filter_radius: Vector2f,
-               filter_table: &'a [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
-               filter_table_size: usize,
-               max_sample_luminance: Float)
-               -> Self {
+    pub fn new(
+        pixel_bounds: Bounds2i,
+        filter_radius: Vector2f,
+        filter_table: &'a [Float; FILTER_TABLE_WIDTH * FILTER_TABLE_WIDTH],
+        filter_table_size: usize,
+        max_sample_luminance: Float,
+    ) -> Self {
         FilmTile {
             pixel_bounds: pixel_bounds,
             filter_radius: filter_radius,
@@ -84,12 +85,12 @@ impl<'a> FilmTile<'a> {
         }
         // compute sample's raster bounds
         let p_film_discrete: Point2f = p_film - Vector2f { x: 0.5, y: 0.5 };
-        let p0f: Point2f = pnt2_ceil(p_film_discrete - self.filter_radius);
+        let p0f: Point2f = pnt2_ceil(&(p_film_discrete - self.filter_radius));
         let mut p0: Point2i = Point2i {
             x: p0f.x as i32,
             y: p0f.y as i32,
         };
-        let p1f: Point2f = pnt2_floor(p_film_discrete + self.filter_radius);
+        let p1f: Point2f = pnt2_floor(&(p_film_discrete + self.filter_radius));
         let mut p1: Point2i = Point2i {
             x: p1f.x as i32 + 1,
             y: p1f.y as i32 + 1,
@@ -102,29 +103,29 @@ impl<'a> FilmTile<'a> {
         // precompute $x$ and $y$ filter table offsets
         let mut ifx: Vec<usize> = Vec::with_capacity(p1.x as usize - p0.x as usize);
         for x in p0.x..p1.x {
-            let fx: Float = ((x as Float - p_film_discrete.x) * self.inv_filter_radius.x *
-                             self.filter_table_size as Float)
-                    .abs();
+            let fx: Float = ((x as Float - p_film_discrete.x) * self.inv_filter_radius.x
+                * self.filter_table_size as Float)
+                .abs();
             ifx.push(fx.floor().min(self.filter_table_size as Float - 1.0) as usize);
         }
         let mut ify: Vec<usize> = Vec::with_capacity(p1.y as usize - p0.y as usize);
         for y in p0.y..p1.y {
-            let fy: Float = ((y as Float - p_film_discrete.y) * self.inv_filter_radius.y *
-                             self.filter_table_size as Float)
-                    .abs();
+            let fy: Float = ((y as Float - p_film_discrete.y) * self.inv_filter_radius.y
+                * self.filter_table_size as Float)
+                .abs();
             ify.push(fy.floor().min(self.filter_table_size as Float - 1.0) as usize);
         }
         for y in p0.y..p1.y {
             for x in p0.x..p1.x {
                 // evaluate filter value at $(x,y)$ pixel
-                let offset: usize = ify[(y - p0.y) as usize] * self.filter_table_size +
-                                    ifx[(x - p0.x) as usize];
+                let offset: usize =
+                    ify[(y - p0.y) as usize] * self.filter_table_size + ifx[(x - p0.x) as usize];
                 let filter_weight: Float = self.filter_table[offset];
                 // update pixel values with filtered sample contribution
                 let idx = self.get_pixel_index(x, y);
                 let ref mut pixel = self.pixels[idx];
-                pixel.contrib_sum += *l * Spectrum::new(sample_weight) *
-                                     Spectrum::new(filter_weight);
+                pixel.contrib_sum +=
+                    *l * Spectrum::new(sample_weight) * Spectrum::new(filter_weight);
                 pixel.filter_weight_sum += filter_weight;
             }
         }
@@ -157,14 +158,15 @@ pub struct Film {
 }
 
 impl Film {
-    pub fn new(resolution: Point2i,
-               crop_window: Bounds2f,
-               filter: Arc<Filter + Sync + Send>,
-               diagonal: Float,
-               filename: String,
-               scale: Float,
-               max_sample_luminance: Float)
-               -> Self {
+    pub fn new(
+        resolution: Point2i,
+        crop_window: Bounds2f,
+        filter: Arc<Filter + Sync + Send>,
+        diagonal: Float,
+        filename: String,
+        scale: Float,
+        max_sample_luminance: Float,
+    ) -> Self {
         let cropped_pixel_bounds: Bounds2i = Bounds2i {
             p_min: Point2i {
                 x: (resolution.x as Float * crop_window.p_min.x).ceil() as i32,
@@ -205,18 +207,18 @@ impl Film {
         }
     }
     pub fn get_sample_bounds(&self) -> Bounds2i {
-        let f: Point2f = pnt2_floor(Point2f {
-                                        x: self.cropped_pixel_bounds.p_min.x as Float,
-                                        y: self.cropped_pixel_bounds.p_min.y as Float,
-                                    } +
-                                    Vector2f { x: 0.5, y: 0.5 } -
-                                    self.filter.get_radius());
-        let c: Point2f = pnt2_ceil(Point2f {
-                                       x: self.cropped_pixel_bounds.p_max.x as Float,
-                                       y: self.cropped_pixel_bounds.p_max.y as Float,
-                                   } -
-                                   Vector2f { x: 0.5, y: 0.5 } +
-                                   self.filter.get_radius());
+        let f: Point2f = pnt2_floor(
+            &(Point2f {
+                x: self.cropped_pixel_bounds.p_min.x as Float,
+                y: self.cropped_pixel_bounds.p_min.y as Float,
+            } + Vector2f { x: 0.5, y: 0.5 } - self.filter.get_radius()),
+        );
+        let c: Point2f = pnt2_ceil(
+            &(Point2f {
+                x: self.cropped_pixel_bounds.p_max.x as Float,
+                y: self.cropped_pixel_bounds.p_max.y as Float,
+            } - Vector2f { x: 0.5, y: 0.5 } + self.filter.get_radius()),
+        );
         let float_bounds: Bounds2f = Bounds2f { p_min: f, p_max: c };
         Bounds2i {
             p_min: Point2i {
@@ -252,16 +254,20 @@ impl Film {
             x: p_max.x.floor() as i32,
             y: p_max.y.floor() as i32,
         } + Point2i { x: 1, y: 1 };
-        let tile_pixel_bounds: Bounds2i = bnd2_intersect_bnd2(Bounds2i {
-                                                                  p_min: p0,
-                                                                  p_max: p1,
-                                                              },
-                                                              self.cropped_pixel_bounds);
-        FilmTile::new(tile_pixel_bounds,
-                      self.filter.get_radius(),
-                      &self.filter_table,
-                      FILTER_TABLE_WIDTH,
-                      self.max_sample_luminance)
+        let tile_pixel_bounds: Bounds2i = bnd2_intersect_bnd2(
+            &Bounds2i {
+                p_min: p0,
+                p_max: p1,
+            },
+            &self.cropped_pixel_bounds,
+        );
+        FilmTile::new(
+            tile_pixel_bounds,
+            self.filter.get_radius(),
+            &self.filter_table,
+            FILTER_TABLE_WIDTH,
+            self.max_sample_luminance,
+        )
     }
     pub fn merge_film_tile(&self, tile: &FilmTile) {
         // TODO: ProfilePhase p(Prof::MergeFilmTile);
@@ -272,10 +278,10 @@ impl Film {
             let idx = tile.get_pixel_index(pixel.x, pixel.y);
             let ref tile_pixel = tile.pixels[idx];
             // START let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
-            assert!(pnt2_inside_exclusive(pixel, self.cropped_pixel_bounds));
+            assert!(pnt2_inside_exclusive(&pixel, &self.cropped_pixel_bounds));
             let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
-            let offset: i32 = (pixel.x - self.cropped_pixel_bounds.p_min.x) +
-                              (pixel.y - self.cropped_pixel_bounds.p_min.y) * width;
+            let offset: i32 = (pixel.x - self.cropped_pixel_bounds.p_min.x)
+                + (pixel.y - self.cropped_pixel_bounds.p_min.y) * width;
             let mut pixels_write = self.pixels.write().unwrap();
             let mut merge_pixel = pixels_write[offset as usize];
             // END let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
@@ -289,7 +295,7 @@ impl Film {
             pixels_write[offset as usize] = merge_pixel;
         }
     }
-    #[cfg(not(feature="openexr"))]
+    #[cfg(not(feature = "openexr"))]
     pub fn write_image(&self, splat_scale: Float) {
         println!("Converting image to RGB and computing final weighted pixel values");
         let mut rgb: Vec<Float> =
@@ -314,9 +320,11 @@ impl Film {
             }
             // add splat value at pixel
             let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
-            let splat_xyz: [Float; 3] = [Float::from(pixel.splat_xyz[0]),
-                                         Float::from(pixel.splat_xyz[1]),
-                                         Float::from(pixel.splat_xyz[2])];
+            let splat_xyz: [Float; 3] = [
+                Float::from(pixel.splat_xyz[0]),
+                Float::from(pixel.splat_xyz[1]),
+                Float::from(pixel.splat_xyz[2]),
+            ];
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
             rgb[start + 0] += splat_scale * splat_rgb[0];
             rgb[start + 1] += splat_scale * splat_rgb[1];
@@ -328,44 +336,53 @@ impl Film {
             offset += 1;
         }
         let filename = "pbrt.png";
-        println!("Writing image {:?} with bounds {:?}",
-                 filename, // TODO: self.filename,
-                 self.cropped_pixel_bounds);
+        println!(
+            "Writing image {:?} with bounds {:?}",
+            filename, // TODO: self.filename,
+            self.cropped_pixel_bounds
+        );
         // TODO: pbrt::WriteImage(filename, &rgb[0], croppedPixelBounds, fullResolution);
         let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * self.cropped_pixel_bounds.area()) as usize];
         // 8-bit format; apply gamma (see WriteImage(...) in imageio.cpp)
-        let width: u32 = (self.cropped_pixel_bounds.p_max.x -
-                          self.cropped_pixel_bounds.p_min.x) as u32;
-        let height: u32 = (self.cropped_pixel_bounds.p_max.y -
-                           self.cropped_pixel_bounds.p_min.y) as u32;
+        let width: u32 =
+            (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as u32;
+        let height: u32 =
+            (self.cropped_pixel_bounds.p_max.y - self.cropped_pixel_bounds.p_min.y) as u32;
         for y in 0..height {
             for x in 0..width {
                 // red
                 let index: usize = (3 * (y * width + x) + 0) as usize;
-                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                        0.0 as Float,
-                                        255.0 as Float) as u8;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
                 // green
                 let index: usize = (3 * (y * width + x) + 1) as usize;
-                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                        0.0 as Float,
-                                        255.0 as Float) as u8;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
                 // blue
                 let index: usize = (3 * (y * width + x) + 2) as usize;
-                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                        0.0 as Float,
-                                        255.0 as Float) as u8;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
             }
         }
         // write "pbrt.png" to disk
-        image::save_buffer(&Path::new("pbrt.png"),
-                           &buffer,
-                           width,
-                           height,
-                           image::RGB(8))
-                .unwrap();
+        image::save_buffer(
+            &Path::new("pbrt.png"),
+            &buffer,
+            width,
+            height,
+            image::RGB(8),
+        ).unwrap();
     }
-    #[cfg(feature="openexr")]
+    #[cfg(feature = "openexr")]
     pub fn write_image(&self, splat_scale: Float) {
         println!("Converting image to RGB and computing final weighted pixel values");
         let mut rgb: Vec<Float> =
@@ -375,7 +392,7 @@ impl Film {
         let mut offset: usize = 0;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            let pixel: Pixel = self.get_pixel(p);
+            let pixel: Pixel = self.get_pixel(&p);
             let start = 3 * offset;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
             xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
@@ -392,9 +409,11 @@ impl Film {
             }
             // add splat value at pixel
             let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
-            let splat_xyz: [Float; 3] = [Float::from(pixel.splat_xyz[0]),
-                                         Float::from(pixel.splat_xyz[1]),
-                                         Float::from(pixel.splat_xyz[2])];
+            let splat_xyz: [Float; 3] = [
+                Float::from(pixel.splat_xyz[0]),
+                Float::from(pixel.splat_xyz[1]),
+                Float::from(pixel.splat_xyz[2]),
+            ];
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
             rgb[start + 0] += splat_scale * splat_rgb[0];
             rgb[start + 1] += splat_scale * splat_rgb[1];
@@ -410,29 +429,34 @@ impl Film {
             offset += 1;
         }
         let filename = "pbrt.png";
-        println!("Writing image {:?} with bounds {:?}",
-                 filename, // TODO: self.filename,
-                 self.cropped_pixel_bounds);
+        println!(
+            "Writing image {:?} with bounds {:?}",
+            filename, // TODO: self.filename,
+            self.cropped_pixel_bounds
+        );
         // TODO: pbrt::WriteImage(filename, &rgb[0], croppedPixelBounds, fullResolution);
         let mut buffer: Vec<u8> = vec![0.0 as u8; (3 * self.cropped_pixel_bounds.area()) as usize];
         // 8-bit format; apply gamma (see WriteImage(...) in imageio.cpp)
-        let width: u32 = (self.cropped_pixel_bounds.p_max.x -
-                          self.cropped_pixel_bounds.p_min.x) as u32;
-        let height: u32 = (self.cropped_pixel_bounds.p_max.y -
-                           self.cropped_pixel_bounds.p_min.y) as u32;
+        let width: u32 =
+            (self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x) as u32;
+        let height: u32 =
+            (self.cropped_pixel_bounds.p_max.y - self.cropped_pixel_bounds.p_min.y) as u32;
         // OpenEXR
         let filename = "pbrt_rust.exr";
-        println!("Writing image {:?} with bounds {:?}",
-                 filename, // TODO: self.filename,
-                 self.cropped_pixel_bounds);
+        println!(
+            "Writing image {:?} with bounds {:?}",
+            filename, // TODO: self.filename,
+            self.cropped_pixel_bounds
+        );
         let mut file = std::fs::File::create("pbrt_rust.exr").unwrap();
-        let mut output_file = ScanlineOutputFile::new(&mut file,
-                                                      Header::new()
-                                                          .set_resolution(width, height)
-                                                          .add_channel("R", PixelType::FLOAT)
-                                                          .add_channel("G", PixelType::FLOAT)
-                                                          .add_channel("B", PixelType::FLOAT))
-                .unwrap();
+        let mut output_file = ScanlineOutputFile::new(
+            &mut file,
+            Header::new()
+                .set_resolution(width, height)
+                .add_channel("R", PixelType::FLOAT)
+                .add_channel("G", PixelType::FLOAT)
+                .add_channel("B", PixelType::FLOAT),
+        ).unwrap();
         let mut fb = FrameBuffer::new(width as u32, height as u32);
         fb.insert_channels(&["R", "G", "B"], &exr);
         output_file.write_pixels(&fb).unwrap();
@@ -442,34 +466,41 @@ impl Film {
             for x in 0..width {
                 // red
                 let index: usize = (3 * (y * width + x) + 0) as usize;
-                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                        0.0 as Float,
-                                        255.0 as Float) as u8;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
                 // green
                 let index: usize = (3 * (y * width + x) + 1) as usize;
-                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                        0.0 as Float,
-                                        255.0 as Float) as u8;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
                 // blue
                 let index: usize = (3 * (y * width + x) + 2) as usize;
-                buffer[index] = clamp_t(255.0 as Float * gamma_correct(rgb[index]) + 0.5,
-                                        0.0 as Float,
-                                        255.0 as Float) as u8;
+                buffer[index] = clamp_t(
+                    255.0 as Float * gamma_correct(rgb[index]) + 0.5,
+                    0.0 as Float,
+                    255.0 as Float,
+                ) as u8;
             }
         }
         // write "pbrt.png" to disk
-        image::save_buffer(&Path::new("pbrt.png"),
-                           &buffer,
-                           width,
-                           height,
-                           image::RGB(8))
-                .unwrap();
+        image::save_buffer(
+            &Path::new("pbrt.png"),
+            &buffer,
+            width,
+            height,
+            image::RGB(8),
+        ).unwrap();
     }
-    pub fn get_pixel(&self, p: Point2i) -> Pixel {
-        assert!(pnt2_inside_exclusive(p, self.cropped_pixel_bounds));
+    pub fn get_pixel(&self, p: &Point2i) -> Pixel {
+        assert!(pnt2_inside_exclusive(p, &self.cropped_pixel_bounds));
         let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
-        let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x) +
-                          (p.y - self.cropped_pixel_bounds.p_min.y) * width;
+        let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x)
+            + (p.y - self.cropped_pixel_bounds.p_min.y) * width;
         self.pixels.read().unwrap()[offset as usize]
     }
 }

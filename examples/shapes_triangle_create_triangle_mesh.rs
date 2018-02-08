@@ -6,12 +6,12 @@ use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use std::sync::Arc;
 
 fn main() {
-    let translate: Transform = Transform::translate(Vector3f {
+    let translate: Transform = Transform::translate(&Vector3f {
                                                         x: 0.25,
                                                         y: 0.0,
                                                         z: 0.0,
                                                     });
-    let inverse: Transform = Transform::inverse(translate);
+    let inverse: Transform = Transform::inverse(&translate);
     let n_triangles: usize = 2;
     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
     let n_vertices: usize = 4;

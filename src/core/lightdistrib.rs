@@ -100,7 +100,7 @@ impl SpatialLightDistribution {
     }
     /// Compute the sampling distribution for the voxel with integer
     /// coordiantes given by "pi".
-    pub fn compute_distribution(&self, pi: Point3i) -> Distribution1D {
+    pub fn compute_distribution(&self, pi: &Point3i) -> Distribution1D {
         // Compute the world-space bounding box of the voxel
         // corresponding to |pi|.
         let p0: Point3f = Point3f {
@@ -155,7 +155,7 @@ impl SpatialLightDistribution {
                 let mut wi: Vector3f = Vector3f::default();
                 let mut vis: VisibilityTester = VisibilityTester::default();
                 let li: Spectrum = self.scene.lights[j]
-                    .sample_li(&intr, u, &mut wi, &mut pdf, &mut vis);
+                    .sample_li(&intr, &u, &mut wi, &mut pdf, &mut vis);
                 if pdf > 0.0 as Float {
                     // TODO: look at tracing shadow rays / computing
                     // beam transmittance. Probably shouldn't give
@@ -292,7 +292,7 @@ impl LightDistribution for SpatialLightDistribution {
                     // Success; we've claimed this position for this
                     // voxel's distribution. Now compute the sampling
                     // distribution and add it to the hash table.
-                    let dist: Distribution1D = self.compute_distribution(pi);
+                    let dist: Distribution1D = self.compute_distribution(&pi);
                     let arc_dist: Arc<Distribution1D> = Arc::new(dist.clone());
                     let mut distribution = entry.distribution.write().unwrap();
                     *distribution = Some(arc_dist.clone());

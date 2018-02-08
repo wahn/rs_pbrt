@@ -9,7 +9,7 @@ use core::transform::Transform;
 
 // see point.h
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct PointLight {
     // private data (see point.h)
     pub p_light: Point3f,
@@ -22,7 +22,7 @@ pub struct PointLight {
 impl PointLight {
     pub fn new(light_to_world: &Transform, i: &Spectrum) -> Self {
         PointLight {
-            p_light: light_to_world.transform_point(Point3f::default()),
+            p_light: light_to_world.transform_point(&Point3f::default()),
             i: *i,
             flags: LightFlags::DeltaPosition as u8,
             n_samples: 1_i32,
@@ -31,15 +31,16 @@ impl PointLight {
 }
 
 impl Light for PointLight {
-    fn sample_li(&self,
-                 iref: &InteractionCommon,
-                 _u: Point2f,
-                 wi: &mut Vector3f,
-                 pdf: &mut Float,
-                 vis: &mut VisibilityTester)
-                 -> Spectrum {
+    fn sample_li(
+        &self,
+        iref: &InteractionCommon,
+        _u: &Point2f,
+        wi: &mut Vector3f,
+        pdf: &mut Float,
+        vis: &mut VisibilityTester,
+    ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
-        *wi = vec3_normalize(self.p_light - iref.p);
+        *wi = vec3_normalize(&(self.p_light - iref.p));
         *pdf = 1.0 as Float;
         *vis = VisibilityTester {
             p0: InteractionCommon {
@@ -57,7 +58,7 @@ impl Light for PointLight {
                 n: Normal3f::default(),
             },
         };
-        self.i / pnt3_distance_squared(self.p_light, iref.p)
+        self.i / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     fn power(&self) -> Spectrum {
         Spectrum::default()

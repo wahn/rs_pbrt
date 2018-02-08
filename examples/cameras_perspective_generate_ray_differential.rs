@@ -31,12 +31,12 @@ fn main() {
     let xw: Float = 0.5;
     let yw: Float = 0.5;
     let filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
-                                                         radius: Vector2f { x: xw, y: yw },
-                                                         inv_radius: Vector2f {
-                                                             x: 1.0 / xw,
-                                                             y: 1.0 / yw,
-                                                         },
-                                                     });
+        radius: Vector2f { x: xw, y: yw },
+        inv_radius: Vector2f {
+            x: 1.0 / xw,
+            y: 1.0 / yw,
+        },
+    });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
     let xres = 1000;
     let yres = 500;
@@ -44,13 +44,15 @@ fn main() {
         p_min: Point2f { x: 0.0, y: 0.0 },
         p_max: Point2f { x: 1.0, y: 1.0 },
     };
-    let film: Arc<Film> = Arc::new(Film::new(Point2i { x: xres, y: yres },
-                                             crop,
-                                             filter,
-                                             35.0,
-                                             filename,
-                                             1.0,
-                                             std::f32::INFINITY));
+    let film: Arc<Film> = Arc::new(Film::new(
+        Point2i { x: xres, y: yres },
+        crop,
+        filter,
+        35.0,
+        filename,
+        1.0,
+        std::f32::INFINITY,
+    ));
     let pos = Point3f {
         x: 2.0,
         y: 2.0,
@@ -66,7 +68,7 @@ fn main() {
         y: 1.0,
         z: 0.0,
     };
-    let t: Transform = Transform::look_at(pos, look, up);
+    let t: Transform = Transform::look_at(&pos, &look, &up);
     let it: Transform = Transform {
         m: t.m_inv.clone(),
         m_inv: t.m.clone(),
@@ -90,14 +92,16 @@ fn main() {
         screen.p_max.y = 1.0 / frame;
     }
     let fov: Float = 30.0;
-    let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(animated_cam_to_world,
-                                                                       screen,
-                                                                       shutteropen,
-                                                                       shutterclose,
-                                                                       lensradius,
-                                                                       focaldistance,
-                                                                       fov,
-                                                                       film);
+    let perspective_camera: PerspectiveCamera = PerspectiveCamera::new(
+        animated_cam_to_world,
+        screen,
+        shutteropen,
+        shutterclose,
+        lensradius,
+        focaldistance,
+        fov,
+        film,
+    );
     // println!("perspective_camera = {:?}", perspective_camera);
     let mut ray: Ray = Ray::default();
     let _ray_weight: Float = perspective_camera.generate_ray_differential(&camera_sample, &mut ray);

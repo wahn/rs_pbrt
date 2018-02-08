@@ -54,15 +54,15 @@ impl DirectLightingIntegrator {
         let bsdf_flags: u8 = BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8;
         let f: Spectrum;
         if let Some(ref bsdf) = isect.bsdf {
-            f = bsdf.sample_f(wo,
+            f = bsdf.sample_f(&wo,
                               &mut wi,
-                              sampler.get_2d(),
+                              &sampler.get_2d(),
                               &mut pdf,
                               bsdf_flags,
                               &mut sampled_type);
-            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(wi, ns) != 0.0 as Float {
+            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(&wi, &ns) != 0.0 as Float {
                 // compute ray differential _rd_ for specular reflection
-                let mut rd: Ray = isect.spawn_ray(wi);
+                let mut rd: Ray = isect.spawn_ray(&wi);
                 if let Some(d) = ray.differential.iter().next() {
                     let dndx: Normal3f = isect.shading.dndu * isect.dudx +
                                          isect.shading.dndv * isect.dvdx;
@@ -70,23 +70,23 @@ impl DirectLightingIntegrator {
                                          isect.shading.dndv * isect.dvdy;
                     let dwodx: Vector3f = -d.rx_direction - wo;
                     let dwody: Vector3f = -d.ry_direction - wo;
-                    let ddndx: Float = vec3_dot_nrm(dwodx, ns) + vec3_dot_nrm(wo, dndx);
-                    let ddndy: Float = vec3_dot_nrm(dwody, ns) + vec3_dot_nrm(wo, dndy);
+                    let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
+                    let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
                     // compute differential reflected directions
                     let diff: RayDifferential = RayDifferential {
                         rx_origin: isect.p + isect.dpdx,
                         ry_origin: isect.p + isect.dpdy,
                         rx_direction: wi - dwodx +
-                                      Vector3f::from(dndx * vec3_dot_nrm(wo, ns) + ns * ddndx) *
+                                      Vector3f::from(dndx * vec3_dot_nrm(&wo, &ns) + ns * ddndx) *
                                       2.0 as Float,
                         ry_direction: wi - dwody +
-                                      Vector3f::from(dndy * vec3_dot_nrm(wo, ns) + ns * ddndy) *
+                                      Vector3f::from(dndy * vec3_dot_nrm(&wo, &ns) + ns * ddndy) *
                                       2.0 as Float,
                     };
                     rd.differential = Some(diff);
                 }
                 return f * self.li(&mut rd, scene, sampler, depth + 1) *
-                       Spectrum::new(vec3_abs_dot_nrm(wi, ns) / pdf);
+                       Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
             } else {
                 Spectrum::new(0.0)
             }
@@ -111,19 +111,19 @@ impl DirectLightingIntegrator {
         let bsdf_flags: u8 = BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8;
         let f: Spectrum;
         if let Some(ref bsdf) = isect.bsdf {
-            f = bsdf.sample_f(wo,
+            f = bsdf.sample_f(&wo,
                               &mut wi,
-                              sampler.get_2d(),
+                              &sampler.get_2d(),
                               &mut pdf,
                               bsdf_flags,
                               &mut sampled_type);
-            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(wi, ns) != 0.0 as Float {
+            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(&wi, &ns) != 0.0 as Float {
                 // compute ray differential _rd_ for specular transmission
-                let mut rd: Ray = isect.spawn_ray(wi);
+                let mut rd: Ray = isect.spawn_ray(&wi);
                 if let Some(d) = ray.differential.iter().next() {
                     let mut eta: Float = bsdf.eta;
                     let w: Vector3f = -wo;
-                    if vec3_dot_nrm(wo, ns) < 0.0 as Float {
+                    if vec3_dot_nrm(&wo, &ns) < 0.0 as Float {
                         eta = 1.0 / eta;
                     }
                     let dndx: Normal3f = isect.shading.dndu * isect.dudx +
@@ -132,13 +132,13 @@ impl DirectLightingIntegrator {
                                          isect.shading.dndv * isect.dvdy;
                     let dwodx: Vector3f = -d.rx_direction - wo;
                     let dwody: Vector3f = -d.ry_direction - wo;
-                    let ddndx: Float = vec3_dot_nrm(dwodx, ns) + vec3_dot_nrm(wo, dndx);
-                    let ddndy: Float = vec3_dot_nrm(dwody, ns) + vec3_dot_nrm(wo, dndy);
-                    let mu: Float = eta * vec3_dot_nrm(w, ns) - vec3_dot_nrm(wi, ns);
+                    let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
+                    let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
+                    let mu: Float = eta * vec3_dot_nrm(&w, &ns) - vec3_dot_nrm(&wi, &ns);
                     let dmudx: Float =
-                        (eta - (eta * eta * vec3_dot_nrm(w, ns)) / vec3_dot_nrm(wi, ns)) * ddndx;
+                        (eta - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns)) * ddndx;
                     let dmudy: Float =
-                        (eta - (eta * eta * vec3_dot_nrm(w, ns)) / vec3_dot_nrm(wi, ns)) * ddndy;
+                        (eta - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns)) * ddndy;
                     let diff: RayDifferential = RayDifferential {
                         rx_origin: isect.p + isect.dpdx,
                         ry_origin: isect.p + isect.dpdy,
@@ -148,7 +148,7 @@ impl DirectLightingIntegrator {
                     rd.differential = Some(diff);
                 }
                 return f * self.li(&mut rd, scene, sampler, depth + 1) *
-                       Spectrum::new(vec3_abs_dot_nrm(wi, ns) / pdf);
+                       Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
             } else {
                 Spectrum::new(0.0)
             }

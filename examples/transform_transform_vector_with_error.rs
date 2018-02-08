@@ -4,7 +4,7 @@ use pbrt::core::geometry::Vector3f;
 use pbrt::core::transform::Transform;
 
 fn main() {
-    let t: Transform = Transform::translate(Vector3f {
+    let t: Transform = Transform::translate(&Vector3f {
         x: -1.3,
         y: 0.0,
         z: 0.0,
@@ -15,9 +15,12 @@ fn main() {
         z: -0.984571517,
     };
     let mut abs_error: Vector3f = Vector3f::default();
-    let tv: Vector3f = t.transform_vector_with_error(v, &mut abs_error);
+    let tv: Vector3f = t.transform_vector_with_error(&v, &mut abs_error);
 
     println!("t = {:?}", t);
     println!("v = {:?}", v);
-    println!("tv = transform_vector_with_error(v, {:?}) = {:?}", abs_error, tv);
+    println!(
+        "tv = transform_vector_with_error(v, {:?}) = {:?}",
+        abs_error, tv
+    );
 }

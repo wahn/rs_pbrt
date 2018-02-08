@@ -22,12 +22,13 @@ pub struct AOIntegrator {
 }
 
 impl AOIntegrator {
-    pub fn new(cos_sample: bool,
-               n_samples: i32,
-               // _perspective_camera: &PerspectiveCamera,
-               // _sampler: &mut Box<Sampler + Send + Sync>,
-               pixel_bounds: Bounds2i)
-               -> Self {
+    pub fn new(
+        cos_sample: bool,
+        n_samples: i32,
+        // _perspective_camera: &PerspectiveCamera,
+        // _sampler: &mut Box<Sampler + Send + Sync>,
+        pixel_bounds: Bounds2i,
+    ) -> Self {
         AOIntegrator {
             pixel_bounds: pixel_bounds,
             cos_sample: cos_sample,
@@ -40,13 +41,14 @@ impl SamplerIntegrator for AOIntegrator {
     fn preprocess(&mut self, _scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) {
         sampler.request_2d_array(self.n_samples);
     }
-    fn li(&self,
-          r: &mut Ray,
-          scene: &Scene,
-          sampler: &mut Box<Sampler + Send + Sync>,
-          // arena: &mut Arena,
-          _depth: i32)
-          -> Spectrum {
+    fn li(
+        &self,
+        r: &mut Ray,
+        scene: &Scene,
+        sampler: &mut Box<Sampler + Send + Sync>,
+        // arena: &mut Arena,
+        _depth: i32,
+    ) -> Spectrum {
         // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
         let mut l: Spectrum = Spectrum::default();
         let mut ray: Ray = Ray {
@@ -66,9 +68,9 @@ impl SamplerIntegrator for AOIntegrator {
             // }
             // compute coordinate frame based on true geometry, not
             // shading geometry.
-            let n: Normal3f = nrm_faceforward_vec3(isect.n, -ray.d);
-            let s: Vector3f = vec3_normalize(isect.dpdu);
-            let t: Vector3f = nrm_cross_vec3(isect.n, s);
+            let n: Normal3f = nrm_faceforward_vec3(&isect.n, &-ray.d);
+            let s: Vector3f = vec3_normalize(&isect.dpdu);
+            let t: Vector3f = nrm_cross_vec3(&isect.n, &s);
             let u: Vec<Point2f> = sampler.get_2d_array(self.n_samples);
             for i in 0..self.n_samples as usize {
                 // Vector3f wi;
@@ -87,9 +89,9 @@ impl SamplerIntegrator for AOIntegrator {
                     y: s.y * wi.x + t.y * wi.y + n.y * wi.z,
                     z: s.z * wi.x + t.z * wi.y + n.z * wi.z,
                 };
-                let mut ray: Ray = isect.spawn_ray(wi);
+                let mut ray: Ray = isect.spawn_ray(&wi);
                 if !scene.intersect_p(&mut ray) {
-                    l += Spectrum::new(vec3_dot_nrm(wi, n) / (pdf * self.n_samples as Float));
+                    l += Spectrum::new(vec3_dot_nrm(&wi, &n) / (pdf * self.n_samples as Float));
                 }
             }
         }

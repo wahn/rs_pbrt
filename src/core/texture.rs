@@ -60,16 +60,16 @@ impl TextureMapping2D for PlanarMapping2D {
             z: si.p.z,
         };
         *dstdx = Vector2f {
-            x: vec3_dot_vec3(si.dpdx, self.vs),
-            y: vec3_dot_vec3(si.dpdx, self.vt),
+            x: vec3_dot_vec3(&si.dpdx, &self.vs),
+            y: vec3_dot_vec3(&si.dpdx, &self.vt),
         };
         *dstdy = Vector2f {
-            x: vec3_dot_vec3(si.dpdy, self.vs),
-            y: vec3_dot_vec3(si.dpdy, self.vt),
+            x: vec3_dot_vec3(&si.dpdy, &self.vs),
+            y: vec3_dot_vec3(&si.dpdy, &self.vt),
         };
         Point2f {
-            x: self.ds + vec3_dot_vec3(vec, self.vs),
-            y: self.dt + vec3_dot_vec3(vec, self.vt),
+            x: self.ds + vec3_dot_vec3(&vec, &self.vs),
+            y: self.dt + vec3_dot_vec3(&vec, &self.vt),
         }
     }
 }

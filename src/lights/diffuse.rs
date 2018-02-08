@@ -52,19 +52,19 @@ impl DiffuseAreaLight {
 impl Light for DiffuseAreaLight {
     fn sample_li(&self,
                  iref: &InteractionCommon,
-                 u: Point2f,
+                 u: &Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
                  -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
-        let p_shape: InteractionCommon = self.shape.sample_with_ref_point(&iref, u, pdf);
+        let p_shape: InteractionCommon = self.shape.sample_with_ref_point(&iref, &*u, pdf);
         // TODO: iref.mediumInterface = mediumInterface;
         if *pdf == 0.0 as Float || (p_shape.p - iref.p).length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
             return Spectrum::default();
         }
-        let new_wi: Vector3f = vec3_normalize(p_shape.p - iref.p);
+        let new_wi: Vector3f = vec3_normalize(&(p_shape.p - iref.p));
         *wi = new_wi;
         vis.p0 = InteractionCommon {
             p: iref.p,
@@ -93,7 +93,7 @@ impl Light for DiffuseAreaLight {
     }
     fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
-        self.shape.pdf(iref, wi)
+        self.shape.pdf(iref, &wi)
     }
     fn get_flags(&self) -> u8 {
         self.flags
@@ -105,7 +105,7 @@ impl Light for DiffuseAreaLight {
 
 impl AreaLight for DiffuseAreaLight {
     fn l(&self, intr: &InteractionCommon, w: Vector3f) -> Spectrum {
-        if self.two_sided || nrm_dot_vec3(intr.n, w) > 0.0 as Float {
+        if self.two_sided || nrm_dot_vec3(&intr.n, &w) > 0.0 as Float {
             self.l_emit
         } else {
             Spectrum::new(0.0 as Float)

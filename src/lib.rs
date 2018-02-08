@@ -220,7 +220,7 @@ pub fn render(scene: &Scene,
                         let mut film_tile = film.get_film_tile(tile_bounds);
                         for pixel in &tile_bounds {
                             tile_sampler.start_pixel(pixel);
-                            if !pnt2_inside_exclusive(pixel, pixel_bounds) {
+                            if !pnt2_inside_exclusive(&pixel, &pixel_bounds) {
                                 continue;
                             }
                             let mut done: bool = false;

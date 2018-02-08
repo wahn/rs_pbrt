@@ -30,7 +30,7 @@ impl DistantLight {
     pub fn new(light_to_world: &Transform, l: &Spectrum, w_light: &Vector3f) -> Self {
         DistantLight {
             l: *l,
-            w_light: vec3_normalize(light_to_world.transform_vector(*w_light)),
+            w_light: vec3_normalize(&light_to_world.transform_vector(&*w_light)),
             world_center: RwLock::new(Point3f::default()),
             world_radius: RwLock::new(0.0),
             flags: LightFlags::DeltaDirection as u8,
@@ -44,7 +44,7 @@ impl DistantLight {
 impl Light for DistantLight {
     fn sample_li(&self,
                  iref: &InteractionCommon,
-                 _u: Point2f,
+                 _u: &Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)

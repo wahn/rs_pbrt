@@ -1,10 +1,11 @@
-extern crate pbrt;
 extern crate getopts;
+extern crate pbrt;
 
 use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f};
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f,
+                           Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::mipmap::ImageWrap;
@@ -54,58 +55,65 @@ impl SceneDescriptionBuilder {
             lights: Vec::new(),
         }
     }
-    fn add_distant_light(&mut self,
-                         light_to_world: &Transform,
-                         l: &Spectrum,
-                         w_light: &Vector3f)
-                         -> &mut SceneDescriptionBuilder {
+    fn add_distant_light(
+        &mut self,
+        light_to_world: &Transform,
+        l: &Spectrum,
+        w_light: &Vector3f,
+    ) -> &mut SceneDescriptionBuilder {
         let distant_light = Arc::new(DistantLight::new(light_to_world, &l, &w_light));
         self.lights.push(distant_light);
         self
     }
-    fn add_mesh(&mut self,
-                object_to_world: Transform,
-                world_to_object: Transform,
-                n_triangles: usize,
-                vertex_indices: Vec<usize>,
-                n_vertices: usize,
-                p_ws: Vec<Point3f>,
-                s: Vec<Vector3f>,
-                n: Vec<Normal3f>,
-                uv: Vec<Point2f>)
-                -> &mut SceneDescriptionBuilder {
-        let triangle_mesh = Arc::new(TriangleMesh::new(object_to_world,
-                                                       world_to_object,
-                                                       false,
-                                                       false,
-                                                       n_triangles,
-                                                       vertex_indices,
-                                                       n_vertices,
-                                                       p_ws, // in world space
-                                                       s, // empty
-                                                       n, // empty
-                                                       uv));
+    fn add_mesh(
+        &mut self,
+        object_to_world: Transform,
+        world_to_object: Transform,
+        n_triangles: usize,
+        vertex_indices: Vec<usize>,
+        n_vertices: usize,
+        p_ws: Vec<Point3f>,
+        s: Vec<Vector3f>,
+        n: Vec<Normal3f>,
+        uv: Vec<Point2f>,
+    ) -> &mut SceneDescriptionBuilder {
+        let triangle_mesh = Arc::new(TriangleMesh::new(
+            object_to_world,
+            world_to_object,
+            false,
+            false,
+            n_triangles,
+            vertex_indices,
+            n_vertices,
+            p_ws, // in world space
+            s,    // empty
+            n,    // empty
+            uv,
+        ));
         println!("triangle_mesh = {:?}", triangle_mesh);
         println!("vertex_indices = {:?}", triangle_mesh.vertex_indices);
         self.meshes.push(triangle_mesh);
         self
     }
-    fn add_sphere(&mut self,
-                  object_to_world: Transform,
-                  world_to_object: Transform,
-                  radius: Float,
-                  z_min: Float,
-                  z_max: Float,
-                  phi_max: Float)
-                  -> &mut SceneDescriptionBuilder {
-        let sphere = Arc::new(Sphere::new(object_to_world,
-                                          world_to_object,
-                                          false,
-                                          false,
-                                          radius,
-                                          z_min,
-                                          z_max,
-                                          phi_max));
+    fn add_sphere(
+        &mut self,
+        object_to_world: Transform,
+        world_to_object: Transform,
+        radius: Float,
+        z_min: Float,
+        z_max: Float,
+        phi_max: Float,
+    ) -> &mut SceneDescriptionBuilder {
+        let sphere = Arc::new(Sphere::new(
+            object_to_world,
+            world_to_object,
+            false,
+            false,
+            radius,
+            z_min,
+            z_max,
+            phi_max,
+        ));
         // println!("sphere = {:?}", sphere);
         self.spheres.push(sphere);
         self
@@ -144,11 +152,13 @@ impl RenderOptions {
         for mesh in scene.meshes {
             // create individual triangles
             for id in 0..mesh.n_triangles {
-                let triangle = Arc::new(Triangle::new(mesh.object_to_world,
-                                                      mesh.world_to_object,
-                                                      mesh.transform_swaps_handedness,
-                                                      mesh.clone(),
-                                                      id));
+                let triangle = Arc::new(Triangle::new(
+                    mesh.object_to_world,
+                    mesh.world_to_object,
+                    mesh.transform_swaps_handedness,
+                    mesh.clone(),
+                    id,
+                ));
                 triangles.push(triangle);
             }
         }
@@ -220,39 +230,43 @@ fn main() {
     let vertex_indices: Vec<usize> = vec![0_usize, 2, 1, 0, 3, 2];
     let n_triangles: usize = vertex_indices.len() / 3;
     // "point P" [-100 -1 -100 400 -1 -100 400 -1 400 -100 -1 400 ]
-    let p: Vec<Point3f> = vec![Point3f {
-                                   x: -100.0,
-                                   y: -1.0,
-                                   z: -100.0,
-                               },
-                               Point3f {
-                                   x: 400.0,
-                                   y: -1.0,
-                                   z: -100.0,
-                               },
-                               Point3f {
-                                   x: 400.0,
-                                   y: -1.0,
-                                   z: 400.0,
-                               },
-                               Point3f {
-                                   x: -100.0,
-                                   y: -1.0,
-                                   z: 400.0,
-                               }];
+    let p: Vec<Point3f> = vec![
+        Point3f {
+            x: -100.0,
+            y: -1.0,
+            z: -100.0,
+        },
+        Point3f {
+            x: 400.0,
+            y: -1.0,
+            z: -100.0,
+        },
+        Point3f {
+            x: 400.0,
+            y: -1.0,
+            z: 400.0,
+        },
+        Point3f {
+            x: -100.0,
+            y: -1.0,
+            z: 400.0,
+        },
+    ];
     // "float st" [ 0 0 1 0 0 1 1 1]
-    let uv: Vec<Point2f> = vec![Point2f { x: 0.0, y: 0.0 },
-                                Point2f { x: 1.0, y: 0.0 },
-                                Point2f { x: 0.0, y: 1.0 },
-                                Point2f { x: 1.0, y: 1.0 }];
+    let uv: Vec<Point2f> = vec![
+        Point2f { x: 0.0, y: 0.0 },
+        Point2f { x: 1.0, y: 0.0 },
+        Point2f { x: 0.0, y: 1.0 },
+        Point2f { x: 1.0, y: 1.0 },
+    ];
 
     // CreateTriangleMeshShape()
-    let object_to_world: Transform = Transform::translate(Vector3f {
-                                                              x: 0.25,
-                                                              y: 0.0,
-                                                              z: 0.0,
-                                                          });
-    let world_to_object: Transform = Transform::inverse(object_to_world);
+    let object_to_world: Transform = Transform::translate(&Vector3f {
+        x: 0.25,
+        y: 0.0,
+        z: 0.0,
+    });
+    let world_to_object: Transform = Transform::inverse(&object_to_world);
     // reverseOrientation = false
     // p graphicsState.floatTextures
     // $7 = std::map with 0 elements
@@ -261,32 +275,34 @@ fn main() {
     let mut p_ws: Vec<Point3f> = Vec::new();
     let n_vertices: usize = p.len();
     for i in 0..n_vertices {
-        p_ws.push(object_to_world.transform_point(p[i]));
+        p_ws.push(object_to_world.transform_point(&p[i]));
     }
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Normal3f> = Vec::new();
     println!("########");
     println!("# mesh #");
     println!("########");
-    builder.add_mesh(object_to_world,
-                     world_to_object,
-                     n_triangles,
-                     vertex_indices,
-                     n_vertices,
-                     p_ws, // in world space
-                     s, // empty
-                     n, // empty
-                     uv);
+    builder.add_mesh(
+        object_to_world,
+        world_to_object,
+        n_triangles,
+        vertex_indices,
+        n_vertices,
+        p_ws, // in world space
+        s,    // empty
+        n,    // empty
+        uv,
+    );
 
     // sphere
 
     // Translate -1.3 0 0
-    let object_to_world: Transform = Transform::translate(Vector3f {
-                                                              x: -1.3,
-                                                              y: 0.0,
-                                                              z: 0.0,
-                                                          });
-    let world_to_object: Transform = Transform::inverse(object_to_world);
+    let object_to_world: Transform = Transform::translate(&Vector3f {
+        x: -1.3,
+        y: 0.0,
+        z: 0.0,
+    });
+    let world_to_object: Transform = Transform::inverse(&object_to_world);
 
     // Shape "sphere"
     let radius: Float = 1.0;
@@ -296,34 +312,37 @@ fn main() {
     println!("############");
     println!("# sphere 1 #");
     println!("############");
-    builder.add_sphere(object_to_world,
-                       world_to_object,
-                       radius,
-                       z_min,
-                       z_max,
-                       phi_max);
+    builder.add_sphere(
+        object_to_world,
+        world_to_object,
+        radius,
+        z_min,
+        z_max,
+        phi_max,
+    );
 
     // sphere
 
     // Translate 2.6 0 0 (not protected by Attribute[Begin|End])
-    let object_to_world: Transform = object_to_world *
-                                     Transform::translate(Vector3f {
-                                                              x: 2.6,
-                                                              y: 0.0,
-                                                              z: 0.0,
-                                                          });
-    let world_to_object: Transform = Transform::inverse(object_to_world);
+    let object_to_world: Transform = object_to_world * Transform::translate(&Vector3f {
+        x: 2.6,
+        y: 0.0,
+        z: 0.0,
+    });
+    let world_to_object: Transform = Transform::inverse(&object_to_world);
 
     // Shape "sphere"
     println!("############");
     println!("# sphere 2 #");
     println!("############");
-    builder.add_sphere(object_to_world,
-                       world_to_object,
-                       radius,
-                       z_min,
-                       z_max,
-                       phi_max);
+    builder.add_sphere(
+        object_to_world,
+        world_to_object,
+        radius,
+        z_min,
+        z_max,
+        phi_max,
+    );
 
     let scene_description: SceneDescription = builder.finalize();
 
@@ -340,13 +359,13 @@ fn main() {
     let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
     let index = Arc::new(ConstantTexture::new(1.5 as Float));
     let glass = Arc::new(GlassMaterial {
-                             kr: kr,
-                             kt: kt,
-                             u_roughness: u_roughness,
-                             v_roughness: v_roughness,
-                             index: index,
-                             remap_roughness: true,
-                         });
+        kr: kr,
+        kt: kt,
+        u_roughness: u_roughness,
+        v_roughness: v_roughness,
+        index: index,
+        remap_roughness: true,
+    });
     if matches.opt_present("n") || matches.opt_present("m") {
         // use no texture
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
@@ -378,22 +397,26 @@ fn main() {
         }
     } else if matches.opt_present("c") {
         // procedural texture (checker board)
-        let tex1 = Arc::new(ConstantTexture { value: Spectrum::new(0.0) });
-        let tex2 = Arc::new(ConstantTexture { value: Spectrum::new(1.0) });
+        let tex1 = Arc::new(ConstantTexture {
+            value: Spectrum::new(0.0),
+        });
+        let tex2 = Arc::new(ConstantTexture {
+            value: Spectrum::new(1.0),
+        });
         let mapping = Box::new(PlanarMapping2D {
-                                   vs: Vector3f {
-                                       x: 1.0,
-                                       y: 0.0,
-                                       z: 0.0,
-                                   },
-                                   vt: Vector3f {
-                                       x: 0.0,
-                                       y: 0.0,
-                                       z: 1.0,
-                                   },
-                                   ds: 0.0 as Float,
-                                   dt: 1.0 as Float,
-                               });
+            vs: Vector3f {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            vt: Vector3f {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+            ds: 0.0 as Float,
+            dt: 1.0 as Float,
+        });
         let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(checker, sigma));
@@ -419,24 +442,26 @@ fn main() {
         let udelta: Float = 0.0;
         let vdelta: Float = 0.0;
         let mapping = Box::new(UVMapping2D {
-                                   su: uscale,
-                                   sv: vscale,
-                                   du: udelta,
-                                   dv: vdelta,
-                               });
+            su: uscale,
+            sv: vscale,
+            du: udelta,
+            dv: vdelta,
+        });
         let filename: String = String::from("assets/scenes/textures/lines.png");
         let do_trilinear: bool = false;
         let max_aniso: Float = 8.0;
         let wrap_mode: ImageWrap = ImageWrap::Repeat;
         let scale: Float = 1.0;
         let gamma: bool = true;
-        let lines_tex = Arc::new(ImageTexture::new(mapping,
-                                                   filename,
-                                                   do_trilinear,
-                                                   max_aniso,
-                                                   wrap_mode,
-                                                   scale,
-                                                   gamma));
+        let lines_tex = Arc::new(ImageTexture::new(
+            mapping,
+            filename,
+            do_trilinear,
+            max_aniso,
+            wrap_mode,
+            scale,
+            gamma,
+        ));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(lines_tex, sigma));
         for triangle in render_options.triangles {
@@ -457,7 +482,11 @@ fn main() {
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
-    let accelerator = Arc::new(BVHAccel::new(render_options.primitives, 4, SplitMethod::SAH));
+    let accelerator = Arc::new(BVHAccel::new(
+        render_options.primitives,
+        4,
+        SplitMethod::SAH,
+    ));
     println!("###############");
     println!("# accelerator #");
     println!("###############");
@@ -479,7 +508,7 @@ fn main() {
         y: 1.0,
         z: 0.0,
     };
-    let t: Transform = Transform::look_at(pos, look, up);
+    let t: Transform = Transform::look_at(&pos, &look, &up);
     let it: Transform = Transform {
         m: t.m_inv.clone(),
         m_inv: t.m.clone(),
@@ -512,31 +541,36 @@ fn main() {
     let xw: Float = 0.5;
     let yw: Float = 0.5;
     let filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
-                                                         radius: Vector2f { x: xw, y: yw },
-                                                         inv_radius: Vector2f {
-                                                             x: 1.0 / xw,
-                                                             y: 1.0 / yw,
-                                                         },
-                                                     });
+        radius: Vector2f { x: xw, y: yw },
+        inv_radius: Vector2f {
+            x: 1.0 / xw,
+            y: 1.0 / yw,
+        },
+    });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
-    let film: Arc<Film> = Arc::new(Film::new(Point2i { x: xres, y: yres },
-                                             crop,
-                                             filter,
-                                             35.0,
-                                             filename,
-                                             1.0,
-                                             std::f32::INFINITY));
-    let camera = Box::new(PerspectiveCamera::new(animated_cam_to_world,
-                                                 screen,
-                                                 shutteropen,
-                                                 shutterclose,
-                                                 lensradius,
-                                                 focaldistance,
-                                                 fov,
-                                                 film.clone()));
+    let film: Arc<Film> = Arc::new(Film::new(
+        Point2i { x: xres, y: yres },
+        crop,
+        filter,
+        35.0,
+        filename,
+        1.0,
+        std::f32::INFINITY,
+    ));
+    let camera = Box::new(PerspectiveCamera::new(
+        animated_cam_to_world,
+        screen,
+        shutteropen,
+        shutterclose,
+        lensradius,
+        focaldistance,
+        fov,
+        film.clone(),
+    ));
     let mut sampler: Box<Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::default());
     let sample_bounds: Bounds2i = film.get_sample_bounds();
-    let mut integrator: Box<SamplerIntegrator + Send + Sync> =
-        Box::new(DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds));
+    let mut integrator: Box<SamplerIntegrator + Send + Sync> = Box::new(
+        DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds),
+    );
     pbrt::render(&scene, camera, &mut sampler, &mut integrator, 0_u8);
 }

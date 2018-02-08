@@ -98,7 +98,7 @@ impl Quaternion {
 
         // transpose since we are left-handed
         Transform {
-            m: Matrix4x4::transpose(m),
+            m: Matrix4x4::transpose(&m),
             m_inv: m,
         }
     }
@@ -154,24 +154,24 @@ impl Neg for Quaternion {
     }
 }
 
-pub fn quat_slerp(t: Float, q1: Quaternion, q2: Quaternion) -> Quaternion {
+pub fn quat_slerp(t: Float, q1: &Quaternion, q2: &Quaternion) -> Quaternion {
     let cos_theta: Float = quat_dot_quat(q1, q2);
     if cos_theta > 0.9995 as Float {
-        quat_normalize(q1 * (1.0 as Float - t) + q2 * t)
+        quat_normalize(&(*q1 * (1.0 as Float - t) + *q2 * t))
     } else {
         let theta: Float = clamp_t(cos_theta, -1.0 as Float, 1.0 as Float).acos();
         let thetap: Float = theta * t;
-        let qperp: Quaternion = quat_normalize(q2 - q1 * cos_theta);
-        q1 * thetap.cos() + qperp * thetap.sin()
+        let qperp: Quaternion = quat_normalize(&(*q2 - *q1 * cos_theta));
+        *q1 * thetap.cos() + qperp * thetap.sin()
     }
 }
 
 /// The inner product of two quaterions.
-pub fn quat_dot_quat(q1: Quaternion, q2: Quaternion) -> Float {
-    vec3_dot_vec3(q1.v, q2.v) + q1.w * q2.w
+pub fn quat_dot_quat(q1: &Quaternion, q2: &Quaternion) -> Float {
+    vec3_dot_vec3(&q1.v, &q2.v) + q1.w * q2.w
 }
 
 /// A quaternion can be normalized by dividing by its length.
-pub fn quat_normalize(q: Quaternion) -> Quaternion {
-    q / quat_dot_quat(q, q).sqrt()
+pub fn quat_normalize(q: &Quaternion) -> Quaternion {
+    *q / quat_dot_quat(q, q).sqrt()
 }

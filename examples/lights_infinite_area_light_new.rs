@@ -9,6 +9,6 @@ fn main() {
     let light_to_world: Transform = Transform::default();
     let n_samples: i32 = 1;
     let texmap: String = String::from("");
-    let infinite_light: InfiniteAreaLight =
+    let _infinite_light: InfiniteAreaLight =
         InfiniteAreaLight::new(&light_to_world, &l, n_samples, texmap);
 }

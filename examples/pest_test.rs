@@ -874,8 +874,8 @@ fn pbrt_shape(param_set: &ParamSet)
         } else if param_set.name == String::from("curve") {
             let mtl: Arc<Material + Send + Sync> = create_material();
             let ply_shapes: Vec<Arc<Shape + Send + Sync>> =
-                create_curve_shape(obj_to_world,
-                                   world_to_obj,
+                create_curve_shape(&obj_to_world,
+                                   &world_to_obj,
                                    false, // reverse_orientation
                                    param_set);
             for shape in ply_shapes {
@@ -921,7 +921,7 @@ fn pbrt_shape(param_set: &ParamSet)
                 // transform tangents to world space
                 let n_tangents: usize = s.len();
                 for i in 0..n_tangents {
-                    s_ws.push(obj_to_world.transform_vector(s[i]));
+                    s_ws.push(obj_to_world.transform_vector(&s[i]));
                 }
             }
             let n = param_set.find_normal3f(String::from("N"));
@@ -931,7 +931,7 @@ fn pbrt_shape(param_set: &ParamSet)
                 // transform normals to world space
                 let n_normals: usize = n.len();
                 for i in 0..n_normals {
-                    n_ws.push(obj_to_world.transform_normal(n[i]));
+                    n_ws.push(obj_to_world.transform_normal(&n[i]));
                 }
             }
             for i in 0..vi.len() {
@@ -947,7 +947,7 @@ fn pbrt_shape(param_set: &ParamSet)
             let mut p_ws: Vec<Point3f> = Vec::new();
             let n_vertices: usize = p.len();
             for i in 0..n_vertices {
-                p_ws.push(obj_to_world.transform_point(p[i]));
+                p_ws.push(obj_to_world.transform_point(&p[i]));
             }
             // vertex indices are expected as usize, not i32
             let mut vertex_indices: Vec<usize> = Vec::new();
@@ -982,8 +982,8 @@ fn pbrt_shape(param_set: &ParamSet)
                 if let Some(ref search_directory) = SEARCH_DIRECTORY {
                     let mtl: Arc<Material + Send + Sync> = create_material();
                     let ply_shapes: Vec<Arc<Shape + Send + Sync>> =
-                        create_ply_mesh(obj_to_world,
-                                        world_to_obj,
+                        create_ply_mesh(&obj_to_world,
+                                        &world_to_obj,
                                         false, // reverse_orientation
                                         param_set,
                                         graphics_state.float_textures.clone(),
@@ -1651,7 +1651,7 @@ fn main() {
                                             let pos: Point3f = Point3f { x: numbers[0], y: numbers[1], z: numbers[2], };
                                             let look: Point3f = Point3f { x: numbers[3], y: numbers[4], z: numbers[5], };
                                             let up: Vector3f = Vector3f { x: numbers[6], y: numbers[7], z: numbers[8], };
-                                            let look_at: Transform = Transform::look_at(pos, look, up);
+                                            let look_at: Transform = Transform::look_at(&pos, &look, &up);
                                             if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
                                                 // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * look_at;
@@ -1883,9 +1883,9 @@ fn main() {
                                                                         RENDER_OPTIONS {
                                                                         ro.camera_name = name;
                                                                         ro.camera_to_world.t[0] =
-                                                                            Transform::inverse(CUR_TRANSFORM.t[0]);
+                                                                            Transform::inverse(&CUR_TRANSFORM.t[0]);
                                                                         ro.camera_to_world.t[1] =
-                                                                            Transform::inverse(CUR_TRANSFORM.t[1]);
+                                                                            Transform::inverse(&CUR_TRANSFORM.t[1]);
                                                                         if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
                                                                             named_coordinate_systems.insert("camera",
                                                                                                             TransformSet {
@@ -4301,7 +4301,7 @@ fn main() {
                                             let x: Float = numbers[1];
                                             let y: Float = numbers[2];
                                             let z: Float = numbers[3];
-                                            let rotate: Transform = Transform::rotate(angle, Vector3f { x: x, y: y, z: z, });
+                                            let rotate: Transform = Transform::rotate(angle, &Vector3f { x: x, y: y, z: z, });
                                             if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
                                                 // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * rotate;
@@ -4401,7 +4401,7 @@ fn main() {
                                             let x: Float = numbers[0];
                                             let y: Float = numbers[1];
                                             let z: Float = numbers[2];
-                                            let translate: Transform = Transform::translate(Vector3f { x: x, y: y, z: z, });
+                                            let translate: Transform = Transform::translate(&Vector3f { x: x, y: y, z: z, });
                                             if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
                                                 // 0x?1
                                                 CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * translate;

@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::{nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared, vec3_normalize};
+use core::geometry::{nrm_normalize, nrm_abs_dot_vec3, pnt3_distance_squared, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::pbrt::Float;
@@ -47,15 +47,16 @@ impl Default for Disk {
 }
 
 impl Disk {
-    pub fn new(object_to_world: Transform,
-               world_to_object: Transform,
-               reverse_orientation: bool,
-               transform_swaps_handedness: bool,
-               height: Float,
-               radius: Float,
-               inner_radius: Float,
-               phi_max: Float)
-               -> Self {
+    pub fn new(
+        object_to_world: Transform,
+        world_to_object: Transform,
+        reverse_orientation: bool,
+        transform_swaps_handedness: bool,
+        height: Float,
+        radius: Float,
+        inner_radius: Float,
+        phi_max: Float,
+    ) -> Self {
         Disk {
             // Shape
             object_to_world: object_to_world,
@@ -89,7 +90,7 @@ impl Shape for Disk {
     }
     fn world_bound(&self) -> Bounds3f {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
-        self.object_to_world.transform_bounds(self.object_bound())
+        self.object_to_world.transform_bounds(&self.object_bound())
     }
     fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // TODO: ProfilePhase p(Prof::ShapeIntersect);
@@ -147,16 +148,18 @@ impl Shape for Disk {
         // initialize _SurfaceInteraction_ from parametric information
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
-        let si: SurfaceInteraction = SurfaceInteraction::new(p_hit,
-                                                             p_error,
-                                                             uv_hit,
-                                                             wo,
-                                                             dpdu,
-                                                             dpdv,
-                                                             dndu,
-                                                             dndv,
-                                                             ray.time,
-                                                             None);
+        let si: SurfaceInteraction = SurfaceInteraction::new(
+            &p_hit,
+            &p_error,
+            &uv_hit,
+            &wo,
+            &dpdu,
+            &dpdv,
+            &dndu,
+            &dndv,
+            ray.time,
+            None,
+        );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(_shape) = si.shape {
             isect.shape = si.shape;
@@ -207,53 +210,54 @@ impl Shape for Disk {
         self.transform_swaps_handedness
     }
     fn area(&self) -> Float {
-        self.phi_max * 0.5 as Float *
-        (self.radius * self.radius - self.inner_radius * self.inner_radius)
+        self.phi_max * 0.5 as Float
+            * (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
-    fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
-        let pd: Point2f = concentric_sample_disk(u);
+    fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+        let pd: Point2f = concentric_sample_disk(*u);
         let p_obj: Point3f = Point3f {
             x: pd.x * self.radius,
             y: pd.y * self.radius,
             z: self.height,
         };
         let mut it: InteractionCommon = InteractionCommon::default();
-        it.n = nrm_normalize(self.object_to_world
-                                 .transform_normal(Normal3f {
-                                                       x: 0.0 as Float,
-                                                       y: 0.0 as Float,
-                                                       z: 1.0 as Float,
-                                                   }));
+        it.n = nrm_normalize(&self.object_to_world.transform_normal(&Normal3f {
+            x: 0.0 as Float,
+            y: 0.0 as Float,
+            z: 1.0 as Float,
+        }));
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }
         let pt_error: Vector3f = Vector3f::default();
-        it.p = self.object_to_world
-            .transform_point_with_abs_error(p_obj, &pt_error, &mut it.p_error);
+        it.p =
+            self.object_to_world
+                .transform_point_with_abs_error(&p_obj, &pt_error, &mut it.p_error);
         *pdf = 1.0 as Float / self.area();
         it
     }
-    fn sample_with_ref_point(&self,
-                             iref: &InteractionCommon,
-                             u: Point2f,
-                             pdf: &mut Float)
-                             -> InteractionCommon {
+    fn sample_with_ref_point(
+        &self,
+        iref: &InteractionCommon,
+        u: &Point2f,
+        pdf: &mut Float,
+    ) -> InteractionCommon {
         let intr: InteractionCommon = self.sample(u, pdf);
         let mut wi: Vector3f = intr.p - iref.p;
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
         } else {
-            wi = vec3_normalize(wi);
+            wi = vec3_normalize(&wi);
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
-            *pdf *= pnt3_distance_squared(iref.p, intr.p) / nrm_abs_dot_vec3(intr.n, -wi);
+            *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);
             if (*pdf).is_infinite() {
                 *pdf = 0.0 as Float;
             }
         }
         intr
     }
-    fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
+    fn pdf(&self, iref: &Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
         let ray: Ray = iref.spawn_ray(wi);
         // ignore any alpha textures used for trimming the shape when
@@ -261,8 +265,8 @@ impl Shape for Disk {
         // scene, where this is used to make an invisible area light.
         if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(iref.get_p(), isect_light.p) /
-                                 (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
+            let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.p)
+                / (nrm_abs_dot_vec3(&isect_light.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;
             }

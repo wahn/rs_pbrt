@@ -12,20 +12,22 @@ fn main() {
     let z_min: Float = -radius;
     let z_max: Float = radius;
     let phi_max: Float = 360.0;
-    let translate: Transform = Transform::translate(Vector3f {
+    let translate: Transform = Transform::translate(&Vector3f {
         x: -1.3,
         y: 0.0,
         z: 0.0,
     });
-    let inverse: Transform = Transform::inverse(translate);
-    let sphere: Sphere = Sphere::new(translate,
-                                     inverse,
-                                     false,
-                                     false,
-                                     radius,
-                                     z_min,
-                                     z_max,
-                                     phi_max);
+    let inverse: Transform = Transform::inverse(&translate);
+    let sphere: Sphere = Sphere::new(
+        translate,
+        inverse,
+        false,
+        false,
+        radius,
+        z_min,
+        z_max,
+        phi_max,
+    );
     // see Sphere::Intersect() in sphere.cpp
     let o: Point3f = Point3f {
         x: 1.99999952,

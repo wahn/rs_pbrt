@@ -41,10 +41,10 @@ impl CurveCommon {
         norm: Option<[Normal3f; 2]>,
     ) -> Self {
         if let Some(norm) = norm {
-            let n0: Normal3f = nrm_normalize(norm[0]);
-            let n1: Normal3f = nrm_normalize(norm[1]);
+            let n0: Normal3f = nrm_normalize(&norm[0]);
+            let n1: Normal3f = nrm_normalize(&norm[1]);
             let normal_angle: Float =
-                clamp_t(nrm_dot_nrm(n0, n1), 0.0 as Float, 1.0 as Float).acos();
+                clamp_t(nrm_dot_nrm(&n0, &n1), 0.0 as Float, 1.0 as Float).acos();
             let inv_sin_normal_angle: Float = 1.0 as Float / normal_angle.sin();
             CurveCommon {
                 curve_type: curve_type,
@@ -257,7 +257,7 @@ impl Curve {
                 let sin1: Float =
                     (u * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
                 n_hit = self.common.n[0] * sin0 + self.common.n[1] * sin1;
-                hit_width *= nrm_abs_dot_vec3(n_hit, ray.d) / ray_length;
+                hit_width *= nrm_abs_dot_vec3(&n_hit, &ray.d) / ray_length;
             }
 
             // test intersection point against curve width
@@ -299,12 +299,12 @@ impl Curve {
             let dpdv: Vector3f;
             eval_bezier(&self.common.cp_obj, u, Some(&mut dpdu));
             if self.common.curve_type == CurveType::Ribbon {
-                dpdv = vec3_normalize(nrm_cross_vec3(n_hit, dpdu)) * hit_width;
+                dpdv = vec3_normalize(&nrm_cross_vec3(&n_hit, &dpdu)) * hit_width;
             } else {
                 // compute curve $\dpdv$ for flat and cylinder curves
                 let dpdu_plane: Vector3f =
-                    Transform::inverse(*ray_to_object).transform_vector(dpdu);
-                let mut dpdv_plane: Vector3f = vec3_normalize(Vector3f {
+                    Transform::inverse(&*ray_to_object).transform_vector(&dpdu);
+                let mut dpdv_plane: Vector3f = vec3_normalize(&Vector3f {
                     x: -dpdu_plane.y,
                     y: dpdu_plane.x,
                     z: 0.0,
@@ -312,20 +312,20 @@ impl Curve {
                 if self.common.curve_type == CurveType::Cylinder {
                     // rotate _dpdvPlane_ to give cylindrical appearance
                     let theta: Float = lerp(v, -90.0 as Float, 90.0 as Float);
-                    let rot: Transform = Transform::rotate(-theta, dpdu_plane);
-                    dpdv_plane = rot.transform_vector(dpdv_plane);
+                    let rot: Transform = Transform::rotate(-theta, &dpdu_plane);
+                    dpdv_plane = rot.transform_vector(&dpdv_plane);
                 }
-                dpdv = ray_to_object.transform_vector(dpdv_plane);
+                dpdv = ray_to_object.transform_vector(&dpdv_plane);
             }
             let si: SurfaceInteraction = SurfaceInteraction::new(
-                ray.position(pc.z),
-                p_error,
-                Point2f { x: u, y: v },
-                -ray.d,
-                dpdu,
-                dpdv,
-                Normal3f::default(),
-                Normal3f::default(),
+                &ray.position(pc.z),
+                &p_error,
+                &Point2f { x: u, y: v },
+                &-ray.d,
+                &dpdu,
+                &dpdv,
+                &Normal3f::default(),
+                &Normal3f::default(),
                 ray.time,
                 None,
             );
@@ -352,18 +352,18 @@ impl Shape for Curve {
         cp_obj[2] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_max, self.u_max);
         cp_obj[3] = blossom_bezier(&self.common.cp_obj, self.u_max, self.u_max, self.u_max);
         let b: Bounds3f = bnd3_union_bnd3(
-            Bounds3f::new(cp_obj[0], cp_obj[1]),
-            Bounds3f::new(cp_obj[2], cp_obj[3]),
+            &Bounds3f::new(cp_obj[0], cp_obj[1]),
+            &Bounds3f::new(cp_obj[2], cp_obj[3]),
         );
         let width: [Float; 2] = [
             lerp(self.u_min, self.common.width[0], self.common.width[1]),
             lerp(self.u_max, self.common.width[0], self.common.width[1]),
         ];
-        bnd3_expand(b, width[0].max(width[1]) * 0.5 as Float)
+        bnd3_expand(&b, width[0].max(width[1]) * 0.5 as Float)
     }
     fn world_bound(&self) -> Bounds3f {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
-        self.object_to_world.transform_bounds(self.object_bound())
+        self.object_to_world.transform_bounds(&self.object_bound())
     }
     fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // TODO: ProfilePhase p(isect ? Prof::CurveIntersect : Prof::CurveIntersectP);
@@ -395,7 +395,7 @@ impl Shape for Curve {
         // recursiveIntersect().
 
         // Vector3f dx = Cross(ray.d, cp_obj[3] - cp_obj[0]);
-        let mut dx: Vector3f = vec3_cross_vec3(ray.d, cp_obj[3] - cp_obj[0]);
+        let mut dx: Vector3f = vec3_cross_vec3(&ray.d, &(cp_obj[3] - cp_obj[0]));
         if dx.length_squared() == 0.0 as Float {
             // if the ray and the vector between the first and last
             // control points are parallel, dx will be zero.  Generate
@@ -406,12 +406,12 @@ impl Shape for Curve {
             vec3_coordinate_system(&ray.d, &mut dx, &mut dy);
         }
 
-        let object_to_ray: Transform = Transform::look_at(ray.o, ray.o + ray.d, dx);
+        let object_to_ray: Transform = Transform::look_at(&ray.o, &(ray.o + ray.d), &dx);
         let cp: [Point3f; 4] = [
-            object_to_ray.transform_point(cp_obj[0]),
-            object_to_ray.transform_point(cp_obj[1]),
-            object_to_ray.transform_point(cp_obj[2]),
-            object_to_ray.transform_point(cp_obj[3]),
+            object_to_ray.transform_point(&cp_obj[0]),
+            object_to_ray.transform_point(&cp_obj[1]),
+            object_to_ray.transform_point(&cp_obj[2]),
+            object_to_ray.transform_point(&cp_obj[3]),
         ];
 
         // Before going any further, see if the ray's bounding box
@@ -467,7 +467,7 @@ impl Shape for Curve {
         self.recursive_intersect(
             &ray,
             &[cp[0], cp[1], cp[2], cp[3]],
-            &Transform::inverse(object_to_ray),
+            &Transform::inverse(&object_to_ray),
             self.u_min,
             self.u_max,
             max_depth,
@@ -498,18 +498,18 @@ impl Shape for Curve {
         let avg_width: Float = (width0 + width1) * 0.5 as Float;
         let mut approx_length: Float = 0.0 as Float;
         for i in 0..3 {
-            approx_length += pnt3_distance(cp_obj[i], cp_obj[i + 1]);
+            approx_length += pnt3_distance(&cp_obj[i], &cp_obj[i + 1]);
         }
         approx_length * avg_width
     }
-    fn sample(&self, _u: Point2f, _pdf: &mut Float) -> InteractionCommon {
+    fn sample(&self, _u: &Point2f, _pdf: &mut Float) -> InteractionCommon {
         println!("FATAL: Curve::sample not implemented.");
         InteractionCommon::default()
     }
     fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
     ) -> InteractionCommon {
         let intr: InteractionCommon = self.sample(u, pdf);
@@ -517,26 +517,26 @@ impl Shape for Curve {
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
         } else {
-            wi = vec3_normalize(wi);
+            wi = vec3_normalize(&wi);
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
-            *pdf *= pnt3_distance_squared(iref.p, intr.p) / nrm_abs_dot_vec3(intr.n, -wi);
+            *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);
             if (*pdf).is_infinite() {
                 *pdf = 0.0 as Float;
             }
         }
         intr
     }
-    fn pdf(&self, iref: &Interaction, wi: Vector3f) -> Float {
+    fn pdf(&self, iref: &Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
-        let ray: Ray = iref.spawn_ray(wi);
+        let ray: Ray = iref.spawn_ray(&wi);
         // ignore any alpha textures used for trimming the shape when
         // performing this intersection. Hack for the "San Miguel"
         // scene, where this is used to make an invisible area light.
         if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(iref.get_p(), isect_light.p)
-                / (nrm_abs_dot_vec3(isect_light.n, -wi) * self.area());
+            let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.p)
+                / (nrm_abs_dot_vec3(&isect_light.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;
             }
@@ -548,8 +548,8 @@ impl Shape for Curve {
 }
 
 pub fn create_curve_shape(
-    o2w: Transform,
-    w2o: Transform,
+    o2w: &Transform,
+    w2o: &Transform,
     reverse_orientation: bool,
     params: &ParamSet,
 ) -> Vec<Arc<Shape + Send + Sync>> {
@@ -596,8 +596,8 @@ pub fn create_curve_shape(
     }
     if n.is_empty() {
         Curve::create(
-            o2w,
-            w2o,
+            *o2w,
+            *w2o,
             reverse_orientation,
             &[cp[0], cp[1], cp[2], cp[3]],
             width0,
@@ -608,8 +608,8 @@ pub fn create_curve_shape(
         )
     } else {
         Curve::create(
-            o2w,
-            w2o,
+            *o2w,
+            *w2o,
             reverse_orientation,
             &[cp[0], cp[1], cp[2], cp[3]],
             width0,
@@ -625,12 +625,12 @@ pub fn create_curve_shape(
 
 fn blossom_bezier(p: &[Point3f; 4], u0: Float, u1: Float, u2: Float) -> Point3f {
     let a: [Point3f; 3] = [
-        pnt3_lerp(u0, p[0], p[1]),
-        pnt3_lerp(u0, p[1], p[2]),
-        pnt3_lerp(u0, p[2], p[3]),
+        pnt3_lerp(u0, &p[0], &p[1]),
+        pnt3_lerp(u0, &p[1], &p[2]),
+        pnt3_lerp(u0, &p[2], &p[3]),
     ];
-    let b: [Point3f; 2] = [pnt3_lerp(u1, a[0], a[1]), pnt3_lerp(u1, a[1], a[2])];
-    pnt3_lerp(u2, b[0], b[1])
+    let b: [Point3f; 2] = [pnt3_lerp(u1, &a[0], &a[1]), pnt3_lerp(u1, &a[1], &a[2])];
+    pnt3_lerp(u2, &b[0], &b[1])
 }
 
 fn subdivide_bezier(cp: &[Point3f; 4], cp_split: &mut [Point3f; 7]) {
@@ -645,15 +645,18 @@ fn subdivide_bezier(cp: &[Point3f; 4], cp_split: &mut [Point3f; 7]) {
 
 fn eval_bezier(cp: &[Point3f; 4], u: Float, deriv: Option<&mut Vector3f>) -> Point3f {
     let cp1: [Point3f; 3] = [
-        pnt3_lerp(u, cp[0], cp[1]),
-        pnt3_lerp(u, cp[1], cp[2]),
-        pnt3_lerp(u, cp[2], cp[3]),
+        pnt3_lerp(u, &cp[0], &cp[1]),
+        pnt3_lerp(u, &cp[1], &cp[2]),
+        pnt3_lerp(u, &cp[2], &cp[3]),
     ];
-    let cp2: [Point3f; 2] = [pnt3_lerp(u, cp1[0], cp1[1]), pnt3_lerp(u, cp1[1], cp1[2])];
+    let cp2: [Point3f; 2] = [
+        pnt3_lerp(u, &cp1[0], &cp1[1]),
+        pnt3_lerp(u, &cp1[1], &cp1[2]),
+    ];
     if let Some(deriv) = deriv {
         *deriv = (cp2[1] - cp2[0]) * 3.0 as Float;
     }
-    pnt3_lerp(u, cp2[0], cp2[1])
+    pnt3_lerp(u, &cp2[0], &cp2[1])
 }
 
 fn log2(v: Float) -> i32 {

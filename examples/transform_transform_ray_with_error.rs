@@ -4,7 +4,7 @@ use pbrt::core::geometry::{Point3f, Ray, Vector3f};
 use pbrt::core::transform::Transform;
 
 fn main() {
-    let t: Transform = Transform::translate(Vector3f {
+    let t: Transform = Transform::translate(&Vector3f {
         x: -1.3,
         y: 0.0,
         z: 0.0,
@@ -32,8 +32,8 @@ fn main() {
 
     println!("t = {:?}", t);
     println!("r = {:?}", r);
-    println!("tr = transform_ray_with_error(r, {:?}, {:?}) = {:?}",
-             o_error,
-             d_error,
-             tr);
+    println!(
+        "tr = transform_ray_with_error(r, {:?}, {:?}) = {:?}",
+        o_error, d_error, tr
+    );
 }

@@ -314,7 +314,7 @@ impl HairBSDF {
 }
 
 impl Bxdf for HairBSDF {
-    fn f(&self, wo: Vector3f, wi: Vector3f) -> Spectrum {
+    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         // compute hair coordinate system terms related to _wo_
         let sin_theta_o: Float = wo.x;
         // Float cosThetaO = SafeSqrt(1 - Sqr(sinThetaO));
@@ -403,9 +403,9 @@ impl Bxdf for HairBSDF {
     }
     fn sample_f(
         &self,
-        wo: Vector3f,
+        wo: &Vector3f,
         wi: &mut Vector3f,
-        sample: Point2f,
+        sample: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
@@ -522,9 +522,9 @@ impl Bxdf for HairBSDF {
                 sin_theta_o,
                 self.v[P_MAX as usize],
             ) * (1.0 as Float / (2.0 as Float * PI));
-        self.f(wo, *wi)
+        self.f(wo, &*wi)
     }
-    fn pdf(&self, wo: Vector3f, wi: Vector3f) -> Float {
+    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // compute hair coordinate system terms related to _wo_
         let sin_theta_o: Float = wo.x;
         let x: Float = 1.0 as Float - (sin_theta_o * sin_theta_o);

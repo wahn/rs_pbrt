@@ -150,7 +150,7 @@ impl InfiniteAreaLight {
                         flags: LightFlags::Infinite as u8,
                         n_samples: std::cmp::max(1_i32, n_samples),
                         light_to_world: *light_to_world,
-                        world_to_light: Transform::inverse(*light_to_world),
+                        world_to_light: Transform::inverse(&*light_to_world),
                     }
                 } else {
                     // try to open an HDR image instead (TODO: check extension upfront)
@@ -227,7 +227,7 @@ impl InfiniteAreaLight {
                                    flags: LightFlags::Infinite as u8,
                                    n_samples: std::cmp::max(1_i32, n_samples),
                                    light_to_world: *light_to_world,
-                                   world_to_light: Transform::inverse(*light_to_world),
+                                   world_to_light: Transform::inverse(&*light_to_world),
                                };
                     }
                 }
@@ -279,7 +279,7 @@ impl InfiniteAreaLight {
 impl Light for InfiniteAreaLight {
     fn sample_li(&self,
                  iref: &InteractionCommon,
-                 u: Point2f,
+                 u: &Point2f,
                  wi: &mut Vector3f,
                  pdf: &mut Float,
                  vis: &mut VisibilityTester)
@@ -303,7 +303,7 @@ impl Light for InfiniteAreaLight {
             y: sin_theta * sin_phi,
             z: cos_theta,
         };
-        *wi = self.light_to_world.transform_vector(vec);
+        *wi = self.light_to_world.transform_vector(&vec);
         // compute PDF for sampled infinite light direction
         *pdf = map_pdf / (2.0 as Float * PI * PI * sin_theta);
         if sin_theta == 0.0 as Float {
@@ -357,7 +357,7 @@ impl Light for InfiniteAreaLight {
     /// the scene bounds. It's the responsibility of the integrators
     /// to call this method for these rays.
     fn le(&self, ray: &mut Ray) -> Spectrum {
-        let w: Vector3f = vec3_normalize(self.world_to_light.transform_vector(ray.d));
+        let w: Vector3f = vec3_normalize(&self.world_to_light.transform_vector(&ray.d));
         let st: Point2f = Point2f {
             x: spherical_phi(&w) * INV_2_PI,
             y: spherical_theta(&w) * INV_PI,
@@ -367,7 +367,7 @@ impl Light for InfiniteAreaLight {
     }
     fn pdf_li(&self, _iref: &Interaction, w: Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
-        let wi: Vector3f = self.world_to_light.transform_vector(w);
+        let wi: Vector3f = self.world_to_light.transform_vector(&w);
         let theta: Float = spherical_theta(&wi);
         let phi: Float = spherical_phi(&wi);
         let sin_theta: Float = theta.sin();

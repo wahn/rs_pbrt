@@ -6,24 +6,26 @@ use pbrt::core::geometry::Vector3f;
 use pbrt::shapes::sphere::Sphere;
 
 fn main() {
-    let translate: Transform = Transform::translate(Vector3f {
-                                                        x: -1.3,
-                                                        y: 0.0,
-                                                        z: 0.0,
-                                                    });
-    let inverse: Transform = Transform::inverse(translate);
+    let translate: Transform = Transform::translate(&Vector3f {
+        x: -1.3,
+        y: 0.0,
+        z: 0.0,
+    });
+    let inverse: Transform = Transform::inverse(&translate);
     let radius: Float = 1.0;
     let z_min: Float = -1.0;
     let z_max: Float = 1.0;
     let phi_max: Float = 360.0;
-    let sphere = Sphere::new(translate,
-                             inverse,
-                             false,
-                             false,
-                             radius,
-                             z_min,
-                             z_max,
-                             phi_max);
+    let sphere = Sphere::new(
+        translate,
+        inverse,
+        false,
+        false,
+        radius,
+        z_min,
+        z_max,
+        phi_max,
+    );
     println!("translate = {:?}", translate);
     println!("inverse = {:?}", inverse);
     println!("sphere.radius = {:?}", sphere.radius);
