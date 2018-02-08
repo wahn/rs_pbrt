@@ -303,7 +303,7 @@ impl Film {
         let mut offset: usize = 0;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            let pixel: Pixel = self.get_pixel(p);
+            let pixel: Pixel = self.get_pixel(&p);
             let start = 3 * offset;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
             xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
