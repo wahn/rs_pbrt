@@ -12,12 +12,12 @@
 #![feature(integer_atomics)]
 
 extern crate crossbeam;
-#[cfg(feature="openexr")]
+#[cfg(feature = "openexr")]
 extern crate half;
 extern crate image;
 extern crate num;
 extern crate num_cpus;
-#[cfg(feature="openexr")]
+#[cfg(feature = "openexr")]
 extern crate openexr;
 extern crate pbr;
 extern crate ply_rs;
@@ -66,9 +66,10 @@ impl BlockQueue {
     /// Panics if the image is not evenly broken into blocks of dimension `dim`
     pub fn new(img: (u32, u32), dim: (u32, u32), select_blocks: (usize, usize)) -> BlockQueue {
         if img.0 % dim.0 != 0 || img.1 % dim.1 != 0 {
-            panic!("Image with dimension {:?} not evenly divided by blocks of {:?}",
-                   img,
-                   dim);
+            panic!(
+                "Image with dimension {:?} not evenly divided by blocks of {:?}",
+                img, dim
+            );
         }
         let num_blocks = (img.0 / dim.0, img.1 / dim.1);
         // TODO: the .. operator precedence is very low so we need this paren here at the moment
@@ -158,11 +159,13 @@ fn morton2(p: &(u32, u32)) -> u32 {
 
 /// **Main function** to **render** a scene mutli-threaded (using all
 /// available cores).
-pub fn render(scene: &Scene,
-              camera: Box<Camera + Send + Sync>,
-              sampler: &mut Box<Sampler + Send + Sync>,
-              integrator: &mut Box<SamplerIntegrator + Send + Sync>,
-              num_threads: u8) {
+pub fn render(
+    scene: &Scene,
+    camera: &Box<Camera + Send + Sync>,
+    sampler: &mut Box<Sampler + Send + Sync>,
+    integrator: &mut Box<SamplerIntegrator + Send + Sync>,
+    num_threads: u8,
+) {
     // SamplerIntegrator::Render (integrator.cpp)
     let film = camera.get_film();
     let sample_bounds: Bounds2i = film.get_sample_bounds();
@@ -185,10 +188,14 @@ pub fn render(scene: &Scene,
     }
     println!("Rendering with {:?} thread(s) ...", num_cores);
     {
-        let block_queue = BlockQueue::new(((n_tiles.x * tile_size) as u32,
-                                           (n_tiles.y * tile_size) as u32),
-                                          (tile_size as u32, tile_size as u32),
-                                          (0, 0));
+        let block_queue = BlockQueue::new(
+            (
+                (n_tiles.x * tile_size) as u32,
+                (n_tiles.y * tile_size) as u32,
+            ),
+            (tile_size as u32, tile_size as u32),
+            (0, 0),
+        );
         println!("block_queue.len() = {}", block_queue.len());
         let integrator = &integrator;
         let bq = &block_queue;
@@ -214,8 +221,8 @@ pub fn render(scene: &Scene,
                         let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                         let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
                         let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
-                        let tile_bounds: Bounds2i = Bounds2i::new(Point2i { x: x0, y: y0 },
-                                                                  Point2i { x: x1, y: y1 });
+                        let tile_bounds: Bounds2i =
+                            Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
                         // println!("Starting image tile {:?}", tile_bounds);
                         let mut film_tile = film.get_film_tile(&tile_bounds);
                         for pixel in &tile_bounds {
@@ -233,42 +240,51 @@ pub fn render(scene: &Scene,
                                     tile_sampler.get_camera_sample(&pixel);
                                 // generate camera ray for current sample
                                 let mut ray: Ray = Ray::default();
-                                let ray_weight: Float = camera
-                                        .generate_ray_differential(&camera_sample, &mut ray);
-                                ray.scale_differentials(1.0 as Float /
-                                                        (tile_sampler.get_samples_per_pixel() as Float)
-                                    .sqrt());
+                                let ray_weight: Float =
+                                    camera.generate_ray_differential(&camera_sample, &mut ray);
+                                ray.scale_differentials(
+                                    1.0 as Float
+                                        / (tile_sampler.get_samples_per_pixel() as Float).sqrt(),
+                                );
                                 // TODO: ++nCameraRays;
                                 // evaluate radiance along camera ray
                                 let mut l: Spectrum = Spectrum::new(0.0 as Float);
                                 let y: Float = l.y();
                                 if ray_weight > 0.0 {
-                                    l = integrator.li(&mut ray,
-                                                      scene,
-                                                      &mut tile_sampler, // &mut arena,
-                                                      0_i32);
+                                    l = integrator.li(
+                                        &mut ray,
+                                        scene,
+                                        &mut tile_sampler, // &mut arena,
+                                        0_i32,
+                                    );
                                 }
                                 if l.has_nans() {
-                                    println!("Not-a-number radiance value returned for pixel \
-                                              ({:?}, {:?}), sample {:?}. Setting to black.",
-                                             pixel.x,
-                                             pixel.y,
-                                             tile_sampler.get_current_sample_number());
+                                    println!(
+                                        "Not-a-number radiance value returned for pixel \
+                                         ({:?}, {:?}), sample {:?}. Setting to black.",
+                                        pixel.x,
+                                        pixel.y,
+                                        tile_sampler.get_current_sample_number()
+                                    );
                                     l = Spectrum::new(0.0);
                                 } else if y < -10.0e-5 as Float {
-                                    println!("Negative luminance value, {:?}, returned for pixel \
-                                              ({:?}, {:?}), sample {:?}. Setting to black.",
-                                             y,
-                                             pixel.x,
-                                             pixel.y,
-                                             tile_sampler.get_current_sample_number());
+                                    println!(
+                                        "Negative luminance value, {:?}, returned for pixel \
+                                         ({:?}, {:?}), sample {:?}. Setting to black.",
+                                        y,
+                                        pixel.x,
+                                        pixel.y,
+                                        tile_sampler.get_current_sample_number()
+                                    );
                                     l = Spectrum::new(0.0);
                                 } else if y.is_infinite() {
-                                    println!("Infinite luminance value returned for pixel ({:?}, \
-                                              {:?}), sample {:?}. Setting to black.",
-                                             pixel.x,
-                                             pixel.y,
-                                             tile_sampler.get_current_sample_number());
+                                    println!(
+                                        "Infinite luminance value returned for pixel ({:?}, \
+                                         {:?}), sample {:?}. Setting to black.",
+                                        pixel.x,
+                                        pixel.y,
+                                        tile_sampler.get_current_sample_number()
+                                    );
                                     l = Spectrum::new(0.0);
                                 }
                                 // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
@@ -279,7 +295,9 @@ pub fn render(scene: &Scene,
                             } // arena is dropped here !
                         }
                         // send the tile through the channel to main thread
-                        pixel_tx.send(film_tile).expect(&format!("Failed to send tile"));
+                        pixel_tx
+                            .send(film_tile)
+                            .expect(&format!("Failed to send tile"));
                     }
                 });
             }
@@ -295,4 +313,15 @@ pub fn render(scene: &Scene,
     }
     println!("Rendering finished");
     film.write_image(1.0 as Float);
+}
+
+/// **Main function** to **render** a scene mutli-threaded (using all
+/// available cores) with **bidirectional** path tracing.
+pub fn render_bdpt(
+    _scene: &Scene,
+    _camera: &Box<Camera + Send + Sync>,
+    _sampler: &mut Box<Sampler + Send + Sync>,
+    _integrator: &mut Box<integrators::bdpt::BDPTIntegrator>,
+    _num_threads: u8,
+) {
 }

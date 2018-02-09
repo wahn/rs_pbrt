@@ -1,5 +1,5 @@
 // pbrt
-use core::geometry::{Bounds2i, Ray, Vector3f};
+use core::geometry::Bounds2i;
 
 // see bdpt.h
 

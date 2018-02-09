@@ -2,6 +2,7 @@ extern crate pbrt;
 
 use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
+use pbrt::core::camera::Camera;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f,
                            Vector3f};
@@ -2025,7 +2026,7 @@ fn main() {
         1.0,
         std::f32::INFINITY,
     ));
-    let camera = Box::new(PerspectiveCamera::new(
+    let camera: Box<Camera + Send + Sync> = Box::new(PerspectiveCamera::new(
         animated_cam_to_world,
         screen,
         shutteropen,
@@ -2040,5 +2041,5 @@ fn main() {
     let mut integrator: Box<SamplerIntegrator + Send + Sync> = Box::new(
         DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds),
     );
-    pbrt::render(&scene, camera, &mut sampler, &mut integrator, 0_u8);
+    pbrt::render(&scene, &camera, &mut sampler, &mut integrator, 0_u8);
 }
