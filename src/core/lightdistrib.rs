@@ -4,6 +4,7 @@ use std::sync::{Arc, RwLock};
 use std::sync::atomic::{AtomicU64, Ordering};
 // pbrt
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f};
+use core::integrator::compute_light_power_distribution;
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::lowdiscrepancy::radical_inverse;
@@ -14,6 +15,9 @@ use core::sampling::Distribution1D;
 
 // see lightdistrib.h
 
+/// LightDistribution defines a general interface for classes that
+/// provide probability distributions for sampling light sources at a
+/// given point in space.
 pub trait LightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
@@ -31,6 +35,13 @@ pub struct UniformLightDistribution {
     pub distrib: Arc<Distribution1D>,
 }
 
+/// The simplest possible implementation of LightDistribution: this
+/// returns a uniform distribution over all light sources, ignoring
+/// the provided point. This approach works well for very simple
+/// scenes, but is quite ineffective for scenes with more than a
+/// handful of light sources. (This was the sampling method originally
+/// used for the PathIntegrator and the VolPathIntegrator in the
+/// printed book, though without the UniformLightDistribution class.)
 impl UniformLightDistribution {
     pub fn new(scene: &Scene) -> Self {
         let prob: Vec<Float> = vec![1.0 as Float; scene.lights.len()];
@@ -43,6 +54,40 @@ impl UniformLightDistribution {
 impl LightDistribution for UniformLightDistribution {
     fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
         self.distrib.clone()
+    }
+}
+
+/// PowerLightDistribution returns a distribution with sampling
+/// probability proportional to the total emitted power for each
+/// light. (It also ignores the provided point |p|.)  This approach
+/// works well for scenes where there the most powerful lights are
+/// also the most important contributors to lighting in the scene, but
+/// doesn't do well if there are many lights and if different lights
+/// are relatively important in some areas of the scene and
+/// unimportant in others. (This was the default sampling method used
+/// for the BDPT integrator and MLT integrator in the printed book,
+/// though also without the PowerLightDistribution class.)
+pub struct PowerLightDistribution {
+    pub distrib: Option<Arc<Distribution1D>>,
+}
+
+impl PowerLightDistribution {
+    pub fn new(scene: &Scene) -> Self {
+        PowerLightDistribution {
+            distrib: compute_light_power_distribution(scene),
+        }
+    }
+}
+
+impl LightDistribution for PowerLightDistribution {
+    fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
+        if let Some(ref distrib) = self.distrib {
+            distrib.clone()
+        } else {
+            // WARNING: this should only happen if scene.lights.is_empty()
+            let prob: Vec<Float> = Vec::new();
+            Arc::new(Distribution1D::new(prob))
+        }
     }
 }
 
