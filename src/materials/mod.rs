@@ -16,6 +16,10 @@
 //! - TranslucentMaterial
 //! - UberMaterial
 //!
+//! ## HairMaterial
+//!
+//! ![HairMaterial](https://www.janwalter.org/assets/hair_rust_pbrt.png)
+//!
 //! ## SubstrateMaterial
 //!
 //! ![SubstrateMaterial](https://www.janwalter.org/assets/ganesha.png)
