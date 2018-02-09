@@ -874,12 +874,12 @@ fn pbrt_shape(param_set: &ParamSet)
             println!("TODO: CreateHyperboloidShape");
         } else if param_set.name == String::from("curve") {
             let mtl: Arc<Material + Send + Sync> = create_material();
-            let ply_shapes: Vec<Arc<Shape + Send + Sync>> =
+            let curve_shapes: Vec<Arc<Shape + Send + Sync>> =
                 create_curve_shape(&obj_to_world,
                                    &world_to_obj,
                                    false, // reverse_orientation
                                    param_set);
-            for shape in ply_shapes {
+            for shape in curve_shapes {
                 shapes.push(shape.clone());
                 materials.push(mtl.clone());
             }
@@ -994,6 +994,8 @@ fn pbrt_shape(param_set: &ParamSet)
                         shapes.push(shape.clone());
                         materials.push(mtl.clone());
                     }
+                } else {
+                    panic!("No search directory for plymesh.");
                 }
             }
         } else if param_set.name == String::from("heightfield") {
@@ -1154,6 +1156,7 @@ fn pbrt_world_end() {
                                     // MakeIntegrator
                                     // if let Some(mut sampler) = some_sampler {
                                     let mut some_integrator: Option<Box<SamplerIntegrator + Sync + Send>> = None;
+                                    let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
                                     if ro.integrator_name == String::from("whitted") {
                                         println!("TODO: CreateWhittedIntegrator");
                                     } else if ro.integrator_name == String::from("directlighting") {
@@ -1250,79 +1253,7 @@ fn pbrt_world_end() {
                                                                                           visualize_weights,
                                                                                           pixel_bounds,
                                                                                           light_strategy));
-                                        // TODO: some_integrator = Some(integrator);
-
-                                        // because we can't call
-                                        // integrator.render() yet,
-                                        // let us repeat some code and
-                                        // call pbrt::render_bdpt(...)
-                                        // instead:
-
-                                        // MakeIntegrator
-                                        // TODO: if (renderOptions->haveScatteringMedia && ...)
-                                        if ro.lights.is_empty() {
-                                            // warn if no light sources are defined
-                                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
-                                        }
-                                        // MakeAccelerator
-                                        if ro.accelerator_name == String::from("bvh") {
-                                            //  CreateBVHAccelerator
-                                            let split_method_name: String =
-                                                ro.accelerator_params.find_one_string(String::from("splitmethod"),
-                                                                                      String::from("sah"));
-                                            let split_method;
-                                            if split_method_name == String::from("sah") {
-                                                split_method = SplitMethod::SAH;
-                                            } else if split_method_name == String::from("hlbvh") {
-                                                split_method = SplitMethod::HLBVH;
-                                            } else if split_method_name == String::from("middle") {
-                                                split_method = SplitMethod::Middle;
-                                            } else if split_method_name == String::from("equal") {
-                                                split_method = SplitMethod::EqualCounts;
-                                            } else {
-                                                println!("WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
-                                                         split_method_name);
-                                                split_method = SplitMethod::SAH;
-                                            }
-                                            let max_prims_in_node: i32 =
-                                                ro.accelerator_params.find_one_int(String::from("maxnodeprims"), 4);
-                                            let accelerator =
-                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
-                                                                       max_prims_in_node as usize,
-                                                                       split_method));
-                                            // MakeScene
-                                            let scene: Scene = Scene::new(accelerator.clone(),
-                                                                          ro.lights.clone());
-                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                                            // TODO: lights.erase(lights.begin(), lights.end());
-                                            let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render_bdpt(&scene,
-                                                              &camera,
-                                                              &mut sampler,
-                                                              &mut integrator,
-                                                              num_threads);
-                                        } else if ro.accelerator_name == String::from("kdtree") {
-                                            // println!("TODO: CreateKdTreeAccelerator");
-                                            // WARNING: Use BVHAccel for now !!!
-                                            let accelerator =
-                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
-                                                                       4,
-                                                                       SplitMethod::SAH));
-                                            // MakeScene
-                                            let scene: Scene = Scene::new(accelerator.clone(),
-                                                                          ro.lights.clone());
-                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                                            // TODO: lights.erase(lights.begin(), lights.end());
-                                            let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render_bdpt(&scene,
-                                                              &camera,
-                                                              &mut sampler,
-                                                              &mut integrator,
-                                                              num_threads);
-                                        } else {
-                                            panic!("Accelerator \"{}\" unknown.",
-                                                   ro.accelerator_name);
-                                        }
+                                        some_bdpt_integrator = Some(integrator);
                                     } else if ro.integrator_name == String::from("mlt") {
                                         println!("TODO: CreateMLTIntegrator");
                                     } else if ro.integrator_name ==
@@ -1430,6 +1361,78 @@ fn pbrt_world_end() {
                                                          &mut sampler,
                                                          &mut integrator,
                                                          num_threads);
+                                        } else {
+                                            panic!("Accelerator \"{}\" unknown.",
+                                                   ro.accelerator_name);
+                                        }
+                                    } else if let Some (mut integrator) = some_bdpt_integrator {
+                                        // because we can't call
+                                        // integrator.render() yet,
+                                        // let us repeat some code and
+                                        // call pbrt::render_bdpt(...)
+                                        // instead:
+
+                                        // MakeIntegrator
+                                        // TODO: if (renderOptions->haveScatteringMedia && ...)
+                                        if ro.lights.is_empty() {
+                                            // warn if no light sources are defined
+                                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                                        }
+                                        // MakeAccelerator
+                                        if ro.accelerator_name == String::from("bvh") {
+                                            //  CreateBVHAccelerator
+                                            let split_method_name: String =
+                                                ro.accelerator_params.find_one_string(String::from("splitmethod"),
+                                                                                      String::from("sah"));
+                                            let split_method;
+                                            if split_method_name == String::from("sah") {
+                                                split_method = SplitMethod::SAH;
+                                            } else if split_method_name == String::from("hlbvh") {
+                                                split_method = SplitMethod::HLBVH;
+                                            } else if split_method_name == String::from("middle") {
+                                                split_method = SplitMethod::Middle;
+                                            } else if split_method_name == String::from("equal") {
+                                                split_method = SplitMethod::EqualCounts;
+                                            } else {
+                                                println!("WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                                                         split_method_name);
+                                                split_method = SplitMethod::SAH;
+                                            }
+                                            let max_prims_in_node: i32 =
+                                                ro.accelerator_params.find_one_int(String::from("maxnodeprims"), 4);
+                                            let accelerator =
+                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
+                                                                       max_prims_in_node as usize,
+                                                                       split_method));
+                                            // MakeScene
+                                            let scene: Scene = Scene::new(accelerator.clone(),
+                                                                          ro.lights.clone());
+                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                                            // TODO: lights.erase(lights.begin(), lights.end());
+                                            let num_threads: u8 = NUMBER_OF_THREADS;
+                                            pbrt::render_bdpt(&scene,
+                                                              &camera,
+                                                              &mut sampler,
+                                                              &mut integrator,
+                                                              num_threads);
+                                        } else if ro.accelerator_name == String::from("kdtree") {
+                                            // println!("TODO: CreateKdTreeAccelerator");
+                                            // WARNING: Use BVHAccel for now !!!
+                                            let accelerator =
+                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
+                                                                       4,
+                                                                       SplitMethod::SAH));
+                                            // MakeScene
+                                            let scene: Scene = Scene::new(accelerator.clone(),
+                                                                          ro.lights.clone());
+                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                                            // TODO: lights.erase(lights.begin(), lights.end());
+                                            let num_threads: u8 = NUMBER_OF_THREADS;
+                                            pbrt::render_bdpt(&scene,
+                                                              &camera,
+                                                              &mut sampler,
+                                                              &mut integrator,
+                                                              num_threads);
                                         } else {
                                             panic!("Accelerator \"{}\" unknown.",
                                                    ro.accelerator_name);

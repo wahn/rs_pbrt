@@ -4571,7 +4571,6 @@ pub fn scrambled_radical_inverse(base_index: u16, a: u64, perm: &[u16]) -> Float
         1023 => {
             return scrambled_radical_inverse_specialized(8161_u16, perm, a);
         }
-        // WORK
         _ => {
             panic!("TODO: scrambled_radical_inverse({:?}, {:?})", base_index, a);
         }

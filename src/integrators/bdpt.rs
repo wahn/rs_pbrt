@@ -30,4 +30,7 @@ impl BDPTIntegrator {
             light_sample_strategy: light_sample_strategy,
         }
     }
+    pub fn get_light_sample_strategy(&self) -> String {
+        self.light_sample_strategy.clone()
+    }
 }

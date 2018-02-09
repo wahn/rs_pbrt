@@ -45,6 +45,7 @@ use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Point2i, Ray, Vector2i};
 use core::geometry::pnt2_inside_exclusive;
 use core::integrator::SamplerIntegrator;
+use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 use core::scene::Scene;
@@ -318,10 +319,13 @@ pub fn render(
 /// **Main function** to **render** a scene mutli-threaded (using all
 /// available cores) with **bidirectional** path tracing.
 pub fn render_bdpt(
-    _scene: &Scene,
+    scene: &Scene,
     _camera: &Box<Camera + Send + Sync>,
     _sampler: &mut Box<Sampler + Send + Sync>,
-    _integrator: &mut Box<integrators::bdpt::BDPTIntegrator>,
+    integrator: &mut Box<integrators::bdpt::BDPTIntegrator>,
     _num_threads: u8,
 ) {
+    let light_distribution =
+        create_light_sample_distribution(integrator.get_light_sample_strategy(), scene);
+    // WORK
 }
