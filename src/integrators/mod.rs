@@ -40,5 +40,6 @@
 //! ![Path Tracing](https://www.janwalter.org/assets/cornell_box_v0.2.0_high.png)
 
 pub mod ao;
+pub mod bdpt;
 pub mod directlighting;
 pub mod path;

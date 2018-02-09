@@ -30,6 +30,7 @@ use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::filters::gaussian::GaussianFilter;
 use pbrt::filters::triangle::TriangleFilter;
 use pbrt::integrators::ao::AOIntegrator;
+use pbrt::integrators::bdpt::BDPTIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::materials::glass::GlassMaterial;
@@ -1224,7 +1225,31 @@ fn pbrt_world_end() {
                                     } else if ro.integrator_name == String::from("volpath") {
                                         println!("TODO: CreateVolPathIntegrator");
                                     } else if ro.integrator_name == String::from("bdpt") {
-                                        println!("TODO: CreateBDPTIntegrator");
+                                        println!("WORK: CreateBDPTIntegrator");
+                                        // CreateBDPTIntegrator
+                                        let mut max_depth: i32 =
+                                            ro.integrator_params
+                                                .find_one_int(String::from("maxdepth"), 5);
+                                        let visualize_strategies: bool =
+                                            ro.integrator_params
+                                            .find_one_bool(String::from("visualizestrategies"), false);
+                                        let visualize_weights: bool =
+                                            ro.integrator_params
+                                            .find_one_bool(String::from("visualizeweights"), false);
+                                        if visualize_strategies || visualize_weights || max_depth > 5_i32 {
+                                            println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
+                                            max_depth = 5;
+                                        }
+                                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                                        let light_strategy: String =
+                                            ro.integrator_params
+                                            .find_one_string(String::from("lightsamplestrategy"),
+                                                             String::from("power"));
+                                        let integrator = Box::new(BDPTIntegrator::new(max_depth as u32,
+                                                                                      visualize_strategies,
+                                                                                      visualize_weights,
+                                                                                      pixel_bounds,
+                                                                                      light_strategy));
                                     } else if ro.integrator_name == String::from("mlt") {
                                         println!("TODO: CreateMLTIntegrator");
                                     } else if ro.integrator_name ==
