@@ -324,9 +324,9 @@ pub fn render(
 pub fn render_bdpt(
     scene: &Scene,
     camera: &Box<Camera + Send + Sync>,
-    _sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Box<Sampler + Send + Sync>,
     integrator: &mut Box<integrators::bdpt::BDPTIntegrator>,
-    _num_threads: u8,
+    num_threads: u8,
 ) {
     let light_distribution =
         create_light_sample_distribution(integrator.get_light_sample_strategy(), scene);
@@ -350,5 +350,78 @@ pub fn render_bdpt(
     let n_x_tiles: i32 = (sample_extent.x + tile_size - 1) / tile_size;
     let n_y_tiles: i32 = (sample_extent.y + tile_size - 1) / tile_size;
     // TODO: ProgressReporter reporter(nXTiles * nYTiles, "Rendering");
-    // WORK
+    // TODO: Allocate buffers for debug visualization
+    // ...
+    // render and write the output image to disk
+    if scene.lights.len() > 0 {
+        let samples_per_pixel: i64 = sampler.get_samples_per_pixel();
+        let num_cores: usize;
+        if num_threads == 0_u8 {
+            num_cores = num_cpus::get();
+        } else {
+            num_cores = num_threads as usize;
+        }
+        println!("Rendering with {:?} thread(s) ...", num_cores);
+        {
+            let block_queue = BlockQueue::new(
+                (
+                    (n_x_tiles * tile_size) as u32,
+                    (n_y_tiles * tile_size) as u32,
+                ),
+                (tile_size as u32, tile_size as u32),
+                (0, 0),
+            );
+            println!("block_queue.len() = {}", block_queue.len());
+            let integrator = &integrator;
+            let bq = &block_queue;
+            let sampler = sampler;
+            let camera = &camera;
+            let film = &film;
+            // let pixel_bounds = integrator.get_pixel_bounds().clone();
+            crossbeam::scope(|scope| {
+                let (pixel_tx, pixel_rx) = mpsc::channel();
+                // spawn worker threads
+                for _ in 0..num_cores {
+                    let pixel_tx = pixel_tx.clone();
+                    let mut tile_sampler: Box<Sampler + Send + Sync> = sampler.box_clone();
+                    scope.spawn(move || {
+                        while let Some((x, y)) = bq.next() {
+                            let tile: Point2i = Point2i {
+                                x: x as i32,
+                                y: y as i32,
+                            };
+                            let seed: i32 = tile.y * n_x_tiles + tile.x;
+                            tile_sampler.reseed(seed as u64);
+                            let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
+                            let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
+                            let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
+                            let y1: i32 = std::cmp::min(y0 + tile_size, sample_bounds.p_max.y);
+                            let tile_bounds: Bounds2i =
+                                Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
+                            // println!("Starting image tile {:?}", tile_bounds);
+                            let mut film_tile = film.get_film_tile(&tile_bounds);
+                            for pixel in &tile_bounds {
+                                // WORK
+                            }
+                            // send the tile through the channel to main thread
+                            pixel_tx
+                                .send(film_tile)
+                                .expect(&format!("Failed to send tile"));
+                        }
+                    });
+                }
+                // spawn thread to collect pixels and render image to file
+                scope.spawn(move || {
+                    for _ in pbr::PbIter::new(0..bq.len()) {
+                        let film_tile = pixel_rx.recv().unwrap();
+                        // merge image tile into _Film_
+                        film.merge_film_tile(&film_tile);
+                    }
+                });
+            });
+        }
+        println!("Rendering finished");
+        film.write_image(1.0 as Float / samples_per_pixel as Float);
+        // TODO: Write buffers for debug visualization
+    }
 }
