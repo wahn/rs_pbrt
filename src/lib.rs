@@ -44,7 +44,7 @@ pub mod textures;
 
 // pbrt
 use core::camera::{Camera, CameraSample};
-use core::geometry::{Bounds2i, Point2i, Ray, Vector2i};
+use core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i};
 use core::geometry::pnt2_inside_exclusive;
 use core::integrator::SamplerIntegrator;
 // use core::light::Light;
@@ -52,6 +52,8 @@ use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 use core::scene::Scene;
+use integrators::bdpt::BDPTIntegrator;
+use integrators::bdpt::generate_camera_subpath;
 
 // see github/tray_rust/src/sampler/block_queue.rs
 
@@ -325,7 +327,7 @@ pub fn render_bdpt(
     scene: &Scene,
     camera: &Box<Camera + Send + Sync>,
     sampler: &mut Box<Sampler + Send + Sync>,
-    integrator: &mut Box<integrators::bdpt::BDPTIntegrator>,
+    integrator: &mut Box<BDPTIntegrator>,
     num_threads: u8,
 ) {
     let light_distribution =
@@ -400,8 +402,29 @@ pub fn render_bdpt(
                                 Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
                             // println!("Starting image tile {:?}", tile_bounds);
                             let mut film_tile = film.get_film_tile(&tile_bounds);
-                            for pixel in &tile_bounds {
-                                // WORK
+                            for p_pixel in &tile_bounds {
+                                tile_sampler.start_pixel(&p_pixel);
+                                if !pnt2_inside_exclusive(&p_pixel, &integrator.pixel_bounds) {
+                                    continue;
+                                }
+                                let mut done: bool = false;
+                                while !done {
+                                    // generate a single sample using BDPT
+                                    let p_film: Point2f = Point2f {
+                                        x: p_pixel.x as Float,
+                                        y: p_pixel.y as Float,
+                                    }
+                                        + tile_sampler.get_2d();
+                                    // trace the camera subpath
+                                    generate_camera_subpath(
+                                        &mut tile_sampler,
+                                        integrator.max_depth + 2,
+                                        camera,
+                                        &p_film,
+                                    );
+                                    // WORK
+                                    done = !tile_sampler.start_next_sample();
+                                }
                             }
                             // send the tile through the channel to main thread
                             pixel_tx
