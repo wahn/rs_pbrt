@@ -11,6 +11,27 @@ Current **Rust** documentation:
 
 https://www.janwalter.org/doc/rust/pbrt/index.html
 
+**Warning:** If you want to compile the **pest_test** executable you
+  need to download and compile with **Rust nightly**:
+
+```
+rustup install nightly
+rustup default nightly
+```
+
+## Usage
+
+```shell
+> ./target/release/examples/pest_test -h
+Usage: ./target/release/examples/pest_test [options]
+
+Options:
+    -h, --help          print this help menu
+    -i FILE             parse an input file
+    -t, --nthreads NUM  use specified number of threads for rendering
+    -v, --version       print version number
+```
+
 ## Ganesha Statue
 
 Very detailed scan of a small statue with over 4.3 million triangles,
