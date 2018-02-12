@@ -1,10 +1,25 @@
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Point2f, Ray};
-use core::pbrt::Spectrum;
+use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 
 // see bdpt.h
+
+pub enum VertexType {
+    Camera,
+    Light,
+    Surface,
+    Medium,
+}
+
+pub struct Vertex {
+    vertex_type: VertexType,
+    beta: Spectrum,
+    delta: bool,
+    pdf_fwd: Float,
+    pdf_rev: Float,
+}
 
 /// Bidirectional Path Tracing (Global Illumination)
 pub struct BDPTIntegrator {
@@ -55,6 +70,8 @@ pub fn generate_camera_subpath(
     camera_sample.p_lens = sampler.get_2d();
     let mut ray: Ray = Ray::default();
     let beta: Spectrum = Spectrum::new(camera.generate_ray_differential(&camera_sample, &mut ray));
+    ray.scale_differentials(1.0 as Float / (sampler.get_samples_per_pixel() as Float).sqrt());
+    // generate first vertex on camera subpath and start random walk
     // WORK
     0_u32
 }
