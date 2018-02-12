@@ -25,8 +25,10 @@ extern crate time;
 extern crate typed_arena;
 
 // use std::cell::RefCell;
+// use std::collections::HashMap;
 use std::default::Default;
 use std::sync::atomic::{AtomicUsize, Ordering};
+// use std::sync::Arc;
 use std::sync::mpsc;
 
 pub mod accelerators;
@@ -45,6 +47,7 @@ use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Point2i, Ray, Vector2i};
 use core::geometry::pnt2_inside_exclusive;
 use core::integrator::SamplerIntegrator;
+// use core::light::Light;
 use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
@@ -320,12 +323,32 @@ pub fn render(
 /// available cores) with **bidirectional** path tracing.
 pub fn render_bdpt(
     scene: &Scene,
-    _camera: &Box<Camera + Send + Sync>,
+    camera: &Box<Camera + Send + Sync>,
     _sampler: &mut Box<Sampler + Send + Sync>,
     integrator: &mut Box<integrators::bdpt::BDPTIntegrator>,
     _num_threads: u8,
 ) {
     let light_distribution =
         create_light_sample_distribution(integrator.get_light_sample_strategy(), scene);
+    // TODO
+    // Compute a reverse mapping from light pointers to offsets into
+    // the scene lights vector (and, equivalently, offsets into
+    // lightDistr). Added after book text was finalized; this is
+    // critical to reasonable performance with 100s+ of light sources.
+    // let mut light_to_index = HashMap::new();
+    // for li in 0..scene.lights.len() {
+    //     let ref light = scene.lights[li];
+    //     light_to_index.insert(light, li);
+    // }
+    // partition the image into tiles
+    let film = camera.get_film();
+    let sample_bounds: Bounds2i = film.get_sample_bounds();
+    println!("sample_bounds = {:?}", sample_bounds);
+    let sample_extent: Vector2i = sample_bounds.diagonal();
+    println!("sample_extent = {:?}", sample_extent);
+    let tile_size: i32 = 16;
+    let n_x_tiles: i32 = (sample_extent.x + tile_size - 1) / tile_size;
+    let n_y_tiles: i32 = (sample_extent.y + tile_size - 1) / tile_size;
+    // TODO: ProgressReporter reporter(nXTiles * nYTiles, "Rendering");
     // WORK
 }
