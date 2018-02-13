@@ -4,12 +4,14 @@ use std;
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::pnt3_offset_ray_origin;
+use core::light::Light;
 use core::interaction::Interaction;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 
 // see bdpt.h
 
+#[derive(Default)]
 pub struct EndpointInteraction {
     // Interaction Public Data
     pub p: Point3f,
@@ -17,9 +19,24 @@ pub struct EndpointInteraction {
     pub p_error: Vector3f,
     pub wo: Vector3f,
     pub n: Normal3f,
+    // EndpointInteraction Public Data
+    pub camera: Option<Box<Camera + Send + Sync>>,
+    pub light: Option<Box<Light + Send + Sync>>,
 }
 
-impl EndpointInteraction {}
+impl EndpointInteraction {
+    pub fn new(p: &Point3f, time: Float) -> Self {
+        EndpointInteraction {
+            p: *p,
+            time,
+            ..Default::default()
+        }
+    }
+    pub fn new_camera(camera: &Box<Camera + Send + Sync>, ray: &Ray) -> Self {
+        let ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
+        ei
+    }
+}
 
 impl Interaction for EndpointInteraction {
     fn is_surface_interaction(&self) -> bool {
@@ -55,6 +72,7 @@ impl Interaction for EndpointInteraction {
     }
 }
 
+#[derive(Debug, Clone)]
 pub enum VertexType {
     Camera,
     Light,
@@ -65,16 +83,26 @@ pub enum VertexType {
 pub struct Vertex {
     vertex_type: VertexType,
     beta: Spectrum,
+    ei: Option<EndpointInteraction>,
     delta: bool,
     pdf_fwd: Float,
     pdf_rev: Float,
 }
 
 impl Vertex {
-    // pub fn new() -> Vertex {}
-    // pub fn create_camera(camera: &Box<Camera + Send + Sync>, ray: &Ray, beta: &Spectrum) -> Vertex {
-    //     Vertex::new(VertexType::Camera, EndpointInteraction(camera, ray), beta)
-    // }
+    pub fn new(vertex_type: VertexType, ei: EndpointInteraction, beta: &Spectrum) -> Self {
+        Vertex {
+            vertex_type: vertex_type,
+            beta: *beta,
+            ei: Some(ei),
+            delta: false,
+            pdf_fwd: 0.0 as Float,
+            pdf_rev: 0.0 as Float,
+        }
+    }
+    pub fn create_camera(camera: &Box<Camera + Send + Sync>, ray: &Ray, beta: &Spectrum) -> Vertex {
+        Vertex::new(VertexType::Camera, EndpointInteraction::new_camera(camera, ray), beta)
+    }
 }
 
 /// Bidirectional Path Tracing (Global Illumination)
