@@ -12,7 +12,7 @@ use core::sampler::Sampler;
 // see bdpt.h
 
 #[derive(Default)]
-pub struct EndpointInteraction {
+pub struct EndpointInteraction<'a> {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
@@ -20,11 +20,11 @@ pub struct EndpointInteraction {
     pub wo: Vector3f,
     pub n: Normal3f,
     // EndpointInteraction Public Data
-    pub camera: Option<Box<Camera + Send + Sync>>,
+    pub camera: Option<&'a Box<Camera + Send + Sync>>,
     pub light: Option<Box<Light + Send + Sync>>,
 }
 
-impl EndpointInteraction {
+impl<'a> EndpointInteraction<'a> {
     pub fn new(p: &Point3f, time: Float) -> Self {
         EndpointInteraction {
             p: *p,
@@ -32,13 +32,15 @@ impl EndpointInteraction {
             ..Default::default()
         }
     }
-    pub fn new_camera(camera: &Box<Camera + Send + Sync>, ray: &Ray) -> Self {
-        let ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
+    pub fn new_camera(camera: &'a Box<Camera + Send + Sync>, ray: &Ray) -> Self {
+        let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
+        // WORK: How do we store a pointer to a camera here?
+        ei.camera = Some(camera);
         ei
     }
 }
 
-impl Interaction for EndpointInteraction {
+impl<'a> Interaction for EndpointInteraction<'a> {
     fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }
@@ -80,17 +82,17 @@ pub enum VertexType {
     Medium,
 }
 
-pub struct Vertex {
+pub struct Vertex<'a> {
     vertex_type: VertexType,
     beta: Spectrum,
-    ei: Option<EndpointInteraction>,
+    ei: Option<EndpointInteraction<'a>>,
     delta: bool,
     pdf_fwd: Float,
     pdf_rev: Float,
 }
 
-impl Vertex {
-    pub fn new(vertex_type: VertexType, ei: EndpointInteraction, beta: &Spectrum) -> Self {
+impl<'a> Vertex<'a> {
+    pub fn new(vertex_type: VertexType, ei: EndpointInteraction<'a>, beta: &Spectrum) -> Self {
         Vertex {
             vertex_type: vertex_type,
             beta: *beta,
@@ -100,7 +102,7 @@ impl Vertex {
             pdf_rev: 0.0 as Float,
         }
     }
-    pub fn create_camera(camera: &Box<Camera + Send + Sync>, ray: &Ray, beta: &Spectrum) -> Vertex {
+    pub fn create_camera(camera: &'a Box<Camera + Send + Sync>, ray: &Ray, beta: &Spectrum) -> Vertex<'a> {
         Vertex::new(VertexType::Camera, EndpointInteraction::new_camera(camera, ray), beta)
     }
 }
@@ -156,6 +158,7 @@ pub fn generate_camera_subpath(
     let beta: Spectrum = Spectrum::new(camera.generate_ray_differential(&camera_sample, &mut ray));
     ray.scale_differentials(1.0 as Float / (sampler.get_samples_per_pixel() as Float).sqrt());
     // generate first vertex on camera subpath and start random walk
+    let vertex: Vertex = Vertex::create_camera(camera, &ray, &beta);
     // WORK
     0_u32
 }
