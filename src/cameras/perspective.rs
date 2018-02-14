@@ -1,11 +1,12 @@
 // std
 use std;
+use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
-use core::geometry::{Bounds2f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f};
-use core::geometry::vec3_normalize;
+use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f};
+use core::geometry::{vec3_dot_vec3, vec3_normalize};
 use core::paramset::ParamSet;
 use core::pbrt::Float;
 use core::pbrt::lerp;
@@ -31,7 +32,7 @@ pub struct PerspectiveCamera {
     // private data (see perspective.h)
     pub dx_camera: Vector3f,
     pub dy_camera: Vector3f,
-    // a: Float,
+    pub a: Float,
 }
 
 impl PerspectiveCamera {
@@ -102,7 +103,7 @@ impl PerspectiveCamera {
         });
         p_min /= p_min.z;
         p_max /= p_max.z;
-        // let a: Float = ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs();
+        let a: Float = ((p_max.x - p_min.x) * (p_max.y - p_min.y)).abs();
 
         PerspectiveCamera {
             camera_to_world: camera_to_world,
@@ -117,7 +118,7 @@ impl PerspectiveCamera {
             focal_distance: focal_distance,
             dx_camera: dx_camera,
             dy_camera: dy_camera,
-            // a: a,
+            a: a,
         }
     }
     pub fn create(
@@ -253,6 +254,57 @@ impl Camera for PerspectiveCamera {
         // TODO: ray->medium = medium;
         *ray = self.camera_to_world.transform_ray(&in_ray);
         1.0
+    }
+    fn pdf_we(&self, ray: &Ray) -> (Float, Float) {
+        let mut pdf_pos: Float = 0.0;
+        let mut pdf_dir: Float = 0.0;
+        // interpolate camera matrix and fail if $\w{}$ is not forward-facing
+        let mut c2w: Transform = Transform::default();
+        self.camera_to_world.interpolate(ray.time, &mut c2w);
+        let cos_theta: Float = vec3_dot_vec3(
+            &ray.d,
+            &c2w.transform_vector(&Vector3f {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            }),
+        );
+        if cos_theta <= 0.0 as Float {
+            // *pdf_pos = *pdf_dir = 0;
+            return (pdf_pos, pdf_dir);
+        }
+        // map ray $(\p{}, \w{})$ onto the raster grid
+        // Point3f p_focus = ray((self.lens_radius > 0 ? self.focal_distance : 1) / cos_theta);
+        let t: Float;
+        if self.lens_radius > 0.0 as Float {
+            t = self.focal_distance / cos_theta;
+        } else {
+            t = 1.0 as Float / cos_theta;
+        }
+        let p_focus: Point3f = ray.position(t);
+        let p_raster: Point3f = Transform::inverse(&self.raster_to_camera)
+            .transform_point(&Transform::inverse(&c2w).transform_point(&p_focus));
+        // return zero probability for out of bounds points
+        let sample_bounds: Bounds2i = self.film.get_sample_bounds();
+        if p_raster.x < sample_bounds.p_min.x as Float
+            || p_raster.x >= sample_bounds.p_max.x as Float
+            || p_raster.y < sample_bounds.p_min.y as Float
+            || p_raster.y >= sample_bounds.p_max.y as Float
+        {
+            // *pdf_pos = *pdf_dir = 0;
+            return (pdf_pos, pdf_dir);
+        }
+        // compute lens area of perspective camera
+        // Float lens_area = self.lens_radius != 0 ? (Pi * self.lens_radius * self.lens_radius) : 1;
+        let lens_area: Float;
+        if self.lens_radius != 0.0 as Float {
+            lens_area = PI * self.lens_radius * self.lens_radius;
+        } else {
+            lens_area = 1.0 as Float;
+        }
+        pdf_pos = 1.0 as Float / lens_area;
+        pdf_dir = 1.0 as Float / (self.a * cos_theta * cos_theta * cos_theta);
+        (pdf_pos, pdf_dir)
     }
     fn get_film(&self) -> Arc<Film> {
         self.film.clone()

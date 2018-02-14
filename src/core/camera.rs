@@ -13,6 +13,7 @@ use core::pbrt::Float;
 
 pub trait Camera {
     fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float;
+    fn pdf_we(&self, ray: &Ray) -> (Float, Float);
     fn get_film(&self) -> Arc<Film>;
 }
 

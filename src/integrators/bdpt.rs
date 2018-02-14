@@ -159,6 +159,10 @@ pub fn generate_camera_subpath(
     ray.scale_differentials(1.0 as Float / (sampler.get_samples_per_pixel() as Float).sqrt());
     // generate first vertex on camera subpath and start random walk
     let vertex: Vertex = Vertex::create_camera(camera, &ray, &beta);
+    let mut path: Vec<Vertex> = Vec::with_capacity(max_depth as usize);
+    path.push(vertex);
+    let (pdf_pos, pdf_dir) = camera.pdf_we(&ray);
+    // TODO: return random_walk(...) bdpt.cpp:142
     // WORK
     0_u32
 }

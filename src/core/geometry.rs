@@ -965,7 +965,12 @@ where
 /// offset their origins enough to ensure that they are past the
 /// boundary of the error box and thus won't incorrectly re-intersect
 /// the surface.
-pub fn pnt3_offset_ray_origin(p: &Point3f, p_error: &Vector3f, n: &Normal3f, w: &Vector3f) -> Point3f {
+pub fn pnt3_offset_ray_origin(
+    p: &Point3f,
+    p_error: &Vector3f,
+    n: &Normal3f,
+    w: &Vector3f,
+) -> Point3f {
     //     Float d = Dot(Abs(n), pError);
     let d: Float = nrm_dot_vec3(&nrm_abs(n), p_error);
     // #ifdef PBRT_FLOAT_AS_DOUBLE
