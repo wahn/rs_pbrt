@@ -8,6 +8,7 @@ use core::light::Light;
 use core::material::TransportMode;
 use core::interaction::{Interaction, SurfaceInteraction};
 use core::pbrt::{Float, Spectrum};
+use core::reflection::BxdfType;
 use core::sampler::Sampler;
 use core::scene::Scene;
 
@@ -239,8 +240,8 @@ pub fn random_walk(
         return bounces;
     }
     // declare variables for forward and reverse probability densities
-    let pdf_fwd: Float = pdf;
-    let pdf_rev: Float = 0.0 as Float;
+    let mut pdf_fwd: Float = pdf;
+    let mut pdf_rev: Float = 0.0 as Float;
     loop {
         // attempt to create the next subpath vertex in _path_
         println!(
@@ -253,20 +254,36 @@ pub fn random_walk(
             // compute scattering functions for _mode_ and skip over medium
             // boundaries
             isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
-            if let Some(ref bsdf) = isect.bsdf {
-                // initialize _vertex_ with surface intersection information
-                // vertex = Vertex::CreateSurface(isect, beta, pdf_fwd, prev);
 
-                // TODO: error[E0623]: lifetime mismatch
-                // path[bounces as usize] =
-                //     Vertex::create_surface(isect, &beta, pdf_fwd, &path[(bounces - 1) as usize]);
+            // if (!isect.bsdf) {
+            //     ray = isect.SpawnRay(ray.d);
+            //     continue;
+            // }
 
-                // if (++bounces >= maxDepth) break;
+            // initialize _vertex_ with surface intersection information
+            let vertex: Vertex = Vertex::create_surface(
+                isect.clone(),
+                &beta,
+                pdf_fwd,
+                &path[(bounces - 1) as usize],
+            );
+            bounces += 1;
+            if bounces >= max_depth {
+                break;
+            }
+            if let Some(ref bsdf) = isect.clone().bsdf {
                 // sample BSDF at current vertex and compute reverse probability
-                // Vector3f wi, wo = isect.wo;
-                // BxDFType type;
-                // Spectrum f = isect.bsdf->Sample_f(wo, &wi, sampler.Get2D(), &pdf_fwd,
-                //                                   BSDF_ALL, &type);
+                let mut wi: Vector3f = Vector3f::default();
+                let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                let mut sampled_type: u8 = u8::max_value(); // != 0
+                bsdf.sample_f(
+                    &isect.wo,
+                    &mut wi,
+                    &sampler.get_2d(),
+                    &mut pdf_fwd,
+                    bsdf_flags,
+                    &mut sampled_type,
+                );
                 // VLOG(2) << "Random walk sampled dir " << wi << " f: " << f <<
                 //     ", pdf_fwd: " << pdf_fwd;
                 // if (f.IsBlack() || pdf_fwd == 0.f) break;
