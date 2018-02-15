@@ -3,8 +3,8 @@ use std;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::pnt3_offset_ray_origin;
-use core::light::Light;
+use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm};
+use core::light::{Light, LightFlags};
 use core::material::TransportMode;
 use core::interaction::{Interaction, SurfaceInteraction};
 use core::pbrt::{Float, Spectrum};
@@ -81,7 +81,7 @@ impl<'c, 'l> Interaction for EndpointInteraction<'c, 'l> {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum VertexType {
     Camera,
     Light,
@@ -149,9 +149,79 @@ impl<'c, 'l, 'p, 's> Vertex<'c, 'l, 'p, 's> {
         v.pdf_fwd = pdf;
         v
     }
+    pub fn p(&self) -> Point3f {
+        match self.vertex_type {
+            VertexType::Medium => Point3f::default(),
+            VertexType::Surface => {
+                if let Some(ref si) = self.si {
+                    si.p
+                } else {
+                    Point3f::default()
+                }
+            }
+            _ => {
+                if let Some(ref ei) = self.ei {
+                    ei.p
+                } else {
+                    Point3f::default()
+                }
+            }
+        }
+    }
+    pub fn ng(&self) -> Normal3f {
+        match self.vertex_type {
+            VertexType::Medium => Normal3f::default(),
+            VertexType::Surface => {
+                if let Some(ref si) = self.si {
+                    si.n
+                } else {
+                    Normal3f::default()
+                }
+            }
+            _ => {
+                if let Some(ref ei) = self.ei {
+                    ei.n
+                } else {
+                    Normal3f::default()
+                }
+            }
+        }
+    }
+    pub fn is_on_surface(&self) -> bool {
+        self.ng() != Normal3f::default()
+    }
+    pub fn is_infinite_light(&self) -> bool {
+        if self.vertex_type != VertexType::Light {
+            return false;
+        } else if let Some(ref ei) = self.ei {
+            if let Some(ref light) = ei.light {
+                let check: u8 = light.get_flags() & LightFlags::Infinite as u8;
+                if check == LightFlags::Infinite as u8 {
+                    return true;
+                }
+                let check: u8 = light.get_flags() & LightFlags::DeltaDirection as u8;
+                if check == LightFlags::DeltaDirection as u8 {
+                    return true;
+                }
+            }
+        }
+        false
+    }
     pub fn convert_density(&self, pdf: Float, next: &Vertex) -> Float {
-        // WORK
-        0.0 as Float
+        // return solid angle density if _next_ is an infinite area light
+        if next.is_infinite_light() {
+            return pdf;
+        }
+        let w: Vector3f = next.p() - self.p();
+        if w.length_squared() == 0.0 as Float {
+            return 0.0 as Float;
+        }
+        let inv_dist_2: Float = 1.0 as Float / w.length_squared();
+        let mut pdf: Float = pdf; // shadow
+        if next.is_on_surface() {
+            pdf *= nrm_abs_dot_vec3(&next.ng(), &(w * inv_dist_2.sqrt()));
+        }
+        pdf * inv_dist_2
     }
 }
 
@@ -187,15 +257,39 @@ impl BDPTIntegrator {
     }
 }
 
+// BDPT Utility Functions
+
+pub fn correct_shading_normal(
+    isect: &SurfaceInteraction,
+    wo: &Vector3f,
+    &wi: &Vector3f,
+    mode: TransportMode,
+) -> Float {
+    if mode == TransportMode::Importance {
+        let num: Float = vec3_abs_dot_nrm(&wo, &isect.shading.n) * vec3_abs_dot_nrm(&wi, &isect.n);
+        let denom: Float =
+            vec3_abs_dot_nrm(&wo, &isect.n) * vec3_abs_dot_nrm(&wi, &isect.shading.n);
+        // wi is occasionally perpendicular to isect.shading.n; this
+        // is fine, but we don't want to return an infinite or NaN
+        // value in that case.
+        if denom == 0.0 as Float {
+            return 0.0 as Float;
+        }
+        num / denom
+    } else {
+        1.0 as Float
+    }
+}
+
 pub fn generate_camera_subpath(
     scene: &Scene,
     sampler: &mut Box<Sampler + Send + Sync>,
     max_depth: u32,
     camera: &Box<Camera + Send + Sync>,
     p_film: &Point2f,
-) -> u32 {
+) -> usize {
     if max_depth == 0 {
-        return 0_u32;
+        return 0_usize;
     }
     // TODO: ProfilePhase _(Prof::BDPTGenerateSubpath);
     // sample initial ray for camera subpath
@@ -204,38 +298,38 @@ pub fn generate_camera_subpath(
     camera_sample.time = sampler.get_1d();
     camera_sample.p_lens = sampler.get_2d();
     let mut ray: Ray = Ray::default();
-    let beta: Spectrum = Spectrum::new(camera.generate_ray_differential(&camera_sample, &mut ray));
+    let mut beta: Spectrum =
+        Spectrum::new(camera.generate_ray_differential(&camera_sample, &mut ray));
     ray.scale_differentials(1.0 as Float / (sampler.get_samples_per_pixel() as Float).sqrt());
     // generate first vertex on camera subpath and start random walk
     let vertex: Vertex = Vertex::create_camera(camera, &ray, &beta);
-    let mut path: Vec<Vertex> = Vec::with_capacity(max_depth as usize);
-    path.push(vertex);
     let (pdf_pos, pdf_dir) = camera.pdf_we(&ray);
     random_walk(
         scene,
         &mut ray,
         sampler,
-        beta,
+        &mut beta,
         pdf_dir,
         max_depth - 1_u32,
         TransportMode::Radiance,
-        &mut path,
-    );
-    // WORK
-    0_u32
+        vertex,
+    ) + 1_usize
 }
 
-pub fn random_walk(
-    scene: &Scene,
+pub fn random_walk<'c, 'l, 'p, 's>(
+    scene: &'p Scene,
     ray: &mut Ray,
     sampler: &mut Box<Sampler + Send + Sync>,
-    beta: Spectrum,
+    beta: &mut Spectrum,
     pdf: Float,
     max_depth: u32,
     mode: TransportMode,
-    path: &mut Vec<Vertex>,
-) -> u32 {
-    let mut bounces: u32 = 0_u32;
+    vertex: Vertex,
+) -> usize {
+    // those two lines where previously in generate_camera_subpath()
+    let mut path: Vec<Vertex> = Vec::with_capacity(max_depth as usize);
+    path.push(vertex);
+    let mut bounces: usize = 0_usize;
     if max_depth == 0_u32 {
         return bounces;
     }
@@ -261,14 +355,10 @@ pub fn random_walk(
             // }
 
             // initialize _vertex_ with surface intersection information
-            let vertex: Vertex = Vertex::create_surface(
-                isect.clone(),
-                &beta,
-                pdf_fwd,
-                &path[(bounces - 1) as usize],
-            );
+            let mut vertex: Vertex =
+                Vertex::create_surface(isect.clone(), &beta, pdf_fwd, &path[bounces as usize]);
             bounces += 1;
-            if bounces >= max_depth {
+            if bounces as u32 >= max_depth {
                 break;
             }
             if let Some(ref bsdf) = isect.clone().bsdf {
@@ -276,7 +366,7 @@ pub fn random_walk(
                 let mut wi: Vector3f = Vector3f::default();
                 let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
                 let mut sampled_type: u8 = u8::max_value(); // != 0
-                bsdf.sample_f(
+                let f: Spectrum = bsdf.sample_f(
                     &isect.wo,
                     &mut wi,
                     &sampler.get_2d(),
@@ -284,22 +374,39 @@ pub fn random_walk(
                     bsdf_flags,
                     &mut sampled_type,
                 );
-                // VLOG(2) << "Random walk sampled dir " << wi << " f: " << f <<
-                //     ", pdf_fwd: " << pdf_fwd;
-                // if (f.IsBlack() || pdf_fwd == 0.f) break;
-                // beta *= f * AbsDot(wi, isect.shading.n) / pdf_fwd;
-                // VLOG(2) << "Random walk beta now " << beta;
-                // pdfRev = isect.bsdf->Pdf(wi, wo, BSDF_ALL);
-                // if (type & BSDF_SPECULAR) {
-                //     vertex.delta = true;
-                //     pdfRev = pdf_fwd = 0;
-                // }
-                // beta *= CorrectShadingNormal(isect, wo, wi, mode.clone());
-                // VLOG(2) << "Random walk beta after shading normal correction " << beta;
-                // ray = isect.SpawnRay(wi);
+                println!(
+                    "Random walk sampled dir {:?} f: {:?}, pdf_fwd: {:?}",
+                    wi, f, pdf_fwd
+                );
+                if f.is_black() || pdf_fwd == 0.0 as Float {
+                    break;
+                }
+                *beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf_fwd;
+                println!("Random walk beta now {:?}", beta);
+                pdf_rev = bsdf.pdf(&wi, &isect.wo, bsdf_flags);
+                if (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8 {
+                    vertex.delta = true;
+                    pdf_rev = 0.0 as Float;
+                    pdf_fwd = 0.0 as Float;
+                }
+                *beta *=
+                    Spectrum::new(correct_shading_normal(&isect, &isect.wo, &wi, mode.clone()));
+                println!(
+                    "Random walk beta after shading normal correction {:?}",
+                    beta
+                );
+                let new_ray = isect.spawn_ray(&wi);
+                *ray = new_ray;
                 // compute reverse area density at preceding vertex
-                // prev.pdfRev = vertex.ConvertDensity(pdfRev, prev);
-                // WORK
+                let mut new_pdf_rev: Float = 0.0 as Float;
+                {
+                    let prev: &Vertex = &path[(bounces - 1) as usize];
+                    new_pdf_rev = vertex.convert_density(pdf_rev, prev);
+                }
+                // update previous vertex
+                path[(bounces - 1) as usize].pdf_rev = new_pdf_rev;
+                // store new vertex
+                path.push(vertex);
             } else {
                 let new_ray = isect.spawn_ray(&ray.d);
                 *ray = new_ray;
