@@ -417,6 +417,7 @@ pub fn render_bdpt(
                                         + tile_sampler.get_2d();
                                     // trace the camera subpath
                                     generate_camera_subpath(
+                                        scene,
                                         &mut tile_sampler,
                                         integrator.max_depth + 2,
                                         camera,

@@ -71,7 +71,7 @@ pub struct Shading {
 }
 
 #[derive(Default, Clone)]
-pub struct SurfaceInteraction<'a, 'b> {
+pub struct SurfaceInteraction<'p, 's> {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
@@ -91,13 +91,13 @@ pub struct SurfaceInteraction<'a, 'b> {
     pub dvdx: Float,
     pub dudy: Float,
     pub dvdy: Float,
-    pub primitive: Option<&'a GeometricPrimitive>,
+    pub primitive: Option<&'p GeometricPrimitive>,
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
-    pub shape: Option<&'b Shape>,
+    pub shape: Option<&'s Shape>,
 }
 
-impl<'a, 'b> SurfaceInteraction<'a, 'b> {
+impl<'p, 's> SurfaceInteraction<'p, 's> {
     pub fn new(
         p: &Point3f,
         p_error: &Vector3f,
@@ -108,7 +108,7 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
         dndu: &Normal3f,
         dndv: &Normal3f,
         time: Float,
-        sh: Option<&'b Shape>,
+        sh: Option<&'s Shape>,
     ) -> Self {
         let nv: Vector3f = vec3_normalize(&vec3_cross_vec3(dpdu, dpdv));
         // TODO: Adjust normal based on orientation and handedness
@@ -289,7 +289,7 @@ impl<'a, 'b> SurfaceInteraction<'a, 'b> {
     }
 }
 
-impl<'a, 'b> Interaction for SurfaceInteraction<'a, 'b> {
+impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
     fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }
