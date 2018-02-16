@@ -416,14 +416,49 @@ pub fn render_bdpt(
                                     }
                                         + tile_sampler.get_2d();
                                     // trace the camera subpath
-                                    generate_camera_subpath(
+                                    let n_camera: usize = generate_camera_subpath(
                                         scene,
                                         &mut tile_sampler,
                                         integrator.max_depth + 2,
                                         camera,
                                         &p_film,
                                     );
+                                    // Get a distribution for sampling
+                                    // the light at the start of the
+                                    // light subpath. Because the
+                                    // light path follows multiple
+                                    // bounces, basing the sampling
+                                    // distribution on any of the
+                                    // vertices of the camera path is
+                                    // unlikely to be a good
+                                    // strategy. We use the
+                                    // PowerLightDistribution by
+                                    // default here, which doesn't use
+                                    // the point passed to it.
+
+                                    // let light_distr: Distribution1D =
+                                    //     light_distribution.lookup(cameraVertices[0].p());
+
+                                    // Now trace the light subpath
+                                    // int nLight = GenerateLightSubpath(
+                                    //     scene, *tileSampler, arena, maxDepth + 1,
+                                    //     cameraVertices[0].time(), *light_distr, lightToIndex,
+                                    //     lightVertices);
                                     // WORK
+                                    // Execute all BDPT connection strategies
+                                    let mut l: Spectrum = Spectrum::new(0.0 as Float);
+                                    for t in 1..n_camera + 1 {
+                                        // for t in 0..n_light + 1 {
+                                        //     // WORK
+                                        // }
+                                    }
+                                    println!(
+                                        "Add film sample pFilm: {:?}, L: {:?}, (y: {:?})",
+                                        p_film,
+                                        l,
+                                        l.y()
+                                    );
+                                    film_tile.add_sample(&p_film, &mut l, 1.0 as Float);
                                     done = !tile_sampler.start_next_sample();
                                 }
                             }
