@@ -1,7 +1,8 @@
 // std
 use std;
 use std::sync::{Arc, RwLock};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::Ordering;
+use integer_atomics;
 // pbrt
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f};
 use core::integrator::compute_light_power_distribution;
@@ -25,9 +26,9 @@ pub trait LightDistribution {
     fn lookup(&self, p: &Point3f) -> Arc<Distribution1D>;
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 struct HashEntry {
-    packed_pos: AtomicU64,
+    packed_pos: integer_atomics::AtomicU64,
     distribution: RwLock<Option<Arc<Distribution1D>>>,
 }
 
@@ -129,7 +130,7 @@ impl SpatialLightDistribution {
         // let null: *mut Distribution1D = std::ptr::null_mut();
         for _i in 0..hash_table_size {
             let hash_entry: HashEntry = HashEntry {
-                packed_pos: AtomicU64::new(INVALID_PACKED_POS),
+                packed_pos: integer_atomics::AtomicU64::new(INVALID_PACKED_POS),
                 distribution: RwLock::new(None),
             };
             hash_table.push(hash_entry);
