@@ -51,7 +51,7 @@ use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 use core::scene::Scene;
-use integrators::bdpt::BDPTIntegrator;
+use integrators::bdpt::{BDPTIntegrator, Vertex};
 use integrators::bdpt::generate_camera_subpath;
 
 // see github/tray_rust/src/sampler/block_queue.rs
@@ -415,12 +415,15 @@ pub fn render_bdpt(
                                     }
                                         + tile_sampler.get_2d();
                                     // trace the camera subpath
+                                    let mut camera_vertices: Vec<Vertex> =
+                                        Vec::with_capacity((integrator.max_depth + 2) as usize);
                                     let n_camera: usize = generate_camera_subpath(
                                         scene,
                                         &mut tile_sampler,
                                         integrator.max_depth + 2,
                                         camera,
                                         &p_film,
+                                        &mut camera_vertices,
                                     );
                                     // Get a distribution for sampling
                                     // the light at the start of the

@@ -15,7 +15,7 @@ use core::scene::Scene;
 // see bdpt.h
 
 #[derive(Default)]
-pub struct EndpointInteraction<'c, 'l> {
+pub struct EndpointInteraction<'a> {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
@@ -23,11 +23,11 @@ pub struct EndpointInteraction<'c, 'l> {
     pub wo: Vector3f,
     pub n: Normal3f,
     // EndpointInteraction Public Data
-    pub camera: Option<&'c Box<Camera + Send + Sync>>,
-    pub light: Option<&'l Box<Light + Send + Sync>>,
+    pub camera: Option<&'a Box<Camera + Send + Sync>>,
+    pub light: Option<&'a Box<Light + Send + Sync>>,
 }
 
-impl<'c, 'l> EndpointInteraction<'c, 'l> {
+impl<'a> EndpointInteraction<'a> {
     pub fn new(p: &Point3f, time: Float) -> Self {
         EndpointInteraction {
             p: *p,
@@ -35,7 +35,7 @@ impl<'c, 'l> EndpointInteraction<'c, 'l> {
             ..Default::default()
         }
     }
-    pub fn new_camera(camera: &'c Box<Camera + Send + Sync>, ray: &Ray) -> Self {
+    pub fn new_camera(camera: &'a Box<Camera + Send + Sync>, ray: &Ray) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
         ei.camera = Some(camera);
         ei
@@ -47,7 +47,7 @@ impl<'c, 'l> EndpointInteraction<'c, 'l> {
     }
 }
 
-impl<'c, 'l> Interaction for EndpointInteraction<'c, 'l> {
+impl<'a> Interaction for EndpointInteraction<'a> {
     fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }
@@ -89,18 +89,18 @@ pub enum VertexType {
     Medium,
 }
 
-pub struct Vertex<'c, 'l, 'p, 's> {
+pub struct Vertex<'a, 'p, 's> {
     vertex_type: VertexType,
     beta: Spectrum,
-    ei: Option<EndpointInteraction<'c, 'l>>,
+    ei: Option<EndpointInteraction<'a>>,
     si: Option<SurfaceInteraction<'p, 's>>,
     delta: bool,
     pdf_fwd: Float,
     pdf_rev: Float,
 }
 
-impl<'c, 'l, 'p, 's> Vertex<'c, 'l, 'p, 's> {
-    pub fn new(vertex_type: VertexType, ei: EndpointInteraction<'c, 'l>, beta: &Spectrum) -> Self {
+impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
+    pub fn new(vertex_type: VertexType, ei: EndpointInteraction<'a>, beta: &Spectrum) -> Self {
         Vertex {
             vertex_type: vertex_type,
             beta: *beta,
@@ -112,10 +112,10 @@ impl<'c, 'l, 'p, 's> Vertex<'c, 'l, 'p, 's> {
         }
     }
     pub fn create_camera(
-        camera: &'c Box<Camera + Send + Sync>,
+        camera: &'a Box<Camera + Send + Sync>,
         ray: &Ray,
         beta: &Spectrum,
-    ) -> Vertex<'c, 'l, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         Vertex::new(
             VertexType::Camera,
             EndpointInteraction::new_camera(camera, ray),
@@ -127,7 +127,7 @@ impl<'c, 'l, 'p, 's> Vertex<'c, 'l, 'p, 's> {
         beta: &Spectrum,
         pdf: Float,
         prev: &Vertex,
-    ) -> Vertex<'c, 'l, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         let mut v: Vertex = Vertex {
             vertex_type: VertexType::Surface,
             beta: *beta,
@@ -141,10 +141,10 @@ impl<'c, 'l, 'p, 's> Vertex<'c, 'l, 'p, 's> {
         v
     }
     pub fn create_light(
-        ei: EndpointInteraction<'c, 'l>,
+        ei: EndpointInteraction<'a>,
         beta: &Spectrum,
         pdf: Float,
-    ) -> Vertex<'c, 'l, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         let mut v: Vertex = Vertex::new(VertexType::Light, ei, beta);
         v.pdf_fwd = pdf;
         v
@@ -281,12 +281,13 @@ pub fn correct_shading_normal(
     }
 }
 
-pub fn generate_camera_subpath(
-    scene: &Scene,
+pub fn generate_camera_subpath<'a>(
+    scene: &'a Scene,
     sampler: &mut Box<Sampler + Send + Sync>,
     max_depth: u32,
-    camera: &Box<Camera + Send + Sync>,
+    camera: &'a Box<Camera + Send + Sync>,
     p_film: &Point2f,
+    path: &'a mut Vec<Vertex<'a, 'a, 'a>>,
 ) -> usize {
     if max_depth == 0 {
         return 0_usize;
@@ -303,6 +304,7 @@ pub fn generate_camera_subpath(
     ray.scale_differentials(1.0 as Float / (sampler.get_samples_per_pixel() as Float).sqrt());
     // generate first vertex on camera subpath and start random walk
     let vertex: Vertex = Vertex::create_camera(camera, &ray, &beta);
+    path.push(vertex);
     let (pdf_pos, pdf_dir) = camera.pdf_we(&ray);
     random_walk(
         scene,
@@ -312,23 +314,20 @@ pub fn generate_camera_subpath(
         pdf_dir,
         max_depth - 1_u32,
         TransportMode::Radiance,
-        vertex,
+        path,
     ) + 1_usize
 }
 
-pub fn random_walk<'c, 'l, 'p, 's>(
-    scene: &'p Scene,
+pub fn random_walk<'a>(
+    scene: &'a Scene,
     ray: &mut Ray,
     sampler: &mut Box<Sampler + Send + Sync>,
     beta: &mut Spectrum,
     pdf: Float,
     max_depth: u32,
     mode: TransportMode,
-    vertex: Vertex,
+    path: &'a mut Vec<Vertex<'a, 'a, 'a>>,
 ) -> usize {
-    // those two lines where previously in generate_camera_subpath()
-    let mut path: Vec<Vertex> = Vec::with_capacity(max_depth as usize);
-    path.push(vertex);
     let mut bounces: usize = 0_usize;
     if max_depth == 0_u32 {
         return bounces;
