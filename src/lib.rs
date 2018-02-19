@@ -27,7 +27,7 @@ extern crate typed_arena;
 // use std::collections::HashMap;
 use std::default::Default;
 use std::sync::atomic::{AtomicUsize, Ordering};
-// use std::sync::Arc;
+use std::sync::Arc;
 use std::sync::mpsc;
 
 pub mod accelerators;
@@ -50,9 +50,10 @@ use core::integrator::SamplerIntegrator;
 use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
+use core::sampling::Distribution1D;
 use core::scene::Scene;
 use integrators::bdpt::{BDPTIntegrator, Vertex};
-use integrators::bdpt::generate_camera_subpath;
+use integrators::bdpt::{generate_camera_subpath, generate_light_subpath};
 
 // see github/tray_rust/src/sampler/block_queue.rs
 
@@ -329,8 +330,6 @@ pub fn render_bdpt(
     integrator: &mut Box<BDPTIntegrator>,
     num_threads: u8,
 ) {
-    let light_distribution =
-        create_light_sample_distribution(integrator.get_light_sample_strategy(), scene);
     // TODO
     // Compute a reverse mapping from light pointers to offsets into
     // the scene lights vector (and, equivalently, offsets into
@@ -417,7 +416,7 @@ pub fn render_bdpt(
                                     // trace the camera subpath
                                     let mut camera_vertices: Vec<Vertex> =
                                         Vec::with_capacity((integrator.max_depth + 2) as usize);
-                                    let n_camera: usize = generate_camera_subpath(
+                                    let (n_camera, p, time) = generate_camera_subpath(
                                         scene,
                                         &mut tile_sampler,
                                         integrator.max_depth + 2,
@@ -437,15 +436,25 @@ pub fn render_bdpt(
                                     // PowerLightDistribution by
                                     // default here, which doesn't use
                                     // the point passed to it.
-
-                                    // let light_distr: Distribution1D =
-                                    //     light_distribution.lookup(cameraVertices[0].p());
-
-                                    // Now trace the light subpath
-                                    // int nLight = GenerateLightSubpath(
-                                    //     scene, *tileSampler, arena, maxDepth + 1,
-                                    //     cameraVertices[0].time(), *light_distr, lightToIndex,
-                                    //     lightVertices);
+                                    if let Some(light_distribution) =
+                                        create_light_sample_distribution(
+                                            integrator.get_light_sample_strategy(),
+                                            scene,
+                                        ) {
+                                        let light_distr: Arc<Distribution1D> = light_distribution.lookup(&p);
+                                        // Now trace the light subpath
+                                        let mut light_vertices: Vec<Vertex> =
+                                            Vec::with_capacity((integrator.max_depth + 1) as usize);
+                                        let n_light: usize = generate_light_subpath(
+                                            scene,
+                                            &mut tile_sampler,
+                                            integrator.max_depth + 1,
+                                            time,
+                                            light_distr,
+                                            // light_to_index,
+                                            &mut light_vertices,
+                                        );
+                                    }
                                     // WORK
                                     // Execute all BDPT connection strategies
                                     let mut l: Spectrum = Spectrum::new(0.0 as Float);

@@ -1,5 +1,6 @@
 // std
 use std;
+use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Ray, Vector3f};
@@ -10,6 +11,7 @@ use core::interaction::{Interaction, SurfaceInteraction};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::BxdfType;
 use core::sampler::Sampler;
+use core::sampling::Distribution1D;
 use core::scene::Scene;
 
 // see bdpt.h
@@ -168,6 +170,25 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             }
         }
     }
+    pub fn time(&self) -> Float {
+        match self.vertex_type {
+            VertexType::Medium => Float::default(),
+            VertexType::Surface => {
+                if let Some(ref si) = self.si {
+                    si.time
+                } else {
+                    Float::default()
+                }
+            }
+            _ => {
+                if let Some(ref ei) = self.ei {
+                    ei.time
+                } else {
+                    Float::default()
+                }
+            }
+        }
+    }
     pub fn ng(&self) -> Normal3f {
         match self.vertex_type {
             VertexType::Medium => Normal3f::default(),
@@ -281,16 +302,16 @@ pub fn correct_shading_normal(
     }
 }
 
-pub fn generate_camera_subpath<'a>(
+pub fn generate_camera_subpath<'a>( 
     scene: &'a Scene,
     sampler: &mut Box<Sampler + Send + Sync>,
     max_depth: u32,
     camera: &'a Box<Camera + Send + Sync>,
     p_film: &Point2f,
     path: &'a mut Vec<Vertex<'a, 'a, 'a>>,
-) -> usize {
-    if max_depth == 0 {
-        return 0_usize;
+) -> (usize, Point3f, Float) {
+   if max_depth == 0 {
+        return (0_usize, Point3f::default(), Float::default());
     }
     // TODO: ProfilePhase _(Prof::BDPTGenerateSubpath);
     // sample initial ray for camera subpath
@@ -304,9 +325,13 @@ pub fn generate_camera_subpath<'a>(
     ray.scale_differentials(1.0 as Float / (sampler.get_samples_per_pixel() as Float).sqrt());
     // generate first vertex on camera subpath and start random walk
     let vertex: Vertex = Vertex::create_camera(camera, &ray, &beta);
+    // get extra info
+    let p: Point3f = vertex.p();
+    let time: Float = vertex.time();
+    // store vertex
     path.push(vertex);
-    let (pdf_pos, pdf_dir) = camera.pdf_we(&ray);
-    random_walk(
+    let (_pdf_pos, pdf_dir) = camera.pdf_we(&ray);
+    (random_walk(
         scene,
         &mut ray,
         sampler,
@@ -315,7 +340,62 @@ pub fn generate_camera_subpath<'a>(
         max_depth - 1_u32,
         TransportMode::Radiance,
         path,
-    ) + 1_usize
+    ) + 1_usize,
+     p,
+     time)
+}
+
+pub fn generate_light_subpath<'a>(
+    scene: &'a Scene,
+    sampler: &mut Box<Sampler + Send + Sync>,
+    max_depth: u32,
+    time: Float,
+    light_distr: Arc<Distribution1D>,
+    // TODO: light_to_index
+    path: &'a mut Vec<Vertex<'a, 'a, 'a>>,
+) -> usize {
+    // const Scene &scene, Sampler &sampler, MemoryArena &arena, int maxDepth,
+    // Float time, const Distribution1D &lightDistr,
+    // const std::unordered_map<const Light *, size_t> &lightToIndex,
+    // Vertex *path) {
+    // if (maxDepth == 0) return 0;
+    // ProfilePhase _(Prof::BDPTGenerateSubpath);
+    // // Sample initial ray for light subpath
+    // Float lightPdf;
+    // int lightNum = lightDistr.SampleDiscrete(sampler.Get1D(), &lightPdf);
+    // const std::shared_ptr<Light> &light = scene.lights[lightNum];
+    // RayDifferential ray;
+    // Normal3f nLight;
+    // Float pdfPos, pdfDir;
+    // Spectrum Le = light->Sample_Le(sampler.Get2D(), sampler.Get2D(), time, &ray,
+    //                                &nLight, &pdfPos, &pdfDir);
+    // if (pdfPos == 0 || pdfDir == 0 || Le.IsBlack()) return 0;
+
+    // // Generate first vertex on light subpath and start random walk
+    // path[0] =
+    //     Vertex::CreateLight(light.get(), ray, nLight, Le, pdfPos * lightPdf);
+    // Spectrum beta = Le * AbsDot(nLight, ray.d) / (lightPdf * pdfPos * pdfDir);
+    // VLOG(2) << "Starting light subpath. Ray: " << ray << ", Le " << Le <<
+    //     ", beta " << beta << ", pdfPos " << pdfPos << ", pdfDir " << pdfDir;
+    // int nVertices =
+    //     RandomWalk(scene, ray, sampler, arena, beta, pdfDir, maxDepth - 1,
+    //                TransportMode::Importance, path + 1);
+
+    // // Correct subpath sampling densities for infinite area lights
+    // if (path[0].IsInfiniteLight()) {
+    //     // Set spatial density of _path[1]_ for infinite area light
+    //     if (nVertices > 0) {
+    //         path[1].pdfFwd = pdfPos;
+    //         if (path[1].IsOnSurface())
+    //             path[1].pdfFwd *= AbsDot(ray.d, path[1].ng());
+    //     }
+
+    //     // Set spatial density of _path[0]_ for infinite area light
+    //     path[0].pdfFwd =
+    //         InfiniteLightDensity(scene, lightDistr, lightToIndex, ray.d);
+    // }
+    // return nVertices + 1;
+    0_usize
 }
 
 pub fn random_walk<'a>(
@@ -397,7 +477,7 @@ pub fn random_walk<'a>(
                 let new_ray = isect.spawn_ray(&wi);
                 *ray = new_ray;
                 // compute reverse area density at preceding vertex
-                let mut new_pdf_rev: Float = 0.0 as Float;
+                let mut new_pdf_rev;
                 {
                     let prev: &Vertex = &path[(bounces - 1) as usize];
                     new_pdf_rev = vertex.convert_density(pdf_rev, prev);
@@ -416,6 +496,8 @@ pub fn random_walk<'a>(
             if mode.clone() == TransportMode::Radiance {
                 let vertex: Vertex =
                     Vertex::create_light(EndpointInteraction::new_ray(ray), &beta, pdf_fwd);
+                // store new vertex
+                path.push(vertex);
                 bounces += 1;
             }
             break;
