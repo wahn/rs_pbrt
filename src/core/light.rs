@@ -3,7 +3,7 @@
 //! to the camera sensor.
 
 // pbrt
-use core::geometry::{Point2f, Ray, Vector3f};
+use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::pbrt::{Float, Spectrum};
 use core::scene::Scene;
@@ -22,17 +22,31 @@ pub trait Light {
     /// Returns the radiance arriving at a point at a certain time due
     /// to the light, assuming there are no occluding objects between
     /// them.
-    fn sample_li(&self,
-                 iref: &InteractionCommon,
-                 u: &Point2f,
-                 wi: &mut Vector3f,
-                 pdf: &mut Float,
-                 vis: &mut VisibilityTester)
-                 -> Spectrum;
+    fn sample_li(
+        &self,
+        iref: &InteractionCommon,
+        u: &Point2f,
+        wi: &mut Vector3f,
+        pdf: &mut Float,
+        vis: &mut VisibilityTester,
+    ) -> Spectrum;
     fn power(&self) -> Spectrum;
     fn preprocess(&self, scene: &Scene);
     fn le(&self, _ray: &mut Ray) -> Spectrum;
     fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float;
+    fn sample_le(
+        &self,
+        u1: &Point2f,
+        u2: &Point2f,
+        time: Float,
+        ray: &mut Ray,
+        n_light: &mut Normal3f,
+        pdf_pos: &mut Float,
+        pdf_dir: &mut Float,
+    ) -> Spectrum {
+        // TODO
+        Spectrum::default()
+    }
     fn get_flags(&self) -> u8;
     fn get_n_samples(&self) -> i32;
 }
@@ -53,7 +67,7 @@ pub fn is_delta_light(flags: u8) -> bool {
 
 /// A closure - an object that encapsulates a small amount of data and
 /// some computation that is yet to be done.
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct VisibilityTester {
     pub p0: InteractionCommon, // TODO: private
     pub p1: InteractionCommon, // TODO: private
