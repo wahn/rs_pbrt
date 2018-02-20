@@ -17,6 +17,7 @@ pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 pub const SHADOW_EPSILON: Float = 0.0001;
 pub const INV_PI: Float = 0.31830988618379067154;
 pub const INV_2_PI: Float = 0.15915494309189533577;
+pub const INV_4_PI: Float = 0.07957747154594766788;
 pub const PI_OVER_2: Float = 1.57079632679489661923;
 pub const PI_OVER_4: Float = 0.78539816339744830961;
 
@@ -114,7 +115,8 @@ pub fn gamma_correct(value: Float) -> Float {
 
 /// Clamp the given value *val* to lie between the values *low* and *high*.
 pub fn clamp_t<T>(val: T, low: T, high: T) -> T
-    where T: PartialOrd
+where
+    T: PartialOrd,
 {
     let r: T;
     if val < low {
@@ -130,8 +132,14 @@ pub fn clamp_t<T>(val: T, low: T, high: T) -> T
 /// Computes the remainder of a/b. Provides the behavior that the
 /// modulus of a negative number is always positive.
 pub fn mod_t<T>(a: T, b: T) -> T
-    where T: num::Zero + Copy + PartialOrd +
-    Add<T, Output = T> + Sub<T, Output = T> + Mul<T, Output = T> + Div<T, Output = T>
+where
+    T: num::Zero
+        + Copy
+        + PartialOrd
+        + Add<T, Output = T>
+        + Sub<T, Output = T>
+        + Mul<T, Output = T>
+        + Div<T, Output = T>,
 {
     let result: T = a - (a / b) * b;
     if result < num::Zero::zero() {
@@ -164,7 +172,8 @@ pub fn log_2_int_i32(v: i32) -> i32 {
 
 /// Determine if a given integer is an exact power of 2.
 pub fn is_power_of_2<T>(v: T) -> bool
-    where T: num::Zero + num::One + Copy + PartialOrd + BitAnd<T, Output = T> + Sub<T, Output = T>
+where
+    T: num::Zero + num::One + Copy + PartialOrd + BitAnd<T, Output = T> + Sub<T, Output = T>,
 {
     // https://doc.rust-lang.org/std/primitive.u32.html#method.is_power_of_two
     (v > num::Zero::zero()) && !((v & (v - num::One::one())) > num::Zero::zero())
@@ -196,7 +205,8 @@ pub fn round_up_pow2_64(v: i64) -> i64 {
 
 /// Helper function which emulates the behavior of std::upper_bound().
 pub fn find_interval<P>(size: usize, pred: P) -> usize
-    where P: Fn(usize) -> bool
+where
+    P: Fn(usize) -> bool,
 {
     let mut first = 0;
     let mut len = size;

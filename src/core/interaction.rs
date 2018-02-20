@@ -46,6 +46,16 @@ pub struct InteractionCommon {
 }
 
 impl InteractionCommon {
+    pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
+        let o: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, d);
+        Ray {
+            o: o,
+            d: *d,
+            t_max: std::f32::INFINITY,
+            time: self.time,
+            differential: None, // TODO: GetMedium(d)
+        }
+    }
     pub fn spawn_ray_to(&self, it: &InteractionCommon) -> Ray {
         let origin: Point3f =
             pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, &(it.p - self.p));
@@ -282,7 +292,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
                     wo: self.wo,
                     n: self.n,
                 };
-                return area_light.l(&interaction, *w);
+                return area_light.l(&interaction, w);
             }
         }
         Spectrum::default()

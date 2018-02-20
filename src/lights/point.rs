@@ -1,9 +1,12 @@
+// std
+use std;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{pnt3_distance_squared, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::pbrt::{Float, Spectrum};
+use core::sampling::{uniform_sample_sphere, uniform_sphere_pdf};
 use core::scene::Scene;
 use core::transform::Transform;
 
@@ -71,6 +74,29 @@ impl Light for PointLight {
     }
     fn pdf_li(&self, _iref: &Interaction, _wi: Vector3f) -> Float {
         0.0 as Float
+    }
+    fn sample_le(
+        &self,
+        u1: &Point2f,
+        u2: &Point2f,
+        time: Float,
+        ray: &mut Ray,
+        n_light: &mut Normal3f,
+        pdf_pos: &mut Float,
+        pdf_dir: &mut Float,
+    ) -> Spectrum {
+        // TODO: ProfilePhase _(Prof::LightSample);
+        let ray: Ray = Ray {
+            o: self.p_light,
+            d: uniform_sample_sphere(u1),
+            t_max: std::f32::INFINITY,
+            time: time,
+            differential: None,
+        };
+        *n_light = Normal3f::from(ray.d);
+        *pdf_pos = 1.0 as Float;
+        *pdf_dir = uniform_sphere_pdf();
+        self.i
     }
     fn get_flags(&self) -> u8 {
         self.flags

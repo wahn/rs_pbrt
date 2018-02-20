@@ -43,10 +43,7 @@ pub trait Light {
         n_light: &mut Normal3f,
         pdf_pos: &mut Float,
         pdf_dir: &mut Float,
-    ) -> Spectrum {
-        // TODO
-        Spectrum::default()
-    }
+    ) -> Spectrum;
     fn get_flags(&self) -> u8;
     fn get_n_samples(&self) -> i32;
 }
@@ -83,5 +80,5 @@ impl VisibilityTester {
 /// that emit light from their surface, with some directional
 /// distribution of radiance at each point on the surface.
 pub trait AreaLight: Light {
-    fn l(&self, intr: &InteractionCommon, w: Vector3f) -> Spectrum;
+    fn l(&self, intr: &InteractionCommon, w: &Vector3f) -> Spectrum;
 }

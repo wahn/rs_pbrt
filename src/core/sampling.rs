@@ -3,14 +3,14 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Point2f, Vector2f, Vector3f};
-use core::pbrt::{INV_2_PI, INV_PI, PI_OVER_2, PI_OVER_4};
+use core::pbrt::{INV_2_PI, INV_4_PI, PI_OVER_2, PI_OVER_4, INV_PI};
 use core::pbrt::Float;
 use core::pbrt::clamp_t;
 use core::rng::Rng;
 
 // see sampling.h
 
-#[derive(Debug,Default,Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Distribution1D {
     pub func: Vec<Float>,
     pub cdf: Vec<Float>,
@@ -47,11 +47,12 @@ impl Distribution1D {
     pub fn count(&self) -> usize {
         self.func.len()
     }
-    pub fn sample_continuous(&self,
-                             u: Float,
-                             pdf: Option<&mut Float>,
-                             off: Option<&mut usize>)
-                             -> Float {
+    pub fn sample_continuous(
+        &self,
+        u: Float,
+        pdf: Option<&mut Float>,
+        off: Option<&mut usize>,
+    ) -> Float {
         // find surrounding CDF segments and _offset_
         // int offset = find_interval((int)cdf.size(),
         //                           [&](int index) { return cdf[index] <= u; });
@@ -70,10 +71,11 @@ impl Distribution1D {
                 len = half;
             }
         }
-        let offset: usize = clamp_t(first as isize - 1_isize,
-                                    0 as isize,
-                                    self.cdf.len() as isize - 2_isize) as
-                            usize;
+        let offset: usize = clamp_t(
+            first as isize - 1_isize,
+            0 as isize,
+            self.cdf.len() as isize - 2_isize,
+        ) as usize;
         if let Some(off_ref) = off {
             *off_ref = offset;
         }
@@ -95,10 +97,11 @@ impl Distribution1D {
         // return $x\in{}[0,1)$ corresponding to sample
         (offset as Float + du) / self.count() as Float
     }
-    pub fn sample_discrete(&self,
-                           u: Float,
-                           pdf: Option<&mut Float> /* TODO: Float *uRemapped = nullptr */)
-                           -> usize {
+    pub fn sample_discrete(
+        &self,
+        u: Float,
+        pdf: Option<&mut Float>, /* TODO: Float *uRemapped = nullptr */
+    ) -> usize {
         // find surrounding CDF segments and _offset_
         // let offset: usize = find_interval(cdf.size(),
         //                           [&](int index) { return cdf[index] <= u; });
@@ -117,10 +120,11 @@ impl Distribution1D {
                 len = half;
             }
         }
-        let offset: usize = clamp_t(first as isize - 1_isize,
-                                    0 as isize,
-                                    self.cdf.len() as isize - 2_isize) as
-                            usize;
+        let offset: usize = clamp_t(
+            first as isize - 1_isize,
+            0 as isize,
+            self.cdf.len() as isize - 2_isize,
+        ) as usize;
         if pdf.is_some() {
             if self.func_int > 0.0 as Float {
                 *pdf.unwrap() = self.func[offset] / (self.func_int * self.func.len() as Float);
@@ -135,7 +139,7 @@ impl Distribution1D {
     }
 }
 
-#[derive(Debug,Default,Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Distribution2D {
     pub p_conditional_v: Vec<Arc<Distribution1D>>,
     pub p_marginal: Arc<Distribution1D>,
@@ -170,12 +174,16 @@ impl Distribution2D {
         Point2f { x: d0, y: d1 }
     }
     pub fn pdf(&self, p: &Point2f) -> Float {
-        let iu: usize = clamp_t((p[0] as usize * self.p_conditional_v[0].count()) as usize,
-                                0_usize,
-                                self.p_conditional_v[0].count() - 1_usize);
-        let iv: usize = clamp_t((p[1] as usize * self.p_marginal.count()) as usize,
-                                0_usize,
-                                self.p_marginal.count() - 1_usize);
+        let iu: usize = clamp_t(
+            (p[0] as usize * self.p_conditional_v[0].count()) as usize,
+            0_usize,
+            self.p_conditional_v[0].count() - 1_usize,
+        );
+        let iv: usize = clamp_t(
+            (p[1] as usize * self.p_marginal.count()) as usize,
+            0_usize,
+            self.p_marginal.count() - 1_usize,
+        );
         self.p_conditional_v[iv].func[iu] / self.p_marginal.func_int
     }
 }
@@ -186,8 +194,10 @@ pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) 
     for i in 0..count {
         let other: i32 = i + rng.uniform_uint32_bounded((count - i) as u32) as i32;
         for j in 0..n_dimensions {
-            samp.swap((n_dimensions * i + j) as usize,
-                      (n_dimensions * other + j) as usize);
+            samp.swap(
+                (n_dimensions * i + j) as usize,
+                (n_dimensions * other + j) as usize,
+            );
         }
     }
 }
@@ -247,6 +257,11 @@ pub fn uniform_sample_sphere(u: &Point2f) -> Vector3f {
         y: r * phi.sin(),
         z: z,
     }
+}
+
+/// Probability density function (PDF) of a sphere.
+pub fn uniform_sphere_pdf() -> Float {
+    INV_4_PI
 }
 
 /// Uniformly distribute samples over a unit disk.
