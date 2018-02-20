@@ -26,7 +26,7 @@ pub struct EndpointInteraction<'a> {
     pub n: Normal3f,
     // EndpointInteraction Public Data
     pub camera: Option<&'a Box<Camera + Send + Sync>>,
-    pub light: Option<&'a Box<Light + Send + Sync>>,
+    pub light: Option<Arc<Light + Send + Sync>>,
 }
 
 impl<'a> EndpointInteraction<'a> {
@@ -40,6 +40,12 @@ impl<'a> EndpointInteraction<'a> {
     pub fn new_camera(camera: &'a Box<Camera + Send + Sync>, ray: &Ray) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
         ei.camera = Some(camera);
+        ei
+    }
+    pub fn new_light(light: Arc<Light + Send + Sync>, ray: &Ray, nl: &Normal3f) -> Self {
+        let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
+        ei.light = Some(light);
+        ei.n = *nl;
         ei
     }
     pub fn new_ray(ray: &Ray) -> Self {
@@ -142,7 +148,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         v.pdf_fwd = prev.convert_density(pdf, &v);
         v
     }
-    pub fn create_light(
+    pub fn create_light_interaction(
         ei: EndpointInteraction<'a>,
         beta: &Spectrum,
         pdf: Float,
@@ -150,6 +156,19 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         let mut v: Vertex = Vertex::new(VertexType::Light, ei, beta);
         v.pdf_fwd = pdf;
         v
+    }
+    pub fn create_light(
+        light: Arc<Light + Send + Sync>,
+        ray: &Ray,
+        nl: &Normal3f,
+        le: &Spectrum,
+        pdf: Float,
+    ) -> Vertex<'a, 'p, 's> {
+        Vertex::new(
+            VertexType::Light,
+            EndpointInteraction::new_light(light, ray, nl),
+            le,
+        )
     }
     pub fn p(&self) -> Point3f {
         match self.vertex_type {
@@ -356,6 +375,7 @@ pub fn generate_light_subpath<'a>(
     // TODO: light_to_index
     path: &'a mut Vec<Vertex<'a, 'a, 'a>>,
 ) -> usize {
+    let mut n_vertices: usize = 0_usize;
     if max_depth == 0_u32 {
         return 0_usize;
     }
@@ -377,22 +397,26 @@ pub fn generate_light_subpath<'a>(
         &mut pdf_pos,
         &mut pdf_dir,
     );
-    // if (pdfPos == 0 || pdfDir == 0 || Le.IsBlack()) return 0;
-
-    // // Generate first vertex on light subpath and start random walk
-    // path[0] =
-    //     Vertex::CreateLight(light.get(), ray, nLight, Le, pdfPos * lightPdf);
+    if pdf_pos == 0.0 as Float || pdf_dir == 0.0 as Float || le.is_black() {
+        return 0_usize;
+    }
+    if let Some(light_pdf) = light_pdf {
+        // generate first vertex on light subpath and start random walk
+        let vertex: Vertex =
+            Vertex::create_light(light.clone(), &ray, &n_light, &le, pdf_pos * light_pdf);
+        path.push(vertex);
+    }
     // Spectrum beta = Le * AbsDot(nLight, ray.d) / (lightPdf * pdfPos * pdfDir);
     // VLOG(2) << "Starting light subpath. Ray: " << ray << ", Le " << Le <<
     //     ", beta " << beta << ", pdfPos " << pdfPos << ", pdfDir " << pdfDir;
-    // int nVertices =
+    // int n_vertices =
     //     RandomWalk(scene, ray, sampler, arena, beta, pdfDir, maxDepth - 1,
     //                TransportMode::Importance, path + 1);
 
     // // Correct subpath sampling densities for infinite area lights
     // if (path[0].IsInfiniteLight()) {
     //     // Set spatial density of _path[1]_ for infinite area light
-    //     if (nVertices > 0) {
+    //     if (n_vertices > 0) {
     //         path[1].pdfFwd = pdfPos;
     //         if (path[1].IsOnSurface())
     //             path[1].pdfFwd *= AbsDot(ray.d, path[1].ng());
@@ -402,8 +426,8 @@ pub fn generate_light_subpath<'a>(
     //     path[0].pdfFwd =
     //         InfiniteLightDensity(scene, light_distr, lightToIndex, ray.d);
     // }
-    // return nVertices + 1;
-    0_usize
+    // return n_vertices + 1;
+    n_vertices
 }
 
 pub fn random_walk<'a>(
@@ -502,8 +526,11 @@ pub fn random_walk<'a>(
         } else {
             // capture escaped rays when tracing from the camera
             if mode.clone() == TransportMode::Radiance {
-                let vertex: Vertex =
-                    Vertex::create_light(EndpointInteraction::new_ray(ray), &beta, pdf_fwd);
+                let vertex: Vertex = Vertex::create_light_interaction(
+                    EndpointInteraction::new_ray(ray),
+                    &beta,
+                    pdf_fwd,
+                );
                 // store new vertex
                 path.push(vertex);
                 bounces += 1;
