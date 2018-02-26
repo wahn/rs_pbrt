@@ -360,6 +360,7 @@ pub fn generate_camera_subpath<'a>(
             max_depth - 1_u32,
             TransportMode::Radiance,
             path,
+            None,
         ) + 1_usize,
         p,
         time,
@@ -404,30 +405,42 @@ pub fn generate_light_subpath<'a>(
         // generate first vertex on light subpath and start random walk
         let vertex: Vertex =
             Vertex::create_light(light.clone(), &ray, &n_light, &le, pdf_pos * light_pdf);
+        let is_infinite_light: bool = vertex.is_infinite_light();
         path.push(vertex);
+        let mut beta: Spectrum =
+            le * nrm_abs_dot_vec3(&n_light, &ray.d) / (light_pdf * pdf_pos * pdf_dir);
+        println!(
+            "Starting light subpath. Ray: {:?}, Le {:?}, beta {:?}, pdf_pos {:?}, pdf_dir {:?}",
+            ray, le, beta, pdf_pos, pdf_dir
+        );
+        let n_vertices: usize;
+        if is_infinite_light {
+            n_vertices = random_walk(
+                scene,
+                &mut ray,
+                sampler,
+                &mut beta,
+                pdf_dir,
+                max_depth - 1,
+                TransportMode::Importance,
+                path,
+                Some(pdf_pos),
+            );
+        } else {
+            n_vertices = random_walk(
+                scene,
+                &mut ray,
+                sampler,
+                &mut beta,
+                pdf_dir,
+                max_depth - 1,
+                TransportMode::Importance,
+                path,
+                None,
+            );
+        }
     }
-    // Spectrum beta = Le * AbsDot(nLight, ray.d) / (lightPdf * pdfPos * pdfDir);
-    // VLOG(2) << "Starting light subpath. Ray: " << ray << ", Le " << Le <<
-    //     ", beta " << beta << ", pdfPos " << pdfPos << ", pdfDir " << pdfDir;
-    // int n_vertices =
-    //     RandomWalk(scene, ray, sampler, arena, beta, pdfDir, maxDepth - 1,
-    //                TransportMode::Importance, path + 1);
-
-    // // Correct subpath sampling densities for infinite area lights
-    // if (path[0].IsInfiniteLight()) {
-    //     // Set spatial density of _path[1]_ for infinite area light
-    //     if (n_vertices > 0) {
-    //         path[1].pdfFwd = pdfPos;
-    //         if (path[1].IsOnSurface())
-    //             path[1].pdfFwd *= AbsDot(ray.d, path[1].ng());
-    //     }
-
-    //     // Set spatial density of _path[0]_ for infinite area light
-    //     path[0].pdfFwd =
-    //         InfiniteLightDensity(scene, light_distr, lightToIndex, ray.d);
-    // }
-    // return n_vertices + 1;
-    n_vertices
+    n_vertices + 1
 }
 
 pub fn random_walk<'a>(
@@ -439,6 +452,7 @@ pub fn random_walk<'a>(
     max_depth: u32,
     mode: TransportMode,
     path: &'a mut Vec<Vertex<'a, 'a, 'a>>,
+    density_info: Option<Float>,
 ) -> usize {
     let mut bounces: usize = 0_usize;
     if max_depth == 0_u32 {
@@ -541,6 +555,18 @@ pub fn random_walk<'a>(
             }
             break;
         }
+    }
+    // correct subpath sampling densities for infinite area lights
+    if let Some(pdf_pos) = density_info {
+        // set spatial density of _path[1]_ for infinite area light
+        if bounces > 0 {
+            path[1].pdf_fwd = pdf_pos;
+            if path[1].is_on_surface() {
+                path[1].pdf_fwd *= vec3_abs_dot_nrm(&ray.d, &path[1].ng());
+            }
+        }
+        // set spatial density of _path[0]_ for infinite area light
+        // path[0].pdf_fwd = infinite_light_density(scene, light_distr, light_to_index, ray.d);
     }
     bounces
 }
