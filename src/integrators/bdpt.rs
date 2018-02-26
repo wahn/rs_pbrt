@@ -570,3 +570,24 @@ pub fn random_walk<'a>(
     }
     bounces
 }
+
+pub fn infinite_light_density<'a>(
+    scene: &'a Scene,
+    light_distr: Arc<Distribution1D>,
+    // const std::unordered_map<const Light *, size_t> &lightToDistrIndex,
+    w: &Vector3f,
+) -> Float {
+    let mut pdf: Float = 0.0 as Float;
+    for light in &scene.infinite_lights {
+        //     CHECK(lightToDistrIndex.find(light.get()) != lightToDistrIndex.end());
+        //     size_t index = lightToDistrIndex.find(light.get())->second;
+        let index: usize = 0; // TODO: calculate index (see above)
+        pdf += light.pdf_li(&SurfaceInteraction::default(), -(*w)) * light_distr.func[index];
+    }
+    // TODO: Old loop (without cache) !!!
+    // for (size_t i = 0; i < scene.lights.size(); ++i)
+    //     if (scene.lights[i]->flags & (int)LightFlags::Infinite)
+    //         pdf +=
+    //             scene.lights[i]->Pdf_Li(Interaction(), -w) * lightDistr.func[i];
+    pdf / (light_distr.func_int * light_distr.count() as Float)
+}
