@@ -130,7 +130,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             beta,
         )
     }
-    pub fn create_surface(
+    pub fn create_surface_interaction(
         si: SurfaceInteraction<'p, 's>,
         beta: &Spectrum,
         pdf: Float,
@@ -466,8 +466,12 @@ pub fn random_walk<'a>(
             // }
 
             // initialize _vertex_ with surface intersection information
-            let mut vertex: Vertex =
-                Vertex::create_surface(isect.clone(), &beta, pdf_fwd, &path[bounces as usize]);
+            let mut vertex: Vertex = Vertex::create_surface_interaction(
+                isect.clone(),
+                &beta,
+                pdf_fwd,
+                &path[bounces as usize],
+            );
             bounces += 1;
             if bounces as u32 >= max_depth {
                 break;
