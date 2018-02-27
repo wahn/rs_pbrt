@@ -5,9 +5,10 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
-use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f};
-use core::geometry::{vec3_dot_vec3, vec3_normalize};
-use core::interaction::Interaction;
+use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray,
+                     RayDifferential, Vector3f};
+use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
+use core::interaction::{Interaction, InteractionCommon};
 use core::light::VisibilityTester;
 use core::paramset::ParamSet;
 use core::pbrt::{Float, Spectrum};
@@ -257,6 +258,10 @@ impl Camera for PerspectiveCamera {
         *ray = self.camera_to_world.transform_ray(&in_ray);
         1.0
     }
+    fn we(&self, ray: &Ray, p_raster2: Option<&mut Point2f>) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
     fn pdf_we(&self, ray: &Ray) -> (Float, Float) {
         let mut pdf_pos: Float = 0.0;
         let mut pdf_dir: Float = 0.0;
@@ -310,15 +315,51 @@ impl Camera for PerspectiveCamera {
     }
     fn sample_wi(
         &self,
-        iref: &Interaction,
+        iref: &InteractionCommon,
         u: &Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         p_raster: &mut Point2f,
         vis: &mut VisibilityTester,
     ) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        // uniformly sample a lens interaction _lensIntr_
+        let p_lens: Point2f = concentric_sample_disk(u) * self.lens_radius;
+        let p_lens_world: Point3f = self.camera_to_world.transform_point(
+            iref.time,
+            &Point3f {
+                x: p_lens.x,
+                y: p_lens.y,
+                z: 0.0 as Float,
+            },
+        );
+        // Interaction lens_intr(p_lens_world, iref.time, medium);
+        let mut lens_intr: InteractionCommon = InteractionCommon::default();
+        lens_intr.p = p_lens_world;
+        lens_intr.time = iref.time;
+        lens_intr.n = Normal3f::from(self.camera_to_world.transform_vector(
+            iref.time,
+            &Vector3f {
+                x: 0.0 as Float,
+                y: 0.0 as Float,
+                z: 1.0 as Float,
+            },
+        ));
+        // populate arguments and compute the importance value
+        vis.p0 = *iref;
+        vis.p1 = lens_intr;
+        *wi = lens_intr.p - iref.p;
+        let dist: Float = wi.length();
+        *wi /= dist;
+
+        // compute PDF for importance arriving at _iref_
+
+        // compute lens area of perspective camera
+        let mut lens_area: Float = 1.0 as Float;
+        if self.lens_radius != 0.0 as Float {
+            lens_area = PI * self.lens_radius * self.lens_radius;
+        }
+        *pdf = (dist * dist) / (nrm_abs_dot_vec3(&lens_intr.n, wi) * lens_area);
+        self.we(&lens_intr.spawn_ray(&-*wi), Some(p_raster))
     }
     fn get_film(&self) -> Arc<Film> {
         self.film.clone()

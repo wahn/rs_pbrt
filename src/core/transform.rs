@@ -1859,6 +1859,17 @@ impl AnimatedTransform {
             t.transform_point(p)
         }
     }
+    pub fn transform_vector(&self, time: Float, v: &Vector3<Float>) -> Vector3<Float> {
+        if !self.actually_animated || time <= self.start_time {
+            self.start_transform.transform_vector(v)
+        } else if time >= self.end_time {
+            self.end_transform.transform_vector(v)
+        } else {
+            let mut t: Transform = Transform::default();
+            self.interpolate(time, &mut t);
+            t.transform_vector(v)
+        }
+    }
     pub fn motion_bounds(&self, b: &Bounds3f) -> Bounds3f {
         if !self.actually_animated {
             return self.start_transform.transform_bounds(b);

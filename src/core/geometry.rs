@@ -357,6 +357,18 @@ impl Div<Float> for Vector3<f32> {
     }
 }
 
+// work around bug
+// https://github.com/rust-lang/rust/issues/40395
+impl DivAssign<Float> for Vector3<f32> {
+    fn div_assign(&mut self, rhs: Float) {
+        assert_ne!(rhs, 0.0 as Float);
+        let inv: Float = 1.0 as Float / rhs;
+        self.x *= inv;
+        self.y *= inv;
+        self.z *= inv;
+    }
+}
+
 impl<T> Neg for Vector3<T>
 where
     T: Copy + Neg<Output = T>,

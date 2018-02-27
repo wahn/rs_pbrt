@@ -7,7 +7,7 @@ use std::sync::Arc;
 // pbrt
 use core::film::Film;
 use core::geometry::{Point2f, Ray, Vector3f};
-use core::interaction::Interaction;
+use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::pbrt::{Float, Spectrum};
 
@@ -15,10 +15,11 @@ use core::pbrt::{Float, Spectrum};
 
 pub trait Camera {
     fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float;
+    fn we(&self, ray: &Ray, p_raster2: Option<&mut Point2f>) -> Spectrum;
     fn pdf_we(&self, ray: &Ray) -> (Float, Float);
     fn sample_wi(
         &self,
-        iref: &Interaction,
+        iref: &InteractionCommon,
         u: &Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
