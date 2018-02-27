@@ -440,7 +440,8 @@ pub fn render_bdpt(
                                             integrator.get_light_sample_strategy(),
                                             scene,
                                         ) {
-                                        let light_distr: Arc<Distribution1D> = light_distribution.lookup(&p);
+                                        let light_distr: Arc<Distribution1D> =
+                                                light_distribution.lookup(&p);
                                         // Now trace the light subpath
                                         let (n_light, light_vertices) = generate_light_subpath(
                                             scene,
@@ -465,9 +466,9 @@ pub fn render_bdpt(
                                                 }
                                                 // execute the $(s, t)$ connection strategy and update _L_
                                                 let p_film_new: Point2f = Point2f {
-                                                x: p_film.x,
-                                                y: p_film.y,
-                                            };
+                                                    x: p_film.x,
+                                                    y: p_film.y,
+                                                };
                                                 // Float misWeight = 0.f;
                                                 let mis_weight: Float = 0.0 as Float;
                                                 // Spectrum Lpath = ConnectBDPT(

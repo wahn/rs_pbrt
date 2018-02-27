@@ -230,6 +230,43 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     pub fn is_on_surface(&self) -> bool {
         self.ng() != Normal3f::default()
     }
+    pub fn is_connectible(&self) -> bool {
+        match self.vertex_type {
+            VertexType::Medium => true,
+            VertexType::Light => {
+                if let Some(ref ei) = self.ei {
+                    if let Some(ref light) = ei.light {
+                        let check: u8 = light.get_flags() & LightFlags::DeltaDirection as u8;
+                        check == 0 as u8
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            }
+            VertexType::Camera => true,
+            VertexType::Surface => {
+                if let Some(ref si) = self.si {
+                    if let Some(ref bsdf) = si.bsdf {
+                        let bsdf_flags: u8 = BxdfType::BsdfDiffuse as u8
+                            | BxdfType::BsdfGlossy as u8
+                            | BxdfType::BsdfReflection as u8
+                            | BxdfType::BsdfTransmission as u8;
+                        bsdf.num_components(bsdf_flags) > 0
+                    } else {
+                        false
+                    }
+                } else {
+                    false
+                }
+            }
+            _ => {
+                panic!("Unhandled vertex type in IsConnectable()");
+                false
+            }
+        }
+    }
     pub fn is_infinite_light(&self) -> bool {
         if self.vertex_type != VertexType::Light {
             return false;
@@ -328,8 +365,7 @@ pub fn generate_camera_subpath<'a>(
     camera: &'a Box<Camera + Send + Sync>,
     p_film: &Point2f,
 ) -> (usize, Arc<Vec<Vertex<'a, 'a, 'a>>>, Point3f, Float) {
-    let mut path: Arc<Vec<Vertex<'a, 'a, 'a>>> =
-        Arc::new(Vec::with_capacity(max_depth as usize));
+    let mut path: Arc<Vec<Vertex<'a, 'a, 'a>>> = Arc::new(Vec::with_capacity(max_depth as usize));
     if max_depth == 0 {
         return (0_usize, path.clone(), Point3f::default(), Float::default());
     }
