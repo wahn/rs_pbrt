@@ -1,5 +1,6 @@
 // std
 use std;
+use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
@@ -87,7 +88,15 @@ impl Light for DiffuseAreaLight {
         self.l(&p_shape, &-new_wi)
     }
     fn power(&self) -> Spectrum {
-        Spectrum::default()
+        // return (twoSided ? 2 : 1) * Lemit * area * Pi;
+        let mut p: Spectrum = Spectrum::default();
+        let factor: Float;
+        if self.two_sided {
+            factor = 2.0 as Float;
+        } else {
+            factor = 1.0 as Float;
+        }
+        self.l_emit * factor * self.area * PI
     }
     fn preprocess(&self, _scene: &Scene) {
         // TODO?
@@ -130,10 +139,10 @@ impl Light for DiffuseAreaLight {
                 w = cosine_sample_hemisphere(&u);
                 w.z *= -1.0 as Float;
             }
-            *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(w.x.abs());
+            *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(w.z.abs());
         } else {
             w = cosine_sample_hemisphere(u2);
-            *pdf_dir = cosine_hemisphere_pdf(w.x);
+            *pdf_dir = cosine_hemisphere_pdf(w.z);
         }
         let n: Vector3f = Vector3f::from(ic.n);
         let mut v1: Vector3f = Vector3f::default();

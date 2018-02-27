@@ -366,9 +366,7 @@ pub fn create_light_sample_distribution(
     if name == String::from("uniform") || scene.lights.len() == 1 {
         return Some(Arc::new(UniformLightDistribution::new(scene)));
     } else if name == String::from("power") {
-        println!("TODO: PowerLightDistribution");
-    // return std::unique_ptr<LightDistribution>{
-    //     new PowerLightDistribution(scene)};
+        return Some(Arc::new(PowerLightDistribution::new(scene)));
     } else if name == String::from("spatial") {
         return Some(Arc::new(SpatialLightDistribution::new(scene, 64)));
     } else {
@@ -376,8 +374,7 @@ pub fn create_light_sample_distribution(
             "Light sample distribution type \"{:?}\" unknown. Using \"spatial\".",
             name
         );
-        // return std::unique_ptr<LightDistribution>{
-        //     new SpatialLightDistribution(scene)};
+        return Some(Arc::new(SpatialLightDistribution::new(scene, 64)));
     }
     None
 }

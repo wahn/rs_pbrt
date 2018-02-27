@@ -436,6 +436,7 @@ pub fn render_bdpt(
                                     // PowerLightDistribution by
                                     // default here, which doesn't use
                                     // the point passed to it.
+                                    let mut n_light: usize = 0_usize;
                                     if let Some(light_distribution) =
                                         create_light_sample_distribution(
                                             integrator.get_light_sample_strategy(),
@@ -445,7 +446,7 @@ pub fn render_bdpt(
                                         // Now trace the light subpath
                                         let mut light_vertices: Vec<Vertex> =
                                             Vec::with_capacity((integrator.max_depth + 1) as usize);
-                                        let n_light: usize = generate_light_subpath(
+                                        n_light = generate_light_subpath(
                                             scene,
                                             &mut tile_sampler,
                                             integrator.max_depth + 1,
@@ -455,20 +456,48 @@ pub fn render_bdpt(
                                             &mut light_vertices,
                                         );
                                     }
-                                    // WORK
                                     // Execute all BDPT connection strategies
                                     let mut l: Spectrum = Spectrum::new(0.0 as Float);
+                                    println!("n_camera = {:?}", n_camera);
+                                    println!("n_light = {:?}", n_light);
                                     for t in 1..n_camera + 1 {
-                                        // for t in 0..n_light + 1 {
-                                        //     // WORK
-                                        // }
+                                        for t in 0..n_light + 1 {
+                                            // int depth = t + s - 2;
+                                            // if ((s == 1 && t == 1) || depth < 0 ||
+                                            //     depth > maxDepth)
+                                            //     continue;
+                                            // // Execute the $(s, t)$ connection strategy and
+                                            // // update _L_
+                                            // Point2f pFilmNew = pFilm;
+                                            // Float misWeight = 0.f;
+                                            // Spectrum Lpath = ConnectBDPT(
+                                            //     scene, lightVertices, cameraVertices, s, t,
+                                            //     *lightDistr, lightToIndex, *camera, *tileSampler,
+                                            //     &pFilmNew, &misWeight);
+                                            // VLOG(2) << "Connect bdpt s: " << s <<", t: " << t <<
+                                            //     ", Lpath: " << Lpath << ", misWeight: " << misWeight;
+                                            // if (visualizeStrategies || visualizeWeights) {
+                                            //     Spectrum value;
+                                            //     if (visualizeStrategies)
+                                            //         value =
+                                            //             misWeight == 0 ? 0 : Lpath / misWeight;
+                                            //     if (visualizeWeights) value = Lpath;
+                                            //     weightFilms[BufferIndex(s, t)]->AddSplat(
+                                            //         pFilmNew, value);
+                                            // }
+                                            // if (t != 1)
+                                            //     L += Lpath;
+                                            // else
+                                            //     film->AddSplat(pFilmNew, Lpath);
+                                            // WORK
+                                        }
                                     }
-                                    println!(
-                                        "Add film sample pFilm: {:?}, L: {:?}, (y: {:?})",
-                                        p_film,
-                                        l,
-                                        l.y()
-                                    );
+                                    // println!(
+                                    //     "Add film sample pFilm: {:?}, L: {:?}, (y: {:?})",
+                                    //     p_film,
+                                    //     l,
+                                    //     l.y()
+                                    // );
                                     film_tile.add_sample(&p_film, &mut l, 1.0 as Float);
                                     done = !tile_sampler.start_next_sample();
                                 }

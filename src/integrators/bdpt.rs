@@ -409,10 +409,10 @@ pub fn generate_light_subpath<'a>(
         path.push(vertex);
         let mut beta: Spectrum =
             le * nrm_abs_dot_vec3(&n_light, &ray.d) / (light_pdf * pdf_pos * pdf_dir);
-        println!(
-            "Starting light subpath. Ray: {:?}, Le {:?}, beta {:?}, pdf_pos {:?}, pdf_dir {:?}",
-            ray, le, beta, pdf_pos, pdf_dir
-        );
+        // println!(
+        //     "Starting light subpath. Ray: {:?}, Le {:?}, beta {:?}, pdf_pos {:?}, pdf_dir {:?}",
+        //     ray, le, beta, pdf_pos, pdf_dir
+        // );
         let n_vertices: usize;
         if is_infinite_light {
             n_vertices = random_walk(
@@ -463,10 +463,10 @@ pub fn random_walk<'a>(
     let mut pdf_rev: Float = 0.0 as Float;
     loop {
         // attempt to create the next subpath vertex in _path_
-        println!(
-            "Random walk. Bounces {:?}, beta {:?}, pdf_fwd {:?}, pdf_rev {:?}",
-            bounces, beta, pdf_fwd, pdf_rev
-        );
+        // println!(
+        //     "Random walk. Bounces {:?}, beta {:?}, pdf_fwd {:?}, pdf_rev {:?}",
+        //     bounces, beta, pdf_fwd, pdf_rev
+        // );
         // TODO: Handle MediumInteraction
         // trace a ray and sample the medium, if any
         if let Some(mut isect) = scene.intersect(ray) {
@@ -503,15 +503,15 @@ pub fn random_walk<'a>(
                     bsdf_flags,
                     &mut sampled_type,
                 );
-                println!(
-                    "Random walk sampled dir {:?} f: {:?}, pdf_fwd: {:?}",
-                    wi, f, pdf_fwd
-                );
+                // println!(
+                //     "Random walk sampled dir {:?} f: {:?}, pdf_fwd: {:?}",
+                //     wi, f, pdf_fwd
+                // );
                 if f.is_black() || pdf_fwd == 0.0 as Float {
                     break;
                 }
                 *beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf_fwd;
-                println!("Random walk beta now {:?}", beta);
+                // println!("Random walk beta now {:?}", beta);
                 pdf_rev = bsdf.pdf(&wi, &isect.wo, bsdf_flags);
                 if (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8 {
                     vertex.delta = true;
@@ -520,10 +520,10 @@ pub fn random_walk<'a>(
                 }
                 *beta *=
                     Spectrum::new(correct_shading_normal(&isect, &isect.wo, &wi, mode.clone()));
-                println!(
-                    "Random walk beta after shading normal correction {:?}",
-                    beta
-                );
+                // println!(
+                //     "Random walk beta after shading normal correction {:?}",
+                //     beta
+                // );
                 let new_ray = isect.spawn_ray(&wi);
                 *ray = new_ray;
                 // compute reverse area density at preceding vertex
@@ -578,7 +578,9 @@ pub fn infinite_light_density<'a>(
     w: &Vector3f,
 ) -> Float {
     let mut pdf: Float = 0.0 as Float;
+    println!("TODO: infinite_light_density()");
     for light in &scene.infinite_lights {
+        // for i in 0..scene.infinite_lights.len() {
         //     CHECK(lightToDistrIndex.find(light.get()) != lightToDistrIndex.end());
         //     size_t index = lightToDistrIndex.find(light.get())->second;
         let index: usize = 0; // TODO: calculate index (see above)
