@@ -5,7 +5,7 @@ use std::sync::Arc;
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm};
-use core::light::{Light, LightFlags};
+use core::light::{Light, LightFlags, VisibilityTester};
 use core::material::TransportMode;
 use core::interaction::{Interaction, SurfaceInteraction};
 use core::pbrt::{Float, Spectrum};
@@ -608,9 +608,97 @@ pub fn connect_bdpt<'a>(
     scene: &'a Scene,
     light_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
     camera_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
+    s: usize,
+    t: usize,
+    sampler: &mut Box<Sampler + Send + Sync>,
 ) -> Spectrum {
+    // TODO: ProfilePhase _(Prof::BDPTConnectSubpaths);
+    let mut l: Spectrum = Spectrum::default();
+    // ignore invalid connections related to infinite area lights
+    if t > 1 && s != 0 && camera_vertices[t - 1].vertex_type == VertexType::Light {
+        return Spectrum::default();
+    }
+    // perform connection and write contribution to _L_
+    // Vertex sampled;
+    if s == 0 {
+        //     // Interpret the camera subpath as a complete path
+        //     const Vertex &pt = cameraVertices[t - 1];
+        //     if (pt.IsLight()) L = pt.Le(scene, cameraVertices[t - 2]) * pt.beta;
+        //     DCHECK(!L.HasNaNs());
+    } else if t == 1 {
+        // sample a point on the camera and connect it to the light subpath
+        //     const Vertex &qs = lightVertices[s - 1];
+        if light_vertices[s - 1].is_connectible() {
+            //         VisibilityTester vis;
+            //         Vector3f wi;
+            //         Float pdf;
+            //         Spectrum Wi = camera.Sample_Wi(qs.GetInteraction(), sampler.Get2D(),
+            //                                        &wi, &pdf, pRaster, &vis);
+            sampler.get_2d();
+            //         if (pdf > 0 && !Wi.IsBlack()) {
+            //             // Initialize dynamically sampled vertex and _L_ for $t=1$ case
+            //             sampled = Vertex::CreateCamera(&camera, vis.P1(), Wi / pdf);
+            //             L = qs.beta * qs.f(sampled, TransportMode::Importance) * sampled.beta;
+            //             if (qs.IsOnSurface()) L *= AbsDot(wi, qs.ns());
+            //             DCHECK(!L.HasNaNs());
+            //             // Only check visibility after we know that the path would
+            //             // make a non-zero contribution.
+            //             if (!L.IsBlack()) L *= vis.Tr(scene, sampler);
+            //         }
+        }
+    } else if s == 1 {
+        //     // Sample a point on a light and connect it to the camera subpath
+        //     const Vertex &pt = cameraVertices[t - 1];
+        //     if (pt.IsConnectible()) {
+        //         Float lightPdf;
+        //         VisibilityTester vis;
+        //         Vector3f wi;
+        //         Float pdf;
+        //         int lightNum =
+        //             lightDistr.SampleDiscrete(sampler.Get1D(), &lightPdf);
+        //         const std::shared_ptr<Light> &light = scene.lights[lightNum];
+        //         Spectrum lightWeight = light->Sample_Li(
+        //             pt.GetInteraction(), sampler.Get2D(), &wi, &pdf, &vis);
+        //         if (pdf > 0 && !lightWeight.IsBlack()) {
+        //             EndpointInteraction ei(vis.P1(), light.get());
+        //             sampled =
+        //                 Vertex::CreateLight(ei, lightWeight / (pdf * lightPdf), 0);
+        //             sampled.pdfFwd =
+        //                 sampled.PdfLightOrigin(scene, pt, lightDistr, lightToIndex);
+        //             L = pt.beta * pt.f(sampled, TransportMode::Radiance) * sampled.beta;
+        //             if (pt.IsOnSurface()) L *= AbsDot(wi, pt.ns());
+        //             // Only check visibility if the path would carry radiance.
+        //             if (!L.IsBlack()) L *= vis.Tr(scene, sampler);
+        //         }
+        //     }
+    } else {
+        //     // Handle all other bidirectional connection cases
+        //     const Vertex &qs = lightVertices[s - 1], &pt = cameraVertices[t - 1];
+        //     if (qs.IsConnectible() && pt.IsConnectible()) {
+        //         L = qs.beta * qs.f(pt, TransportMode::Importance) * pt.f(qs, TransportMode::Radiance) * pt.beta;
+        //         VLOG(2) << "General connect s: " << s << ", t: " << t <<
+        //             " qs: " << qs << ", pt: " << pt << ", qs.f(pt): " << qs.f(pt, TransportMode::Importance) <<
+        //             ", pt.f(qs): " << pt.f(qs, TransportMode::Radiance) << ", G: " << G(scene, sampler, qs, pt) <<
+        //             ", dist^2: " << DistanceSquared(qs.p(), pt.p());
+        //         if (!L.IsBlack()) L *= G(scene, sampler, qs, pt);
+        //     }
+    }
+
+    // ++totalPaths;
+    // if (L.IsBlack()) ++zeroRadiancePaths;
+    // ReportValue(pathLength, s + t - 2);
+
+    // // Compute MIS weight for connection strategy
+    // Float misWeight =
+    //     L.IsBlack() ? 0.f : MISWeight(scene, lightVertices, cameraVertices,
+    //                                   sampled, s, t, lightDistr, lightToIndex);
+    // VLOG(2) << "MIS weight for (s,t) = (" << s << ", " << t << ") connection: "
+    //         << misWeight;
+    // DCHECK(!std::isnan(misWeight));
+    // L *= misWeight;
+    // if (misWeightPtr) *misWeightPtr = misWeight;
     // WORK
-    Spectrum::default()
+    l
 }
 
 pub fn infinite_light_density<'a>(

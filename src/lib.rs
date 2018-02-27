@@ -479,6 +479,9 @@ pub fn render_bdpt(
                                                     scene,
                                                     &light_vertices,
                                                     &camera_vertices,
+                                                    s,
+                                                    t,
+                                                    &mut tile_sampler,
                                                 );
                                                 // VLOG(2) << "Connect bdpt s: " << s <<", t: " << t <<
                                                 //     ", Lpath: " << Lpath << ", misWeight: " << misWeight;

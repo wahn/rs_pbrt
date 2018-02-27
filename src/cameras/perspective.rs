@@ -7,8 +7,10 @@ use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f};
 use core::geometry::{vec3_dot_vec3, vec3_normalize};
+use core::interaction::Interaction;
+use core::light::VisibilityTester;
 use core::paramset::ParamSet;
-use core::pbrt::Float;
+use core::pbrt::{Float, Spectrum};
 use core::pbrt::lerp;
 use core::sampling::concentric_sample_disk;
 use core::transform::{AnimatedTransform, Transform};
@@ -305,6 +307,18 @@ impl Camera for PerspectiveCamera {
         pdf_pos = 1.0 as Float / lens_area;
         pdf_dir = 1.0 as Float / (self.a * cos_theta * cos_theta * cos_theta);
         (pdf_pos, pdf_dir)
+    }
+    fn sample_wi(
+        &self,
+        iref: &Interaction,
+        u: &Point2f,
+        wi: &mut Vector3f,
+        pdf: &mut Float,
+        p_raster: &mut Point2f,
+        vis: &mut VisibilityTester,
+    ) -> Spectrum {
+        // WORK
+        Spectrum::default()
     }
     fn get_film(&self) -> Arc<Film> {
         self.film.clone()
