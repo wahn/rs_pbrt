@@ -6,6 +6,8 @@
 use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::pbrt::{Float, Spectrum};
+use core::primitive::Primitive;
+use core::sampler::Sampler;
 use core::scene::Scene;
 
 // see light.h
@@ -73,6 +75,34 @@ pub struct VisibilityTester {
 impl VisibilityTester {
     pub fn unoccluded(&self, scene: &Scene) -> bool {
         !scene.intersect_p(&mut self.p0.spawn_ray_to(&self.p1))
+    }
+    pub fn tr(&self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
+        let mut ray: Ray = self.p0.spawn_ray_to(&self.p1);
+        let tr: Spectrum = Spectrum::new(1.0 as Float);
+        loop {
+            if let Some(mut isect) = scene.intersect(&mut ray) {
+                // handle opaque surface along ray's path
+                if let Some(primitive) = isect.primitive {
+                    if let Some(material) = primitive.get_material() {
+                        // update transmittance for current ray segment
+                        // TODO: if (ray.medium) Tr *= ray.medium->Tr(ray, sampler);
+                        let it: InteractionCommon = InteractionCommon {
+                            p: isect.p,
+                            time: isect.time,
+                            p_error: isect.p_error,
+                            wo: isect.wo,
+                            n: isect.n,
+                        };
+                        ray = it.spawn_ray_to(&self.p1);
+                    } else {
+                        return Spectrum::default();
+                    }
+                }
+            } else {
+                break;
+            }
+        }
+        tr
     }
 }
 

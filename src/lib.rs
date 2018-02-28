@@ -461,7 +461,7 @@ pub fn render_bdpt(
                                                 &mut tile_sampler,
                                                 integrator.max_depth + 1,
                                                 time,
-                                                light_distr,
+                                                &light_distr,
                                                 // light_to_index,
                                                 &mut light_vertices,
                                             );
@@ -496,6 +496,7 @@ pub fn render_bdpt(
                                                     &camera_vertices,
                                                     s,
                                                     t,
+                                                    &light_distr,
                                                     camera,
                                                     &mut tile_sampler,
                                                     &mut p_film_new,

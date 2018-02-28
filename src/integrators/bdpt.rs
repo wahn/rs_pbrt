@@ -7,6 +7,7 @@ use core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_normalize};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::material::TransportMode;
+use core::primitive::Primitive;
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::BxdfType;
@@ -26,7 +27,7 @@ pub struct EndpointInteraction<'a> {
     pub n: Normal3f,
     // EndpointInteraction Public Data
     pub camera: Option<&'a Box<Camera + Send + Sync>>,
-    pub light: Option<Arc<Light + Send + Sync>>,
+    pub light: Option<&'a Arc<Light + Send + Sync>>,
 }
 
 impl<'a> EndpointInteraction<'a> {
@@ -37,7 +38,10 @@ impl<'a> EndpointInteraction<'a> {
             ..Default::default()
         }
     }
-    pub fn new_interaction(it: &InteractionCommon, camera: &'a Box<Camera + Send + Sync>) -> Self {
+    pub fn new_interaction_from_camera(
+        it: &InteractionCommon,
+        camera: &'a Box<Camera + Send + Sync>,
+    ) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&it.p, it.time);
         ei.camera = Some(camera);
         ei
@@ -47,10 +51,23 @@ impl<'a> EndpointInteraction<'a> {
         ei.camera = Some(camera);
         ei
     }
-    pub fn new_light(light: Arc<Light + Send + Sync>, ray: &Ray, nl: &Normal3f) -> Self {
+    pub fn new_light(light: &'a Arc<Light + Send + Sync>, ray: &Ray, nl: &Normal3f) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
         ei.light = Some(light);
         ei.n = *nl;
+        ei
+    }
+    pub fn new_interaction_from_light(
+        it: &InteractionCommon,
+        light: &'a Arc<Light + Send + Sync>,
+    ) -> Self {
+        let mut ei: EndpointInteraction = EndpointInteraction::default();
+        ei.p = it.p;
+        ei.time = it.time;
+        ei.p_error = it.p_error;
+        ei.wo = it.wo;
+        ei.n = it.n;
+        ei.light = Some(light);
         ei
     }
     pub fn new_ray(ray: &Ray) -> Self {
@@ -142,7 +159,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     ) -> Vertex<'a, 'p, 's> {
         Vertex::new(
             VertexType::Camera,
-            EndpointInteraction::new_interaction(it, camera),
+            EndpointInteraction::new_interaction_from_camera(it, camera),
             beta,
         )
     }
@@ -174,7 +191,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         v
     }
     pub fn create_light(
-        light: Arc<Light + Send + Sync>,
+        light: &'a Arc<Light + Send + Sync>,
         ray: &Ray,
         nl: &Normal3f,
         le: &Spectrum,
@@ -242,6 +259,29 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                 }
             }
         }
+    }
+    pub fn ns(&self) -> Normal3f {
+        match self.vertex_type {
+            VertexType::Medium => {}
+            VertexType::Surface => {
+                if let Some(ref si) = self.si {
+                    return si.shading.n;
+                } else {
+                    return Normal3f::default();
+                }
+            }
+            VertexType::Light => {
+                if let Some(ref ei) = self.ei {
+                    return ei.n;
+                } else {
+                    return Normal3f::default();
+                }
+            }
+            _ => {
+                return Normal3f::default();
+            }
+        }
+        Normal3f::default()
     }
     pub fn is_on_surface(&self) -> bool {
         self.ng() != Normal3f::default()
@@ -314,6 +354,22 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             }
         }
     }
+    pub fn is_light(&self) -> bool {
+        if self.vertex_type == VertexType::Light {
+            return true;
+        } else {
+            if self.vertex_type == VertexType::Surface {
+                if let Some(ref si) = self.si {
+                    if let Some(primitive) = si.primitive {
+                        if let Some(area_light) = primitive.get_area_light() {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        false
+    }
     pub fn is_infinite_light(&self) -> bool {
         if self.vertex_type != VertexType::Light {
             return false;
@@ -330,6 +386,46 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             }
         }
         false
+    }
+    pub fn le(&self, scene: &Scene, v: &Vertex) -> Spectrum {
+        if !self.is_light() {
+            return Spectrum::default();
+        }
+        let mut w: Vector3f = v.p() - self.p();
+        if w.length_squared() == 0.0 as Float {
+            return Spectrum::default();
+        }
+        w = vec3_normalize(&w);
+        if (self.is_infinite_light()) {
+            // return emitted radiance for infinite light sources
+            let mut le: Spectrum = Spectrum::default();
+            for light in &scene.infinite_lights {
+                let mut ray: Ray = Ray {
+                    o: self.p(),
+                    d: -w,
+                    t_max: Float::default(),
+                    time: Float::default(),
+                    differential: None,
+                };
+                le += light.le(&mut ray);
+            }
+            return le;
+        } else {
+            if let Some(ref si) = self.si {
+                if let Some(primitive) = si.primitive {
+                    if let Some(light) = primitive.get_area_light() {
+                        let mut iref: InteractionCommon = InteractionCommon::default();
+                        iref.p = si.p;
+                        iref.time = si.time;
+                        iref.p_error = si.p_error;
+                        iref.wo = si.wo;
+                        iref.n = si.n;
+                        return light.l(&iref, &w);
+                    }
+                }
+            }
+        }
+        Spectrum::default()
     }
     pub fn convert_density(&self, pdf: Float, next: &Vertex) -> Float {
         // return solid angle density if _next_ is an infinite area light
@@ -456,7 +552,7 @@ pub fn generate_light_subpath<'a>(
     sampler: &mut Box<Sampler + Send + Sync>,
     max_depth: u32,
     time: Float,
-    light_distr: Arc<Distribution1D>,
+    light_distr: &Arc<Distribution1D>,
     // TODO: light_to_index
     path: &mut Vec<Vertex<'a, 'a, 'a>>,
 ) -> usize {
@@ -488,7 +584,7 @@ pub fn generate_light_subpath<'a>(
     if let Some(light_pdf) = light_pdf {
         // generate first vertex on light subpath and start random walk
         let vertex: Vertex =
-            Vertex::create_light(light.clone(), &ray, &n_light, &le, pdf_pos * light_pdf);
+            Vertex::create_light(light, &ray, &n_light, &le, pdf_pos * light_pdf);
         let is_infinite_light: bool = vertex.is_infinite_light();
         path.push(vertex);
         let mut beta: Spectrum =
@@ -660,6 +756,7 @@ pub fn connect_bdpt<'a>(
     camera_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
     s: usize,
     t: usize,
+    light_distr: &Arc<Distribution1D>,
     camera: &'a Box<Camera + Send + Sync>,
     sampler: &mut Box<Sampler + Send + Sync>,
     p_raster: &mut Point2f,
@@ -673,10 +770,12 @@ pub fn connect_bdpt<'a>(
     // perform connection and write contribution to _L_
     // Vertex sampled;
     if s == 0 {
-        //     // Interpret the camera subpath as a complete path
-        //     const Vertex &pt = cameraVertices[t - 1];
-        //     if (pt.IsLight()) L = pt.Le(scene, cameraVertices[t - 2]) * pt.beta;
-        //     DCHECK(!L.HasNaNs());
+        // interpret the camera subpath as a complete path
+        if camera_vertices[t - 1].is_light() {
+            l = camera_vertices[t - 1].le(scene, &camera_vertices[t - 2])
+                * camera_vertices[t - 1].beta;
+        }
+        assert!(!l.has_nans());
     } else if t == 1 {
         // sample a point on the camera and connect it to the light subpath
         if light_vertices[s - 1].is_connectible() {
@@ -715,54 +814,83 @@ pub fn connect_bdpt<'a>(
                     * light_vertices[s - 1].f(&sampled, TransportMode::Importance)
                     * sampled.beta;
                 println!("l = {:?}", l);
-                // if (light_vertices[s - 1].IsOnSurface()) L *=
-                // AbsDot(wi, light_vertices[s - 1].ns());
-                // DCHECK(!L.HasNaNs()); // Only check visibility
-                // after we know that the path would // make a
-                // non-zero contribution.  if (!L.IsBlack()) L *=
-                // vis.Tr(scene, sampler);
+                if light_vertices[s - 1].is_on_surface() {
+                    l *= Spectrum::new(vec3_abs_dot_nrm(&wi, &light_vertices[s - 1].ns()));
+                }
+                assert!(!l.has_nans());
+                // only check visibility after we know that the path
+                // would make a non-zero contribution.
+                if !l.is_black() {
+                    l *= vis.tr(scene, sampler);
+                }
             }
         }
     } else if s == 1 {
         // sample a point on a light and connect it to the camera subpath
-        //     const Vertex &pt = cameraVertices[t - 1];
-        //     if (pt.IsConnectible()) {
-        //         Float lightPdf;
-        //         VisibilityTester vis;
-        //         Vector3f wi;
-        //         Float pdf;
-        //         int lightNum =
-        //             lightDistr.SampleDiscrete(sampler.Get1D(), &lightPdf);
-        //         const std::shared_ptr<Light> &light = scene.lights[lightNum];
-        //         Spectrum lightWeight = light->Sample_Li(
-        //             pt.GetInteraction(), sampler.Get2D(), &wi, &pdf, &vis);
-        //         if (pdf > 0 && !lightWeight.IsBlack()) {
-        //             EndpointInteraction ei(vis.P1(), light.get());
-        //             sampled =
-        //                 Vertex::CreateLight(ei, lightWeight / (pdf * lightPdf), 0);
-        //             sampled.pdfFwd =
-        //                 sampled.PdfLightOrigin(scene, pt, lightDistr, lightToIndex);
-        //             L = pt.beta * pt.f(sampled, TransportMode::Radiance) * sampled.beta;
-        //             if (pt.IsOnSurface()) L *= AbsDot(wi, pt.ns());
-        //             // Only check visibility if the path would carry radiance.
-        //             if (!L.IsBlack()) L *= vis.Tr(scene, sampler);
-        //         }
-        //     }
+        if camera_vertices[t - 1].is_connectible() {
+            let mut wi: Vector3f = Vector3f::default();
+            let mut pdf: Float = 0.0 as Float;
+            let mut light_pdf: Option<Float> = Some(0.0 as Float);
+            let mut vis: VisibilityTester = VisibilityTester::default();
+            let light_num: usize =
+                light_distr.sample_discrete(sampler.get_1d(), light_pdf.as_mut());
+            //         const std::shared_ptr<Light> &light = scene.lights[light_num];
+            let mut iref: InteractionCommon = InteractionCommon::default();
+            // qs.GetInteraction()
+            match camera_vertices[t - 1].vertex_type {
+                VertexType::Medium => {}
+                VertexType::Surface => {
+                    if let Some(ref si) = camera_vertices[t - 1].si {
+                        iref.p = si.p;
+                        iref.time = si.time;
+                        iref.p_error = si.p_error;
+                        iref.wo = si.wo;
+                        iref.n = si.n;
+                    } else {
+                    }
+                }
+                _ => {}
+            }
+            let light_weight: Spectrum = scene.lights[light_num].sample_li(
+                &iref,
+                &sampler.get_2d(),
+                &mut wi,
+                &mut pdf,
+                &mut vis,
+            );
+            if pdf > 0.0 as Float && !light_weight.is_black() {
+                let ei: EndpointInteraction = EndpointInteraction::new_interaction_from_light(
+                    &vis.p1,
+                    &scene.lights[light_num],
+                );
+                let sampled: Vertex = Vertex::create_light_interaction(
+                    ei,
+                    &(light_weight / (pdf * light_pdf.unwrap())),
+                    0.0 as Float,
+                );
+                // sampled.pdfFwd =
+                //     sampled.PdfLightOrigin(scene, camera_vertices[t - 1], light_distr, lightToIndex);
+                // L = camera_vertices[t - 1].beta * camera_vertices[t - 1].f(sampled, TransportMode::Radiance) * sampled.beta;
+                // if (camera_vertices[t - 1].IsOnSurface()) L *= AbsDot(wi, camera_vertices[t - 1].ns());
+                // // Only check visibility if the path would carry radiance.
+                // if (!L.IsBlack()) L *= vis.Tr(scene, sampler);
+            }
+        }
     } else {
-        //     // Handle all other bidirectional connection cases
-        //     const Vertex &qs = lightVertices[s - 1], &pt = cameraVertices[t - 1];
-        //     if (qs.IsConnectible() && pt.IsConnectible()) {
-        //         L = qs.beta * qs.f(pt, TransportMode::Importance) *
-        //         pt.f(qs, TransportMode::Radiance) * pt.beta;
-        //         VLOG(2) << "General connect s: " << s << ", t: " <<
-        //             t << " qs: " << qs << ", pt: " << pt << ",
-        //             qs.f(pt): " << qs.f(pt,
-        //             TransportMode::Importance) << ", pt.f(qs): " <<
-        //             pt.f(qs, TransportMode::Radiance) << ", G: " <<
-        //             G(scene, sampler, qs, pt) << ", dist^2: " <<
-        //             DistanceSquared(qs.p(), pt.p());
-        //         if (!L.IsBlack()) L *= G(scene, sampler, qs, pt);
-        //     }
+        // handle all other bidirectional connection cases
+        // const Vertex &qs = lightVertices[s - 1], &pt = cameraVertices[t - 1];
+        // if (qs.IsConnectible() && pt.IsConnectible()) {
+        //     L = qs.beta * qs.f(pt, TransportMode::Importance) *
+        //     pt.f(qs, TransportMode::Radiance) * pt.beta;
+        //     VLOG(2) << "General connect s: " << s << ", t: " <<
+        //         t << " qs: " << qs << ", pt: " << pt << ",
+        //         qs.f(pt): " << qs.f(pt,
+        //         TransportMode::Importance) << ", pt.f(qs): " <<
+        //         pt.f(qs, TransportMode::Radiance) << ", G: " <<
+        //         G(scene, sampler, qs, pt) << ", dist^2: " <<
+        //         DistanceSquared(qs.p(), pt.p());
+        //     if (!L.IsBlack()) L *= G(scene, sampler, qs, pt);
+        // }
     }
 
     // ++totalPaths;
@@ -772,7 +900,7 @@ pub fn connect_bdpt<'a>(
     // // Compute MIS weight for connection strategy
     // Float misWeight =
     //     L.IsBlack() ? 0.f : MISWeight(scene, lightVertices, cameraVertices,
-    //                                   sampled, s, t, lightDistr, lightToIndex);
+    //                                   sampled, s, t, light_distr, lightToIndex);
     // VLOG(2) << "MIS weight for (s,t) = (" << s << ", " << t << ") connection: "
     //         << misWeight;
     // DCHECK(!std::isnan(misWeight));
@@ -801,6 +929,6 @@ pub fn infinite_light_density<'a>(
     // for (size_t i = 0; i < scene.lights.size(); ++i)
     //     if (scene.lights[i]->flags & (int)LightFlags::Infinite)
     //         pdf +=
-    //             scene.lights[i]->Pdf_Li(Interaction(), -w) * lightDistr.func[i];
+    //             scene.lights[i]->Pdf_Li(Interaction(), -w) * light_distr.func[i];
     pdf / (light_distr.func_int * light_distr.count() as Float)
 }
