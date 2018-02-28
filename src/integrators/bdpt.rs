@@ -4,7 +4,7 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm};
+use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_normalize};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::material::TransportMode;
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -245,6 +245,37 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     }
     pub fn is_on_surface(&self) -> bool {
         self.ng() != Normal3f::default()
+    }
+    pub fn f(&self, next: &Vertex, mode: TransportMode) -> Spectrum {
+        let mut wi: Vector3f = next.p() - self.p();
+        if wi.length_squared() == 0.0 as Float {
+            return Spectrum::default();
+        }
+        wi = vec3_normalize(&wi);
+        match self.vertex_type {
+            VertexType::Surface => {
+                if let Some(ref si) = self.si {
+                    if let Some(ref bsdf) = si.bsdf {
+                        let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                        return bsdf.f(&si.wo, &wi, bsdf_flags)
+                            * correct_shading_normal(si, &si.wo, &wi, mode);
+                    } else {
+                        return Spectrum::default();
+                    }
+                } else {
+                    return Spectrum::default();
+                }
+            }
+            VertexType::Medium => {
+                // TODO: return mi.phase->p(mi.wo, wi);
+                return Spectrum::default();
+            }
+            _ => {
+                panic!("Vertex::f(): Unimplemented");
+                return Spectrum::default();
+            }
+        }
+        Spectrum::default()
     }
     pub fn is_connectible(&self) -> bool {
         match self.vertex_type {
@@ -680,15 +711,16 @@ pub fn connect_bdpt<'a>(
                 // initialize dynamically sampled vertex and _L_ for $t=1$ case
                 let sampled: Vertex =
                     Vertex::create_camera_from_interaction(camera, &vis.p1, &(wi_color / pdf));
-                println!("sampled.beta = {:?}", sampled.beta);
-                // l = light_vertices[s - 1].beta
-                //     * light_vertices[s - 1].f(sampled, TransportMode::Importance)
-                //     * sampled.beta;
-                //             if (light_vertices[s - 1].IsOnSurface()) L *= AbsDot(wi, light_vertices[s - 1].ns());
-                //             DCHECK(!L.HasNaNs());
-                //             // Only check visibility after we know that the path would
-                //             // make a non-zero contribution.
-                //             if (!L.IsBlack()) L *= vis.Tr(scene, sampler);
+                l = light_vertices[s - 1].beta
+                    * light_vertices[s - 1].f(&sampled, TransportMode::Importance)
+                    * sampled.beta;
+                println!("l = {:?}", l);
+                // if (light_vertices[s - 1].IsOnSurface()) L *=
+                // AbsDot(wi, light_vertices[s - 1].ns());
+                // DCHECK(!L.HasNaNs()); // Only check visibility
+                // after we know that the path would // make a
+                // non-zero contribution.  if (!L.IsBlack()) L *=
+                // vis.Tr(scene, sampler);
             }
         }
     } else if s == 1 {
@@ -720,11 +752,15 @@ pub fn connect_bdpt<'a>(
         //     // Handle all other bidirectional connection cases
         //     const Vertex &qs = lightVertices[s - 1], &pt = cameraVertices[t - 1];
         //     if (qs.IsConnectible() && pt.IsConnectible()) {
-        //         L = qs.beta * qs.f(pt, TransportMode::Importance) * pt.f(qs, TransportMode::Radiance) * pt.beta;
-        //         VLOG(2) << "General connect s: " << s << ", t: " << t <<
-        //             " qs: " << qs << ", pt: " << pt << ", qs.f(pt): " << qs.f(pt, TransportMode::Importance) <<
-        //             ", pt.f(qs): " << pt.f(qs, TransportMode::Radiance) << ", G: " << G(scene, sampler, qs, pt) <<
-        //             ", dist^2: " << DistanceSquared(qs.p(), pt.p());
+        //         L = qs.beta * qs.f(pt, TransportMode::Importance) *
+        //         pt.f(qs, TransportMode::Radiance) * pt.beta;
+        //         VLOG(2) << "General connect s: " << s << ", t: " <<
+        //             t << " qs: " << qs << ", pt: " << pt << ",
+        //             qs.f(pt): " << qs.f(pt,
+        //             TransportMode::Importance) << ", pt.f(qs): " <<
+        //             pt.f(qs, TransportMode::Radiance) << ", G: " <<
+        //             G(scene, sampler, qs, pt) << ", dist^2: " <<
+        //             DistanceSquared(qs.p(), pt.p());
         //         if (!L.IsBlack()) L *= G(scene, sampler, qs, pt);
         //     }
     }
