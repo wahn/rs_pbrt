@@ -259,8 +259,55 @@ impl Camera for PerspectiveCamera {
         1.0
     }
     fn we(&self, ray: &Ray, p_raster2: Option<&mut Point2f>) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        // interpolate camera matrix and check if $\w{}$ is forward-facing
+        let mut c2w: Transform = Transform::default();
+        self.camera_to_world.interpolate(ray.time, &mut c2w);
+        let cos_theta: Float = vec3_dot_vec3(
+            &ray.d,
+            &c2w.transform_vector(&Vector3f {
+                x: 0.0 as Float,
+                y: 0.0 as Float,
+                z: 1.0 as Float,
+            }),
+        );
+        if cos_theta <= 0.0 as Float {
+            return Spectrum::default();
+        }
+        // map ray $(\p{}, \w{})$ onto the raster grid
+        let p_focus: Point3f;
+        if self.lens_radius > 0.0 as Float {
+            p_focus = ray.position(self.focal_distance / cos_theta);
+        } else {
+            p_focus = ray.position(1.0 as Float / cos_theta);
+        }
+        let p_raster: Point3f = Transform::inverse(&self.raster_to_camera)
+            .transform_point(&Transform::inverse(&c2w).transform_point(&p_focus));
+        // return raster position if requested
+        if let Some(p_raster2) = p_raster2 {
+            *p_raster2 = Point2f {
+                x: p_raster.x,
+                y: p_raster.y,
+            };
+        }
+        // return zero importance for out of bounds points
+        let sample_bounds: Bounds2i = self.film.get_sample_bounds();
+        if p_raster.x < (sample_bounds.p_min.x as Float)
+            || p_raster.x >= (sample_bounds.p_max.x as Float)
+            || p_raster.y < (sample_bounds.p_min.y as Float)
+            || p_raster.y >= (sample_bounds.p_max.y as Float)
+        {
+            return Spectrum::default();
+        }
+        // compute lens area of perspective camera
+        let lens_area: Float;
+        if self.lens_radius != 0.0 as Float {
+            lens_area = PI * self.lens_radius * self.lens_radius;
+        } else {
+            lens_area = 1.0 as Float;
+        }
+        // return importance for point on image plane
+        let cos_2_theta: Float = cos_theta * cos_theta;
+        Spectrum::new(1.0 as Float / (self.a * lens_area * cos_2_theta * cos_2_theta))
     }
     fn pdf_we(&self, ray: &Ray) -> (Float, Float) {
         let mut pdf_pos: Float = 0.0;

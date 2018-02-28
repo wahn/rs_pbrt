@@ -43,7 +43,7 @@ pub mod textures;
 
 // pbrt
 use core::camera::{Camera, CameraSample};
-use core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i};
+use core::geometry::{Bounds2i, Point2f, Point2i, Point3f, Ray, Vector2i};
 use core::geometry::pnt2_inside_exclusive;
 use core::integrator::SamplerIntegrator;
 // use core::light::Light;
@@ -407,21 +407,6 @@ pub fn render_bdpt(
                                 }
                                 let mut done: bool = false;
                                 while !done {
-                                    // generate a single sample using BDPT
-                                    let p_film: Point2f = Point2f {
-                                        x: p_pixel.x as Float,
-                                        y: p_pixel.y as Float,
-                                    }
-                                        + tile_sampler.get_2d();
-                                    // trace the camera subpath
-                                    let (n_camera, camera_vertices, p, time) =
-                                        generate_camera_subpath(
-                                            scene,
-                                            &mut tile_sampler,
-                                            integrator.max_depth + 2,
-                                            camera,
-                                            &p_film,
-                                        );
                                     // Get a distribution for sampling
                                     // the light at the start of the
                                     // light subpath. Because the
@@ -433,24 +418,54 @@ pub fn render_bdpt(
                                     // strategy. We use the
                                     // PowerLightDistribution by
                                     // default here, which doesn't use
-                                    // the point passed to it.
-                                    let mut n_light: usize = 0_usize;
+                                    // the point passed to it. Now
+                                    // trace the light subpath
                                     if let Some(light_distribution) =
                                         create_light_sample_distribution(
                                             integrator.get_light_sample_strategy(),
                                             scene,
                                         ) {
-                                        let light_distr: Arc<Distribution1D> =
-                                                light_distribution.lookup(&p);
-                                        // Now trace the light subpath
-                                        let (n_light, light_vertices) = generate_light_subpath(
-                                            scene,
-                                            &mut tile_sampler,
-                                            integrator.max_depth + 1,
-                                            time,
-                                            light_distr,
-                                            // light_to_index,
-                                        );
+                                        // generate a single sample using BDPT
+                                        let p_film: Point2f = Point2f {
+                                            x: p_pixel.x as Float,
+                                            y: p_pixel.y as Float,
+                                        }
+                                            + tile_sampler.get_2d();
+                                        // trace the camera subpath
+                                        let mut camera_vertices: Vec<Vertex> =
+                                        Vec::with_capacity((integrator.max_depth + 2) as usize);
+                                        let mut n_camera: usize = 0_usize;
+                                        let mut p: Point3f = Point3f::default();
+                                        let mut time: Float = 0.0 as Float;
+                                        {
+                                            let (n_camera_new, p_new, time_new) =
+                                                generate_camera_subpath(
+                                                    scene,
+                                                    &mut tile_sampler,
+                                                    integrator.max_depth + 2,
+                                                    camera,
+                                                    &p_film,
+                                                    &mut camera_vertices,
+                                                );
+                                            n_camera = n_camera_new;
+                                            p = p_new;
+                                            time = time_new;
+                                        }
+                                        let light_distr: Arc<Distribution1D> = light_distribution.lookup(&p);
+                                        let mut light_vertices: Vec<Vertex> =
+                                                Vec::with_capacity((integrator.max_depth + 1) as usize);
+                                        let mut n_light: usize = 0_usize;
+                                        {
+                                            n_light = generate_light_subpath(
+                                                scene,
+                                                &mut tile_sampler,
+                                                integrator.max_depth + 1,
+                                                time,
+                                                light_distr,
+                                                // light_to_index,
+                                                &mut light_vertices,
+                                            );
+                                        }
                                         // Execute all BDPT connection strategies
                                         let mut l: Spectrum = Spectrum::new(0.0 as Float);
                                         println!("n_camera = {:?}", n_camera);

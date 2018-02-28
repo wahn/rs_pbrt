@@ -364,10 +364,10 @@ pub fn generate_camera_subpath<'a>(
     max_depth: u32,
     camera: &'a Box<Camera + Send + Sync>,
     p_film: &Point2f,
-) -> (usize, Arc<Vec<Vertex<'a, 'a, 'a>>>, Point3f, Float) {
-    let mut path: Arc<Vec<Vertex<'a, 'a, 'a>>> = Arc::new(Vec::with_capacity(max_depth as usize));
+    path: &mut Vec<Vertex<'a, 'a, 'a>>,
+) -> (usize, Point3f, Float) {
     if max_depth == 0 {
-        return (0_usize, path.clone(), Point3f::default(), Float::default());
+        return (0_usize, Point3f::default(), Float::default());
     }
     // TODO: ProfilePhase _(Prof::BDPTGenerateSubpath);
     // sample initial ray for camera subpath
@@ -385,20 +385,23 @@ pub fn generate_camera_subpath<'a>(
     let p: Point3f = vertex.p();
     let time: Float = vertex.time();
     // store vertex
-    Arc::get_mut(&mut path).unwrap().push(vertex);
+    path.push(vertex);
     let (_pdf_pos, pdf_dir) = camera.pdf_we(&ray);
-    let n_camera: usize = random_walk(
-        scene,
-        &mut ray,
-        sampler,
-        &mut beta,
-        pdf_dir,
-        max_depth - 1_u32,
-        TransportMode::Radiance,
-        Arc::get_mut(&mut path.clone()).unwrap(),
-        None,
-    ) + 1_usize;
-    (n_camera, path.clone(), p, time)
+    (
+        random_walk(
+            scene,
+            &mut ray,
+            sampler,
+            &mut beta,
+            pdf_dir,
+            max_depth - 1_u32,
+            TransportMode::Radiance,
+            path,
+            None,
+        ) + 1_usize,
+        p,
+        time,
+    )
 }
 
 pub fn generate_light_subpath<'a>(
@@ -408,11 +411,11 @@ pub fn generate_light_subpath<'a>(
     time: Float,
     light_distr: Arc<Distribution1D>,
     // TODO: light_to_index
-) -> (usize, Arc<Vec<Vertex<'a, 'a, 'a>>>) {
-    let mut path: Arc<Vec<Vertex>> = Arc::new(Vec::with_capacity(max_depth as usize));
+    path: &mut Vec<Vertex<'a, 'a, 'a>>,
+) -> usize {
     let mut n_vertices: usize = 0_usize;
     if max_depth == 0_u32 {
-        return (0_usize, path.clone());
+        return 0_usize;
     }
     // TODO: ProfilePhase _(Prof::BDPTGenerateSubpath);
     // sample initial ray for light subpath
@@ -433,14 +436,14 @@ pub fn generate_light_subpath<'a>(
         &mut pdf_dir,
     );
     if pdf_pos == 0.0 as Float || pdf_dir == 0.0 as Float || le.is_black() {
-        return (0_usize, path.clone());
+        return 0_usize;
     }
     if let Some(light_pdf) = light_pdf {
         // generate first vertex on light subpath and start random walk
         let vertex: Vertex =
             Vertex::create_light(light.clone(), &ray, &n_light, &le, pdf_pos * light_pdf);
         let is_infinite_light: bool = vertex.is_infinite_light();
-        Arc::get_mut(&mut path).unwrap().push(vertex);
+        path.push(vertex);
         let mut beta: Spectrum =
             le * nrm_abs_dot_vec3(&n_light, &ray.d) / (light_pdf * pdf_pos * pdf_dir);
         // println!(
@@ -456,7 +459,7 @@ pub fn generate_light_subpath<'a>(
                 pdf_dir,
                 max_depth - 1,
                 TransportMode::Importance,
-                Arc::get_mut(&mut path.clone()).unwrap(),
+                path,
                 Some(pdf_pos),
             );
         } else {
@@ -468,12 +471,12 @@ pub fn generate_light_subpath<'a>(
                 pdf_dir,
                 max_depth - 1,
                 TransportMode::Importance,
-                Arc::get_mut(&mut path.clone()).unwrap(),
+                path,
                 None,
             );
         }
     }
-    (n_vertices + 1, path.clone())
+    n_vertices + 1
 }
 
 pub fn random_walk<'a>(
@@ -484,7 +487,7 @@ pub fn random_walk<'a>(
     pdf: Float,
     max_depth: u32,
     mode: TransportMode,
-    path: &'a mut Vec<Vertex<'a, 'a, 'a>>,
+    path: &mut Vec<Vertex<'a, 'a, 'a>>,
     density_info: Option<Float>,
 ) -> usize {
     let mut bounces: usize = 0_usize;
