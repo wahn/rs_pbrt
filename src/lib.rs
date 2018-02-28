@@ -480,7 +480,7 @@ pub fn render_bdpt(
                                                     continue;
                                                 }
                                                 // execute the $(s, t)$ connection strategy and update _L_
-                                                let p_film_new: Point2f = Point2f {
+                                                let mut p_film_new: Point2f = Point2f {
                                                     x: p_film.x,
                                                     y: p_film.y,
                                                 };
@@ -496,7 +496,9 @@ pub fn render_bdpt(
                                                     &camera_vertices,
                                                     s,
                                                     t,
+                                                    camera,
                                                     &mut tile_sampler,
+                                                    &mut p_film_new,
                                                 );
                                                 // VLOG(2) << "Connect bdpt s: " << s <<", t: " << t <<
                                                 //     ", Lpath: " << Lpath << ", misWeight: " << misWeight;

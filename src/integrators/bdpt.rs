@@ -7,7 +7,7 @@ use core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::material::TransportMode;
-use core::interaction::{Interaction, SurfaceInteraction};
+use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::BxdfType;
 use core::sampler::Sampler;
@@ -36,6 +36,11 @@ impl<'a> EndpointInteraction<'a> {
             time,
             ..Default::default()
         }
+    }
+    pub fn new_interaction(it: &InteractionCommon, camera: &'a Box<Camera + Send + Sync>) -> Self {
+        let mut ei: EndpointInteraction = EndpointInteraction::new(&it.p, it.time);
+        ei.camera = Some(camera);
+        ei
     }
     pub fn new_camera(camera: &'a Box<Camera + Send + Sync>, ray: &Ray) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
@@ -119,7 +124,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             pdf_rev: 0.0 as Float,
         }
     }
-    pub fn create_camera(
+    pub fn create_camera_from_ray(
         camera: &'a Box<Camera + Send + Sync>,
         ray: &Ray,
         beta: &Spectrum,
@@ -127,6 +132,17 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         Vertex::new(
             VertexType::Camera,
             EndpointInteraction::new_camera(camera, ray),
+            beta,
+        )
+    }
+    pub fn create_camera_from_interaction(
+        camera: &'a Box<Camera + Send + Sync>,
+        it: &InteractionCommon,
+        beta: &Spectrum,
+    ) -> Vertex<'a, 'p, 's> {
+        Vertex::new(
+            VertexType::Camera,
+            EndpointInteraction::new_interaction(it, camera),
             beta,
         )
     }
@@ -380,7 +396,7 @@ pub fn generate_camera_subpath<'a>(
         Spectrum::new(camera.generate_ray_differential(&camera_sample, &mut ray));
     ray.scale_differentials(1.0 as Float / (sampler.get_samples_per_pixel() as Float).sqrt());
     // generate first vertex on camera subpath and start random walk
-    let vertex: Vertex = Vertex::create_camera(camera, &ray, &beta);
+    let vertex: Vertex = Vertex::create_camera_from_ray(camera, &ray, &beta);
     // get extra info
     let p: Point3f = vertex.p();
     let time: Float = vertex.time();
@@ -613,7 +629,9 @@ pub fn connect_bdpt<'a>(
     camera_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
     s: usize,
     t: usize,
+    camera: &'a Box<Camera + Send + Sync>,
     sampler: &mut Box<Sampler + Send + Sync>,
+    p_raster: &mut Point2f,
 ) -> Spectrum {
     // TODO: ProfilePhase _(Prof::BDPTConnectSubpaths);
     let mut l: Spectrum = Spectrum::default();
@@ -630,27 +648,51 @@ pub fn connect_bdpt<'a>(
         //     DCHECK(!L.HasNaNs());
     } else if t == 1 {
         // sample a point on the camera and connect it to the light subpath
-        //     const Vertex &qs = lightVertices[s - 1];
         if light_vertices[s - 1].is_connectible() {
-            //         VisibilityTester vis;
-            //         Vector3f wi;
-            //         Float pdf;
-            //         Spectrum Wi = camera.Sample_Wi(qs.GetInteraction(), sampler.Get2D(),
-            //                                        &wi, &pdf, pRaster, &vis);
-            sampler.get_2d();
-            //         if (pdf > 0 && !Wi.IsBlack()) {
-            //             // Initialize dynamically sampled vertex and _L_ for $t=1$ case
-            //             sampled = Vertex::CreateCamera(&camera, vis.P1(), Wi / pdf);
-            //             L = qs.beta * qs.f(sampled, TransportMode::Importance) * sampled.beta;
-            //             if (qs.IsOnSurface()) L *= AbsDot(wi, qs.ns());
-            //             DCHECK(!L.HasNaNs());
-            //             // Only check visibility after we know that the path would
-            //             // make a non-zero contribution.
-            //             if (!L.IsBlack()) L *= vis.Tr(scene, sampler);
-            //         }
+            let mut iref: InteractionCommon = InteractionCommon::default();
+            // qs.GetInteraction()
+            match light_vertices[s - 1].vertex_type {
+                VertexType::Medium => {}
+                VertexType::Surface => {
+                    if let Some(ref si) = light_vertices[s - 1].si {
+                        iref.p = si.p;
+                        iref.time = si.time;
+                        iref.p_error = si.p_error;
+                        iref.wo = si.wo;
+                        iref.n = si.n;
+                    } else {
+                    }
+                }
+                _ => {}
+            }
+            let mut wi: Vector3f = Vector3f::default();
+            let mut pdf: Float = 0.0 as Float;
+            let mut vis: VisibilityTester = VisibilityTester::default();
+            let wi_color: Spectrum = camera.sample_wi(
+                &iref,
+                &sampler.get_2d(),
+                &mut wi,
+                &mut pdf,
+                p_raster,
+                &mut vis,
+            );
+            if pdf > 0.0 as Float && !wi_color.is_black() {
+                // initialize dynamically sampled vertex and _L_ for $t=1$ case
+                let sampled: Vertex =
+                    Vertex::create_camera_from_interaction(camera, &vis.p1, &(wi_color / pdf));
+                println!("sampled.beta = {:?}", sampled.beta);
+                // l = light_vertices[s - 1].beta
+                //     * light_vertices[s - 1].f(sampled, TransportMode::Importance)
+                //     * sampled.beta;
+                //             if (light_vertices[s - 1].IsOnSurface()) L *= AbsDot(wi, light_vertices[s - 1].ns());
+                //             DCHECK(!L.HasNaNs());
+                //             // Only check visibility after we know that the path would
+                //             // make a non-zero contribution.
+                //             if (!L.IsBlack()) L *= vis.Tr(scene, sampler);
+            }
         }
     } else if s == 1 {
-        //     // Sample a point on a light and connect it to the camera subpath
+        // sample a point on a light and connect it to the camera subpath
         //     const Vertex &pt = cameraVertices[t - 1];
         //     if (pt.IsConnectible()) {
         //         Float lightPdf;
