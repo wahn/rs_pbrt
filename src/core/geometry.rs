@@ -342,6 +342,17 @@ where
     }
 }
 
+impl<T> MulAssign<T> for Vector3<T>
+where
+    T: Copy + MulAssign,
+{
+    fn mul_assign(&mut self, rhs: T) {
+        self.x *= rhs;
+        self.y *= rhs;
+        self.z *= rhs;
+    }
+}
+
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
 impl Div<Float> for Vector3<f32> {

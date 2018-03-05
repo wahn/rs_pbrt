@@ -836,6 +836,71 @@ pub fn random_walk<'a>(
     bounces
 }
 
+pub fn g<'a>(
+    scene: &'a Scene,
+    sampler: &mut Box<Sampler + Send + Sync>,
+    v0: &Vertex,
+    v1: &Vertex,
+) -> Spectrum {
+    // Vector3f d = v0.p() - v1.p();
+    let mut d: Vector3f = v0.p() - v1.p();
+    let mut g: Float = 1.0 / d.length_squared();
+    d *= g.sqrt();
+    if v0.is_on_surface() {
+        g *= nrm_abs_dot_vec3(&v0.ns(), &d);
+    }
+    if v1.is_on_surface() {
+        g *= nrm_abs_dot_vec3(&v1.ns(), &d);
+    }
+    // VisibilityTester vis(v0.GetInteraction(), v1.GetInteraction());
+    let mut p0: InteractionCommon = InteractionCommon::default();
+    match v0.vertex_type {
+        VertexType::Medium => {},
+        VertexType::Surface => {
+            if let Some(ref si) = v0.si {
+                p0.p = si.p;
+                p0.time = si.time;
+                p0.p_error = si.p_error;
+                p0.wo = si.wo;
+                p0.n = si.n;
+            }
+        }
+        _ => {
+            if let Some(ref ei) = v0.ei {
+                p0.p = ei.p;
+                p0.time = ei.time;
+                p0.p_error = ei.p_error;
+                p0.wo = ei.wo;
+                p0.n = ei.n;
+            }
+        }
+    }
+    let mut p1: InteractionCommon = InteractionCommon::default();
+    match v1.vertex_type {
+        VertexType::Medium => {},
+        VertexType::Surface => {
+            if let Some(ref si) = v1.si {
+                p1.p = si.p;
+                p1.time = si.time;
+                p1.p_error = si.p_error;
+                p1.wo = si.wo;
+                p1.n = si.n;
+            }
+        }
+        _ => {
+            if let Some(ref ei) = v1.ei {
+                p1.p = ei.p;
+                p1.time = ei.time;
+                p1.p_error = ei.p_error;
+                p1.wo = ei.wo;
+                p1.n = ei.n;
+            }
+        }
+    }
+    let vis: VisibilityTester = VisibilityTester { p0: p0, p1: p1 };
+    vis.tr(scene, sampler) * g
+}
+
 pub fn connect_bdpt<'a>(
     scene: &'a Scene,
     light_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
@@ -949,35 +1014,68 @@ pub fn connect_bdpt<'a>(
                     &vis.p1,
                     &scene.lights[light_num],
                 );
-                let sampled: Vertex = Vertex::create_light_interaction(
+                let mut sampled: Vertex = Vertex::create_light_interaction(
                     ei,
                     &(light_weight / (pdf * light_pdf.unwrap())),
                     0.0 as Float,
                 );
-                // sampled.pdfFwd =
-                //     sampled.PdfLightOrigin(scene, camera_vertices[t - 1], light_distr, lightToIndex);
-                sampled.pdf_light_origin(scene, &camera_vertices[t - 1], light_distr);
-                // L = camera_vertices[t - 1].beta * camera_vertices[t - 1].f(sampled, TransportMode::Radiance) * sampled.beta;
-                // if (camera_vertices[t - 1].IsOnSurface()) L *= AbsDot(wi, camera_vertices[t - 1].ns());
-                // // Only check visibility if the path would carry radiance.
-                // if (!L.IsBlack()) L *= vis.Tr(scene, sampler);
+                sampled.pdf_fwd =
+                    sampled.pdf_light_origin(scene, &camera_vertices[t - 1], light_distr);
+                l = camera_vertices[t - 1].beta
+                    * camera_vertices[t - 1].f(&sampled, TransportMode::Radiance)
+                    * sampled.beta;
+                if camera_vertices[t - 1].is_on_surface() {
+                    l *= Spectrum::new(vec3_abs_dot_nrm(&wi, &camera_vertices[t - 1].ns()));
+                }
+                // only check visibility if the path would carry radiance.
+                if !l.is_black() {
+                    l *= vis.tr(scene, sampler);
+                }
             }
         }
     } else {
         // handle all other bidirectional connection cases
-        // const Vertex &qs = lightVertices[s - 1], &pt = cameraVertices[t - 1];
-        // if (qs.IsConnectible() && pt.IsConnectible()) {
-        //     L = qs.beta * qs.f(pt, TransportMode::Importance) *
-        //     pt.f(qs, TransportMode::Radiance) * pt.beta;
-        //     VLOG(2) << "General connect s: " << s << ", t: " <<
-        //         t << " qs: " << qs << ", pt: " << pt << ",
-        //         qs.f(pt): " << qs.f(pt,
-        //         TransportMode::Importance) << ", pt.f(qs): " <<
-        //         pt.f(qs, TransportMode::Radiance) << ", G: " <<
-        //         G(scene, sampler, qs, pt) << ", dist^2: " <<
-        //         DistanceSquared(qs.p(), pt.p());
-        //     if (!L.IsBlack()) L *= G(scene, sampler, qs, pt);
-        // }
+        if light_vertices[s - 1].is_connectible() && camera_vertices[t - 1].is_connectible() {
+            l = light_vertices[s - 1].beta
+                * light_vertices[s - 1].f(&camera_vertices[t - 1], TransportMode::Importance)
+                * camera_vertices[t - 1].f(&light_vertices[s - 1], TransportMode::Radiance)
+                * camera_vertices[t - 1].beta;
+            // print!("General connect s: {:?}, t: {:?} ", s, t);
+            // print!(
+            //     "qs: {:?}, pt: {:?}, ",
+            //     light_vertices[s - 1],
+            //     camera_vertices[t - 1]
+            // );
+            // print!(
+            //     "qs.f(pt): {:?}, ",
+            //     light_vertices[s - 1].f(camera_vertices[t - 1], TransportMode::Importance)
+            // );
+            // print!(
+            //     "pt.f(qs): {:?}, ",
+            //     camera_vertices[t - 1].f(light_vertices[s - 1], TransportMode::Radiance)
+            // );
+            // print!(
+            //     "G: {:?}, ",
+            //     g(
+            //         scene,
+            //         sampler,
+            //         light_vertices[s - 1],
+            //         camera_vertices[t - 1]
+            //     )
+            // );
+            // println!(
+            //     "dist^2: {:?}",
+            //     distance_squared(light_vertices[s - 1].p(), camera_vertices[t - 1].p())
+            // );
+            if !l.is_black() {
+                l *= g(
+                    scene,
+                    sampler,
+                    &light_vertices[s - 1],
+                    &camera_vertices[t - 1],
+                );
+            }
+        }
     }
 
     // ++totalPaths;
@@ -986,7 +1084,7 @@ pub fn connect_bdpt<'a>(
 
     // // Compute MIS weight for connection strategy
     // Float misWeight =
-    //     L.IsBlack() ? 0.f : MISWeight(scene, lightVertices, cameraVertices,
+    //     L.IsBlack() ? 0.f : MISWeight(scene, light_vertices, camera_vertices,
     //                                   sampled, s, t, light_distr, lightToIndex);
     // VLOG(2) << "MIS weight for (s,t) = (" << s << ", " << t << ") connection: "
     //         << misWeight;
