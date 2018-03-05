@@ -46,6 +46,7 @@ pub trait Light {
         pdf_pos: &mut Float,
         pdf_dir: &mut Float,
     ) -> Spectrum;
+    fn pdf_le(&self, ray: &Ray, n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float);
     fn get_flags(&self) -> u8;
     fn get_n_samples(&self) -> i32;
 }
@@ -76,14 +77,14 @@ impl VisibilityTester {
     pub fn unoccluded(&self, scene: &Scene) -> bool {
         !scene.intersect_p(&mut self.p0.spawn_ray_to(&self.p1))
     }
-    pub fn tr(&self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
+    pub fn tr(&self, scene: &Scene, _sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
         let mut ray: Ray = self.p0.spawn_ray_to(&self.p1);
         let tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {
-            if let Some(mut isect) = scene.intersect(&mut ray) {
+            if let Some(isect) = scene.intersect(&mut ray) {
                 // handle opaque surface along ray's path
                 if let Some(primitive) = isect.primitive {
-                    if let Some(material) = primitive.get_material() {
+                    if let Some(_material) = primitive.get_material() {
                         // update transmittance for current ray segment
                         // TODO: if (ray.medium) Tr *= ray.medium->Tr(ray, sampler);
                         let it: InteractionCommon = InteractionCommon {

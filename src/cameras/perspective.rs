@@ -8,7 +8,7 @@ use core::film::Film;
 use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray,
                      RayDifferential, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
-use core::interaction::{Interaction, InteractionCommon};
+use core::interaction::{InteractionCommon};
 use core::light::VisibilityTester;
 use core::paramset::ParamSet;
 use core::pbrt::{Float, Spectrum};

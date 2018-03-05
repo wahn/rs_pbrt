@@ -195,7 +195,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         ray: &Ray,
         nl: &Normal3f,
         le: &Spectrum,
-        pdf: Float,
+        _pdf: Float,
     ) -> Vertex<'a, 'p, 's> {
         Vertex::new(
             VertexType::Light,
@@ -312,10 +312,8 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             }
             _ => {
                 panic!("Vertex::f(): Unimplemented");
-                return Spectrum::default();
             }
         }
-        Spectrum::default()
     }
     pub fn is_connectible(&self) -> bool {
         match self.vertex_type {
@@ -348,10 +346,6 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                     false
                 }
             }
-            _ => {
-                panic!("Unhandled vertex type in IsConnectable()");
-                false
-            }
         }
     }
     pub fn is_light(&self) -> bool {
@@ -361,7 +355,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             if self.vertex_type == VertexType::Surface {
                 if let Some(ref si) = self.si {
                     if let Some(primitive) = si.primitive {
-                        if let Some(area_light) = primitive.get_area_light() {
+                        if let Some(_area_light) = primitive.get_area_light() {
                             return true;
                         }
                     }
@@ -396,7 +390,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             return Spectrum::default();
         }
         w = vec3_normalize(&w);
-        if (self.is_infinite_light()) {
+        if self.is_infinite_light() {
             // return emitted radiance for infinite light sources
             let mut le: Spectrum = Spectrum::default();
             for light in &scene.infinite_lights {
@@ -442,6 +436,97 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             pdf *= nrm_abs_dot_vec3(&next.ng(), &(w * inv_dist_2.sqrt()));
         }
         pdf * inv_dist_2
+    }
+    pub fn pdf_light_origin(
+        &self,
+        scene: &Scene,
+        v: &Vertex,
+        light_distr: &Arc<Distribution1D>,
+    ) -> Float {
+        let mut w: Vector3f = v.p() - self.p();
+        if w.length_squared() == 0.0 as Float {
+            return 0.0 as Float;
+        }
+        w = vec3_normalize(&w);
+        if self.is_infinite_light() {
+            // return solid angle density for infinite light sources
+            return infinite_light_density(scene, &light_distr, &w);
+        } else {
+            // return solid angle density for non-infinite light sources
+            //         Float pdf_pos, pdf_dir, pdf_choice = 0;
+            let mut pdf_pos: Float = 0.0;
+            let mut pdf_dir: Float = 0.0;
+            let mut pdf_choice: Float = 0.0;
+            // get pointer _light_ to the light source at the vertex
+            assert!(self.is_light());
+            if self.vertex_type == VertexType::Light {
+                // a real light source (not geometry emitting light)
+                if let Some(ref ei) = self.ei {
+                    if let Some(ref light_ref) = ei.light {
+                        // find light in light vector
+                        for i in 0..scene.lights.len() {
+                            let light = &scene.lights[i];
+                            // use ** (alloc::arc::Arc<Light> **)
+                            let pr = &**light_ref as *const _ as *const usize;
+                            let pl = &*light as *const _ as *const usize;
+                            if pr == pl {
+                                // compute the discrete probability of sampling _light_, _pdf_choice_
+                                pdf_choice = light_distr.discrete_pdf(i);
+                                light.pdf_le(
+                                    &Ray {
+                                        o: self.p(),
+                                        d: w,
+                                        t_max: std::f32::INFINITY,
+                                        time: self.time(),
+                                        differential: None,
+                                    },
+                                    &self.ng(),
+                                    &mut pdf_pos,
+                                    &mut pdf_dir,
+                                );
+                                break;
+                            }
+                        }
+                        assert!(pdf_choice != 0.0 as Float);
+                        return pdf_pos * pdf_choice;
+                    }
+                }
+            } else {
+                // area light from primitive
+                if let Some(ref si) = self.si {
+                    if let Some(primitive) = si.primitive {
+                        if let Some(area_light) = primitive.get_area_light() {
+                            // find area light in light vector
+                            for i in 0..scene.lights.len() {
+                                let light = &scene.lights[i];
+                                let pa = &*area_light as *const _ as *const usize;
+                                let pl = &*light as *const _ as *const usize;
+                                if pa == pl {
+                                    // compute the discrete probability of sampling _light_, _pdf_choice_
+                                    pdf_choice = light_distr.discrete_pdf(i);
+                                    light.pdf_le(
+                                        &Ray {
+                                            o: self.p(),
+                                            d: w,
+                                            t_max: std::f32::INFINITY,
+                                            time: self.time(),
+                                            differential: None,
+                                        },
+                                        &self.ng(),
+                                        &mut pdf_pos,
+                                        &mut pdf_dir,
+                                    );
+                                    break;
+                                }
+                            }
+                            assert!(pdf_choice != 0.0 as Float);
+                            return pdf_pos * pdf_choice;
+                        }
+                    }
+                }
+            }
+        }
+        0.0 as Float
     }
 }
 
@@ -583,8 +668,7 @@ pub fn generate_light_subpath<'a>(
     }
     if let Some(light_pdf) = light_pdf {
         // generate first vertex on light subpath and start random walk
-        let vertex: Vertex =
-            Vertex::create_light(light, &ray, &n_light, &le, pdf_pos * light_pdf);
+        let vertex: Vertex = Vertex::create_light(light, &ray, &n_light, &le, pdf_pos * light_pdf);
         let is_infinite_light: bool = vertex.is_infinite_light();
         path.push(vertex);
         let mut beta: Spectrum =
@@ -667,6 +751,8 @@ pub fn random_walk<'a>(
             );
             bounces += 1;
             if bounces as u32 >= max_depth {
+                // store new vertex
+                path.push(vertex);
                 break;
             }
             if let Some(ref bsdf) = isect.clone().bsdf {
@@ -870,6 +956,7 @@ pub fn connect_bdpt<'a>(
                 );
                 // sampled.pdfFwd =
                 //     sampled.PdfLightOrigin(scene, camera_vertices[t - 1], light_distr, lightToIndex);
+                sampled.pdf_light_origin(scene, &camera_vertices[t - 1], light_distr);
                 // L = camera_vertices[t - 1].beta * camera_vertices[t - 1].f(sampled, TransportMode::Radiance) * sampled.beta;
                 // if (camera_vertices[t - 1].IsOnSurface()) L *= AbsDot(wi, camera_vertices[t - 1].ns());
                 // // Only check visibility if the path would carry radiance.
@@ -912,7 +999,7 @@ pub fn connect_bdpt<'a>(
 
 pub fn infinite_light_density<'a>(
     scene: &'a Scene,
-    light_distr: Arc<Distribution1D>,
+    light_distr: &Arc<Distribution1D>,
     // const std::unordered_map<const Light *, size_t> &lightToDistrIndex,
     w: &Vector3f,
 ) -> Float {

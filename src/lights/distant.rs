@@ -106,7 +106,7 @@ impl Light for DistantLight {
     fn sample_le(
         &self,
         u1: &Point2f,
-        u2: &Point2f,
+        _u2: &Point2f,
         time: Float,
         ray: &mut Ray,
         n_light: &mut Normal3f,
@@ -135,6 +135,11 @@ impl Light for DistantLight {
         *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);
         *pdf_dir = 1.0 as Float;
         self.l
+    }
+    fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+        let world_radius: Float = *self.world_radius.read().unwrap();
+        *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);
+        *pdf_dir = 0.0 as Float;
     }
     fn get_flags(&self) -> u8 {
         self.flags

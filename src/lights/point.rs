@@ -78,9 +78,9 @@ impl Light for PointLight {
     fn sample_le(
         &self,
         u1: &Point2f,
-        u2: &Point2f,
+        _u2: &Point2f,
         time: Float,
-        ray: &mut Ray,
+        _ray: &mut Ray,
         n_light: &mut Normal3f,
         pdf_pos: &mut Float,
         pdf_dir: &mut Float,
@@ -103,5 +103,9 @@ impl Light for PointLight {
     }
     fn get_n_samples(&self) -> i32 {
         self.n_samples
+    }
+    fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+        *pdf_pos = 0.0 as Float;
+        *pdf_dir = uniform_sphere_pdf();
     }
 }

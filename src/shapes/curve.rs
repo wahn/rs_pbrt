@@ -527,7 +527,7 @@ impl Shape for Curve {
         }
         intr
     }
-    fn pdf(&self, iref: &Interaction, wi: &Vector3f) -> Float {
+    fn pdf_with_ref_point(&self, iref: &Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
         let ray: Ray = iref.spawn_ray(&wi);
         // ignore any alpha textures used for trimming the shape when

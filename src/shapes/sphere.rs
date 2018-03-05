@@ -456,7 +456,7 @@ impl Shape for Sphere {
         *pdf = 1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max));
         it
     }
-    fn pdf(&self, iref: &Interaction, wi: &Vector3f) -> Float {
+    fn pdf_with_ref_point(&self, iref: &Interaction, wi: &Vector3f) -> Float {
         let p_center: Point3f = self.object_to_world.transform_point(&Point3f::default());
         // return uniform PDF if point is inside sphere
         let p_origin: Point3f = pnt3_offset_ray_origin(

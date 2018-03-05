@@ -22,10 +22,14 @@ pub trait Shape {
     fn get_transform_swaps_handedness(&self) -> bool;
     fn area(&self) -> Float;
     fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon;
-    fn sample_with_ref_point(&self,
-                             iref: &InteractionCommon,
-                             u: &Point2f,
-                             pdf: &mut Float)
-                             -> InteractionCommon;
-    fn pdf(&self, iref: &Interaction, wi: &Vector3f) -> Float;
+    fn pdf(&self, _iref: &InteractionCommon) -> Float {
+        1.0 as Float / self.area()
+    }
+    fn sample_with_ref_point(
+        &self,
+        iref: &InteractionCommon,
+        u: &Point2f,
+        pdf: &mut Float,
+    ) -> InteractionCommon;
+    fn pdf_with_ref_point(&self, iref: &Interaction, wi: &Vector3f) -> Float;
 }

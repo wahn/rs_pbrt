@@ -137,6 +137,10 @@ impl Distribution1D {
         // if (uRemapped) CHECK(*uRemapped >= 0.f && *uRemapped <= 1.f);
         offset
     }
+    pub fn discrete_pdf(&self, index: usize) -> Float {
+        assert!(index < self.func.len());
+        self.func[index] / (self.func_int * self.func.len() as Float)
+    }
 }
 
 #[derive(Debug, Default, Clone)]

@@ -454,6 +454,16 @@ impl Light for InfiniteAreaLight {
         // TODO: return Spectrum(Lmap->Lookup(uv), SpectrumType::Illuminant);
         self.lmap.lookup_pnt_flt(&uv, 0.0 as Float)
     }
+    fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+        let d: Vector3f = -self.world_to_light.transform_vector(&ray.d);
+        let theta: Float = spherical_theta(&d);
+        let phi: Float = spherical_phi(&d);
+        let uv: Point2f = Point2f{x:phi * INV_2_PI, y:theta * INV_PI};
+        let map_pdf: Float = self.distribution.pdf(&uv);
+        let world_radius: Float = *self.world_radius.read().unwrap();
+        *pdf_dir = map_pdf / (2.0 as Float * PI * PI * theta.sin());
+        *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);
+    }
     fn get_flags(&self) -> u8 {
         self.flags
     }

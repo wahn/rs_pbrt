@@ -376,5 +376,4 @@ pub fn create_light_sample_distribution(
         );
         return Some(Arc::new(SpatialLightDistribution::new(scene, 64)));
     }
-    None
 }
