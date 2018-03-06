@@ -928,6 +928,7 @@ pub fn mis_weight<'a>(
     //        *qsMinus = s > 1 ? &light_vertices[s - 2] : nullptr,
     //        *ptMinus = t > 1 ? &camera_vertices[t - 2] : nullptr;
     let mut qs: Option<Vertex> = None;
+    let mut pt: Option<Vertex> = None;
 
     // update sampled vertex for $s=1$ or $t=1$ strategy
     // ScopedAssignment<Vertex> a1;
@@ -968,11 +969,50 @@ pub fn mis_weight<'a>(
         });
     } else if t == 1 {
         // a1 = {pt, sampled};
+        let mut ei: Option<EndpointInteraction> = None;
+        let mut si: Option<SurfaceInteraction> = None;
+        if let Some(ref lv_ei) = sampled.ei {
+            let new_ei: EndpointInteraction = EndpointInteraction {
+                p: lv_ei.p.clone(),
+                time: lv_ei.time,
+                p_error: lv_ei.p_error.clone(),
+                wo: lv_ei.wo.clone(),
+                n: lv_ei.n.clone(),
+                ..Default::default()
+            };
+            ei = Some(new_ei);
+        }
+        if let Some(ref lv_si) = sampled.si {
+            let new_si: SurfaceInteraction = SurfaceInteraction {
+                p: lv_si.p.clone(),
+                time: lv_si.time,
+                p_error: lv_si.p_error.clone(),
+                wo: lv_si.wo.clone(),
+                n: lv_si.n.clone(),
+                ..Default::default()
+            };
+            si = Some(new_si);
+        }
+        pt = Some(Vertex {
+            vertex_type: sampled.vertex_type.clone(),
+            beta: sampled.beta,
+            ei: ei,
+            si: si,
+            delta: sampled.delta,
+            pdf_fwd: sampled.pdf_fwd,
+            pdf_rev: sampled.pdf_rev,
+        });
     }
     // mark connection vertices as non-degenerate
     // ScopedAssignment<bool> a2, a3;
     // if (pt) a2 = {&pt->delta, false};
+    if let Some(mut overwrite) = pt {
+        overwrite.delta = false;
+    }
     // if (qs) a3 = {&qs->delta, false};
+    if let Some(mut overwrite) = qs {
+        overwrite.delta = false;
+    }
 
     // update reverse density of vertex $\pt{}_{t-1}$
     // ScopedAssignment<Float> a4;
