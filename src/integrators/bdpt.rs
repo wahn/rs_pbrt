@@ -1,9 +1,10 @@
 // std
 use std;
+use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
-use core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Ray, Vector3f};
+use core::geometry::{Bounds2i, Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_normalize};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::material::TransportMode;
@@ -436,6 +437,94 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             pdf *= nrm_abs_dot_vec3(&next.ng(), &(w * inv_dist_2.sqrt()));
         }
         pdf * inv_dist_2
+    }
+    pub fn pdf(&self, scene: &Scene, prev: Option<&Vertex>, next: &Vertex) -> Float {
+        // if (type == VertexType::Light) return PdfLight(scene, next);
+        if self.vertex_type != VertexType::Light {
+            return self.pdf_light(scene, next);
+        }
+        // compute directions to preceding and next vertex
+        let mut wn: Vector3f = next.p() - self.p();
+        if wn.length_squared() == 0.0 as Float {
+            return 0.0 as Float;
+        }
+        wn = vec3_normalize(&wn);
+        let mut wp: Vector3f = Vector3f::default();
+        if let Some(prev) = prev {
+            wp = prev.p() - self.p();
+            if wp.length_squared() == 0.0 as Float {
+                return 0.0 as Float;
+            }
+            wp = vec3_normalize(&wp);
+        } else {
+            assert!(self.vertex_type == VertexType::Camera);
+        }
+        // compute directional density depending on the vertex types
+        let mut pdf_flt: Float = 0.0;
+        let mut _unused: Float = 0.0;
+        if self.vertex_type == VertexType::Camera {
+            if let Some(ref ei) = self.ei {
+                if let Some(ref camera) = ei.camera {
+                    let (_unused, pdf_flt) = camera.pdf_we(&ei.spawn_ray(&wn));
+                }
+            }
+        } else if self.vertex_type == VertexType::Surface {
+            if let Some(ref si) = self.si {
+                if let Some(ref bsdf) = si.bsdf {
+                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                    pdf_flt = bsdf.pdf(&wp, &wn, bsdf_flags);
+                }
+            }
+        } else if self.vertex_type == VertexType::Medium {
+            // TODO:
+            // pdf_flt = mi.phase->p(wp, wn);
+        } else {
+            panic!("Vertex::Pdf(): Unimplemented");
+        }
+        // return probability per unit area at vertex _next_
+        self.convert_density(pdf_flt, next)
+    }
+    pub fn pdf_light(&self, scene: &Scene, v: &Vertex) -> Float {
+        // Vector3f w = v.p() - p();
+        let mut w: Vector3f = v.p() - self.p();
+        let inv_dist2: Float = 1.0 as Float / w.length_squared();
+        w *= inv_dist2.sqrt();
+        let mut pdf: Float = 0.0;
+        if self.is_infinite_light() {
+            // compute planar sampling density for infinite light sources
+            let mut world_center: Point3f = Point3f::default();
+            let mut world_radius: Float = 0.0;
+            Bounds3f::bounding_sphere(&scene.world_bound(), &mut world_center, &mut world_radius);
+            pdf = 1.0 as Float / (PI * world_radius * world_radius);
+        } else {
+            // get pointer _light_ to the light source at the vertex
+            let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            assert!(self.is_light());
+            //     const Light *light = type == VertexType::Light
+            //                              ? ei.light
+            //                              : si.primitive->GetAreaLight();
+            if self.vertex_type != VertexType::Light {
+                if let Some(ref ei) = self.ei {
+                    if let Some(ref light_ref) = ei.light {
+                        light = Some(light_ref);
+                    }
+                } else if let Some(ref si) = self.si {
+                    if let Some(primitive) = si.primitive {
+                        if let Some(area_light) = primitive.get_area_light() {
+                            // light = Some(&area_light.arc_clone());
+                        }
+                    }
+                }
+            }
+            //     CHECK_NOTNULL(light);
+
+            //     // Compute sampling density for non-infinite light sources
+            //     Float pdfPos, pdfDir;
+            //     light->Pdf_Le(Ray(p(), w, Infinity, time()), ng(), &pdfPos, &pdfDir);
+            //     pdf = pdfDir * inv_dist2;
+        }
+        // if (v.IsOnSurface()) pdf *= AbsDot(v.ng(), w);
+        pdf
     }
     pub fn pdf_light_origin(
         &self,
@@ -931,7 +1020,6 @@ pub fn mis_weight<'a>(
     let mut pt: Option<Vertex> = None;
 
     // update sampled vertex for $s=1$ or $t=1$ strategy
-    // ScopedAssignment<Vertex> a1;
     if s == 1 {
         // a1 = {qs, sampled};
         let mut ei: Option<EndpointInteraction> = None;
@@ -1004,24 +1092,25 @@ pub fn mis_weight<'a>(
         });
     }
     // mark connection vertices as non-degenerate
-    // ScopedAssignment<bool> a2, a3;
-    // if (pt) a2 = {&pt->delta, false};
-    if let Some(mut overwrite) = pt {
+    if let Some(ref mut overwrite) = pt {
         overwrite.delta = false;
     }
-    // if (qs) a3 = {&qs->delta, false};
-    if let Some(mut overwrite) = qs {
+    if let Some(ref mut overwrite) = qs {
         overwrite.delta = false;
     }
 
     // update reverse density of vertex $\pt{}_{t-1}$
-    // ScopedAssignment<Float> a4;
-    // if (pt)
-    //     a4 = {&pt->pdfRev, s > 0 ? qs->Pdf(scene, qsMinus, *pt)
-    //                              : pt->PdfLightOrigin(scene, *ptMinus, lightPdf,
-    //                                                   lightToIndex)};
-
-    // // Update reverse density of vertex $\pt{}_{t-2}$
+    if let Some(ref mut overwrite) = pt {
+        if s > 0 {
+            if let Some(ref overwrite2) = qs {
+                overwrite.pdf_rev = overwrite2.pdf(scene, Some(&light_vertices[s - 2]), &overwrite);
+            }
+        } else {
+            overwrite.pdf_rev =
+                overwrite.pdf_light_origin(scene, &camera_vertices[t - 2], &light_pdf);
+        }
+    }
+    // update reverse density of vertex $\pt{}_{t-2}$
     // ScopedAssignment<Float> a5;
     // if (ptMinus)
     //     a5 = {&ptMinus->pdfRev, s > 0 ? pt->Pdf(scene, qs, *ptMinus)
@@ -1255,7 +1344,10 @@ pub fn connect_bdpt<'a>(
             light_distr,
         );
     }
-    println!("MIS weight for (s,t) = ({:?}, {:?}) connection: {:?}", s, t, mis_weight_flt);
+    println!(
+        "MIS weight for (s,t) = ({:?}, {:?}) connection: {:?}",
+        s, t, mis_weight_flt
+    );
     assert!(!mis_weight_flt.is_nan());
     l *= Spectrum::new(mis_weight_flt);
     // TODO: if (mis_weight_ptr) *mis_weight_ptr = mis_weight_flt;
