@@ -470,7 +470,8 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                             let pr = &**light_ref as *const _ as *const usize;
                             let pl = &*light as *const _ as *const usize;
                             if pr == pl {
-                                // compute the discrete probability of sampling _light_, _pdf_choice_
+                                // compute the discrete probability of
+                                // sampling _light_, _pdf_choice_
                                 pdf_choice = light_distr.discrete_pdf(i);
                                 light.pdf_le(
                                     &Ray {
@@ -502,7 +503,9 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                                 let pa = &*area_light as *const _ as *const usize;
                                 let pl = &*light as *const _ as *const usize;
                                 if pa == pl {
-                                    // compute the discrete probability of sampling _light_, _pdf_choice_
+                                    // compute the discrete
+                                    // probability of sampling
+                                    // _light_, _pdf_choice_
                                     pdf_choice = light_distr.discrete_pdf(i);
                                     light.pdf_le(
                                         &Ray {
@@ -855,7 +858,7 @@ pub fn g<'a>(
     // VisibilityTester vis(v0.GetInteraction(), v1.GetInteraction());
     let mut p0: InteractionCommon = InteractionCommon::default();
     match v0.vertex_type {
-        VertexType::Medium => {},
+        VertexType::Medium => {}
         VertexType::Surface => {
             if let Some(ref si) = v0.si {
                 p0.p = si.p;
@@ -877,7 +880,7 @@ pub fn g<'a>(
     }
     let mut p1: InteractionCommon = InteractionCommon::default();
     match v1.vertex_type {
-        VertexType::Medium => {},
+        VertexType::Medium => {}
         VertexType::Surface => {
             if let Some(ref si) = v1.si {
                 p1.p = si.p;
@@ -901,6 +904,115 @@ pub fn g<'a>(
     vis.tr(scene, sampler) * g
 }
 
+pub fn mis_weight<'a>(
+    scene: &'a Scene,
+    light_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
+    camera_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
+    sampled: &Vertex,
+    s: usize,
+    t: usize,
+    light_pdf: &Arc<Distribution1D>,
+) -> Float {
+    if s + t == 2 as usize {
+        return 1.0 as Float;
+    }
+    let mut sum_ri: Float = 0.0;
+    // define helper function _remap0_ that deals with Dirac delta functions
+    // auto remap0 = [](Float f) -> Float { return f != 0 ? f : 1; };
+
+    // temporarily update vertex properties for current strategy
+
+    // look up connection vertices and their predecessors
+    // Vertex *qs = s > 0 ? &light_vertices[s - 1] : nullptr,
+    //        *pt = t > 0 ? &camera_vertices[t - 1] : nullptr,
+    //        *qsMinus = s > 1 ? &light_vertices[s - 2] : nullptr,
+    //        *ptMinus = t > 1 ? &camera_vertices[t - 2] : nullptr;
+    let mut qs: Option<Vertex> = None;
+
+    // update sampled vertex for $s=1$ or $t=1$ strategy
+    // ScopedAssignment<Vertex> a1;
+    if s == 1 {
+        // a1 = {qs, sampled};
+        let mut ei: Option<EndpointInteraction> = None;
+        let mut si: Option<SurfaceInteraction> = None;
+        if let Some(ref lv_ei) = sampled.ei {
+            let new_ei: EndpointInteraction = EndpointInteraction {
+                p: lv_ei.p.clone(),
+                time: lv_ei.time,
+                p_error: lv_ei.p_error.clone(),
+                wo: lv_ei.wo.clone(),
+                n: lv_ei.n.clone(),
+                ..Default::default()
+            };
+            ei = Some(new_ei);
+        }
+        if let Some(ref lv_si) = sampled.si {
+            let new_si: SurfaceInteraction = SurfaceInteraction {
+                p: lv_si.p.clone(),
+                time: lv_si.time,
+                p_error: lv_si.p_error.clone(),
+                wo: lv_si.wo.clone(),
+                n: lv_si.n.clone(),
+                ..Default::default()
+            };
+            si = Some(new_si);
+        }
+        qs = Some(Vertex {
+            vertex_type: sampled.vertex_type.clone(),
+            beta: sampled.beta,
+            ei: ei,
+            si: si,
+            delta: sampled.delta,
+            pdf_fwd: sampled.pdf_fwd,
+            pdf_rev: sampled.pdf_rev,
+        });
+    } else if t == 1 {
+        // a1 = {pt, sampled};
+    }
+    // mark connection vertices as non-degenerate
+    // ScopedAssignment<bool> a2, a3;
+    // if (pt) a2 = {&pt->delta, false};
+    // if (qs) a3 = {&qs->delta, false};
+
+    // update reverse density of vertex $\pt{}_{t-1}$
+    // ScopedAssignment<Float> a4;
+    // if (pt)
+    //     a4 = {&pt->pdfRev, s > 0 ? qs->Pdf(scene, qsMinus, *pt)
+    //                              : pt->PdfLightOrigin(scene, *ptMinus, lightPdf,
+    //                                                   lightToIndex)};
+
+    // // Update reverse density of vertex $\pt{}_{t-2}$
+    // ScopedAssignment<Float> a5;
+    // if (ptMinus)
+    //     a5 = {&ptMinus->pdfRev, s > 0 ? pt->Pdf(scene, qs, *ptMinus)
+    //                                   : pt->PdfLight(scene, *ptMinus)};
+
+    // // Update reverse density of vertices $\pq{}_{s-1}$ and $\pq{}_{s-2}$
+    // ScopedAssignment<Float> a6;
+    // if (qs) a6 = {&qs->pdfRev, pt->Pdf(scene, ptMinus, *qs)};
+    // ScopedAssignment<Float> a7;
+    // if (qsMinus) a7 = {&qsMinus->pdfRev, qs->Pdf(scene, pt, *qsMinus)};
+
+    // consider hypothetical connection strategies along the camera subpath
+    let mut ri: Float = 1.0;
+    // for (int i = t - 1; i > 0; --i) {
+    //     ri *=
+    //         remap0(camera_vertices[i].pdfRev) / remap0(camera_vertices[i].pdfFwd);
+    //     if (!camera_vertices[i].delta && !camera_vertices[i - 1].delta)
+    //         sum_ri += ri;
+    // }
+
+    // Consider hypothetical connection strategies along the light subpath
+    ri = 1.0 as Float;
+    // for (int i = s - 1; i >= 0; --i) {
+    //     ri *= remap0(light_vertices[i].pdfRev) / remap0(light_vertices[i].pdfFwd);
+    //     bool deltaLightvertex = i > 0 ? light_vertices[i - 1].delta
+    //                                   : light_vertices[0].IsDeltaLight();
+    //     if (!light_vertices[i].delta && !deltaLightvertex) sum_ri += ri;
+    // }
+    1.0 as Float / (1.0 as Float + sum_ri)
+}
+
 pub fn connect_bdpt<'a>(
     scene: &'a Scene,
     light_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
@@ -919,7 +1031,15 @@ pub fn connect_bdpt<'a>(
         return Spectrum::default();
     }
     // perform connection and write contribution to _L_
-    // Vertex sampled;
+    let mut sampled: Vertex = Vertex {
+        vertex_type: VertexType::Medium,
+        beta: Spectrum::default(),
+        ei: None,
+        si: None,
+        delta: false,
+        pdf_fwd: 0.0 as Float,
+        pdf_rev: 0.0 as Float,
+    };
     if s == 0 {
         // interpret the camera subpath as a complete path
         if camera_vertices[t - 1].is_light() {
@@ -959,7 +1079,7 @@ pub fn connect_bdpt<'a>(
             );
             if pdf > 0.0 as Float && !wi_color.is_black() {
                 // initialize dynamically sampled vertex and _L_ for $t=1$ case
-                let sampled: Vertex =
+                sampled =
                     Vertex::create_camera_from_interaction(camera, &vis.p1, &(wi_color / pdf));
                 l = light_vertices[s - 1].beta
                     * light_vertices[s - 1].f(&sampled, TransportMode::Importance)
@@ -1014,7 +1134,7 @@ pub fn connect_bdpt<'a>(
                     &vis.p1,
                     &scene.lights[light_num],
                 );
-                let mut sampled: Vertex = Vertex::create_light_interaction(
+                sampled = Vertex::create_light_interaction(
                     ei,
                     &(light_weight / (pdf * light_pdf.unwrap())),
                     0.0 as Float,
@@ -1077,21 +1197,28 @@ pub fn connect_bdpt<'a>(
             }
         }
     }
-
+    // TODO:
     // ++totalPaths;
     // if (L.IsBlack()) ++zeroRadiancePaths;
     // ReportValue(pathLength, s + t - 2);
 
-    // // Compute MIS weight for connection strategy
-    // Float misWeight =
-    //     L.IsBlack() ? 0.f : MISWeight(scene, light_vertices, camera_vertices,
-    //                                   sampled, s, t, light_distr, lightToIndex);
-    // VLOG(2) << "MIS weight for (s,t) = (" << s << ", " << t << ") connection: "
-    //         << misWeight;
-    // DCHECK(!std::isnan(misWeight));
-    // L *= misWeight;
-    // if (misWeightPtr) *misWeightPtr = misWeight;
-    // WORK
+    // compute MIS weight for connection strategy
+    let mut mis_weight_flt: Float = 0.0 as Float;
+    if !l.is_black() {
+        mis_weight_flt = mis_weight(
+            scene,
+            light_vertices,
+            camera_vertices,
+            &sampled,
+            s,
+            t,
+            light_distr,
+        );
+    }
+    println!("MIS weight for (s,t) = ({:?}, {:?}) connection: {:?}", s, t, mis_weight_flt);
+    assert!(!mis_weight_flt.is_nan());
+    l *= Spectrum::new(mis_weight_flt);
+    // TODO: if (mis_weight_ptr) *mis_weight_ptr = mis_weight_flt;
     l
 }
 

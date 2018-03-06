@@ -85,6 +85,8 @@ impl VisibilityTester {
                 // handle opaque surface along ray's path
                 if let Some(primitive) = isect.primitive {
                     if let Some(_material) = primitive.get_material() {
+                        return Spectrum::default();
+                    } else {
                         // update transmittance for current ray segment
                         // TODO: if (ray.medium) Tr *= ray.medium->Tr(ray, sampler);
                         let it: InteractionCommon = InteractionCommon {
@@ -95,8 +97,6 @@ impl VisibilityTester {
                             n: isect.n,
                         };
                         ray = it.spawn_ray_to(&self.p1);
-                    } else {
-                        return Spectrum::default();
                     }
                 }
             } else {
