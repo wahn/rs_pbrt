@@ -485,7 +485,6 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         self.convert_density(pdf_flt, next)
     }
     pub fn pdf_light(&self, scene: &Scene, v: &Vertex) -> Float {
-        // Vector3f w = v.p() - p();
         let mut w: Vector3f = v.p() - self.p();
         let inv_dist2: Float = 1.0 as Float / w.length_squared();
         w *= inv_dist2.sqrt();
@@ -497,33 +496,56 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             Bounds3f::bounding_sphere(&scene.world_bound(), &mut world_center, &mut world_radius);
             pdf = 1.0 as Float / (PI * world_radius * world_radius);
         } else {
-            // get pointer _light_ to the light source at the vertex
-            let mut light: Option<&Arc<Light + Send + Sync>> = None;
             assert!(self.is_light());
-            //     const Light *light = type == VertexType::Light
-            //                              ? ei.light
-            //                              : si.primitive->GetAreaLight();
             if self.vertex_type != VertexType::Light {
                 if let Some(ref ei) = self.ei {
                     if let Some(ref light_ref) = ei.light {
-                        light = Some(light_ref);
+                        // compute sampling density for non-infinite
+                        // light sources
+                        let mut pdf_pos: Float = 0.0;
+                        let mut pdf_dir: Float = 0.0;
+                        light_ref.pdf_le(
+                            &Ray {
+                                o: self.p(),
+                                d: w,
+                                t_max: std::f32::INFINITY,
+                                time: self.time(),
+                                differential: None,
+                            },
+                            &self.ng(),
+                            &mut pdf_pos,
+                            &mut pdf_dir,
+                        );
+                        pdf = pdf_dir * inv_dist2;
                     }
                 } else if let Some(ref si) = self.si {
                     if let Some(primitive) = si.primitive {
                         if let Some(area_light) = primitive.get_area_light() {
-                            // light = Some(&area_light.arc_clone());
+                            // compute sampling density for
+                            // non-infinite light sources
+                            let mut pdf_pos: Float = 0.0;
+                            let mut pdf_dir: Float = 0.0;
+                            area_light.pdf_le(
+                                &Ray {
+                                    o: self.p(),
+                                    d: w,
+                                    t_max: std::f32::INFINITY,
+                                    time: self.time(),
+                                    differential: None,
+                                },
+                                &self.ng(),
+                                &mut pdf_pos,
+                                &mut pdf_dir,
+                            );
+                            pdf = pdf_dir * inv_dist2;
                         }
                     }
                 }
             }
-            //     CHECK_NOTNULL(light);
-
-            //     // Compute sampling density for non-infinite light sources
-            //     Float pdfPos, pdfDir;
-            //     light->Pdf_Le(Ray(p(), w, Infinity, time()), ng(), &pdfPos, &pdfDir);
-            //     pdf = pdfDir * inv_dist2;
         }
-        // if (v.IsOnSurface()) pdf *= AbsDot(v.ng(), w);
+        if v.is_on_surface() {
+            pdf *= nrm_abs_dot_vec3(&v.ng(), &w);
+        }
         pdf
     }
     pub fn pdf_light_origin(
