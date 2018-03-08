@@ -440,7 +440,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     }
     pub fn pdf(&self, scene: &Scene, prev: Option<&Vertex>, next: &Vertex) -> Float {
         // if (type == VertexType::Light) return PdfLight(scene, next);
-        if self.vertex_type != VertexType::Light {
+        if self.vertex_type == VertexType::Light {
             return self.pdf_light(scene, next);
         }
         // compute directions to preceding and next vertex
@@ -497,7 +497,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             pdf = 1.0 as Float / (PI * world_radius * world_radius);
         } else {
             assert!(self.is_light());
-            if self.vertex_type != VertexType::Light {
+            if self.vertex_type == VertexType::Light {
                 if let Some(ref ei) = self.ei {
                     if let Some(ref light_ref) = ei.light {
                         // compute sampling density for non-infinite
@@ -518,7 +518,9 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                         );
                         pdf = pdf_dir * inv_dist2;
                     }
-                } else if let Some(ref si) = self.si {
+                }
+            } else {
+                if let Some(ref si) = self.si {
                     if let Some(primitive) = si.primitive {
                         if let Some(area_light) = primitive.get_area_light() {
                             // compute sampling density for
@@ -1047,13 +1049,22 @@ pub fn mis_weight<'a>(
         let mut ei: Option<EndpointInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
+            let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+            let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            if let Some(camera_box) = lv_ei.camera {
+                camera = Some(camera_box);
+            }
+            if let Some(light_arc) = lv_ei.light {
+                light = Some(light_arc);
+            }
             let new_ei: EndpointInteraction = EndpointInteraction {
                 p: lv_ei.p.clone(),
                 time: lv_ei.time,
                 p_error: lv_ei.p_error.clone(),
                 wo: lv_ei.wo.clone(),
                 n: lv_ei.n.clone(),
-                ..Default::default()
+                camera: camera,
+                light: light,
             };
             ei = Some(new_ei);
         }
@@ -1082,13 +1093,22 @@ pub fn mis_weight<'a>(
         let mut ei: Option<EndpointInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
+            let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+            let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            if let Some(camera_box) = lv_ei.camera {
+                camera = Some(camera_box);
+            }
+            if let Some(light_arc) = lv_ei.light {
+                light = Some(light_arc);
+            }
             let new_ei: EndpointInteraction = EndpointInteraction {
                 p: lv_ei.p.clone(),
                 time: lv_ei.time,
                 p_error: lv_ei.p_error.clone(),
                 wo: lv_ei.wo.clone(),
                 n: lv_ei.n.clone(),
-                ..Default::default()
+                camera: camera,
+                light: light,
             };
             ei = Some(new_ei);
         }
@@ -1116,6 +1136,50 @@ pub fn mis_weight<'a>(
     // mark connection vertices as non-degenerate
     if let Some(ref mut overwrite) = pt {
         overwrite.delta = false;
+    } else if t > 0 {
+        // *pt = t > 0 ? &cameraVertices[t - 1] : nullptr
+        let mut ei: Option<EndpointInteraction> = None;
+        let mut si: Option<SurfaceInteraction> = None;
+        if let Some(ref cv_ei) = camera_vertices[t - 1].ei {
+            let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+            let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            if let Some(camera_box) = cv_ei.camera {
+                camera = Some(camera_box);
+            }
+            if let Some(light_arc) = cv_ei.light {
+                light = Some(light_arc);
+            }
+            let new_ei: EndpointInteraction = EndpointInteraction {
+                p: cv_ei.p.clone(),
+                time: cv_ei.time,
+                p_error: cv_ei.p_error.clone(),
+                wo: cv_ei.wo.clone(),
+                n: cv_ei.n.clone(),
+                camera: camera,
+                light: light,
+            };
+            ei = Some(new_ei);
+        }
+        if let Some(ref cv_si) = camera_vertices[t - 1].si {
+            let new_si: SurfaceInteraction = SurfaceInteraction {
+                p: cv_si.p.clone(),
+                time: cv_si.time,
+                p_error: cv_si.p_error.clone(),
+                wo: cv_si.wo.clone(),
+                n: cv_si.n.clone(),
+                ..Default::default()
+            };
+            si = Some(new_si);
+        }
+        pt = Some(Vertex {
+            vertex_type: camera_vertices[t - 1].vertex_type.clone(),
+            beta: camera_vertices[t - 1].beta,
+            ei: ei,
+            si: si,
+            delta: false, // overwrite
+            pdf_fwd: camera_vertices[t - 1].pdf_fwd,
+            pdf_rev: camera_vertices[t - 1].pdf_rev,
+        });
     }
     if let Some(ref mut overwrite) = qs {
         overwrite.delta = false;
@@ -1125,11 +1189,17 @@ pub fn mis_weight<'a>(
     if let Some(ref mut overwrite) = pt {
         if s > 0 {
             if let Some(ref overwrite2) = qs {
-                overwrite.pdf_rev = overwrite2.pdf(scene, Some(&light_vertices[s - 2]), &overwrite);
+                if s > 1 {
+                    overwrite.pdf_rev = overwrite2.pdf(scene, Some(&light_vertices[s - 2]), &overwrite);
+                } else {
+                    overwrite.pdf_rev = overwrite2.pdf(scene, None, &overwrite);
+                }
             }
         } else {
-            overwrite.pdf_rev =
-                overwrite.pdf_light_origin(scene, &camera_vertices[t - 2], &light_pdf);
+            if t > 1 {
+                overwrite.pdf_rev =
+                    overwrite.pdf_light_origin(scene, &camera_vertices[t - 2], &light_pdf);
+            }
         }
     }
     // update reverse density of vertex $\pt{}_{t-2}$
