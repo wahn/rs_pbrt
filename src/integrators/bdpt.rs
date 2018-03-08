@@ -1042,7 +1042,7 @@ pub fn mis_weight<'a>(
     //        *ptMinus = t > 1 ? &camera_vertices[t - 2] : nullptr;
     let mut qs: Option<Vertex> = None;
     let mut pt: Option<Vertex> = None;
-    // let mut qs_minus: Option<Vertex> = None;
+    let mut qs_minus: Option<Vertex> = None;
     let mut pt_minus: Option<Vertex> = None;
 
     // update sampled vertex for $s=1$ or $t=1$ strategy
@@ -1193,12 +1193,12 @@ pub fn mis_weight<'a>(
     // update reverse density of vertex $\pt{}_{t-1}$
     if let Some(ref mut overwrite) = pt {
         if s > 0 {
-            if let Some(ref overwrite2) = qs {
+            if let Some(ref callable) = qs {
                 if s > 1 {
                     overwrite.pdf_rev =
-                        overwrite2.pdf(scene, Some(&light_vertices[s - 2]), &overwrite);
+                        callable.pdf(scene, Some(&light_vertices[s - 2]), &overwrite);
                 } else {
-                    overwrite.pdf_rev = overwrite2.pdf(scene, None, &overwrite);
+                    overwrite.pdf_rev = callable.pdf(scene, None, &overwrite);
                 }
             }
         } else {
@@ -1209,10 +1209,6 @@ pub fn mis_weight<'a>(
         }
     }
     // update reverse density of vertex $\pt{}_{t-2}$
-    // ScopedAssignment<Float> a5;
-    // if (ptMinus)
-    //     a5 = {&ptMinus->pdfRev, s > 0 ? pt->Pdf(scene, qs, *ptMinus)
-    //                                   : pt->PdfLight(scene, *ptMinus)};
     if let Some(ref callable) = pt {
         if t > 1 {
             let mut ei: Option<EndpointInteraction> = None;
@@ -1271,11 +1267,68 @@ pub fn mis_weight<'a>(
         }
     }
 
-    // // Update reverse density of vertices $\pq{}_{s-1}$ and $\pq{}_{s-2}$
-    // ScopedAssignment<Float> a6;
-    // if (qs) a6 = {&qs->pdfRev, pt->Pdf(scene, ptMinus, *qs)};
-    // ScopedAssignment<Float> a7;
-    // if (qsMinus) a7 = {&qsMinus->pdfRev, qs->Pdf(scene, pt, *qsMinus)};
+    // update reverse density of vertices $\pq{}_{s-1}$ and $\pq{}_{s-2}$
+    if let Some(ref mut overwrite) = qs {
+        if t > 0 {
+            if let Some(ref callable) = pt {
+                overwrite.pdf_rev =
+                    callable.pdf(scene, Some(&camera_vertices[t - 2]), &overwrite);
+            }
+        }
+    }
+    if let Some(ref callable) = qs {
+        if s > 1 {
+            let mut ei: Option<EndpointInteraction> = None;
+            let mut si: Option<SurfaceInteraction> = None;
+            if let Some(ref lv_ei) = light_vertices[s - 2].ei {
+                let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+                let mut light: Option<&Arc<Light + Send + Sync>> = None;
+                if let Some(camera_box) = lv_ei.camera {
+                    camera = Some(camera_box);
+                }
+                if let Some(light_arc) = lv_ei.light {
+                    light = Some(light_arc);
+                }
+                let new_ei: EndpointInteraction = EndpointInteraction {
+                    p: lv_ei.p.clone(),
+                    time: lv_ei.time,
+                    p_error: lv_ei.p_error.clone(),
+                    wo: lv_ei.wo.clone(),
+                    n: lv_ei.n.clone(),
+                    camera: camera,
+                    light: light,
+                };
+                ei = Some(new_ei);
+            }
+            if let Some(ref lv_si) = light_vertices[s - 2].si {
+                let new_si: SurfaceInteraction = SurfaceInteraction {
+                    p: lv_si.p.clone(),
+                    time: lv_si.time,
+                    p_error: lv_si.p_error.clone(),
+                    wo: lv_si.wo.clone(),
+                    n: lv_si.n.clone(),
+                    bsdf: lv_si.bsdf.clone(),
+                    ..Default::default()
+                };
+                si = Some(new_si);
+            }
+            let mut pdf_rev: Float = 0.0;
+            if let Some(ref pt_ref) = pt {
+                pdf_rev = callable.pdf(scene, Some(&pt_ref), &light_vertices[s - 2]);
+            } else {
+                pdf_rev = callable.pdf(scene, None, &light_vertices[s - 2]);
+            }
+            qs_minus = Some(Vertex {
+                vertex_type: light_vertices[s - 2].vertex_type.clone(),
+                beta: light_vertices[s - 2].beta,
+                ei: ei,
+                si: si,
+                delta: light_vertices[s - 2].delta,
+                pdf_fwd: light_vertices[s - 2].pdf_fwd,
+                pdf_rev: pdf_rev, //overwrite
+            });
+        }
+    }
 
     // consider hypothetical connection strategies along the camera subpath
     let mut ri: Float = 1.0;
@@ -1286,7 +1339,7 @@ pub fn mis_weight<'a>(
     //         sum_ri += ri;
     // }
 
-    // Consider hypothetical connection strategies along the light subpath
+    // consider hypothetical connection strategies along the light subpath
     ri = 1.0 as Float;
     // for (int i = s - 1; i >= 0; --i) {
     //     ri *= remap0(light_vertices[i].pdfRev) / remap0(light_vertices[i].pdfFwd);
