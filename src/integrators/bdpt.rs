@@ -7,6 +7,7 @@ use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_normalize};
 use core::light::{Light, LightFlags, VisibilityTester};
+use core::light::is_delta_light;
 use core::material::TransportMode;
 use core::primitive::Primitive;
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -361,6 +362,17 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                         }
                     }
                 }
+            }
+        }
+        false
+    }
+    pub fn is_delta_light(&self) -> bool {
+        if self.vertex_type != VertexType::Light {
+            return false;
+        } else if let Some(ref ei) = self.ei {
+            if let Some(ref light) = ei.light {
+                let check: u8 = light.get_flags();
+                return is_delta_light(check);
             }
         }
         false
@@ -1271,8 +1283,7 @@ pub fn mis_weight<'a>(
     if let Some(ref mut overwrite) = qs {
         if t > 0 {
             if let Some(ref callable) = pt {
-                overwrite.pdf_rev =
-                    callable.pdf(scene, Some(&camera_vertices[t - 2]), &overwrite);
+                overwrite.pdf_rev = callable.pdf(scene, Some(&camera_vertices[t - 2]), &overwrite);
             }
         }
     }
@@ -1332,21 +1343,84 @@ pub fn mis_weight<'a>(
 
     // consider hypothetical connection strategies along the camera subpath
     let mut ri: Float = 1.0;
-    // for (int i = t - 1; i > 0; --i) {
-    //     ri *=
-    //         remap0(camera_vertices[i].pdfRev) / remap0(camera_vertices[i].pdfFwd);
-    //     if (!camera_vertices[i].delta && !camera_vertices[i - 1].delta)
-    //         sum_ri += ri;
-    // }
+    let mut i: usize = t - 1;
+    while i > 0 {
+        let mut cv1: &Vertex = &camera_vertices[i];
+        let mut cv0: &Vertex = &camera_vertices[i - 1];
+        if i == t - 1 {
+            // use modified camera vertices
+            if let Some(ref cv) = pt {
+                cv1 = cv;
+            }
+            if let Some(ref cv) = pt_minus {
+                cv0 = cv;
+            }
+        } else if i == t - 2 {
+            // use modified camera vertex
+            if let Some(ref cv) = pt_minus {
+                cv1 = cv;
+            }
+        }
+        let mut numerator: Float = cv1.pdf_rev;
+        if numerator == 0.0 {
+            numerator = 1.0;
+        }
+        let mut denominator: Float = cv1.pdf_fwd;
+        if denominator == 0.0 {
+            denominator = 1.0;
+        }
+        ri *= numerator / denominator;
+        if !cv1.delta && !cv0.delta {
+            sum_ri += ri;
+        }
+        i -= 1;
+    }
 
     // consider hypothetical connection strategies along the light subpath
     ri = 1.0 as Float;
-    // for (int i = s - 1; i >= 0; --i) {
-    //     ri *= remap0(light_vertices[i].pdfRev) / remap0(light_vertices[i].pdfFwd);
-    //     bool deltaLightvertex = i > 0 ? light_vertices[i - 1].delta
-    //                                   : light_vertices[0].IsDeltaLight();
-    //     if (!light_vertices[i].delta && !deltaLightvertex) sum_ri += ri;
-    // }
+    let mut i: isize = s as isize - 1;
+    while i >= 0 {
+        let mut lv1: &Vertex = &light_vertices[i as usize];
+        if i == s as isize - 1 {
+            // use modified light vertices
+            if let Some(ref lv) = qs {
+                lv1 = lv;
+            }
+        } else if i == s as isize - 2 {
+            // use modified light vertex
+            if let Some(ref lv) = qs_minus {
+                lv1 = lv;
+            }
+        }
+        let mut numerator: Float = lv1.pdf_rev;
+        if numerator == 0.0 {
+            numerator = 1.0;
+        }
+        let mut denominator: Float = lv1.pdf_fwd;
+        if denominator == 0.0 {
+            denominator = 1.0;
+        }
+        ri *= numerator / denominator;
+        let mut delta_lightvertex: bool;
+        if i > 0 {
+            if i == s as isize - 2 {
+                if let Some(ref lv) = qs_minus {
+                    // use modified light vertex
+                    delta_lightvertex = lv.delta;
+                } else {
+                    delta_lightvertex = light_vertices[(i - 1) as usize].delta;
+                }
+            } else {
+                delta_lightvertex = light_vertices[(i - 1) as usize].delta;
+            }
+        } else {
+            delta_lightvertex = lv1.is_delta_light();
+        }
+        if !lv1.delta && !delta_lightvertex {
+            sum_ri += ri;
+        }
+        i -= 1;
+    }
     1.0 as Float / (1.0 as Float + sum_ri)
 }
 
@@ -1421,7 +1495,7 @@ pub fn connect_bdpt<'a>(
                 l = light_vertices[s - 1].beta
                     * light_vertices[s - 1].f(&sampled, TransportMode::Importance)
                     * sampled.beta;
-                println!("l = {:?}", l);
+                // println!("l = {:?}", l);
                 if light_vertices[s - 1].is_on_surface() {
                     l *= Spectrum::new(vec3_abs_dot_nrm(&wi, &light_vertices[s - 1].ns()));
                 }
