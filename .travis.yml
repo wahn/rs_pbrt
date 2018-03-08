@@ -5,6 +5,7 @@ rust:
   - nightly
 matrix:
   allow_failures:
+    - rust: stable
     - rust: beta
 env:
   global:
