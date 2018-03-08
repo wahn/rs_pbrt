@@ -1042,6 +1042,8 @@ pub fn mis_weight<'a>(
     //        *ptMinus = t > 1 ? &camera_vertices[t - 2] : nullptr;
     let mut qs: Option<Vertex> = None;
     let mut pt: Option<Vertex> = None;
+    // let mut qs_minus: Option<Vertex> = None;
+    let mut pt_minus: Option<Vertex> = None;
 
     // update sampled vertex for $s=1$ or $t=1$ strategy
     if s == 1 {
@@ -1075,6 +1077,7 @@ pub fn mis_weight<'a>(
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
+                bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
             };
             si = Some(new_si);
@@ -1119,6 +1122,7 @@ pub fn mis_weight<'a>(
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
+                bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
             };
             si = Some(new_si);
@@ -1167,6 +1171,7 @@ pub fn mis_weight<'a>(
                 p_error: cv_si.p_error.clone(),
                 wo: cv_si.wo.clone(),
                 n: cv_si.n.clone(),
+                bsdf: cv_si.bsdf.clone(),
                 ..Default::default()
             };
             si = Some(new_si);
@@ -1190,7 +1195,8 @@ pub fn mis_weight<'a>(
         if s > 0 {
             if let Some(ref overwrite2) = qs {
                 if s > 1 {
-                    overwrite.pdf_rev = overwrite2.pdf(scene, Some(&light_vertices[s - 2]), &overwrite);
+                    overwrite.pdf_rev =
+                        overwrite2.pdf(scene, Some(&light_vertices[s - 2]), &overwrite);
                 } else {
                     overwrite.pdf_rev = overwrite2.pdf(scene, None, &overwrite);
                 }
@@ -1207,6 +1213,63 @@ pub fn mis_weight<'a>(
     // if (ptMinus)
     //     a5 = {&ptMinus->pdfRev, s > 0 ? pt->Pdf(scene, qs, *ptMinus)
     //                                   : pt->PdfLight(scene, *ptMinus)};
+    if let Some(ref callable) = pt {
+        if t > 1 {
+            let mut ei: Option<EndpointInteraction> = None;
+            let mut si: Option<SurfaceInteraction> = None;
+            if let Some(ref cv_ei) = camera_vertices[t - 2].ei {
+                let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+                let mut light: Option<&Arc<Light + Send + Sync>> = None;
+                if let Some(camera_box) = cv_ei.camera {
+                    camera = Some(camera_box);
+                }
+                if let Some(light_arc) = cv_ei.light {
+                    light = Some(light_arc);
+                }
+                let new_ei: EndpointInteraction = EndpointInteraction {
+                    p: cv_ei.p.clone(),
+                    time: cv_ei.time,
+                    p_error: cv_ei.p_error.clone(),
+                    wo: cv_ei.wo.clone(),
+                    n: cv_ei.n.clone(),
+                    camera: camera,
+                    light: light,
+                };
+                ei = Some(new_ei);
+            }
+            if let Some(ref cv_si) = camera_vertices[t - 2].si {
+                let new_si: SurfaceInteraction = SurfaceInteraction {
+                    p: cv_si.p.clone(),
+                    time: cv_si.time,
+                    p_error: cv_si.p_error.clone(),
+                    wo: cv_si.wo.clone(),
+                    n: cv_si.n.clone(),
+                    bsdf: cv_si.bsdf.clone(),
+                    ..Default::default()
+                };
+                si = Some(new_si);
+            }
+            let mut pdf_rev: Float = 0.0;
+            if s > 0 {
+                if let Some(ref qs_ref) = qs {
+                    pdf_rev = callable.pdf(scene, Some(&qs_ref), &camera_vertices[t - 2]);
+                } else {
+                    pdf_rev = callable.pdf(scene, None, &camera_vertices[t - 2]);
+                }
+            } else {
+                pdf_rev = callable.pdf_light(scene, &camera_vertices[t - 2]);
+            }
+            pt_minus = Some(Vertex {
+                vertex_type: camera_vertices[t - 2].vertex_type.clone(),
+                beta: camera_vertices[t - 2].beta,
+                ei: ei,
+                si: si,
+                delta: camera_vertices[t - 2].delta,
+                pdf_fwd: camera_vertices[t - 2].pdf_fwd,
+                pdf_rev: pdf_rev, //overwrite
+            });
+        }
+    }
 
     // // Update reverse density of vertices $\pq{}_{s-1}$ and $\pq{}_{s-2}$
     // ScopedAssignment<Float> a6;
