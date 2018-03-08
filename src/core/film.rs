@@ -295,6 +295,49 @@ impl Film {
             pixels_write[offset as usize] = merge_pixel;
         }
     }
+    // pub fn add_splat(&self, p: &Point2f, v: &Spectrum) {
+    //     let mut v: Spectrum = *v;
+    //     // TODO: ProfilePhase pp(Prof::SplatFilm);
+    //     if v.has_nans() {
+    //         println!(
+    //             "ERROR: Ignoring splatted spectrum with NaN values at ({:?}, {:?})",
+    //             p.x, p.y
+    //         );
+    //         return;
+    //     } else if v.y() < 0.0 as Float {
+    //         println!(
+    //             "ERROR: Ignoring splatted spectrum with negative luminance {:?} at ({:?}, {:?})",
+    //             v.y(),
+    //             p.x,
+    //             p.y
+    //         );
+    //         return;
+    //     } else if v.y().is_infinite() {
+    //         println!(
+    //             "ERROR: Ignoring splatted spectrum with infinite luminance at ({:?}, {:?})",
+    //             p.x, p.y
+    //         );
+    //         return;
+    //     }
+
+    //     let mut pi: Point2i = Point2i {
+    //         x: p.x as i32,
+    //         y: p.y as i32,
+    //     };
+    //     if (!pnt2_inside_exclusive(&pi, &self.cropped_pixel_bounds)) {
+    //         return;
+    //     }
+    //     if v.y() > self.max_sample_luminance {
+    //         v  = v * self.max_sample_luminance / v.y();
+    //     }
+    //     let mut xyz: [Float; 3] = [Float::default(); 3];
+    //     v.to_xyz(&mut xyz);
+    //     let pixel: Pixel = self.get_pixel(&pi);
+    //     // for (int i = 0; i < 3; ++i) pixel.splatXYZ[i].Add(xyz[i]);
+    //     pixel.splat_xyz[0].add(xyz[0]);
+    //     pixel.splat_xyz[1].add(xyz[1]);
+    //     pixel.splat_xyz[2].add(xyz[2]);
+    // }
     #[cfg(not(feature = "openexr"))]
     pub fn write_image(&self, splat_scale: Float) {
         println!("Converting image to RGB and computing final weighted pixel values");

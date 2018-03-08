@@ -1434,6 +1434,7 @@ pub fn connect_bdpt<'a>(
     camera: &'a Box<Camera + Send + Sync>,
     sampler: &mut Box<Sampler + Send + Sync>,
     p_raster: &mut Point2f,
+    mis_weight_opt: Option<&mut Float>,
 ) -> Spectrum {
     // TODO: ProfilePhase _(Prof::BDPTConnectSubpaths);
     let mut l: Spectrum = Spectrum::default();
@@ -1626,13 +1627,17 @@ pub fn connect_bdpt<'a>(
             light_distr,
         );
     }
-    println!(
-        "MIS weight for (s,t) = ({:?}, {:?}) connection: {:?}",
-        s, t, mis_weight_flt
-    );
+    if mis_weight_flt > 0.0 {
+        println!(
+            "MIS weight for (s,t) = ({:?}, {:?}) connection: {:?}",
+            s, t, mis_weight_flt
+        );
+    }
     assert!(!mis_weight_flt.is_nan());
     l *= Spectrum::new(mis_weight_flt);
-    // TODO: if (mis_weight_ptr) *mis_weight_ptr = mis_weight_flt;
+    if let Some(mis_weight_ptr) = mis_weight_opt {
+        *mis_weight_ptr = mis_weight_flt;
+    }
     l
 }
 

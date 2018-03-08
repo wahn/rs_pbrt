@@ -9,11 +9,12 @@
 //! [repo]: https://github.com/wahn/rs_pbrt
 //!
 
+#![feature(integer_atomics)]
+
 extern crate crossbeam;
 #[cfg(feature = "openexr")]
 extern crate half;
 extern crate image;
-extern crate integer_atomics;
 extern crate num;
 extern crate num_cpus;
 #[cfg(feature = "openexr")]
@@ -451,9 +452,11 @@ pub fn render_bdpt(
                                             p = p_new;
                                             time = time_new;
                                         }
-                                        let light_distr: Arc<Distribution1D> = light_distribution.lookup(&p);
+                                        let light_distr: Arc<Distribution1D> =
+                                                light_distribution.lookup(&p);
                                         let mut light_vertices: Vec<Vertex> =
-                                                Vec::with_capacity((integrator.max_depth + 1) as usize);
+                                                Vec::with_capacity((integrator.max_depth + 1)
+                                                                   as usize);
                                         let mut n_light: usize = 0_usize;
                                         {
                                             n_light = generate_light_subpath(
@@ -484,13 +487,9 @@ pub fn render_bdpt(
                                                     x: p_film.x,
                                                     y: p_film.y,
                                                 };
-                                                // Float misWeight = 0.f;
-                                                let mis_weight: Float = 0.0 as Float;
-                                                // Spectrum Lpath = ConnectBDPT(
-                                                //     scene, lightVertices, cameraVertices, s, t,
-                                                //     *lightDistr, lightToIndex, *camera, *tileSampler,
-                                                //     &pFilmNew, &misWeight);
-                                                connect_bdpt(
+                                                let mut mis_weight: Option<Float> =
+                                                    Some(0.0 as Float);
+                                                let lpath: Spectrum = connect_bdpt(
                                                     scene,
                                                     &light_vertices,
                                                     &camera_vertices,
@@ -500,22 +499,26 @@ pub fn render_bdpt(
                                                     camera,
                                                     &mut tile_sampler,
                                                     &mut p_film_new,
+                                                    mis_weight.as_mut(),
                                                 );
-                                                // VLOG(2) << "Connect bdpt s: " << s <<", t: " << t <<
-                                                //     ", Lpath: " << Lpath << ", misWeight: " << misWeight;
+                                                if let Some(mis_weight_flt) = mis_weight {
+                                                    println!("Connect bdpt s: {:?}, t: {:?}, lpath: {:?}, mis_weight: {:?}",
+                                                             s, t, lpath, mis_weight_flt);
+                                                }
                                                 // if (visualizeStrategies || visualizeWeights) {
                                                 //     Spectrum value;
                                                 //     if (visualizeStrategies)
                                                 //         value =
-                                                //             misWeight == 0 ? 0 : Lpath / misWeight;
-                                                //     if (visualizeWeights) value = Lpath;
+                                                //             mis_weight == 0 ? 0 : lpath / mis_weight;
+                                                //     if (visualizeWeights) value = lpath;
                                                 //     weightFilms[BufferIndex(s, t)]->AddSplat(
                                                 //         pFilmNew, value);
                                                 // }
-                                                // if (t != 1)
-                                                //     L += Lpath;
+                                                if t != 1 {
+                                                    l += lpath;
+                                                }
                                                 // else
-                                                //     film->AddSplat(pFilmNew, Lpath);
+                                                //     film->AddSplat(pFilmNew, lpath);
                                                 // WORK
                                             }
                                         }
