@@ -9,11 +9,12 @@
 //! [repo]: https://github.com/wahn/rs_pbrt
 //!
 
+#![feature(integer_atomics)]
+
 extern crate crossbeam;
 #[cfg(feature = "openexr")]
 extern crate half;
 extern crate image;
-extern crate integer_atomics;
 extern crate num;
 extern crate num_cpus;
 #[cfg(feature = "openexr")]
