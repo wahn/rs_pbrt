@@ -363,9 +363,9 @@ impl Film {
             // add splat value at pixel
             let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
             let splat_xyz: [Float; 3] = [
-                Float::from(pixel.splat_xyz[0]),
-                Float::from(pixel.splat_xyz[1]),
-                Float::from(pixel.splat_xyz[2]),
+                Float::from(pixel.splat_xyz[0].clone()),
+                Float::from(pixel.splat_xyz[1].clone()),
+                Float::from(pixel.splat_xyz[2].clone()),
             ];
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
             rgb[start + 0] += splat_scale * splat_rgb[0];
