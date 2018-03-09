@@ -469,7 +469,11 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
             }
             wp = vec3_normalize(&wp);
         } else {
-            assert!(self.vertex_type == VertexType::Camera);
+            assert!(
+                self.vertex_type == VertexType::Camera,
+                "VertexType::Camera expected, VertexType::{:?} found",
+                self.vertex_type
+            );
         }
         // compute directional density depending on the vertex types
         let mut pdf_flt: Float = 0.0;
@@ -477,7 +481,8 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         if self.vertex_type == VertexType::Camera {
             if let Some(ref ei) = self.ei {
                 if let Some(ref camera) = ei.camera {
-                    let (_unused, pdf_flt) = camera.pdf_we(&ei.spawn_ray(&wn));
+                    let (_unused, pdf_flt_local) = camera.pdf_we(&ei.spawn_ray(&wn));
+                    pdf_flt = pdf_flt_local;
                 }
             }
         } else if self.vertex_type == VertexType::Surface {
@@ -661,8 +666,8 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
 /// Bidirectional Path Tracing (Global Illumination)
 pub struct BDPTIntegrator {
     pub max_depth: u32,
-    visualize_strategies: bool,
-    visualize_weights: bool,
+    // visualize_strategies: bool,
+    // visualize_weights: bool,
     pub pixel_bounds: Bounds2i,
     light_sample_strategy: String, // "power"
 }
@@ -672,15 +677,15 @@ impl BDPTIntegrator {
         // TODO: sampler
         // TODO: camera
         max_depth: u32,
-        visualize_strategies: bool,
-        visualize_weights: bool,
+        // visualize_strategies: bool,
+        // visualize_weights: bool,
         pixel_bounds: Bounds2i,
         light_sample_strategy: String,
     ) -> Self {
         BDPTIntegrator {
             max_depth: max_depth,
-            visualize_strategies: visualize_strategies,
-            visualize_weights: visualize_weights,
+            // visualize_strategies: visualize_strategies,
+            // visualize_weights: visualize_weights,
             pixel_bounds: pixel_bounds,
             light_sample_strategy: light_sample_strategy,
         }
@@ -851,7 +856,7 @@ pub fn random_walk<'a>(
     }
     // declare variables for forward and reverse probability densities
     let mut pdf_fwd: Float = pdf;
-    let mut pdf_rev: Float = 0.0 as Float;
+    let mut pdf_rev: Float;
     loop {
         // attempt to create the next subpath vertex in _path_
         // println!(
@@ -1257,7 +1262,7 @@ pub fn mis_weight<'a>(
                 };
                 si = Some(new_si);
             }
-            let mut pdf_rev: Float = 0.0;
+            let mut pdf_rev;
             if s > 0 {
                 if let Some(ref qs_ref) = qs {
                     pdf_rev = callable.pdf(scene, Some(&qs_ref), &camera_vertices[t - 2]);
@@ -1323,7 +1328,7 @@ pub fn mis_weight<'a>(
                 };
                 si = Some(new_si);
             }
-            let mut pdf_rev: Float = 0.0;
+            let mut pdf_rev;
             if let Some(ref pt_ref) = pt {
                 pdf_rev = callable.pdf(scene, Some(&pt_ref), &light_vertices[s - 2]);
             } else {
@@ -1401,7 +1406,7 @@ pub fn mis_weight<'a>(
             denominator = 1.0;
         }
         ri *= numerator / denominator;
-        let mut delta_lightvertex: bool;
+        let delta_lightvertex: bool;
         if i > 0 {
             if i == s as isize - 2 {
                 if let Some(ref lv) = qs_minus {

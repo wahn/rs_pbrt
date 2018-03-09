@@ -1249,8 +1249,8 @@ fn pbrt_world_end() {
                                             .find_one_string(String::from("lightsamplestrategy"),
                                                              String::from("power"));
                                         let mut integrator = Box::new(BDPTIntegrator::new(max_depth as u32,
-                                                                                          visualize_strategies,
-                                                                                          visualize_weights,
+                                                                                          // visualize_strategies,
+                                                                                          // visualize_weights,
                                                                                           pixel_bounds,
                                                                                           light_strategy));
                                         some_bdpt_integrator = Some(integrator);

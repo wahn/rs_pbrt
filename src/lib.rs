@@ -9,8 +9,7 @@
 //! [repo]: https://github.com/wahn/rs_pbrt
 //!
 
-#![feature(integer_atomics)]
-
+extern crate atomic;
 extern crate crossbeam;
 #[cfg(feature = "openexr")]
 extern crate half;
@@ -44,7 +43,7 @@ pub mod textures;
 
 // pbrt
 use core::camera::{Camera, CameraSample};
-use core::geometry::{Bounds2i, Point2f, Point2i, Point3f, Ray, Vector2i};
+use core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i};
 use core::geometry::pnt2_inside_exclusive;
 use core::integrator::SamplerIntegrator;
 // use core::light::Light;
@@ -435,9 +434,9 @@ pub fn render_bdpt(
                                         // trace the camera subpath
                                         let mut camera_vertices: Vec<Vertex> =
                                         Vec::with_capacity((integrator.max_depth + 2) as usize);
-                                        let mut n_camera: usize = 0_usize;
-                                        let mut p: Point3f = Point3f::default();
-                                        let mut time: Float = 0.0 as Float;
+                                        let mut n_camera;
+                                        let mut p;
+                                        let mut time;
                                         {
                                             let (n_camera_new, p_new, time_new) =
                                                 generate_camera_subpath(
@@ -457,7 +456,7 @@ pub fn render_bdpt(
                                         let mut light_vertices: Vec<Vertex> =
                                                 Vec::with_capacity((integrator.max_depth + 1)
                                                                    as usize);
-                                        let mut n_light: usize = 0_usize;
+                                        let mut n_light;
                                         {
                                             n_light = generate_light_subpath(
                                                 scene,
