@@ -516,9 +516,9 @@ pub fn render_bdpt(
                                                 if t != 1 {
                                                     l += lpath;
                                                 }
-                                                // else
-                                                //     film->AddSplat(pFilmNew, lpath);
-                                                // WORK
+                                                else {
+                                                    film.add_splat(&p_film_new, &lpath);
+                                                }
                                             }
                                         }
                                         // println!(

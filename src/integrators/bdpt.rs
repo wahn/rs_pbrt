@@ -787,9 +787,11 @@ pub fn generate_light_subpath<'a>(
     let mut n_light: Normal3f = Normal3f::default();
     let mut pdf_pos: Float = 0.0 as Float;
     let mut pdf_dir: Float = 0.0 as Float;
+    let u2: Point2f = sampler.get_2d();
+    let u1: Point2f = sampler.get_2d();
     let le: Spectrum = light.sample_le(
-        &sampler.get_2d(),
-        &sampler.get_2d(),
+        &u1,
+        &u2,
         time,
         &mut ray,
         &mut n_light,
@@ -1205,6 +1207,51 @@ pub fn mis_weight<'a>(
     }
     if let Some(ref mut overwrite) = qs {
         overwrite.delta = false;
+    } else if s > 0 {
+        // *qs = s > 0 ? &lightVertices[s - 1] : nullptr
+        let mut ei: Option<EndpointInteraction> = None;
+        let mut si: Option<SurfaceInteraction> = None;
+        if let Some(ref lv_ei) = light_vertices[s - 1].ei {
+            let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+            let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            if let Some(camera_box) = lv_ei.camera {
+                camera = Some(camera_box);
+            }
+            if let Some(light_arc) = lv_ei.light {
+                light = Some(light_arc);
+            }
+            let new_ei: EndpointInteraction = EndpointInteraction {
+                p: lv_ei.p.clone(),
+                time: lv_ei.time,
+                p_error: lv_ei.p_error.clone(),
+                wo: lv_ei.wo.clone(),
+                n: lv_ei.n.clone(),
+                camera: camera,
+                light: light,
+            };
+            ei = Some(new_ei);
+        }
+        if let Some(ref lv_si) = light_vertices[s - 1].si {
+            let new_si: SurfaceInteraction = SurfaceInteraction {
+                p: lv_si.p.clone(),
+                time: lv_si.time,
+                p_error: lv_si.p_error.clone(),
+                wo: lv_si.wo.clone(),
+                n: lv_si.n.clone(),
+                bsdf: lv_si.bsdf.clone(),
+                ..Default::default()
+            };
+            si = Some(new_si);
+        }
+        qs = Some(Vertex {
+            vertex_type: light_vertices[s - 1].vertex_type.clone(),
+            beta: light_vertices[s - 1].beta,
+            ei: ei,
+            si: si,
+            delta: false, // overwrite
+            pdf_fwd: light_vertices[s - 1].pdf_fwd,
+            pdf_rev: light_vertices[s - 1].pdf_rev,
+        });
     }
 
     // update reverse density of vertex $\pt{}_{t-1}$
@@ -1286,9 +1333,11 @@ pub fn mis_weight<'a>(
 
     // update reverse density of vertices $\pq{}_{s-1}$ and $\pq{}_{s-2}$
     if let Some(ref mut overwrite) = qs {
-        if t > 0 {
-            if let Some(ref callable) = pt {
-                overwrite.pdf_rev = callable.pdf(scene, Some(&camera_vertices[t - 2]), &overwrite);
+        if let Some(ref callable) = pt {
+            if let Some(ref pt_ref) = pt_minus {
+                overwrite.pdf_rev = callable.pdf(scene, Some(&pt_ref), &overwrite);
+            } else {
+                overwrite.pdf_rev = callable.pdf(scene, None, &overwrite);
             }
         }
     }
@@ -1573,10 +1622,11 @@ pub fn connect_bdpt<'a>(
     } else {
         // handle all other bidirectional connection cases
         if light_vertices[s - 1].is_connectible() && camera_vertices[t - 1].is_connectible() {
-            l = light_vertices[s - 1].beta
-                * light_vertices[s - 1].f(&camera_vertices[t - 1], TransportMode::Importance)
-                * camera_vertices[t - 1].f(&light_vertices[s - 1], TransportMode::Radiance)
-                * camera_vertices[t - 1].beta;
+            let radiance =
+                camera_vertices[t - 1].f(&light_vertices[s - 1], TransportMode::Radiance);
+            let importance =
+                light_vertices[s - 1].f(&camera_vertices[t - 1], TransportMode::Importance);
+            l = light_vertices[s - 1].beta * importance * radiance * camera_vertices[t - 1].beta;
             // print!("General connect s: {:?}, t: {:?} ", s, t);
             // print!(
             //     "qs: {:?}, pt: {:?}, ",
