@@ -618,7 +618,6 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                                 break;
                             }
                         }
-                        assert!(pdf_choice != 0.0 as Float);
                         return pdf_pos * pdf_choice;
                     }
                 }
@@ -652,7 +651,6 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                                     break;
                                 }
                             }
-                            assert!(pdf_choice != 0.0 as Float);
                             return pdf_pos * pdf_choice;
                         }
                     }
@@ -1110,6 +1108,7 @@ pub fn mis_weight<'a>(
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
+                primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
             };
@@ -1155,6 +1154,7 @@ pub fn mis_weight<'a>(
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
+                primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
             };
@@ -1204,6 +1204,7 @@ pub fn mis_weight<'a>(
                 p_error: cv_si.p_error.clone(),
                 wo: cv_si.wo.clone(),
                 n: cv_si.n.clone(),
+                primitive: cv_si.primitive,
                 bsdf: cv_si.bsdf.clone(),
                 ..Default::default()
             };
@@ -1252,6 +1253,7 @@ pub fn mis_weight<'a>(
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
+                primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
             };
@@ -1702,12 +1704,12 @@ pub fn connect_bdpt<'a>(
             light_distr,
         );
     }
-    if mis_weight_flt > 0.0 {
-        println!(
-            "MIS weight for (s,t) = ({:?}, {:?}) connection: {:?}",
-            s, t, mis_weight_flt
-        );
-    }
+    // if mis_weight_flt > 0.0 {
+    //     println!(
+    //         "MIS weight for (s,t) = ({:?}, {:?}) connection: {:?}",
+    //         s, t, mis_weight_flt
+    //     );
+    // }
     assert!(!mis_weight_flt.is_nan());
     l *= Spectrum::new(mis_weight_flt);
     if let Some(mis_weight_ptr) = mis_weight_opt {

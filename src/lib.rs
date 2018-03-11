@@ -470,8 +470,8 @@ pub fn render_bdpt(
                                         }
                                         // Execute all BDPT connection strategies
                                         let mut l: Spectrum = Spectrum::new(0.0 as Float);
-                                        println!("n_camera = {:?}", n_camera);
-                                        println!("n_light = {:?}", n_light);
+                                        // println!("n_camera = {:?}", n_camera);
+                                        // println!("n_light = {:?}", n_light);
                                         for t in 1..n_camera + 1 {
                                             for s in 0..n_light + 1 {
                                                 // int depth = t + s - 2;
@@ -500,10 +500,10 @@ pub fn render_bdpt(
                                                     &mut p_film_new,
                                                     mis_weight.as_mut(),
                                                 );
-                                                if let Some(mis_weight_flt) = mis_weight {
-                                                    println!("Connect bdpt s: {:?}, t: {:?}, lpath: {:?}, mis_weight: {:?}",
-                                                             s, t, lpath, mis_weight_flt);
-                                                }
+                                                // if let Some(mis_weight_flt) = mis_weight {
+                                                //     println!("Connect bdpt s: {:?}, t: {:?}, lpath: {:?}, mis_weight: {:?}",
+                                                //              s, t, lpath, mis_weight_flt);
+                                                // }
                                                 // if (visualizeStrategies || visualizeWeights) {
                                                 //     Spectrum value;
                                                 //     if (visualizeStrategies)
