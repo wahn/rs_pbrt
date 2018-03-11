@@ -813,6 +813,8 @@ pub fn generate_light_subpath<'a>(
         //     ray, le, beta, pdf_pos, pdf_dir
         // );
         if is_infinite_light {
+            // set spatial density of _path[1]_ for infinite area
+            // light is done in random_walk !!!
             n_vertices = random_walk(
                 scene,
                 &mut ray,
@@ -824,6 +826,8 @@ pub fn generate_light_subpath<'a>(
                 path,
                 Some(pdf_pos),
             );
+            // set spatial density of _path[0]_ for infinite area light
+            path[0].pdf_fwd = infinite_light_density(scene, light_distr, &ray.d);
         } else {
             n_vertices = random_walk(
                 scene,
@@ -908,6 +912,8 @@ pub fn random_walk<'a>(
                 //     wi, f, pdf_fwd
                 // );
                 if f.is_black() || pdf_fwd == 0.0 as Float {
+                    // in C++ code ++bounces is called after continue !!!
+                    bounces -= 1;
                     break;
                 }
                 *beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf_fwd;
@@ -939,6 +945,8 @@ pub fn random_walk<'a>(
             } else {
                 let new_ray = isect.spawn_ray(&ray.d);
                 *ray = new_ray;
+                // in C++ code ++bounces is called after continue !!!
+                bounces -= 1;
                 continue;
             }
         } else {
@@ -968,6 +976,12 @@ pub fn random_walk<'a>(
         // set spatial density of _path[0]_ for infinite area light
         // path[0].pdf_fwd = infinite_light_density(scene, light_distr, light_to_index, ray.d);
     }
+    assert!(
+        bounces + 1 == path.len(),
+        "bounces = {:?}, path.len =  = {:?}",
+        bounces,
+        path.len()
+    );
     bounces
 }
 
@@ -1515,6 +1529,12 @@ pub fn connect_bdpt<'a>(
         assert!(!l.has_nans());
     } else if t == 1 {
         // sample a point on the camera and connect it to the light subpath
+        assert!(
+            (s - 1) < light_vertices.len(),
+            "(s - 1) = {:?} should be less than length of light vertices({:?})",
+            (s - 1),
+            light_vertices.len()
+        );
         if light_vertices[s - 1].is_connectible() {
             let mut iref: InteractionCommon = InteractionCommon::default();
             // qs.GetInteraction()
