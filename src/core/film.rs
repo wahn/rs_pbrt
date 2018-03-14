@@ -12,7 +12,7 @@
 // std
 #[cfg(feature = "openexr")]
 use std;
-use std::ops::DerefMut;
+use std::ops::{DerefMut};
 use std::path::Path;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 // others
@@ -33,12 +33,27 @@ use core::spectrum::xyz_to_rgb;
 
 const FILTER_TABLE_WIDTH: usize = 16;
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 pub struct Pixel {
     xyz: [Float; 3],
     filter_weight_sum: Float,
-    splat_xyz: [AtomicFloat; 3],
+    splat_xyz: Arc<[AtomicFloat; 3]>,
     pad: Float,
+}
+
+impl Default for Pixel {
+    fn default() -> Self {
+        Pixel {
+            xyz: [0.0 as Float; 3],
+            filter_weight_sum: 0.0 as Float,
+            splat_xyz: Arc::new([
+                AtomicFloat::default(),
+                AtomicFloat::default(),
+                AtomicFloat::default(),
+            ]),
+            pad: 0.0 as Float,
+        }
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -345,9 +360,18 @@ impl Film {
         let pixel_vec: &mut Vec<Pixel> = pixels_write.deref_mut();
         let pixel: &mut Pixel = &mut pixel_vec[offset as usize];
 
-        pixel.splat_xyz[0].add(xyz[0]);
-        pixel.splat_xyz[1].add(xyz[1]);
-        pixel.splat_xyz[2].add(xyz[2]);
+        let option: Option<&mut [AtomicFloat; 3]> = Arc::get_mut(&mut pixel.splat_xyz);
+        if option.is_some() {
+            let splat_xyz: &mut [AtomicFloat; 3] = option.unwrap();
+            splat_xyz[0].add(xyz[0]);
+            splat_xyz[1].add(xyz[1]);
+            splat_xyz[2].add(xyz[2]);
+        } else {
+            panic!("Can't call AtomicFloat::add()");
+        }
+        //.index_mut(1).add(xyz[1]);
+        // pixel.splat_xyz[1].add(xyz[1]);
+        // pixel.splat_xyz[2].add(xyz[2]);
         // pixel_vec[offset as usize] = *pixel;
     }
     #[cfg(not(feature = "openexr"))]
@@ -373,18 +397,18 @@ impl Film {
                 rgb[start + 1] = (rgb[start + 1] * inv_wt).max(0.0 as Float);
                 rgb[start + 2] = (rgb[start + 2] * inv_wt).max(0.0 as Float);
             }
-            // add splat value at pixel
-            let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
-            let splat_xyz: [Float; 3] = [
-                Float::from(pixel.splat_xyz[0].clone()),
-                Float::from(pixel.splat_xyz[1].clone()),
-                Float::from(pixel.splat_xyz[2].clone()),
-            ];
-            println!("splat_xyz = {:?}", splat_xyz);
-            xyz_to_rgb(&splat_xyz, &mut splat_rgb);
-            rgb[start + 0] += splat_scale * splat_rgb[0];
-            rgb[start + 1] += splat_scale * splat_rgb[1];
-            rgb[start + 2] += splat_scale * splat_rgb[2];
+            // // add splat value at pixel
+            // let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
+            // let splat_xyz: [Float; 3] = [
+            //     Float::from(pixel.splat_xyz[0].clone()),
+            //     Float::from(pixel.splat_xyz[1].clone()),
+            //     Float::from(pixel.splat_xyz[2].clone()),
+            // ];
+            // println!("splat_xyz = {:?}", splat_xyz);
+            // xyz_to_rgb(&splat_xyz, &mut splat_rgb);
+            // rgb[start + 0] += splat_scale * splat_rgb[0];
+            // rgb[start + 1] += splat_scale * splat_rgb[1];
+            // rgb[start + 2] += splat_scale * splat_rgb[2];
             // scale pixel value by _scale_
             rgb[start + 0] *= self.scale;
             rgb[start + 1] *= self.scale;
