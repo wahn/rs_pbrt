@@ -12,8 +12,9 @@
 // std
 #[cfg(feature = "openexr")]
 use std;
+use std::ops::DerefMut;
 use std::path::Path;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 // others
 use image;
 #[cfg(feature = "openexr")]
@@ -328,14 +329,26 @@ impl Film {
             return;
         }
         if v.y() > self.max_sample_luminance {
-            v  = v * self.max_sample_luminance / v.y();
+            v = v * self.max_sample_luminance / v.y();
         }
         let mut xyz: [Float; 3] = [Float::default(); 3];
+        println!("v = {:?}", v);
         v.to_xyz(&mut xyz);
-        let pixel: Pixel = self.get_pixel(&pi);
+        println!("x = {:?}", xyz);
+        // let pixel: Pixel = self.get_pixel(&pi);
+
+        let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
+        let offset: i32 = (pi.x - self.cropped_pixel_bounds.p_min.x)
+            + (pi.y - self.cropped_pixel_bounds.p_min.y) * width;
+        let mut pixels_write: RwLockWriteGuard<Vec<Pixel>> = self.pixels.write().unwrap();
+        println!("offset: {:?}", offset);
+        let pixel_vec: &mut Vec<Pixel> = pixels_write.deref_mut();
+        let pixel: &mut Pixel = &mut pixel_vec[offset as usize];
+
         pixel.splat_xyz[0].add(xyz[0]);
         pixel.splat_xyz[1].add(xyz[1]);
         pixel.splat_xyz[2].add(xyz[2]);
+        // pixel_vec[offset as usize] = *pixel;
     }
     #[cfg(not(feature = "openexr"))]
     pub fn write_image(&self, splat_scale: Float) {
