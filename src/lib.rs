@@ -355,6 +355,7 @@ pub fn render_bdpt(
     // render and write the output image to disk
     if scene.lights.len() > 0 {
         let samples_per_pixel: i64 = sampler.get_samples_per_pixel();
+        println!("samples_per_pixel = {:?}", samples_per_pixel);
         let num_cores: usize;
         if num_threads == 0_u8 {
             num_cores = num_cpus::get();
@@ -517,7 +518,11 @@ pub fn render_bdpt(
                                                     l += lpath;
                                                 }
                                                 else {
-                                                    film.add_splat(&p_film_new, &lpath);
+                                                    if !lpath.is_black() {
+                                                        // println!("film.add_splat({:?}, {:?})",
+                                                        //          p_film_new, lpath);
+                                                        film.add_splat(&p_film_new, &lpath);
+                                                    }
                                                 }
                                             }
                                         }

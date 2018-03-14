@@ -17,7 +17,7 @@ browse: doc
 	firefox ./target/doc/pbrt/index.html
 
 debug: master.zip
-	cargo test
+	cargo test --no-default-features
 
 release: master.zip
 	cargo test --release

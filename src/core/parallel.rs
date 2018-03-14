@@ -14,23 +14,23 @@ pub struct AtomicFloat {
 }
 
 impl AtomicFloat {
-    pub fn new(v: Float) -> AtomicFloat{
+    pub fn new(v: Float) -> AtomicFloat {
         AtomicFloat {
             bits: Arc::new(Atomic::new(float_to_bits(v))),
         }
     }
     pub fn add(&self, v: Float) {
+        let mut old_bits: u32 = self.bits.load(Ordering::Relaxed);
         loop {
-            let old_bits: u32 = self.bits.load(Ordering::SeqCst);
             let new_bits: u32 = float_to_bits(bits_to_float(old_bits) + v);
-            let result = self.bits.compare_exchange_weak(
+            match self.bits.compare_exchange_weak(
                 old_bits,
                 new_bits,
                 Ordering::SeqCst,
                 Ordering::Relaxed,
-            );
-            if result.is_ok() {
-                break;
+            ) {
+                Ok(_) => break,
+                Err(x) => old_bits = x,
             }
         }
     }

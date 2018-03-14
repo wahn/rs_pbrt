@@ -367,6 +367,7 @@ impl Film {
                 Float::from(pixel.splat_xyz[1].clone()),
                 Float::from(pixel.splat_xyz[2].clone()),
             ];
+            println!("splat_xyz = {:?}", splat_xyz);
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
             rgb[start + 0] += splat_scale * splat_rgb[0];
             rgb[start + 1] += splat_scale * splat_rgb[1];
