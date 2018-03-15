@@ -30,11 +30,20 @@ impl AtomicFloat {
             ) {
                 Ok(_) => {
                     break;
-                },
+                }
                 Err(x) => {
                     old_bits = x;
-                },
+                }
             }
+        }
+    }
+}
+
+impl Clone for AtomicFloat {
+    fn clone(&self) -> Self {
+        let bits: u32 = self.bits.load(Ordering::SeqCst);
+        AtomicFloat {
+            bits: Atomic::new(bits),
         }
     }
 }
