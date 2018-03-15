@@ -12,7 +12,7 @@
 // std
 #[cfg(feature = "openexr")]
 use std;
-use std::ops::{DerefMut};
+use std::ops::{Deref, DerefMut, Index};
 use std::path::Path;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 // others
@@ -299,7 +299,7 @@ impl Film {
             let offset: i32 = (pixel.x - self.cropped_pixel_bounds.p_min.x)
                 + (pixel.y - self.cropped_pixel_bounds.p_min.y) * width;
             let mut pixels_write = self.pixels.write().unwrap();
-            let mut merge_pixel = pixels_write[offset as usize].clone();
+            let mut merge_pixel = &mut pixels_write[offset as usize];
             // END let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
             let mut xyz: [Float; 3] = [0.0; 3];
             tile_pixel.contrib_sum.to_xyz(&mut xyz);
@@ -308,7 +308,7 @@ impl Film {
             }
             merge_pixel.filter_weight_sum += tile_pixel.filter_weight_sum;
             // write pixel back
-            pixels_write[offset as usize] = merge_pixel;
+            // pixels_write[offset as usize] = *merge_pixel;
         }
     }
     pub fn add_splat(&self, p: &Point2f, v: &Spectrum) {
@@ -349,9 +349,7 @@ impl Film {
         let mut xyz: [Float; 3] = [Float::default(); 3];
         println!("v = {:?}", v);
         v.to_xyz(&mut xyz);
-        println!("x = {:?}", xyz);
-        // let pixel: Pixel = self.get_pixel(&pi);
-
+        println!("xyz = {:?}", xyz);
         let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
         let offset: i32 = (pi.x - self.cropped_pixel_bounds.p_min.x)
             + (pi.y - self.cropped_pixel_bounds.p_min.y) * width;
@@ -360,6 +358,8 @@ impl Film {
         let pixel_vec: &mut Vec<Pixel> = pixels_write.deref_mut();
         let pixel: &mut Pixel = &mut pixel_vec[offset as usize];
 
+        println!("weak_count = {:?}", Arc::weak_count(&pixel.splat_xyz));
+        println!("strong_count = {:?}", Arc::strong_count(&pixel.splat_xyz));
         let option: Option<&mut [AtomicFloat; 3]> = Arc::get_mut(&mut pixel.splat_xyz);
         if option.is_some() {
             let splat_xyz: &mut [AtomicFloat; 3] = option.unwrap();
@@ -369,7 +369,7 @@ impl Film {
         } else {
             panic!("Can't call AtomicFloat::add()");
         }
-        //.index_mut(1).add(xyz[1]);
+        // pixel.splat_xyz[0].add(xyz[0]);
         // pixel.splat_xyz[1].add(xyz[1]);
         // pixel.splat_xyz[2].add(xyz[2]);
         // pixel_vec[offset as usize] = *pixel;
@@ -379,11 +379,18 @@ impl Film {
         println!("Converting image to RGB and computing final weighted pixel values");
         let mut rgb: Vec<Float> =
             vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
-        let mut offset: usize = 0;
+        let mut offset;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            let pixel: Pixel = self.get_pixel(&p);
-            let start = 3 * offset;
+            // let pixel: &Pixel = self.get_pixel(&p);
+
+            assert!(pnt2_inside_exclusive(&p, &self.cropped_pixel_bounds));
+            let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
+            offset = ((p.x - self.cropped_pixel_bounds.p_min.x)
+                + (p.y - self.cropped_pixel_bounds.p_min.y) * width) as usize;
+            let pixel: &Pixel = &self.pixels.read().unwrap()[offset];
+
+            let start: usize = 3 * offset;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
             xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
             rgb[start + 0] = rgb_array[0];
@@ -397,23 +404,23 @@ impl Film {
                 rgb[start + 1] = (rgb[start + 1] * inv_wt).max(0.0 as Float);
                 rgb[start + 2] = (rgb[start + 2] * inv_wt).max(0.0 as Float);
             }
-            // // add splat value at pixel
-            // let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
-            // let splat_xyz: [Float; 3] = [
-            //     Float::from(pixel.splat_xyz[0].clone()),
-            //     Float::from(pixel.splat_xyz[1].clone()),
-            //     Float::from(pixel.splat_xyz[2].clone()),
-            // ];
-            // println!("splat_xyz = {:?}", splat_xyz);
-            // xyz_to_rgb(&splat_xyz, &mut splat_rgb);
-            // rgb[start + 0] += splat_scale * splat_rgb[0];
-            // rgb[start + 1] += splat_scale * splat_rgb[1];
-            // rgb[start + 2] += splat_scale * splat_rgb[2];
+            // add splat value at pixel
+            let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
+            let pixel_splat_xyz: &[AtomicFloat; 3] = pixel.splat_xyz.deref();
+            let splat_xyz: [Float; 3] = [
+                Float::from(pixel_splat_xyz.index(0)),
+                Float::from(pixel_splat_xyz.index(1)),
+                Float::from(pixel_splat_xyz.index(2)),
+            ];
+            println!("splat_xyz = {:?}", splat_xyz);
+            xyz_to_rgb(&splat_xyz, &mut splat_rgb);
+            rgb[start + 0] += splat_scale * splat_rgb[0];
+            rgb[start + 1] += splat_scale * splat_rgb[1];
+            rgb[start + 2] += splat_scale * splat_rgb[2];
             // scale pixel value by _scale_
             rgb[start + 0] *= self.scale;
             rgb[start + 1] *= self.scale;
             rgb[start + 2] *= self.scale;
-            offset += 1;
         }
         let filename = "pbrt.png";
         println!(
@@ -489,11 +496,13 @@ impl Film {
             }
             // add splat value at pixel
             let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
+            let pixel_splat_xyz: &[AtomicFloat; 3] = pixel.splat_xyz.deref();
             let splat_xyz: [Float; 3] = [
-                Float::from(pixel.splat_xyz[0].clone()),
-                Float::from(pixel.splat_xyz[1].clone()),
-                Float::from(pixel.splat_xyz[2].clone()),
+                Float::from(pixel_splat_xyz.index(0)),
+                Float::from(pixel_splat_xyz.index(1)),
+                Float::from(pixel_splat_xyz.index(2)),
             ];
+            println!("splat_xyz = {:?}", splat_xyz);
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
             rgb[start + 0] += splat_scale * splat_rgb[0];
             rgb[start + 1] += splat_scale * splat_rgb[1];
@@ -576,11 +585,11 @@ impl Film {
             image::RGB(8),
         ).unwrap();
     }
-    pub fn get_pixel(&self, p: &Point2i) -> Pixel {
-        assert!(pnt2_inside_exclusive(p, &self.cropped_pixel_bounds));
-        let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
-        let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x)
-            + (p.y - self.cropped_pixel_bounds.p_min.y) * width;
-        self.pixels.read().unwrap()[offset as usize].clone()
-    }
+    // pub fn get_pixel<'a>(&self, p: &Point2i) -> &'a Pixel {
+    //     assert!(pnt2_inside_exclusive(p, &self.cropped_pixel_bounds));
+    //     let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
+    //     let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x)
+    //         + (p.y - self.cropped_pixel_bounds.p_min.y) * width;
+    //     &self.pixels.read().unwrap()[offset as usize]
+    // }
 }

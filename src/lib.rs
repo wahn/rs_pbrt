@@ -519,8 +519,6 @@ pub fn render_bdpt(
                                                 }
                                                 else {
                                                     if !lpath.is_black() {
-                                                        println!("film.add_splat({:?}, {:?})",
-                                                                 p_film_new, lpath);
                                                         film.add_splat(&p_film_new, &lpath);
                                                     }
                                                 }

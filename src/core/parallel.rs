@@ -17,11 +17,10 @@ impl AtomicFloat {
             bits: Atomic::new(float_to_bits(v)),
         }
     }
-    pub fn add(&mut self, v: Float) {
+    pub fn add(&self, v: Float) {
         let mut old_bits: u32 = self.bits.load(Ordering::Relaxed);
         loop {
             let f: Float = bits_to_float(old_bits);
-            print!("{:?} + {:?}: ", f, v);
             let new_bits: u32 = float_to_bits(f + v);
             match self.bits.compare_exchange_weak(
                 old_bits,
@@ -30,11 +29,9 @@ impl AtomicFloat {
                 Ordering::Relaxed,
             ) {
                 Ok(_) => {
-                    println!("Ok");
                     break;
                 },
                 Err(x) => {
-                    println!("Err({:?})", x);
                     old_bits = x;
                 },
             }
@@ -48,8 +45,8 @@ impl Default for AtomicFloat {
     }
 }
 
-impl From<AtomicFloat> for Float {
-    fn from(a: AtomicFloat) -> Float {
+impl<'a> From<&'a AtomicFloat> for Float {
+    fn from(a: &'a AtomicFloat) -> Float {
         let bits: u32 = a.bits.load(Ordering::SeqCst);
         bits_to_float(bits) as Float
     }
