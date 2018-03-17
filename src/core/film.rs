@@ -368,8 +368,6 @@ impl Film {
         let mut offset;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            // let pixel: &Pixel = self.get_pixel(&p);
-
             assert!(pnt2_inside_exclusive(&p, &self.cropped_pixel_bounds));
             let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
             offset = ((p.x - self.cropped_pixel_bounds.p_min.x)
@@ -461,10 +459,14 @@ impl Film {
             vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
         let mut exr: Vec<(Float, Float, Float)> = // copy data for OpenEXR image
             vec![(0.0_f32, 0.0_f32, 0.0_f32); self.cropped_pixel_bounds.area() as usize];
-        let mut offset: usize = 0;
+        let mut offset;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            let pixel: Pixel = self.get_pixel(&p);
+            assert!(pnt2_inside_exclusive(&p, &self.cropped_pixel_bounds));
+            let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
+            offset = ((p.x - self.cropped_pixel_bounds.p_min.x)
+                + (p.y - self.cropped_pixel_bounds.p_min.y) * width) as usize;
+            let pixel: &Pixel = &self.pixels.read().unwrap()[offset];
             let start = 3 * offset;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
             xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
@@ -499,7 +501,6 @@ impl Film {
             exr[offset].0 = rgb[start + 0];
             exr[offset].1 = rgb[start + 1];
             exr[offset].2 = rgb[start + 2];
-            offset += 1;
         }
         let filename = "pbrt.png";
         println!(
