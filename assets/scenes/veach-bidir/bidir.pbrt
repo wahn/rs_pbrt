@@ -1,5 +1,5 @@
-#Integrator "bdpt" "integer maxdepth" [5] 
-Integrator "path" "integer maxdepth" [5] 
+Integrator "bdpt" "integer maxdepth" [5]
+#Integrator "path" "integer maxdepth" [5]
 #"bool visualizestrategies" ["true"]
 #"bool visualizeweights" ["true"]
 

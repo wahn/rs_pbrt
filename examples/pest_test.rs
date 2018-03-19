@@ -1228,7 +1228,6 @@ fn pbrt_world_end() {
                                     } else if ro.integrator_name == String::from("volpath") {
                                         println!("TODO: CreateVolPathIntegrator");
                                     } else if ro.integrator_name == String::from("bdpt") {
-                                        println!("WORK: CreateBDPTIntegrator");
                                         // CreateBDPTIntegrator
                                         let mut max_depth: i32 =
                                             ro.integrator_params
