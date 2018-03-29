@@ -1,0 +1,54 @@
+MakeNamedMedium "vol" 
+        "string type" [ "homogeneous" ] 
+        "rgb sigma_a" [ 0.0199999996 0.0199999996 0.0199999996 ] 
+        "rgb sigma_s" [ 0.3499999940 0.3499999940 0.3499999940 ] 
+Film "image" 
+        "integer xresolution" [ 800 ] 
+        "integer yresolution" [ 800 ] 
+        "string filename" [ "caustic.exr" ] 
+Integrator "mlt" 
+        "integer mutationsperpixel" [ 16384 ] 
+MediumInterface "" "vol"
+LookAt -0.75 0.800000012 -1.25
+        -1 0.800000012 0
+        0 1 0
+Camera "perspective" 
+        "float fov" [ 95 ] 
+
+#############################################
+WorldBegin
+
+MediumInterface "" "vol"
+
+AttributeBegin
+    MediumInterface "vol" ""
+    Material "" 
+    Shape "sphere" 
+            "float radius" [ 2 ] 
+AttributeEnd
+
+AttributeBegin
+    Rotate -60 0 0 1
+    LightSource "infinite" 
+            "string mapname" [ "textures/skylight-day.hdr" ] 
+            "rgb scale" [ 1.5000000000 1.5000000000 1.3999999762 ] 
+AttributeEnd
+LightSource "spot" 
+        "float coneangle" [ 6.3499999046 ] 
+        "point from" [ -3 6 -2 ] 
+        "point to" [ -1 1 0 ] 
+        "rgb I" [ 2500 2500 2500 ] 
+
+AttributeBegin
+    Translate -1 1 0
+    Material "glass" 
+    Shape "sphere" 
+            "float radius" [ 0.5000000000 ] 
+AttributeEnd
+Material "matte" 
+        "rgb Kd" [ 0.2000000030 0.2000000030 0.2000000030 ] 
+Translate 0 -0.100000001 0
+Shape "trianglemesh" 
+        "integer indices" [ 0 1 2 2 3 0 ] 
+        "point P" [ -15 0 -15 15 0 -15 15 0 15 -15 0 15 ] 
+WorldEnd

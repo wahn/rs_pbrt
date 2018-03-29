@@ -39,7 +39,19 @@
 //!
 //! ![Path Tracing](https://www.janwalter.org/assets/cornell_box_v0.2.0_high.png)
 
+//! ## Bidirectional Path Tracing (BDPT)
+//!
+//! Bidirectional path tracing is a generalization of the standard
+//! pathtracing algorithm that can be much more efficient. It
+//! constructs paths that start from the camera on one end, from the
+//! light on the other end, and connects in the middle with a
+//! visibility ray.
+//!
+//! ![Bidirectional Path
+//! Tracing](https://www.janwalter.org/assets/art_gallery_pbrt_rust_07n.png)
+
 pub mod ao;
 pub mod bdpt;
 pub mod directlighting;
+pub mod mlt;
 pub mod path;

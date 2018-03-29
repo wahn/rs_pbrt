@@ -1,4 +1,4 @@
-#![recursion_limit="2000"]
+#![recursion_limit = "2000"]
 
 extern crate pest;
 #[macro_use]
@@ -10,6 +10,7 @@ use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::api::{GraphicsState, RenderOptions, TransformSet};
 use pbrt::core::camera::Camera;
+use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
@@ -17,22 +18,26 @@ use pbrt::core::light::Light;
 use pbrt::core::material::Material;
 use pbrt::core::mipmap::ImageWrap;
 use pbrt::core::paramset::{ParamSet, TextureParams};
-use pbrt::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
-use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::pbrt::clamp_t;
-use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
-use pbrt::core::film::Film;
+use pbrt::core::pbrt::{Float, Spectrum};
+use pbrt::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
 use pbrt::core::shape::Shape;
 use pbrt::core::texture::{PlanarMapping2D, Texture, TextureMapping2D, UVMapping2D};
+use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::filters::gaussian::GaussianFilter;
 use pbrt::filters::triangle::TriangleFilter;
 use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::bdpt::BDPTIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
+use pbrt::lights::diffuse::DiffuseAreaLight;
+use pbrt::lights::distant::DistantLight;
+use pbrt::lights::infinite::InfiniteAreaLight;
+use pbrt::lights::point::PointLight;
 use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::hair::HairMaterial;
 use pbrt::materials::matte::MatteMaterial;
@@ -42,10 +47,6 @@ use pbrt::materials::mixmat::MixMaterial;
 use pbrt::materials::plastic::PlasticMaterial;
 use pbrt::materials::substrate::SubstrateMaterial;
 use pbrt::materials::uber::UberMaterial;
-use pbrt::lights::diffuse::DiffuseAreaLight;
-use pbrt::lights::distant::DistantLight;
-use pbrt::lights::infinite::InfiniteAreaLight;
-use pbrt::lights::point::PointLight;
 use pbrt::samplers::halton::HaltonSampler;
 use pbrt::samplers::random::RandomSampler;
 use pbrt::samplers::sobol::SobolSampler;
@@ -65,13 +66,13 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // std
-use std::str::FromStr;
 use std::collections::{HashMap, LinkedList};
 use std::env;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
+use std::io::prelude::*;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::sync::Arc;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -81,16 +82,20 @@ static mut SEARCH_DIRECTORY: Option<Box<PathBuf>> = None;
 static mut CUR_TRANSFORM: TransformSet = TransformSet {
     t: [Transform {
         m: Matrix4x4 {
-            m: [[1.0, 0.0, 0.0, 0.0],
+            m: [
+                [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0]],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
         },
         m_inv: Matrix4x4 {
-            m: [[1.0, 0.0, 0.0, 0.0],
+            m: [
+                [1.0, 0.0, 0.0, 0.0],
                 [0.0, 1.0, 0.0, 0.0],
                 [0.0, 0.0, 1.0, 0.0],
-                [0.0, 0.0, 0.0, 1.0]],
+                [0.0, 0.0, 0.0, 1.0],
+            ],
         },
     }; 2],
 };
@@ -165,11 +170,10 @@ fn print_params(params: &ParamSet) {
     }
     for p in &params.point3fs {
         if p.n_values == 1_usize {
-            println!("  \"point {}\" [{} {} {}]",
-                     p.name,
-                     p.values[0].x,
-                     p.values[0].y,
-                     p.values[0].z);
+            println!(
+                "  \"point {}\" [{} {} {}]",
+                p.name, p.values[0].x, p.values[0].y, p.values[0].z
+            );
         } else {
             println!("  \"point {}\" [", p.name);
             for i in 0..p.n_values {
@@ -180,20 +184,18 @@ fn print_params(params: &ParamSet) {
     }
     for p in &params.vector3fs {
         if p.n_values == 1_usize {
-            println!("  \"vector {}\" [{} {} {}]",
-                     p.name,
-                     p.values[0].x,
-                     p.values[0].y,
-                     p.values[0].z);
+            println!(
+                "  \"vector {}\" [{} {} {}]",
+                p.name, p.values[0].x, p.values[0].y, p.values[0].z
+            );
         }
     }
     for p in &params.normals {
         if p.n_values == 1_usize {
-            println!("  \"normal {}\" [{} {} {}]",
-                     p.name,
-                     p.values[0].x,
-                     p.values[0].y,
-                     p.values[0].z);
+            println!(
+                "  \"normal {}\" [{} {} {}]",
+                p.name, p.values[0].x, p.values[0].y, p.values[0].z
+            );
         } else {
             println!("  \"normal {}\" [", p.name);
             for i in 0..p.n_values {
@@ -204,11 +206,10 @@ fn print_params(params: &ParamSet) {
     }
     for p in &params.spectra {
         if p.n_values == 1_usize {
-            println!("  \"rgb {}\" [{} {} {}]",
-                     p.name,
-                     p.values[0].c[0],
-                     p.values[0].c[1],
-                     p.values[0].c[2]);
+            println!(
+                "  \"rgb {}\" [{} {} {}]",
+                p.name, p.values[0].c[0], p.values[0].c[1], p.values[0].c[2]
+            );
         }
     }
     for p in &params.strings {
@@ -237,14 +238,17 @@ fn create_material() -> Arc<Material + Send + Sync> {
             };
             if graphics_state.current_material != String::new() {
                 match graphics_state
-                          .named_materials
-                          .get(graphics_state.current_material.as_str()) {
+                    .named_materials
+                    .get(graphics_state.current_material.as_str())
+                {
                     Some(named_material) => {
                         return named_material.clone();
                     }
                     None => {
-                        println!("WARNING: Named material \"{}\" not defined. Using \"matte\".",
-                                 graphics_state.current_material);
+                        println!(
+                            "WARNING: Named material \"{}\" not defined. Using \"matte\".",
+                            graphics_state.current_material
+                        );
                     }
                 }
             } else {
@@ -254,10 +258,10 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 if graphics_state.material == String::from("matte") {
                     return MatteMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("plastic") {
-                    let kd = mp.get_spectrum_texture(String::from("Kd"),
-                                                     Spectrum::new(0.25 as Float));
-                    let ks = mp.get_spectrum_texture(String::from("Ks"),
-                                                     Spectrum::new(0.25 as Float));
+                    let kd =
+                        mp.get_spectrum_texture(String::from("Kd"), Spectrum::new(0.25 as Float));
+                    let ks =
+                        mp.get_spectrum_texture(String::from("Ks"), Spectrum::new(0.25 as Float));
                     let roughness = mp.get_float_texture(String::from("roughness"), 0.1 as Float);
                     // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
                     let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
@@ -267,10 +271,10 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 } else if graphics_state.material == String::from("translucent") {
                     println!("TODO: CreateTranslucentMaterial");
                 } else if graphics_state.material == String::from("glass") {
-                    let kr = mp.get_spectrum_texture(String::from("Kr"),
-                                                     Spectrum::new(1.0 as Float));
-                    let kt = mp.get_spectrum_texture(String::from("Kt"),
-                                                     Spectrum::new(1.0 as Float));
+                    let kr =
+                        mp.get_spectrum_texture(String::from("Kr"), Spectrum::new(1.0 as Float));
+                    let kt =
+                        mp.get_spectrum_texture(String::from("Kt"), Spectrum::new(1.0 as Float));
                     // let some_eta = mp.get_float_texture_or_null(String::from("eta"));
                     // if let Some(eta) = some_eta {
                     //     println!("some eta");
@@ -287,42 +291,38 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     //     mp.GetFloatTextureOrNull("bumpmap");
                     let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
                     let glass = Arc::new(GlassMaterial {
-                                             kr: kr,
-                                             kt: kt,
-                                             u_roughness: roughu,
-                                             v_roughness: roughv,
-                                             index: eta,
-                                             remap_roughness: remap_roughness,
-                                         });
+                        kr: kr,
+                        kt: kt,
+                        u_roughness: roughu,
+                        v_roughness: roughv,
+                        index: eta,
+                        remap_roughness: remap_roughness,
+                    });
                     return glass;
                 } else if graphics_state.material == String::from("mirror") {
-                    let kr = mp.get_spectrum_texture(String::from("Kr"),
-                                                     Spectrum::new(0.9 as Float));
+                    let kr =
+                        mp.get_spectrum_texture(String::from("Kr"), Spectrum::new(0.9 as Float));
                     // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
                     let mirror = Arc::new(MirrorMaterial { kr: kr });
                     return mirror;
                 } else if graphics_state.material == String::from("hair") {
                     return HairMaterial::create(&mut mp);
                 } else if graphics_state.material == String::from("mix") {
-                    let m1: String = mp.find_string(String::from("namedmaterial1"),
-                                                    String::from(""));
-                    let m2: String = mp.find_string(String::from("namedmaterial2"),
-                                                    String::from(""));
+                    let m1: String =
+                        mp.find_string(String::from("namedmaterial1"), String::from(""));
+                    let m2: String =
+                        mp.find_string(String::from("namedmaterial2"), String::from(""));
                     let mat1 = match graphics_state.named_materials.get(&m1) {
-                        Some(named_material) => {
-                            named_material
-                        },
+                        Some(named_material) => named_material,
                         None => {
                             panic!("Material \"{}\" unknown.", m1);
-                        },
+                        }
                     };
                     let mat2 = match graphics_state.named_materials.get(&m2) {
-                        Some(named_material) => {
-                            named_material
-                        },
+                        Some(named_material) => named_material,
                         None => {
                             panic!("Material \"{}\" unknown.", m2);
-                        },
+                        }
                     };
                     let scale: Arc<Texture<Spectrum> + Send + Sync> =
                         mp.get_spectrum_texture(String::from("amount"), Spectrum::new(0.5));
@@ -354,8 +354,8 @@ fn create_material() -> Arc<Material + Send + Sync> {
 fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     // MakeLight (api.cpp:591)
     if param_set.name == String::from("point") {
-        let i: Spectrum = param_set
-            .find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
+        let i: Spectrum =
+            param_set.find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
         // Spectrum sc = paramSet.FindOneSpectrum("scale", Spectrum(1.0));
         // Point3f P = paramSet.FindOnePoint3f("from", Point3f(0, 0, 0));
         // Transform l2w = Translate(Vector3f(P.x, P.y, P.z)) * light2world;
@@ -372,44 +372,48 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
         println!("TODO: CreateProjectionLight");
     } else if param_set.name == String::from("distant") {
         // CreateDistantLight
-        let l: Spectrum = param_set
-            .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
+        let l: Spectrum =
+            param_set.find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
         let sc: Spectrum =
             param_set.find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
-        let from: Point3f = param_set.find_one_point3f(String::from("from"),
-                                                       Point3f {
-                                                           x: 0.0,
-                                                           y: 0.0,
-                                                           z: 0.0,
-                                                       });
-        let to: Point3f = param_set.find_one_point3f(String::from("to"),
-                                                     Point3f {
-                                                         x: 0.0,
-                                                         y: 0.0,
-                                                         z: 0.0,
-                                                     });
+        let from: Point3f = param_set.find_one_point3f(
+            String::from("from"),
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let to: Point3f = param_set.find_one_point3f(
+            String::from("to"),
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
         let dir: Vector3f = from - to;
         // return std::make_shared<DistantLight>(light2world, L * sc, dir);
         unsafe {
             let distant_light = Arc::new(DistantLight::new(&CUR_TRANSFORM.t[0], &(l * sc), &dir));
             ro.lights.push(distant_light);
         }
-    } else if param_set.name == String::from("infinite") ||
-        param_set.name == String::from("exinfinite")
+    } else if param_set.name == String::from("infinite")
+        || param_set.name == String::from("exinfinite")
     {
-        let l: Spectrum = param_set
-            .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
+        let l: Spectrum =
+            param_set.find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
         let sc: Spectrum =
             param_set.find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
-        let mut texmap: String = param_set
-            .find_one_filename(String::from("mapname"), String::from(""));
+        let mut texmap: String =
+            param_set.find_one_filename(String::from("mapname"), String::from(""));
         if texmap != String::from("") {
             unsafe {
                 if let Some(ref search_directory) = SEARCH_DIRECTORY {
                     // texmap = AbsolutePath(ResolveFilename(texmap));
                     let mut path_buf: PathBuf = PathBuf::from("/");
                     path_buf.push(search_directory.as_ref());
-                path_buf.push(texmap);
+                    path_buf.push(texmap);
                     texmap = String::from(path_buf.to_str().unwrap());
                 }
             }
@@ -419,8 +423,12 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
 
         // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
         unsafe {
-            let infinte_light =
-                Arc::new(InfiniteAreaLight::new(&CUR_TRANSFORM.t[0], &(l * sc), n_samples, texmap));
+            let infinte_light = Arc::new(InfiniteAreaLight::new(
+                &CUR_TRANSFORM.t[0],
+                &(l * sc),
+                n_samples,
+                texmap,
+            ));
             ro.lights.push(infinte_light);
         }
     } else {
@@ -444,11 +452,13 @@ fn make_texture(param_set: &ParamSet) {
             };
             if param_set.tex_type == String::from("float") {
                 println!("TODO: MakeFloatTexture");
-            } else if param_set.tex_type == String::from("color") ||
-                      param_set.tex_type == String::from("spectrum") {
+            } else if param_set.tex_type == String::from("color")
+                || param_set.tex_type == String::from("spectrum")
+            {
                 match graphics_state
-                          .spectrum_textures
-                          .get(param_set.name.as_str()) {
+                    .spectrum_textures
+                    .get(param_set.name.as_str())
+                {
                     Some(_spectrum_texture) => {
                         println!("Texture \"{}\" being redefined", param_set.name);
                     }
@@ -466,40 +476,44 @@ fn make_texture(param_set: &ParamSet) {
                 } else if param_set.tex_name == String::from("imagemap") {
                     // CreateImageSpectrumTexture
                     let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
-                    let mapping: String = tp.find_string(String::from("mapping"),
-                                                         String::from("uv"));
+                    let mapping: String =
+                        tp.find_string(String::from("mapping"), String::from("uv"));
                     if mapping == String::from("uv") {
                         let su: Float = tp.find_float(String::from("uscale"), 1.0);
                         let sv: Float = tp.find_float(String::from("vscale"), 1.0);
                         let du: Float = tp.find_float(String::from("udelta"), 0.0);
                         let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
                         map = Some(Box::new(UVMapping2D {
-                                                su: su,
-                                                sv: sv,
-                                                du: du,
-                                                dv: dv,
-                                            }));
+                            su: su,
+                            sv: sv,
+                            du: du,
+                            dv: dv,
+                        }));
                     } else if mapping == String::from("spherical") {
                         println!("TODO: SphericalMapping2D");
                     } else if mapping == String::from("cylindrical") {
                         println!("TODO: CylindricalMapping2D");
                     } else if mapping == String::from("planar") {
                         map = Some(Box::new(PlanarMapping2D {
-                                                vs: tp.find_vector3f(String::from("v1"),
-                                                                     Vector3f {
-                                                                         x: 1.0,
-                                                                         y: 0.0,
-                                                                         z: 0.0,
-                                                                     }),
-                                                vt: tp.find_vector3f(String::from("v2"),
-                                                                     Vector3f {
-                                                                         x: 0.0,
-                                                                         y: 1.0,
-                                                                         z: 0.0,
-                                                                     }),
-                                                ds: tp.find_float(String::from("udelta"), 0.0),
-                                                dt: tp.find_float(String::from("vdelta"), 0.0),
-                                            }));
+                            vs: tp.find_vector3f(
+                                String::from("v1"),
+                                Vector3f {
+                                    x: 1.0,
+                                    y: 0.0,
+                                    z: 0.0,
+                                },
+                            ),
+                            vt: tp.find_vector3f(
+                                String::from("v2"),
+                                Vector3f {
+                                    x: 0.0,
+                                    y: 1.0,
+                                    z: 0.0,
+                                },
+                            ),
+                            ds: tp.find_float(String::from("udelta"), 0.0),
+                            dt: tp.find_float(String::from("vdelta"), 0.0),
+                        }));
                     } else {
                         panic!("2D texture mapping \"{}\" unknown", mapping);
                     }
@@ -531,13 +545,15 @@ fn make_texture(param_set: &ParamSet) {
                     let gamma: bool = tp.find_bool(String::from("gamma"), true);
 
                     if let Some(mapping) = map {
-                        let st = Arc::new(ImageTexture::new(mapping,
-                                                            filename,
-                                                            do_trilinear,
-                                                            max_aniso,
-                                                            wrap_mode,
-                                                            scale,
-                                                            gamma));
+                        let st = Arc::new(ImageTexture::new(
+                            mapping,
+                            filename,
+                            do_trilinear,
+                            max_aniso,
+                            wrap_mode,
+                            scale,
+                            gamma,
+                        ));
                         graphics_state
                             .spectrum_textures
                             .insert(param_set.name.clone(), st);
@@ -555,7 +571,9 @@ fn make_texture(param_set: &ParamSet) {
                     let tex2: Arc<Texture<Spectrum> + Send + Sync> =
                         tp.get_spectrum_texture(String::from("tex2"), Spectrum::new(0.0));
                     if dim == 2 {
-                        let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+                        let mut map: Option<
+                            Box<TextureMapping2D + Send + Sync>,
+                        > = None;
                         let mapping: String =
                             tp.find_string(String::from("mapping"), String::from("uv"));
                         if mapping == String::from("uv") {
@@ -575,21 +593,25 @@ fn make_texture(param_set: &ParamSet) {
                             println!("TODO: CylindricalMapping2D");
                         } else if mapping == String::from("planar") {
                             map = Some(Box::new(PlanarMapping2D {
-                                                    vs: tp.find_vector3f(String::from("v1"),
-                                                                         Vector3f {
-                                                                             x: 1.0,
-                                                                             y: 0.0,
-                                                                             z: 0.0,
-                                                                         }),
-                                                    vt: tp.find_vector3f(String::from("v2"),
-                                                                         Vector3f {
-                                                                             x: 0.0,
-                                                                             y: 1.0,
-                                                                             z: 0.0,
-                                                                         }),
-                                                    ds: tp.find_float(String::from("udelta"), 0.0),
-                                                    dt: tp.find_float(String::from("vdelta"), 0.0),
-                                                }));
+                                vs: tp.find_vector3f(
+                                    String::from("v1"),
+                                    Vector3f {
+                                        x: 1.0,
+                                        y: 0.0,
+                                        z: 0.0,
+                                    },
+                                ),
+                                vt: tp.find_vector3f(
+                                    String::from("v2"),
+                                    Vector3f {
+                                        x: 0.0,
+                                        y: 1.0,
+                                        z: 0.0,
+                                    },
+                                ),
+                                ds: tp.find_float(String::from("udelta"), 0.0),
+                                dt: tp.find_float(String::from("vdelta"), 0.0),
+                            }));
                         } else {
                             panic!("2D texture mapping \"{}\" unknown", mapping);
                         }
@@ -628,8 +650,9 @@ fn make_texture(param_set: &ParamSet) {
 }
 
 fn pbrt_bool_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, bool)
-    where I: pest::inputs::Input,
-          R: pest::RuleType
+where
+    I: pest::inputs::Input,
+    R: pest::RuleType,
 {
     // single string with or without brackets
     let ident = pairs.next();
@@ -657,16 +680,19 @@ fn pbrt_bool_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Strin
     } else if string2 == String::from("false") {
         b = false
     } else {
-        println!("WARNING: parameter {:?} not well defined, defaulting to false",
-                 string);
+        println!(
+            "WARNING: parameter {:?} not well defined, defaulting to false",
+            string
+        );
         b = false
     }
     (string, b)
 }
 
 fn pbrt_float_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, Vec<Float>)
-    where I: pest::inputs::Input,
-          R: pest::RuleType
+where
+    I: pest::inputs::Input,
+    R: pest::RuleType,
 {
     let mut floats: Vec<Float> = Vec::new();
     // single float or several floats using brackets
@@ -702,8 +728,9 @@ fn pbrt_float_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Stri
 }
 
 fn pbrt_integer_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, Vec<i32>)
-    where I: pest::inputs::Input,
-          R: pest::RuleType
+where
+    I: pest::inputs::Input,
+    R: pest::RuleType,
 {
     let mut integers: Vec<i32> = Vec::new();
     // single integer or several integers using brackets
@@ -739,8 +766,9 @@ fn pbrt_integer_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (St
 }
 
 fn pbrt_string_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, String)
-    where I: pest::inputs::Input,
-          R: pest::RuleType
+where
+    I: pest::inputs::Input,
+    R: pest::RuleType,
 {
     // single string with or without brackets
     let ident = pairs.next();
@@ -765,8 +793,9 @@ fn pbrt_string_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (Str
 }
 
 fn pbrt_texture_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (String, String)
-    where I: pest::inputs::Input,
-          R: pest::RuleType
+where
+    I: pest::inputs::Input,
+    R: pest::RuleType,
 {
     // single string with or without brackets
     let ident = pairs.next();
@@ -790,8 +819,12 @@ fn pbrt_texture_parameter<R, I>(pairs: &mut pest::iterators::Pairs<R, I>) -> (St
     (string1, string2)
 }
 
-fn pbrt_shape(param_set: &ParamSet)
-              -> (Vec<Arc<Shape + Send + Sync>>, Vec<Arc<Material + Send + Sync>>) {
+fn pbrt_shape(
+    param_set: &ParamSet,
+) -> (
+    Vec<Arc<Shape + Send + Sync>>,
+    Vec<Arc<Material + Send + Sync>>,
+) {
     let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
     let mut materials: Vec<Arc<Material + Send + Sync>> = Vec::new();
     // pbrtShape (api.cpp:1153)
@@ -809,7 +842,9 @@ fn pbrt_shape(param_set: &ParamSet)
         if CUR_TRANSFORM.is_animated() {
             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                 if graphics_state.area_light != String::from("") {
-                    println!("WARNING: Ignoring currently set area light when creating animated shape",);
+                    println!(
+                        "WARNING: Ignoring currently set area light when creating animated shape",
+                    );
                 }
             }
             // WORK
@@ -824,14 +859,16 @@ fn pbrt_shape(param_set: &ParamSet)
             let z_min: Float = param_set.find_one_float(String::from("zmin"), -radius);
             let z_max: Float = param_set.find_one_float(String::from("zmax"), radius);
             let phi_max: Float = param_set.find_one_float(String::from("phimax"), 360.0 as Float);
-            let sphere = Arc::new(Sphere::new(obj_to_world,
-                                              world_to_obj,
-                                              false,
-                                              false,
-                                              radius,
-                                              z_min,
-                                              z_max,
-                                              phi_max));
+            let sphere = Arc::new(Sphere::new(
+                obj_to_world,
+                world_to_obj,
+                false,
+                false,
+                radius,
+                z_min,
+                z_max,
+                phi_max,
+            ));
             let mtl: Arc<Material + Send + Sync> = create_material();
             shapes.push(sphere.clone());
             materials.push(mtl.clone());
@@ -840,13 +877,15 @@ fn pbrt_shape(param_set: &ParamSet)
             let z_min: Float = param_set.find_one_float(String::from("zmin"), -radius);
             let z_max: Float = param_set.find_one_float(String::from("zmax"), radius);
             let phi_max: Float = param_set.find_one_float(String::from("phimax"), 360.0 as Float);
-            let cylinder = Arc::new(Cylinder::new(obj_to_world,
-                                                  world_to_obj,
-                                                  false,
-                                                  radius,
-                                                  z_min,
-                                                  z_max,
-                                                  phi_max));
+            let cylinder = Arc::new(Cylinder::new(
+                obj_to_world,
+                world_to_obj,
+                false,
+                radius,
+                z_min,
+                z_max,
+                phi_max,
+            ));
             let mtl: Arc<Material + Send + Sync> = create_material();
             shapes.push(cylinder.clone());
             materials.push(mtl.clone());
@@ -855,14 +894,16 @@ fn pbrt_shape(param_set: &ParamSet)
             let radius: Float = param_set.find_one_float(String::from("radius"), 1.0);
             let inner_radius: Float = param_set.find_one_float(String::from("innerradius"), 0.0);
             let phi_max: Float = param_set.find_one_float(String::from("phimax"), 360.0);
-            let disk = Arc::new(Disk::new(obj_to_world,
-                                          world_to_obj,
-                                          false,
-                                          false,
-                                          height,
-                                          radius,
-                                          inner_radius,
-                                          phi_max));
+            let disk = Arc::new(Disk::new(
+                obj_to_world,
+                world_to_obj,
+                false,
+                false,
+                height,
+                radius,
+                inner_radius,
+                phi_max,
+            ));
             let mtl: Arc<Material + Send + Sync> = create_material();
             shapes.push(disk.clone());
             materials.push(mtl.clone());
@@ -874,11 +915,12 @@ fn pbrt_shape(param_set: &ParamSet)
             println!("TODO: CreateHyperboloidShape");
         } else if param_set.name == String::from("curve") {
             let mtl: Arc<Material + Send + Sync> = create_material();
-            let curve_shapes: Vec<Arc<Shape + Send + Sync>> =
-                create_curve_shape(&obj_to_world,
-                                   &world_to_obj,
-                                   false, // reverse_orientation
-                                   param_set);
+            let curve_shapes: Vec<Arc<Shape + Send + Sync>> = create_curve_shape(
+                &obj_to_world,
+                &world_to_obj,
+                false, // reverse_orientation
+                param_set,
+            );
             for shape in curve_shapes {
                 shapes.push(shape.clone());
                 materials.push(mtl.clone());
@@ -903,9 +945,9 @@ fn pbrt_shape(param_set: &ParamSet)
                     // found some float UVs
                     for i in 0..(fuv.len() / 2) {
                         uvs.push(Point2f {
-                                     x: fuv[2 * i],
-                                     y: fuv[2 * i + 1],
-                                 });
+                            x: fuv[2 * i],
+                            y: fuv[2 * i + 1],
+                        });
                     }
                 }
             }
@@ -956,24 +998,28 @@ fn pbrt_shape(param_set: &ParamSet)
                 vertex_indices.push(vi[i] as usize);
             }
             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                let mesh = Arc::new(TriangleMesh::new(obj_to_world,
-                                                      world_to_obj,
-                                                      graphics_state.reverse_orientation,
-                                                      false, // transform_swaps_handedness
-                                                      vi.len() / 3, // n_triangles
-                                                      vertex_indices,
-                                                      n_vertices,
-                                                      p_ws, // in world space
-                                                      s_ws, // in world space
-                                                      n_ws, // in world space
-                                                      uvs));
+                let mesh = Arc::new(TriangleMesh::new(
+                    obj_to_world,
+                    world_to_obj,
+                    graphics_state.reverse_orientation,
+                    false,        // transform_swaps_handedness
+                    vi.len() / 3, // n_triangles
+                    vertex_indices,
+                    n_vertices,
+                    p_ws, // in world space
+                    s_ws, // in world space
+                    n_ws, // in world space
+                    uvs,
+                ));
                 let mtl: Arc<Material + Send + Sync> = create_material();
                 for id in 0..mesh.n_triangles {
-                    let triangle = Arc::new(Triangle::new(mesh.object_to_world,
-                                                          mesh.world_to_object,
-                                                          mesh.reverse_orientation,
-                                                          mesh.clone(),
-                                                          id));
+                    let triangle = Arc::new(Triangle::new(
+                        mesh.object_to_world,
+                        mesh.world_to_object,
+                        mesh.reverse_orientation,
+                        mesh.clone(),
+                        id,
+                    ));
                     shapes.push(triangle.clone());
                     materials.push(mtl.clone());
                 }
@@ -982,14 +1028,15 @@ fn pbrt_shape(param_set: &ParamSet)
             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                 if let Some(ref search_directory) = SEARCH_DIRECTORY {
                     let mtl: Arc<Material + Send + Sync> = create_material();
-                    let ply_shapes: Vec<Arc<Shape + Send + Sync>> =
-                        create_ply_mesh(&obj_to_world,
-                                        &world_to_obj,
-                                        false, // reverse_orientation
-                                        param_set,
-                                        graphics_state.float_textures.clone(),
-                                        // additional parameters:
-                                        Some(search_directory));
+                    let ply_shapes: Vec<Arc<Shape + Send + Sync>> = create_ply_mesh(
+                        &obj_to_world,
+                        &world_to_obj,
+                        false, // reverse_orientation
+                        param_set,
+                        graphics_state.float_textures.clone(),
+                        // additional parameters:
+                        Some(search_directory),
+                    );
                     for shape in ply_shapes {
                         shapes.push(shape.clone());
                         materials.push(mtl.clone());
@@ -1015,8 +1062,10 @@ fn pbrt_world_end() {
     // println!("WorldEnd");
     unsafe {
         if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
-            assert!(pushed_graphics_states.len() == 0_usize,
-                    "Missing end to pbrtAttributeBegin()");
+            assert!(
+                pushed_graphics_states.len() == 0_usize,
+                "Missing end to pbrtAttributeBegin()"
+            );
             if let Some(ref mut pt) = PUSHED_TRANSFORMS {
                 assert!(pt.len() == 0_usize, "Missing end to pbrtTransformBegin()");
                 if let Some(ref mut ro) = RENDER_OPTIONS {
@@ -1037,9 +1086,8 @@ fn pbrt_world_end() {
                     }
                     // MakeFilm
                     if ro.film_name == String::from("image") {
-                        let filename: String =
-                            ro.film_params
-                                .find_one_string(String::from("filename"), String::new());
+                        let filename: String = ro.film_params
+                            .find_one_string(String::from("filename"), String::new());
                         let xres: i32 = ro.film_params
                             .find_one_int(String::from("xresolution"), 1280);
                         let yres: i32 = ro.film_params
@@ -1058,27 +1106,32 @@ fn pbrt_world_end() {
                             crop.p_min.y = clamp_t(cr[2].min(cr[3]), 0.0, 1.0);
                             crop.p_max.y = clamp_t(cr[2].max(cr[3]), 0.0, 1.0);
                         } else if cr.len() != 0 {
-                            panic!("{:?} values supplied for \"cropwindow\". Expected 4.", cr.len());
+                            panic!(
+                                "{:?} values supplied for \"cropwindow\". Expected 4.",
+                                cr.len()
+                            );
                         }
-                        let scale: Float = ro.film_params.find_one_float(String::from("scale"),
-                                                                         1.0);
+                        let scale: Float =
+                            ro.film_params.find_one_float(String::from("scale"), 1.0);
                         let diagonal: Float = ro.film_params
                             .find_one_float(String::from("diagonal"), 35.0);
-                        let max_sample_luminance: Float =
-                            ro.film_params
-                                .find_one_float(String::from("maxsampleluminance"),
-                                                std::f32::INFINITY);
+                        let max_sample_luminance: Float = ro.film_params
+                            .find_one_float(String::from("maxsampleluminance"), std::f32::INFINITY);
                         if let Some(filter) = some_filter {
-                            let film: Arc<Film> = Arc::new(Film::new(Point2i { x: xres, y: yres },
-                                                                     crop,
-                                                                     filter,
-                                                                     diagonal,
-                                                                     filename,
-                                                                     scale,
-                                                                     max_sample_luminance));
+                            let film: Arc<Film> = Arc::new(Film::new(
+                                Point2i { x: xres, y: yres },
+                                crop,
+                                filter,
+                                diagonal,
+                                filename,
+                                scale,
+                                max_sample_luminance,
+                            ));
                             // MakeCamera
                             // TODO: let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
-                            let mut some_camera: Option<Box<Camera + Sync + Send>> = None;
+                            let mut some_camera: Option<
+                                Box<Camera + Sync + Send>,
+                            > = None;
                             // TODO: MediumInterface mediumInterface = graphicsState.CreateMediumInterface();
                             let animated_cam_to_world: AnimatedTransform =
                                 AnimatedTransform::new(&ro.camera_to_world.t[0],
@@ -1086,10 +1139,13 @@ fn pbrt_world_end() {
                                                        &ro.camera_to_world.t[1],
                                                        ro.transform_end_time);
                             if ro.camera_name == String::from("perspective") {
-                                let camera: Box<Camera + Send + Sync> =
-                                    PerspectiveCamera::create(&ro.camera_params,
-                                                              animated_cam_to_world,
-                                    film);
+                                let camera: Box<
+                                    Camera + Send + Sync,
+                                > = PerspectiveCamera::create(
+                                    &ro.camera_params,
+                                    animated_cam_to_world,
+                                    film,
+                                );
                                 some_camera = Some(camera);
                             } else if ro.camera_name == String::from("orthographic") {
                                 println!("TODO: CreateOrthographicCamera");
@@ -1102,49 +1158,49 @@ fn pbrt_world_end() {
                             }
                             if let Some(camera) = some_camera {
                                 // MakeSampler
-                                let mut some_sampler: Option<Box<Sampler + Sync + Send>> = None;
-                                if ro.sampler_name == String::from("lowdiscrepancy") ||
-                                   ro.sampler_name == String::from("02sequence") {
-                                    let nsamp: i32 =
-                                        ro.sampler_params
-                                            .find_one_int(String::from("pixelsamples"), 16);
+                                let mut some_sampler: Option<
+                                    Box<Sampler + Sync + Send>,
+                                > = None;
+                                if ro.sampler_name == String::from("lowdiscrepancy")
+                                    || ro.sampler_name == String::from("02sequence")
+                                {
+                                    let nsamp: i32 = ro.sampler_params
+                                        .find_one_int(String::from("pixelsamples"), 16);
                                     let sd: i32 = ro.sampler_params
                                         .find_one_int(String::from("dimensions"), 4);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-                                    let sampler = Box::new(ZeroTwoSequenceSampler::new(nsamp as
-                                                                                       i64,
-                                                                                       sd as i64));
+                                    let sampler = Box::new(ZeroTwoSequenceSampler::new(
+                                        nsamp as i64,
+                                        sd as i64,
+                                    ));
                                     some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("maxmindist") {
                                     println!("TODO: CreateMaxMinDistSampler");
                                 } else if ro.sampler_name == String::from("halton") {
-                                    let nsamp: i32 =
-                                        ro.sampler_params
-                                            .find_one_int(String::from("pixelsamples"), 16);
+                                    let nsamp: i32 = ro.sampler_params
+                                        .find_one_int(String::from("pixelsamples"), 16);
                                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-                                    let sample_at_center: bool =
-                                        ro.integrator_params
-                                            .find_one_bool(String::from("samplepixelcenter"),
-                                                           false);
+                                    let sample_at_center: bool = ro.integrator_params
+                                        .find_one_bool(String::from("samplepixelcenter"), false);
                                     let sample_bounds: Bounds2i =
                                         camera.get_film().get_sample_bounds();
-                                    let sampler = Box::new(HaltonSampler::new(nsamp as i64,
-                                                                              sample_bounds,
-                                                                              sample_at_center));
+                                    let sampler = Box::new(HaltonSampler::new(
+                                        nsamp as i64,
+                                        sample_bounds,
+                                        sample_at_center,
+                                    ));
                                     some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("sobol") {
-                                    let nsamp: i32 =
-                                        ro.sampler_params
-                                            .find_one_int(String::from("pixelsamples"), 16);
+                                    let nsamp: i32 = ro.sampler_params
+                                        .find_one_int(String::from("pixelsamples"), 16);
                                     let sample_bounds: Bounds2i =
                                         camera.get_film().get_sample_bounds();
-                                    let sampler = Box::new(SobolSampler::new(nsamp as i64,
-                                                                             sample_bounds));
+                                    let sampler =
+                                        Box::new(SobolSampler::new(nsamp as i64, sample_bounds));
                                     some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("random") {
-                                    let nsamp: i32 =
-                                        ro.sampler_params
-                                            .find_one_int(String::from("pixelsamples"), 4);
+                                    let nsamp: i32 = ro.sampler_params
+                                        .find_one_int(String::from("pixelsamples"), 4);
                                     let sampler = Box::new(RandomSampler::new(nsamp as i64));
                                     some_sampler = Some(sampler);
                                 } else if ro.sampler_name == String::from("stratified") {
@@ -1157,41 +1213,43 @@ fn pbrt_world_end() {
                                     // if let Some(mut sampler) = some_sampler {
                                     let mut some_integrator: Option<Box<SamplerIntegrator + Sync + Send>> = None;
                                     let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
+                                    let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
                                     if ro.integrator_name == String::from("whitted") {
                                         println!("TODO: CreateWhittedIntegrator");
                                     } else if ro.integrator_name == String::from("directlighting") {
                                         // CreateDirectLightingIntegrator
-                                        let max_depth: i32 =
-                                            ro.integrator_params
-                                                .find_one_int(String::from("maxdepth"), 5);
-                                        let st: String = ro.integrator_params
-                                            .find_one_string(String::from("strategy"),
-                                                             String::from("all"));
+                                        let max_depth: i32 = ro.integrator_params
+                                            .find_one_int(String::from("maxdepth"), 5);
+                                        let st: String = ro.integrator_params.find_one_string(
+                                            String::from("strategy"),
+                                            String::from("all"),
+                                        );
                                         let strategy: LightStrategy;
                                         if st == String::from("one") {
                                             strategy = LightStrategy::UniformSampleOne;
                                         } else if st == String::from("all") {
                                             strategy = LightStrategy::UniformSampleAll;
                                         } else {
-                                            panic!("Strategy \"{}\" for direct lighting unknown.",
-                                                   st);
+                                            panic!(
+                                                "Strategy \"{}\" for direct lighting unknown.",
+                                                st
+                                            );
                                         }
                                         // TODO: const int *pb = params.FindInt("pixelbounds", &np);
                                         let pixel_bounds: Bounds2i = Bounds2i {
                                             p_min: Point2i { x: 0, y: 0 },
                                             p_max: Point2i { x: xres, y: yres },
                                         };
-                                        let integrator =
-                                            Box::new(DirectLightingIntegrator::new(strategy,
-                                                                                   max_depth as
-                                                                                   i64,
-                                                                                   pixel_bounds));
+                                        let integrator = Box::new(DirectLightingIntegrator::new(
+                                            strategy,
+                                            max_depth as i64,
+                                            pixel_bounds,
+                                        ));
                                         some_integrator = Some(integrator);
                                     } else if ro.integrator_name == String::from("path") {
                                         // CreatePathIntegrator
-                                        let max_depth: i32 =
-                                            ro.integrator_params
-                                                .find_one_int(String::from("maxdepth"), 5);
+                                        let max_depth: i32 = ro.integrator_params
+                                            .find_one_int(String::from("maxdepth"), 5);
                                         let pb: Vec<i32> = ro.integrator_params
                                             .find_int(String::from("pixelbounds"));
                                         let np: usize = pb.len();
@@ -1219,11 +1277,12 @@ fn pbrt_world_end() {
                                             ro.integrator_params
                                             .find_one_string(String::from("lightsamplestrategy"),
                                                              String::from("spatial"));
-                                        let integrator =
-                                            Box::new(PathIntegrator::new(max_depth as u32,
-                                                                         pixel_bounds,
-                                                                         rr_threshold,
-                                                                         light_strategy));
+                                        let integrator = Box::new(PathIntegrator::new(
+                                            max_depth as u32,
+                                            pixel_bounds,
+                                            rr_threshold,
+                                            light_strategy,
+                                        ));
                                         some_integrator = Some(integrator);
                                     } else if ro.integrator_name == String::from("volpath") {
                                         println!("TODO: CreateVolPathIntegrator");
@@ -1238,7 +1297,9 @@ fn pbrt_world_end() {
                                         let visualize_weights: bool =
                                             ro.integrator_params
                                             .find_one_bool(String::from("visualizeweights"), false);
-                                        if visualize_strategies || visualize_weights || max_depth > 5_i32 {
+                                        if visualize_strategies || visualize_weights
+                                            || max_depth > 5_i32
+                                        {
                                             println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
                                             max_depth = 5;
                                         }
@@ -1247,16 +1308,49 @@ fn pbrt_world_end() {
                                             ro.integrator_params
                                             .find_one_string(String::from("lightsamplestrategy"),
                                                              String::from("power"));
-                                        let mut integrator = Box::new(BDPTIntegrator::new(max_depth as u32,
-                                                                                          // visualize_strategies,
-                                                                                          // visualize_weights,
-                                                                                          pixel_bounds,
-                                                                                          light_strategy));
+                                        let mut integrator = Box::new(BDPTIntegrator::new(
+                                            max_depth as u32,
+                                            // visualize_strategies,
+                                            // visualize_weights,
+                                            pixel_bounds,
+                                            light_strategy,
+                                        ));
                                         some_bdpt_integrator = Some(integrator);
                                     } else if ro.integrator_name == String::from("mlt") {
-                                        println!("TODO: CreateMLTIntegrator");
-                                    } else if ro.integrator_name ==
-                                              String::from("ambientocclusion") {
+                                        println!("WORK: CreateMLTIntegrator");
+                                        // CreateMLTIntegrator
+                                        let mut max_depth: i32 =
+                                            ro.integrator_params
+                                                .find_one_int(String::from("maxdepth"), 5);
+                                        let mut n_bootstrap: i32 =
+                                            ro.integrator_params
+                                                .find_one_int(String::from("bootstrapsamples"), 100000);
+                                        let mut n_chains: i32 =
+                                            ro.integrator_params
+                                                .find_one_int(String::from("chains"), 1000);
+                                        let mut mutations_per_pixel: i32 =
+                                            ro.integrator_params
+                                                .find_one_int(String::from("mutationsperpixel"), 100);
+                                        let large_step_probability: Float =
+                                            ro.integrator_params
+                                            .find_one_float(String::from("largestepprobability"),
+                                                            0.3 as Float);
+                                        let sigma: Float =
+                                            ro.integrator_params
+                                            .find_one_float(String::from("sigma"),
+                                                            0.01 as Float);
+                                        let mut integrator = Box::new(MLTIntegrator::new(
+                                            // camera,
+                                            max_depth as u32,
+                                            n_bootstrap as u32,
+                                            n_chains as u32,
+                                            mutations_per_pixel as u32,
+                                            sigma,
+                                            large_step_probability,
+                                        ));
+                                        some_mlt_integrator = Some(integrator);
+                                    } else if ro.integrator_name == String::from("ambientocclusion")
+                                    {
                                         // CreateAOIntegrator
                                         let pb: Vec<i32> = ro.integrator_params
                                             .find_int(String::from("pixelbounds"));
@@ -1284,14 +1378,15 @@ fn pbrt_world_end() {
                                             .find_one_bool(String::from("cossample"), true);
                                         println!("DEBUG: cos_sample = {:?}", cos_sample);
                                         // int nSamples = params.Find_One_Int("nsamples", 64);
-                                        let n_samples: i32 =
-                                            ro.integrator_params
-                                                .find_one_int(String::from("nsamples"), 64 as i32);
+                                        let n_samples: i32 = ro.integrator_params
+                                            .find_one_int(String::from("nsamples"), 64 as i32);
                                         // return new AOIntegrator(cosSample, nSamples, camera, sampler, pixelBounds);
 
-                                        let integrator = Box::new(AOIntegrator::new(cos_sample,
-                                                                                    n_samples,
-                                                                                    pixel_bounds));
+                                        let integrator = Box::new(AOIntegrator::new(
+                                            cos_sample,
+                                            n_samples,
+                                            pixel_bounds,
+                                        ));
                                         some_integrator = Some(integrator);
                                     } else if ro.integrator_name == String::from("sppm") {
                                         println!("TODO: CreateSPPMIntegrator");
@@ -1327,44 +1422,52 @@ fn pbrt_world_end() {
                                             }
                                             let max_prims_in_node: i32 =
                                                 ro.accelerator_params.find_one_int(String::from("maxnodeprims"), 4);
-                                            let accelerator =
-                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
-                                                                       max_prims_in_node as usize,
-                                                                       split_method));
+                                            let accelerator = Arc::new(BVHAccel::new(
+                                                ro.primitives.clone(),
+                                                max_prims_in_node as usize,
+                                                split_method,
+                                            ));
                                             // MakeScene
                                             let scene: Scene = Scene::new(accelerator.clone(),
                                                                           ro.lights.clone());
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render(&scene,
-                                                         &camera,
-                                                         &mut sampler,
-                                                         &mut integrator,
-                                                         num_threads);
+                                            pbrt::render(
+                                                &scene,
+                                                &camera,
+                                                &mut sampler,
+                                                &mut integrator,
+                                                num_threads,
+                                            );
                                         } else if ro.accelerator_name == String::from("kdtree") {
                                             // println!("TODO: CreateKdTreeAccelerator");
                                             // WARNING: Use BVHAccel for now !!!
-                                            let accelerator =
-                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
-                                                                       4,
-                                                                       SplitMethod::SAH));
+                                            let accelerator = Arc::new(BVHAccel::new(
+                                                ro.primitives.clone(),
+                                                4,
+                                                SplitMethod::SAH,
+                                            ));
                                             // MakeScene
                                             let scene: Scene = Scene::new(accelerator.clone(),
                                                                           ro.lights.clone());
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render(&scene,
-                                                         &camera,
-                                                         &mut sampler,
-                                                         &mut integrator,
-                                                         num_threads);
+                                            pbrt::render(
+                                                &scene,
+                                                &camera,
+                                                &mut sampler,
+                                                &mut integrator,
+                                                num_threads,
+                                            );
                                         } else {
-                                            panic!("Accelerator \"{}\" unknown.",
-                                                   ro.accelerator_name);
+                                            panic!(
+                                                "Accelerator \"{}\" unknown.",
+                                                ro.accelerator_name
+                                            );
                                         }
-                                    } else if let Some (mut integrator) = some_bdpt_integrator {
+                                    } else if let Some(mut integrator) = some_bdpt_integrator {
                                         // because we can't call
                                         // integrator.render() yet,
                                         // let us repeat some code and
@@ -1399,42 +1502,130 @@ fn pbrt_world_end() {
                                             }
                                             let max_prims_in_node: i32 =
                                                 ro.accelerator_params.find_one_int(String::from("maxnodeprims"), 4);
-                                            let accelerator =
-                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
-                                                                       max_prims_in_node as usize,
-                                                                       split_method));
+                                            let accelerator = Arc::new(BVHAccel::new(
+                                                ro.primitives.clone(),
+                                                max_prims_in_node as usize,
+                                                split_method,
+                                            ));
                                             // MakeScene
                                             let scene: Scene = Scene::new(accelerator.clone(),
                                                                           ro.lights.clone());
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render_bdpt(&scene,
-                                                              &camera,
-                                                              &mut sampler,
-                                                              &mut integrator,
-                                                              num_threads);
+                                            pbrt::render_bdpt(
+                                                &scene,
+                                                &camera,
+                                                &mut sampler,
+                                                &mut integrator,
+                                                num_threads,
+                                            );
                                         } else if ro.accelerator_name == String::from("kdtree") {
                                             // println!("TODO: CreateKdTreeAccelerator");
                                             // WARNING: Use BVHAccel for now !!!
-                                            let accelerator =
-                                                Arc::new(BVHAccel::new(ro.primitives.clone(),
-                                                                       4,
-                                                                       SplitMethod::SAH));
+                                            let accelerator = Arc::new(BVHAccel::new(
+                                                ro.primitives.clone(),
+                                                4,
+                                                SplitMethod::SAH,
+                                            ));
                                             // MakeScene
                                             let scene: Scene = Scene::new(accelerator.clone(),
                                                                           ro.lights.clone());
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render_bdpt(&scene,
-                                                              &camera,
-                                                              &mut sampler,
-                                                              &mut integrator,
-                                                              num_threads);
+                                            pbrt::render_bdpt(
+                                                &scene,
+                                                &camera,
+                                                &mut sampler,
+                                                &mut integrator,
+                                                num_threads,
+                                            );
                                         } else {
-                                            panic!("Accelerator \"{}\" unknown.",
-                                                   ro.accelerator_name);
+                                            panic!(
+                                                "Accelerator \"{}\" unknown.",
+                                                ro.accelerator_name
+                                            );
+                                        }
+                                    } else if let Some(mut integrator) = some_mlt_integrator {
+                                        // because we can't call
+                                        // integrator.render() yet,
+                                        // let us repeat some code and
+                                        // call pbrt::render_bdpt(...)
+                                        // instead:
+
+                                        // MakeIntegrator
+                                        // TODO: if (renderOptions->haveScatteringMedia && ...)
+                                        if ro.lights.is_empty() {
+                                            // warn if no light sources are defined
+                                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                                        }
+                                        // MakeAccelerator
+                                        if ro.accelerator_name == String::from("bvh") {
+                                            //  CreateBVHAccelerator
+                                            let split_method_name: String =
+                                                ro.accelerator_params.find_one_string(String::from("splitmethod"),
+                                                                                      String::from("sah"));
+                                            let split_method;
+                                            if split_method_name == String::from("sah") {
+                                                split_method = SplitMethod::SAH;
+                                            } else if split_method_name == String::from("hlbvh") {
+                                                split_method = SplitMethod::HLBVH;
+                                            } else if split_method_name == String::from("middle") {
+                                                split_method = SplitMethod::Middle;
+                                            } else if split_method_name == String::from("equal") {
+                                                split_method = SplitMethod::EqualCounts;
+                                            } else {
+                                                println!("WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                                                         split_method_name);
+                                                split_method = SplitMethod::SAH;
+                                            }
+                                            let max_prims_in_node: i32 =
+                                                ro.accelerator_params.find_one_int(String::from("maxnodeprims"), 4);
+                                            let accelerator = Arc::new(BVHAccel::new(
+                                                ro.primitives.clone(),
+                                                max_prims_in_node as usize,
+                                                split_method,
+                                            ));
+                                            // MakeScene
+                                            let scene: Scene = Scene::new(accelerator.clone(),
+                                                                          ro.lights.clone());
+                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                                            // TODO: lights.erase(lights.begin(), lights.end());
+                                            let num_threads: u8 = NUMBER_OF_THREADS;
+                                            pbrt::render_mlt(
+                                                &scene,
+                                                &camera,
+                                                &mut sampler,
+                                                &mut integrator,
+                                                num_threads,
+                                            );
+                                        } else if ro.accelerator_name == String::from("kdtree") {
+                                            // println!("TODO: CreateKdTreeAccelerator");
+                                            // WARNING: Use BVHAccel for now !!!
+                                            let accelerator = Arc::new(BVHAccel::new(
+                                                ro.primitives.clone(),
+                                                4,
+                                                SplitMethod::SAH,
+                                            ));
+                                            // MakeScene
+                                            let scene: Scene = Scene::new(accelerator.clone(),
+                                                                          ro.lights.clone());
+                                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                                            // TODO: lights.erase(lights.begin(), lights.end());
+                                            let num_threads: u8 = NUMBER_OF_THREADS;
+                                            pbrt::render_mlt(
+                                                &scene,
+                                                &camera,
+                                                &mut sampler,
+                                                &mut integrator,
+                                                num_threads,
+                                            );
+                                        } else {
+                                            panic!(
+                                                "Accelerator \"{}\" unknown.",
+                                                ro.accelerator_name
+                                            );
                                         }
                                     } else {
                                         panic!("Unable to create integrator.");
@@ -1464,10 +1655,12 @@ fn main() {
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
     opts.optopt("i", "", "parse an input file", "FILE");
-    opts.optopt("t",
-                "nthreads",
-                "use specified number of threads for rendering",
-                "NUM");
+    opts.optopt(
+        "t",
+        "nthreads",
+        "use specified number of threads for rendering",
+        "NUM",
+    );
     opts.optflag("v", "version", "print version number");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -1482,8 +1675,10 @@ fn main() {
             match nthreads {
                 Some(x) => {
                     let number_result = x.parse::<u8>();
-                    assert!(!number_result.is_err(),
-                            "ERROR: 8 bit unsigned integer expected");
+                    assert!(
+                        !number_result.is_err(),
+                        "ERROR: 8 bit unsigned integer expected"
+                    );
                     let num_threads: u8 = number_result.unwrap();
                     println!("nthreads = {:?}", num_threads);
                     unsafe {
@@ -1538,8 +1733,8 @@ fn main() {
                                 for statement_pair in pair.into_inner() {
                                     match statement_pair.as_rule() {
                                         Rule::active_transform => {
-                                            for active_transform_pair in
-                                                statement_pair.into_inner() {
+                                            for active_transform_pair in statement_pair.into_inner()
+                                            {
                                                 match active_transform_pair.as_rule() {
                                                     Rule::all => {
                                                         // println!("ActiveTransform All");
@@ -1559,8 +1754,8 @@ fn main() {
                                         }
                                         Rule::concat_transform => {
                                             let mut numbers: Vec<Float> = Vec::new();
-                                            for concat_transform_pair in
-                                                statement_pair.into_inner() {
+                                            for concat_transform_pair in statement_pair.into_inner()
+                                            {
                                                 // ignore brackets
                                                 let not_opening: bool = concat_transform_pair.as_str() != String::from("[");
                                                 let not_closing: bool = concat_transform_pair.as_str() != String::from("]");
@@ -1604,12 +1799,21 @@ fn main() {
                                                 match keyword_pair.as_rule() {
                                                     Rule::attribute_begin => {
                                                         if let Some(ref mut graphics_state) =
-                                                            GRAPHICS_STATE {
-                                                            if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
+                                                            GRAPHICS_STATE
+                                                        {
+                                                            if let Some(
+                                                                ref mut pushed_graphics_states,
+                                                            ) = PUSHED_GRAPHICS_STATES
+                                                            {
                                                                 let mut material_param_set: ParamSet = ParamSet::default();
-                                                                material_param_set.copy_from(&graphics_state.material_params);
+                                                                material_param_set.copy_from(
+                                                                    &graphics_state.material_params,
+                                                                );
                                                                 let mut area_light_param_set: ParamSet = ParamSet::default();
-                                                                area_light_param_set.copy_from(&graphics_state.area_light_params);
+                                                                area_light_param_set.copy_from(
+                                                                    &graphics_state
+                                                                        .area_light_params,
+                                                                );
                                                                 pushed_graphics_states.push(GraphicsState {
                                                                     float_textures: graphics_state.float_textures.clone(),
                                                                     spectrum_textures: graphics_state.spectrum_textures.clone(),
@@ -1623,53 +1827,92 @@ fn main() {
                                                                 });
                                                             }
                                                             if let Some(ref mut pt) =
-                                                                PUSHED_TRANSFORMS {
+                                                                PUSHED_TRANSFORMS
+                                                            {
                                                                 pt.push(TransformSet {
                                                                     t: [
                                                                         Transform {
                                                                             m: CUR_TRANSFORM.t[0].m,
-                                                                            m_inv: CUR_TRANSFORM.t[0].m_inv,},
+                                                                            m_inv: CUR_TRANSFORM.t
+                                                                                [0]
+                                                                                .m_inv,
+                                                                        },
                                                                         Transform {
                                                                             m: CUR_TRANSFORM.t[1].m,
-                                                                            m_inv: CUR_TRANSFORM.t[1].m_inv,},
-                                                                    ]
+                                                                            m_inv: CUR_TRANSFORM.t
+                                                                                [1]
+                                                                                .m_inv,
+                                                                        },
+                                                                    ],
                                                                 });
                                                             }
                                                             if let Some(ref mut patb) =
-                                                                PUSHED_ACTIVE_TRANSFORM_BITS {
+                                                                PUSHED_ACTIVE_TRANSFORM_BITS
+                                                            {
                                                                 patb.push(ACTIVE_TRANSFORM_BITS);
                                                             }
                                                         }
                                                     }
                                                     Rule::attribute_end => {
                                                         if let Some(ref mut graphics_state) =
-                                                            GRAPHICS_STATE {
-                                                            if let Some(ref mut pushed_graphics_states) = PUSHED_GRAPHICS_STATES {
-                                                                if !(pushed_graphics_states.len() >= 1_usize) {
+                                                            GRAPHICS_STATE
+                                                        {
+                                                            if let Some(
+                                                                ref mut pushed_graphics_states,
+                                                            ) = PUSHED_GRAPHICS_STATES
+                                                            {
+                                                                if !(pushed_graphics_states.len()
+                                                                    >= 1_usize)
+                                                                {
                                                                     panic!("Unmatched pbrtAttributeEnd() encountered.")
                                                                 }
                                                                 let pgs: GraphicsState = pushed_graphics_states.pop().unwrap();
                                                                 // material_params
-                                                                graphics_state.material_params.reset(String::new(),
-                                                                                                     String::from(""),
-                                                                                                     String::from(""),
-                                                                                                     String::new());
-                                                                graphics_state.material_params.copy_from(&pgs.material_params);
+                                                                graphics_state
+                                                                    .material_params
+                                                                    .reset(
+                                                                        String::new(),
+                                                                        String::from(""),
+                                                                        String::from(""),
+                                                                        String::new(),
+                                                                    );
+                                                                graphics_state
+                                                                    .material_params
+                                                                    .copy_from(
+                                                                        &pgs.material_params,
+                                                                    );
                                                                 // material
-                                                                graphics_state.material = String::from(pgs.material.as_ref());
+                                                                graphics_state.material =
+                                                                    String::from(
+                                                                        pgs.material.as_ref(),
+                                                                    );
                                                                 // area_light_params
-                                                                graphics_state.area_light_params.reset(String::new(),
-                                                                                                       String::from(""),
-                                                                                                       String::from(""),
-                                                                                                       String::new());
-                                                                graphics_state.area_light_params.copy_from(&pgs.area_light_params);
+                                                                graphics_state
+                                                                    .area_light_params
+                                                                    .reset(
+                                                                        String::new(),
+                                                                        String::from(""),
+                                                                        String::from(""),
+                                                                        String::new(),
+                                                                    );
+                                                                graphics_state
+                                                                    .area_light_params
+                                                                    .copy_from(
+                                                                        &pgs.area_light_params,
+                                                                    );
                                                                 // area_light
-                                                                graphics_state.area_light = String::from(pgs.area_light.as_ref());
+                                                                graphics_state.area_light =
+                                                                    String::from(
+                                                                        pgs.area_light.as_ref(),
+                                                                    );
                                                                 // reverse_orientation
-                                                                graphics_state.reverse_orientation = pgs.reverse_orientation;
+                                                                graphics_state
+                                                                    .reverse_orientation =
+                                                                    pgs.reverse_orientation;
                                                             }
                                                             if let Some(ref mut pt) =
-                                                                PUSHED_TRANSFORMS {
+                                                                PUSHED_TRANSFORMS
+                                                            {
                                                                 let popped_transform_set: TransformSet = pt.pop().unwrap();
                                                                 CUR_TRANSFORM.t[0] =
                                                                     popped_transform_set.t[0];
@@ -1677,7 +1920,8 @@ fn main() {
                                                                     popped_transform_set.t[1];
                                                             }
                                                             if let Some(ref mut patb) =
-                                                                PUSHED_ACTIVE_TRANSFORM_BITS {
+                                                                PUSHED_ACTIVE_TRANSFORM_BITS
+                                                            {
                                                                 let active_transform_bits: u8 = patb.pop().unwrap();
                                                                 ACTIVE_TRANSFORM_BITS =
                                                                     active_transform_bits;
@@ -1685,44 +1929,53 @@ fn main() {
                                                         }
                                                     }
                                                     Rule::transform_begin => {
-                                                        if let Some(ref mut pt) =
-                                                            PUSHED_TRANSFORMS {
-                                                                pt.push(TransformSet {
-                                                                    t: [
-                                                                        Transform {
-                                                                            m: CUR_TRANSFORM.t[0].m,
-                                                                            m_inv: CUR_TRANSFORM.t[0].m_inv,},
-                                                                        Transform {
-                                                                            m: CUR_TRANSFORM.t[1].m,
-                                                                            m_inv: CUR_TRANSFORM.t[1].m_inv,},
-                                                                    ]
-                                                                });
-                                                            }
+                                                        if let Some(ref mut pt) = PUSHED_TRANSFORMS
+                                                        {
+                                                            pt.push(TransformSet {
+                                                                t: [
+                                                                    Transform {
+                                                                        m: CUR_TRANSFORM.t[0].m,
+                                                                        m_inv: CUR_TRANSFORM.t[0]
+                                                                            .m_inv,
+                                                                    },
+                                                                    Transform {
+                                                                        m: CUR_TRANSFORM.t[1].m,
+                                                                        m_inv: CUR_TRANSFORM.t[1]
+                                                                            .m_inv,
+                                                                    },
+                                                                ],
+                                                            });
+                                                        }
                                                         if let Some(ref mut patb) =
-                                                            PUSHED_ACTIVE_TRANSFORM_BITS {
-                                                                patb.push(ACTIVE_TRANSFORM_BITS);
-                                                            }
+                                                            PUSHED_ACTIVE_TRANSFORM_BITS
+                                                        {
+                                                            patb.push(ACTIVE_TRANSFORM_BITS);
+                                                        }
                                                     }
                                                     Rule::transform_end => {
-                                                        if let Some(ref mut pt) =
-                                                            PUSHED_TRANSFORMS {
-                                                                let popped_transform_set: TransformSet = pt.pop().unwrap();
-                                                                CUR_TRANSFORM.t[0] =
-                                                                    popped_transform_set.t[0];
-                                                                CUR_TRANSFORM.t[1] =
-                                                                    popped_transform_set.t[1];
-                                                            }
+                                                        if let Some(ref mut pt) = PUSHED_TRANSFORMS
+                                                        {
+                                                            let popped_transform_set: TransformSet = pt.pop().unwrap();
+                                                            CUR_TRANSFORM.t[0] =
+                                                                popped_transform_set.t[0];
+                                                            CUR_TRANSFORM.t[1] =
+                                                                popped_transform_set.t[1];
+                                                        }
                                                         if let Some(ref mut patb) =
-                                                            PUSHED_ACTIVE_TRANSFORM_BITS {
-                                                                let active_transform_bits: u8 = patb.pop().unwrap();
-                                                                ACTIVE_TRANSFORM_BITS =
-                                                                    active_transform_bits;
-                                                            }
+                                                            PUSHED_ACTIVE_TRANSFORM_BITS
+                                                        {
+                                                            let active_transform_bits: u8 = patb.pop().unwrap();
+                                                            ACTIVE_TRANSFORM_BITS =
+                                                                active_transform_bits;
+                                                        }
                                                     }
                                                     Rule::reverse_orientation => {
                                                         println!("ReverseOrientation");
-                                                        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
-                                                            graphics_state.reverse_orientation = !graphics_state.reverse_orientation;
+                                                        if let Some(ref mut graphics_state) =
+                                                            GRAPHICS_STATE
+                                                        {
+                                                            graphics_state.reverse_orientation =
+                                                                !graphics_state.reverse_orientation;
                                                         }
                                                     }
                                                     Rule::world_begin => {
@@ -1730,11 +1983,16 @@ fn main() {
                                                         CUR_TRANSFORM.t[0] = Transform::default();
                                                         CUR_TRANSFORM.t[1] = Transform::default();
                                                         ACTIVE_TRANSFORM_BITS = 3_u8; // 0x11
-                                                        if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
-                                                            named_coordinate_systems.insert("world",
-                                                                                            TransformSet {
-                                                                                                t: [Transform::default(); 2]
-                                                                                            });
+                                                        if let Some(
+                                                            ref mut named_coordinate_systems,
+                                                        ) = NAMED_COORDINATE_SYSTEMS
+                                                        {
+                                                            named_coordinate_systems.insert(
+                                                                "world",
+                                                                TransformSet {
+                                                                    t: [Transform::default(); 2],
+                                                                },
+                                                            );
                                                         }
                                                     }
                                                     _ => unreachable!(),
@@ -1762,15 +2020,16 @@ fn main() {
                                             }
                                         }
                                         Rule::named_statement => {
-                                            for named_statement_pair in
-                                                statement_pair.into_inner() {
+                                            for named_statement_pair in statement_pair.into_inner()
+                                            {
                                                 match named_statement_pair.as_rule() {
                                                     Rule::accelerator => {
                                                         println!("TODO: Rule::accelerator")
                                                     }
                                                     Rule::area_light_source => {
                                                         for area_light_source_pair in
-                                                            named_statement_pair.into_inner() {
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match area_light_source_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -1779,11 +2038,17 @@ fn main() {
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("AreaLightSource"),
-                                                                                        String::from(name),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from(
+                                                                                "AreaLightSource",
+                                                                            ),
+                                                                            String::from(name),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
@@ -1791,7 +2056,8 @@ fn main() {
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
                                                                         area_light_source_pair
-                                                                            .into_inner() {
+                                                                            .into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -1954,11 +2220,14 @@ fn main() {
                                                         }
                                                         // we should have the area_light_source parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            println!("AreaLightSource \"{}\" ",
-                                                                     param_set.name);
+                                                            println!(
+                                                                "AreaLightSource \"{}\" ",
+                                                                param_set.name
+                                                            );
                                                             print_params(&param_set);
                                                             if let Some(ref mut graphics_state) =
-                                                                GRAPHICS_STATE {
+                                                                GRAPHICS_STATE
+                                                            {
                                                                 graphics_state.area_light =
                                                                     param_set.name.clone();
                                                                 graphics_state
@@ -1970,8 +2239,9 @@ fn main() {
                                                         }
                                                     }
                                                     Rule::camera => {
-                                                        for camera_pair in named_statement_pair
-                                                                .into_inner() {
+                                                        for camera_pair in
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match camera_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -1980,13 +2250,22 @@ fn main() {
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
                                                                     if let Some(ref mut ro) =
-                                                                        RENDER_OPTIONS {
+                                                                        RENDER_OPTIONS
+                                                                    {
                                                                         ro.camera_name = name;
                                                                         ro.camera_to_world.t[0] =
-                                                                            Transform::inverse(&CUR_TRANSFORM.t[0]);
+                                                                            Transform::inverse(
+                                                                                &CUR_TRANSFORM.t[0],
+                                                                            );
                                                                         ro.camera_to_world.t[1] =
-                                                                            Transform::inverse(&CUR_TRANSFORM.t[1]);
-                                                                        if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
+                                                                            Transform::inverse(
+                                                                                &CUR_TRANSFORM.t[1],
+                                                                            );
+                                                                        if let Some(
+                                                                            ref mut named_coordinate_systems,
+                                                                        ) =
+                                                                            NAMED_COORDINATE_SYSTEMS
+                                                                        {
                                                                             named_coordinate_systems.insert("camera",
                                                                                                             TransformSet {
                                                                                                                 t: [ro.camera_to_world.t[0],
@@ -1996,18 +2275,23 @@ fn main() {
                                                                     } else {
                                                                         panic!("Can't get render options.");
                                                                     }
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("Camera"),
-                                                                                        String::from(""),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from("Camera"),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
                                                                 }
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
-                                                                        camera_pair.into_inner() {
+                                                                        camera_pair.into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -2170,10 +2454,12 @@ fn main() {
                                                         }
                                                         // we should have the camera parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) =
-                                                                RENDER_OPTIONS {
-                                                                println!("Camera \"{}\" ",
-                                                                         ro.camera_name);
+                                                            if let Some(ref mut ro) = RENDER_OPTIONS
+                                                            {
+                                                                println!(
+                                                                    "Camera \"{}\" ",
+                                                                    ro.camera_name
+                                                                );
                                                                 ro.camera_params
                                                                     .copy_from(param_set);
                                                                 print_params(&ro.camera_params);
@@ -2186,9 +2472,10 @@ fn main() {
                                                     }
                                                     Rule::coord_sys_transform => {
                                                         for coord_sys_transform_pair in
-                                                            named_statement_pair.into_inner() {
-                                                            match coord_sys_transform_pair
-                                                                      .as_rule() {
+                                                            named_statement_pair.into_inner()
+                                                        {
+                                                            match coord_sys_transform_pair.as_rule()
+                                                            {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
                                                                         coord_sys_transform_pair
@@ -2196,7 +2483,10 @@ fn main() {
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut named_coordinate_systems) = NAMED_COORDINATE_SYSTEMS {
+                                                                    if let Some(
+                                                                        ref mut named_coordinate_systems,
+                                                                    ) = NAMED_COORDINATE_SYSTEMS
+                                                                    {
                                                                         match named_coordinate_systems.get(name.as_str()) {
                                                                             Some(transform_set) => {
                                                                                 CUR_TRANSFORM.t[0] = transform_set.t[0];
@@ -2213,8 +2503,9 @@ fn main() {
                                                         }
                                                     }
                                                     Rule::film => {
-                                                        for film_pair in named_statement_pair
-                                                                .into_inner() {
+                                                        for film_pair in
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match film_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -2223,23 +2514,29 @@ fn main() {
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
                                                                     if let Some(ref mut ro) =
-                                                                        RENDER_OPTIONS {
+                                                                        RENDER_OPTIONS
+                                                                    {
                                                                         ro.film_name = name;
                                                                     } else {
                                                                         panic!("Can't get render options.");
                                                                     }
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("Film"),
-                                                                                        String::from(""),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from("Film"),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
                                                                 }
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
-                                                                        film_pair.into_inner() {
+                                                                        film_pair.into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -2402,10 +2699,12 @@ fn main() {
                                                         }
                                                         // we should have the film parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) =
-                                                                RENDER_OPTIONS {
-                                                                println!("Film \"{}\" ",
-                                                                         ro.film_name);
+                                                            if let Some(ref mut ro) = RENDER_OPTIONS
+                                                            {
+                                                                println!(
+                                                                    "Film \"{}\" ",
+                                                                    ro.film_name
+                                                                );
                                                                 ro.film_params.copy_from(param_set);
                                                                 print_params(&ro.film_params);
                                                             } else {
@@ -2417,7 +2716,8 @@ fn main() {
                                                     }
                                                     Rule::integrator => {
                                                         for integrator_pair in
-                                                            named_statement_pair.into_inner() {
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match integrator_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -2427,23 +2727,31 @@ fn main() {
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
                                                                     if let Some(ref mut ro) =
-                                                                        RENDER_OPTIONS {
+                                                                        RENDER_OPTIONS
+                                                                    {
                                                                         ro.integrator_name = name;
                                                                     } else {
                                                                         panic!("Can't get render options.");
                                                                     }
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("Integrator"),
-                                                                                        String::from(""),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from(
+                                                                                "Integrator",
+                                                                            ),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
                                                                 }
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
-                                                                        integrator_pair.into_inner() {
+                                                                        integrator_pair.into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -2606,10 +2914,12 @@ fn main() {
                                                         }
                                                         // we should have the integrator parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) =
-                                                                RENDER_OPTIONS {
-                                                                println!("Integrator \"{}\" ",
-                                                                         ro.integrator_name);
+                                                            if let Some(ref mut ro) = RENDER_OPTIONS
+                                                            {
+                                                                println!(
+                                                                    "Integrator \"{}\" ",
+                                                                    ro.integrator_name
+                                                                );
                                                                 ro.integrator_params
                                                                     .copy_from(param_set);
                                                                 print_params(&ro.integrator_params);
@@ -2622,7 +2932,8 @@ fn main() {
                                                     }
                                                     Rule::light_source => {
                                                         for light_source_pair in
-                                                            named_statement_pair.into_inner() {
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match light_source_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -2631,11 +2942,17 @@ fn main() {
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("Light_Source"),
-                                                                                        String::from(name),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from(
+                                                                                "Light_Source",
+                                                                            ),
+                                                                            String::from(name),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
@@ -2643,7 +2960,8 @@ fn main() {
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
                                                                         light_source_pair
-                                                                            .into_inner() {
+                                                                            .into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -2806,10 +3124,12 @@ fn main() {
                                                         }
                                                         // we should have the light_source parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) =
-                                                                RENDER_OPTIONS {
-                                                                println!("LightSource \"{}\" ",
-                                                                         param_set.name);
+                                                            if let Some(ref mut ro) = RENDER_OPTIONS
+                                                            {
+                                                                println!(
+                                                                    "LightSource \"{}\" ",
+                                                                    param_set.name
+                                                                );
                                                                 print_params(&param_set);
                                                                 make_light(&param_set, ro);
                                                             } else {
@@ -2821,9 +3141,10 @@ fn main() {
                                                     }
                                                     Rule::make_named_material => {
                                                         for make_named_material_pair in
-                                                            named_statement_pair.into_inner() {
-                                                            match make_named_material_pair
-                                                                      .as_rule() {
+                                                            named_statement_pair.into_inner()
+                                                        {
+                                                            match make_named_material_pair.as_rule()
+                                                            {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
                                                                         make_named_material_pair
@@ -2831,11 +3152,19 @@ fn main() {
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("MakeNamedMaterial"),
-                                                                                        String::from(name.clone()),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from(
+                                                                                "MakeNamedMaterial",
+                                                                            ),
+                                                                            String::from(
+                                                                                name.clone(),
+                                                                            ),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
@@ -2843,7 +3172,8 @@ fn main() {
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
                                                                         make_named_material_pair
-                                                                            .into_inner() {
+                                                                            .into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -3012,33 +3342,41 @@ fn main() {
                                                                 panic!("No parameter string \"type\" found in MakeNamedMaterial");
                                                             }
                                                             if let Some(ref mut graphics_state) =
-                                                                GRAPHICS_STATE {
+                                                                GRAPHICS_STATE
+                                                            {
                                                                 graphics_state.material =
                                                                     mat_type.clone();
                                                                 graphics_state
                                                                     .material_params
                                                                     .copy_from(&param_set);
-                                                                graphics_state.current_material = String::new();
+                                                                graphics_state.current_material =
+                                                                    String::new();
                                                                 let mtl: Arc<Material + Send + Sync> = create_material();
-                                                                match graphics_state.named_materials.get(param_set.name.as_str()) {
+                                                                match graphics_state
+                                                                    .named_materials
+                                                                    .get(param_set.name.as_str())
+                                                                {
                                                                     Some(_named_material) => {
                                                                         println!("Named material \"{}\" redefined",
                                                                                  mat_type);
-                                                                    },
-                                                                    None => {},
+                                                                    }
+                                                                    None => {}
                                                                 }
                                                                 graphics_state
                                                                     .named_materials
-                                                                    .insert(param_set.name.clone(),
-                                                                            mtl);
+                                                                    .insert(
+                                                                        param_set.name.clone(),
+                                                                        mtl,
+                                                                    );
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
                                                         }
                                                     }
                                                     Rule::material => {
-                                                        for material_pair in named_statement_pair
-                                                                .into_inner() {
+                                                        for material_pair in
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match material_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -3046,18 +3384,27 @@ fn main() {
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("Material"),
-                                                                                        String::from(name.clone()),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from(
+                                                                                "Material",
+                                                                            ),
+                                                                            String::from(
+                                                                                name.clone(),
+                                                                            ),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
                                                                 }
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
-                                                                        material_pair.into_inner() {
+                                                                        material_pair.into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -3221,13 +3568,15 @@ fn main() {
                                                         // we should have the material parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
                                                             if let Some(ref mut graphics_state) =
-                                                                GRAPHICS_STATE {
+                                                                GRAPHICS_STATE
+                                                            {
                                                                 graphics_state.material =
                                                                     param_set.name.clone();
                                                                 graphics_state
                                                                     .material_params
                                                                     .copy_from(&param_set);
-                                                                graphics_state.current_material = String::new();
+                                                                graphics_state.current_material =
+                                                                    String::new();
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
@@ -3235,7 +3584,8 @@ fn main() {
                                                     }
                                                     Rule::named_material => {
                                                         for named_material_pair in
-                                                            named_statement_pair.into_inner() {
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match named_material_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -3244,11 +3594,19 @@ fn main() {
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("MakeNamedMaterial"),
-                                                                                        String::from(name.clone()),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from(
+                                                                                "MakeNamedMaterial",
+                                                                            ),
+                                                                            String::from(
+                                                                                name.clone(),
+                                                                            ),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
@@ -3256,7 +3614,8 @@ fn main() {
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
                                                                         named_material_pair
-                                                                            .into_inner() {
+                                                                            .into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -3420,8 +3779,10 @@ fn main() {
                                                         // we should have the named_material parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
                                                             if let Some(ref mut graphics_state) =
-                                                                GRAPHICS_STATE {
-                                                                graphics_state.current_material = param_set.name.clone();
+                                                                GRAPHICS_STATE
+                                                            {
+                                                                graphics_state.current_material =
+                                                                    param_set.name.clone();
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");
@@ -3429,7 +3790,8 @@ fn main() {
                                                     }
                                                     Rule::pixel_filter => {
                                                         for pixel_filter_pair in
-                                                            named_statement_pair.into_inner() {
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match pixel_filter_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -3439,16 +3801,23 @@ fn main() {
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
                                                                     if let Some(ref mut ro) =
-                                                                        RENDER_OPTIONS {
+                                                                        RENDER_OPTIONS
+                                                                    {
                                                                         ro.filter_name = name;
                                                                     } else {
                                                                         panic!("Can't get render options.");
                                                                     }
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("PixelFilter"),
-                                                                                        String::from(""),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from(
+                                                                                "PixelFilter",
+                                                                            ),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
@@ -3456,7 +3825,8 @@ fn main() {
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
                                                                         pixel_filter_pair
-                                                                            .into_inner() {
+                                                                            .into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -3619,10 +3989,12 @@ fn main() {
                                                         }
                                                         // we should have the pixel_filter parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) =
-                                                                RENDER_OPTIONS {
-                                                                println!("PixelFilter \"{}\" ",
-                                                                         ro.filter_name);
+                                                            if let Some(ref mut ro) = RENDER_OPTIONS
+                                                            {
+                                                                println!(
+                                                                    "PixelFilter \"{}\" ",
+                                                                    ro.filter_name
+                                                                );
                                                                 ro.filter_params
                                                                     .copy_from(param_set);
                                                                 print_params(&ro.filter_params);
@@ -3634,8 +4006,9 @@ fn main() {
                                                         }
                                                     }
                                                     Rule::sampler => {
-                                                        for sampler_pair in named_statement_pair
-                                                                .into_inner() {
+                                                        for sampler_pair in
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match sampler_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -3644,23 +4017,29 @@ fn main() {
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
                                                                     if let Some(ref mut ro) =
-                                                                        RENDER_OPTIONS {
+                                                                        RENDER_OPTIONS
+                                                                    {
                                                                         ro.sampler_name = name;
                                                                     } else {
                                                                         panic!("Can't get render options.");
                                                                     }
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
-                                                                        param_set.reset(String::from("Sampler"),
-                                                                                        String::from(""),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from("Sampler"),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
                                                                 }
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
-                                                                        sampler_pair.into_inner() {
+                                                                        sampler_pair.into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -3823,10 +4202,12 @@ fn main() {
                                                         }
                                                         // we should have the sampler parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            if let Some(ref mut ro) =
-                                                                RENDER_OPTIONS {
-                                                                println!("Sampler \"{}\" ",
-                                                                         ro.sampler_name);
+                                                            if let Some(ref mut ro) = RENDER_OPTIONS
+                                                            {
+                                                                println!(
+                                                                    "Sampler \"{}\" ",
+                                                                    ro.sampler_name
+                                                                );
                                                                 ro.sampler_params
                                                                     .copy_from(param_set);
                                                                 print_params(&ro.sampler_params);
@@ -3838,8 +4219,9 @@ fn main() {
                                                         }
                                                     }
                                                     Rule::shape => {
-                                                        for shape_pair in named_statement_pair
-                                                                .into_inner() {
+                                                        for shape_pair in
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match shape_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
@@ -3847,19 +4229,26 @@ fn main() {
                                                                     let ident = string_pairs.next();
                                                                     let name: String =
                                                                         String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                    if let Some(ref mut param_set) = PARAM_SET {
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
                                                                         // WARNING: Reset BEFORE calling pbrt_shape() !
-                                                                        param_set.reset(String::from("Shape"),
-                                                                                        String::from(name.clone()),
-                                                                                        String::from(""),
-                                                                                        String::from(""));
+                                                                        param_set.reset(
+                                                                            String::from("Shape"),
+                                                                            String::from(
+                                                                                name.clone(),
+                                                                            ),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
                                                                     } else {
                                                                         panic!("Can't get parameter set.");
                                                                     }
                                                                 }
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
-                                                                        shape_pair.into_inner() {
+                                                                        shape_pair.into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -4029,19 +4418,25 @@ fn main() {
                                                             let mut area_lights: Vec<Arc<Light + Send + Sync>> = Vec::new();
                                                             // possibly create area light for shape (see pbrtShape())
                                                             if let Some(ref mut graphics_state) =
-                                                                GRAPHICS_STATE {
-                                                                if graphics_state.area_light !=
-                                                                   String::new() {
+                                                                GRAPHICS_STATE
+                                                            {
+                                                                if graphics_state.area_light
+                                                                    != String::new()
+                                                                {
                                                                     // MakeAreaLight
-                                                                    if graphics_state.area_light ==
-                                                                       String::from("area") ||
-                                                                       graphics_state.area_light ==
-                                                                       String::from("diffuse") {
+                                                                    if graphics_state.area_light
+                                                                        == String::from("area")
+                                                                        || graphics_state.area_light
+                                                                            == String::from(
+                                                                                "diffuse",
+                                                                            ) {
                                                                         // first create the shape
                                                                         let (shapes, materials) =
                                                                             pbrt_shape(&param_set);
-                                                                        assert_eq!(shapes.len(),
-                                                                                   materials.len());
+                                                                        assert_eq!(
+                                                                            shapes.len(),
+                                                                            materials.len()
+                                                                        );
                                                                         for i in 0..shapes.len() {
                                                                             let shape = &shapes[i];
                                                                             let material =
@@ -4073,33 +4468,44 @@ fn main() {
                                                                                     shape.clone(),
                                                                                     two_sided
                                                                                 ));
-                                                                            area_lights.push(area_light.clone());
+                                                                            area_lights.push(
+                                                                                area_light.clone(),
+                                                                            );
                                                                             let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
                                                                                                                             material.clone(),
                                                                                                                             Some(area_light.clone())));
-                                                                            prims.push(geo_prim.clone());
+                                                                            prims.push(
+                                                                                geo_prim.clone(),
+                                                                            );
                                                                         }
                                                                     }
                                                                 } else {
                                                                     // continue with shape itself
                                                                     let (shapes, materials) =
                                                                         pbrt_shape(&param_set);
-                                                                    assert_eq!(shapes.len(),
-                                                                               materials.len());
+                                                                    assert_eq!(
+                                                                        shapes.len(),
+                                                                        materials.len()
+                                                                    );
                                                                     for i in 0..shapes.len() {
                                                                         let shape = &shapes[i];
-                                                                        let material = &materials
-                                                                                            [i];
-                                                                        let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
-                                                                                                                        material.clone(),
-                                                                                                                        None));
+                                                                        let material =
+                                                                            &materials[i];
+                                                                        let geo_prim = Arc::new(
+                                                                            GeometricPrimitive::new(
+                                                                                shape.clone(),
+                                                                                material.clone(),
+                                                                                None,
+                                                                            ),
+                                                                        );
                                                                         prims
                                                                             .push(geo_prim.clone());
                                                                     }
                                                                     // animated?
                                                                     if CUR_TRANSFORM.is_animated() {
                                                                         if let Some(ref mut ro) =
-                                                                            RENDER_OPTIONS {
+                                                                            RENDER_OPTIONS
+                                                                        {
                                                                             let animated_object_to_world: AnimatedTransform =
                                                                                 AnimatedTransform::new(&CUR_TRANSFORM.t[0],
                                                                                                        ro.transform_start_time,
@@ -4109,12 +4515,21 @@ fn main() {
                                                                                 println!("TODO: prims.len() > 1");
                                                                                 let bvh: Arc<Primitive + Send + Sync> = Arc::new(BVHAccel::new(prims.clone(), 4, SplitMethod::SAH));
                                                                                 prims.clear();
-                                                                                prims.push(bvh.clone());
+                                                                                prims.push(
+                                                                                    bvh.clone(),
+                                                                                );
                                                                             } else {
-                                                                                if let Some(primitive) = prims.pop() {
+                                                                                if let Some(
+                                                                                    primitive,
+                                                                                ) = prims.pop()
+                                                                                {
                                                                                     let geo_prim = Arc::new(TransformedPrimitive::new(primitive,
                                                                                                                                       animated_object_to_world));
-                                                                                    prims.push(geo_prim.clone());
+                                                                                    prims.push(
+                                                                                        geo_prim
+                                                                                            .clone(
+                                                                                            ),
+                                                                                    );
                                                                                 }
                                                                             }
                                                                         }
@@ -4124,14 +4539,20 @@ fn main() {
                                                                 // continue with shape itself
                                                                 let (shapes, materials) =
                                                                     pbrt_shape(&param_set);
-                                                                assert_eq!(shapes.len(),
-                                                                           materials.len());
+                                                                assert_eq!(
+                                                                    shapes.len(),
+                                                                    materials.len()
+                                                                );
                                                                 for i in 0..shapes.len() {
                                                                     let shape = &shapes[i];
                                                                     let material = &materials[i];
-                                                                    let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
-                                                                                                                    material.clone(),
-                                                                                                                    None));
+                                                                    let geo_prim = Arc::new(
+                                                                        GeometricPrimitive::new(
+                                                                            shape.clone(),
+                                                                            material.clone(),
+                                                                            None,
+                                                                        ),
+                                                                    );
                                                                     prims.push(geo_prim.clone());
                                                                 }
                                                             }
@@ -4142,8 +4563,8 @@ fn main() {
                                                             //     renderOptions->currentInstance->insert(
                                                             //         renderOptions->currentInstance->end(), prims.begin(), prims.end());
                                                             // } else {
-                                                            if let Some(ref mut ro) =
-                                                                RENDER_OPTIONS {
+                                                            if let Some(ref mut ro) = RENDER_OPTIONS
+                                                            {
                                                                 // renderOptions->primitives.insert(renderOptions->primitives.end(),
                                                                 //     prims.begin(), prims.end());
                                                                 for prim in prims {
@@ -4167,8 +4588,9 @@ fn main() {
                                                         let mut name: String = String::from("undefined");
                                                         let mut tex_type: String = String::from("undefined");
                                                         let mut tex_name;
-                                                        for texture_pair in named_statement_pair
-                                                                .into_inner() {
+                                                        for texture_pair in
+                                                            named_statement_pair.into_inner()
+                                                        {
                                                             match texture_pair.as_rule() {
                                                                 Rule::string => {
                                                                     match counter {
@@ -4198,11 +4620,29 @@ fn main() {
                                                                             let ident =
                                                                                 string_pairs.next();
                                                                             tex_name = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                                                                            if let Some(ref mut param_set) = PARAM_SET {
-                                                                                param_set.reset(String::from("Texture"),
-                                                                                                String::from(name.clone()),
-                                                                                                String::from(tex_type.clone()),
-                                                                                                String::from(tex_name.clone()));
+                                                                            if let Some(
+                                                                                ref mut param_set,
+                                                                            ) = PARAM_SET
+                                                                            {
+                                                                                param_set.reset(
+                                                                                    String::from(
+                                                                                        "Texture",
+                                                                                    ),
+                                                                                    String::from(
+                                                                                        name.clone(
+                                                                                        ),
+                                                                                    ),
+                                                                                    String::from(
+                                                                                        tex_type
+                                                                                            .clone(
+                                                                                            ),
+                                                                                    ),
+                                                                                    String::from(
+                                                                                        tex_name
+                                                                                            .clone(
+                                                                                            ),
+                                                                                    ),
+                                                                                );
                                                                             } else {
                                                                                 panic!("Can't get parameter set.");
                                                                             }
@@ -4213,7 +4653,8 @@ fn main() {
                                                                 }
                                                                 Rule::parameter => {
                                                                     for parameter_pair in
-                                                                        texture_pair.into_inner() {
+                                                                        texture_pair.into_inner()
+                                                                    {
                                                                         match parameter_pair
                                                                                   .as_rule() {
                                                                             Rule::bool_param => {
@@ -4474,8 +4915,8 @@ fn main() {
                                         }
                                         Rule::transform_times => {
                                             let mut numbers: Vec<Float> = Vec::new();
-                                            for transform_times_pair in
-                                                statement_pair.into_inner() {
+                                            for transform_times_pair in statement_pair.into_inner()
+                                            {
                                                 let number: Float =
                                                     f32::from_str(transform_times_pair.clone().into_span().as_str()).unwrap();
                                                 numbers.push(number);
@@ -4486,9 +4927,10 @@ fn main() {
                                                 // TODO: VERIFY_OPTIONS("TransformTimes");
                                                 ro.transform_start_time = start;
                                                 ro.transform_end_time = end;
-                                                println!("TransformTimes {} {}",
-                                                         ro.transform_start_time,
-                                                         ro.transform_end_time);
+                                                println!(
+                                                    "TransformTimes {} {}",
+                                                    ro.transform_start_time, ro.transform_end_time
+                                                );
                                             }
                                         }
                                         Rule::translate => {

@@ -46,6 +46,7 @@ use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i};
 use core::geometry::pnt2_inside_exclusive;
 use core::integrator::SamplerIntegrator;
+use core::integrator::compute_light_power_distribution;
 // use core::light::Light;
 use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::{Float, Spectrum};
@@ -54,6 +55,7 @@ use core::sampling::Distribution1D;
 use core::scene::Scene;
 use integrators::bdpt::{BDPTIntegrator, Vertex};
 use integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_subpath};
+use integrators::mlt::MLTIntegrator;
 
 // see github/tray_rust/src/sampler/block_queue.rs
 
@@ -516,8 +518,7 @@ pub fn render_bdpt(
                                                 // }
                                                 if t != 1 {
                                                     l += lpath;
-                                                }
-                                                else {
+                                                } else {
                                                     if !lpath.is_black() {
                                                         film.add_splat(&p_film_new, &lpath);
                                                     }
@@ -555,5 +556,22 @@ pub fn render_bdpt(
         println!("Rendering finished");
         film.write_image(1.0 as Float / samples_per_pixel as Float);
         // TODO: Write buffers for debug visualization
+    }
+}
+
+/// **Main function** to **render** a scene mutli-threaded (using all
+/// available cores) with **Metropolis Light Transport** (MLT).
+pub fn render_mlt(
+    scene: &Scene,
+    camera: &Box<Camera + Send + Sync>,
+    sampler: &mut Box<Sampler + Send + Sync>,
+    integrator: &mut Box<MLTIntegrator>,
+    num_threads: u8,
+) {
+    if let Some(light_distribution) = compute_light_power_distribution(scene) {
+        if scene.lights.len() > 0 {
+            // TODO: ProgressReporter progress(nBootstrap / 256, "Generating bootstrap paths");
+
+        }
     }
 }
