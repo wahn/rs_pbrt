@@ -12,6 +12,7 @@ pub mod lightdistrib;
 pub mod light;
 pub mod lowdiscrepancy;
 pub mod material;
+pub mod medium;
 pub mod memory;
 pub mod microfacet;
 pub mod mipmap;

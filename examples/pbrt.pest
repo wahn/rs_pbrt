@@ -17,6 +17,7 @@ named_statement = { accelerator |
                     integrator |
                     light_source |
                     make_named_material |
+                    make_named_medium |
                     material |
                     named_material |
                     pixel_filter |
@@ -138,6 +139,8 @@ texture = { "Texture" ~ string ~ string ~ string ~ parameter* }
 material = { "Material" ~ string ~ parameter* }
 // MakeNamedMaterial "myplastic" "string type" "plastic" "float roughness" 0.1
 make_named_material = { "MakeNamedMaterial" ~ string ~ parameter* }
+// MakeNamedMedium "mymedium" "string type" "homogeneous" "rgb sigma_s" [100 100 100]
+make_named_medium = { "MakeNamedMedium" ~ string ~ parameter* }
 // NamedMaterial "myplastic"
 named_material = { "NamedMaterial" ~ string ~ parameter* }
 // Shape "sphere" "float radius" 0.25
