@@ -257,6 +257,15 @@ pub fn get_medium_scattering_properties(
     sigma_a: &mut Spectrum,
     sigma_prime_s: &mut Spectrum,
 ) -> bool {
-    // WORK
+    if *name == String::from("") {
+        return false;
+    }
+    for mss in SUBSURFACE_PARAMETER_TABLE.iter() {
+        if name == mss.name {
+            *sigma_a = Spectrum::from_rgb(&mss.sigma_a);
+            *sigma_prime_s = Spectrum::from_rgb(&mss.sigma_prime_s);
+            return true;
+        }
+    }
     false
 }
