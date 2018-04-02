@@ -22,9 +22,8 @@ fn main() {
     };
     let t: Transform = Transform::look_at(&pos, &look, &up);
 
-    println!("Transform::look_at({:?}, {:?}, {:?}) = {:?}",
-             pos,
-             look,
-             up,
-             t);
+    println!(
+        "Transform::look_at({:?}, {:?}, {:?}) = {:?}",
+        pos, look, up, t
+    );
 }

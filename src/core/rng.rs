@@ -9,7 +9,7 @@ pub const PCG32_DEFAULT_STREAM: u64 = 0xda3e39cb94b95bdb;
 pub const PCG32_MULT: u64 = 0x5851f42d4c957f2d;
 
 /// Random number generator
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct Rng {
     state: u64,
     inc: u64,
@@ -59,6 +59,7 @@ impl Rng {
         }
     }
     pub fn uniform_float(&mut self) -> Float {
-        (self.uniform_uint32() as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON)
+        (self.uniform_uint32() as Float * 2.3283064365386963e-10 as Float)
+            .min(FLOAT_ONE_MINUS_EPSILON)
     }
 }

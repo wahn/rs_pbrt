@@ -27,11 +27,10 @@ fn main() {
     };
     let animated_cam_2_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
 
-    println!("Transform::look_at({:?}, {:?}, {:?}) = {:?}",
-             pos,
-             look,
-             up,
-             t);
+    println!(
+        "Transform::look_at({:?}, {:?}, {:?}) = {:?}",
+        pos, look, up, t
+    );
     println!("it = {:?}", it);
     println!("animated_cam_2_world = {:?}", animated_cam_2_world);
     // TODO: check results vs. C++ version

@@ -7,8 +7,8 @@
 // std
 use std::f32::consts::PI;
 // pbrt
-use core::geometry::{Point2f, Vector2f, Vector3f};
 use core::geometry::vec3_dot_vec3;
+use core::geometry::{Point2f, Vector2f, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::pbrt::Float;
 
@@ -18,7 +18,7 @@ pub trait TextureMapping2D {
     fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f;
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct UVMapping2D {
     pub su: Float,
     pub sv: Float,
@@ -44,7 +44,7 @@ impl TextureMapping2D for UVMapping2D {
     }
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct PlanarMapping2D {
     pub vs: Vector3f,
     pub vt: Vector3f,

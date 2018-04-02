@@ -33,18 +33,17 @@ pub trait Sampler: SamplerClone {
     fn get_samples_per_pixel(&self) -> i64;
 }
 
-pub trait PixelSampler: Sampler {
-}
+pub trait PixelSampler: Sampler {}
 
-pub trait GlobalSampler: Sampler {
-}
+pub trait GlobalSampler: Sampler {}
 
 pub trait SamplerClone {
     fn box_clone(&self) -> Box<Sampler + Send + Sync>;
 }
 
 impl<T> SamplerClone for T
-    where T: 'static + Sampler + Clone + Send + Sync
+where
+    T: 'static + Sampler + Clone + Send + Sync,
 {
     fn box_clone(&self) -> Box<Sampler + Send + Sync> {
         Box::new(self.clone())

@@ -2,11 +2,11 @@
 use std;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use core::geometry::vec3_abs_dot_nrm;
+use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
-use core::light::{Light, VisibilityTester};
 use core::light::is_delta_light;
+use core::light::{Light, VisibilityTester};
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::reflection::BxdfType;

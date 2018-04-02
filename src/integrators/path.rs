@@ -24,20 +24,21 @@ pub struct PathIntegrator {
     pixel_bounds: Bounds2i,
     // see path.h
     max_depth: u32,
-    rr_threshold: Float, // 1.0
+    rr_threshold: Float,           // 1.0
     light_sample_strategy: String, // "spatial"
     // TODO: std::unique_ptr<LightDistribution> lightDistribution;
     light_distribution: Option<Arc<LightDistribution + Send + Sync>>,
 }
 
 impl PathIntegrator {
-    pub fn new(max_depth: u32,
-               // _perspective_camera: &PerspectiveCamera,
-               // _sampler: &mut Box<Sampler + Send + Sync>,
-               pixel_bounds: Bounds2i,
-               rr_threshold: Float,
-               light_sample_strategy: String)
-               -> Self {
+    pub fn new(
+        max_depth: u32,
+        // _perspective_camera: &PerspectiveCamera,
+        // _sampler: &mut Box<Sampler + Send + Sync>,
+        pixel_bounds: Bounds2i,
+        rr_threshold: Float,
+        light_sample_strategy: String,
+    ) -> Self {
         PathIntegrator {
             pixel_bounds: pixel_bounds,
             max_depth: max_depth,
@@ -53,13 +54,14 @@ impl SamplerIntegrator for PathIntegrator {
         self.light_distribution =
             create_light_sample_distribution(self.light_sample_strategy.clone(), scene);
     }
-    fn li(&self,
-          r: &mut Ray,
-          scene: &Scene,
-          sampler: &mut Box<Sampler + Send + Sync>,
-          // arena: &mut Arena,
-          _depth: i32)
-          -> Spectrum {
+    fn li(
+        &self,
+        r: &mut Ray,
+        scene: &Scene,
+        sampler: &mut Box<Sampler + Send + Sync>,
+        // arena: &mut Arena,
+        _depth: i32,
+    ) -> Spectrum {
         // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
         let mut l: Spectrum = Spectrum::default();
         let mut beta: Spectrum = Spectrum::new(1.0 as Float);
@@ -114,13 +116,13 @@ impl SamplerIntegrator for PathIntegrator {
                     if let Some(ref bsdf) = isect.bsdf {
                         if bsdf.num_components(bsdf_flags) > 0 {
                             // TODO: ++total_paths;
-                            let ld: Spectrum =
-                                beta *
-                                uniform_sample_one_light(&isect,
-                                                         scene,
-                                                         sampler,
-                                                         false,
-                                                         Some(Arc::borrow(&distrib)));
+                            let ld: Spectrum = beta * uniform_sample_one_light(
+                                &isect,
+                                scene,
+                                sampler,
+                                false,
+                                Some(Arc::borrow(&distrib)),
+                            );
                             // TODO: println!("Sampled direct lighting Ld = {:?}", ld);
                             // TODO: if ld.is_black() {
                             //     ++zero_radiance_paths;
@@ -134,12 +136,14 @@ impl SamplerIntegrator for PathIntegrator {
                         let mut pdf: Float = 0.0 as Float;
                         let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
                         let mut sampled_type: u8 = u8::max_value(); // != 0
-                        let f: Spectrum = bsdf.sample_f(&wo,
-                                                        &mut wi,
-                                                        &sampler.get_2d(),
-                                                        &mut pdf,
-                                                        bsdf_flags,
-                                                        &mut sampled_type);
+                        let f: Spectrum = bsdf.sample_f(
+                            &wo,
+                            &mut wi,
+                            &sampler.get_2d(),
+                            &mut pdf,
+                            bsdf_flags,
+                            &mut sampled_type,
+                        );
 
                         // println!("Sampled BSDF, f = {:?}, pdf = {:?}", f, pdf);
                         if f.is_black() || pdf == 0.0 as Float {
@@ -148,14 +152,20 @@ impl SamplerIntegrator for PathIntegrator {
                         beta *= (f * vec3_abs_dot_nrm(&wi, &isect.shading.n)) / pdf;
                         // println!("Updated beta = {:?}", beta);
                         assert!(beta.y() >= 0.0 as Float);
-                        assert!(!(beta.y().is_infinite()),
-                                "[{:#?}, {:?}] = ({:#?} * dot({:#?}, {:#?})) / {:?}",
-                                sampler.get_current_pixel(),
-                                sampler.get_current_sample_number(),
-                                f, wi, isect.shading.n, pdf);
+                        assert!(
+                            !(beta.y().is_infinite()),
+                            "[{:#?}, {:?}] = ({:#?} * dot({:#?}, {:#?})) / {:?}",
+                            sampler.get_current_pixel(),
+                            sampler.get_current_sample_number(),
+                            f,
+                            wi,
+                            isect.shading.n,
+                            pdf
+                        );
                         specular_bounce = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
-                        if ((sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8) &&
-                           ((sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8) {
+                        if ((sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8)
+                            && ((sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8)
+                        {
                             let eta: Float = bsdf.eta;
                             // Update the term that tracks radiance
                             // scaling for refraction depending on
@@ -195,8 +205,8 @@ impl SamplerIntegrator for PathIntegrator {
                         // Factor out radiance scaling due to refraction in rr_beta.
                         let rr_beta: Spectrum = beta * eta_scale;
                         if rr_beta.max_component_value() < self.rr_threshold && bounces > 3 {
-                            let q: Float = (0.05 as Float)
-                                .max(1.0 as Float - rr_beta.max_component_value());
+                            let q: Float =
+                                (0.05 as Float).max(1.0 as Float - rr_beta.max_component_value());
                             if sampler.get_1d() < q {
                                 break;
                             }

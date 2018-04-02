@@ -14,10 +14,10 @@ use openexr::{FrameBufferMut, InputFile, PixelType};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
-use core::mipmap::{ImageWrap, MipMap};
 use core::light::{Light, LightFlags, VisibilityTester};
-use core::pbrt::{INV_2_PI, INV_PI};
+use core::mipmap::{ImageWrap, MipMap};
 use core::pbrt::{Float, Spectrum};
+use core::pbrt::{INV_2_PI, INV_PI};
 use core::sampling::Distribution2D;
 use core::sampling::concentric_sample_disk;
 use core::scene::Scene;
@@ -458,7 +458,10 @@ impl Light for InfiniteAreaLight {
         let d: Vector3f = -self.world_to_light.transform_vector(&ray.d);
         let theta: Float = spherical_theta(&d);
         let phi: Float = spherical_phi(&d);
-        let uv: Point2f = Point2f{x:phi * INV_2_PI, y:theta * INV_PI};
+        let uv: Point2f = Point2f {
+            x: phi * INV_2_PI,
+            y: theta * INV_PI,
+        };
         let map_pdf: Float = self.distribution.pdf(&uv);
         let world_radius: Float = *self.world_radius.read().unwrap();
         *pdf_dir = map_pdf / (2.0 as Float * PI * PI * theta.sin());

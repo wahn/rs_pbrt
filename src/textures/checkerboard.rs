@@ -15,9 +15,10 @@ pub struct Checkerboard2DTexture<T> {
 }
 
 impl<T: Copy> Checkerboard2DTexture<T> {
-    pub fn new(mapping: Box<TextureMapping2D + Send + Sync>,
-               tex1: Arc<Texture<T> + Send + Sync>,
-               tex2: Arc<Texture<T> + Send + Sync>// , TODO: aaMethod
+    pub fn new(
+        mapping: Box<TextureMapping2D + Send + Sync>,
+        tex1: Arc<Texture<T> + Send + Sync>,
+        tex2: Arc<Texture<T> + Send + Sync>, // , TODO: aaMethod
     ) -> Self {
         Checkerboard2DTexture {
             tex1: tex1,

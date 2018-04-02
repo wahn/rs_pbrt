@@ -4,11 +4,11 @@ use std::sync::RwLock;
 use core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 use core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
 use core::lowdiscrepancy::{compute_radical_inverse_permutations, inverse_radical_inverse,
-                           scrambled_radical_inverse, radical_inverse};
+                           radical_inverse, scrambled_radical_inverse};
 use core::pbrt::Float;
 use core::pbrt::mod_t;
-use core::sampler::{GlobalSampler, Sampler};
 use core::rng::Rng;
+use core::sampler::{GlobalSampler, Sampler};
 
 // see halton.h
 
@@ -62,10 +62,11 @@ pub struct HaltonSampler {
 }
 
 impl HaltonSampler {
-    pub fn new(samples_per_pixel: i64,
-               sample_bounds: Bounds2i,
-               sample_at_pixel_center: bool)
-               -> Self {
+    pub fn new(
+        samples_per_pixel: i64,
+        sample_bounds: Bounds2i,
+        sample_at_pixel_center: bool,
+    ) -> Self {
         // generate random digit permutations for Halton sampler
         // if (radical_Inverse_Permutations.empty()) {
         let mut rng: Rng = Rng::new();
@@ -94,9 +95,10 @@ impl HaltonSampler {
         // compute stride in samples for visiting each pixel area
         let sample_stride: u64 = base_scales[0] as u64 * base_scales[1] as u64;
         // compute multiplicative inverses for _baseScales_
-        let mult_inverse: [i64; 2] =
-            [multiplicative_inverse(base_scales[1] as i64, base_scales[0] as i64) as i64,
-             multiplicative_inverse(base_scales[0] as i64, base_scales[1] as i64) as i64];
+        let mult_inverse: [i64; 2] = [
+            multiplicative_inverse(base_scales[1] as i64, base_scales[0] as i64) as i64,
+            multiplicative_inverse(base_scales[0] as i64, base_scales[1] as i64) as i64,
+        ];
         HaltonSampler {
             samples_per_pixel: samples_per_pixel,
             radical_inverse_permutations: radical_inverse_permutations.iter().cloned().collect(),
@@ -141,9 +143,9 @@ impl HaltonSampler {
                         dim_offset =
                             inverse_radical_inverse(3, pm[i] as u64, self.base_exponents[i] as u64);
                     }
-                    *offset_for_current_pixel +=
-                        dim_offset * (self.sample_stride / self.base_scales[i] as u64) as u64 *
-                        self.mult_inverse[i as usize] as u64;
+                    *offset_for_current_pixel += dim_offset
+                        * (self.sample_stride / self.base_scales[i] as u64) as u64
+                        * self.mult_inverse[i as usize] as u64;
                 }
                 *offset_for_current_pixel %= self.sample_stride as u64;
             }
@@ -167,8 +169,10 @@ impl HaltonSampler {
     }
     fn permutation_for_dimension(&self, dim: i64) -> &[u16] {
         if dim >= PRIME_TABLE_SIZE as i64 {
-            panic!("FATAL: HaltonSampler can only sample {:?} dimensions.",
-                   PRIME_TABLE_SIZE);
+            panic!(
+                "FATAL: HaltonSampler can only sample {:?} dimensions.",
+                PRIME_TABLE_SIZE
+            );
         }
         &self.radical_inverse_permutations[PRIME_SUMS[dim as usize] as usize..]
     }
@@ -186,8 +190,8 @@ impl Sampler for HaltonSampler {
         self.dimension = 0_i64;
         self.interval_sample_index = self.get_index_for_sample(0_u64);
         // compute _self.array_end_dim_ for dimensions used for array samples
-        self.array_end_dim = self.array_start_dim + self.sample_array_1d.len() as i64 +
-                             2_i64 * self.sample_array_2d.len() as i64;
+        self.array_end_dim = self.array_start_dim + self.sample_array_1d.len() as i64
+            + 2_i64 * self.sample_array_2d.len() as i64;
         // compute 1D array samples for _GlobalSampler_
         for i in 0..self.samples_1d_array_sizes.len() {
             let n_samples = self.samples_1d_array_sizes[i] * self.samples_per_pixel as i32;
@@ -200,8 +204,8 @@ impl Sampler for HaltonSampler {
         // compute 2D array samples for _GlobalSampler_
         let mut dim: i64 = self.array_start_dim + self.samples_1d_array_sizes.len() as i64;
         for i in 0..self.samples_2d_array_sizes.len() {
-            let n_samples: usize = self.samples_2d_array_sizes[i] as usize *
-                                   self.samples_per_pixel as usize;
+            let n_samples: usize =
+                self.samples_2d_array_sizes[i] as usize * self.samples_per_pixel as usize;
             for j in 0..n_samples {
                 let idx: u64 = self.get_index_for_sample(j as u64);
                 self.sample_array_2d[i][j].x = self.sample_dimension(idx, dim);
@@ -230,10 +234,7 @@ impl Sampler for HaltonSampler {
         // C++: call y first
         let y = self.sample_dimension(self.interval_sample_index, self.dimension + 1);
         let x = self.sample_dimension(self.interval_sample_index, self.dimension);
-        let p: Point2f = Point2f {
-            x: x,
-            y: y,
-        };
+        let p: Point2f = Point2f { x: x, y: y };
         self.dimension += 2;
         return p;
     }
@@ -253,10 +254,12 @@ impl Sampler for HaltonSampler {
             return samples;
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
@@ -288,8 +291,7 @@ impl Sampler for HaltonSampler {
     }
 }
 
-impl GlobalSampler for HaltonSampler {
-}
+impl GlobalSampler for HaltonSampler {}
 
 impl Clone for HaltonSampler {
     fn clone(&self) -> HaltonSampler {

@@ -4,8 +4,8 @@ use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Point3f, Vector2f, Vector3f};
 use core::pbrt::{Float, Spectrum};
-use core::spectrum::{CIE_LAMBDA, N_CIE_SAMPLES};
 use core::spectrum::blackbody_normalized;
+use core::spectrum::{CIE_LAMBDA, N_CIE_SAMPLES};
 use core::texture::Texture;
 use textures::constant::ConstantTexture;
 
@@ -56,60 +56,54 @@ impl ParamSet {
         self.textures.clear();
     }
     pub fn add_float(&mut self, name: String, value: Float) {
-        self.floats
-            .push(ParamSetItem::<Float> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.floats.push(ParamSetItem::<Float> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_floats(&mut self, name: String, values: Vec<Float>) {
         let n_values: usize = values.len();
-        self.floats
-            .push(ParamSetItem::<Float> {
-                      name: name,
-                      values: values,
-                      n_values: n_values,
-                      looked_up: false,
-                  });
+        self.floats.push(ParamSetItem::<Float> {
+            name: name,
+            values: values,
+            n_values: n_values,
+            looked_up: false,
+        });
     }
     pub fn add_int(&mut self, name: String, value: i32) {
-        self.ints
-            .push(ParamSetItem::<i32> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.ints.push(ParamSetItem::<i32> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_ints(&mut self, name: String, values: Vec<i32>) {
         let n_values: usize = values.len();
-        self.ints
-            .push(ParamSetItem::<i32> {
-                      name: name,
-                      values: values,
-                      n_values: n_values,
-                      looked_up: false,
-                  });
+        self.ints.push(ParamSetItem::<i32> {
+            name: name,
+            values: values,
+            n_values: n_values,
+            looked_up: false,
+        });
     }
     pub fn add_bool(&mut self, name: String, value: bool) {
-        self.bools
-            .push(ParamSetItem::<bool> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.bools.push(ParamSetItem::<bool> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_point3f(&mut self, name: String, value: Point3f) {
-        self.point3fs
-            .push(ParamSetItem::<Point3f> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.point3fs.push(ParamSetItem::<Point3f> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_point3fs(&mut self, name: String, values: Vec<Float>) {
         let n_values: usize = values.len();
@@ -122,49 +116,44 @@ impl ParamSet {
             let z: Float = values[i * 3 + 2];
             p_values.push(Point3f { x: x, y: y, z: z });
         }
-        self.point3fs
-            .push(ParamSetItem::<Point3f> {
-                      name: name,
-                      values: p_values,
-                      n_values: n_points,
-                      looked_up: false,
-                  });
+        self.point3fs.push(ParamSetItem::<Point3f> {
+            name: name,
+            values: p_values,
+            n_values: n_points,
+            looked_up: false,
+        });
     }
     pub fn add_string(&mut self, name: String, value: String) {
-        self.strings
-            .push(ParamSetItem::<String> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.strings.push(ParamSetItem::<String> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_texture(&mut self, name: String, value: String) {
-        self.textures
-            .push(ParamSetItem::<String> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.textures.push(ParamSetItem::<String> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_vector3f(&mut self, name: String, value: Vector3f) {
-        self.vector3fs
-            .push(ParamSetItem::<Vector3f> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.vector3fs.push(ParamSetItem::<Vector3f> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_normal3f(&mut self, name: String, value: Normal3f) {
-        self.normals
-            .push(ParamSetItem::<Normal3f> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.normals.push(ParamSetItem::<Normal3f> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_normal3fs(&mut self, name: String, values: Vec<Float>) {
         let n_values: usize = values.len();
@@ -177,22 +166,20 @@ impl ParamSet {
             let z: Float = values[i * 3 + 2];
             p_values.push(Normal3f { x: x, y: y, z: z });
         }
-        self.normals
-            .push(ParamSetItem::<Normal3f> {
-                      name: name,
-                      values: p_values,
-                      n_values: n_normals,
-                      looked_up: false,
-                  });
+        self.normals.push(ParamSetItem::<Normal3f> {
+            name: name,
+            values: p_values,
+            n_values: n_normals,
+            looked_up: false,
+        });
     }
     pub fn add_rgb_spectrum(&mut self, name: String, value: Spectrum) {
-        self.spectra
-            .push(ParamSetItem::<Spectrum> {
-                      name: name,
-                      values: vec![value],
-                      n_values: 1_usize,
-                      looked_up: false,
-                  });
+        self.spectra.push(ParamSetItem::<Spectrum> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
     }
     pub fn add_blackbody_spectrum(&mut self, name: String, values: Vec<Float>) {
         assert!(values.len() % 2 == 0);
@@ -202,16 +189,16 @@ impl ParamSet {
         let mut v: Vec<Float> = Vec::with_capacity(N_CIE_SAMPLES as usize);
         for i in 0..n_values {
             blackbody_normalized(&CIE_LAMBDA, N_CIE_SAMPLES as usize, values[2 * i], &mut v);
-            s.push(Spectrum::from_sampled(&CIE_LAMBDA, &v, N_CIE_SAMPLES as i32) *
-                   values[2 * i + 1]);
+            s.push(
+                Spectrum::from_sampled(&CIE_LAMBDA, &v, N_CIE_SAMPLES as i32) * values[2 * i + 1],
+            );
         }
-        self.spectra
-            .push(ParamSetItem::<Spectrum> {
-                      name: name,
-                      values: s,
-                      n_values: n_values,
-                      looked_up: false,
-                  });
+        self.spectra.push(ParamSetItem::<Spectrum> {
+            name: name,
+            values: s,
+            n_values: n_values,
+            looked_up: false,
+        });
     }
     pub fn copy_from(&mut self, param_set: &ParamSet) {
         self.key_word = param_set.key_word.clone();
@@ -222,13 +209,12 @@ impl ParamSet {
             for ix in 0..b.n_values {
                 values.push(b.values[ix]);
             }
-            self.bools
-                .push(ParamSetItem::<bool> {
-                          name: b.name.clone(),
-                          values: values,
-                          n_values: b.n_values,
-                          looked_up: false,
-                      });
+            self.bools.push(ParamSetItem::<bool> {
+                name: b.name.clone(),
+                values: values,
+                n_values: b.n_values,
+                looked_up: false,
+            });
         }
         self.ints.clear();
         for i in &param_set.ints {
@@ -236,13 +222,12 @@ impl ParamSet {
             for ix in 0..i.n_values {
                 values.push(i.values[ix]);
             }
-            self.ints
-                .push(ParamSetItem::<i32> {
-                          name: i.name.clone(),
-                          values: values,
-                          n_values: i.n_values,
-                          looked_up: false,
-                      });
+            self.ints.push(ParamSetItem::<i32> {
+                name: i.name.clone(),
+                values: values,
+                n_values: i.n_values,
+                looked_up: false,
+            });
         }
         self.floats.clear();
         for f in &param_set.floats {
@@ -250,13 +235,12 @@ impl ParamSet {
             for ix in 0..f.n_values {
                 values.push(f.values[ix]);
             }
-            self.floats
-                .push(ParamSetItem::<Float> {
-                          name: f.name.clone(),
-                          values: values,
-                          n_values: f.n_values,
-                          looked_up: false,
-                      });
+            self.floats.push(ParamSetItem::<Float> {
+                name: f.name.clone(),
+                values: values,
+                n_values: f.n_values,
+                looked_up: false,
+            });
         }
         self.point2fs.clear();
         self.vector2fs.clear();
@@ -266,13 +250,12 @@ impl ParamSet {
             for ix in 0..p.n_values {
                 values.push(p.values[ix].clone());
             }
-            self.point3fs
-                .push(ParamSetItem::<Point3f> {
-                          name: p.name.clone(),
-                          values: values,
-                          n_values: p.n_values,
-                          looked_up: false,
-                      });
+            self.point3fs.push(ParamSetItem::<Point3f> {
+                name: p.name.clone(),
+                values: values,
+                n_values: p.n_values,
+                looked_up: false,
+            });
         }
         self.vector3fs.clear();
         self.normals.clear();
@@ -282,13 +265,12 @@ impl ParamSet {
             for ix in 0..s.n_values {
                 values.push(s.values[ix].clone());
             }
-            self.spectra
-                .push(ParamSetItem::<Spectrum> {
-                          name: s.name.clone(),
-                          values: values,
-                          n_values: s.n_values,
-                          looked_up: false,
-                      });
+            self.spectra.push(ParamSetItem::<Spectrum> {
+                name: s.name.clone(),
+                values: values,
+                n_values: s.n_values,
+                looked_up: false,
+            });
         }
         self.strings.clear();
         for s in &param_set.strings {
@@ -296,13 +278,12 @@ impl ParamSet {
             for ix in 0..s.n_values {
                 values.push(s.values[ix].clone());
             }
-            self.strings
-                .push(ParamSetItem::<String> {
-                          name: s.name.clone(),
-                          values: values,
-                          n_values: s.n_values,
-                          looked_up: false,
-                      });
+            self.strings.push(ParamSetItem::<String> {
+                name: s.name.clone(),
+                values: values,
+                n_values: s.n_values,
+                looked_up: false,
+            });
         }
         self.textures.clear();
         for s in &param_set.textures {
@@ -310,13 +291,12 @@ impl ParamSet {
             for ix in 0..s.n_values {
                 values.push(s.values[ix].clone());
             }
-            self.textures
-                .push(ParamSetItem::<String> {
-                          name: s.name.clone(),
-                          values: values,
-                          n_values: s.n_values,
-                          looked_up: false,
-                      });
+            self.textures.push(ParamSetItem::<String> {
+                name: s.name.clone(),
+                values: values,
+                n_values: s.n_values,
+                looked_up: false,
+            });
         }
     }
     pub fn find_one_float(&self, name: String, d: Float) -> Float {
@@ -509,11 +489,12 @@ pub struct TextureParams {
 }
 
 impl TextureParams {
-    pub fn new(geom_params: ParamSet,
-               material_params: ParamSet,
-               f_tex: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
-               s_tex: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>)
-               -> Self {
+    pub fn new(
+        geom_params: ParamSet,
+        material_params: ParamSet,
+        f_tex: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
+        s_tex: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
+    ) -> Self {
         TextureParams {
             float_textures: f_tex,
             spectrum_textures: s_tex,
@@ -521,10 +502,11 @@ impl TextureParams {
             material_params: material_params,
         }
     }
-    pub fn get_spectrum_texture(&mut self,
-                                n: String,
-                                def: Spectrum)
-                                -> Arc<Texture<Spectrum> + Send + Sync> {
+    pub fn get_spectrum_texture(
+        &mut self,
+        n: String,
+        def: Spectrum,
+    ) -> Arc<Texture<Spectrum> + Send + Sync> {
         let mut name: String = self.geom_params.find_texture(n.clone());
         if name == String::new() {
             name = self.material_params.find_texture(n.clone());
@@ -535,9 +517,10 @@ impl TextureParams {
                     return spectrum_texture.clone();
                 }
                 None => {
-                    panic!("Couldn't find spectrum texture named \"{}\" for parameter \"{}\"",
-                           name,
-                           n);
+                    panic!(
+                        "Couldn't find spectrum texture named \"{}\" for parameter \"{}\"",
+                        name, n
+                    );
                 }
             }
         }
@@ -545,9 +528,10 @@ impl TextureParams {
         val = self.geom_params.find_one_spectrum(n.clone(), val);
         Arc::new(ConstantTexture { value: val })
     }
-    pub fn get_spectrum_texture_or_null(&mut self,
-                                        n: String)
-                                        -> Option<Arc<Texture<Spectrum> + Send + Sync>> {
+    pub fn get_spectrum_texture_or_null(
+        &mut self,
+        n: String,
+    ) -> Option<Arc<Texture<Spectrum> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n.clone());
         if name == String::new() {
             name = self.material_params.find_texture(n.clone());
@@ -556,9 +540,10 @@ impl TextureParams {
             match self.spectrum_textures.get(name.as_str()) {
                 Some(_spectrum_texture) => {}
                 None => {
-                    println!("Couldn't find spectrum texture named \"{}\" for parameter \"{}\"",
-                             name,
-                             n);
+                    println!(
+                        "Couldn't find spectrum texture named \"{}\" for parameter \"{}\"",
+                        name, n
+                    );
                     return None;
                 }
             }
@@ -573,10 +558,11 @@ impl TextureParams {
             Some(Arc::new(ConstantTexture { value: val[0] }))
         }
     }
-    pub fn get_float_texture(&mut self,
-                             n: String,
-                             def: Float)
-                             -> Arc<Texture<Float> + Send + Sync> {
+    pub fn get_float_texture(
+        &mut self,
+        n: String,
+        def: Float,
+    ) -> Arc<Texture<Float> + Send + Sync> {
         let mut name: String = self.geom_params.find_texture(n.clone());
         if name == String::new() {
             name = self.material_params.find_texture(n.clone());
@@ -585,9 +571,10 @@ impl TextureParams {
             match self.float_textures.get(name.as_str()) {
                 Some(_float_texture) => {}
                 None => {
-                    panic!("Couldn't find float texture named \"{}\" for parameter \"{}\"",
-                           name,
-                           n);
+                    panic!(
+                        "Couldn't find float texture named \"{}\" for parameter \"{}\"",
+                        name, n
+                    );
                 }
             }
         }
@@ -595,9 +582,10 @@ impl TextureParams {
         val = self.geom_params.find_one_float(n.clone(), val);
         Arc::new(ConstantTexture { value: val })
     }
-    pub fn get_float_texture_or_null(&mut self,
-                                     n: String)
-                                     -> Option<Arc<Texture<Float> + Send + Sync>> {
+    pub fn get_float_texture_or_null(
+        &mut self,
+        n: String,
+    ) -> Option<Arc<Texture<Float> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n.clone());
         if name == String::new() {
             name = self.material_params.find_texture(n.clone());
@@ -606,9 +594,10 @@ impl TextureParams {
             match self.float_textures.get(name.as_str()) {
                 Some(_float_texture) => {}
                 None => {
-                    println!("Couldn't find float texture named \"{}\" for parameter \"{}\"",
-                             name,
-                             n);
+                    println!(
+                        "Couldn't find float texture named \"{}\" for parameter \"{}\"",
+                        name, n
+                    );
                     return None;
                 }
             }
@@ -624,40 +613,47 @@ impl TextureParams {
         }
     }
     pub fn find_float(&mut self, name: String, d: Float) -> Float {
-        self.geom_params
-            .find_one_float(name.clone(),
-                            self.material_params.find_one_float(name.clone(), d))
+        self.geom_params.find_one_float(
+            name.clone(),
+            self.material_params.find_one_float(name.clone(), d),
+        )
     }
     pub fn find_string(&mut self, name: String, d: String) -> String {
-        self.geom_params
-            .find_one_string(name.clone(),
-                             self.material_params.find_one_string(name.clone(), d))
+        self.geom_params.find_one_string(
+            name.clone(),
+            self.material_params.find_one_string(name.clone(), d),
+        )
     }
     pub fn find_filename(&mut self, name: String, d: String) -> String {
-        self.geom_params
-            .find_one_filename(name.clone(),
-                               self.material_params.find_one_filename(name.clone(), d))
+        self.geom_params.find_one_filename(
+            name.clone(),
+            self.material_params.find_one_filename(name.clone(), d),
+        )
     }
     pub fn find_int(&mut self, name: String, d: i32) -> i32 {
-        self.geom_params
-            .find_one_int(name.clone(),
-                          self.material_params.find_one_int(name.clone(), d))
+        self.geom_params.find_one_int(
+            name.clone(),
+            self.material_params.find_one_int(name.clone(), d),
+        )
     }
     pub fn find_bool(&mut self, name: String, d: bool) -> bool {
-        self.geom_params
-            .find_one_bool(name.clone(),
-                           self.material_params.find_one_bool(name.clone(), d))
+        self.geom_params.find_one_bool(
+            name.clone(),
+            self.material_params.find_one_bool(name.clone(), d),
+        )
     }
     pub fn find_vector3f(&mut self, name: String, d: Vector3f) -> Vector3f {
-        self.geom_params
-            .find_one_vector3f(name.clone(),
-                               self.material_params.find_one_vector3f(name.clone(), d))
+        self.geom_params.find_one_vector3f(
+            name.clone(),
+            self.material_params.find_one_vector3f(name.clone(), d),
+        )
     }
 }
 
 /// Replaces a macro on the C++ side.
 pub fn lookup_one<T>(vec: &Vec<ParamSetItem<T>>, name: String, d: T) -> T
-    where T: Clone
+where
+    T: Clone,
 {
     for v in vec {
         if v.name == name && v.n_values == 1_usize {

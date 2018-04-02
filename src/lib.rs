@@ -26,8 +26,8 @@ extern crate typed_arena;
 // use std::cell::RefCell;
 // use std::collections::HashMap;
 use std::default::Default;
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
 
 pub mod accelerators;
@@ -43,19 +43,21 @@ pub mod textures;
 
 // pbrt
 use core::camera::{Camera, CameraSample};
-use core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i};
 use core::geometry::pnt2_inside_exclusive;
+use core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i};
 use core::integrator::SamplerIntegrator;
 use core::integrator::compute_light_power_distribution;
 // use core::light::Light;
 use core::lightdistrib::create_light_sample_distribution;
+use core::pbrt::clamp_t;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 use core::sampling::Distribution1D;
 use core::scene::Scene;
 use integrators::bdpt::{BDPTIntegrator, Vertex};
 use integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_subpath};
-use integrators::mlt::MLTIntegrator;
+use integrators::mlt::N_SAMPLE_STREAMS;
+use integrators::mlt::{MLTIntegrator, MLTSampler};
 
 // see github/tray_rust/src/sampler/block_queue.rs
 
@@ -569,9 +571,24 @@ pub fn render_mlt(
     num_threads: u8,
 ) {
     if let Some(light_distribution) = compute_light_power_distribution(scene) {
+        // generate bootstrap samples and compute normalization constant $b$
+        let n_bootstrap_samples: u32 = integrator.n_bootstrap * (integrator.max_depth + 1);
         if scene.lights.len() > 0 {
             // TODO: ProgressReporter progress(nBootstrap / 256, "Generating bootstrap paths");
-
+            let chunk_size: u32 = clamp_t(integrator.n_bootstrap / 128, 1, 8192);
+            for i in 0..integrator.n_bootstrap {
+                // generate _i_th bootstrap sample
+                for depth in 0..integrator.max_depth {
+                    let rng_index: u64 = (i * (integrator.max_depth + 1) + depth) as u64;
+                    let sampler: MLTSampler = MLTSampler::new(
+                        integrator.mutations_per_pixel as i64,
+                        rng_index,
+                        integrator.sigma,
+                        integrator.large_step_probability,
+                        N_SAMPLE_STREAMS as i32,
+                    );
+                }
+            }
         }
     }
 }

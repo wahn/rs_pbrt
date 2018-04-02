@@ -8,8 +8,8 @@
 
 // pbrt
 use core::geometry::{Bounds3f, Point2f, Ray, Vector3f};
-use core::pbrt::Float;
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
+use core::pbrt::Float;
 
 // see shape.h
 

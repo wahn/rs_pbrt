@@ -42,7 +42,7 @@ impl Sampler for RandomSampler {
         // TODO: ProfilePhase _(Prof::StartPixel);
         for i in 0..self.sample_array_1d.len() {
             for j in 0..self.sample_array_1d[i].len() {
-            self.sample_array_1d[i][j] = self.rng.uniform_float();
+                self.sample_array_1d[i][j] = self.rng.uniform_float();
             }
         }
         for i in 0..self.sample_array_2d.len() {
@@ -71,10 +71,7 @@ impl Sampler for RandomSampler {
         // C++: call x first
         let x = self.rng.uniform_float();
         let y = self.rng.uniform_float();
-        Point2f {
-            x: x,
-            y: y,
-        }
+        Point2f { x: x, y: y }
     }
     fn reseed(&mut self, seed: u64) {
         self.rng.set_sequence(seed);
@@ -95,10 +92,12 @@ impl Sampler for RandomSampler {
             return samples;
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();

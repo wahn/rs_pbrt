@@ -639,7 +639,9 @@ fn mp(
     let b: Float = sin_theta_i * sin_theta_o / v;
     let mp: Float;
     if v <= 0.1 as Float {
-        mp = (log_i0(a) - b - 1.0 as Float / v + 0.6931 as Float + (1.0 as Float / (2. as Float * v)).ln()).exp();
+        mp = (log_i0(a) - b - 1.0 as Float / v + 0.6931 as Float
+            + (1.0 as Float / (2. as Float * v)).ln())
+            .exp();
     } else {
         mp = ((-b).exp() * i0(a)) / ((1.0 as Float / v).sinh() * 2.0 as Float * v);
     }
@@ -667,10 +669,8 @@ fn i0(x: Float) -> Float {
 #[inline]
 fn log_i0(x: Float) -> Float {
     if x > 12.0 as Float {
-        x
-            + 0.5
-                * (-((2.0 as Float * PI).ln()) + (1.0 as Float / x).ln()
-                    + 1.0 as Float / (8.0 as Float * x))
+        x + 0.5 * (-((2.0 as Float * PI).ln()) + (1.0 as Float / x).ln()
+            + 1.0 as Float / (8.0 as Float * x))
     } else {
         i0(x).ln()
     }

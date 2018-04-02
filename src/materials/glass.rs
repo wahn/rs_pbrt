@@ -24,11 +24,12 @@ pub struct GlassMaterial {
 }
 
 impl GlassMaterial {
-    pub fn bsdf(&self,
-                si: &SurfaceInteraction,
-                mode: TransportMode,
-                allow_multiple_lobes: bool)
-                -> Bsdf {
+    pub fn bsdf(
+        &self,
+        si: &SurfaceInteraction,
+        mode: TransportMode,
+        allow_multiple_lobes: bool,
+    ) -> Bsdf {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let eta: Float = self.index.evaluate(si);
         let mut urough: Float = self.u_roughness.evaluate(si);
@@ -41,7 +42,13 @@ impl GlassMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;
         if is_specular && allow_multiple_lobes {
-            bxdfs.push(Arc::new(FresnelSpecular::new(r, t, 1.0 as Float, eta, mode)));
+            bxdfs.push(Arc::new(FresnelSpecular::new(
+                r,
+                t,
+                1.0 as Float,
+                eta,
+                mode,
+            )));
         } else {
             if self.remap_roughness {
                 urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
@@ -53,9 +60,9 @@ impl GlassMaterial {
             };
             if !r.is_black() {
                 let fresnel = Arc::new(FresnelDielectric {
-                                           eta_i: 1.0 as Float,
-                                           eta_t: eta,
-                                       });
+                    eta_i: 1.0 as Float,
+                    eta_t: eta,
+                });
                 if is_specular {
                     bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
                 } else {
@@ -76,11 +83,13 @@ impl GlassMaterial {
 }
 
 impl Material for GlassMaterial {
-    fn compute_scattering_functions(&self,
-                                    si: &mut SurfaceInteraction,
-                                    // arena: &mut Arena,
-                                    mode: TransportMode,
-                                    allow_multiple_lobes: bool) {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        mode: TransportMode,
+        allow_multiple_lobes: bool,
+    ) {
         si.bsdf = Some(Arc::new(self.bsdf(si, mode, allow_multiple_lobes)));
     }
 }

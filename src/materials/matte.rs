@@ -5,8 +5,8 @@ use std::sync::Arc;
 use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
 use core::paramset::TextureParams;
-use core::pbrt::{Float, Spectrum};
 use core::pbrt::clamp_t;
+use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, Bxdf, LambertianReflection, OrenNayar};
 use core::texture::Texture;
 
@@ -20,9 +20,10 @@ pub struct MatteMaterial {
 }
 
 impl MatteMaterial {
-    pub fn new(kd: Arc<Texture<Spectrum> + Send + Sync>,
-               sigma: Arc<Texture<Float> + Sync + Send>)
-               -> Self {
+    pub fn new(
+        kd: Arc<Texture<Spectrum> + Send + Sync>,
+        sigma: Arc<Texture<Float> + Sync + Send>,
+    ) -> Self {
         MatteMaterial {
             kd: kd,
             sigma: sigma,
@@ -40,9 +41,11 @@ impl MatteMaterial {
         let r: Spectrum = self.kd
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let sig: Float = clamp_t(self.sigma.evaluate(si) as Float,
-                                 0.0 as Float,
-                                 90.0 as Float);
+        let sig: Float = clamp_t(
+            self.sigma.evaluate(si) as Float,
+            0.0 as Float,
+            90.0 as Float,
+        );
         if !r.is_black() {
             if sig == 0.0 {
                 bxdfs.push(Arc::new(LambertianReflection::new(r)));
@@ -55,11 +58,13 @@ impl MatteMaterial {
 }
 
 impl Material for MatteMaterial {
-    fn compute_scattering_functions(&self,
-                                    si: &mut SurfaceInteraction,
-                                    // arena: &mut Arena,
-                                    _mode: TransportMode,
-                                    _allow_multiple_lobes: bool) {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
         si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }

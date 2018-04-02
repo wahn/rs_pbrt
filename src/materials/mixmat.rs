@@ -20,37 +20,41 @@ pub struct MixMaterial {
 }
 
 impl MixMaterial {
-    pub fn new(m1: Arc<Material + Sync + Send>,
-               m2: Arc<Material + Sync + Send>,
-               scale: Arc<Texture<Spectrum> + Send + Sync>)
-               -> Self {
+    pub fn new(
+        m1: Arc<Material + Sync + Send>,
+        m2: Arc<Material + Sync + Send>,
+        scale: Arc<Texture<Spectrum> + Send + Sync>,
+    ) -> Self {
         MixMaterial {
             m1: m1,
             m2: m2,
             scale: scale,
         }
     }
-    pub fn bsdf(&self,
-                si: &mut SurfaceInteraction,
-                mode: TransportMode,
-                allow_multiple_lobes: bool)
-                -> Bsdf {
+    pub fn bsdf(
+        &self,
+        si: &mut SurfaceInteraction,
+        mode: TransportMode,
+        allow_multiple_lobes: bool,
+    ) -> Bsdf {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let s1: Spectrum = self.scale
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let s2: Spectrum = (Spectrum::new(1.0 as Float) - s1)
-            .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let mut si2: SurfaceInteraction = SurfaceInteraction::new(&si.p,
-                                                                  &si.p_error,
-                                                                  &si.uv,
-                                                                  &si.wo,
-                                                                  &si.dpdu,
-                                                                  &si.dpdv,
-                                                                  &si.dndu,
-                                                                  &si.dndv,
-                                                                  si.time,
-                                                                  si.shape);
+        let s2: Spectrum =
+            (Spectrum::new(1.0 as Float) - s1).clamp(0.0 as Float, std::f32::INFINITY as Float);
+        let mut si2: SurfaceInteraction = SurfaceInteraction::new(
+            &si.p,
+            &si.p_error,
+            &si.uv,
+            &si.wo,
+            &si.dpdu,
+            &si.dpdv,
+            &si.dndu,
+            &si.dndv,
+            si.time,
+            si.shape,
+        );
         self.m1
             .compute_scattering_functions(si, mode.clone(), allow_multiple_lobes);
         self.m2
@@ -75,11 +79,13 @@ impl MixMaterial {
 }
 
 impl Material for MixMaterial {
-    fn compute_scattering_functions(&self,
-                                    si: &mut SurfaceInteraction,
-                                    // arena: &mut Arena,
-                                    mode: TransportMode,
-                                    allow_multiple_lobes: bool) {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        mode: TransportMode,
+        allow_multiple_lobes: bool,
+    ) {
         si.bsdf = Some(Arc::new(self.bsdf(si, mode, allow_multiple_lobes)));
     }
 }

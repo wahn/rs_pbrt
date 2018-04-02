@@ -1,6 +1,6 @@
 extern crate pbrt;
 
-use pbrt::core::geometry::{Vector2, Vector3, Normal3};
+use pbrt::core::geometry::{Normal3, Vector2, Vector3};
 
 fn main() {
     let float_vec2_f32 = Vector2 {
@@ -45,9 +45,13 @@ fn main() {
     };
 
     println!("float_normal3_f32 = {:?}", float_normal3_f32);
-    println!("float_normal3_f32.length() = {:?}",
-             float_normal3_f32.length());
+    println!(
+        "float_normal3_f32.length() = {:?}",
+        float_normal3_f32.length()
+    );
     println!("float_normal3_f64 = {:?}", float_normal3_f64);
-    println!("float_normal3_f64.length() = {:?}",
-             float_normal3_f64.length());
+    println!(
+        "float_normal3_f64.length() = {:?}",
+        float_normal3_f64.length()
+    );
 }

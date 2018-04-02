@@ -13,7 +13,7 @@ use materials::matte::MatteMaterial;
 
 // see api.cpp
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct TransformSet {
     pub t: [Transform; 2],
 }
@@ -25,7 +25,11 @@ impl TransformSet {
         // return false;
 
         // we have only 2 transforms
-        if self.t[0] != self.t[1] { true } else { false }
+        if self.t[0] != self.t[1] {
+            true
+        } else {
+            false
+        }
     }
 }
 
@@ -73,16 +77,20 @@ impl Default for RenderOptions {
             camera_to_world: TransformSet {
                 t: [Transform {
                     m: Matrix4x4 {
-                        m: [[1.0, 0.0, 0.0, 0.0],
+                        m: [
+                            [1.0, 0.0, 0.0, 0.0],
                             [0.0, 1.0, 0.0, 0.0],
                             [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0]],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
                     },
                     m_inv: Matrix4x4 {
-                        m: [[1.0, 0.0, 0.0, 0.0],
+                        m: [
+                            [1.0, 0.0, 0.0, 0.0],
                             [0.0, 1.0, 0.0, 0.0],
                             [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0]],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
                     },
                 }; 2],
             },
@@ -119,12 +127,15 @@ impl GraphicsState {
         let float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>> = HashMap::new();
         let spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>> =
             HashMap::new();
-        let mut tp: TextureParams = TextureParams::new(ParamSet::default(),
-                                                       ParamSet::default(),
-                                                       float_textures.clone(),
-                                                       spectrum_textures.clone());
+        let mut tp: TextureParams = TextureParams::new(
+            ParamSet::default(),
+            ParamSet::default(),
+            float_textures.clone(),
+            spectrum_textures.clone(),
+        );
         let mtl: Arc<Material + Send + Sync> = MatteMaterial::create(&mut tp);
-        let mut named_materials: HashMap<String, Option<Arc<Material + Send + Sync>>> = HashMap::new();
+        let mut named_materials: HashMap<String, Option<Arc<Material + Send + Sync>>> =
+            HashMap::new();
         named_materials.insert(String::from("matte"), Some(mtl));
         let current_material: String = String::from("matte");
         GraphicsState {

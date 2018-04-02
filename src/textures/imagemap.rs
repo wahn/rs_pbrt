@@ -4,7 +4,7 @@ extern crate image;
 use std::path::Path;
 use std::sync::Arc;
 // others
-use image::{ImageResult, DynamicImage};
+use image::{DynamicImage, ImageResult};
 // pbrt
 use core::geometry::{Point2f, Point2i, Vector2f};
 use core::interaction::SurfaceInteraction;
@@ -20,14 +20,15 @@ pub struct ImageTexture {
 }
 
 impl ImageTexture {
-    pub fn new(mapping: Box<TextureMapping2D + Send + Sync>,
-               filename: String,
-               do_trilinear: bool,
-               max_aniso: Float,
-               wrap_mode: ImageWrap,
-               _scale: Float,
-               _gamma: bool)
-               -> Self {
+    pub fn new(
+        mapping: Box<TextureMapping2D + Send + Sync>,
+        filename: String,
+        do_trilinear: bool,
+        max_aniso: Float,
+        wrap_mode: ImageWrap,
+        _scale: Float,
+        _gamma: bool,
+    ) -> Self {
         let path = Path::new(&filename);
         let img_result: ImageResult<DynamicImage> = image::open(path);
         if !img_result.is_ok() {
@@ -52,7 +53,13 @@ impl ImageTexture {
             }
         }
         // create _MipMap_ from converted texels (see above)
-        let mipmap = Arc::new(MipMap::new(&res, &texels[..], do_trilinear, max_aniso, wrap_mode));
+        let mipmap = Arc::new(MipMap::new(
+            &res,
+            &texels[..],
+            do_trilinear,
+            max_aniso,
+            wrap_mode,
+        ));
         ImageTexture {
             mapping: mapping,
             mipmap: mipmap,

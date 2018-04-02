@@ -1,9 +1,11 @@
 extern crate getopts;
 extern crate pbrt;
 
+use getopts::Options;
 use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::Camera;
+use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f,
                            Vector3f};
@@ -12,11 +14,10 @@ use pbrt::core::light::Light;
 use pbrt::core::mipmap::ImageWrap;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
-use pbrt::core::transform::{AnimatedTransform, Transform};
-use pbrt::core::film::Film;
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
 use pbrt::core::texture::{PlanarMapping2D, UVMapping2D};
+use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::lights::distant::DistantLight;
@@ -26,13 +27,12 @@ use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::sphere::Sphere;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
-use pbrt::textures::constant::ConstantTexture;
 use pbrt::textures::checkerboard::Checkerboard2DTexture;
+use pbrt::textures::constant::ConstantTexture;
 use pbrt::textures::imagemap::ImageTexture;
 use std::env;
 use std::string::String;
 use std::sync::Arc;
-use getopts::Options;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -387,10 +387,12 @@ fn main() {
             let mut sphere_counter: u8 = 0;
             for sphere in render_options.spheres {
                 if sphere_counter == 0 {
-                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
+                    let geo_prim =
+                        Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
                     render_options.primitives.push(geo_prim.clone());
                 } else {
-                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(glass.clone()), None));
+                    let geo_prim =
+                        Arc::new(GeometricPrimitive::new(sphere, Some(glass.clone()), None));
                     render_options.primitives.push(geo_prim.clone());
                 }
                 sphere_counter += 1;
@@ -428,7 +430,8 @@ fn main() {
         let mut sphere_counter: u8 = 0;
         for sphere in render_options.spheres {
             if sphere_counter == 0 {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
+                let geo_prim =
+                    Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
                 render_options.primitives.push(geo_prim.clone());
             } else {
                 let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(glass.clone()), None));
@@ -472,7 +475,8 @@ fn main() {
         let mut sphere_counter: u8 = 0;
         for sphere in render_options.spheres {
             if sphere_counter == 0 {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
+                let geo_prim =
+                    Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
                 render_options.primitives.push(geo_prim.clone());
             } else {
                 let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(glass.clone()), None));

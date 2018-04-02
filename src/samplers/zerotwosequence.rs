@@ -1,6 +1,6 @@
 // pbrt
-use core::geometry::{Point2i, Point2f};
-use core::lowdiscrepancy::{sobol_2d, van_der_corput};
+use core::geometry::{Point2f, Point2i};
+use core::lowdiscrepancy::{van_der_corput, sobol_2d};
 use core::pbrt::Float;
 use core::pbrt::round_up_pow2_32;
 use core::rng::Rng;
@@ -8,7 +8,7 @@ use core::sampler::{PixelSampler, Sampler};
 
 // see zerotwosequence.h
 
-#[derive(Debug,Clone)]
+#[derive(Debug, Clone)]
 pub struct ZeroTwoSequenceSampler {
     pub samples_per_pixel: i64,
     pub n_sampled_dimensions: i64,
@@ -105,17 +105,21 @@ impl Sampler for ZeroTwoSequenceSampler {
         // generate 1D and 2D array samples using $(0,2)$-sequence
         for i in 0..self.samples_1d_array_sizes.len() {
             let samples: &mut [Float] = self.sample_array_1d[i].as_mut_slice();
-            van_der_corput(self.samples_1d_array_sizes[i],
-                           self.samples_per_pixel as i32,
-                           samples,
-                           &mut self.rng);
+            van_der_corput(
+                self.samples_1d_array_sizes[i],
+                self.samples_per_pixel as i32,
+                samples,
+                &mut self.rng,
+            );
         }
         for i in 0..self.samples_2d_array_sizes.len() {
             let samples: &mut [Point2f] = self.sample_array_2d[i].as_mut_slice();
-            sobol_2d(self.samples_2d_array_sizes[i],
-                     self.samples_per_pixel as i32,
-                     samples,
-                     &mut self.rng);
+            sobol_2d(
+                self.samples_2d_array_sizes[i],
+                self.samples_per_pixel as i32,
+                samples,
+                &mut self.rng,
+            );
         }
         // PixelSampler::StartPixel(p);
         self.current_pixel = *p;
@@ -126,13 +130,15 @@ impl Sampler for ZeroTwoSequenceSampler {
     }
     fn get_1d(&mut self) -> Float {
         // TODO: ProfilePhase _(Prof::GetSample);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "current_pixel_sample_index = {}, samples_per_pixel = {}",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "current_pixel_sample_index = {}, samples_per_pixel = {}",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
         if self.current_1d_dimension < self.samples_1d.len() as i32 {
-            let sample: Float = self.samples_1d[self.current_1d_dimension as usize][self.current_pixel_sample_index as
-            usize];
+            let sample: Float = self.samples_1d[self.current_1d_dimension as usize]
+                [self.current_pixel_sample_index as usize];
             self.current_1d_dimension += 1;
             sample
         } else {
@@ -141,13 +147,15 @@ impl Sampler for ZeroTwoSequenceSampler {
     }
     fn get_2d(&mut self) -> Point2f {
         // TODO: ProfilePhase _(Prof::GetSample);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "current_pixel_sample_index = {}, samples_per_pixel = {}",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "current_pixel_sample_index = {}, samples_per_pixel = {}",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
         if self.current_2d_dimension < self.samples_2d.len() as i32 {
-            let sample: Point2f = self.samples_2d[self.current_2d_dimension as usize][self.current_pixel_sample_index as
-            usize];
+            let sample: Point2f = self.samples_2d[self.current_2d_dimension as usize]
+                [self.current_pixel_sample_index as usize];
             self.current_2d_dimension += 1;
             sample
         } else {
@@ -173,10 +181,12 @@ impl Sampler for ZeroTwoSequenceSampler {
             return samples;
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
@@ -207,5 +217,4 @@ impl Sampler for ZeroTwoSequenceSampler {
     }
 }
 
-impl PixelSampler for ZeroTwoSequenceSampler {
-}
+impl PixelSampler for ZeroTwoSequenceSampler {}

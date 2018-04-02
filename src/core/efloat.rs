@@ -15,8 +15,10 @@ pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &m
         false
     } else {
         let root_discrim: f64 = discrim.sqrt();
-        let float_root_discrim: EFloat = EFloat::new(root_discrim as f32,
-                                                     MACHINE_EPSILON as f32 * root_discrim as f32);
+        let float_root_discrim: EFloat = EFloat::new(
+            root_discrim as f32,
+            MACHINE_EPSILON as f32 * root_discrim as f32,
+        );
         // compute quadratic _t_ values
         let q: EFloat;
         if b.v < 0.0f32 {
@@ -35,7 +37,7 @@ pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &m
     }
 }
 
-#[derive(Debug,Default,Copy,Clone)]
+#[derive(Debug, Default, Copy, Clone)]
 pub struct EFloat {
     pub v: f32,
     pub low: f32,
@@ -99,10 +101,12 @@ impl Sub for EFloat {
 impl Mul for EFloat {
     type Output = EFloat;
     fn mul(self, rhs: EFloat) -> EFloat {
-        let prod: [f32; 4] = [self.lower_bound() * rhs.lower_bound(),
-                              self.upper_bound() * rhs.lower_bound(),
-                              self.lower_bound() * rhs.upper_bound(),
-                              self.upper_bound() * rhs.upper_bound()];
+        let prod: [f32; 4] = [
+            self.lower_bound() * rhs.lower_bound(),
+            self.upper_bound() * rhs.lower_bound(),
+            self.lower_bound() * rhs.upper_bound(),
+            self.upper_bound() * rhs.upper_bound(),
+        ];
         // TODO: r.Check();
         EFloat {
             v: self.v * rhs.v,
@@ -122,10 +126,12 @@ impl Mul<f32> for EFloat {
 impl Div for EFloat {
     type Output = EFloat;
     fn div(self, rhs: EFloat) -> EFloat {
-        let div: [f32; 4] = [self.lower_bound() / rhs.lower_bound(),
-                             self.upper_bound() / rhs.lower_bound(),
-                             self.lower_bound() / rhs.upper_bound(),
-                             self.upper_bound() / rhs.upper_bound()];
+        let div: [f32; 4] = [
+            self.lower_bound() / rhs.lower_bound(),
+            self.upper_bound() / rhs.lower_bound(),
+            self.lower_bound() / rhs.upper_bound(),
+            self.upper_bound() / rhs.upper_bound(),
+        ];
         // TODO: r.Check();
         if rhs.low < 0.0 && rhs.high > 0.0 {
             // the interval we're dividing by straddles zero, so just

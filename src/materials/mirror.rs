@@ -32,11 +32,13 @@ impl MirrorMaterial {
 }
 
 impl Material for MirrorMaterial {
-    fn compute_scattering_functions(&self,
-                                    si: &mut SurfaceInteraction,
-                                    // arena: &mut Arena,
-                                    _mode: TransportMode,
-                                    _allow_multiple_lobes: bool) {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
         si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }

@@ -20,13 +20,14 @@ use core::texture::Texture;
 use core::transform::Transform;
 use shapes::triangle::{Triangle, TriangleMesh};
 
-pub fn create_ply_mesh(o2w: &Transform,
-                       w2o: &Transform,
-                       reverse_orientation: bool,
-                       params: &ParamSet,
-                       _float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
-                       search_directory: Option<&Box<PathBuf>>)
-                       -> Vec<Arc<Shape + Send + Sync>> {
+pub fn create_ply_mesh(
+    o2w: &Transform,
+    w2o: &Transform,
+    reverse_orientation: bool,
+    params: &ParamSet,
+    _float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
+    search_directory: Option<&Box<PathBuf>>,
+) -> Vec<Arc<Shape + Send + Sync>> {
     let mut filename: String = params.find_one_string(String::from("filename"), String::new());
     if let Some(ref search_directory) = search_directory {
         let mut path_buf: PathBuf = PathBuf::from("/");
@@ -74,51 +75,51 @@ pub fn create_ply_mesh(o2w: &Transform,
                                 if let ply::Property::Float(x) = list2 {
                                     pnt.x = x;
                                 }
-                            },
+                            }
                             "y" => {
                                 if let ply::Property::Float(y) = list2 {
                                     pnt.y = y;
                                 }
-                            },
+                            }
                             "z" => {
                                 if let ply::Property::Float(z) = list2 {
                                     pnt.z = z;
                                 }
-                            },
+                            }
                             "nx" => {
                                 has_normals = true;
                                 if let ply::Property::Float(x) = list2 {
                                     nrm.x = x;
                                 }
-                            },
+                            }
                             "ny" => {
                                 has_normals = true;
                                 if let ply::Property::Float(y) = list2 {
                                     nrm.y = y;
                                 }
-                            },
+                            }
                             "nz" => {
                                 has_normals = true;
                                 if let ply::Property::Float(z) = list2 {
                                     nrm.z = z;
                                 }
-                            },
+                            }
                             "u" => {
                                 has_uvs = true;
                                 if let ply::Property::Float(x) = list2 {
                                     pt2.x = x;
                                 }
-                            },
+                            }
                             "v" => {
                                 has_uvs = true;
                                 if let ply::Property::Float(y) = list2 {
                                     pt2.y = y;
                                 }
-                            },
+                            }
                             _ => {
                                 println!("name2 = {:?}", name2);
                                 unreachable!();
-                            },
+                            }
                         }
                     }
                     p.push(pnt);
@@ -136,7 +137,9 @@ pub fn create_ply_mesh(o2w: &Transform,
                         match name2.as_ref() {
                             "vertex_indices" => {
                                 if let ply::Property::ListInt(li) = list2 {
-                                    let mut vertex_indices: Vec<usize> = Vec::new();
+                                    let mut vertex_indices: Vec<
+                                        usize,
+                                    > = Vec::new();
                                     for i in li.into_iter() {
                                         vertex_indices.push(i as usize);
                                     }
@@ -189,24 +192,28 @@ pub fn create_ply_mesh(o2w: &Transform,
         p_ws.push(o2w.transform_point(&p[i]));
     }
     let s_ws: Vec<Vector3f> = Vec::new(); // TODO
-    let mesh = Arc::new(TriangleMesh::new(*o2w,
-                                          *w2o,
-                                          reverse_orientation,
-                                          false, // transform_swaps_handedness
-                                          tm_vertex_indices.len() / 3, // n_triangles
-                                          tm_vertex_indices,
-                                          n_vertices,
-                                          p_ws, // in world space
-                                          s_ws, // in world space
-                                          n_ws, // in world space
-                                          uvs));
+    let mesh = Arc::new(TriangleMesh::new(
+        *o2w,
+        *w2o,
+        reverse_orientation,
+        false,                       // transform_swaps_handedness
+        tm_vertex_indices.len() / 3, // n_triangles
+        tm_vertex_indices,
+        n_vertices,
+        p_ws, // in world space
+        s_ws, // in world space
+        n_ws, // in world space
+        uvs,
+    ));
     let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
     for id in 0..mesh.n_triangles {
-        let triangle = Arc::new(Triangle::new(mesh.object_to_world,
-                                              mesh.world_to_object,
-                                              mesh.transform_swaps_handedness,
-                                              mesh.clone(),
-                                              id));
+        let triangle = Arc::new(Triangle::new(
+            mesh.object_to_world,
+            mesh.world_to_object,
+            mesh.transform_swaps_handedness,
+            mesh.clone(),
+            id,
+        ));
         shapes.push(triangle.clone());
     }
     shapes

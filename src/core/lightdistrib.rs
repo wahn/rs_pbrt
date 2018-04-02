@@ -1,17 +1,17 @@
 // std
+use atomic::{Atomic, Ordering};
 use std;
 use std::sync::{Arc, RwLock};
-use atomic::{Atomic, Ordering};
 // pbrt
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f};
 use core::integrator::compute_light_power_distribution;
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::lowdiscrepancy::radical_inverse;
-use core::pbrt::{Float, Spectrum};
 use core::pbrt::clamp_t;
-use core::scene::Scene;
+use core::pbrt::{Float, Spectrum};
 use core::sampling::Distribution1D;
+use core::scene::Scene;
 
 // see lightdistrib.h
 

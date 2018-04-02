@@ -15,20 +15,21 @@ use core::texture::Texture;
 pub struct SubstrateMaterial {
     pub kd: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.5
     pub ks: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.5
-    pub nu: Arc<Texture<Float> + Sync + Send>, // default: 0.1
-    pub nv: Arc<Texture<Float> + Sync + Send>, // default: 0.1
+    pub nu: Arc<Texture<Float> + Sync + Send>,    // default: 0.1
+    pub nv: Arc<Texture<Float> + Sync + Send>,    // default: 0.1
     // TODO: bump_map
     pub remap_roughness: bool,
 }
 
 impl SubstrateMaterial {
-    pub fn new(kd: Arc<Texture<Spectrum> + Send + Sync>,
-               ks: Arc<Texture<Spectrum> + Send + Sync>,
-               nu: Arc<Texture<Float> + Sync + Send>,
-               nv: Arc<Texture<Float> + Sync + Send>,
-               // TODO: bump_map
-               remap_roughness: bool)
-               -> Self {
+    pub fn new(
+        kd: Arc<Texture<Spectrum> + Send + Sync>,
+        ks: Arc<Texture<Spectrum> + Send + Sync>,
+        nu: Arc<Texture<Float> + Sync + Send>,
+        nv: Arc<Texture<Float> + Sync + Send>,
+        // TODO: bump_map
+        remap_roughness: bool,
+    ) -> Self {
         SubstrateMaterial {
             kd: kd,
             ks: ks,
@@ -47,11 +48,13 @@ impl SubstrateMaterial {
         let vroughness: Arc<Texture<Float> + Sync + Send> =
             mp.get_float_texture(String::from("vroughness"), 0.1);
         let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
-        Arc::new(SubstrateMaterial::new(kd,
-                                        ks,
-                                        uroughness,
-                                        vroughness,
-                                        remap_roughness))
+        Arc::new(SubstrateMaterial::new(
+            kd,
+            ks,
+            uroughness,
+            vroughness,
+            remap_roughness,
+        ))
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
@@ -77,11 +80,13 @@ impl SubstrateMaterial {
 }
 
 impl Material for SubstrateMaterial {
-    fn compute_scattering_functions(&self,
-                                    si: &mut SurfaceInteraction,
-                                    // arena: &mut Arena,
-                                    _mode: TransportMode,
-                                    _allow_multiple_lobes: bool) {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
         si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }

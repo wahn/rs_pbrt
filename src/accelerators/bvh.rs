@@ -269,10 +269,9 @@ impl BVHAccel {
                                     b1 = bnd3_union_bnd3(&b1, &buckets[j].bounds);
                                     count1 += buckets[j].count;
                                 }
-                                cost[i] = 1.0
-                                    + (count0 as Float * b0.surface_area()
-                                        + count1 as Float * b1.surface_area())
-                                        / bounds.surface_area();
+                                cost[i] = 1.0 + (count0 as Float * b0.surface_area()
+                                    + count1 as Float * b1.surface_area())
+                                    / bounds.surface_area();
                             }
                             // find bucket to split at that minimizes SAH metric
                             let mut min_cost: Float = cost[0];

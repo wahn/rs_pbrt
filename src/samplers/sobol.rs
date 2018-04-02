@@ -35,8 +35,10 @@ impl SobolSampler {
         let mut samples_per_pixel: i64 = samples_per_pixel;
         if !is_power_of_2(samples_per_pixel) {
             samples_per_pixel = round_up_pow2_64(samples_per_pixel);
-            println!("WARNING: Non power-of-two sample count rounded up to {:?} for SobolSampler.",
-                     samples_per_pixel);
+            println!(
+                "WARNING: Non power-of-two sample count rounded up to {:?} for SobolSampler.",
+                samples_per_pixel
+            );
         }
         let resolution: i32 =
             round_up_pow2_32(sample_bounds.diagonal().x.max(sample_bounds.diagonal().y));
@@ -65,22 +67,28 @@ impl SobolSampler {
     }
     pub fn get_index_for_sample(&self, sample_num: u64) -> u64 {
         let v: Vector2i = self.current_pixel - self.sample_bounds.p_min;
-        sobol_interval_to_index(self.log_2_resolution as u32,
-                                sample_num,
-                                &Point2i { x: v.x, y: v.y })
+        sobol_interval_to_index(
+            self.log_2_resolution as u32,
+            sample_num,
+            &Point2i { x: v.x, y: v.y },
+        )
     }
     pub fn sample_dimension(&self, index: u64, dim: i64) -> Float {
         if dim >= NUM_SOBOL_DIMENSIONS as i64 {
-            panic!("SobolSampler can only sample up to {} dimensions! Exiting.",
-                   NUM_SOBOL_DIMENSIONS);
+            panic!(
+                "SobolSampler can only sample up to {} dimensions! Exiting.",
+                NUM_SOBOL_DIMENSIONS
+            );
         }
         let mut s: Float = sobol_sample(index as i64, dim as i32, 0_u64);
         // remap Sobol$'$ dimensions used for pixel samples
         if dim == 0 || dim == 1 {
             s = s * self.resolution as Float + self.sample_bounds.p_min[dim as u8] as Float;
-            s = clamp_t(s - self.current_pixel[dim as u8] as Float,
-                        0.0 as Float,
-                        FLOAT_ONE_MINUS_EPSILON);
+            s = clamp_t(
+                s - self.current_pixel[dim as u8] as Float,
+                0.0 as Float,
+                FLOAT_ONE_MINUS_EPSILON,
+            );
         }
         s
     }
@@ -98,8 +106,8 @@ impl Sampler for SobolSampler {
         self.dimension = 0_i64;
         self.interval_sample_index = self.get_index_for_sample(0_u64);
         // compute _self.array_end_dim_ for dimensions used for array samples
-        self.array_end_dim = self.array_start_dim + self.sample_array_1d.len() as i64 +
-                             2_i64 * self.sample_array_2d.len() as i64;
+        self.array_end_dim = self.array_start_dim + self.sample_array_1d.len() as i64
+            + 2_i64 * self.sample_array_2d.len() as i64;
         // compute 1D array samples for _GlobalSampler_
         for i in 0..self.samples_1d_array_sizes.len() {
             let n_samples = self.samples_1d_array_sizes[i] * self.samples_per_pixel as i32;
@@ -112,8 +120,8 @@ impl Sampler for SobolSampler {
         // compute 2D array samples for _GlobalSampler_
         let mut dim: i64 = self.array_start_dim + self.samples_1d_array_sizes.len() as i64;
         for i in 0..self.samples_2d_array_sizes.len() {
-            let n_samples: usize = self.samples_2d_array_sizes[i] as usize *
-                                   self.samples_per_pixel as usize;
+            let n_samples: usize =
+                self.samples_2d_array_sizes[i] as usize * self.samples_per_pixel as usize;
             for j in 0..n_samples {
                 let idx: u64 = self.get_index_for_sample(j as u64);
                 self.sample_array_2d[i][j].x = self.sample_dimension(idx, dim);
@@ -162,10 +170,12 @@ impl Sampler for SobolSampler {
             return samples;
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(self.current_pixel_sample_index < self.samples_per_pixel,
-                "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-                self.current_pixel_sample_index,
-                self.samples_per_pixel);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
@@ -197,8 +207,7 @@ impl Sampler for SobolSampler {
     }
 }
 
-impl GlobalSampler for SobolSampler {
-}
+impl GlobalSampler for SobolSampler {}
 
 impl Clone for SobolSampler {
     fn clone(&self) -> SobolSampler {

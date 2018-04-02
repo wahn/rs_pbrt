@@ -9,7 +9,7 @@ use core::transform::{Matrix4x4, Transform};
 
 // see quaternion.h
 
-#[derive(Debug,Copy,Clone)]
+#[derive(Debug, Copy, Clone)]
 pub struct Quaternion {
     pub v: Vector3f,
     pub w: Float,

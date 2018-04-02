@@ -14,9 +14,9 @@ use std::sync::Arc;
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3,
                      vec3_dot_vec3, vec3_normalize};
+use core::material::TransportMode;
 use core::pbrt::SHADOW_EPSILON;
 use core::pbrt::{Float, Spectrum};
-use core::material::TransportMode;
 use core::primitive::{GeometricPrimitive, Primitive};
 use core::reflection::Bsdf;
 use core::shape::Shape;

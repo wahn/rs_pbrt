@@ -23,9 +23,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn new(aggregate: Arc<BVHAccel>,
-               lights: Vec<Arc<Light + Sync + Send>>)
-               -> Self {
+    pub fn new(aggregate: Arc<BVHAccel>, lights: Vec<Arc<Light + Sync + Send>>) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
         let scene: Scene = Scene {
             lights: Vec::new(),
@@ -55,22 +53,26 @@ impl Scene {
     }
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         // TODO: ++nIntersectionTests;
-        assert_ne!(ray.d,
-                   Vector3f {
-                       x: 0.0,
-                       y: 0.0,
-                       z: 0.0,
-                   });
+        assert_ne!(
+            ray.d,
+            Vector3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }
+        );
         self.aggregate.intersect(ray)
     }
     pub fn intersect_p(&self, ray: &mut Ray) -> bool {
         // TODO: ++nShadowTests;
-        assert_ne!(ray.d,
-                   Vector3f {
-                       x: 0.0,
-                       y: 0.0,
-                       z: 0.0,
-                   });
+        assert_ne!(
+            ray.d,
+            Vector3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            }
+        );
         self.aggregate.intersect_p(ray)
     }
 }

@@ -254,7 +254,9 @@ fn create_material() -> Option<Arc<Material + Send + Sync>> {
                 }
             } else {
                 // MakeMaterial
-                if graphics_state.material == String::from("") || graphics_state.material == String::from("none"){
+                if graphics_state.material == String::from("")
+                    || graphics_state.material == String::from("none")
+                {
                     return None;
                 } else if graphics_state.material == String::from("matte") {
                     return Some(MatteMaterial::create(&mut mp));
@@ -1341,10 +1343,8 @@ fn pbrt_world_end() {
                                             ro.integrator_params
                                             .find_one_float(String::from("largestepprobability"),
                                                             0.3 as Float);
-                                        let sigma: Float =
-                                            ro.integrator_params
-                                            .find_one_float(String::from("sigma"),
-                                                            0.01 as Float);
+                                        let sigma: Float = ro.integrator_params
+                                            .find_one_float(String::from("sigma"), 0.01 as Float);
                                         let mut integrator = Box::new(MLTIntegrator::new(
                                             // camera,
                                             max_depth as u32,
@@ -2027,12 +2027,17 @@ fn main() {
                                         }
                                         Rule::medium_interface => {
                                             let mut strings: Vec<String> = Vec::new();
-                                            for medium_interface_pair in statement_pair.into_inner() {
+                                            for medium_interface_pair in statement_pair.into_inner()
+                                            {
                                                 let string: String =
                                                     String::from_str(medium_interface_pair.clone().into_span().as_str()).unwrap();
                                                 strings.push(string);
                                             }
-                                            assert!(strings.len() == 2_usize, "ERROR: expected two atrings, found {:?}", strings.len());
+                                            assert!(
+                                                strings.len() == 2_usize,
+                                                "ERROR: expected two atrings, found {:?}",
+                                                strings.len()
+                                            );
                                         }
                                         Rule::named_statement => {
                                             for named_statement_pair in statement_pair.into_inner()
@@ -3392,8 +3397,7 @@ fn main() {
                                                         for make_named_medium_pair in
                                                             named_statement_pair.into_inner()
                                                         {
-                                                            match make_named_medium_pair.as_rule()
-                                                            {
+                                                            match make_named_medium_pair.as_rule() {
                                                                 Rule::string => {
                                                                     let mut string_pairs =
                                                                         make_named_medium_pair
@@ -3603,7 +3607,9 @@ fn main() {
                                                                 let found: bool = get_medium_scattering_properties(&preset,
                                                                                                                    &mut sig_a,
                                                                                                                    &mut sig_s);
-                                                                if preset != String::from("") && !found {
+                                                                if preset != String::from("")
+                                                                    && !found
+                                                                {
                                                                     println!("WARNING: Material preset \"{:?}\" not found.  Using defaults.",
                                                                              preset);
                                                                 }

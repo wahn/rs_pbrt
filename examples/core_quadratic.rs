@@ -38,20 +38,16 @@ fn main() {
     let is_quadratic = quadratic(a, b, c, &mut t0, &mut t1);
     println!("ray = {:?}", ray);
     if is_quadratic {
-        println!("quadratic({:?}, {:?}, {:?}, {:?}, {:?}) = {:?}",
-                 a,
-                 b,
-                 c,
-                 t0,
-                 t1,
-                 is_quadratic);
+        println!(
+            "quadratic({:?}, {:?}, {:?}, {:?}, {:?}) = {:?}",
+            a, b, c, t0, t1, is_quadratic
+        );
     } else {
         // values of _t0_ and _t1_ therefore don't matter
-        println!("quadratic({:?}, {:?}, {:?}, ...) = {:?}",
-                 a,
-                 b,
-                 c,
-                 is_quadratic);
+        println!(
+            "quadratic({:?}, {:?}, {:?}, ...) = {:?}",
+            a, b, c, is_quadratic
+        );
     }
     let radius: Float = 1.0;
     let ray: Ray = Ray {
@@ -90,18 +86,14 @@ fn main() {
     println!("ray = {:?}", ray);
     if is_quadratic {
         // compare vs. the gdb output above
-        println!("quadratic({:?}, {:?}, {:?}, {:?}, {:?}) = {:?}",
-                 a,
-                 b,
-                 c,
-                 t0,
-                 t1,
-                 is_quadratic);
+        println!(
+            "quadratic({:?}, {:?}, {:?}, {:?}, {:?}) = {:?}",
+            a, b, c, t0, t1, is_quadratic
+        );
     } else {
-        println!("quadratic({:?}, {:?}, {:?}, ...) = {:?}",
-                 a,
-                 b,
-                 c,
-                 is_quadratic);
+        println!(
+            "quadratic({:?}, {:?}, {:?}, ...) = {:?}",
+            a, b, c, is_quadratic
+        );
     }
 }

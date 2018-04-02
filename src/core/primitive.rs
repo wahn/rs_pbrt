@@ -1,8 +1,8 @@
 // std
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Bounds3f, Ray};
 use core::geometry::nrm_dot_nrm;
+use core::geometry::{Bounds3f, Ray};
 use core::interaction::SurfaceInteraction;
 use core::light::AreaLight;
 use core::material::{Material, TransportMode};

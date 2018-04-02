@@ -9,7 +9,7 @@ use core::interaction::SurfaceInteraction;
 /// Is used to inform non-symetric BSDFs about the transported
 /// quantity so that they can correctly switch between the adjoint and
 /// non-adjoint forms.
-#[derive(Debug,Clone,PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TransportMode {
     Radiance,
     Importance,
@@ -23,9 +23,11 @@ pub trait Material {
     /// surface of a shape and is responsible for determining the
     /// reflective properties at the point and initializing some
     /// member variables.
-    fn compute_scattering_functions(&self,
-                                    si: &mut SurfaceInteraction,
-                                    // arena: &mut Arena,
-                                    mode: TransportMode,
-                                    allow_multiple_lobes: bool);
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        mode: TransportMode,
+        allow_multiple_lobes: bool,
+    );
 }

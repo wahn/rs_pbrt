@@ -22,11 +22,12 @@ pub struct PlasticMaterial {
 }
 
 impl PlasticMaterial {
-    pub fn new(kd: Arc<Texture<Spectrum> + Send + Sync>,
-               ks: Arc<Texture<Spectrum> + Send + Sync>,
-               roughness: Arc<Texture<Float> + Sync + Send>,
-               remap_roughness: bool)
-               -> Self {
+    pub fn new(
+        kd: Arc<Texture<Spectrum> + Send + Sync>,
+        ks: Arc<Texture<Spectrum> + Send + Sync>,
+        roughness: Arc<Texture<Float> + Sync + Send>,
+        remap_roughness: bool,
+    ) -> Self {
         PlasticMaterial {
             kd: kd,
             ks: ks,
@@ -49,9 +50,9 @@ impl PlasticMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !ks.is_black() {
             let fresnel = Arc::new(FresnelDielectric {
-                                       eta_i: 1.5 as Float,
-                                       eta_t: 1.0 as Float,
-                                   });
+                eta_i: 1.5 as Float,
+                eta_t: 1.0 as Float,
+            });
             // create microfacet distribution _distrib_ for plastic material
             let mut rough: Float = self.roughness.evaluate(si);
             if self.remap_roughness {
@@ -62,18 +63,24 @@ impl PlasticMaterial {
                 alpha_y: rough,
                 sample_visible_area: true,
             };
-            bxdfs.push(Arc::new(MicrofacetReflection::new(ks, Some(distrib), fresnel)));
+            bxdfs.push(Arc::new(MicrofacetReflection::new(
+                ks,
+                Some(distrib),
+                fresnel,
+            )));
         }
         Bsdf::new(si, 1.0, bxdfs)
     }
 }
 
 impl Material for PlasticMaterial {
-    fn compute_scattering_functions(&self,
-                                    si: &mut SurfaceInteraction,
-                                    // arena: &mut Arena,
-                                    _mode: TransportMode,
-                                    _allow_multiple_lobes: bool) {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
         si.bsdf = Some(Arc::new(self.bsdf(si)));
     }
 }

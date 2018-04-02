@@ -13,7 +13,7 @@ fn round_up(x: usize) -> usize {
     (x + BLOCK_SIZE - 1) & !(BLOCK_SIZE - 1)
 }
 
-#[derive(Debug,Clone,Default)]
+#[derive(Debug, Clone, Default)]
 pub struct BlockedArray<T> {
     pub data: Vec<T>,
     pub u_res: usize,
@@ -24,7 +24,8 @@ pub struct BlockedArray<T> {
 }
 
 impl<T> BlockedArray<T>
-    where T: num::Zero + Clone + Add<T, Output = T>
+where
+    T: num::Zero + Clone + Add<T, Output = T>,
 {
     pub fn new(u_res: usize, v_res: usize) -> BlockedArray<T> {
         let data = vec![num::Zero::zero(); round_up(u_res) * round_up(v_res)];
@@ -64,7 +65,8 @@ impl<T> BlockedArray<T>
 }
 
 impl<T> Index<(usize, usize)> for BlockedArray<T>
-    where T: num::Zero + std::clone::Clone + Add<T, Output = T>
+where
+    T: num::Zero + std::clone::Clone + Add<T, Output = T>,
 {
     type Output = T;
     fn index(&self, i: (usize, usize)) -> &T {
@@ -73,14 +75,15 @@ impl<T> Index<(usize, usize)> for BlockedArray<T>
         let bv = self.block(v);
         let ou = self.offset(u);
         let ov = self.offset(v);
-        let offset = self.block_size() * self.block_size() * (self.u_blocks * bv + bu) +
-                     self.block_size() * ov + ou;
+        let offset = self.block_size() * self.block_size() * (self.u_blocks * bv + bu)
+            + self.block_size() * ov + ou;
         &self.data[offset]
     }
 }
 
 impl<T> IndexMut<(usize, usize)> for BlockedArray<T>
-    where T: num::Zero + std::clone::Clone + Add<T, Output = T>
+where
+    T: num::Zero + std::clone::Clone + Add<T, Output = T>,
 {
     fn index_mut(&mut self, i: (usize, usize)) -> &mut T {
         let (u, v) = i;
@@ -88,8 +91,8 @@ impl<T> IndexMut<(usize, usize)> for BlockedArray<T>
         let bv = self.block(v);
         let ou = self.offset(u);
         let ov = self.offset(v);
-        let offset = self.block_size() * self.block_size() * (self.u_blocks * bv + bu) +
-                     self.block_size() * ov + ou;
+        let offset = self.block_size() * self.block_size() * (self.u_blocks * bv + bu)
+            + self.block_size() * ov + ou;
         &mut self.data[offset]
     }
 }

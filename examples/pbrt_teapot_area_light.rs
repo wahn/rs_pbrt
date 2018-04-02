@@ -3,6 +3,7 @@ extern crate pbrt;
 use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::Camera;
+use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f,
                            Vector3f};
@@ -10,15 +11,14 @@ use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
-use pbrt::core::transform::{AnimatedTransform, Transform};
-use pbrt::core::film::Film;
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
+use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::lights::point::PointLight;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::plastic::PlasticMaterial;
-use pbrt::lights::point::PointLight;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::disk::Disk;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
@@ -1952,10 +1952,18 @@ fn main() {
     let mut triangle_count: usize = 0;
     for triangle in render_options.triangles {
         if triangle_count < 72 {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, Some(plastic1.clone()), None));
+            let geo_prim = Arc::new(GeometricPrimitive::new(
+                triangle,
+                Some(plastic1.clone()),
+                None,
+            ));
             render_options.primitives.push(geo_prim.clone());
         } else {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, Some(plastic2.clone()), None));
+            let geo_prim = Arc::new(GeometricPrimitive::new(
+                triangle,
+                Some(plastic2.clone()),
+                None,
+            ));
             render_options.primitives.push(geo_prim.clone());
         }
         triangle_count += 1;
