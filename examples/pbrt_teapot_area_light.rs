@@ -1952,10 +1952,10 @@ fn main() {
     let mut triangle_count: usize = 0;
     for triangle in render_options.triangles {
         if triangle_count < 72 {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, plastic1.clone(), None));
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, Some(plastic1.clone()), None));
             render_options.primitives.push(geo_prim.clone());
         } else {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, plastic2.clone(), None));
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, Some(plastic2.clone()), None));
             render_options.primitives.push(geo_prim.clone());
         }
         triangle_count += 1;
@@ -1965,7 +1965,7 @@ fn main() {
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
     let matte = Arc::new(MatteMaterial::new(kd, sigma));
     for disk in render_options.disks {
-        let geo_prim = Arc::new(GeometricPrimitive::new(disk, matte.clone(), None));
+        let geo_prim = Arc::new(GeometricPrimitive::new(disk, Some(matte.clone()), None));
         render_options.primitives.push(geo_prim.clone());
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel

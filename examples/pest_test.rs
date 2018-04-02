@@ -225,7 +225,7 @@ fn print_params(params: &ParamSet) {
     }
 }
 
-fn create_material() -> Arc<Material + Send + Sync> {
+fn create_material() -> Option<Arc<Material + Send + Sync>> {
     unsafe {
         if let Some(ref mut graphics_state) = GRAPHICS_STATE {
             // CreateMaterial
@@ -254,10 +254,10 @@ fn create_material() -> Arc<Material + Send + Sync> {
                 }
             } else {
                 // MakeMaterial
-                assert_ne!(graphics_state.material, String::new());
-                assert_ne!(graphics_state.material, String::from("none"));
-                if graphics_state.material == String::from("matte") {
-                    return MatteMaterial::create(&mut mp);
+                if graphics_state.material == String::from("") || graphics_state.material == String::from("none"){
+                    return None;
+                } else if graphics_state.material == String::from("matte") {
+                    return Some(MatteMaterial::create(&mut mp));
                 } else if graphics_state.material == String::from("plastic") {
                     let kd =
                         mp.get_spectrum_texture(String::from("Kd"), Spectrum::new(0.25 as Float));
@@ -268,7 +268,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
                     let plastic =
                         Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
-                    return plastic;
+                    return Some(plastic);
                 } else if graphics_state.material == String::from("translucent") {
                     println!("TODO: CreateTranslucentMaterial");
                 } else if graphics_state.material == String::from("glass") {
@@ -299,15 +299,15 @@ fn create_material() -> Arc<Material + Send + Sync> {
                         index: eta,
                         remap_roughness: remap_roughness,
                     });
-                    return glass;
+                    return Some(glass);
                 } else if graphics_state.material == String::from("mirror") {
                     let kr =
                         mp.get_spectrum_texture(String::from("Kr"), Spectrum::new(0.9 as Float));
                     // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
                     let mirror = Arc::new(MirrorMaterial { kr: kr });
-                    return mirror;
+                    return Some(mirror);
                 } else if graphics_state.material == String::from("hair") {
-                    return HairMaterial::create(&mut mp);
+                    return Some(HairMaterial::create(&mut mp));
                 } else if graphics_state.material == String::from("mix") {
                     let m1: String =
                         mp.find_string(String::from("namedmaterial1"), String::from(""));
@@ -327,14 +327,19 @@ fn create_material() -> Arc<Material + Send + Sync> {
                     };
                     let scale: Arc<Texture<Spectrum> + Send + Sync> =
                         mp.get_spectrum_texture(String::from("amount"), Spectrum::new(0.5));
-                    let mix = Arc::new(MixMaterial::new(mat1.clone(), mat2.clone(), scale));
-                    return mix;
+                    if let Some(m1) = mat1 {
+                        if let Some(m2) = mat2 {
+                            let mix = Arc::new(MixMaterial::new(m1.clone(), m2.clone(), scale));
+                            return Some(mix);
+                        }
+                    }
+                    return None;
                 } else if graphics_state.material == String::from("metal") {
-                    return MetalMaterial::create(&mut mp);
+                    return Some(MetalMaterial::create(&mut mp));
                 } else if graphics_state.material == String::from("substrate") {
-                    return SubstrateMaterial::create(&mut mp);
+                    return Some(SubstrateMaterial::create(&mut mp));
                 } else if graphics_state.material == String::from("uber") {
-                    return UberMaterial::create(&mut mp);
+                    return Some(UberMaterial::create(&mut mp));
                 } else if graphics_state.material == String::from("subsurface") {
                     println!("TODO: CreateSubsurfaceMaterial");
                 } else if graphics_state.material == String::from("kdsubsurface") {
@@ -349,7 +354,7 @@ fn create_material() -> Arc<Material + Send + Sync> {
     }
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-    Arc::new(MatteMaterial::new(kd, sigma))
+    Some(Arc::new(MatteMaterial::new(kd, sigma)))
 }
 
 fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
@@ -824,10 +829,10 @@ fn pbrt_shape(
     param_set: &ParamSet,
 ) -> (
     Vec<Arc<Shape + Send + Sync>>,
-    Vec<Arc<Material + Send + Sync>>,
+    Vec<Option<Arc<Material + Send + Sync>>>,
 ) {
     let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
-    let mut materials: Vec<Arc<Material + Send + Sync>> = Vec::new();
+    let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
     // pbrtShape (api.cpp:1153)
     // TODO: if (!curTransform.IsAnimated()) { ... }
     // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
@@ -870,9 +875,9 @@ fn pbrt_shape(
                 z_max,
                 phi_max,
             ));
-            let mtl: Arc<Material + Send + Sync> = create_material();
+            let mtl: Option<Arc<Material + Send + Sync>> = create_material();
             shapes.push(sphere.clone());
-            materials.push(mtl.clone());
+            materials.push(mtl);
         } else if param_set.name == String::from("cylinder") {
             let radius: Float = param_set.find_one_float(String::from("radius"), 1.0);
             let z_min: Float = param_set.find_one_float(String::from("zmin"), -radius);
@@ -887,7 +892,7 @@ fn pbrt_shape(
                 z_max,
                 phi_max,
             ));
-            let mtl: Arc<Material + Send + Sync> = create_material();
+            let mtl: Option<Arc<Material + Send + Sync>> = create_material();
             shapes.push(cylinder.clone());
             materials.push(mtl.clone());
         } else if param_set.name == String::from("disk") {
@@ -905,7 +910,7 @@ fn pbrt_shape(
                 inner_radius,
                 phi_max,
             ));
-            let mtl: Arc<Material + Send + Sync> = create_material();
+            let mtl: Option<Arc<Material + Send + Sync>> = create_material();
             shapes.push(disk.clone());
             materials.push(mtl.clone());
         } else if param_set.name == String::from("cone") {
@@ -915,7 +920,7 @@ fn pbrt_shape(
         } else if param_set.name == String::from("hyperboloid") {
             println!("TODO: CreateHyperboloidShape");
         } else if param_set.name == String::from("curve") {
-            let mtl: Arc<Material + Send + Sync> = create_material();
+            let mtl: Option<Arc<Material + Send + Sync>> = create_material();
             let curve_shapes: Vec<Arc<Shape + Send + Sync>> = create_curve_shape(
                 &obj_to_world,
                 &world_to_obj,
@@ -1012,7 +1017,7 @@ fn pbrt_shape(
                     n_ws, // in world space
                     uvs,
                 ));
-                let mtl: Arc<Material + Send + Sync> = create_material();
+                let mtl: Option<Arc<Material + Send + Sync>> = create_material();
                 for id in 0..mesh.n_triangles {
                     let triangle = Arc::new(Triangle::new(
                         mesh.object_to_world,
@@ -1028,7 +1033,7 @@ fn pbrt_shape(
         } else if param_set.name == String::from("plymesh") {
             if let Some(ref mut graphics_state) = GRAPHICS_STATE {
                 if let Some(ref search_directory) = SEARCH_DIRECTORY {
-                    let mtl: Arc<Material + Send + Sync> = create_material();
+                    let mtl: Option<Arc<Material + Send + Sync>> = create_material();
                     let ply_shapes: Vec<Arc<Shape + Send + Sync>> = create_ply_mesh(
                         &obj_to_world,
                         &world_to_obj,
@@ -2019,6 +2024,15 @@ fn main() {
                                                 // 0x1?
                                                 CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * look_at;
                                             }
+                                        }
+                                        Rule::medium_interface => {
+                                            let mut strings: Vec<String> = Vec::new();
+                                            for medium_interface_pair in statement_pair.into_inner() {
+                                                let string: String =
+                                                    String::from_str(medium_interface_pair.clone().into_span().as_str()).unwrap();
+                                                strings.push(string);
+                                            }
+                                            assert!(strings.len() == 2_usize, "ERROR: expected two atrings, found {:?}", strings.len());
                                         }
                                         Rule::named_statement => {
                                             for named_statement_pair in statement_pair.into_inner()
@@ -3352,7 +3366,7 @@ fn main() {
                                                                     .copy_from(&param_set);
                                                                 graphics_state.current_material =
                                                                     String::new();
-                                                                let mtl: Arc<Material + Send + Sync> = create_material();
+                                                                let mtl: Option<Arc<Material + Send + Sync>> = create_material();
                                                                 match graphics_state
                                                                     .named_materials
                                                                     .get(param_set.name.as_str())
@@ -3627,6 +3641,22 @@ fn main() {
                                                             named_statement_pair.into_inner()
                                                         {
                                                             match material_pair.as_rule() {
+                                                                Rule::empty_string => {
+                                                                    if let Some(ref mut param_set) =
+                                                                        PARAM_SET
+                                                                    {
+                                                                        param_set.reset(
+                                                                            String::from(
+                                                                                "Material",
+                                                                            ),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                            String::from(""),
+                                                                        );
+                                                                    } else {
+                                                                        panic!("Can't get parameter set.");
+                                                                    }
+                                                                }
                                                                 Rule::string => {
                                                                     let mut string_pairs =
                                                                         material_pair.into_inner();

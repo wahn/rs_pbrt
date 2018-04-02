@@ -51,19 +51,19 @@ pub struct GeometricPrimitive {
 impl GeometricPrimitive {
     pub fn new(
         shape: Arc<Shape + Send + Sync>,
-        material: Arc<Material + Send + Sync>,
+        material: Option<Arc<Material + Send + Sync>>,
         area_light: Option<Arc<AreaLight + Send + Sync>>,
     ) -> Self {
         if let Some(area_light) = area_light {
             GeometricPrimitive {
                 shape: shape,
-                material: Some(material),
+                material: material,
                 area_light: Some(area_light),
             }
         } else {
             GeometricPrimitive {
                 shape: shape,
-                material: Some(material),
+                material: material,
                 area_light: None,
             }
         }

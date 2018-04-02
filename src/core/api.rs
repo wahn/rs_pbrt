@@ -107,7 +107,7 @@ pub struct GraphicsState {
     pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
     pub material_params: ParamSet,
     pub material: String,
-    pub named_materials: HashMap<String, Arc<Material + Send + Sync>>,
+    pub named_materials: HashMap<String, Option<Arc<Material + Send + Sync>>>,
     pub current_material: String,
     pub area_light_params: ParamSet,
     pub area_light: String,
@@ -124,8 +124,8 @@ impl GraphicsState {
                                                        float_textures.clone(),
                                                        spectrum_textures.clone());
         let mtl: Arc<Material + Send + Sync> = MatteMaterial::create(&mut tp);
-        let mut named_materials: HashMap<String, Arc<Material + Send + Sync>> = HashMap::new();
-        named_materials.insert(String::from("matte"), mtl);
+        let mut named_materials: HashMap<String, Option<Arc<Material + Send + Sync>>> = HashMap::new();
+        named_materials.insert(String::from("matte"), Some(mtl));
         let current_material: String = String::from("matte");
         GraphicsState {
             float_textures: float_textures.clone(),

@@ -373,13 +373,13 @@ fn main() {
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(kd, sigma));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, Some(matte.clone()), None));
             render_options.primitives.push(geo_prim.clone());
         }
         if matches.opt_present("m") {
             // use only matte materials
             for sphere in render_options.spheres {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, matte.clone(), None));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(matte.clone()), None));
                 render_options.primitives.push(geo_prim.clone());
             }
         } else {
@@ -387,10 +387,10 @@ fn main() {
             let mut sphere_counter: u8 = 0;
             for sphere in render_options.spheres {
                 if sphere_counter == 0 {
-                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone(), None));
+                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
                     render_options.primitives.push(geo_prim.clone());
                 } else {
-                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone(), None));
+                    let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(glass.clone()), None));
                     render_options.primitives.push(geo_prim.clone());
                 }
                 sphere_counter += 1;
@@ -422,16 +422,16 @@ fn main() {
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(checker, sigma));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, Some(matte.clone()), None));
             render_options.primitives.push(geo_prim.clone());
         }
         let mut sphere_counter: u8 = 0;
         for sphere in render_options.spheres {
             if sphere_counter == 0 {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone(), None));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
                 render_options.primitives.push(geo_prim.clone());
             } else {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone(), None));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(glass.clone()), None));
                 render_options.primitives.push(geo_prim.clone());
             }
             sphere_counter += 1;
@@ -466,16 +466,16 @@ fn main() {
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(lines_tex, sigma));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, matte.clone(), None));
+            let geo_prim = Arc::new(GeometricPrimitive::new(triangle, Some(matte.clone()), None));
             render_options.primitives.push(geo_prim.clone());
         }
         let mut sphere_counter: u8 = 0;
         for sphere in render_options.spheres {
             if sphere_counter == 0 {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, mirror.clone(), None));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(mirror.clone()), None));
                 render_options.primitives.push(geo_prim.clone());
             } else {
-                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, glass.clone(), None));
+                let geo_prim = Arc::new(GeometricPrimitive::new(sphere, Some(glass.clone()), None));
                 render_options.primitives.push(geo_prim.clone());
             }
             sphere_counter += 1;

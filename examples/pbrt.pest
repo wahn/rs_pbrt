@@ -3,6 +3,7 @@ statement = { active_transform |
               concat_transform |
               keyword |
               look_at |
+              medium_interface |
               named_statement |
               rotate |
               scale |
@@ -115,6 +116,8 @@ look_at = { "LookAt" ~
             // up_x up_y up_z
             number ~ number ~ number
 }
+// MediumInterface "" "vol"
+medium_interface = { "MediumInterface" ~ (empty_string | string) ~ (empty_string | string) }
 // Accelerator "kdtree" "float emptybonus" 0.1
 accelerator = { "Accelerator" ~ string ~ parameter* }
 // Camera "perspective" "float fov" 90 ...
@@ -136,7 +139,7 @@ light_source = { "LightSource" ~ string ~ parameter* }
 // Texture "mydiffuse" "spectrum" "imagemap" "string filename" "image.tga"
 texture = { "Texture" ~ string ~ string ~ string ~ parameter* }
 // Material "matte" "texture Kd" "mydiffuse"
-material = { "Material" ~ string ~ parameter* }
+material = { "Material" ~ (empty_string | string) ~ parameter* }
 // MakeNamedMaterial "myplastic" "string type" "plastic" "float roughness" 0.1
 make_named_material = { "MakeNamedMaterial" ~ string ~ parameter* }
 // MakeNamedMedium "mymedium" "string type" "homogeneous" "rgb sigma_s" [100 100 100]
@@ -152,8 +155,6 @@ keyword = {
      "CoordinateSystem" |
      "Identity" |
      "Include" |
-     "MakeNamedMedium" |
-     "MediumInterface" |
      "ObjectBegin" |
      "ObjectEnd" |
      "ObjectInstance" |
@@ -176,6 +177,7 @@ world_begin = { "WorldBegin" }
 ident =  { ('a'..'z' | 'A'..'Z' | "_") ~
            ('a'..'z' | 'A'..'Z' | "_" | "-" | ":" | '0'..'9')* }
 string = { ("\"" ~ ident ~ "\"") | ("\"" ~ filename ~ "\"") }
+empty_string = { "\"" ~ "\"" }
 filename = { ('a'..'z' | 'A'..'Z' | "_") ~ // TODO: can be a full path
              ('a'..'z' | 'A'..'Z' | "_" | "-" | "." | "/" | '0'..'9')* }
 // "" { return LBRACK; }
