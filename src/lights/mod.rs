@@ -60,3 +60,4 @@ pub mod diffuse;
 pub mod distant;
 pub mod infinite;
 pub mod point;
+pub mod spot;

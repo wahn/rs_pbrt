@@ -13,6 +13,7 @@ use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
+use pbrt::core::geometry::{vec3_coordinate_system, vec3_normalize};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
@@ -39,6 +40,7 @@ use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
 use pbrt::lights::point::PointLight;
+use pbrt::lights::spot::SpotLight;
 use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::hair::HairMaterial;
 use pbrt::materials::matte::MatteMaterial;
@@ -373,7 +375,69 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
             ro.lights.push(point_light);
         }
     } else if param_set.name == String::from("spot") {
-        println!("TODO: CreateSpotLight");
+        println!("WORK: CreateSpotLight");
+        // CreateSpotLight
+        let i: Spectrum =
+            param_set.find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
+        let sc: Spectrum =
+            param_set.find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+        let coneangle: Float = param_set.find_one_float(String::from("coneangle"), 30.0 as Float);
+        let conedelta: Float =
+            param_set.find_one_float(String::from("conedeltaangle"), 5.0 as Float);
+        // compute spotlight world to light transformation
+        let from: Point3f = param_set.find_one_point3f(
+            String::from("from"),
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let to: Point3f = param_set.find_one_point3f(
+            String::from("to"),
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+        );
+        let dir: Vector3f = vec3_normalize(&(from - to));
+        let mut du: Vector3f = Vector3f::default();
+        let mut dv: Vector3f = Vector3f::default();
+        vec3_coordinate_system(&dir, &mut du, &mut dv);
+        let dir_to_z: Transform = Transform::new(
+            du.x,
+            du.y,
+            du.z,
+            0.0,
+            dv.x,
+            dv.y,
+            dv.z,
+            0.0,
+            dir.x,
+            dir.y,
+            dir.z,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+        );
+        unsafe {
+            let light2world: Transform = CUR_TRANSFORM.t[0] * Transform::translate(&Vector3f {
+                x: from.x,
+                y: from.y,
+                z: from.z,
+            }) * Transform::inverse(&dir_to_z);
+            // return std::make_shared<SpotLight>(light2world, medium, I * sc, coneangle, coneangle - conedelta);
+            let spot_light = Arc::new(SpotLight::new(
+                &CUR_TRANSFORM.t[0],
+                &(i * sc),
+                coneangle,
+                coneangle - conedelta,
+            ));
+            ro.lights.push(spot_light);
+        }
     } else if param_set.name == String::from("goniometric") {
         println!("TODO: CreateGoniometricLight");
     } else if param_set.name == String::from("projection") {
