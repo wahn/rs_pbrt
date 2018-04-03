@@ -174,7 +174,7 @@ start_time = { "StartTime" }
 reverse_orientation = { "ReverseOrientation" }
 world_begin = { "WorldBegin" }
 // IDENT a-zA-Z_a-zA-Z_0-9*
-ident =  { ('a'..'z' | 'A'..'Z' | "_") ~
+ident =  { ('a'..'z' | 'A'..'Z' | "_" | '0'..'9') ~
            ('a'..'z' | 'A'..'Z' | "_" | "-" | ":" | '0'..'9')* }
 string = { ("\"" ~ ident ~ "\"") | ("\"" ~ filename ~ "\"") }
 empty_string = { "\"" ~ "\"" }
