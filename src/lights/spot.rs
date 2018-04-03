@@ -119,7 +119,7 @@ impl Light for SpotLight {
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
         let w: Vector3f = uniform_sample_cone(u1, self.cos_total_width);
-        let new_ray: Ray = Ray {
+        *ray = Ray {
             o: self.p_light,
             d: self.light_to_world.transform_vector(&w),
             t_max: std::f32::INFINITY,
@@ -129,7 +129,7 @@ impl Light for SpotLight {
         *n_light = Normal3f::from(ray.d);
         *pdf_pos = 1.0 as Float;
         *pdf_dir = uniform_cone_pdf(self.cos_total_width);
-        self.i * self.falloff(&new_ray.d)
+        self.i * self.falloff(&ray.d)
     }
     fn get_flags(&self) -> u8 {
         self.flags

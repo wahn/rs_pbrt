@@ -80,13 +80,13 @@ impl Light for PointLight {
         u1: &Point2f,
         _u2: &Point2f,
         time: Float,
-        _ray: &mut Ray,
+        ray: &mut Ray,
         n_light: &mut Normal3f,
         pdf_pos: &mut Float,
         pdf_dir: &mut Float,
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
-        let ray: Ray = Ray {
+        *ray = Ray {
             o: self.p_light,
             d: uniform_sample_sphere(u1),
             t_max: std::f32::INFINITY,

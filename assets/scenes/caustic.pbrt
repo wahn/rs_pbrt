@@ -3,11 +3,12 @@ MakeNamedMedium "vol"
         "rgb sigma_a" [ 0.0199999996 0.0199999996 0.0199999996 ] 
         "rgb sigma_s" [ 0.3499999940 0.3499999940 0.3499999940 ] 
 Film "image" 
-        "integer xresolution" [ 800 ] 
-        "integer yresolution" [ 800 ] 
-        "string filename" [ "caustic.exr" ] 
-Integrator "mlt" 
-        "integer mutationsperpixel" [ 16384 ] 
+        "integer xresolution" [ 400 ] 
+        "integer yresolution" [ 400 ] 
+        "string filename" [ "f16-22a.exr" ] 
+Sampler "02sequence" 
+        "integer pixelsamples" [ 64 ] 
+Integrator "bdpt" 
 MediumInterface "" "vol"
 LookAt -0.75 0.800000012 -1.25
         -1 0.800000012 0
@@ -30,7 +31,7 @@ AttributeEnd
 AttributeBegin
     Rotate -60 0 0 1
     LightSource "infinite" 
-            "string mapname" [ "textures/skylight-day.hdr" ] 
+            "string mapname" [ "textures/skylight-day.exr" ] 
             "rgb scale" [ 1.5000000000 1.5000000000 1.3999999762 ] 
 AttributeEnd
 LightSource "spot" 

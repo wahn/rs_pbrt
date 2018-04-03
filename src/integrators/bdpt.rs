@@ -1725,7 +1725,6 @@ pub fn infinite_light_density<'a>(
     w: &Vector3f,
 ) -> Float {
     let mut pdf: Float = 0.0 as Float;
-    println!("TODO: infinite_light_density()");
     for light in &scene.infinite_lights {
         // for i in 0..scene.infinite_lights.len() {
         //     CHECK(lightToDistrIndex.find(light.get()) != lightToDistrIndex.end());

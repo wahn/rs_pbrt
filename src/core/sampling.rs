@@ -179,12 +179,12 @@ impl Distribution2D {
     }
     pub fn pdf(&self, p: &Point2f) -> Float {
         let iu: usize = clamp_t(
-            (p[0] as usize * self.p_conditional_v[0].count()) as usize,
+            (p[0] * self.p_conditional_v[0].count() as Float) as usize,
             0_usize,
             self.p_conditional_v[0].count() - 1_usize,
         );
         let iv: usize = clamp_t(
-            (p[1] as usize * self.p_marginal.count()) as usize,
+            (p[1] * self.p_marginal.count() as Float) as usize,
             0_usize,
             self.p_marginal.count() - 1_usize,
         );
