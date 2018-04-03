@@ -1,9 +1,12 @@
 // pbrt
 use core::geometry::{Point2f, Point2i};
-use core::pbrt::Float;
+use core::pbrt::{Float, Spectrum};
 use core::rng::Rng;
 use core::sampler::Sampler;
+use core::sampling::Distribution1D;
+use core::scene::Scene;
 
+pub const CAMERA_STREAM_INDEX: u8 = 0;
 pub const N_SAMPLE_STREAMS: u8 = 3;
 
 pub struct MLTSampler {
@@ -12,6 +15,8 @@ pub struct MLTSampler {
     pub sigma: Float,
     pub large_step_probability: Float,
     pub stream_count: i32,
+    pub stream_index: i32,
+    pub sample_index: i32,
     // inherited from class Sampler (see sampler.h)
     pub current_pixel: Point2i,
     pub current_pixel_sample_index: i64,
@@ -39,6 +44,8 @@ impl MLTSampler {
             sigma: sigma,
             large_step_probability: large_step_probability,
             stream_count: stream_count,
+            stream_index: 0_i32,
+            sample_index: 0_i32,
             current_pixel: Point2i::default(),
             current_pixel_sample_index: 0_i64,
             samples_1d_array_sizes: Vec::new(),
@@ -48,6 +55,10 @@ impl MLTSampler {
             array_1d_offset: 0_usize,
             array_2d_offset: 0_usize,
         }
+    }
+    pub fn start_stream(&mut self, index: i32) {
+        self.stream_index = index;
+        self.sample_index = 0;
     }
 }
 
@@ -99,6 +110,8 @@ impl Clone for MLTSampler {
             sigma: self.sigma,
             large_step_probability: self.large_step_probability,
             stream_count: self.stream_count,
+            stream_index: self.stream_index,
+            sample_index: self.sample_index,
             current_pixel: self.current_pixel,
             current_pixel_sample_index: self.current_pixel_sample_index,
             samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
@@ -137,5 +150,14 @@ impl MLTIntegrator {
             sigma: sigma,
             large_step_probability: large_step_probability,
         }
+    }
+    pub fn l(&self,
+             scene: &Scene,
+             light_distr: &Distribution1D,
+             sampler: &mut MLTSampler,
+    ) -> Spectrum {
+        sampler.start_stream(CAMERA_STREAM_INDEX as i32);
+        // WORK
+        Spectrum::default()
     }
 }

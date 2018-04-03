@@ -578,7 +578,7 @@ pub fn render_mlt(
             let chunk_size: u32 = clamp_t(integrator.n_bootstrap / 128, 1, 8192);
             for i in 0..integrator.n_bootstrap {
                 // generate _i_th bootstrap sample
-                for depth in 0..integrator.max_depth {
+                for depth in 0..(integrator.max_depth + 1) {
                     let rng_index: u64 = (i * (integrator.max_depth + 1) + depth) as u64;
                     let sampler: MLTSampler = MLTSampler::new(
                         integrator.mutations_per_pixel as i64,
@@ -587,6 +587,8 @@ pub fn render_mlt(
                         integrator.large_step_probability,
                         N_SAMPLE_STREAMS as i32,
                     );
+                    // p_raster: Point2f;
+                    // l();
                 }
             }
         }
