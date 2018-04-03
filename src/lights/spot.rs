@@ -8,7 +8,8 @@ use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::pbrt::radians;
 use core::pbrt::{Float, Spectrum};
-use core::sampling::{uniform_sample_sphere, uniform_sphere_pdf};
+use core::reflection::cos_theta;
+use core::sampling::{uniform_cone_pdf, uniform_sample_cone};
 use core::scene::Scene;
 use core::transform::Transform;
 
@@ -111,23 +112,24 @@ impl Light for SpotLight {
         u1: &Point2f,
         _u2: &Point2f,
         time: Float,
-        _ray: &mut Ray,
+        ray: &mut Ray,
         n_light: &mut Normal3f,
         pdf_pos: &mut Float,
         pdf_dir: &mut Float,
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
-        let ray: Ray = Ray {
+        let w: Vector3f = uniform_sample_cone(u1, self.cos_total_width);
+        let new_ray: Ray = Ray {
             o: self.p_light,
-            d: uniform_sample_sphere(u1),
+            d: self.light_to_world.transform_vector(&w),
             t_max: std::f32::INFINITY,
             time: time,
             differential: None,
         };
         *n_light = Normal3f::from(ray.d);
         *pdf_pos = 1.0 as Float;
-        *pdf_dir = uniform_sphere_pdf();
-        self.i
+        *pdf_dir = uniform_cone_pdf(self.cos_total_width);
+        self.i * self.falloff(&new_ray.d)
     }
     fn get_flags(&self) -> u8 {
         self.flags
@@ -135,8 +137,12 @@ impl Light for SpotLight {
     fn get_n_samples(&self) -> i32 {
         self.n_samples
     }
-    fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+    fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         *pdf_pos = 0.0 as Float;
-        *pdf_dir = uniform_sphere_pdf();
+        if cos_theta(&self.world_to_light.transform_vector(&ray.d)) > self.cos_total_width {
+            *pdf_dir = uniform_cone_pdf(self.cos_total_width);
+        } else {
+            *pdf_dir = 0.0 as Float;
+        }
     }
 }

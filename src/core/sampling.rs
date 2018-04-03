@@ -298,6 +298,18 @@ pub fn uniform_cone_pdf(cos_theta_max: Float) -> Float {
     1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max))
 }
 
+/// Samples in a cone of directions about the (0, 0, 1) axis.
+pub fn uniform_sample_cone(u: &Point2f, cos_theta_max: Float) -> Vector3f {
+    let cos_theta: Float = (1.0 as Float - u[0]) + u[0] * cos_theta_max;
+    let sin_theta: Float = (1.0 as Float - cos_theta * cos_theta).sqrt();
+    let phi: Float = u[1] * 2.0 as Float * PI;
+    Vector3f {
+        x: phi.cos() * sin_theta,
+        y: phi.sin() * sin_theta,
+        z: cos_theta,
+    }
+}
+
 /// Uniformly distributing samples over isosceles right triangles
 /// actually works for any triangle.
 pub fn uniform_sample_triangle(u: &Point2f) -> Point2f {
