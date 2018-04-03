@@ -24,6 +24,9 @@ pub struct SpotLight {
     // inherited from class Light (see light.h)
     flags: u8,
     n_samples: i32,
+    // TODO: const MediumInterface mediumInterface;
+    light_to_world: Transform,
+    world_to_light: Transform,
 }
 
 impl SpotLight {
@@ -40,7 +43,23 @@ impl SpotLight {
             cos_falloff_start: radians(falloff_start).cos(),
             flags: LightFlags::DeltaPosition as u8,
             n_samples: 1_i32,
+            light_to_world: *light_to_world,
+            world_to_light: Transform::inverse(light_to_world),
         }
+    }
+    pub fn falloff(&self, w: &Vector3f) -> Float {
+        let wl: Vector3f = vec3_normalize(&self.world_to_light.transform_vector(w));
+        let cos_theta: Float = wl.z;
+        if cos_theta < self.cos_total_width {
+            return 0.0 as Float;
+        }
+        if cos_theta >= self.cos_falloff_start {
+            return 1.0 as Float;
+        }
+        // compute falloff inside spotlight cone
+        let delta: Float =
+            (cos_theta - self.cos_total_width) / (self.cos_falloff_start - self.cos_total_width);
+        (delta * delta) * (delta * delta)
     }
 }
 
@@ -72,7 +91,7 @@ impl Light for SpotLight {
                 n: Normal3f::default(),
             },
         };
-        self.i / pnt3_distance_squared(&self.p_light, &iref.p)
+        self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     fn power(&self) -> Spectrum {
         self.i * 2.0 as Float * PI
