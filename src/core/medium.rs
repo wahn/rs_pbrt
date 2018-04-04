@@ -1,5 +1,8 @@
 // pbrt
+use core::geometry::Ray;
+use core::interaction::MediumInteraction;
 use core::pbrt::{Float, Spectrum};
+use core::sampler::Sampler;
 
 pub const SUBSURFACE_PARAMETER_TABLE: [MeasuredSS; 47] = [
     // From "A Practical Model for Subsurface Light Transport"
@@ -250,6 +253,15 @@ pub struct MeasuredSS {
     pub name: &'static str,
     pub sigma_prime_s: [Float; 3],
     pub sigma_a: [Float; 3],
+}
+
+pub trait Medium {
+    fn tr(ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum;
+    fn sample(
+        ray: &Ray,
+        sampler: &mut Box<Sampler + Send + Sync>,
+        mi: &mut MediumInteraction,
+    ) -> Spectrum;
 }
 
 pub fn get_medium_scattering_properties(

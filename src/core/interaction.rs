@@ -81,6 +81,45 @@ pub struct Shading {
 }
 
 #[derive(Default, Clone)]
+pub struct MediumInteraction {
+}
+
+impl Interaction for MediumInteraction {
+    fn is_surface_interaction(&self) -> bool {
+        // WORK
+        false
+    }
+    fn is_medium_interaction(&self) -> bool {
+        // WORK
+        false
+    }
+    fn spawn_ray(&self, d: &Vector3f) -> Ray {
+        // WORK
+        Ray::default()
+    }
+    fn get_p(&self) -> Point3f {
+        // WORK
+        Point3f::default()
+    }
+    fn get_time(&self) -> Float {
+        // WORK
+        0.0 as Float
+    }
+    fn get_p_error(&self) -> Vector3f {
+        // WORK
+        Vector3f::default()
+    }
+    fn get_wo(&self) -> Vector3f {
+        // WORK
+        Vector3f::default()
+    }
+    fn get_n(&self) -> Normal3f {
+        // WORK
+        Normal3f::default()
+    }
+}
+
+#[derive(Default, Clone)]
 pub struct SurfaceInteraction<'p, 's> {
     // Interaction Public Data
     pub p: Point3f,
