@@ -7,9 +7,23 @@ use core::sampler::Sampler;
 
 // see homogeneous.h
 
-pub struct HomogeneousMedium {}
+pub struct HomogeneousMedium {
+    pub sigma_a: Spectrum,
+    pub sigma_s: Spectrum,
+    pub sigma_t: Spectrum,
+    pub g: Float,
+}
 
-impl HomogeneousMedium {}
+impl HomogeneousMedium {
+    pub fn new(sigma_a: &Spectrum, sigma_s: &Spectrum, g: Float) -> Self {
+        HomogeneousMedium {
+            sigma_a: *sigma_a,
+            sigma_s: *sigma_s,
+            sigma_t: *sigma_s + *sigma_a,
+            g: g,
+        }
+    }
+}
 
 impl Medium for HomogeneousMedium {
     fn tr(ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {

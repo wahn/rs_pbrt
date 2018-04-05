@@ -4,6 +4,7 @@ use std::sync::Arc;
 // pbrt
 use core::light::Light;
 use core::material::Material;
+use core::medium::Medium;
 use core::paramset::{ParamSet, TextureParams};
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
@@ -49,7 +50,7 @@ pub struct RenderOptions {
     pub camera_name: String, // "perspective";
     pub camera_params: ParamSet,
     pub camera_to_world: TransformSet,
-    // TODO: std::map<std::string, std::shared_ptr<Medium>> namedMedia;
+    pub named_media: HashMap<String, Arc<Medium + Sync + Send>>,
     pub lights: Vec<Arc<Light + Sync + Send>>,
     pub primitives: Vec<Arc<Primitive + Sync + Send>>,
     // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
@@ -94,6 +95,7 @@ impl Default for RenderOptions {
                     },
                 }; 2],
             },
+            named_media: HashMap::new(),
             lights: Vec::new(),
             primitives: Vec::new(),
             have_scattering_media: false,

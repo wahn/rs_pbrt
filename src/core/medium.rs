@@ -259,12 +259,16 @@ pub struct MeasuredSS {
 }
 
 pub trait Medium {
-    fn tr(ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum;
+    fn tr(ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum
+    where
+        Self: Sized;
     fn sample(
         ray: &Ray,
         sampler: &mut Box<Sampler + Send + Sync>,
         mi: &mut MediumInteraction,
-    ) -> Spectrum;
+    ) -> Spectrum
+    where
+        Self: Sized;
 }
 
 #[derive(Default, Clone)]

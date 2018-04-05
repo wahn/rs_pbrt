@@ -17,6 +17,7 @@ use pbrt::core::geometry::{vec3_coordinate_system, vec3_normalize};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
+use pbrt::core::medium::Medium;
 use pbrt::core::medium::get_medium_scattering_properties;
 use pbrt::core::mipmap::ImageWrap;
 use pbrt::core::paramset::{ParamSet, TextureParams};
@@ -50,6 +51,7 @@ use pbrt::materials::mixmat::MixMaterial;
 use pbrt::materials::plastic::PlasticMaterial;
 use pbrt::materials::substrate::SubstrateMaterial;
 use pbrt::materials::uber::UberMaterial;
+use pbrt::media::homogeneous::HomogeneousMedium;
 use pbrt::samplers::halton::HaltonSampler;
 use pbrt::samplers::random::RandomSampler;
 use pbrt::samplers::sobol::SobolSampler;
@@ -514,14 +516,26 @@ fn make_medium(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     let sig_s_rgb: [Float; 3] = [2.55, 3.21, 3.77];
     let mut sig_a: Spectrum = Spectrum::from_rgb(&sig_a_rgb);
     let mut sig_s: Spectrum = Spectrum::from_rgb(&sig_s_rgb);
-    let preset: String = param_set.find_one_string(String::from("preset"),
-                                                   String::new());
-    let found: bool = get_medium_scattering_properties(&preset,
-                                                       &mut sig_a,
-                                                       &mut sig_s);
+    let preset: String = param_set.find_one_string(String::from("preset"), String::new());
+    let found: bool = get_medium_scattering_properties(&preset, &mut sig_a, &mut sig_s);
+    if preset != String::from("") && !found {
+        println!(
+            "WARNING: Material preset \"{:?}\" not found.  Using defaults.",
+            preset
+        );
+    }
+    let scale: Float = param_set.find_one_float(String::from("scale"), 1.0 as Float);
+    let g: Float = param_set.find_one_float(String::from("g"), 1.0 as Float);
+    sig_a = param_set.find_one_spectrum(String::from("sigma_a"), sig_a) * scale;
+    sig_s = param_set.find_one_spectrum(String::from("sigma_s"), sig_s) * scale;
+    let mut some_medium: Option<Arc<Medium + Sync + Send>> = None;
     if param_set.name == String::from("homogeneous") {
+        some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
     } else {
         panic!("MakeMedium: unknown name {}", param_set.name);
+    }
+    if let Some(medium) = some_medium {
+        ro.named_media.insert(param_set.name.clone(), medium);
     }
 }
 
