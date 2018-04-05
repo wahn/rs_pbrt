@@ -1,3 +1,6 @@
+// std
+use std;
+use std::sync::Arc;
 // pbrt
 use core::geometry::Ray;
 use core::interaction::MediumInteraction;
@@ -262,6 +265,12 @@ pub trait Medium {
         sampler: &mut Box<Sampler + Send + Sync>,
         mi: &mut MediumInteraction,
     ) -> Spectrum;
+}
+
+#[derive(Default, Clone)]
+pub struct MediumInterface {
+    // pub inside: Option<Arc<Medium + Send + Sync>>,
+    // pub outside: Option<Arc<Medium + Send + Sync>>,
 }
 
 pub fn get_medium_scattering_properties(

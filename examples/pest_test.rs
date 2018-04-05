@@ -508,6 +508,23 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     }
 }
 
+fn make_medium(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
+    // MakeMedium (api.cpp:685)
+    let sig_a_rgb: [Float; 3] = [0.0011, 0.0024, 0.014];
+    let sig_s_rgb: [Float; 3] = [2.55, 3.21, 3.77];
+    let mut sig_a: Spectrum = Spectrum::from_rgb(&sig_a_rgb);
+    let mut sig_s: Spectrum = Spectrum::from_rgb(&sig_s_rgb);
+    let preset: String = param_set.find_one_string(String::from("preset"),
+                                                   String::new());
+    let found: bool = get_medium_scattering_properties(&preset,
+                                                       &mut sig_a,
+                                                       &mut sig_s);
+    if param_set.name == String::from("homogeneous") {
+    } else {
+        panic!("MakeMedium: unknown name {}", param_set.name);
+    }
+}
+
 fn make_texture(param_set: &ParamSet) {
     unsafe {
         // pbrtTexture (api.cpp:1049)
@@ -3653,54 +3670,16 @@ fn main() {
                                                         }
                                                         // we should have the make_named_medium parameters by now
                                                         if let Some(ref mut param_set) = PARAM_SET {
-                                                            let med_type: String = param_set.find_one_string(String::from("type"),
-                                                                                                             String::new());
-                                                            if med_type == String::new() {
-                                                                panic!("No parameter string \"type\" found in MakeNamedMedium");
-                                                            }
-                                                            if let Some(ref mut graphics_state) =
-                                                                GRAPHICS_STATE
+                                                            if let Some(ref mut ro) = RENDER_OPTIONS
                                                             {
-                                                                // MakeMedium
-                                                                let sig_a_rgb: [Float; 3] = [0.0011, 0.0024, 0.014];
-                                                                let sig_s_rgb: [Float; 3] = [2.55, 3.21, 3.77];
-                                                                let mut sig_a: Spectrum = Spectrum::from_rgb(&sig_a_rgb);
-                                                                let mut sig_s: Spectrum = Spectrum::from_rgb(&sig_s_rgb);
-                                                                let preset: String = param_set.find_one_string(String::from("preset"),
-                                                                                                               String::new());
-                                                                let found: bool = get_medium_scattering_properties(&preset,
-                                                                                                                   &mut sig_a,
-                                                                                                                   &mut sig_s);
-                                                                if preset != String::from("")
-                                                                    && !found
-                                                                {
-                                                                    println!("WARNING: Material preset \"{:?}\" not found.  Using defaults.",
-                                                                             preset);
-                                                                }
-                                                                // graphics_state.medium =
-                                                                //     med_type.clone();
-                                                                // graphics_state
-                                                                //     .medium_params
-                                                                //     .copy_from(&param_set);
-                                                                // graphics_state.current_medium =
-                                                                //     String::new();
-                                                                // let mtl: Arc<Medium + Send + Sync> = create_medium();
-                                                                // match graphics_state
-                                                                //     .named_mediums
-                                                                //     .get(param_set.name.as_str())
-                                                                // {
-                                                                //     Some(_named_medium) => {
-                                                                //         println!("Named medium \"{}\" redefined",
-                                                                //                  med_type);
-                                                                //     }
-                                                                //     None => {}
-                                                                // }
-                                                                // graphics_state
-                                                                //     .named_mediums
-                                                                //     .insert(
-                                                                //         param_set.name.clone(),
-                                                                //         mtl,
-                                                                //     );
+                                                                println!(
+                                                                    "LightSource \"{}\" ",
+                                                                    param_set.name
+                                                                );
+                                                                print_params(&param_set);
+                                                                make_medium(&param_set, ro);
+                                                            } else {
+                                                                panic!("Can't get render options.");
                                                             }
                                                         } else {
                                                             panic!("Can't get parameter set.");

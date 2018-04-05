@@ -15,6 +15,7 @@ use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3,
                      vec3_dot_vec3, vec3_normalize};
 use core::material::TransportMode;
+use core::medium::MediumInterface;
 use core::pbrt::SHADOW_EPSILON;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::{GeometricPrimitive, Primitive};
@@ -120,14 +121,14 @@ impl Interaction for MediumInteraction {
 }
 
 #[derive(Default, Clone)]
-pub struct SurfaceInteraction<'p, 's> {
+pub struct SurfaceInteraction<'m, 'p, 's> {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
     pub p_error: Vector3f,
     pub wo: Vector3f,
     pub n: Normal3f,
-    // TODO: MediumInterface mediumInterface;
+    pub medium_interface: Option<&'m MediumInterface>,
     // SurfaceInteraction Public Data
     pub uv: Point2f,
     pub dpdu: Vector3f,
@@ -146,7 +147,7 @@ pub struct SurfaceInteraction<'p, 's> {
     pub shape: Option<&'s Shape>,
 }
 
-impl<'p, 's> SurfaceInteraction<'p, 's> {
+impl<'m, 'p, 's> SurfaceInteraction<'m, 'p, 's> {
     pub fn new(
         p: &Point3f,
         p_error: &Vector3f,
@@ -180,6 +181,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             p_error: *p_error,
             wo: vec3_normalize(wo),
             n: n,
+            medium_interface: None,
             uv: *uv,
             dpdu: *dpdu,
             dpdv: *dpdv,
@@ -338,7 +340,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
     }
 }
 
-impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
+impl<'m, 'p, 's> Interaction for SurfaceInteraction<'m, 'p, 's> {
     fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }
