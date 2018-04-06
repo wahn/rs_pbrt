@@ -511,6 +511,10 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
 }
 
 fn make_medium(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
+    let medium_type: String = param_set.find_one_string(String::from("type"), String::new());
+    if medium_type == String::from("") {
+        panic!("ERROR: No parameter string \"type\" found in MakeNamedMedium");
+    }
     // MakeMedium (api.cpp:685)
     let sig_a_rgb: [Float; 3] = [0.0011, 0.0024, 0.014];
     let sig_s_rgb: [Float; 3] = [2.55, 3.21, 3.77];
@@ -531,6 +535,8 @@ fn make_medium(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     let mut some_medium: Option<Arc<Medium + Sync + Send>> = None;
     if param_set.name == String::from("homogeneous") {
         some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
+    } else if param_set.name == String::from("heterogeneous") {
+        panic!("TODO: make_medium(\"heterogeneous\")");
     } else {
         panic!("MakeMedium: unknown name {}", param_set.name);
     }
@@ -1494,6 +1500,16 @@ fn pbrt_world_end() {
                                     } else {
                                         panic!("Integrator \"{}\" unknown.", ro.integrator_name);
                                     }
+                                    if ro.have_scattering_media &&
+                                        ro.integrator_name != String::from("volpath") &&
+                                        ro.integrator_name != String::from("bdpt") &&
+                                        ro.integrator_name != String::from("mlt")
+                                    {
+                                        print!("WARNING: Scene has scattering media but \"{:?}\" integrator doesn't support ",
+                                               ro.integrator_name);
+                                        print!("volume scattering. Consider using \"volpath\", \"bdpt\", or ");
+                                        println!("\"mlt\".");
+                                    }
                                     if let Some(mut integrator) = some_integrator {
                                         // MakeIntegrator
                                         // TODO: if (renderOptions->haveScatteringMedia && ...)
@@ -1916,6 +1932,8 @@ fn main() {
                                                                         .area_light_params,
                                                                 );
                                                                 pushed_graphics_states.push(GraphicsState {
+                                                                    current_inside_medium: graphics_state.current_inside_medium.clone(),
+                                                                    current_outside_medium: graphics_state.current_outside_medium.clone(),
                                                                     float_textures: graphics_state.float_textures.clone(),
                                                                     spectrum_textures: graphics_state.spectrum_textures.clone(),
                                                                     material_params: material_param_set,
@@ -2130,9 +2148,18 @@ fn main() {
                                             }
                                             assert!(
                                                 strings.len() == 2_usize,
-                                                "ERROR: expected two atrings, found {:?}",
+                                                "ERROR: expected two strings, found {:?}",
                                                 strings.len()
                                             );
+                                            if let Some(ref mut graphics_state) = GRAPHICS_STATE
+                                            {
+                                                graphics_state.current_inside_medium = strings[0].clone();
+                                                graphics_state.current_outside_medium = strings[1].clone();
+                                                if let Some(ref mut ro) = RENDER_OPTIONS
+                                                {
+                                                    ro.have_scattering_media = true;
+                                                }
+                                            }
                                         }
                                         Rule::named_statement => {
                                             for named_statement_pair in statement_pair.into_inner()

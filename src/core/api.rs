@@ -112,7 +112,8 @@ impl RenderOptions {
 
 #[derive(Default)]
 pub struct GraphicsState {
-    // std::string currentInsideMedium, currentOutsideMedium;
+    pub current_inside_medium: String,
+    pub current_outside_medium: String,
     pub float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
     pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
     pub material_params: ParamSet,
@@ -141,6 +142,8 @@ impl GraphicsState {
         named_materials.insert(String::from("matte"), Some(mtl));
         let current_material: String = String::from("matte");
         GraphicsState {
+            current_inside_medium: String::from(""),
+            current_outside_medium: String::from(""),
             float_textures: float_textures.clone(),
             spectrum_textures: spectrum_textures.clone(),
             material_params: ParamSet::default(),
