@@ -10,6 +10,7 @@ use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ra
 use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
+use core::medium::Medium;
 use core::paramset::ParamSet;
 use core::pbrt::lerp;
 use core::pbrt::{Float, Spectrum};
@@ -24,7 +25,7 @@ pub struct PerspectiveCamera {
     pub shutter_open: Float,
     pub shutter_close: Float,
     pub film: Arc<Film>,
-    // TODO: const Medium *medium;
+    pub medium: Option<Arc<Medium + Send + Sync>>,
     // inherited from ProjectiveCamera (see camera.h)
     // camera_to_screen: Transform,
     pub raster_to_camera: Transform,
@@ -47,7 +48,8 @@ impl PerspectiveCamera {
         lens_radius: Float,
         focal_distance: Float,
         fov: Float,
-        film: Arc<Film>, /* const Medium *medium */
+        film: Arc<Film>,
+        medium: Option<Arc<Medium + Send + Sync>>,
     ) -> Self {
         // see perspective.cpp
         let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
@@ -113,6 +115,7 @@ impl PerspectiveCamera {
             shutter_open: shutter_open,
             shutter_close: shutter_close,
             film: film,
+            medium: medium,
             // camera_to_screen: camera_to_screen,
             raster_to_camera: raster_to_camera,
             // screen_to_raster: screen_to_raster,
@@ -127,7 +130,8 @@ impl PerspectiveCamera {
     pub fn create(
         params: &ParamSet,
         cam2world: AnimatedTransform,
-        film: Arc<Film>, /* const Medium *medium */
+        film: Arc<Film>,
+        medium: Option<Arc<Medium + Send + Sync>>,
     ) -> Box<Camera + Send + Sync> {
         let shutteropen: Float = params.find_one_float(String::from("shutteropen"), 0.0);
         let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
@@ -166,6 +170,7 @@ impl PerspectiveCamera {
             focaldistance,
             fov,
             film,
+            medium,
         ));
         camera
     }

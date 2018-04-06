@@ -103,13 +103,6 @@ impl Default for RenderOptions {
     }
 }
 
-impl RenderOptions {
-    // pub fn make_integrator(&self) -> Integrator {
-    // }
-    // pub fn make_camera(&self) -> Camera {
-    // }
-}
-
 #[derive(Default)]
 pub struct GraphicsState {
     pub current_inside_medium: String,

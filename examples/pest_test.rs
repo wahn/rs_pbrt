@@ -17,8 +17,8 @@ use pbrt::core::geometry::{vec3_coordinate_system, vec3_normalize};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
-use pbrt::core::medium::Medium;
 use pbrt::core::medium::get_medium_scattering_properties;
+use pbrt::core::medium::{Medium, MediumInterface};
 use pbrt::core::mipmap::ImageWrap;
 use pbrt::core::paramset::{ParamSet, TextureParams};
 use pbrt::core::pbrt::clamp_t;
@@ -361,6 +361,39 @@ fn create_material() -> Option<Arc<Material + Send + Sync>> {
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
     Some(Arc::new(MatteMaterial::new(kd, sigma)))
+}
+
+fn create_medium_interface() -> MediumInterface {
+    let mut m: MediumInterface = MediumInterface::default();
+    unsafe {
+        if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+            if let Some(ref mut ro) = RENDER_OPTIONS {
+                if graphics_state.current_inside_medium != String::from("") {
+                    match ro.named_media.get(&graphics_state.current_inside_medium) {
+                        Some(inside_medium_arc) => m.inside = Some(inside_medium_arc.clone()),
+                        None => {
+                            panic!(
+                                "ERROR: Named medium \"{:?}\" undefined.",
+                                graphics_state.current_inside_medium
+                            );
+                        }
+                    }
+                }
+                if graphics_state.current_outside_medium != String::from("") {
+                    match ro.named_media.get(&graphics_state.current_outside_medium) {
+                        Some(outside_medium_arc) => m.outside = Some(outside_medium_arc.clone()),
+                        None => {
+                            panic!(
+                                "ERROR: Named medium \"{:?}\" undefined.",
+                                graphics_state.current_outside_medium
+                            );
+                        }
+                    }
+                }
+            }
+        }
+    }
+    m
 }
 
 fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
@@ -1241,7 +1274,7 @@ fn pbrt_world_end() {
                             let mut some_camera: Option<
                                 Box<Camera + Sync + Send>,
                             > = None;
-                            // TODO: MediumInterface mediumInterface = graphicsState.CreateMediumInterface();
+                            let medium_interface: MediumInterface = create_medium_interface();
                             let animated_cam_to_world: AnimatedTransform =
                                 AnimatedTransform::new(&ro.camera_to_world.t[0],
                                                        ro.transform_start_time,
@@ -1254,6 +1287,7 @@ fn pbrt_world_end() {
                                     &ro.camera_params,
                                     animated_cam_to_world,
                                     film,
+                                    medium_interface.outside,
                                 );
                                 some_camera = Some(camera);
                             } else if ro.camera_name == String::from("orthographic") {
@@ -1500,10 +1534,10 @@ fn pbrt_world_end() {
                                     } else {
                                         panic!("Integrator \"{}\" unknown.", ro.integrator_name);
                                     }
-                                    if ro.have_scattering_media &&
-                                        ro.integrator_name != String::from("volpath") &&
-                                        ro.integrator_name != String::from("bdpt") &&
-                                        ro.integrator_name != String::from("mlt")
+                                    if ro.have_scattering_media
+                                        && ro.integrator_name != String::from("volpath")
+                                        && ro.integrator_name != String::from("bdpt")
+                                        && ro.integrator_name != String::from("mlt")
                                     {
                                         print!("WARNING: Scene has scattering media but \"{:?}\" integrator doesn't support ",
                                                ro.integrator_name);
@@ -2151,12 +2185,12 @@ fn main() {
                                                 "ERROR: expected two strings, found {:?}",
                                                 strings.len()
                                             );
-                                            if let Some(ref mut graphics_state) = GRAPHICS_STATE
-                                            {
-                                                graphics_state.current_inside_medium = strings[0].clone();
-                                                graphics_state.current_outside_medium = strings[1].clone();
-                                                if let Some(ref mut ro) = RENDER_OPTIONS
-                                                {
+                                            if let Some(ref mut graphics_state) = GRAPHICS_STATE {
+                                                graphics_state.current_inside_medium =
+                                                    strings[0].clone();
+                                                graphics_state.current_outside_medium =
+                                                    strings[1].clone();
+                                                if let Some(ref mut ro) = RENDER_OPTIONS {
                                                     ro.have_scattering_media = true;
                                                 }
                                             }

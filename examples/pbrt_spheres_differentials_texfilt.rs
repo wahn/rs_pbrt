@@ -571,6 +571,7 @@ fn main() {
         focaldistance,
         fov,
         film.clone(),
+        None,
     ));
     let mut sampler: Box<Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::default());
     let sample_bounds: Bounds2i = film.get_sample_bounds();

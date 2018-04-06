@@ -273,8 +273,8 @@ pub trait Medium {
 
 #[derive(Default, Clone)]
 pub struct MediumInterface {
-    // pub inside: Option<Arc<Medium + Send + Sync>>,
-    // pub outside: Option<Arc<Medium + Send + Sync>>,
+    pub inside: Option<Arc<Medium + Send + Sync>>,
+    pub outside: Option<Arc<Medium + Send + Sync>>,
 }
 
 pub fn get_medium_scattering_properties(
