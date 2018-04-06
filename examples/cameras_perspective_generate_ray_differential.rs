@@ -101,6 +101,7 @@ fn main() {
         focaldistance,
         fov,
         film,
+        None,
     );
     // println!("perspective_camera = {:?}", perspective_camera);
     let mut ray: Ray = Ray::default();
