@@ -7,6 +7,7 @@ use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{AreaLight, Light, LightFlags, VisibilityTester};
+use core::medium::{Medium, MediumInterface};
 use core::pbrt::{Float, Spectrum};
 use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::sampling::{cosine_hemisphere_pdf, cosine_sample_hemisphere};
@@ -22,9 +23,9 @@ pub struct DiffuseAreaLight {
     pub two_sided: bool,
     pub area: Float,
     // inherited from class Light (see light.h)
-    flags: u8,
-    n_samples: i32,
-    // TODO: const MediumInterface mediumInterface;
+    pub flags: u8,
+    pub n_samples: i32,
+    pub medium_interface: MediumInterface,
     // light_to_world: Transform,
     // world_to_light: Transform,
 }
@@ -32,12 +33,21 @@ pub struct DiffuseAreaLight {
 impl DiffuseAreaLight {
     pub fn new(
         _light_to_world: &Transform,
+        medium_interface: &MediumInterface,
         l_emit: &Spectrum,
         n_samples: i32,
         shape: Arc<Shape + Send + Sync>,
         two_sided: bool,
     ) -> Self {
         let area: Float = shape.area();
+        let mut inside: Option<Arc<Medium + Send + Sync>> = None;
+        let mut outside: Option<Arc<Medium + Send + Sync>> = None;
+        if let Some(ref mi_inside) = medium_interface.inside {
+            inside = Some(mi_inside.clone());
+        }
+        if let Some(ref mi_outside) = medium_interface.outside {
+            outside = Some(mi_outside.clone());
+        }
         DiffuseAreaLight {
             l_emit: *l_emit,
             shape: shape,
@@ -46,7 +56,10 @@ impl DiffuseAreaLight {
             // inherited from class Light (see light.h)
             flags: LightFlags::Area as u8,
             n_samples: std::cmp::max(1_i32, n_samples),
-            // TODO: const MediumInterface mediumInterface;
+            medium_interface: MediumInterface {
+                inside: inside,
+                outside: outside,
+            },
             // light_to_world: *light_to_world,
             // world_to_light: Transform::inverse(*light_to_world),
         }

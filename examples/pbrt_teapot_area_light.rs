@@ -9,6 +9,7 @@ use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point
                            Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
+use pbrt::core::medium::MediumInterface;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
@@ -50,7 +51,11 @@ impl SceneDescriptionBuilder {
         light_to_world: &Transform,
         i: &Spectrum,
     ) -> &mut SceneDescriptionBuilder {
-        let point_light = Arc::new(PointLight::new(light_to_world, &i));
+        let point_light = Arc::new(PointLight::new(
+            light_to_world,
+            &MediumInterface::default(),
+            &i,
+        ));
         self.lights.push(point_light);
         self
     }

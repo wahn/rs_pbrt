@@ -1,10 +1,12 @@
 // std
 use std;
+use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{pnt3_distance_squared, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
+use core::medium::{Medium, MediumInterface};
 use core::pbrt::{Float, Spectrum};
 use core::sampling::{uniform_sample_sphere, uniform_sphere_pdf};
 use core::scene::Scene;
@@ -12,23 +14,40 @@ use core::transform::Transform;
 
 // see point.h
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Clone)]
 pub struct PointLight {
     // private data (see point.h)
     pub p_light: Point3f,
     pub i: Spectrum,
     // inherited from class Light (see light.h)
-    flags: u8,
-    n_samples: i32,
+    pub flags: u8,
+    pub n_samples: i32,
+    pub medium_interface: MediumInterface,
 }
 
 impl PointLight {
-    pub fn new(light_to_world: &Transform, i: &Spectrum) -> Self {
+    pub fn new(
+        light_to_world: &Transform,
+        medium_interface: &MediumInterface,
+        i: &Spectrum,
+    ) -> Self {
+        let mut inside: Option<Arc<Medium + Send + Sync>> = None;
+        let mut outside: Option<Arc<Medium + Send + Sync>> = None;
+        if let Some(ref mi_inside) = medium_interface.inside {
+            inside = Some(mi_inside.clone());
+        }
+        if let Some(ref mi_outside) = medium_interface.outside {
+            outside = Some(mi_outside.clone());
+        }
         PointLight {
             p_light: light_to_world.transform_point(&Point3f::default()),
             i: *i,
             flags: LightFlags::DeltaPosition as u8,
             n_samples: 1_i32,
+            medium_interface: MediumInterface {
+                inside: inside,
+                outside: outside,
+            },
         }
     }
 }

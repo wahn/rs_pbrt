@@ -396,17 +396,24 @@ fn create_medium_interface() -> MediumInterface {
     m
 }
 
-fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
+fn make_light(
+    param_set: &ParamSet,
+    ro: &mut Box<RenderOptions>,
+    medium_interface: &MediumInterface,
+) {
     // MakeLight (api.cpp:591)
     if param_set.name == String::from("point") {
         let i: Spectrum =
             param_set.find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
-        // Spectrum sc = paramSet.FindOneSpectrum("scale", Spectrum(1.0));
-        // Point3f P = paramSet.FindOnePoint3f("from", Point3f(0, 0, 0));
-        // Transform l2w = Translate(Vector3f(P.x, P.y, P.z)) * light2world;
+        let sc: Spectrum =
+            param_set.find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
         // return std::make_shared<PointLight>(l2w, medium, I * sc);
         unsafe {
-            let point_light = Arc::new(PointLight::new(&CUR_TRANSFORM.t[0], &i));
+            let point_light = Arc::new(PointLight::new(
+                &CUR_TRANSFORM.t[0],
+                medium_interface,
+                &(i * sc),
+            ));
             ro.lights.push(point_light);
         }
     } else if param_set.name == String::from("spot") {
@@ -467,6 +474,7 @@ fn make_light(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
             // return std::make_shared<SpotLight>(light2world, medium, I * sc, coneangle, coneangle - conedelta);
             let spot_light = Arc::new(SpotLight::new(
                 &CUR_TRANSFORM.t[0],
+                medium_interface,
                 &(i * sc),
                 coneangle,
                 coneangle - conedelta,
@@ -3307,7 +3315,8 @@ fn main() {
                                                                     param_set.name
                                                                 );
                                                                 print_params(&param_set);
-                                                                make_light(&param_set, ro);
+                                                                let mi: MediumInterface = create_medium_interface();
+                                                                make_light(&param_set, ro, &mi);
                                                             } else {
                                                                 panic!("Can't get render options.");
                                                             }
@@ -4866,6 +4875,7 @@ fn main() {
                                                                             let area_light: Arc<DiffuseAreaLight> =
                                                                                 Arc::new(DiffuseAreaLight::new(
                                                                                     &light_to_world,
+                                                                                    &MediumInterface::default(),
                                                                                     &l_emit,
                                                                                     n_samples,
                                                                                     shape.clone(),

@@ -7,6 +7,7 @@ use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{vec3_coordinate_system, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
+use core::medium::MediumInterface;
 use core::pbrt::{Float, Spectrum};
 use core::sampling::concentric_sample_disk;
 use core::scene::Scene;
@@ -14,7 +15,6 @@ use core::transform::Transform;
 
 // see distant.h
 
-#[derive(Debug)]
 pub struct DistantLight {
     // private data (see distant.h)
     pub l: Spectrum,
@@ -22,11 +22,11 @@ pub struct DistantLight {
     pub world_center: RwLock<Point3f>,
     pub world_radius: RwLock<Float>,
     // inherited from class Light (see light.h)
-    flags: u8,
-    n_samples: i32,
-    // TODO: const MediumInterface mediumInterface;
-    light_to_world: Transform,
-    world_to_light: Transform,
+    pub flags: u8,
+    pub n_samples: i32,
+    pub medium_interface: MediumInterface,
+    pub light_to_world: Transform,
+    pub world_to_light: Transform,
 }
 
 impl DistantLight {
@@ -38,6 +38,7 @@ impl DistantLight {
             world_radius: RwLock::new(0.0),
             flags: LightFlags::DeltaDirection as u8,
             n_samples: 1_i32,
+            medium_interface: MediumInterface::default(),
             light_to_world: Transform::default(),
             world_to_light: Transform::default(),
         }

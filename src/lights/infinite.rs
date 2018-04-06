@@ -15,6 +15,7 @@ use core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3
 use core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
+use core::medium::MediumInterface;
 use core::mipmap::{ImageWrap, MipMap};
 use core::pbrt::{Float, Spectrum};
 use core::pbrt::{INV_2_PI, INV_PI};
@@ -54,11 +55,11 @@ pub struct InfiniteAreaLight {
     pub world_radius: RwLock<Float>,
     pub distribution: Arc<Distribution2D>,
     // inherited from class Light (see light.h)
-    flags: u8,
-    n_samples: i32,
-    // TODO: const MediumInterface mediumInterface;
-    light_to_world: Transform,
-    world_to_light: Transform,
+    pub flags: u8,
+    pub n_samples: i32,
+    pub medium_interface: MediumInterface,
+    pub light_to_world: Transform,
+    pub world_to_light: Transform,
 }
 
 impl InfiniteAreaLight {
@@ -158,6 +159,7 @@ impl InfiniteAreaLight {
                         distribution: distribution,
                         flags: LightFlags::Infinite as u8,
                         n_samples: std::cmp::max(1_i32, n_samples),
+                        medium_interface: MediumInterface::default(),
                         light_to_world: *light_to_world,
                         world_to_light: Transform::inverse(&*light_to_world),
                     }
@@ -237,6 +239,7 @@ impl InfiniteAreaLight {
                             distribution: distribution,
                             flags: LightFlags::Infinite as u8,
                             n_samples: std::cmp::max(1_i32, n_samples),
+                            medium_interface: MediumInterface::default(),
                             light_to_world: *light_to_world,
                             world_to_light: Transform::inverse(&*light_to_world),
                         };
@@ -286,6 +289,7 @@ impl InfiniteAreaLight {
             distribution: distribution,
             flags: LightFlags::Infinite as u8,
             n_samples: std::cmp::max(1_i32, n_samples),
+            medium_interface: MediumInterface::default(),
             light_to_world: Transform::default(),
             world_to_light: Transform::default(),
         }

@@ -21,6 +21,5 @@ fn main() {
     let dir: Vector3f = from - to;
     let light_to_world: Transform = Transform::default();
     let lsc: Spectrum = l * sc;
-    let distant_light: DistantLight = DistantLight::new(&light_to_world, &lsc, &dir);
-    println!("distant_light = {:?}", distant_light);
+    let _distant_light: DistantLight = DistantLight::new(&light_to_world, &lsc, &dir);
 }

@@ -1,11 +1,13 @@
 // std
 use std;
 use std::f32::consts::PI;
+use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{pnt3_distance_squared, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
+use core::medium::{Medium, MediumInterface};
 use core::pbrt::radians;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::cos_theta;
@@ -15,7 +17,7 @@ use core::transform::Transform;
 
 // see spot.h
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Clone)]
 pub struct SpotLight {
     // private data (see spot.h)
     pub p_light: Point3f,
@@ -23,20 +25,29 @@ pub struct SpotLight {
     pub cos_total_width: Float,
     pub cos_falloff_start: Float,
     // inherited from class Light (see light.h)
-    flags: u8,
-    n_samples: i32,
-    // TODO: const MediumInterface mediumInterface;
-    light_to_world: Transform,
-    world_to_light: Transform,
+    pub flags: u8,
+    pub n_samples: i32,
+    pub medium_interface: MediumInterface,
+    pub light_to_world: Transform,
+    pub world_to_light: Transform,
 }
 
 impl SpotLight {
     pub fn new(
         light_to_world: &Transform,
+        medium_interface: &MediumInterface,
         i: &Spectrum,
         total_width: Float,
         falloff_start: Float,
     ) -> Self {
+        let mut inside: Option<Arc<Medium + Send + Sync>> = None;
+        let mut outside: Option<Arc<Medium + Send + Sync>> = None;
+        if let Some(ref mi_inside) = medium_interface.inside {
+            inside = Some(mi_inside.clone());
+        }
+        if let Some(ref mi_outside) = medium_interface.outside {
+            outside = Some(mi_outside.clone());
+        }
         SpotLight {
             p_light: light_to_world.transform_point(&Point3f::default()),
             i: *i,
@@ -44,6 +55,10 @@ impl SpotLight {
             cos_falloff_start: radians(falloff_start).cos(),
             flags: LightFlags::DeltaPosition as u8,
             n_samples: 1_i32,
+            medium_interface: MediumInterface {
+                inside: inside,
+                outside: outside,
+            },
             light_to_world: *light_to_world,
             world_to_light: Transform::inverse(light_to_world),
         }

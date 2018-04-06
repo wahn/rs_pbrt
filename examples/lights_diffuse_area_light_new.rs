@@ -1,6 +1,7 @@
 extern crate pbrt;
 
 use pbrt::core::geometry::Vector3f;
+use pbrt::core::medium::MediumInterface;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::shape::Shape;
 use pbrt::core::transform::Transform;
@@ -40,8 +41,14 @@ fn main() {
         phi_max,
     ));
     let two_sided: bool = false;
-    let diffuse_area_light: DiffuseAreaLight =
-        DiffuseAreaLight::new(&light_to_world, &l_emit, n_samples, shape, two_sided);
+    let diffuse_area_light: DiffuseAreaLight = DiffuseAreaLight::new(
+        &light_to_world,
+        &MediumInterface::default(),
+        &l_emit,
+        n_samples,
+        shape,
+        two_sided,
+    );
     println!(
         "diffuse_area_light.l_emit = {:?}",
         diffuse_area_light.l_emit
