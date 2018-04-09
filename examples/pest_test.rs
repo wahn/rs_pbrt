@@ -574,12 +574,12 @@ fn make_medium(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
     sig_a = param_set.find_one_spectrum(String::from("sigma_a"), sig_a) * scale;
     sig_s = param_set.find_one_spectrum(String::from("sigma_s"), sig_s) * scale;
     let mut some_medium: Option<Arc<Medium + Sync + Send>> = None;
-    if param_set.name == String::from("homogeneous") {
+    if medium_type == String::from("homogeneous") {
         some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
-    } else if param_set.name == String::from("heterogeneous") {
+    } else if medium_type == String::from("heterogeneous") {
         panic!("TODO: make_medium(\"heterogeneous\")");
     } else {
-        panic!("MakeMedium: unknown name {}", param_set.name);
+        panic!("MakeMedium: unknown name {}", medium_type);
     }
     if let Some(medium) = some_medium {
         ro.named_media.insert(param_set.name.clone(), medium);
@@ -2184,9 +2184,17 @@ fn main() {
                                             let mut strings: Vec<String> = Vec::new();
                                             for medium_interface_pair in statement_pair.into_inner()
                                             {
-                                                let string: String =
-                                                    String::from_str(medium_interface_pair.clone().into_span().as_str()).unwrap();
-                                                strings.push(string);
+                                                match medium_interface_pair.as_rule() {
+                                                    Rule::empty_string => {
+                                                        strings.push(String::from(""));
+                                                    },
+                                                    Rule::string => {
+                                                        let ident = medium_interface_pair.into_inner().next();
+                                                        let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                                                        strings.push(string);
+                                                    }
+                                                    _ => unreachable!(),
+                                                }
                                             }
                                             assert!(
                                                 strings.len() == 2_usize,
@@ -3757,7 +3765,7 @@ fn main() {
                                                             if let Some(ref mut ro) = RENDER_OPTIONS
                                                             {
                                                                 println!(
-                                                                    "LightSource \"{}\" ",
+                                                                    "MakeNamedMedium \"{}\" ",
                                                                     param_set.name
                                                                 );
                                                                 print_params(&param_set);
