@@ -339,6 +339,7 @@ impl Light for InfiniteAreaLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
+                medium_interface: None,
             },
             p1: InteractionCommon {
                 p: iref.p + *wi * (2.0 as Float * world_radius),
@@ -346,6 +347,7 @@ impl Light for InfiniteAreaLight {
                 p_error: Vector3f::default(),
                 wo: Vector3f::default(),
                 n: Normal3f::default(),
+                medium_interface: None,
             },
         };
         // TODO: SpectrumType::Illuminant
@@ -447,6 +449,7 @@ impl Light for InfiniteAreaLight {
             t_max: std::f32::INFINITY,
             time: time,
             differential: None,
+            medium: None,
         };
         // compute _InfiniteAreaLight_ ray PDFs
         if sin_theta == 0.0 as Float {

@@ -90,6 +90,7 @@ impl Light for DiffuseAreaLight {
             p_error: iref.p_error,
             wo: iref.wo,
             n: iref.n,
+            medium_interface: None,
         };
         vis.p1 = InteractionCommon {
             p: p_shape.p,
@@ -97,6 +98,7 @@ impl Light for DiffuseAreaLight {
             p_error: p_shape.p_error,
             wo: p_shape.wo,
             n: p_shape.n,
+            medium_interface: None,
         };
         self.l(&p_shape, &-new_wi)
     }

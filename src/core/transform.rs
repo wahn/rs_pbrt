@@ -685,6 +685,7 @@ impl Transform {
                 t_max: t_max,
                 time: r.time,
                 differential: Some(diff),
+                medium: r.medium.clone(),
             }
         } else {
             Ray {
@@ -693,6 +694,7 @@ impl Transform {
                 t_max: t_max,
                 time: r.time,
                 differential: None,
+                medium: r.medium.clone(),
             }
         }
     }
@@ -902,6 +904,7 @@ impl Transform {
             t_max: r.t_max,
             time: r.time,
             differential: None,
+            medium: r.medium.clone(),
         }
     }
     pub fn transform_surface_interaction(&self, si: &SurfaceInteraction) -> SurfaceInteraction {

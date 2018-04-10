@@ -20,6 +20,7 @@ fn main() {
         },
         t_max: std::f32::INFINITY,
         time: 0.0,
+        medium: None,
         differential: None,
     };
     let ox = ray.o.x;
@@ -36,7 +37,6 @@ fn main() {
     let mut t1: Float = 0.0;
     // expected to return false
     let is_quadratic = quadratic(a, b, c, &mut t0, &mut t1);
-    println!("ray = {:?}", ray);
     if is_quadratic {
         println!(
             "quadratic({:?}, {:?}, {:?}, {:?}, {:?}) = {:?}",
@@ -63,6 +63,7 @@ fn main() {
         },
         t_max: std::f32::INFINITY,
         time: 0.0,
+        medium: None,
         differential: None,
     };
     let ox = ray.o.x;
@@ -83,7 +84,6 @@ fn main() {
     // $8 = {v = 6.18103886, low = 6.18102741, high = 6.18105078, vPrecise = 6.1810388691983602651135176753172118}
     // (gdb) p t1
     // $9 = {v = 6.29181957, low = 6.29180765, high = 6.29183102, vPrecise = 6.2918196725310140370035494328249115}
-    println!("ray = {:?}", ray);
     if is_quadratic {
         // compare vs. the gdb output above
         println!(

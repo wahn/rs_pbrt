@@ -91,9 +91,9 @@ fn main() {
         d: d,
         t_max: std::f32::INFINITY,
         time: 0.0,
+        medium: None,
         differential: None,
     };
-    println!("r = {:?}", r);
     if let Some((_isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
         println!("triangle.intersect(r) = (isect, {:?})", t_hit);
     }
@@ -109,9 +109,9 @@ fn main() {
         d: d,
         t_max: std::f32::INFINITY,
         time: 0.0,
+        medium: None,
         differential: None,
     };
-    println!("r = {:?}", r);
     if let Some((_isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
         println!("triangle.intersect(r) = (isect, {:?})", t_hit);
     }

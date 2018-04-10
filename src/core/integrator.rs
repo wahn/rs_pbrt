@@ -164,6 +164,7 @@ pub fn estimate_direct(
         p_error: it.get_p_error(),
         wo: it.get_wo(),
         n: it.get_n(),
+        medium_interface: it.get_medium_interface(),
     };
     let mut li: Spectrum = light.sample_li(
         &it_common,

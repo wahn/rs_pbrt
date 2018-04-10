@@ -215,6 +215,7 @@ impl Camera for PerspectiveCamera {
             d: dir,
             t_max: std::f32::INFINITY,
             time: lerp(sample.time, self.shutter_open, self.shutter_close),
+            medium: None,
             differential: Some(diff),
         };
         // modify ray for depth of field
@@ -397,8 +398,8 @@ impl Camera for PerspectiveCamera {
             },
         ));
         // populate arguments and compute the importance value
-        vis.p0 = *iref;
-        vis.p1 = lens_intr;
+        vis.p0 = iref.clone();
+        vis.p1 = lens_intr.clone();
         *wi = lens_intr.p - iref.p;
         let dist: Float = wi.length();
         *wi /= dist;

@@ -13,9 +13,9 @@ use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3,
-                     vec3_dot_vec3, vec3_normalize};
+                     vec3_dot_nrm, vec3_dot_vec3, vec3_normalize};
 use core::material::TransportMode;
-use core::medium::MediumInterface;
+use core::medium::{Medium, MediumInterface};
 use core::pbrt::SHADOW_EPSILON;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::{GeometricPrimitive, Primitive};
@@ -34,9 +34,10 @@ pub trait Interaction {
     fn get_p_error(&self) -> Vector3f;
     fn get_wo(&self) -> Vector3f;
     fn get_n(&self) -> Normal3f;
+    fn get_medium_interface(&self) -> Option<MediumInterface>;
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Default, Clone)]
 pub struct InteractionCommon {
     // Interaction Public Data
     pub p: Point3f,
@@ -44,6 +45,7 @@ pub struct InteractionCommon {
     pub p_error: Vector3f,
     pub wo: Vector3f,
     pub n: Normal3f,
+    pub medium_interface: Option<MediumInterface>,
 }
 
 impl InteractionCommon {
@@ -54,7 +56,8 @@ impl InteractionCommon {
             d: *d,
             t_max: std::f32::INFINITY,
             time: self.time,
-            differential: None, // TODO: GetMedium(d)
+            differential: None,
+            medium: self.get_medium(d),
         }
     }
     pub fn spawn_ray_to(&self, it: &InteractionCommon) -> Ray {
@@ -68,6 +71,22 @@ impl InteractionCommon {
             t_max: 1.0 - SHADOW_EPSILON,
             time: self.time,
             differential: None,
+            medium: self.get_medium(&d),
+        }
+    }
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
+        if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
+            if let Some(ref medium_interface) = self.medium_interface {
+                medium_interface.outside.clone()
+            } else {
+                None
+            }
+        } else {
+            if let Some(ref medium_interface) = self.medium_interface {
+                medium_interface.inside.clone()
+            } else {
+                None
+            }
         }
     }
 }
@@ -82,8 +101,7 @@ pub struct Shading {
 }
 
 #[derive(Default, Clone)]
-pub struct MediumInteraction {
-}
+pub struct MediumInteraction {}
 
 impl Interaction for MediumInteraction {
     fn is_surface_interaction(&self) -> bool {
@@ -117,6 +135,10 @@ impl Interaction for MediumInteraction {
     fn get_n(&self) -> Normal3f {
         // WORK
         Normal3f::default()
+    }
+    fn get_medium_interface(&self) -> Option<MediumInterface> {
+        // WORK
+        None
     }
 }
 
@@ -332,6 +354,7 @@ impl<'m, 'p, 's> SurfaceInteraction<'m, 'p, 's> {
                     p_error: self.p_error,
                     wo: self.wo,
                     n: self.n,
+                    medium_interface: None,
                 };
                 return area_light.l(&interaction, w);
             }
@@ -355,6 +378,7 @@ impl<'m, 'p, 's> Interaction for SurfaceInteraction<'m, 'p, 's> {
             t_max: std::f32::INFINITY,
             time: self.time,
             differential: None,
+            medium: None,
         }
     }
     fn get_p(&self) -> Point3f {
@@ -371,5 +395,12 @@ impl<'m, 'p, 's> Interaction for SurfaceInteraction<'m, 'p, 's> {
     }
     fn get_n(&self) -> Normal3f {
         self.n.clone()
+    }
+    fn get_medium_interface(&self) -> Option<MediumInterface> {
+        if let Some(medium_interface) = self.medium_interface {
+            Some(medium_interface.clone())
+        } else {
+            None
+        }
     }
 }

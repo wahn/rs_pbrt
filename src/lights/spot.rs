@@ -98,6 +98,7 @@ impl Light for SpotLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
+                medium_interface: None,
             },
             p1: InteractionCommon {
                 p: self.p_light,
@@ -105,6 +106,7 @@ impl Light for SpotLight {
                 p_error: Vector3f::default(),
                 wo: Vector3f::default(),
                 n: Normal3f::default(),
+                medium_interface: None,
             },
         };
         self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
@@ -140,6 +142,7 @@ impl Light for SpotLight {
             t_max: std::f32::INFINITY,
             time: time,
             differential: None,
+            medium: None,
         };
         *n_light = Normal3f::from(ray.d);
         *pdf_pos = 1.0 as Float;

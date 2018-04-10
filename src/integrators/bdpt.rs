@@ -10,6 +10,7 @@ use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::light::is_delta_light;
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::material::TransportMode;
+use core::medium::MediumInterface;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::reflection::BxdfType;
@@ -94,6 +95,7 @@ impl<'a> Interaction for EndpointInteraction<'a> {
             t_max: std::f32::INFINITY,
             time: self.time,
             differential: None,
+            medium: None,
         }
     }
     fn get_p(&self) -> Point3f {
@@ -110,6 +112,10 @@ impl<'a> Interaction for EndpointInteraction<'a> {
     }
     fn get_n(&self) -> Normal3f {
         self.n.clone()
+    }
+    fn get_medium_interface(&self) -> Option<MediumInterface> {
+        // WORK
+        None
     }
 }
 
@@ -413,6 +419,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
                     t_max: Float::default(),
                     time: Float::default(),
                     differential: None,
+                    medium: None,
                 };
                 le += light.le(&mut ray);
             }
@@ -528,6 +535,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
                                 t_max: std::f32::INFINITY,
                                 time: self.time(),
                                 differential: None,
+                                medium: None,
                             },
                             &self.ng(),
                             &mut pdf_pos,
@@ -551,6 +559,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
                                     t_max: std::f32::INFINITY,
                                     time: self.time(),
                                     differential: None,
+                                    medium: None,
                                 },
                                 &self.ng(),
                                 &mut pdf_pos,
@@ -610,6 +619,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
                                         t_max: std::f32::INFINITY,
                                         time: self.time(),
                                         differential: None,
+                                        medium: None,
                                     },
                                     &self.ng(),
                                     &mut pdf_pos,
@@ -643,6 +653,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
                                             t_max: std::f32::INFINITY,
                                             time: self.time(),
                                             differential: None,
+                                            medium: None,
                                         },
                                         &self.ng(),
                                         &mut pdf_pos,

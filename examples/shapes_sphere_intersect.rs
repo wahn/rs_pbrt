@@ -44,10 +44,10 @@ fn main() {
         d: d,
         t_max: 17.7973537,
         time: 0.0,
+        medium: None,
         differential: None,
     };
     println!("translate = {:?}", translate);
-    println!("r = {:?}", r);
     if let Some((_isect, t_hit)) = Shape::intersect(&sphere, &r) {
         println!("sphere.intersect(r) = (isect, {:?})", t_hit);
     }

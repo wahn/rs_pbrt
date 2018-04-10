@@ -106,5 +106,4 @@ fn main() {
     // println!("perspective_camera = {:?}", perspective_camera);
     let mut ray: Ray = Ray::default();
     let _ray_weight: Float = perspective_camera.generate_ray_differential(&camera_sample, &mut ray);
-    println!("ray = {:?}", ray);
 }

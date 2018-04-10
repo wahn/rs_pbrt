@@ -18,8 +18,7 @@ fn main() {
         d: direction,
         t_max: std::f32::INFINITY,
         time: 0.0,
+        medium: None,
         differential: None,
     };
-
-    println!("{:?}", ray);
 }

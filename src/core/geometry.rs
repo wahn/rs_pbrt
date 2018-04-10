@@ -115,10 +115,9 @@
 //!         d: direction,
 //!         t_max: std::f32::INFINITY,
 //!         time: 0.0,
+//!         medium: None,
 //!         differential: None,
 //!     };
-//!
-//!     println!("{:?}", ray);
 //! }
 //! ```
 //!
@@ -184,9 +183,11 @@
 use std;
 use std::f32::consts::PI;
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
+use std::sync::Arc;
 // others
 use num;
 // pbrt
+use core::medium::Medium;
 use core::pbrt::Float;
 use core::pbrt::{clamp_t, gamma, lerp, next_float_down, next_float_up};
 
@@ -1646,7 +1647,7 @@ pub fn bnd3_expand(b: &Bounds3f, delta: Float) -> Bounds3f {
     )
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Default, Clone)]
 pub struct Ray {
     /// origin
     pub o: Point3f,
@@ -1656,6 +1657,7 @@ pub struct Ray {
     pub t_max: Float,
     /// used for animations
     pub time: Float,
+    pub medium: Option<Arc<Medium + Send + Sync>>,
     /// in C++: 'class RayDifferential : public Ray'
     pub differential: Option<RayDifferential>,
 }

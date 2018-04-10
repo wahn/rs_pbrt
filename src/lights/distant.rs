@@ -66,6 +66,7 @@ impl Light for DistantLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
+                medium_interface: None,
             },
             p1: InteractionCommon {
                 p: p_outside,
@@ -73,6 +74,7 @@ impl Light for DistantLight {
                 p_error: Vector3f::default(),
                 wo: Vector3f::default(),
                 n: Normal3f::default(),
+                medium_interface: None,
             },
         };
         self.l
@@ -131,6 +133,7 @@ impl Light for DistantLight {
             t_max: std::f32::INFINITY,
             time: time,
             differential: None,
+            medium: None,
         };
         *n_light = Normal3f::from(ray.d);
         *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);

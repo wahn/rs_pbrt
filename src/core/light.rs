@@ -67,7 +67,7 @@ pub fn is_delta_light(flags: u8) -> bool {
 
 /// A closure - an object that encapsulates a small amount of data and
 /// some computation that is yet to be done.
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Default, Clone)]
 pub struct VisibilityTester {
     pub p0: InteractionCommon, // TODO: private
     pub p1: InteractionCommon, // TODO: private
@@ -89,14 +89,19 @@ impl VisibilityTester {
                     } else {
                         // update transmittance for current ray segment
                         // TODO: if (ray.medium) Tr *= ray.medium->Tr(ray, sampler);
-                        let it: InteractionCommon = InteractionCommon {
-                            p: isect.p,
-                            time: isect.time,
-                            p_error: isect.p_error,
-                            wo: isect.wo,
-                            n: isect.n,
-                        };
-                        ray = it.spawn_ray_to(&self.p1);
+                        if let Some(medium) = ray.medium {
+                            panic!("TODO: VisibilityTester::tr() has to deal with media");
+                        } else {
+                            let it: InteractionCommon = InteractionCommon {
+                                p: isect.p,
+                                time: isect.time,
+                                p_error: isect.p_error,
+                                wo: isect.wo,
+                                n: isect.n,
+                                medium_interface: None,
+                            };
+                            ray = it.spawn_ray_to(&self.p1);
+                        }
                     }
                 }
             } else {

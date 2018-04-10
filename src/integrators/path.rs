@@ -71,6 +71,7 @@ impl SamplerIntegrator for PathIntegrator {
             t_max: r.t_max,
             time: r.time,
             differential: r.differential,
+            medium: r.medium.clone(),
         };
         let mut specular_bounce: bool = false;
         let mut bounces: u32 = 0_u32;

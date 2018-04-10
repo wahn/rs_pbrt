@@ -57,6 +57,7 @@ impl SamplerIntegrator for AOIntegrator {
             t_max: r.t_max,
             time: r.time,
             differential: r.differential,
+            medium: r.medium.clone(),
         };
         if let Some(mut isect) = scene.intersect(&mut ray) {
             let mode: TransportMode = TransportMode::Radiance;
