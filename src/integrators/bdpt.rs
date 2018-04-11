@@ -6,11 +6,11 @@ use std::sync::Arc;
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_normalize};
-use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
+use core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
 use core::light::is_delta_light;
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::material::TransportMode;
-use core::medium::MediumInterface;
+use core::medium::{Medium, MediumInterface};
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::reflection::BxdfType;
@@ -878,9 +878,12 @@ pub fn random_walk<'a>(
         //     "Random walk. Bounces {:?}, beta {:?}, pdf_fwd {:?}, pdf_rev {:?}",
         //     bounces, beta, pdf_fwd, pdf_rev
         // );
-        // TODO: Handle MediumInteraction
+        let mut mi: MediumInteraction = MediumInteraction {};
         // trace a ray and sample the medium, if any
         if let Some(mut isect) = scene.intersect(ray) {
+            if let Some(ref medium) = ray.medium {
+                *beta *= medium.sample(ray, sampler, &mut mi);
+            }
             // compute scattering functions for _mode_ and skip over medium
             // boundaries
             isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());

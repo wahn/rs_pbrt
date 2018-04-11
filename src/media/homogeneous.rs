@@ -26,11 +26,12 @@ impl HomogeneousMedium {
 }
 
 impl Medium for HomogeneousMedium {
-    fn tr(ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
+    fn tr(&self, ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
         // WORK
         Spectrum::default()
     }
     fn sample(
+        &self,
         ray: &Ray,
         sampler: &mut Box<Sampler + Send + Sync>,
         mi: &mut MediumInteraction,
