@@ -36,6 +36,15 @@ impl Medium for HomogeneousMedium {
         sampler: &mut Box<Sampler + Send + Sync>,
         mi: &mut MediumInteraction,
     ) -> Spectrum {
+        // TODO: ProfilePhase _(Prof::MediumSample);
+        // sample a channel and distance along the ray
+        let channel: usize = ((sampler.get_1d() * 3.0 as Float) as usize).min(2_usize);
+        let dist: Float = (1.0 as Float - sampler.get_1d()).ln() / self.sigma_a[channel];
+        let t: Float = (dist / ray.d.length()).min(ray.t_max);
+        let sampled_medium: bool = t < ray.t_max;
+        if sampled_medium {
+            // TODO: *mi = MediumInteraction(...)
+        }
         // WORK
         Spectrum::default()
     }

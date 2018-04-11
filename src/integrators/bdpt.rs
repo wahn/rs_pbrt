@@ -878,11 +878,16 @@ pub fn random_walk<'a>(
         //     "Random walk. Bounces {:?}, beta {:?}, pdf_fwd {:?}, pdf_rev {:?}",
         //     bounces, beta, pdf_fwd, pdf_rev
         // );
-        let mut mi: MediumInteraction = MediumInteraction {};
+        let mut mi: MediumInteraction = MediumInteraction {
+            phase: None,
+        };
         // trace a ray and sample the medium, if any
         if let Some(mut isect) = scene.intersect(ray) {
             if let Some(ref medium) = ray.medium {
                 *beta *= medium.sample(ray, sampler, &mut mi);
+            }
+            if beta.is_black() {
+                break;
             }
             // compute scattering functions for _mode_ and skip over medium
             // boundaries

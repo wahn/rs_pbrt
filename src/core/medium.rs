@@ -2,7 +2,7 @@
 use std;
 use std::sync::Arc;
 // pbrt
-use core::geometry::Ray;
+use core::geometry::{Bounds3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::MediumInteraction;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
@@ -256,6 +256,11 @@ pub struct MeasuredSS {
     pub name: &'static str,
     pub sigma_prime_s: [Float; 3],
     pub sigma_a: [Float; 3],
+}
+
+pub trait PhaseFunction {
+    fn p(&self, wo: &Vector3f, wi: &Vector3f) -> Float;
+    fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: &Point2f) -> Float;
 }
 
 pub trait Medium {

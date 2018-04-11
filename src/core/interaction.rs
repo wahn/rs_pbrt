@@ -15,7 +15,7 @@ use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3,
                      vec3_dot_nrm, vec3_dot_vec3, vec3_normalize};
 use core::material::TransportMode;
-use core::medium::{Medium, MediumInterface};
+use core::medium::{Medium, MediumInterface, PhaseFunction};
 use core::pbrt::SHADOW_EPSILON;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::{GeometricPrimitive, Primitive};
@@ -101,7 +101,9 @@ pub struct Shading {
 }
 
 #[derive(Default, Clone)]
-pub struct MediumInteraction {}
+pub struct MediumInteraction {
+    pub phase: Option<Arc<PhaseFunction>>,
+}
 
 impl Interaction for MediumInteraction {
     fn is_surface_interaction(&self) -> bool {
