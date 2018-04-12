@@ -1,4 +1,5 @@
 // std
+use std::f32;
 use std::sync::Arc;
 // pbrt
 use core::geometry::Ray;
@@ -29,8 +30,8 @@ impl HomogeneousMedium {
 
 impl Medium for HomogeneousMedium {
     fn tr(&self, ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        // TODO: ProfilePhase _(Prof::MediumTr);
+        (-self.sigma_t * (ray.t_max * ray.d.length()).min(f32::MAX)).exp()
     }
     fn sample(
         &self,
@@ -54,7 +55,27 @@ impl Medium for HomogeneousMedium {
                 Some(Arc::new(HenyeyGreenstein { g: self.g })),
             );
         }
-        // WORK
-        Spectrum::default()
+        // compute the transmittance and sampling density
+        let tr: Spectrum = (-self.sigma_t * t.min(f32::MAX) * ray.d.length()).exp();
+        let density: Spectrum;
+        if sampled_medium {
+            density = self.sigma_t * tr;
+        } else {
+            density = tr;
+        }
+        let mut pdf: Float = 0.0 as Float;
+        for i in 0..3 { // TODO: Spectrum::nSamples
+            pdf += density[i];
+        }
+        pdf *= 1.0 as Float / 3.0 as Float; // TODO: Spectrum::nSamples
+        if pdf == 0.0 as Float {
+            assert!(tr.is_black());
+            pdf = 1.0 as Float;
+        }
+        if sampled_medium {
+            tr * self.sigma_s / pdf
+        } else {
+            tr / pdf
+        }
     }
 }
