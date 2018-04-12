@@ -131,6 +131,7 @@ pub struct Vertex<'a, 'm, 'p, 's> {
     vertex_type: VertexType,
     beta: Spectrum,
     ei: Option<EndpointInteraction<'a>>,
+    mi: Option<MediumInteraction>,
     si: Option<SurfaceInteraction<'m, 'p, 's>>,
     delta: bool,
     pdf_fwd: Float,
@@ -143,6 +144,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
             vertex_type: vertex_type,
             beta: *beta,
             ei: Some(ei),
+            mi: None,
             si: None,
             delta: false,
             pdf_fwd: 0.0 as Float,
@@ -181,7 +183,27 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
             vertex_type: VertexType::Surface,
             beta: *beta,
             ei: None,
+            mi: None,
             si: Some(si),
+            delta: false,
+            pdf_fwd: 0.0 as Float,
+            pdf_rev: 0.0 as Float,
+        };
+        v.pdf_fwd = prev.convert_density(pdf, &v);
+        v
+    }
+    pub fn create_medium_interaction(
+        mi: MediumInteraction,
+        beta: &Spectrum,
+        pdf: Float,
+        prev: &Vertex,
+    ) -> Vertex<'a, 'm, 'p, 's> {
+        let mut v: Vertex = Vertex {
+            vertex_type: VertexType::Medium,
+            beta: *beta,
+            ei: None,
+            mi: Some(mi),
+            si: None,
             delta: false,
             pdf_fwd: 0.0 as Float,
             pdf_rev: 0.0 as Float,
@@ -889,90 +911,92 @@ pub fn random_walk<'a>(
             }
             if mi.is_valid() {
                 // record medium interaction in _path_ and compute forward density
-                // vertex = Vertex::CreateMedium(mi, beta, pdfFwd, prev);
+                let prev: &Vertex = &path[(bounces - 1) as usize];
+                let mut vertex: Vertex = Vertex::create_medium_interaction(mi, &beta, pdf_fwd, prev);
                 // if (++bounces >= maxDepth) break;
                 // sample direction and compute reverse density at preceding vertex
                 // Vector3f wi;
                 // pdfFwd = pdfRev = mi.phase->Sample_p(-ray.d, &wi, sampler.Get2D());
                 // ray = mi.SpawnRay(wi);
                 // WORK
-            }
-            // compute scattering functions for _mode_ and skip over medium
-            // boundaries
-            isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
+            } else {
+                // compute scattering functions for _mode_ and skip over medium
+                // boundaries
+                isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
 
-            // if (!isect.bsdf) {
-            //     ray = isect.SpawnRay(ray.d);
-            //     continue;
-            // }
+                // if (!isect.bsdf) {
+                //     ray = isect.SpawnRay(ray.d);
+                //     continue;
+                // }
 
-            // initialize _vertex_ with surface intersection information
-            let mut vertex: Vertex = Vertex::create_surface_interaction(
-                isect.clone(),
-                &beta,
-                pdf_fwd,
-                &path[bounces as usize],
-            );
-            bounces += 1;
-            if bounces as u32 >= max_depth {
-                // store new vertex
-                path.push(vertex);
-                break;
-            }
-            if let Some(ref bsdf) = isect.clone().bsdf {
-                // sample BSDF at current vertex and compute reverse probability
-                let mut wi: Vector3f = Vector3f::default();
-                let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                let mut sampled_type: u8 = u8::max_value(); // != 0
-                let f: Spectrum = bsdf.sample_f(
-                    &isect.wo,
-                    &mut wi,
-                    &sampler.get_2d(),
-                    &mut pdf_fwd,
-                    bsdf_flags,
-                    &mut sampled_type,
+                // initialize _vertex_ with surface intersection information
+                let mut vertex: Vertex = Vertex::create_surface_interaction(
+                    isect.clone(),
+                    &beta,
+                    pdf_fwd,
+                    &path[bounces as usize],
                 );
-                // println!(
-                //     "Random walk sampled dir {:?} f: {:?}, pdf_fwd: {:?}",
-                //     wi, f, pdf_fwd
-                // );
-                if f.is_black() || pdf_fwd == 0.0 as Float {
-                    // in C++ code ++bounces is called after continue !!!
-                    bounces -= 1;
+                bounces += 1;
+                if bounces as u32 >= max_depth {
+                    // store new vertex
+                    path.push(vertex);
                     break;
                 }
-                *beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf_fwd;
-                // println!("Random walk beta now {:?}", beta);
-                pdf_rev = bsdf.pdf(&wi, &isect.wo, bsdf_flags);
-                if (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8 {
-                    vertex.delta = true;
-                    pdf_rev = 0.0 as Float;
-                    pdf_fwd = 0.0 as Float;
+                if let Some(ref bsdf) = isect.clone().bsdf {
+                    // sample BSDF at current vertex and compute reverse probability
+                    let mut wi: Vector3f = Vector3f::default();
+                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                    let mut sampled_type: u8 = u8::max_value(); // != 0
+                    let f: Spectrum = bsdf.sample_f(
+                        &isect.wo,
+                        &mut wi,
+                        &sampler.get_2d(),
+                        &mut pdf_fwd,
+                        bsdf_flags,
+                        &mut sampled_type,
+                    );
+                    // println!(
+                    //     "Random walk sampled dir {:?} f: {:?}, pdf_fwd: {:?}",
+                    //     wi, f, pdf_fwd
+                    // );
+                    if f.is_black() || pdf_fwd == 0.0 as Float {
+                        // in C++ code ++bounces is called after continue !!!
+                        bounces -= 1;
+                        break;
+                    }
+                    *beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf_fwd;
+                    // println!("Random walk beta now {:?}", beta);
+                    pdf_rev = bsdf.pdf(&wi, &isect.wo, bsdf_flags);
+                    if (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8 {
+                        vertex.delta = true;
+                        pdf_rev = 0.0 as Float;
+                        pdf_fwd = 0.0 as Float;
+                    }
+                    *beta *=
+                        Spectrum::new(correct_shading_normal(&isect, &isect.wo, &wi, mode.clone()));
+                    // println!(
+                    //     "Random walk beta after shading normal correction {:?}",
+                    //     beta
+                    // );
+                    let new_ray = isect.spawn_ray(&wi);
+                    *ray = new_ray;
+                    // compute reverse area density at preceding vertex
+                    let mut new_pdf_rev;
+                    {
+                        let prev: &Vertex = &path[(bounces - 1) as usize];
+                        new_pdf_rev = vertex.convert_density(pdf_rev, prev);
+                    }
+                    // update previous vertex
+                    path[(bounces - 1) as usize].pdf_rev = new_pdf_rev;
+                    // store new vertex
+                    path.push(vertex);
+                } else {
+                    let new_ray = isect.spawn_ray(&ray.d);
+                    *ray = new_ray;
+                    // in C++ code ++bounces is called after continue !!!
+                    bounces -= 1;
+                    continue;
                 }
-                *beta *=
-                    Spectrum::new(correct_shading_normal(&isect, &isect.wo, &wi, mode.clone()));
-                // println!(
-                //     "Random walk beta after shading normal correction {:?}",
-                //     beta
-                // );
-                let new_ray = isect.spawn_ray(&wi);
-                *ray = new_ray;
-                // compute reverse area density at preceding vertex
-                let mut new_pdf_rev;
-                {
-                    let prev: &Vertex = &path[(bounces - 1) as usize];
-                    new_pdf_rev = vertex.convert_density(pdf_rev, prev);
-                }
-                // update previous vertex
-                path[(bounces - 1) as usize].pdf_rev = new_pdf_rev;
-                // store new vertex
-                path.push(vertex);
-            } else {
-                let new_ray = isect.spawn_ray(&ray.d);
-                *ray = new_ray;
-                // in C++ code ++bounces is called after continue !!!
-                bounces -= 1;
-                continue;
             }
         } else {
             // capture escaped rays when tracing from the camera
@@ -1107,6 +1131,7 @@ pub fn mis_weight<'a>(
     if s == 1 {
         // a1 = {qs, sampled};
         let mut ei: Option<EndpointInteraction> = None;
+        let mut mi: Option<MediumInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
             let mut camera: Option<&Box<Camera + Send + Sync>> = None;
@@ -1145,6 +1170,7 @@ pub fn mis_weight<'a>(
             vertex_type: sampled.vertex_type.clone(),
             beta: sampled.beta,
             ei: ei,
+            mi: mi,
             si: si,
             delta: sampled.delta,
             pdf_fwd: sampled.pdf_fwd,
@@ -1153,6 +1179,7 @@ pub fn mis_weight<'a>(
     } else if t == 1 {
         // a1 = {pt, sampled};
         let mut ei: Option<EndpointInteraction> = None;
+        let mut mi: Option<MediumInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
             let mut camera: Option<&Box<Camera + Send + Sync>> = None;
@@ -1191,6 +1218,7 @@ pub fn mis_weight<'a>(
             vertex_type: sampled.vertex_type.clone(),
             beta: sampled.beta,
             ei: ei,
+            mi: mi,
             si: si,
             delta: sampled.delta,
             pdf_fwd: sampled.pdf_fwd,
@@ -1203,6 +1231,7 @@ pub fn mis_weight<'a>(
     } else if t > 0 {
         // *pt = t > 0 ? &cameraVertices[t - 1] : nullptr
         let mut ei: Option<EndpointInteraction> = None;
+        let mut mi: Option<MediumInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref cv_ei) = camera_vertices[t - 1].ei {
             let mut camera: Option<&Box<Camera + Send + Sync>> = None;
@@ -1241,6 +1270,7 @@ pub fn mis_weight<'a>(
             vertex_type: camera_vertices[t - 1].vertex_type.clone(),
             beta: camera_vertices[t - 1].beta,
             ei: ei,
+            mi: mi,
             si: si,
             delta: false, // overwrite
             pdf_fwd: camera_vertices[t - 1].pdf_fwd,
@@ -1252,6 +1282,7 @@ pub fn mis_weight<'a>(
     } else if s > 0 {
         // *qs = s > 0 ? &lightVertices[s - 1] : nullptr
         let mut ei: Option<EndpointInteraction> = None;
+        let mut mi: Option<MediumInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = light_vertices[s - 1].ei {
             let mut camera: Option<&Box<Camera + Send + Sync>> = None;
@@ -1290,6 +1321,7 @@ pub fn mis_weight<'a>(
             vertex_type: light_vertices[s - 1].vertex_type.clone(),
             beta: light_vertices[s - 1].beta,
             ei: ei,
+            mi: mi,
             si: si,
             delta: false, // overwrite
             pdf_fwd: light_vertices[s - 1].pdf_fwd,
@@ -1319,6 +1351,7 @@ pub fn mis_weight<'a>(
     if let Some(ref callable) = pt {
         if t > 1 {
             let mut ei: Option<EndpointInteraction> = None;
+            let mut mi: Option<MediumInteraction> = None;
             let mut si: Option<SurfaceInteraction> = None;
             if let Some(ref cv_ei) = camera_vertices[t - 2].ei {
                 let mut camera: Option<&Box<Camera + Send + Sync>> = None;
@@ -1366,6 +1399,7 @@ pub fn mis_weight<'a>(
                 vertex_type: camera_vertices[t - 2].vertex_type.clone(),
                 beta: camera_vertices[t - 2].beta,
                 ei: ei,
+            mi: mi,
                 si: si,
                 delta: camera_vertices[t - 2].delta,
                 pdf_fwd: camera_vertices[t - 2].pdf_fwd,
@@ -1387,6 +1421,7 @@ pub fn mis_weight<'a>(
     if let Some(ref callable) = qs {
         if s > 1 {
             let mut ei: Option<EndpointInteraction> = None;
+            let mut mi: Option<MediumInteraction> = None;
             let mut si: Option<SurfaceInteraction> = None;
             if let Some(ref lv_ei) = light_vertices[s - 2].ei {
                 let mut camera: Option<&Box<Camera + Send + Sync>> = None;
@@ -1430,6 +1465,7 @@ pub fn mis_weight<'a>(
                 vertex_type: light_vertices[s - 2].vertex_type.clone(),
                 beta: light_vertices[s - 2].beta,
                 ei: ei,
+                mi: mi,
                 si: si,
                 delta: light_vertices[s - 2].delta,
                 pdf_fwd: light_vertices[s - 2].pdf_fwd,
@@ -1544,6 +1580,7 @@ pub fn connect_bdpt<'a>(
         vertex_type: VertexType::Medium,
         beta: Spectrum::default(),
         ei: None,
+        mi: None,
         si: None,
         delta: false,
         pdf_fwd: 0.0 as Float,
