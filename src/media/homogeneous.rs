@@ -1,7 +1,9 @@
+// std
+use std::sync::Arc;
 // pbrt
 use core::geometry::Ray;
 use core::interaction::MediumInteraction;
-use core::medium::Medium;
+use core::medium::{HenyeyGreenstein, Medium};
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 
@@ -44,6 +46,13 @@ impl Medium for HomogeneousMedium {
         let sampled_medium: bool = t < ray.t_max;
         if sampled_medium {
             // TODO: *mi = MediumInteraction(...)
+            *mi = MediumInteraction::new(
+                &ray.position(t),
+                &(-ray.d),
+                ray.time,
+                Some(self.clone()),
+                Some(Arc::new(HenyeyGreenstein { g: self.g })),
+            );
         }
         // WORK
         Spectrum::default()

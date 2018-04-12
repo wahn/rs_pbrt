@@ -878,9 +878,7 @@ pub fn random_walk<'a>(
         //     "Random walk. Bounces {:?}, beta {:?}, pdf_fwd {:?}, pdf_rev {:?}",
         //     bounces, beta, pdf_fwd, pdf_rev
         // );
-        let mut mi: MediumInteraction = MediumInteraction {
-            phase: None,
-        };
+        let mut mi: MediumInteraction = MediumInteraction::default();
         // trace a ray and sample the medium, if any
         if let Some(mut isect) = scene.intersect(ray) {
             if let Some(ref medium) = ray.medium {
@@ -888,6 +886,16 @@ pub fn random_walk<'a>(
             }
             if beta.is_black() {
                 break;
+            }
+            if mi.is_valid() {
+                // record medium interaction in _path_ and compute forward density
+                // vertex = Vertex::CreateMedium(mi, beta, pdfFwd, prev);
+                // if (++bounces >= maxDepth) break;
+                // sample direction and compute reverse density at preceding vertex
+                // Vector3f wi;
+                // pdfFwd = pdfRev = mi.phase->Sample_p(-ray.d, &wi, sampler.Get2D());
+                // ray = mi.SpawnRay(wi);
+                // WORK
             }
             // compute scattering functions for _mode_ and skip over medium
             // boundaries

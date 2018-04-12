@@ -102,7 +102,42 @@ pub struct Shading {
 
 #[derive(Default, Clone)]
 pub struct MediumInteraction {
+    // Interaction Public Data
+    pub p: Point3f,
+    pub time: Float,
+    pub p_error: Vector3f,
+    pub wo: Vector3f,
+    pub n: Normal3f,
+    pub medium_interface: Option<MediumInterface>,
+    // MediumInteraction Public Data
     pub phase: Option<Arc<PhaseFunction>>,
+}
+
+impl MediumInteraction {
+    pub fn new(
+        p: &Point3f,
+        wo: &Vector3f,
+        time: Float,
+        medium: Option<&Medium>,
+        phase: Option<Arc<PhaseFunction>>,
+    ) -> Self {
+        MediumInteraction {
+            p: *p,
+            time: time,
+            p_error: Vector3f::default(),
+            wo: *wo,
+            n: Normal3f::default(),
+            medium_interface: None,
+            phase: phase,
+        }
+    }
+    pub fn is_valid(&self) -> bool {
+        if let Some(ref arc) = self.phase {
+            true
+        } else {
+            false
+        }
+    }
 }
 
 impl Interaction for MediumInteraction {
