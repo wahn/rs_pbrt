@@ -1,9 +1,12 @@
 // std
 use std;
+use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Bounds3f, Point2f, Point3f, Ray, Vector3f};
+use core::geometry::{spherical_direction_vec3, vec3_coordinate_system, vec3_dot_vec3};
 use core::interaction::MediumInteraction;
+use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 
@@ -273,6 +276,40 @@ pub trait Medium {
     ) -> Spectrum;
 }
 
+pub struct HenyeyGreenstein {
+    pub g: Float,
+}
+
+impl PhaseFunction for HenyeyGreenstein {
+    fn p(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        // TODO: ProfilePhase _(Prof::PhaseFuncEvaluation);
+        phase_hg(vec3_dot_vec3(wo, wi), self.g)
+    }
+    fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: &Point2f) -> Float {
+        // TODO: ProfilePhase _(Prof::PhaseFuncSampling);
+        // compute $\cos \theta$ for Henyey--Greenstein sample
+        let cos_theta: Float;
+        if self.g.abs() < 1e-3 as Float {
+            cos_theta = 1.0 as Float - 2.0 as Float * u[0];
+        } else {
+            let sqr_term: Float = (1.0 as Float - self.g * self.g)
+                / (1.0 as Float - self.g + 2.0 as Float * self.g * u[0]);
+            cos_theta =
+                (1.0 as Float + self.g * self.g - sqr_term * sqr_term) / (2.0 as Float * self.g);
+        }
+        // compute direction _wi_ for Henyey--Greenstein sample
+        let sin_theta: Float = (0.0 as Float)
+            .max(1.0 as Float - cos_theta * cos_theta)
+            .sqrt();
+        let phi: Float = 2.0 as Float * PI * u[1];
+        let mut v1: Vector3f = Vector3f::default();
+        let mut v2: Vector3f = Vector3f::default();
+        vec3_coordinate_system(wo, &mut v1, &mut v2);
+        *wi = spherical_direction_vec3(sin_theta, cos_theta, phi, &v1, &v2, &(-*wo));
+        phase_hg(-cos_theta, self.g)
+    }
+}
+
 #[derive(Default, Clone)]
 pub struct MediumInterface {
     pub inside: Option<Arc<Medium + Send + Sync>>,
@@ -295,4 +332,9 @@ pub fn get_medium_scattering_properties(
         }
     }
     false
+}
+
+pub fn phase_hg(cos_theta: Float, g: Float) -> Float {
+    let denom: Float = 1.0 as Float + g * g + 2.0 as Float * g * cos_theta;
+    INV_4_PI * (1.0 as Float - g * g) / (denom * denom.sqrt())
 }
