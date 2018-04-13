@@ -1961,6 +1961,7 @@ fn main() {
                 triangle,
                 Some(plastic1.clone()),
                 None,
+                &MediumInterface::default(),
             ));
             render_options.primitives.push(geo_prim.clone());
         } else {
@@ -1968,6 +1969,7 @@ fn main() {
                 triangle,
                 Some(plastic2.clone()),
                 None,
+                &MediumInterface::default(),
             ));
             render_options.primitives.push(geo_prim.clone());
         }
@@ -1978,7 +1980,12 @@ fn main() {
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
     let matte = Arc::new(MatteMaterial::new(kd, sigma));
     for disk in render_options.disks {
-        let geo_prim = Arc::new(GeometricPrimitive::new(disk, Some(matte.clone()), None));
+        let geo_prim = Arc::new(GeometricPrimitive::new(
+            disk,
+            Some(matte.clone()),
+            None,
+            &MediumInterface::default(),
+        ));
         render_options.primitives.push(geo_prim.clone());
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel

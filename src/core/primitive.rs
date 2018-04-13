@@ -6,6 +6,7 @@ use core::geometry::{Bounds3f, Ray};
 use core::interaction::SurfaceInteraction;
 use core::light::AreaLight;
 use core::material::{Material, TransportMode};
+use core::medium::MediumInterface;
 use core::pbrt::Float;
 use core::shape::Shape;
 use core::transform::{AnimatedTransform, Transform};
@@ -45,7 +46,7 @@ pub struct GeometricPrimitive {
     pub shape: Arc<Shape + Send + Sync>,
     pub material: Option<Arc<Material + Send + Sync>>,
     pub area_light: Option<Arc<AreaLight + Send + Sync>>,
-    // TODO: MediumInterface mediumInterface;
+    pub medium_interface: MediumInterface,
 }
 
 impl GeometricPrimitive {
@@ -53,18 +54,21 @@ impl GeometricPrimitive {
         shape: Arc<Shape + Send + Sync>,
         material: Option<Arc<Material + Send + Sync>>,
         area_light: Option<Arc<AreaLight + Send + Sync>>,
+        medium_interface: &MediumInterface,
     ) -> Self {
         if let Some(area_light) = area_light {
             GeometricPrimitive {
                 shape: shape,
                 material: material,
                 area_light: Some(area_light),
+                medium_interface: medium_interface.clone(),
             }
         } else {
             GeometricPrimitive {
                 shape: shape,
                 material: material,
                 area_light: None,
+                medium_interface: medium_interface.clone(),
             }
         }
     }

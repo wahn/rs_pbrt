@@ -4867,6 +4867,8 @@ fn main() {
                                                                             shapes.len(),
                                                                             materials.len()
                                                                         );
+                                                                        // MediumInterface
+                                                                        let mi: MediumInterface = create_medium_interface();
                                                                         for i in 0..shapes.len() {
                                                                             let shape = &shapes[i];
                                                                             let material =
@@ -4893,7 +4895,7 @@ fn main() {
                                                                             let area_light: Arc<DiffuseAreaLight> =
                                                                                 Arc::new(DiffuseAreaLight::new(
                                                                                     &light_to_world,
-                                                                                    &MediumInterface::default(),
+                                                                                    &mi,
                                                                                     &l_emit,
                                                                                     n_samples,
                                                                                     shape.clone(),
@@ -4904,7 +4906,8 @@ fn main() {
                                                                             );
                                                                             let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
                                                                                                                             material.clone(),
-                                                                                                                            Some(area_light.clone())));
+                                                                                                                            Some(area_light.clone()),
+                                                                                                                            &mi));
                                                                             prims.push(
                                                                                 geo_prim.clone(),
                                                                             );
@@ -4918,6 +4921,8 @@ fn main() {
                                                                         shapes.len(),
                                                                         materials.len()
                                                                     );
+                                                                    // MediumInterface
+                                                                    let mi: MediumInterface = create_medium_interface();
                                                                     for i in 0..shapes.len() {
                                                                         let shape = &shapes[i];
                                                                         let material =
@@ -4927,6 +4932,7 @@ fn main() {
                                                                                 shape.clone(),
                                                                                 material.clone(),
                                                                                 None,
+                                                                                &mi,
                                                                             ),
                                                                         );
                                                                         prims
@@ -4974,6 +4980,8 @@ fn main() {
                                                                     shapes.len(),
                                                                     materials.len()
                                                                 );
+                                                                // MediumInterface
+                                                                let mi: MediumInterface = create_medium_interface();
                                                                 for i in 0..shapes.len() {
                                                                     let shape = &shapes[i];
                                                                     let material = &materials[i];
@@ -4982,6 +4990,7 @@ fn main() {
                                                                             shape.clone(),
                                                                             material.clone(),
                                                                             None,
+                                                                            &mi,
                                                                         ),
                                                                     );
                                                                     prims.push(geo_prim.clone());
