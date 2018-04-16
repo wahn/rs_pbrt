@@ -378,7 +378,7 @@ fn main() {
                 triangle,
                 Some(matte.clone()),
                 None,
-                &MediumInterface::default(),
+                None,
             ));
             render_options.primitives.push(geo_prim.clone());
         }
@@ -389,7 +389,7 @@ fn main() {
                     sphere,
                     Some(matte.clone()),
                     None,
-                    &MediumInterface::default(),
+                    None,
                 ));
                 render_options.primitives.push(geo_prim.clone());
             }
@@ -402,7 +402,7 @@ fn main() {
                         sphere,
                         Some(mirror.clone()),
                         None,
-                        &MediumInterface::default(),
+                        None,
                     ));
                     render_options.primitives.push(geo_prim.clone());
                 } else {
@@ -410,7 +410,7 @@ fn main() {
                         sphere,
                         Some(glass.clone()),
                         None,
-                        &MediumInterface::default(),
+                        None,
                     ));
                     render_options.primitives.push(geo_prim.clone());
                 }
@@ -447,7 +447,7 @@ fn main() {
                 triangle,
                 Some(matte.clone()),
                 None,
-                &MediumInterface::default(),
+                None,
             ));
             render_options.primitives.push(geo_prim.clone());
         }
@@ -458,7 +458,7 @@ fn main() {
                     sphere,
                     Some(mirror.clone()),
                     None,
-                    &MediumInterface::default(),
+                    None,
                 ));
                 render_options.primitives.push(geo_prim.clone());
             } else {
@@ -466,7 +466,7 @@ fn main() {
                     sphere,
                     Some(glass.clone()),
                     None,
-                    &MediumInterface::default(),
+                    None,
                 ));
                 render_options.primitives.push(geo_prim.clone());
             }
@@ -506,7 +506,7 @@ fn main() {
                 triangle,
                 Some(matte.clone()),
                 None,
-                &MediumInterface::default(),
+                None,
             ));
             render_options.primitives.push(geo_prim.clone());
         }
@@ -517,7 +517,7 @@ fn main() {
                     sphere,
                     Some(mirror.clone()),
                     None,
-                    &MediumInterface::default(),
+                    None,
                 ));
                 render_options.primitives.push(geo_prim.clone());
             } else {
@@ -525,7 +525,7 @@ fn main() {
                     sphere,
                     Some(glass.clone()),
                     None,
-                    &MediumInterface::default(),
+                    None,
                 ));
                 render_options.primitives.push(geo_prim.clone());
             }

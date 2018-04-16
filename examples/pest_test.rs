@@ -1547,7 +1547,7 @@ fn pbrt_world_end() {
                                         && ro.integrator_name != String::from("bdpt")
                                         && ro.integrator_name != String::from("mlt")
                                     {
-                                        print!("WARNING: Scene has scattering media but \"{:?}\" integrator doesn't support ",
+                                        print!("WARNING: Scene has scattering media but \"{}\" integrator doesn't support ",
                                                ro.integrator_name);
                                         print!("volume scattering. Consider using \"volpath\", \"bdpt\", or ");
                                         println!("\"mlt\".");
@@ -4907,7 +4907,7 @@ fn main() {
                                                                             let geo_prim = Arc::new(GeometricPrimitive::new(shape.clone(),
                                                                                                                             material.clone(),
                                                                                                                             Some(area_light.clone()),
-                                                                                                                            &mi));
+                                                                                                                            Some(Arc::new(mi.clone()))));
                                                                             prims.push(
                                                                                 geo_prim.clone(),
                                                                             );
@@ -4932,7 +4932,7 @@ fn main() {
                                                                                 shape.clone(),
                                                                                 material.clone(),
                                                                                 None,
-                                                                                &mi,
+                                                                                Some(Arc::new(mi.clone())),
                                                                             ),
                                                                         );
                                                                         prims
@@ -4990,7 +4990,7 @@ fn main() {
                                                                             shape.clone(),
                                                                             material.clone(),
                                                                             None,
-                                                                            &mi,
+                                                                            Some(Arc::new(mi.clone())),
                                                                         ),
                                                                     );
                                                                     prims.push(geo_prim.clone());

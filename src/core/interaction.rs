@@ -34,7 +34,7 @@ pub trait Interaction {
     fn get_p_error(&self) -> Vector3f;
     fn get_wo(&self) -> Vector3f;
     fn get_n(&self) -> Normal3f;
-    fn get_medium_interface(&self) -> Option<MediumInterface>;
+    fn get_medium_interface(&self) -> Option<Arc<MediumInterface>>;
 }
 
 #[derive(Default, Clone)]
@@ -45,7 +45,7 @@ pub struct InteractionCommon {
     pub p_error: Vector3f,
     pub wo: Vector3f,
     pub n: Normal3f,
-    pub medium_interface: Option<MediumInterface>,
+    pub medium_interface: Option<Arc<MediumInterface>>,
 }
 
 impl InteractionCommon {
@@ -108,7 +108,7 @@ pub struct MediumInteraction {
     pub p_error: Vector3f,
     pub wo: Vector3f,
     pub n: Normal3f,
-    pub medium_interface: Option<MediumInterface>,
+    pub medium_interface: Option<Arc<MediumInterface>>,
     // MediumInteraction Public Data
     pub phase: Option<Arc<PhaseFunction>>,
 }
@@ -173,21 +173,21 @@ impl Interaction for MediumInteraction {
         // WORK
         Normal3f::default()
     }
-    fn get_medium_interface(&self) -> Option<MediumInterface> {
+    fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
         // WORK
         None
     }
 }
 
 #[derive(Default, Clone)]
-pub struct SurfaceInteraction<'m, 'p, 's> {
+pub struct SurfaceInteraction<'p, 's> {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
     pub p_error: Vector3f,
     pub wo: Vector3f,
     pub n: Normal3f,
-    pub medium_interface: Option<&'m MediumInterface>,
+    pub medium_interface: Option<Arc<MediumInterface>>,
     // SurfaceInteraction Public Data
     pub uv: Point2f,
     pub dpdu: Vector3f,
@@ -206,7 +206,7 @@ pub struct SurfaceInteraction<'m, 'p, 's> {
     pub shape: Option<&'s Shape>,
 }
 
-impl<'m, 'p, 's> SurfaceInteraction<'m, 'p, 's> {
+impl<'p, 's> SurfaceInteraction<'p, 's> {
     pub fn new(
         p: &Point3f,
         p_error: &Vector3f,
@@ -400,7 +400,7 @@ impl<'m, 'p, 's> SurfaceInteraction<'m, 'p, 's> {
     }
 }
 
-impl<'m, 'p, 's> Interaction for SurfaceInteraction<'m, 'p, 's> {
+impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
     fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }
@@ -433,8 +433,8 @@ impl<'m, 'p, 's> Interaction for SurfaceInteraction<'m, 'p, 's> {
     fn get_n(&self) -> Normal3f {
         self.n.clone()
     }
-    fn get_medium_interface(&self) -> Option<MediumInterface> {
-        if let Some(medium_interface) = self.medium_interface {
+    fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
+        if let Some(ref medium_interface) = self.medium_interface {
             Some(medium_interface.clone())
         } else {
             None

@@ -316,6 +316,41 @@ pub struct MediumInterface {
     pub outside: Option<Arc<Medium + Send + Sync>>,
 }
 
+impl MediumInterface {
+    pub fn new(
+        inside: &Option<Arc<Medium + Send + Sync>>,
+        outside: &Option<Arc<Medium + Send + Sync>>,
+    ) -> Self {
+        MediumInterface {
+            inside: inside.clone(),
+            outside: outside.clone(),
+        }
+    }
+    pub fn is_medium_transition(&self) -> bool {
+        if let Some(ref inside) = self.inside {
+            // self.inside == Some
+            if let Some(ref outside) = self.outside {
+                // self.outside == Some
+                let pi = &*inside as *const _ as *const usize;
+                let po = &*outside as *const _ as *const usize;
+                pi != po
+            } else {
+                // self.outside == None
+                true
+            }
+        } else {
+            // self.inside == None
+            if let Some(ref outside) = self.outside {
+                // self.outside == Some
+                true
+            } else {
+                // self.outside == None
+                false
+            }
+        }
+    }
+}
+
 pub fn get_medium_scattering_properties(
     name: &String,
     sigma_a: &mut Spectrum,
