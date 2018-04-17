@@ -46,7 +46,7 @@ pub struct GeometricPrimitive {
     pub shape: Arc<Shape + Send + Sync>,
     pub material: Option<Arc<Material + Send + Sync>>,
     pub area_light: Option<Arc<AreaLight + Send + Sync>>,
-    pub medium_interface: MediumInterface,
+    pub medium_interface: Option<Arc<MediumInterface>>,
 }
 
 impl GeometricPrimitive {
@@ -54,21 +54,39 @@ impl GeometricPrimitive {
         shape: Arc<Shape + Send + Sync>,
         material: Option<Arc<Material + Send + Sync>>,
         area_light: Option<Arc<AreaLight + Send + Sync>>,
-        medium_interface: &MediumInterface,
+        medium_interface: Option<Arc<MediumInterface>>,
     ) -> Self {
         if let Some(area_light) = area_light {
-            GeometricPrimitive {
-                shape: shape,
-                material: material,
-                area_light: Some(area_light),
-                medium_interface: medium_interface.clone(),
+            if let Some(medium_interface) = medium_interface {
+                GeometricPrimitive {
+                    shape: shape,
+                    material: material,
+                    area_light: Some(area_light),
+                    medium_interface: Some(medium_interface),
+                }
+            } else {
+                GeometricPrimitive {
+                    shape: shape,
+                    material: material,
+                    area_light: Some(area_light),
+                    medium_interface: None,
+                }
             }
         } else {
-            GeometricPrimitive {
-                shape: shape,
-                material: material,
-                area_light: None,
-                medium_interface: medium_interface.clone(),
+            if let Some(medium_interface) = medium_interface {
+                GeometricPrimitive {
+                    shape: shape,
+                    material: material,
+                    area_light: None,
+                    medium_interface: Some(medium_interface),
+                }
+            } else {
+                GeometricPrimitive {
+                    shape: shape,
+                    material: material,
+                    area_light: None,
+                    medium_interface: None,
+                }
             }
         }
     }
@@ -82,6 +100,28 @@ impl Primitive for GeometricPrimitive {
         self.shape.intersect(ray).map(|(mut isect, t_hit)| {
             isect.primitive = Some(self.clone());
             ray.t_max = t_hit;
+            assert!(nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0 as Float);
+            // initialize _SurfaceInteraction::mediumInterface_ after
+            // _Shape_ intersection
+            if let Some(ref medium_interface) = self.medium_interface {
+                if medium_interface.is_medium_transition() {
+                    isect.medium_interface = Some(medium_interface.clone());
+                    print!("medium_interface = {{inside = ");
+                    if let Some(ref inside) = medium_interface.inside {
+                        print!("{:p} , outside = ", inside);
+                    } else {
+                        print!("0x0 , outside = ")
+                    }
+                    if let Some(ref outside) = medium_interface.outside {
+                        println!("{:p}}}", outside);
+                    } else {
+                        println!("0x0}}")
+                    }
+                } else {
+                    isect.medium_interface =
+                        Some(Arc::new(MediumInterface::new(&ray.medium, &ray.medium)));
+                }
+            }
             isect
         })
     }
