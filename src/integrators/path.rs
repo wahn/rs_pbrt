@@ -103,12 +103,14 @@ impl SamplerIntegrator for PathIntegrator {
                 // compute scattering functions and skip over medium boundaries
                 let mode: TransportMode = TransportMode::Radiance;
                 isect.compute_scattering_functions(&mut ray, true, mode);
-                // if (!isect.bsdf) {
-                //     VLOG(2) << "Skipping intersection due to null bsdf";
-                //     ray = isect.SpawnRay(ray.d);
-                //     bounces--;
-                //     continue;
-                // }
+                if let Some(ref bsdf) = isect.bsdf {
+                    // we are fine (for below)
+                } else {
+                    // TODO: println!("Skipping intersection due to null bsdf");
+                    ray = isect.spawn_ray(&ray.d);
+                    // bounces--;
+                    continue;
+                } 
                 if let Some(ref light_distribution) = self.light_distribution {
                     let distrib: Arc<Distribution1D> = light_distribution.lookup(&isect.p);
                     // Sample illumination from lights to find path contribution.

@@ -113,7 +113,7 @@ impl<'a> Interaction for EndpointInteraction<'a> {
     fn get_n(&self) -> Normal3f {
         self.n.clone()
     }
-    fn get_medium_interface(&self) -> Option<MediumInterface> {
+    fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
         // WORK
         None
     }
@@ -127,18 +127,18 @@ pub enum VertexType {
     Medium,
 }
 
-pub struct Vertex<'a, 'm, 'p, 's> {
+pub struct Vertex<'a, 'p, 's> {
     vertex_type: VertexType,
     beta: Spectrum,
     ei: Option<EndpointInteraction<'a>>,
     mi: Option<MediumInteraction>,
-    si: Option<SurfaceInteraction<'m, 'p, 's>>,
+    si: Option<SurfaceInteraction<'p, 's>>,
     delta: bool,
     pdf_fwd: Float,
     pdf_rev: Float,
 }
 
-impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
+impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     pub fn new(vertex_type: VertexType, ei: EndpointInteraction<'a>, beta: &Spectrum) -> Self {
         Vertex {
             vertex_type: vertex_type,
@@ -155,7 +155,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
         camera: &'a Box<Camera + Send + Sync>,
         ray: &Ray,
         beta: &Spectrum,
-    ) -> Vertex<'a, 'm, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         Vertex::new(
             VertexType::Camera,
             EndpointInteraction::new_camera(camera, ray),
@@ -166,7 +166,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
         camera: &'a Box<Camera + Send + Sync>,
         it: &InteractionCommon,
         beta: &Spectrum,
-    ) -> Vertex<'a, 'm, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         Vertex::new(
             VertexType::Camera,
             EndpointInteraction::new_interaction_from_camera(it, camera),
@@ -174,11 +174,11 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
         )
     }
     pub fn create_surface_interaction(
-        si: SurfaceInteraction<'m, 'p, 's>,
+        si: SurfaceInteraction<'p, 's>,
         beta: &Spectrum,
         pdf: Float,
         prev: &Vertex,
-    ) -> Vertex<'a, 'm, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         let mut v: Vertex = Vertex {
             vertex_type: VertexType::Surface,
             beta: *beta,
@@ -197,7 +197,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
         beta: &Spectrum,
         pdf: Float,
         prev: &Vertex,
-    ) -> Vertex<'a, 'm, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         let mut v: Vertex = Vertex {
             vertex_type: VertexType::Medium,
             beta: *beta,
@@ -215,7 +215,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
         ei: EndpointInteraction<'a>,
         beta: &Spectrum,
         pdf: Float,
-    ) -> Vertex<'a, 'm, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         let mut v: Vertex = Vertex::new(VertexType::Light, ei, beta);
         v.pdf_fwd = pdf;
         v
@@ -226,7 +226,7 @@ impl<'a, 'm, 'p, 's> Vertex<'a, 'm, 'p, 's> {
         nl: &Normal3f,
         le: &Spectrum,
         _pdf: Float,
-    ) -> Vertex<'a, 'm, 'p, 's> {
+    ) -> Vertex<'a, 'p, 's> {
         Vertex::new(
             VertexType::Light,
             EndpointInteraction::new_light(light, ray, nl),
@@ -756,7 +756,7 @@ pub fn generate_camera_subpath<'a>(
     max_depth: u32,
     camera: &'a Box<Camera + Send + Sync>,
     p_film: &Point2f,
-    path: &mut Vec<Vertex<'a, 'a, 'a, 'a>>,
+    path: &mut Vec<Vertex<'a, 'a, 'a>>,
 ) -> (usize, Point3f, Float) {
     if max_depth == 0 {
         return (0_usize, Point3f::default(), Float::default());
@@ -803,7 +803,7 @@ pub fn generate_light_subpath<'a>(
     time: Float,
     light_distr: &Arc<Distribution1D>,
     // TODO: light_to_index
-    path: &mut Vec<Vertex<'a, 'a, 'a, 'a>>,
+    path: &mut Vec<Vertex<'a, 'a, 'a>>,
 ) -> usize {
     let mut n_vertices: usize = 0_usize;
     if max_depth == 0_u32 {
@@ -884,7 +884,7 @@ pub fn random_walk<'a>(
     pdf: Float,
     max_depth: u32,
     mode: TransportMode,
-    path: &mut Vec<Vertex<'a, 'a, 'a, 'a>>,
+    path: &mut Vec<Vertex<'a, 'a, 'a>>,
     density_info: Option<Float>,
 ) -> usize {
     let mut bounces: usize = 0_usize;
@@ -1101,8 +1101,8 @@ pub fn g<'a>(
 
 pub fn mis_weight<'a>(
     scene: &'a Scene,
-    light_vertices: &'a Vec<Vertex<'a, 'a, 'a, 'a>>,
-    camera_vertices: &'a Vec<Vertex<'a, 'a, 'a, 'a>>,
+    light_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
+    camera_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
     sampled: &Vertex,
     s: usize,
     t: usize,
@@ -1559,8 +1559,8 @@ pub fn mis_weight<'a>(
 
 pub fn connect_bdpt<'a>(
     scene: &'a Scene,
-    light_vertices: &'a Vec<Vertex<'a, 'a, 'a, 'a>>,
-    camera_vertices: &'a Vec<Vertex<'a, 'a, 'a, 'a>>,
+    light_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
+    camera_vertices: &'a Vec<Vertex<'a, 'a, 'a>>,
     s: usize,
     t: usize,
     light_distr: &Arc<Distribution1D>,

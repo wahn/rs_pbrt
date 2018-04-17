@@ -1961,7 +1961,7 @@ fn main() {
                 triangle,
                 Some(plastic1.clone()),
                 None,
-                &MediumInterface::default(),
+                None,
             ));
             render_options.primitives.push(geo_prim.clone());
         } else {
@@ -1969,7 +1969,7 @@ fn main() {
                 triangle,
                 Some(plastic2.clone()),
                 None,
-                &MediumInterface::default(),
+                None,
             ));
             render_options.primitives.push(geo_prim.clone());
         }
@@ -1984,7 +1984,7 @@ fn main() {
             disk,
             Some(matte.clone()),
             None,
-            &MediumInterface::default(),
+            None,
         ));
         render_options.primitives.push(geo_prim.clone());
     }
