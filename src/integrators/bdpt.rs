@@ -28,6 +28,7 @@ pub struct EndpointInteraction<'a> {
     pub p_error: Vector3f,
     pub wo: Vector3f,
     pub n: Normal3f,
+    pub medium_interface: Option<Arc<MediumInterface>>,
     // EndpointInteraction Public Data
     pub camera: Option<&'a Box<Camera + Send + Sync>>,
     pub light: Option<&'a Arc<Light + Send + Sync>>,
@@ -1134,8 +1135,12 @@ pub fn mis_weight<'a>(
         let mut mi: Option<MediumInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut camera: Option<&Box<Camera + Send + Sync>> = None;
             let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
             if let Some(camera_box) = lv_ei.camera {
                 camera = Some(camera_box);
             }
@@ -1148,18 +1153,24 @@ pub fn mis_weight<'a>(
                 p_error: lv_ei.p_error.clone(),
                 wo: lv_ei.wo.clone(),
                 n: lv_ei.n.clone(),
+                medium_interface: medium_interface,
                 camera: camera,
                 light: light,
             };
             ei = Some(new_ei);
         }
         if let Some(ref lv_si) = sampled.si {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
+            if let Some(ref medium_interface_arc) = lv_si.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
             let new_si: SurfaceInteraction = SurfaceInteraction {
                 p: lv_si.p.clone(),
                 time: lv_si.time,
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
+                medium_interface: medium_interface,
                 primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
@@ -1182,8 +1193,12 @@ pub fn mis_weight<'a>(
         let mut mi: Option<MediumInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut camera: Option<&Box<Camera + Send + Sync>> = None;
             let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
             if let Some(camera_box) = lv_ei.camera {
                 camera = Some(camera_box);
             }
@@ -1196,18 +1211,24 @@ pub fn mis_weight<'a>(
                 p_error: lv_ei.p_error.clone(),
                 wo: lv_ei.wo.clone(),
                 n: lv_ei.n.clone(),
+                medium_interface: medium_interface,
                 camera: camera,
                 light: light,
             };
             ei = Some(new_ei);
         }
         if let Some(ref lv_si) = sampled.si {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
+            if let Some(ref medium_interface_arc) = lv_si.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
             let new_si: SurfaceInteraction = SurfaceInteraction {
                 p: lv_si.p.clone(),
                 time: lv_si.time,
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
+                medium_interface: medium_interface,
                 primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
@@ -1234,8 +1255,12 @@ pub fn mis_weight<'a>(
         let mut mi: Option<MediumInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref cv_ei) = camera_vertices[t - 1].ei {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut camera: Option<&Box<Camera + Send + Sync>> = None;
             let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            if let Some(ref medium_interface_arc) = cv_ei.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
             if let Some(camera_box) = cv_ei.camera {
                 camera = Some(camera_box);
             }
@@ -1248,18 +1273,24 @@ pub fn mis_weight<'a>(
                 p_error: cv_ei.p_error.clone(),
                 wo: cv_ei.wo.clone(),
                 n: cv_ei.n.clone(),
+                medium_interface: medium_interface,
                 camera: camera,
                 light: light,
             };
             ei = Some(new_ei);
         }
         if let Some(ref cv_si) = camera_vertices[t - 1].si {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
+            if let Some(ref medium_interface_arc) = cv_si.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
             let new_si: SurfaceInteraction = SurfaceInteraction {
                 p: cv_si.p.clone(),
                 time: cv_si.time,
                 p_error: cv_si.p_error.clone(),
                 wo: cv_si.wo.clone(),
                 n: cv_si.n.clone(),
+                medium_interface: medium_interface,
                 primitive: cv_si.primitive,
                 bsdf: cv_si.bsdf.clone(),
                 ..Default::default()
@@ -1285,8 +1316,12 @@ pub fn mis_weight<'a>(
         let mut mi: Option<MediumInteraction> = None;
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = light_vertices[s - 1].ei {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut camera: Option<&Box<Camera + Send + Sync>> = None;
             let mut light: Option<&Arc<Light + Send + Sync>> = None;
+            if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
             if let Some(camera_box) = lv_ei.camera {
                 camera = Some(camera_box);
             }
@@ -1299,18 +1334,24 @@ pub fn mis_weight<'a>(
                 p_error: lv_ei.p_error.clone(),
                 wo: lv_ei.wo.clone(),
                 n: lv_ei.n.clone(),
+                medium_interface: medium_interface,
                 camera: camera,
                 light: light,
             };
             ei = Some(new_ei);
         }
         if let Some(ref lv_si) = light_vertices[s - 1].si {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
+            if let Some(ref medium_interface_arc) = lv_si.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
             let new_si: SurfaceInteraction = SurfaceInteraction {
                 p: lv_si.p.clone(),
                 time: lv_si.time,
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
+                medium_interface: medium_interface,
                 primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
@@ -1354,8 +1395,12 @@ pub fn mis_weight<'a>(
             let mut mi: Option<MediumInteraction> = None;
             let mut si: Option<SurfaceInteraction> = None;
             if let Some(ref cv_ei) = camera_vertices[t - 2].ei {
+                let mut medium_interface: Option<Arc<MediumInterface>> = None;
                 let mut camera: Option<&Box<Camera + Send + Sync>> = None;
                 let mut light: Option<&Arc<Light + Send + Sync>> = None;
+                if let Some(ref medium_interface_arc) = cv_ei.medium_interface {
+                    medium_interface = Some(medium_interface_arc.clone());
+                }
                 if let Some(camera_box) = cv_ei.camera {
                     camera = Some(camera_box);
                 }
@@ -1368,18 +1413,24 @@ pub fn mis_weight<'a>(
                     p_error: cv_ei.p_error.clone(),
                     wo: cv_ei.wo.clone(),
                     n: cv_ei.n.clone(),
+                    medium_interface: medium_interface,
                     camera: camera,
                     light: light,
                 };
                 ei = Some(new_ei);
             }
             if let Some(ref cv_si) = camera_vertices[t - 2].si {
+                let mut medium_interface: Option<Arc<MediumInterface>> = None;
+                if let Some(ref medium_interface_arc) = cv_si.medium_interface {
+                    medium_interface = Some(medium_interface_arc.clone());
+                }
                 let new_si: SurfaceInteraction = SurfaceInteraction {
                     p: cv_si.p.clone(),
                     time: cv_si.time,
                     p_error: cv_si.p_error.clone(),
                     wo: cv_si.wo.clone(),
                     n: cv_si.n.clone(),
+                    medium_interface: medium_interface,
                     bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
                 };
@@ -1424,8 +1475,12 @@ pub fn mis_weight<'a>(
             let mut mi: Option<MediumInteraction> = None;
             let mut si: Option<SurfaceInteraction> = None;
             if let Some(ref lv_ei) = light_vertices[s - 2].ei {
+                let mut medium_interface: Option<Arc<MediumInterface>> = None;
                 let mut camera: Option<&Box<Camera + Send + Sync>> = None;
                 let mut light: Option<&Arc<Light + Send + Sync>> = None;
+                if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
+                    medium_interface = Some(medium_interface_arc.clone());
+                }
                 if let Some(camera_box) = lv_ei.camera {
                     camera = Some(camera_box);
                 }
@@ -1438,18 +1493,24 @@ pub fn mis_weight<'a>(
                     p_error: lv_ei.p_error.clone(),
                     wo: lv_ei.wo.clone(),
                     n: lv_ei.n.clone(),
+                    medium_interface: medium_interface,
                     camera: camera,
                     light: light,
                 };
                 ei = Some(new_ei);
             }
             if let Some(ref lv_si) = light_vertices[s - 2].si {
+                let mut medium_interface: Option<Arc<MediumInterface>> = None;
+                if let Some(ref medium_interface_arc) = lv_si.medium_interface {
+                    medium_interface = Some(medium_interface_arc.clone());
+                }
                 let new_si: SurfaceInteraction = SurfaceInteraction {
                     p: lv_si.p.clone(),
                     time: lv_si.time,
                     p_error: lv_si.p_error.clone(),
                     wo: lv_si.wo.clone(),
                     n: lv_si.n.clone(),
+                    medium_interface: medium_interface,
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
