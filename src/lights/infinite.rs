@@ -339,7 +339,7 @@ impl Light for InfiniteAreaLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
-                medium_interface: None,
+                medium_interface: Some(Arc::new(MediumInterface::default())),
             },
             p1: InteractionCommon {
                 p: iref.p + *wi * (2.0 as Float * world_radius),
@@ -347,7 +347,7 @@ impl Light for InfiniteAreaLight {
                 p_error: Vector3f::default(),
                 wo: Vector3f::default(),
                 n: Normal3f::default(),
-                medium_interface: None,
+                medium_interface: Some(Arc::new(MediumInterface::default())),
             },
         };
         // TODO: SpectrumType::Illuminant

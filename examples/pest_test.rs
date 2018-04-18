@@ -417,7 +417,6 @@ fn make_light(
             ro.lights.push(point_light);
         }
     } else if param_set.name == String::from("spot") {
-        println!("WORK: CreateSpotLight");
         // CreateSpotLight
         let i: Spectrum =
             param_set.find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
@@ -473,7 +472,7 @@ fn make_light(
             }) * Transform::inverse(&dir_to_z);
             // return std::make_shared<SpotLight>(light2world, medium, I * sc, coneangle, coneangle - conedelta);
             let spot_light = Arc::new(SpotLight::new(
-                &CUR_TRANSFORM.t[0],
+                &light2world,
                 medium_interface,
                 &(i * sc),
                 coneangle,

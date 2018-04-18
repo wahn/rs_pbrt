@@ -8,6 +8,7 @@ use core::integrator::compute_light_power_distribution;
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::lowdiscrepancy::radical_inverse;
+use core::medium::MediumInterface;
 use core::pbrt::clamp_t;
 use core::pbrt::{Float, Spectrum};
 use core::sampling::Distribution1D;
@@ -190,7 +191,7 @@ impl SpatialLightDistribution {
                     z: 0.0,
                 },
                 n: Normal3f::default(),
-                medium_interface: None,
+                medium_interface: Some(Arc::new(MediumInterface::default())),
             };
             // Use the next two Halton dimensions to sample a point on the
             // light source.
