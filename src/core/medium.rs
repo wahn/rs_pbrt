@@ -272,8 +272,7 @@ pub trait Medium {
         &self,
         ray: &Ray,
         sampler: &mut Box<Sampler + Send + Sync>,
-        mi: &mut MediumInteraction,
-    ) -> Spectrum;
+    ) -> (Spectrum, Option<MediumInteraction>);
 }
 
 pub struct HenyeyGreenstein {

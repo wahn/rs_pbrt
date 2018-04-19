@@ -97,7 +97,7 @@ impl Primitive for GeometricPrimitive {
         self.shape.world_bound()
     }
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
-        self.shape.intersect(ray).map(|(mut isect, t_hit)| {
+        if let Some((mut isect, t_hit)) = self.shape.intersect(ray) {
             isect.primitive = Some(self.clone());
             ray.t_max = t_hit;
             assert!(nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0 as Float);
@@ -122,8 +122,10 @@ impl Primitive for GeometricPrimitive {
                         Some(Arc::new(MediumInterface::new(&ray.medium, &ray.medium)));
                 }
             }
-            isect
-        })
+            Some(isect)
+        } else {
+            None
+        }
     }
     fn intersect_p(&self, r: &Ray) -> bool {
         self.shape.intersect_p(r)

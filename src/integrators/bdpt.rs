@@ -905,7 +905,9 @@ pub fn random_walk<'a>(
         // trace a ray and sample the medium, if any
         if let Some(mut isect) = scene.intersect(ray) {
             if let Some(ref medium) = ray.medium {
-                *beta *= medium.sample(ray, sampler, &mut mi);
+                // TODO: mi gets created by this function (below)
+                let (spectrum, _option) = medium.sample(ray, sampler);
+                *beta *= spectrum;
             }
             if beta.is_black() {
                 break;

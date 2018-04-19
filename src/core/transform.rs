@@ -679,22 +679,44 @@ impl Transform {
                 rx_direction: self.transform_vector(&rd.rx_direction),
                 ry_direction: self.transform_vector(&rd.ry_direction),
             };
-            Ray {
-                o: o,
-                d: d,
-                t_max: t_max,
-                time: r.time,
-                differential: Some(diff),
-                medium: r.medium.clone(),
+            if let Some(ref medium_arc) = r.medium {
+                Ray {
+                    o: o,
+                    d: d,
+                    t_max: t_max,
+                    time: r.time,
+                    differential: Some(diff),
+                    medium: Some(medium_arc.clone()),
+                }
+            } else {
+                Ray {
+                    o: o,
+                    d: d,
+                    t_max: t_max,
+                    time: r.time,
+                    differential: Some(diff),
+                    medium: None,
+                }
             }
         } else {
-            Ray {
-                o: o,
-                d: d,
-                t_max: t_max,
-                time: r.time,
-                differential: None,
-                medium: r.medium.clone(),
+            if let Some(ref medium_arc) = r.medium {
+                Ray {
+                    o: o,
+                    d: d,
+                    t_max: t_max,
+                    time: r.time,
+                    differential: None,
+                    medium: Some(medium_arc.clone()),
+                }
+            } else {
+                Ray {
+                    o: o,
+                    d: d,
+                    t_max: t_max,
+                    time: r.time,
+                    differential: None,
+                    medium: None,
+                }
             }
         }
     }

@@ -10,7 +10,7 @@ use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ra
 use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
-use core::medium::Medium;
+use core::medium::{Medium, MediumInterface};
 use core::paramset::ParamSet;
 use core::pbrt::lerp;
 use core::pbrt::{Float, Spectrum};
@@ -261,6 +261,11 @@ impl Camera for PerspectiveCamera {
             in_ray.differential = Some(diff);
         }
         // TODO: ray->medium = medium;
+        // if let Some(ref medium_arc) = self.medium {
+        //     in_ray.medium = Some(medium_arc.clone());
+        // } else {
+        //     in_ray.medium = None;
+        // }
         *ray = self.camera_to_world.transform_ray(&in_ray);
         1.0
     }
@@ -397,6 +402,14 @@ impl Camera for PerspectiveCamera {
                 z: 1.0 as Float,
             },
         ));
+        // if let Some(ref medium_arc) = self.medium {
+        //     lens_intr.medium_interface = Some(Arc::new(MediumInterface::new(
+        //         &Some(medium_arc.clone()),
+        //         &Some(medium_arc.clone()),
+        //     )));
+        // } else {
+        //     lens_intr.medium_interface = None;
+        // }
         // populate arguments and compute the importance value
         vis.p0 = iref.clone();
         vis.p1 = lens_intr.clone();

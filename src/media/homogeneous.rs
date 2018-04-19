@@ -37,8 +37,7 @@ impl Medium for HomogeneousMedium {
         &self,
         ray: &Ray,
         sampler: &mut Box<Sampler + Send + Sync>,
-        mi: &mut MediumInteraction,
-    ) -> Spectrum {
+    ) -> (Spectrum, Option<MediumInteraction>) {
         // TODO: ProfilePhase _(Prof::MediumSample);
         // sample a channel and distance along the ray
         let channel: usize = ((sampler.get_1d() * 3.0 as Float) as usize).min(2_usize);
@@ -47,13 +46,13 @@ impl Medium for HomogeneousMedium {
         let sampled_medium: bool = t < ray.t_max;
         if sampled_medium {
             // TODO: *mi = MediumInteraction(...)
-            *mi = MediumInteraction::new(
-                &ray.position(t),
-                &(-ray.d),
-                ray.time,
-                Some(self.clone()),
-                Some(Arc::new(HenyeyGreenstein { g: self.g })),
-            );
+            // *mi = MediumInteraction::new(
+            //     &ray.position(t),
+            //     &(-ray.d),
+            //     ray.time,
+            //     Some(self.clone()),
+            //     Some(Arc::new(HenyeyGreenstein { g: self.g })),
+            // );
         }
         // compute the transmittance and sampling density
         let tr: Spectrum = (-self.sigma_t * t.min(f32::MAX) * ray.d.length()).exp();
@@ -73,9 +72,9 @@ impl Medium for HomogeneousMedium {
             pdf = 1.0 as Float;
         }
         if sampled_medium {
-            tr * self.sigma_s / pdf
+            (tr * self.sigma_s / pdf, None) // TODO: MediumInteraction
         } else {
-            tr / pdf
+            (tr / pdf, None) // TODO: MediumInteraction
         }
     }
 }
