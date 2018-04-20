@@ -118,17 +118,31 @@ impl MediumInteraction {
         p: &Point3f,
         wo: &Vector3f,
         time: Float,
-        medium: Option<&Medium>,
+        medium: Option<Arc<Medium + Send + Sync>>,
         phase: Option<Arc<PhaseFunction>>,
     ) -> Self {
-        MediumInteraction {
-            p: *p,
-            time: time,
-            p_error: Vector3f::default(),
-            wo: *wo,
-            n: Normal3f::default(),
-            medium_interface: None,
-            phase: phase,
+        if let Some(medium_arc) = medium {
+            let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            MediumInteraction {
+                p: *p,
+                time: time,
+                p_error: Vector3f::default(),
+                wo: *wo,
+                n: Normal3f::default(),
+                medium_interface: Some(Arc::new(MediumInterface::new(inside, outside))),
+                phase: phase,
+            }
+        } else {
+            MediumInteraction {
+                p: *p,
+                time: time,
+                p_error: Vector3f::default(),
+                wo: *wo,
+                n: Normal3f::default(),
+                medium_interface: None,
+                phase: phase,
+            }
         }
     }
     pub fn is_valid(&self) -> bool {

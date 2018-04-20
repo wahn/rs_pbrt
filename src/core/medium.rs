@@ -317,12 +317,12 @@ pub struct MediumInterface {
 
 impl MediumInterface {
     pub fn new(
-        inside: &Option<Arc<Medium + Send + Sync>>,
-        outside: &Option<Arc<Medium + Send + Sync>>,
+        inside: Option<Arc<Medium + Send + Sync>>,
+        outside: Option<Arc<Medium + Send + Sync>>,
     ) -> Self {
         MediumInterface {
-            inside: inside.clone(),
-            outside: outside.clone(),
+            inside: inside,
+            outside: outside,
         }
     }
     pub fn is_medium_transition(&self) -> bool {

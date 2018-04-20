@@ -6,7 +6,7 @@ use core::geometry::{Bounds3f, Ray};
 use core::interaction::SurfaceInteraction;
 use core::light::AreaLight;
 use core::material::{Material, TransportMode};
-use core::medium::MediumInterface;
+use core::medium::{Medium, MediumInterface};
 use core::pbrt::Float;
 use core::shape::Shape;
 use core::transform::{AnimatedTransform, Transform};
@@ -106,20 +106,24 @@ impl Primitive for GeometricPrimitive {
             if let Some(ref medium_interface) = self.medium_interface {
                 if medium_interface.is_medium_transition() {
                     isect.medium_interface = Some(medium_interface.clone());
-                    // print!("medium_interface = {{inside = ");
-                    // if let Some(ref inside) = medium_interface.inside {
-                    //     print!("{:p} , outside = ", inside);
-                    // } else {
-                    //     print!("0x0 , outside = ")
-                    // }
-                    // if let Some(ref outside) = medium_interface.outside {
-                    //     println!("{:p}}}", outside);
-                    // } else {
-                    //     println!("0x0}}")
-                    // }
                 } else {
-                    isect.medium_interface =
-                        Some(Arc::new(MediumInterface::new(&ray.medium, &ray.medium)));
+                    if let Some(ref medium_arc) = ray.medium {
+                        let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+                        let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+                        isect.medium_interface =
+                            Some(Arc::new(MediumInterface::new(inside, outside)));
+                    }
+                }
+                print!("medium_interface = {{inside = ");
+                if let Some(ref inside) = medium_interface.inside {
+                    print!("{:p} , outside = ", inside);
+                } else {
+                    print!("0x0 , outside = ")
+                }
+                if let Some(ref outside) = medium_interface.outside {
+                    println!("{:p}}}", outside);
+                } else {
+                    println!("0x0}}")
                 }
             }
             Some(isect)
