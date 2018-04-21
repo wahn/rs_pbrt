@@ -114,17 +114,17 @@ impl Primitive for GeometricPrimitive {
                             Some(Arc::new(MediumInterface::new(inside, outside)));
                     }
                 }
-                print!("medium_interface = {{inside = ");
-                if let Some(ref inside) = medium_interface.inside {
-                    print!("{:p} , outside = ", inside);
-                } else {
-                    print!("0x0 , outside = ")
-                }
-                if let Some(ref outside) = medium_interface.outside {
-                    println!("{:p}}}", outside);
-                } else {
-                    println!("0x0}}")
-                }
+                // print!("medium_interface = {{inside = ");
+                // if let Some(ref inside) = medium_interface.inside {
+                //     print!("{:p} , outside = ", inside);
+                // } else {
+                //     print!("0x0 , outside = ")
+                // }
+                // if let Some(ref outside) = medium_interface.outside {
+                //     println!("{:p}}}", outside);
+                // } else {
+                //     println!("0x0}}")
+                // }
             }
             Some(isect)
         } else {
