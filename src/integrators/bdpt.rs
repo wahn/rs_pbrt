@@ -968,8 +968,17 @@ pub fn random_walk<'a>(
                         pdf_rev = pdf_fwd;
                         let new_ray = isect.spawn_ray(&wi);
                         *ray = new_ray;
+                        // compute reverse area density at preceding vertex
+                        let mut new_pdf_rev;
+                        {
+                            let prev: &Vertex = &path[(bounces - 1) as usize];
+                            new_pdf_rev = vertex.convert_density(pdf_rev, prev);
+                        }
+                        // update previous vertex
+                        path[(bounces - 1) as usize].pdf_rev = new_pdf_rev;
+                        // store new vertex
+                        path.push(vertex);
                     }
-                    // WORK
                 } else {
                     // compute scattering functions for _mode_ and skip over medium
                     // boundaries
@@ -1157,7 +1166,7 @@ pub fn random_walk<'a>(
     }
     assert!(
         bounces + 1 == path.len(),
-        "bounces = {:?}, path.len =  = {:?}",
+        "bounces = {:?}, path.len = {:?}",
         bounces,
         path.len()
     );
