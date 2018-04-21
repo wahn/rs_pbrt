@@ -918,16 +918,28 @@ pub fn random_walk<'a>(
             if let Some(mi) = mi_opt {
                 if mi.is_valid() {
                     if let Some(phase) = mi.clone().phase {
-                        // record medium interaction in _path_ and compute forward density
-                        let prev: &Vertex = &path[(bounces - 1) as usize];
-                        let mut vertex: Vertex = Vertex::create_medium_interaction(mi, &beta, pdf_fwd, prev);
+                        let mut vertex: Vertex = Vertex {
+                            vertex_type: VertexType::Medium,
+                            beta: Spectrum::default(),
+                            ei: None,
+                            mi: None,
+                            si: None,
+                            delta: false,
+                            pdf_fwd: 0.0 as Float,
+                            pdf_rev: 0.0 as Float,
+                        };
+                        {
+                            // record medium interaction in _path_ and compute forward density
+                            let prev: &Vertex = &path[(bounces - 1) as usize];
+                            vertex = Vertex::create_medium_interaction(mi, &beta, pdf_fwd, prev);
+                        }
                         // if (++bounces >= maxDepth) break;
                         bounces += 1;
-                        // if bounces as u32 >= max_depth {
-                        //     // store new vertex
-                        //     path.push(vertex);
-                        //     break;
-                        // }
+                        if bounces as u32 >= max_depth {
+                            // store new vertex
+                            path.push(vertex);
+                            break;
+                        }
                         // sample direction and compute reverse density at preceding vertex
                         let mut wi: Vector3f = Vector3f::default();
                         pdf_fwd = phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
