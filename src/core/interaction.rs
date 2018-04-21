@@ -145,6 +145,21 @@ impl MediumInteraction {
             }
         }
     }
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
+        if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
+            if let Some(ref medium_interface) = self.medium_interface {
+                medium_interface.outside.clone()
+            } else {
+                None
+            }
+        } else {
+            if let Some(ref medium_interface) = self.medium_interface {
+                medium_interface.inside.clone()
+            } else {
+                None
+            }
+        }
+    }
     pub fn is_valid(&self) -> bool {
         if let Some(ref arc) = self.phase {
             true
@@ -152,44 +167,54 @@ impl MediumInteraction {
             false
         }
     }
+    pub fn get_phase(&self) -> Option<Arc<PhaseFunction>> {
+        if let Some(ref phase) = self.phase {
+            Some(phase.clone())
+        } else {
+            None
+        }
+    }
 }
 
 impl Interaction for MediumInteraction {
     fn is_surface_interaction(&self) -> bool {
-        // WORK
-        false
+        self.n != Normal3f::default()
     }
     fn is_medium_interaction(&self) -> bool {
-        // WORK
-        false
+        !self.is_surface_interaction()
     }
     fn spawn_ray(&self, d: &Vector3f) -> Ray {
-        // WORK
-        Ray::default()
+        let o: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, d);
+        Ray {
+            o: o,
+            d: *d,
+            t_max: std::f32::INFINITY,
+            time: self.time,
+            differential: None,
+            medium: self.get_medium(d),
+        }
     }
     fn get_p(&self) -> Point3f {
-        // WORK
-        Point3f::default()
+        self.p.clone()
     }
     fn get_time(&self) -> Float {
-        // WORK
-        0.0 as Float
+        self.time
     }
     fn get_p_error(&self) -> Vector3f {
-        // WORK
-        Vector3f::default()
+        self.p_error.clone()
     }
     fn get_wo(&self) -> Vector3f {
-        // WORK
-        Vector3f::default()
+        self.wo.clone()
     }
     fn get_n(&self) -> Normal3f {
-        // WORK
-        Normal3f::default()
+        self.n.clone()
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
-        // WORK
-        None
+        if let Some(ref medium_interface) = self.medium_interface {
+            Some(medium_interface.clone())
+        } else {
+            None
+        }
     }
 }
 
@@ -270,6 +295,21 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             shading: shading,
             bsdf: None,
             shape: sh,
+        }
+    }
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
+        if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
+            if let Some(ref medium_interface) = self.medium_interface {
+                medium_interface.outside.clone()
+            } else {
+                None
+            }
+        } else {
+            if let Some(ref medium_interface) = self.medium_interface {
+                medium_interface.inside.clone()
+            } else {
+                None
+            }
         }
     }
     pub fn set_shading_geometry(
@@ -429,7 +469,7 @@ impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
             t_max: std::f32::INFINITY,
             time: self.time,
             differential: None,
-            medium: None,
+            medium: self.get_medium(d),
         }
     }
     fn get_p(&self) -> Point3f {

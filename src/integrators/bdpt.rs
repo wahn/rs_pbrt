@@ -5,12 +5,12 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_normalize};
+use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_dot_nrm, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
 use core::light::is_delta_light;
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::material::TransportMode;
-use core::medium::{Medium, MediumInterface};
+use core::medium::{Medium, MediumInterface, PhaseFunction};
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::reflection::BxdfType;
@@ -79,6 +79,21 @@ impl<'a> EndpointInteraction<'a> {
         ei.n = Normal3f::from(-ray.d);
         ei
     }
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
+        if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
+            if let Some(ref medium_interface) = self.medium_interface {
+                medium_interface.outside.clone()
+            } else {
+                None
+            }
+        } else {
+            if let Some(ref medium_interface) = self.medium_interface {
+                medium_interface.inside.clone()
+            } else {
+                None
+            }
+        }
+    }
 }
 
 impl<'a> Interaction for EndpointInteraction<'a> {
@@ -96,7 +111,7 @@ impl<'a> Interaction for EndpointInteraction<'a> {
             t_max: std::f32::INFINITY,
             time: self.time,
             differential: None,
-            medium: None,
+            medium: self.get_medium(d),
         }
     }
     fn get_p(&self) -> Point3f {
@@ -338,8 +353,15 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                 }
             }
             VertexType::Medium => {
-                // TODO: return mi.phase->p(mi.wo, wi);
-                return Spectrum::default();
+                if let Some(ref mi) = self.mi {
+                    if let Some(phase) = mi.get_phase() {
+                        return Spectrum::new(phase.p(&mi.wo, &wi));
+                    } else {
+                        return Spectrum::default();
+                    }
+                } else {
+                    return Spectrum::default();
+                }
             }
             _ => {
                 panic!("Vertex::f(): Unimplemented");
@@ -1161,7 +1183,15 @@ pub fn g<'a>(
     // VisibilityTester vis(v0.GetInteraction(), v1.GetInteraction());
     let mut p0: InteractionCommon = InteractionCommon::default();
     match v0.vertex_type {
-        VertexType::Medium => {}
+        VertexType::Medium => {
+            if let Some(ref mi) = v0.mi {
+                p0.p = mi.p;
+                p0.time = mi.time;
+                p0.p_error = mi.p_error;
+                p0.wo = mi.wo;
+                p0.n = mi.n;
+            }
+        }
         VertexType::Surface => {
             if let Some(ref si) = v0.si {
                 p0.p = si.p;
@@ -1183,7 +1213,15 @@ pub fn g<'a>(
     }
     let mut p1: InteractionCommon = InteractionCommon::default();
     match v1.vertex_type {
-        VertexType::Medium => {}
+        VertexType::Medium => {
+            if let Some(ref mi) = v1.mi {
+                p1.p = mi.p;
+                p1.time = mi.time;
+                p1.p_error = mi.p_error;
+                p1.wo = mi.wo;
+                p1.n = mi.n;
+            }
+        }
         VertexType::Surface => {
             if let Some(ref si) = v1.si {
                 p1.p = si.p;
