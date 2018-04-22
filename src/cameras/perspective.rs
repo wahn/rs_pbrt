@@ -260,12 +260,12 @@ impl Camera for PerspectiveCamera {
             // replace differential
             in_ray.differential = Some(diff);
         }
-        // TODO: ray->medium = medium;
-        // if let Some(ref medium_arc) = self.medium {
-        //     in_ray.medium = Some(medium_arc.clone());
-        // } else {
-        //     in_ray.medium = None;
-        // }
+        // ray->medium = medium;
+        if let Some(ref medium_arc) = self.medium {
+            in_ray.medium = Some(medium_arc.clone());
+        } else {
+            in_ray.medium = None;
+        }
         *ray = self.camera_to_world.transform_ray(&in_ray);
         1.0
     }

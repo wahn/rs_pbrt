@@ -51,13 +51,33 @@ impl<'a> EndpointInteraction<'a> {
         ei
     }
     pub fn new_camera(camera: &'a Box<Camera + Send + Sync>, ray: &Ray) -> Self {
-        let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
-        ei.camera = Some(camera);
+        let mut ei: EndpointInteraction = EndpointInteraction {
+            p: ray.o,
+            time: ray.time,
+            camera: Some(camera),
+            ..Default::default()
+        };
+        if let Some(ref medium_arc) = ray.medium {
+            let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            ei.medium_interface =
+                Some(Arc::new(MediumInterface::new(inside, outside)));
+        }
         ei
     }
     pub fn new_light(light: &'a Arc<Light + Send + Sync>, ray: &Ray, nl: &Normal3f) -> Self {
-        let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
-        ei.light = Some(light);
+        let mut ei: EndpointInteraction = EndpointInteraction {
+            p: ray.o,
+            time: ray.time,
+            light: Some(light),
+            ..Default::default()
+        };
+        if let Some(ref medium_arc) = ray.medium {
+            let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            ei.medium_interface =
+                Some(Arc::new(MediumInterface::new(inside, outside)));
+        }
         ei.n = *nl;
         ei
     }
@@ -75,8 +95,18 @@ impl<'a> EndpointInteraction<'a> {
         ei
     }
     pub fn new_ray(ray: &Ray) -> Self {
-        let mut ei: EndpointInteraction = EndpointInteraction::new(&ray.o, ray.time);
+        let mut ei: EndpointInteraction = EndpointInteraction {
+            p: ray.o,
+            time: ray.time,
+            ..Default::default()
+        };
         ei.n = Normal3f::from(-ray.d);
+        if let Some(ref medium_arc) = ray.medium {
+            let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            ei.medium_interface =
+                Some(Arc::new(MediumInterface::new(inside, outside)));
+        }
         ei
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
@@ -241,17 +271,25 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         ray: &Ray,
         nl: &Normal3f,
         le: &Spectrum,
-        _pdf: Float,
+        pdf: Float,
     ) -> Vertex<'a, 'p, 's> {
-        Vertex::new(
+        let mut v = Vertex::new(
             VertexType::Light,
             EndpointInteraction::new_light(light, ray, nl),
             le,
-        )
+        );
+        v.pdf_fwd = pdf;
+        v
     }
     pub fn p(&self) -> Point3f {
         match self.vertex_type {
-            VertexType::Medium => Point3f::default(),
+            VertexType::Medium => {
+                if let Some(ref mi) = self.mi {
+                    mi.p
+                } else {
+                    Point3f::default()
+                }
+            }
             VertexType::Surface => {
                 if let Some(ref si) = self.si {
                     si.p
@@ -270,7 +308,13 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     }
     pub fn time(&self) -> Float {
         match self.vertex_type {
-            VertexType::Medium => Float::default(),
+            VertexType::Medium => {
+                if let Some(ref mi) = self.mi {
+                    mi.time
+                } else {
+                    Float::default()
+                }
+            }
             VertexType::Surface => {
                 if let Some(ref si) = self.si {
                     si.time
@@ -289,7 +333,13 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     }
     pub fn ng(&self) -> Normal3f {
         match self.vertex_type {
-            VertexType::Medium => Normal3f::default(),
+            VertexType::Medium => {
+                if let Some(ref mi) = self.mi {
+                    mi.n
+                } else {
+                    Normal3f::default()
+                }
+            }
             VertexType::Surface => {
                 if let Some(ref si) = self.si {
                     si.n
@@ -308,7 +358,13 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     }
     pub fn ns(&self) -> Normal3f {
         match self.vertex_type {
-            VertexType::Medium => {}
+            VertexType::Medium => {
+                if let Some(ref mi) = self.mi {
+                    return mi.n;
+                } else {
+                    return Normal3f::default();
+                }
+            }
             VertexType::Surface => {
                 if let Some(ref si) = self.si {
                     return si.shading.n;
@@ -1062,12 +1118,12 @@ pub fn random_walk<'a>(
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
                 isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
-
-                // if (!isect.bsdf) {
-                //     ray = isect.SpawnRay(ray.d);
-                //     continue;
-                // }
-
+                if let Some(ref bsdf) = isect.clone().bsdf {
+                } else {
+                    let new_ray = isect.spawn_ray(&ray.d);
+                    *ray = new_ray;
+                    continue;
+                }
                 // initialize _vertex_ with surface intersection information
                 let mut vertex: Vertex = Vertex::create_surface_interaction(
                     isect.clone(),
