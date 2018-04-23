@@ -569,7 +569,7 @@ fn make_medium(param_set: &ParamSet, ro: &mut Box<RenderOptions>) {
         );
     }
     let scale: Float = param_set.find_one_float(String::from("scale"), 1.0 as Float);
-    let g: Float = param_set.find_one_float(String::from("g"), 1.0 as Float);
+    let g: Float = param_set.find_one_float(String::from("g"), 0.0 as Float);
     sig_a = param_set.find_one_spectrum(String::from("sigma_a"), sig_a) * scale;
     sig_s = param_set.find_one_spectrum(String::from("sigma_s"), sig_s) * scale;
     let mut some_medium: Option<Arc<Medium + Sync + Send>> = None;
