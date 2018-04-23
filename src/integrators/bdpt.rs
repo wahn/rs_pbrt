@@ -96,7 +96,7 @@ impl<'a> EndpointInteraction<'a> {
     }
     pub fn new_ray(ray: &Ray) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction {
-            p: ray.o,
+            p: ray.position(1.0 as Float),
             time: ray.time,
             ..Default::default()
         };
@@ -497,6 +497,9 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                 if check == LightFlags::DeltaDirection as u8 {
                     return true;
                 }
+            } else {
+                // !ei.light
+                return true;
             }
         }
         false
@@ -1008,7 +1011,11 @@ pub fn random_walk<'a>(
                         };
                         {
                             // record medium interaction in _path_ and compute forward density
-                            let prev: &Vertex = &path[(bounces - 1) as usize];
+                            let mut index: usize = 0;
+                            if bounces >= 1_usize {
+                                index = bounces - 1;
+                            }
+                            let prev: &Vertex = &path[index];
                             vertex = Vertex::create_medium_interaction(mi, &beta, pdf_fwd, prev);
                         }
                         // if (++bounces >= maxDepth) break;
@@ -1027,11 +1034,19 @@ pub fn random_walk<'a>(
                         // compute reverse area density at preceding vertex
                         let mut new_pdf_rev;
                         {
-                            let prev: &Vertex = &path[(bounces - 1) as usize];
+                            let mut index: usize = 0;
+                            if bounces >= 1_usize {
+                                index = bounces - 1;
+                            }
+                            let prev: &Vertex = &path[index];
                             new_pdf_rev = vertex.convert_density(pdf_rev, prev);
                         }
                         // update previous vertex
-                        path[(bounces - 1) as usize].pdf_rev = new_pdf_rev;
+                        let mut index: usize = 0;
+                        if bounces >= 1_usize {
+                            index = bounces - 1;
+                        }
+                        path[index].pdf_rev = new_pdf_rev;
                         // store new vertex
                         path.push(vertex);
                     }
@@ -1099,11 +1114,19 @@ pub fn random_walk<'a>(
                         // compute reverse area density at preceding vertex
                         let mut new_pdf_rev;
                         {
-                            let prev: &Vertex = &path[(bounces - 1) as usize];
+                            let mut index: usize = 0;
+                            if bounces >= 1_usize {
+                                index = bounces - 1;
+                            }
+                            let prev: &Vertex = &path[index];
                             new_pdf_rev = vertex.convert_density(pdf_rev, prev);
                         }
                         // update previous vertex
-                        path[(bounces - 1) as usize].pdf_rev = new_pdf_rev;
+                        let mut index: usize = 0;
+                        if bounces >= 1_usize {
+                            index = bounces - 1;
+                        }
+                        path[index].pdf_rev = new_pdf_rev;
                         // store new vertex
                         path.push(vertex);
                     } else {
@@ -1182,7 +1205,11 @@ pub fn random_walk<'a>(
                         new_pdf_rev = vertex.convert_density(pdf_rev, prev);
                     }
                     // update previous vertex
-                    path[(bounces - 1) as usize].pdf_rev = new_pdf_rev;
+                    let mut index: usize = 0;
+                    if bounces >= 1_usize {
+                        index = bounces - 1;
+                    }
+                    path[index].pdf_rev = new_pdf_rev;
                     // store new vertex
                     path.push(vertex);
                 } else {
