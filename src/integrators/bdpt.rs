@@ -4,9 +4,9 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
-use core::geometry::{Bounds2i, Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_dot_nrm,
                      vec3_normalize};
+use core::geometry::{Bounds2i, Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
 use core::light::is_delta_light;
 use core::light::{Light, LightFlags, VisibilityTester};
@@ -981,143 +981,85 @@ pub fn random_walk<'a>(
         //     bounces, beta, pdf_fwd, pdf_rev
         // );
         let mut mi_opt: Option<MediumInteraction> = None;
+        let mut si_opt: Option<SurfaceInteraction> = None;
         // trace a ray and sample the medium, if any
-        if let Some(mut isect) = scene.intersect(ray) {
-            if let Some(ref medium) = ray.medium {
-                // TODO: mi gets created by this function (below)
-                let (spectrum, option) = medium.sample(ray, sampler);
-                *beta *= spectrum;
-                if beta.is_black() {
-                    break;
-                }
-                if let Some(mi) = option {
-                    mi_opt = Some(mi);
-                }
+        let found_intersection: bool;
+        if let Some(isect) = scene.intersect(ray) {
+            si_opt = Some(isect);
+            found_intersection = true;
+        } else {
+            found_intersection = false;
+        }
+        if let Some(ref medium) = ray.medium {
+            let (spectrum, option) = medium.sample(ray, sampler);
+            *beta *= spectrum;
+            if let Some(mi) = option {
+                mi_opt = Some(mi);
             }
-            if let Some(mi) = mi_opt {
-                if mi.is_valid() {
-                    if let Some(phase) = mi.clone().phase {
-                        let mut vertex: Vertex = Vertex {
-                            vertex_type: VertexType::Medium,
-                            beta: Spectrum::default(),
-                            ei: None,
-                            mi: None,
-                            si: None,
-                            delta: false,
-                            pdf_fwd: 0.0 as Float,
-                            pdf_rev: 0.0 as Float,
-                        };
-                        {
-                            // record medium interaction in _path_ and compute forward density
-                            let prev: &Vertex = &path[path.len() - 1];
-                            vertex = Vertex::create_medium_interaction(mi, &beta, pdf_fwd, prev);
-                        }
-                        // if (++bounces >= maxDepth) break;
-                        bounces += 1;
-                        if bounces as u32 >= max_depth {
-                            // store new vertex
-                            path.push(vertex);
-                            break;
-                        }
-                        // sample direction and compute reverse density at preceding vertex
-                        let mut wi: Vector3f = Vector3f::default();
-                        pdf_fwd = phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
-                        pdf_rev = pdf_fwd;
-                        if let Some(ref mi) = vertex.mi {
-                            let new_ray = mi.spawn_ray(&wi);
-                            *ray = new_ray;
-                        }
-                        // compute reverse area density at preceding vertex
-                        let mut new_pdf_rev: Float = 0.0;
-                        {
-                            let prev: &Vertex = &path[path.len() - 1];
-                            new_pdf_rev = vertex.convert_density(pdf_rev, prev);
-                        }
-                        let index: usize = path.len() - 1;
-                        path[index].pdf_rev = new_pdf_rev;
-                        // store new vertex
-                        path.push(vertex);
-                    } else {
-                        panic!("ERROR: medium without phase function");
-                    }
-                } else {
-                    // compute scattering functions for _mode_ and skip over medium
-                    // boundaries
-                    isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
-                    if let Some(ref bsdf) = isect.clone().bsdf {
-                    } else {
-                        let new_ray = isect.spawn_ray(&ray.d);
-                        *ray = new_ray;
-                        continue;
-                    }
-                    // initialize _vertex_ with surface intersection information
-                    let mut vertex: Vertex = Vertex::create_surface_interaction(
-                        isect.clone(),
-                        &beta,
-                        pdf_fwd,
-                        &path[path.len() - 1],
-                    );
-                    bounces += 1;
-                    if bounces as u32 >= max_depth {
-                        // store new vertex
-                        path.push(vertex);
-                        break;
-                    }
-                    if let Some(ref bsdf) = isect.clone().bsdf {
-                        // sample BSDF at current vertex and compute reverse probability
-                        let mut wi: Vector3f = Vector3f::default();
-                        let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                        let mut sampled_type: u8 = u8::max_value(); // != 0
-                        let f: Spectrum = bsdf.sample_f(
-                            &isect.wo,
-                            &mut wi,
-                            &sampler.get_2d(),
-                            &mut pdf_fwd,
-                            bsdf_flags,
-                            &mut sampled_type,
-                        );
-                        // println!(
-                        //     "Random walk sampled dir {:?} f: {:?}, pdf_fwd: {:?}",
-                        //     wi, f, pdf_fwd
-                        // );
-                        if f.is_black() || pdf_fwd == 0.0 as Float {
-                            // in C++ code ++bounces is called after continue !!!
-                            bounces -= 1;
-                            break;
-                        }
-                        *beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf_fwd;
-                        // println!("Random walk beta now {:?}", beta);
-                        pdf_rev = bsdf.pdf(&wi, &isect.wo, bsdf_flags);
-                        if (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8 {
-                            vertex.delta = true;
-                            pdf_rev = 0.0 as Float;
-                            pdf_fwd = 0.0 as Float;
-                        }
-                        *beta *= Spectrum::new(correct_shading_normal(
-                            &isect,
-                            &isect.wo,
-                            &wi,
-                            mode.clone(),
-                        ));
-                        // println!(
-                        //     "Random walk beta after shading normal correction {:?}",
-                        //     beta
-                        // );
-                        let new_ray = isect.spawn_ray(&wi);
-                        *ray = new_ray;
-                    }
-                    // compute reverse area density at preceding vertex
-                    let mut new_pdf_rev: Float = 0.0;
-                    {
-                        let prev: &Vertex = &path[path.len() - 1];
-                        new_pdf_rev = vertex.convert_density(pdf_rev, prev);
-                    }
-                    let index: usize = path.len() - 1;
-                    path[index].pdf_rev = new_pdf_rev;
+        }
+        if beta.is_black() {
+            break;
+        }
+        if let Some(mi) = mi_opt {
+            // if mi.is_valid() {...}
+            if let Some(phase) = mi.clone().phase {
+                let mut vertex: Vertex = Vertex {
+                    vertex_type: VertexType::Medium,
+                    beta: Spectrum::default(),
+                    ei: None,
+                    mi: None,
+                    si: None,
+                    delta: false,
+                    pdf_fwd: 0.0 as Float,
+                    pdf_rev: 0.0 as Float,
+                };
+                {
+                    // record medium interaction in _path_ and compute forward density
+                    let prev: &Vertex = &path[path.len() - 1];
+                    vertex = Vertex::create_medium_interaction(mi, &beta, pdf_fwd, prev);
+                }
+                // if (++bounces >= maxDepth) break;
+                bounces += 1;
+                if bounces as u32 >= max_depth {
                     // store new vertex
                     path.push(vertex);
+                    break;
                 }
-            } else {
+                // sample direction and compute reverse density at preceding vertex
+                let mut wi: Vector3f = Vector3f::default();
+                pdf_fwd = phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
+                pdf_rev = pdf_fwd;
+                if let Some(ref mi) = vertex.mi {
+                    let new_ray = mi.spawn_ray(&wi);
+                    *ray = new_ray;
+                }
+                // compute reverse area density at preceding vertex
+                let mut new_pdf_rev: Float = 0.0;
+                {
+                    let prev: &Vertex = &path[path.len() - 1];
+                    new_pdf_rev = vertex.convert_density(pdf_rev, prev);
+                }
+                let index: usize = path.len() - 1;
+                path[index].pdf_rev = new_pdf_rev;
+                // store new vertex
+                path.push(vertex);
+            }
+        } else {
+            if !found_intersection {
+                // capture escaped rays when tracing from the camera
+                if mode.clone() == TransportMode::Radiance {
+                    let vertex: Vertex = Vertex::create_light_interaction(
+                        EndpointInteraction::new_ray(ray),
+                        &beta,
+                        pdf_fwd,
+                    );
+                    // store new vertex
+                    path.push(vertex);
+                    bounces += 1;
+                }
+                break;
+            }
+            if let Some(mut isect) = si_opt {
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
                 isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
@@ -1180,7 +1122,7 @@ pub fn random_walk<'a>(
                     *ray = new_ray;
                 }
                 // compute reverse area density at preceding vertex
-                let mut new_pdf_rev;
+                let mut new_pdf_rev: Float = 0.0;
                 {
                     let prev: &Vertex = &path[path.len() - 1];
                     new_pdf_rev = vertex.convert_density(pdf_rev, prev);
@@ -1190,30 +1132,6 @@ pub fn random_walk<'a>(
                 // store new vertex
                 path.push(vertex);
             }
-        } else {
-            if let Some(ref medium) = ray.medium {
-                // TODO: mi gets created by this function (below)
-                let (spectrum, option) = medium.sample(ray, sampler);
-                *beta *= spectrum;
-                if beta.is_black() {
-                    break;
-                }
-                if let Some(mi) = option {
-                    mi_opt = Some(mi);
-                }
-            }
-            // capture escaped rays when tracing from the camera
-            if mode.clone() == TransportMode::Radiance {
-                let vertex: Vertex = Vertex::create_light_interaction(
-                    EndpointInteraction::new_ray(ray),
-                    &beta,
-                    pdf_fwd,
-                );
-                // store new vertex
-                path.push(vertex);
-                bounces += 1;
-            }
-            break;
         }
     }
     assert!(
