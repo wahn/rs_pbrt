@@ -402,14 +402,14 @@ impl Camera for PerspectiveCamera {
                 z: 1.0 as Float,
             },
         ));
-        // if let Some(ref medium_arc) = self.medium {
-        //     lens_intr.medium_interface = Some(Arc::new(MediumInterface::new(
-        //         &Some(medium_arc.clone()),
-        //         &Some(medium_arc.clone()),
-        //     )));
-        // } else {
-        //     lens_intr.medium_interface = None;
-        // }
+        if let Some(ref medium_arc) = self.medium {
+            lens_intr.medium_interface = Some(Arc::new(MediumInterface::new(
+                Some(medium_arc.clone()),
+                Some(medium_arc.clone()),
+            )));
+        } else {
+            lens_intr.medium_interface = None;
+        }
         // populate arguments and compute the importance value
         vis.p0 = iref.clone();
         vis.p1 = lens_intr.clone();

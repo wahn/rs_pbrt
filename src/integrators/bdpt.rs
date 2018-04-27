@@ -1790,7 +1790,16 @@ pub fn connect_bdpt<'a>(
             let mut iref: InteractionCommon = InteractionCommon::default();
             // qs.GetInteraction()
             match light_vertices[s - 1].vertex_type {
-                VertexType::Medium => {}
+                VertexType::Medium => {
+                    if let Some(ref mi) = light_vertices[s - 1].mi {
+                        iref.p = mi.p;
+                        iref.time = mi.time;
+                        iref.p_error = mi.p_error;
+                        iref.wo = mi.wo;
+                        iref.n = mi.n;
+                    } else {
+                    }
+                }
                 VertexType::Surface => {
                     if let Some(ref si) = light_vertices[s - 1].si {
                         iref.p = si.p;
@@ -1801,7 +1810,16 @@ pub fn connect_bdpt<'a>(
                     } else {
                     }
                 }
-                _ => {}
+                _ => {
+                    if let Some(ref ei) = light_vertices[s - 1].ei {
+                        iref.p = ei.p;
+                        iref.time = ei.time;
+                        iref.p_error = ei.p_error;
+                        iref.wo = ei.wo;
+                        iref.n = ei.n;
+                    } else {
+                    }
+                }
             }
             let mut wi: Vector3f = Vector3f::default();
             let mut pdf: Float = 0.0 as Float;
@@ -1846,7 +1864,16 @@ pub fn connect_bdpt<'a>(
             let mut iref: InteractionCommon = InteractionCommon::default();
             // qs.GetInteraction()
             match camera_vertices[t - 1].vertex_type {
-                VertexType::Medium => {}
+                VertexType::Medium => {
+                    if let Some(ref mi) = camera_vertices[t - 1].mi {
+                        iref.p = mi.p;
+                        iref.time = mi.time;
+                        iref.p_error = mi.p_error;
+                        iref.wo = mi.wo;
+                        iref.n = mi.n;
+                    } else {
+                    }
+                }
                 VertexType::Surface => {
                     if let Some(ref si) = camera_vertices[t - 1].si {
                         iref.p = si.p;
@@ -1857,7 +1884,16 @@ pub fn connect_bdpt<'a>(
                     } else {
                     }
                 }
-                _ => {}
+                _ => {
+                    if let Some(ref ei) = camera_vertices[t - 1].ei {
+                        iref.p = ei.p;
+                        iref.time = ei.time;
+                        iref.p_error = ei.p_error;
+                        iref.wo = ei.wo;
+                        iref.n = ei.n;
+                    } else {
+                    }
+                }
             }
             let light_weight: Spectrum = scene.lights[light_num].sample_li(
                 &iref,
