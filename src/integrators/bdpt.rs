@@ -5,7 +5,8 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{Bounds2i, Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_dot_nrm, vec3_normalize};
+use core::geometry::{nrm_abs_dot_vec3, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_dot_nrm,
+                     vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
 use core::light::is_delta_light;
 use core::light::{Light, LightFlags, VisibilityTester};
@@ -60,8 +61,7 @@ impl<'a> EndpointInteraction<'a> {
         if let Some(ref medium_arc) = ray.medium {
             let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
             let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
-            ei.medium_interface =
-                Some(Arc::new(MediumInterface::new(inside, outside)));
+            ei.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
         }
         ei
     }
@@ -75,8 +75,7 @@ impl<'a> EndpointInteraction<'a> {
         if let Some(ref medium_arc) = ray.medium {
             let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
             let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
-            ei.medium_interface =
-                Some(Arc::new(MediumInterface::new(inside, outside)));
+            ei.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
         }
         ei.n = *nl;
         ei
@@ -104,8 +103,7 @@ impl<'a> EndpointInteraction<'a> {
         if let Some(ref medium_arc) = ray.medium {
             let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
             let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
-            ei.medium_interface =
-                Some(Arc::new(MediumInterface::new(inside, outside)));
+            ei.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
         }
         ei
     }
@@ -975,7 +973,7 @@ pub fn random_walk<'a>(
     }
     // declare variables for forward and reverse probability densities
     let mut pdf_fwd: Float = pdf;
-    let mut pdf_rev: Float;
+    let mut pdf_rev: Float = 0.0;
     loop {
         // attempt to create the next subpath vertex in _path_
         // println!(
@@ -1011,11 +1009,7 @@ pub fn random_walk<'a>(
                         };
                         {
                             // record medium interaction in _path_ and compute forward density
-                            let mut index: usize = 0;
-                            if bounces >= 1_usize {
-                                index = bounces - 1;
-                            }
-                            let prev: &Vertex = &path[index];
+                            let prev: &Vertex = &path[path.len() - 1];
                             vertex = Vertex::create_medium_interaction(mi, &beta, pdf_fwd, prev);
                         }
                         // if (++bounces >= maxDepth) break;
@@ -1029,43 +1023,39 @@ pub fn random_walk<'a>(
                         let mut wi: Vector3f = Vector3f::default();
                         pdf_fwd = phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
                         pdf_rev = pdf_fwd;
-                        let new_ray = isect.spawn_ray(&wi);
-                        *ray = new_ray;
+                        if let Some(ref mi) = vertex.mi {
+                            let new_ray = mi.spawn_ray(&wi);
+                            *ray = new_ray;
+                        }
                         // compute reverse area density at preceding vertex
-                        let mut new_pdf_rev;
+                        let mut new_pdf_rev: Float = 0.0;
                         {
-                            let mut index: usize = 0;
-                            if bounces >= 1_usize {
-                                index = bounces - 1;
-                            }
-                            let prev: &Vertex = &path[index];
+                            let prev: &Vertex = &path[path.len() - 1];
                             new_pdf_rev = vertex.convert_density(pdf_rev, prev);
                         }
-                        // update previous vertex
-                        let mut index: usize = 0;
-                        if bounces >= 1_usize {
-                            index = bounces - 1;
-                        }
+                        let index: usize = path.len() - 1;
                         path[index].pdf_rev = new_pdf_rev;
                         // store new vertex
                         path.push(vertex);
+                    } else {
+                        panic!("ERROR: medium without phase function");
                     }
                 } else {
                     // compute scattering functions for _mode_ and skip over medium
                     // boundaries
                     isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
-                    
-                    // if (!isect.bsdf) {
-                    //     ray = isect.SpawnRay(ray.d);
-                    //     continue;
-                    // }
-                    
+                    if let Some(ref bsdf) = isect.clone().bsdf {
+                    } else {
+                        let new_ray = isect.spawn_ray(&ray.d);
+                        *ray = new_ray;
+                        continue;
+                    }
                     // initialize _vertex_ with surface intersection information
                     let mut vertex: Vertex = Vertex::create_surface_interaction(
                         isect.clone(),
                         &beta,
                         pdf_fwd,
-                        &path[bounces as usize],
+                        &path[path.len() - 1],
                     );
                     bounces += 1;
                     if bounces as u32 >= max_depth {
@@ -1103,39 +1093,29 @@ pub fn random_walk<'a>(
                             pdf_rev = 0.0 as Float;
                             pdf_fwd = 0.0 as Float;
                         }
-                        *beta *=
-                            Spectrum::new(correct_shading_normal(&isect, &isect.wo, &wi, mode.clone()));
+                        *beta *= Spectrum::new(correct_shading_normal(
+                            &isect,
+                            &isect.wo,
+                            &wi,
+                            mode.clone(),
+                        ));
                         // println!(
                         //     "Random walk beta after shading normal correction {:?}",
                         //     beta
                         // );
                         let new_ray = isect.spawn_ray(&wi);
                         *ray = new_ray;
-                        // compute reverse area density at preceding vertex
-                        let mut new_pdf_rev;
-                        {
-                            let mut index: usize = 0;
-                            if bounces >= 1_usize {
-                                index = bounces - 1;
-                            }
-                            let prev: &Vertex = &path[index];
-                            new_pdf_rev = vertex.convert_density(pdf_rev, prev);
-                        }
-                        // update previous vertex
-                        let mut index: usize = 0;
-                        if bounces >= 1_usize {
-                            index = bounces - 1;
-                        }
-                        path[index].pdf_rev = new_pdf_rev;
-                        // store new vertex
-                        path.push(vertex);
-                    } else {
-                        let new_ray = isect.spawn_ray(&ray.d);
-                        *ray = new_ray;
-                        // in C++ code ++bounces is called after continue !!!
-                        bounces -= 1;
-                        continue;
                     }
+                    // compute reverse area density at preceding vertex
+                    let mut new_pdf_rev: Float = 0.0;
+                    {
+                        let prev: &Vertex = &path[path.len() - 1];
+                        new_pdf_rev = vertex.convert_density(pdf_rev, prev);
+                    }
+                    let index: usize = path.len() - 1;
+                    path[index].pdf_rev = new_pdf_rev;
+                    // store new vertex
+                    path.push(vertex);
                 }
             } else {
                 // compute scattering functions for _mode_ and skip over medium
@@ -1152,7 +1132,7 @@ pub fn random_walk<'a>(
                     isect.clone(),
                     &beta,
                     pdf_fwd,
-                    &path[bounces as usize],
+                    &path[path.len() - 1],
                 );
                 bounces += 1;
                 if bounces as u32 >= max_depth {
@@ -1198,29 +1178,30 @@ pub fn random_walk<'a>(
                     // );
                     let new_ray = isect.spawn_ray(&wi);
                     *ray = new_ray;
-                    // compute reverse area density at preceding vertex
-                    let mut new_pdf_rev;
-                    {
-                        let prev: &Vertex = &path[(bounces - 1) as usize];
-                        new_pdf_rev = vertex.convert_density(pdf_rev, prev);
-                    }
-                    // update previous vertex
-                    let mut index: usize = 0;
-                    if bounces >= 1_usize {
-                        index = bounces - 1;
-                    }
-                    path[index].pdf_rev = new_pdf_rev;
-                    // store new vertex
-                    path.push(vertex);
-                } else {
-                    let new_ray = isect.spawn_ray(&ray.d);
-                    *ray = new_ray;
-                    // in C++ code ++bounces is called after continue !!!
-                    bounces -= 1;
-                    continue;
                 }
+                // compute reverse area density at preceding vertex
+                let mut new_pdf_rev;
+                {
+                    let prev: &Vertex = &path[path.len() - 1];
+                    new_pdf_rev = vertex.convert_density(pdf_rev, prev);
+                }
+                let index: usize = path.len() - 1;
+                path[index].pdf_rev = new_pdf_rev;
+                // store new vertex
+                path.push(vertex);
             }
         } else {
+            if let Some(ref medium) = ray.medium {
+                // TODO: mi gets created by this function (below)
+                let (spectrum, option) = medium.sample(ray, sampler);
+                *beta *= spectrum;
+                if beta.is_black() {
+                    break;
+                }
+                if let Some(mi) = option {
+                    mi_opt = Some(mi);
+                }
+            }
             // capture escaped rays when tracing from the camera
             if mode.clone() == TransportMode::Radiance {
                 let vertex: Vertex = Vertex::create_light_interaction(
@@ -1234,18 +1215,6 @@ pub fn random_walk<'a>(
             }
             break;
         }
-    }
-    // correct subpath sampling densities for infinite area lights
-    if let Some(pdf_pos) = density_info {
-        // set spatial density of _path[1]_ for infinite area light
-        if bounces > 0 {
-            path[1].pdf_fwd = pdf_pos;
-            if path[1].is_on_surface() {
-                path[1].pdf_fwd *= vec3_abs_dot_nrm(&ray.d, &path[1].ng());
-            }
-        }
-        // set spatial density of _path[0]_ for infinite area light
-        // path[0].pdf_fwd = infinite_light_density(scene, light_distr, light_to_index, ray.d);
     }
     assert!(
         bounces + 1 == path.len(),
@@ -1687,7 +1656,7 @@ pub fn mis_weight<'a>(
                 vertex_type: camera_vertices[t - 2].vertex_type.clone(),
                 beta: camera_vertices[t - 2].beta,
                 ei: ei,
-            mi: mi,
+                mi: mi,
                 si: si,
                 delta: camera_vertices[t - 2].delta,
                 pdf_fwd: camera_vertices[t - 2].pdf_fwd,
