@@ -1169,6 +1169,9 @@ pub fn g<'a>(
                 p0.p_error = mi.p_error;
                 p0.wo = mi.wo;
                 p0.n = mi.n;
+                if let Some(ref medium_interface_arc) = mi.medium_interface {
+                    p0.medium_interface = Some(medium_interface_arc.clone())
+                }
             }
         }
         VertexType::Surface => {
@@ -1199,6 +1202,9 @@ pub fn g<'a>(
                 p1.p_error = mi.p_error;
                 p1.wo = mi.wo;
                 p1.n = mi.n;
+                if let Some(ref medium_interface_arc) = mi.medium_interface {
+                    p0.medium_interface = Some(medium_interface_arc.clone())
+                }
             }
         }
         VertexType::Surface => {
@@ -1797,6 +1803,9 @@ pub fn connect_bdpt<'a>(
                         iref.p_error = mi.p_error;
                         iref.wo = mi.wo;
                         iref.n = mi.n;
+                        if let Some(ref medium_interface_arc) = mi.medium_interface {
+                            iref.medium_interface = Some(medium_interface_arc.clone())
+                        }
                     } else {
                     }
                 }
@@ -1871,6 +1880,9 @@ pub fn connect_bdpt<'a>(
                         iref.p_error = mi.p_error;
                         iref.wo = mi.wo;
                         iref.n = mi.n;
+                        if let Some(ref medium_interface_arc) = mi.medium_interface {
+                            iref.medium_interface = Some(medium_interface_arc.clone())
+                        }
                     } else {
                     }
                 }

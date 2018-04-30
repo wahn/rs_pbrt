@@ -77,9 +77,9 @@ impl VisibilityTester {
     pub fn unoccluded(&self, scene: &Scene) -> bool {
         !scene.intersect_p(&mut self.p0.spawn_ray_to(&self.p1))
     }
-    pub fn tr(&self, scene: &Scene, _sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
+    pub fn tr(&self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
         let mut ray: Ray = self.p0.spawn_ray_to(&self.p1);
-        let tr: Spectrum = Spectrum::new(1.0 as Float);
+        let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {
             if let Some(isect) = scene.intersect(&mut ray) {
                 // handle opaque surface along ray's path
@@ -88,9 +88,8 @@ impl VisibilityTester {
                         return Spectrum::default();
                     } else {
                         // update transmittance for current ray segment
-                        // TODO: if (ray.medium) Tr *= ray.medium->Tr(ray, sampler);
-                        if let Some(medium) = ray.medium {
-                            panic!("TODO: VisibilityTester::tr() has to deal with media");
+                        if let Some(ref medium) = ray.medium {
+                            tr *= medium.tr(&ray, sampler);
                         } else {
                             let it: InteractionCommon = InteractionCommon {
                                 p: isect.p,
