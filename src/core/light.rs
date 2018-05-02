@@ -2,9 +2,12 @@
 //! source of illumination so that some light is reflected from them
 //! to the camera sensor.
 
+// std
+use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
+use core::medium::{Medium, MediumInterface};
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::sampler::Sampler;
@@ -81,6 +84,8 @@ impl VisibilityTester {
         let mut ray: Ray = self.p0.spawn_ray_to(&self.p1);
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {
+            let mut it: InteractionCommon = InteractionCommon::default();
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
             if let Some(isect) = scene.intersect(&mut ray) {
                 // handle opaque surface along ray's path
                 if let Some(primitive) = isect.primitive {
@@ -88,24 +93,28 @@ impl VisibilityTester {
                         return Spectrum::default();
                     } else {
                         // update transmittance for current ray segment
-                        if let Some(ref medium) = ray.medium {
-                            tr *= medium.tr(&ray, sampler);
-                        } else {
-                            let it: InteractionCommon = InteractionCommon {
-                                p: isect.p,
-                                time: isect.time,
-                                p_error: isect.p_error,
-                                wo: isect.wo,
-                                n: isect.n,
-                                medium_interface: None,
-                            };
-                            ray = it.spawn_ray_to(&self.p1);
+                        if let Some(ref medium_arc) = ray.medium {
+                            tr *= medium_arc.tr(&ray, sampler);
                         }
                     }
                 }
+                if let Some(mi_arc) = isect.medium_interface {
+                    medium_interface = Some(mi_arc.clone());
+                }
+                it.p = isect.p;
+                it.time = isect.time;
+                it.p_error = isect.p_error;
+                it.wo = isect.wo;
+                it. n = isect.n;
+                it.medium_interface = medium_interface;
             } else {
+                // update transmittance for current ray segment
+                if let Some(ref medium_arc) = ray.medium {
+                    tr *= medium_arc.tr(&ray, sampler);
+                }
                 break;
             }
+            ray = it.spawn_ray_to(&self.p1);
         }
         tr
     }

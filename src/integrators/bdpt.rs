@@ -90,6 +90,9 @@ impl<'a> EndpointInteraction<'a> {
         ei.p_error = it.p_error;
         ei.wo = it.wo;
         ei.n = it.n;
+        if let Some(ref medium_interface_arc) = it.medium_interface {
+            ei.medium_interface = Some(medium_interface_arc.clone());
+        }
         ei.light = Some(light);
         ei
     }
@@ -602,8 +605,11 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                 }
             }
         } else if self.vertex_type == VertexType::Medium {
-            // TODO:
-            // pdf_flt = mi.phase->p(wp, wn);
+            if let Some(ref mi) = self.mi {
+                if let Some(ref phase) = mi.phase {
+                    pdf_flt = phase.p(&wp, &wn);
+                }
+            }
         } else {
             panic!("Vertex::Pdf(): Unimplemented");
         }
@@ -1289,6 +1295,26 @@ pub fn mis_weight<'a>(
             };
             ei = Some(new_ei);
         }
+        if let Some(ref lv_mi) = sampled.mi {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
+            let mut phase: Option<Arc<PhaseFunction>> = None;
+            if let Some(ref medium_interface_arc) = lv_mi.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
+            if let Some(ref phase_arc) = lv_mi.phase {
+                phase = Some(phase_arc.clone());
+            }
+            let new_mi: MediumInteraction = MediumInteraction {
+                p: lv_mi.p.clone(),
+                time: lv_mi.time,
+                p_error: lv_mi.p_error.clone(),
+                wo: lv_mi.wo.clone(),
+                n: lv_mi.n.clone(),
+                medium_interface: medium_interface,
+                phase: phase,
+            };
+            mi = Some(new_mi);
+        }
         if let Some(ref lv_si) = sampled.si {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
             if let Some(ref medium_interface_arc) = lv_si.medium_interface {
@@ -1346,6 +1372,26 @@ pub fn mis_weight<'a>(
                 light: light,
             };
             ei = Some(new_ei);
+        }
+        if let Some(ref lv_mi) = sampled.mi {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
+            let mut phase: Option<Arc<PhaseFunction>> = None;
+            if let Some(ref medium_interface_arc) = lv_mi.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
+            if let Some(ref phase_arc) = lv_mi.phase {
+                phase = Some(phase_arc.clone());
+            }
+            let new_mi: MediumInteraction = MediumInteraction {
+                p: lv_mi.p.clone(),
+                time: lv_mi.time,
+                p_error: lv_mi.p_error.clone(),
+                wo: lv_mi.wo.clone(),
+                n: lv_mi.n.clone(),
+                medium_interface: medium_interface,
+                phase: phase,
+            };
+            mi = Some(new_mi);
         }
         if let Some(ref lv_si) = sampled.si {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
@@ -1409,6 +1455,26 @@ pub fn mis_weight<'a>(
             };
             ei = Some(new_ei);
         }
+        if let Some(ref cv_mi) = camera_vertices[t - 1].mi {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
+            let mut phase: Option<Arc<PhaseFunction>> = None;
+            if let Some(ref medium_interface_arc) = cv_mi.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
+            if let Some(ref phase_arc) = cv_mi.phase {
+                phase = Some(phase_arc.clone());
+            }
+            let new_mi: MediumInteraction = MediumInteraction {
+                p: cv_mi.p.clone(),
+                time: cv_mi.time,
+                p_error: cv_mi.p_error.clone(),
+                wo: cv_mi.wo.clone(),
+                n: cv_mi.n.clone(),
+                medium_interface: medium_interface,
+                phase: phase,
+            };
+            mi = Some(new_mi);
+        }
         if let Some(ref cv_si) = camera_vertices[t - 1].si {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
             if let Some(ref medium_interface_arc) = cv_si.medium_interface {
@@ -1469,6 +1535,26 @@ pub fn mis_weight<'a>(
                 light: light,
             };
             ei = Some(new_ei);
+        }
+        if let Some(ref lv_mi) = light_vertices[s - 1].mi {
+            let mut medium_interface: Option<Arc<MediumInterface>> = None;
+            let mut phase: Option<Arc<PhaseFunction>> = None;
+            if let Some(ref medium_interface_arc) = lv_mi.medium_interface {
+                medium_interface = Some(medium_interface_arc.clone());
+            }
+            if let Some(ref phase_arc) = lv_mi.phase {
+                phase = Some(phase_arc.clone());
+            }
+            let new_mi: MediumInteraction = MediumInteraction {
+                p: lv_mi.p.clone(),
+                time: lv_mi.time,
+                p_error: lv_mi.p_error.clone(),
+                wo: lv_mi.wo.clone(),
+                n: lv_mi.n.clone(),
+                medium_interface: medium_interface,
+                phase: phase,
+            };
+            mi = Some(new_mi);
         }
         if let Some(ref lv_si) = light_vertices[s - 1].si {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
@@ -1549,6 +1635,26 @@ pub fn mis_weight<'a>(
                 };
                 ei = Some(new_ei);
             }
+            if let Some(ref cv_mi) = camera_vertices[t - 2].mi {
+                let mut medium_interface: Option<Arc<MediumInterface>> = None;
+                let mut phase: Option<Arc<PhaseFunction>> = None;
+                if let Some(ref medium_interface_arc) = cv_mi.medium_interface {
+                    medium_interface = Some(medium_interface_arc.clone());
+                }
+                if let Some(ref phase_arc) = cv_mi.phase {
+                    phase = Some(phase_arc.clone());
+                }
+                let new_mi: MediumInteraction = MediumInteraction {
+                    p: cv_mi.p.clone(),
+                    time: cv_mi.time,
+                    p_error: cv_mi.p_error.clone(),
+                    wo: cv_mi.wo.clone(),
+                    n: cv_mi.n.clone(),
+                    medium_interface: medium_interface,
+                    phase: phase,
+                };
+                mi = Some(new_mi);
+            }
             if let Some(ref cv_si) = camera_vertices[t - 2].si {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
                 if let Some(ref medium_interface_arc) = cv_si.medium_interface {
@@ -1628,6 +1734,26 @@ pub fn mis_weight<'a>(
                     light: light,
                 };
                 ei = Some(new_ei);
+            }
+            if let Some(ref lv_mi) = light_vertices[s - 2].mi {
+                let mut medium_interface: Option<Arc<MediumInterface>> = None;
+                let mut phase: Option<Arc<PhaseFunction>> = None;
+                if let Some(ref medium_interface_arc) = lv_mi.medium_interface {
+                    medium_interface = Some(medium_interface_arc.clone());
+                }
+                if let Some(ref phase_arc) = lv_mi.phase {
+                    phase = Some(phase_arc.clone());
+                }
+                let new_mi: MediumInteraction = MediumInteraction {
+                    p: lv_mi.p.clone(),
+                    time: lv_mi.time,
+                    p_error: lv_mi.p_error.clone(),
+                    wo: lv_mi.wo.clone(),
+                    n: lv_mi.n.clone(),
+                    medium_interface: medium_interface,
+                    phase: phase,
+                };
+                mi = Some(new_mi);
             }
             if let Some(ref lv_si) = light_vertices[s - 2].si {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
@@ -1871,7 +1997,7 @@ pub fn connect_bdpt<'a>(
                 light_distr.sample_discrete(sampler.get_1d(), light_pdf.as_mut());
             //         const std::shared_ptr<Light> &light = scene.lights[light_num];
             let mut iref: InteractionCommon = InteractionCommon::default();
-            // qs.GetInteraction()
+            // pt.GetInteraction()
             match camera_vertices[t - 1].vertex_type {
                 VertexType::Medium => {
                     if let Some(ref mi) = camera_vertices[t - 1].mi {

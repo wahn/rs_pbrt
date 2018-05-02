@@ -76,14 +76,14 @@ impl InteractionCommon {
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
-            if let Some(ref medium_interface) = self.medium_interface {
-                medium_interface.outside.clone()
+            if let Some(ref medium_interface_arc) = self.medium_interface {
+                medium_interface_arc.get_outside()
             } else {
                 None
             }
         } else {
-            if let Some(ref medium_interface) = self.medium_interface {
-                medium_interface.inside.clone()
+            if let Some(ref medium_interface_arc) = self.medium_interface {
+                medium_interface_arc.get_inside()
             } else {
                 None
             }

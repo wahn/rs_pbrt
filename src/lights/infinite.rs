@@ -332,6 +332,10 @@ impl Light for InfiniteAreaLight {
         }
         // return radiance value for infinite light direction
         let world_radius: Float = *self.world_radius.read().unwrap();
+        let mut medium_interface: Option<Arc<MediumInterface>> = None;
+        if let Some(ref mi_arc) = iref.medium_interface {
+            medium_interface = Some(mi_arc.clone());
+        }
         *vis = VisibilityTester {
             p0: InteractionCommon {
                 p: iref.p,
@@ -339,7 +343,7 @@ impl Light for InfiniteAreaLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
-                medium_interface: Some(Arc::new(MediumInterface::default())),
+                medium_interface: medium_interface,
             },
             p1: InteractionCommon {
                 p: iref.p + *wi * (2.0 as Float * world_radius),

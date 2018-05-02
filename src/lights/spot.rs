@@ -42,10 +42,9 @@ impl SpotLight {
     ) -> Self {
         let mut inside: Option<Arc<Medium + Send + Sync>> = None;
         let mut outside: Option<Arc<Medium + Send + Sync>> = None;
-        if let Some(ref mi_inside) = medium_interface.inside {
-            inside = Some(mi_inside.clone());
-        }
         if let Some(ref mi_outside) = medium_interface.outside {
+            // in C++: MediumInterface(const Medium *medium) : inside(medium), outside(medium)
+            inside = Some(mi_outside.clone());
             outside = Some(mi_outside.clone());
         }
         SpotLight {
@@ -91,6 +90,15 @@ impl Light for SpotLight {
         // TODO: ProfilePhase _(Prof::LightSample);
         *wi = vec3_normalize(&(self.p_light - iref.p));
         *pdf = 1.0 as Float;
+        let mut inside: Option<Arc<Medium + Send + Sync>> = None;
+        let mut outside: Option<Arc<Medium + Send + Sync>> = None;
+        if let Some(ref mi_inside_arc) = self.medium_interface.inside {
+            inside = Some(mi_inside_arc.clone());
+        }
+        if let Some(ref mi_outside_arc) = self.medium_interface.outside {
+            outside = Some(mi_outside_arc.clone());
+        }
+        let medium_interface_arc: Arc<MediumInterface> = Arc::new(MediumInterface::new(inside, outside));
         *vis = VisibilityTester {
             p0: InteractionCommon {
                 p: iref.p,
@@ -98,7 +106,7 @@ impl Light for SpotLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
-                medium_interface: None,
+                medium_interface: Some(medium_interface_arc.clone()),
             },
             p1: InteractionCommon {
                 p: self.p_light,
@@ -106,7 +114,7 @@ impl Light for SpotLight {
                 p_error: Vector3f::default(),
                 wo: Vector3f::default(),
                 n: Normal3f::default(),
-                medium_interface: None,
+                medium_interface: Some(medium_interface_arc.clone()),
             },
         };
         self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)

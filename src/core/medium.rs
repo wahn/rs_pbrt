@@ -348,6 +348,20 @@ impl MediumInterface {
             }
         }
     }
+    pub fn get_inside(&self) -> Option<Arc<Medium + Send + Sync>> {
+        if let Some(ref inside) = self.inside {
+            Some(inside.clone())
+        } else {
+            None
+        }
+    }
+    pub fn get_outside(&self) -> Option<Arc<Medium + Send + Sync>> {
+        if let Some(ref outside) = self.outside {
+            Some(outside.clone())
+        } else {
+            None
+        }
+    }
 }
 
 pub fn get_medium_scattering_properties(
