@@ -54,7 +54,7 @@ where
         self.v_res
     }
     pub fn block_size(&self) -> usize {
-        self.block_size
+        1 << self.log_block_size
     }
     pub fn block(&self, a: usize) -> usize {
         a >> self.log_block_size
