@@ -6,7 +6,7 @@ use std::ops::{Add, Index, IndexMut};
 
 // see memory.h
 
-const LOG_BLOCK_SIZE: usize = 3;
+const LOG_BLOCK_SIZE: usize = 2;
 const BLOCK_SIZE: usize = 1 << LOG_BLOCK_SIZE;
 
 fn round_up(x: usize) -> usize {

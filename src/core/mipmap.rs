@@ -3,8 +3,8 @@ use std;
 // pbrt
 use core::geometry::{Point2f, Point2i, Vector2f};
 use core::memory::BlockedArray;
+use core::pbrt::{clamp_t, is_power_of_2, mod_t, round_up_pow2_32};
 use core::pbrt::{Float, Spectrum};
-use core::pbrt::{clamp_t, mod_t, is_power_of_2, round_up_pow2_32};
 use core::spectrum::lerp_rgb;
 use core::texture::lanczos;
 
@@ -313,10 +313,11 @@ impl MipMap {
         let t0: isize = t.floor() as isize;
         let ds: Float = s - s0 as Float;
         let dt: Float = t - t0 as Float;
-        *self.texel(level, s0, t0) * (1.0 - ds) * (1.0 - dt)
-            + *self.texel(level, s0, t0 + 1) * (1.0 - ds) * dt
-            + *self.texel(level, s0 + 1, t0) * ds * (1.0 - dt)
-            + *self.texel(level, s0 + 1, t0 + 1) * ds * dt
+        let tmp1: Spectrum = *self.texel(level, s0 + 1, t0 + 1) * (ds * dt);
+        let tmp2: Spectrum = *self.texel(level, s0 + 1, t0) * (ds * (1.0 - dt));
+        let tmp3: Spectrum = *self.texel(level, s0, t0 + 1) * ((1.0 - ds) * dt);
+        let tmp4: Spectrum = *self.texel(level, s0, t0) * ((1.0 - ds) * (1.0 - dt));
+        tmp4 + tmp3 + tmp2 + tmp1
     }
     fn ewa(&self, level: usize, st: Point2f, dst0: Vector2f, dst1: Vector2f) -> Spectrum {
         if level >= self.levels() {
