@@ -1187,6 +1187,9 @@ pub fn g<'a>(
                 p0.p_error = si.p_error;
                 p0.wo = si.wo;
                 p0.n = si.n;
+                if let Some(ref medium_interface_arc) = si.medium_interface {
+                    p0.medium_interface = Some(medium_interface_arc.clone())
+                }
             }
         }
         _ => {
@@ -1196,6 +1199,9 @@ pub fn g<'a>(
                 p0.p_error = ei.p_error;
                 p0.wo = ei.wo;
                 p0.n = ei.n;
+                if let Some(ref medium_interface_arc) = ei.medium_interface {
+                    p0.medium_interface = Some(medium_interface_arc.clone())
+                }
             }
         }
     }
@@ -1209,7 +1215,7 @@ pub fn g<'a>(
                 p1.wo = mi.wo;
                 p1.n = mi.n;
                 if let Some(ref medium_interface_arc) = mi.medium_interface {
-                    p0.medium_interface = Some(medium_interface_arc.clone())
+                    p1.medium_interface = Some(medium_interface_arc.clone())
                 }
             }
         }
@@ -1220,6 +1226,9 @@ pub fn g<'a>(
                 p1.p_error = si.p_error;
                 p1.wo = si.wo;
                 p1.n = si.n;
+                if let Some(ref medium_interface_arc) = si.medium_interface {
+                    p1.medium_interface = Some(medium_interface_arc.clone())
+                }
             }
         }
         _ => {
@@ -1229,6 +1238,9 @@ pub fn g<'a>(
                 p1.p_error = ei.p_error;
                 p1.wo = ei.wo;
                 p1.n = ei.n;
+                if let Some(ref medium_interface_arc) = ei.medium_interface {
+                    p1.medium_interface = Some(medium_interface_arc.clone())
+                }
             }
         }
     }

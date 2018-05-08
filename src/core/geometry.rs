@@ -1041,7 +1041,7 @@ pub fn spherical_direction_vec3(
     y: &Vector3f,
     z: &Vector3f,
 ) -> Vector3f {
-    *x * sin_theta * phi.cos() + *y * sin_theta * phi.sin() + *z * cos_theta
+    *x * (sin_theta * phi.cos()) + *y * (sin_theta * phi.sin()) + *z * cos_theta
 }
 
 /// Conversion of a direction to spherical angles. Note that
