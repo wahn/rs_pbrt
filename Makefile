@@ -48,7 +48,7 @@ examples: release
 	./target/release/examples/geometry_point2_origin
 	./target/release/examples/geometry_point3_origin
 	./target/release/examples/geometry_ray_creation
-  ./target/release/examples/geometry_spherical_direction_vec3
+	./target/release/examples/geometry_spherical_direction_vec3
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
 	./target/release/examples/pbrt
