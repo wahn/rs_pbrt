@@ -144,13 +144,17 @@ impl Light for SpotLight {
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
         let w: Vector3f = uniform_sample_cone(u1, self.cos_total_width);
+        let mut inside: Option<Arc<Medium + Send + Sync>> = None;
+        if let Some(ref mi_inside) = self.medium_interface.inside {
+            inside = Some(mi_inside.clone());
+        }
         *ray = Ray {
             o: self.p_light,
             d: self.light_to_world.transform_vector(&w),
             t_max: std::f32::INFINITY,
             time: time,
             differential: None,
-            medium: None,
+            medium: inside,
         };
         *n_light = Normal3f::from(ray.d);
         *pdf_pos = 1.0 as Float;

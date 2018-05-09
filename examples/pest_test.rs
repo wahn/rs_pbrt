@@ -442,7 +442,7 @@ fn make_light(
                 z: 1.0,
             },
         );
-        let dir: Vector3f = vec3_normalize(&(from - to));
+        let dir: Vector3f = vec3_normalize(&(to - from));
         let mut du: Vector3f = Vector3f::default();
         let mut dv: Vector3f = Vector3f::default();
         vec3_coordinate_system(&dir, &mut du, &mut dv);
