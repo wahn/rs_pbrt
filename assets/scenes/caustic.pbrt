@@ -31,7 +31,7 @@ AttributeEnd
 AttributeBegin
     Rotate -60 0 0 1
     LightSource "infinite" 
-            "string mapname" [ "textures/skylight-day.exr" ] 
+            "string mapname" [ "textures/skylight-day.hdr" ] 
             "rgb scale" [ 1.5000000000 1.5000000000 1.3999999762 ] 
 AttributeEnd
 LightSource "spot" 
