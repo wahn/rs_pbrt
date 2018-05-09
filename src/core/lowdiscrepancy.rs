@@ -1,8 +1,8 @@
 // pbrt
 use core::geometry::{Point2f, Point2i};
 use core::pbrt::Float;
-use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::rng::Rng;
+use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::sampling::shuffle;
 use core::sobolmatrices::{SOBOL_MATRICES_32, NUM_SOBOL_DIMENSIONS, SOBOL_MATRIX_SIZE,
                           VD_C_SOBOL_MATRICES, VD_C_SOBOL_MATRICES_INV};
@@ -205,7 +205,11 @@ pub fn gray_code_sample_1d(c: [u32; 32], n: u32, scramble: u32, p: &mut [Float])
     let mut v: u32 = scramble;
     for i in 0..n as usize {
         // 1/2^32
-        p[i] = (v as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        //#ifndef PBRT_HAVE_HEX_FP_CONSTANTS
+        // p[i] = (v as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        //#else
+        p[i] = (v as Float * hexf32!("0x1.0p-32") as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        //#endif
         v ^= c[(i + 1).trailing_zeros() as usize];
     }
 }
@@ -216,8 +220,13 @@ pub fn gray_code_sample_1d(c: [u32; 32], n: u32, scramble: u32, p: &mut [Float])
 pub fn gray_code_sample_2d(c0: &[u32], c1: &[u32], n: u32, scramble: &Point2i, p: &mut [Point2f]) {
     let mut v: [u32; 2] = [scramble.x as u32, scramble.y as u32];
     for i in 0..n as usize {
-        p[i].x = (v[0] as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
-        p[i].y = (v[1] as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        // #ifndef PBRT_HAVE_HEX_FP_CONSTANTS
+        // p[i].x = (v[0] as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        // p[i].y = (v[1] as Float * 2.3283064365386963e-10 as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        // #else
+        p[i].x = (v[0] as Float * hexf32!("0x1.0p-32") as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        p[i].y = (v[1] as Float * hexf32!("0x1.0p-32") as Float).min(FLOAT_ONE_MINUS_EPSILON);
+        // #endif
         v[0] ^= c0[(i + 1).trailing_zeros() as usize];
         v[1] ^= c1[(i + 1).trailing_zeros() as usize];
     }
@@ -392,9 +401,12 @@ pub fn sobol_sample_float(a: i64, dimension: i32, scramble: u32) -> Float {
         a = a >> 1;
         i += 1_usize;
     }
-    // TODO: #ifndef PBRT_HAVE_HEX_FP_CONSTANTS
-    let x = (2.0 as f32).powi(-32 as i32); // 0x1p-32f: 1/2^32
-    (v as Float * x).min(FLOAT_ONE_MINUS_EPSILON)
+    //#ifndef PBRT_HAVE_HEX_FP_CONSTANTS
+    // let x = (2.0 as f32).powi(-32 as i32); // 0x1p-32f: 1/2^32
+    // (v as Float * x).min(FLOAT_ONE_MINUS_EPSILON)
+    //#else
+    (v as Float * hexf32!("0x1.0p-32") as Float).min(FLOAT_ONE_MINUS_EPSILON)
+    //#endif
 }
 
 // see lowdiscrepancy.cpp
@@ -448,9 +460,11 @@ pub fn scrambled_radical_inverse_specialized(base: u16, perm: &[u16], a: u64) ->
 pub fn radical_inverse(base_index: u16, a: u64) -> Float {
     match base_index {
         0 => {
-            // TODO: #ifndef PBRT_HAVE_HEX_FP_CONSTANTS
-            // 0x1p-64 = (2.0 as Float).powi(-64 as i32)
-            return reverse_bits_64(a) as Float * (2.0 as Float).powi(-64 as i32);
+            //#ifndef PBRT_HAVE_HEX_FP_CONSTANTS
+            //return reverse_bits_64(a) as Float * (2.0 as Float).powi(-64 as i32);
+            //#else
+            return reverse_bits_64(a) as Float * hexf32!("0x1.0p-64") as Float;
+            //#endif
         }
         1 => {
             return radical_inverse_specialized(3_u16, a);

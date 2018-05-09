@@ -11,6 +11,7 @@ default = ["openexr"]
 crossbeam = "0.3"
 getopts="0.2.15"
 half="1"
+hexf = "0.1.0"
 image="0.19"
 num="*"
 num_cpus = "1.2"

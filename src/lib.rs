@@ -13,6 +13,8 @@ extern crate atomic;
 extern crate crossbeam;
 #[cfg(feature = "openexr")]
 extern crate half;
+#[macro_use]
+extern crate hexf;
 extern crate image;
 extern crate num;
 extern crate num_cpus;
