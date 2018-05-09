@@ -148,20 +148,28 @@ impl MediumInteraction {
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
-                medium_interface.outside.clone()
+                if let Some (ref outside_arc) = medium_interface.outside {
+                    Some(outside_arc.clone())
+                } else {
+                    None
+                }
             } else {
                 None
             }
         } else {
             if let Some(ref medium_interface) = self.medium_interface {
-                medium_interface.inside.clone()
+                if let Some (ref inside_arc) = medium_interface.inside {
+                    Some(inside_arc.clone())
+                } else {
+                    None
+                }
             } else {
                 None
             }
         }
     }
     pub fn is_valid(&self) -> bool {
-        if let Some(ref arc) = self.phase {
+        if let Some(ref _arc) = self.phase {
             true
         } else {
             false
@@ -300,13 +308,21 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
-                medium_interface.outside.clone()
+                if let Some (ref outside_arc) = medium_interface.outside {
+                    Some(outside_arc.clone())
+                } else {
+                    None
+                }
             } else {
                 None
             }
         } else {
             if let Some(ref medium_interface) = self.medium_interface {
-                medium_interface.inside.clone()
+                if let Some (ref inside_arc) = medium_interface.inside {
+                    Some(inside_arc.clone())
+                } else {
+                    None
+                }
             } else {
                 None
             }

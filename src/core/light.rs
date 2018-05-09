@@ -7,7 +7,7 @@ use std::sync::Arc;
 // pbrt
 use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
-use core::medium::{Medium, MediumInterface};
+use core::medium::MediumInterface;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::sampler::Sampler;
@@ -105,7 +105,7 @@ impl VisibilityTester {
                 it.time = isect.time;
                 it.p_error = isect.p_error;
                 it.wo = isect.wo;
-                it. n = isect.n;
+                it.n = isect.n;
                 it.medium_interface = medium_interface;
             } else {
                 // update transmittance for current ray segment

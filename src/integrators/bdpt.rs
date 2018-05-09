@@ -384,7 +384,6 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
                 return Normal3f::default();
             }
         }
-        Normal3f::default()
     }
     pub fn is_on_surface(&self) -> bool {
         self.ng() != Normal3f::default()
@@ -1009,16 +1008,7 @@ pub fn random_walk<'a>(
         if let Some(mi) = mi_opt {
             // if mi.is_valid() {...}
             if let Some(phase) = mi.clone().phase {
-                let mut vertex: Vertex = Vertex {
-                    vertex_type: VertexType::Medium,
-                    beta: Spectrum::default(),
-                    ei: None,
-                    mi: None,
-                    si: None,
-                    delta: false,
-                    pdf_fwd: 0.0 as Float,
-                    pdf_rev: 0.0 as Float,
-                };
+                let mut vertex: Vertex;
                 {
                     // record medium interaction in _path_ and compute forward density
                     let prev: &Vertex = &path[path.len() - 1];
@@ -1040,7 +1030,7 @@ pub fn random_walk<'a>(
                     *ray = new_ray;
                 }
                 // compute reverse area density at preceding vertex
-                let mut new_pdf_rev: Float = 0.0;
+                let mut new_pdf_rev;
                 {
                     let prev: &Vertex = &path[path.len() - 1];
                     new_pdf_rev = vertex.convert_density(pdf_rev, prev);
@@ -1069,7 +1059,7 @@ pub fn random_walk<'a>(
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
                 isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
-                if let Some(ref bsdf) = isect.clone().bsdf {
+                if let Some(ref _bsdf) = isect.clone().bsdf {
                 } else {
                     let new_ray = isect.spawn_ray(&ray.d);
                     *ray = new_ray;
@@ -1128,7 +1118,7 @@ pub fn random_walk<'a>(
                     *ray = new_ray;
                 }
                 // compute reverse area density at preceding vertex
-                let mut new_pdf_rev: Float = 0.0;
+                let mut new_pdf_rev: Float;
                 {
                     let prev: &Vertex = &path[path.len() - 1];
                     new_pdf_rev = vertex.convert_density(pdf_rev, prev);
@@ -1139,6 +1129,18 @@ pub fn random_walk<'a>(
                 path.push(vertex);
             }
         }
+    }
+    // correct subpath sampling densities for infinite area lights
+    if let Some(pdf_pos) = density_info {
+        // set spatial density of _path[1]_ for infinite area light
+        if bounces > 0 {
+            path[1].pdf_fwd = pdf_pos;
+            if path[1].is_on_surface() {
+                path[1].pdf_fwd *= vec3_abs_dot_nrm(&ray.d, &path[1].ng());
+            }
+        }
+        // set spatial density of _path[0]_ for infinite area light
+        // path[0].pdf_fwd = infinite_light_density(scene, light_distr, light_to_index, ray.d);
     }
     assert!(
         bounces + 1 == path.len(),

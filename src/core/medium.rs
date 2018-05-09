@@ -1,10 +1,9 @@
 // std
-use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Bounds3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{spherical_direction_vec3, vec3_coordinate_system, vec3_dot_vec3};
+use core::geometry::{Point2f, Ray, Vector3f};
 use core::interaction::MediumInteraction;
 use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
@@ -339,7 +338,7 @@ impl MediumInterface {
             }
         } else {
             // self.inside == None
-            if let Some(ref outside) = self.outside {
+            if let Some(ref _outside) = self.outside {
                 // self.outside == Some
                 true
             } else {
