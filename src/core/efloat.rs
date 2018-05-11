@@ -1,3 +1,8 @@
+//! In addition to working out the error bounds algebraically, we can
+//! also have the computer do this work for us as some computation is
+//! being performed. This approach is known as *running error
+//! analysis*.
+
 // std
 use std;
 use std::ops::{Add, Div, Mul, Sub};
@@ -37,6 +42,8 @@ pub fn quadratic_efloat(a: EFloat, b: EFloat, c: EFloat, t0: &mut EFloat, t1: &m
     }
 }
 
+/// **EFloat** keeps track of an interval that describes the
+/// uncertainty of a value of interest.
 #[derive(Debug, Default, Copy, Clone)]
 pub struct EFloat {
     pub v: f32,

@@ -1,3 +1,7 @@
+//! The **Spectrum** type hides the details of the particular spectral
+//! representation used, so that changing this detail of the system
+//! only requires changing the **Spectrum** implementation.
+
 // std
 use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Neg, Sub};
 // others

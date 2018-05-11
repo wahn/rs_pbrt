@@ -1,3 +1,6 @@
+//! Rendering an image of the scene is handled by an instance of a
+//! class that implements the **Integrator** interface.
+
 // std
 use std;
 use std::sync::Arc;
@@ -285,6 +288,8 @@ pub fn estimate_direct(
     ld
 }
 
+/// The light to start each photon path from is chosen according to a
+/// PDF defined by the lights' respective powers.
 pub fn compute_light_power_distribution(scene: &Scene) -> Option<Arc<Distribution1D>> {
     if scene.lights.is_empty() {
         return None;

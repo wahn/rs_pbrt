@@ -1,3 +1,6 @@
+//! A key operation that **Medium** implementations must perform is to
+//! compute the beam transmittance along a given ray.
+
 // std
 use std::f32::consts::PI;
 use std::sync::Arc;

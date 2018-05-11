@@ -1,3 +1,5 @@
+//! Random Number Generator
+
 // pbrt
 use core::pbrt::Float;
 
