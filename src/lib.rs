@@ -28,9 +28,9 @@ extern crate typed_arena;
 // use std::cell::RefCell;
 // use std::collections::HashMap;
 use std::default::Default;
-use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::mpsc;
+use std::sync::Arc;
 
 pub mod accelerators;
 pub mod cameras;
@@ -48,17 +48,18 @@ pub mod textures;
 use core::camera::{Camera, CameraSample};
 use core::geometry::pnt2_inside_exclusive;
 use core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i};
-use core::integrator::SamplerIntegrator;
 use core::integrator::compute_light_power_distribution;
+use core::integrator::SamplerIntegrator;
 // use core::light::Light;
+use core::film::Film;
 use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::clamp_t;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
 use core::sampling::Distribution1D;
 use core::scene::Scene;
-use integrators::bdpt::{BDPTIntegrator, Vertex};
 use integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_subpath};
+use integrators::bdpt::{BDPTIntegrator, Vertex};
 use integrators::mlt::N_SAMPLE_STREAMS;
 use integrators::mlt::{MLTIntegrator, MLTSampler};
 
@@ -328,8 +329,10 @@ pub fn render(
     film.write_image(1.0 as Float);
 }
 
-/// **Main function** to **render** a scene mutli-threaded (using all
+/// **Main function** to **render** a scene multi-threaded (using all
 /// available cores) with **bidirectional** path tracing.
+///
+/// ![bdpt](https://www.janwalter.org/assets/uml/pbrt/render_bdpt.png)
 pub fn render_bdpt(
     scene: &Scene,
     camera: &Box<Camera + Send + Sync>,
@@ -564,7 +567,7 @@ pub fn render_bdpt(
     }
 }
 
-/// **Main function** to **render** a scene mutli-threaded (using all
+/// **Main function** to **render** a scene multi-threaded (using all
 /// available cores) with **Metropolis Light Transport** (MLT).
 pub fn render_mlt(
     scene: &Scene,
@@ -573,9 +576,10 @@ pub fn render_mlt(
     integrator: &mut Box<MLTIntegrator>,
     num_threads: u8,
 ) {
-    if let Some(light_distribution) = compute_light_power_distribution(scene) {
+    if let Some(light_distr) = compute_light_power_distribution(scene) {
         // generate bootstrap samples and compute normalization constant $b$
         let n_bootstrap_samples: u32 = integrator.n_bootstrap * (integrator.max_depth + 1);
+        let mut bootstrap_weights: Vec<Float> = vec![0.0 as Float; n_bootstrap_samples as usize];
         if scene.lights.len() > 0 {
             // TODO: ProgressReporter progress(nBootstrap / 256, "Generating bootstrap paths");
             let chunk_size: u32 = clamp_t(integrator.n_bootstrap / 128, 1, 8192);
@@ -583,17 +587,30 @@ pub fn render_mlt(
                 // generate _i_th bootstrap sample
                 for depth in 0..(integrator.max_depth + 1) {
                     let rng_index: u64 = (i * (integrator.max_depth + 1) + depth) as u64;
-                    let sampler: MLTSampler = MLTSampler::new(
+                    let mut sampler: MLTSampler = MLTSampler::new(
                         integrator.mutations_per_pixel as i64,
                         rng_index,
                         integrator.sigma,
                         integrator.large_step_probability,
                         N_SAMPLE_STREAMS as i32,
                     );
-                    // p_raster: Point2f;
-                    // l();
+                    let p_raster: Point2f = Point2f::default();
+                    bootstrap_weights[rng_index as usize] =
+                        integrator.l(scene, &light_distr, &mut sampler).y();
                 }
+                // TODO: if ((i + 1) % 256 == 0) progress.Update();
             }
         }
+        let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
+        let b: Float = bootstrap.func_int * (integrator.max_depth + 1) as Float;
+        // run _nChains_ Markov chains in parallel
+        let film: Arc<Film> = camera.get_film();
+        let n_total_mutations: i64 =
+            integrator.mutations_per_pixel as i64 * film.get_sample_bounds().area() as i64;
+        if scene.lights.len() > 0 {
+            // WORK
+        }
+        // Store final image computed with MLT
+        film.write_image(b / integrator.mutations_per_pixel as Float);
     }
 }
