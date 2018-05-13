@@ -15,6 +15,8 @@ pub struct MLTSampler {
     pub sigma: Float,
     pub large_step_probability: Float,
     pub stream_count: i32,
+    pub current_iteration: i64,
+    pub large_step: bool,
     pub stream_index: i32,
     pub sample_index: i32,
     // inherited from class Sampler (see sampler.h)
@@ -44,6 +46,8 @@ impl MLTSampler {
             sigma: sigma,
             large_step_probability: large_step_probability,
             stream_count: stream_count,
+            current_iteration: 0_i64,
+            large_step: true,
             stream_index: 0_i32,
             sample_index: 0_i32,
             current_pixel: Point2i::default(),
@@ -55,6 +59,10 @@ impl MLTSampler {
             array_1d_offset: 0_usize,
             array_2d_offset: 0_usize,
         }
+    }
+    pub fn start_iteration(&mut self) {
+        self.current_iteration += 1;
+        self.large_step = self.rng.uniform_float() < self.large_step_probability;
     }
     pub fn start_stream(&mut self, index: i32) {
         self.stream_index = index;
@@ -110,6 +118,8 @@ impl Clone for MLTSampler {
             sigma: self.sigma,
             large_step_probability: self.large_step_probability,
             stream_count: self.stream_count,
+            current_iteration: self.current_iteration,
+            large_step: self.large_step,
             stream_index: self.stream_index,
             sample_index: self.sample_index,
             current_pixel: self.current_pixel,

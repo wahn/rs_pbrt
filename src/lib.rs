@@ -55,6 +55,7 @@ use core::film::Film;
 use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::clamp_t;
 use core::pbrt::{Float, Spectrum};
+use core::rng::Rng;
 use core::sampler::Sampler;
 use core::sampling::Distribution1D;
 use core::scene::Scene;
@@ -603,12 +604,44 @@ pub fn render_mlt(
         }
         let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
         let b: Float = bootstrap.func_int * (integrator.max_depth + 1) as Float;
-        // run _nChains_ Markov chains in parallel
+        // run _n_chains_ Markov chains in parallel
         let film: Arc<Film> = camera.get_film();
-        let n_total_mutations: i64 =
-            integrator.mutations_per_pixel as i64 * film.get_sample_bounds().area() as i64;
+        let n_total_mutations: u64 =
+            integrator.mutations_per_pixel as u64 * film.get_sample_bounds().area() as u64;
         if scene.lights.len() > 0 {
-            // WORK
+            let progress_frequency = 32768;
+            // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
+            //                           "Rendering");
+            for i in 0..integrator.n_chains {
+                let n_chain_mutations: u64 = ((i as u64 + 1) * n_total_mutations
+                    / integrator.n_chains as u64)
+                    .min(n_total_mutations)
+                    - i as u64 * n_total_mutations / integrator.n_chains as u64;
+                // select initial state from the set of bootstrap samples
+                let mut rng: Rng = Rng::default();
+                rng.set_sequence(i as u64);
+                let bootstrap_index: usize = bootstrap.sample_discrete(rng.uniform_float(), None);
+                let depth: i32 = bootstrap_index as i32 % (integrator.max_depth as i32 + 1);
+                // initialize local variables for selected state
+                let mut sampler: MLTSampler = MLTSampler::new(
+                    integrator.mutations_per_pixel as i64,
+                    bootstrap_index as u64,
+                    integrator.sigma,
+                    integrator.large_step_probability,
+                    N_SAMPLE_STREAMS as i32,
+                );
+                // Point2f pCurrent;
+                let l_current: Spectrum = integrator.l(
+                    scene,
+                    &light_distr,
+                    &mut sampler,
+                );
+                // run the Markov chain for _n_chain_mutations_ steps
+                for j in 0..n_chain_mutations {
+                    sampler.start_iteration();
+                    // WORK
+                }
+            }
         }
         // Store final image computed with MLT
         film.write_image(b / integrator.mutations_per_pixel as Float);
