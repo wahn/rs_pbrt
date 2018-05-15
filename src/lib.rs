@@ -632,7 +632,7 @@ pub fn render_mlt(
                     N_SAMPLE_STREAMS as i32,
                 );
                 let mut p_current: Point2f = Point2f::default();
-                let l_current: Spectrum =
+                let mut l_current: Spectrum =
                     integrator.l(scene, &light_distr, &mut sampler, depth, &mut p_current);
                 // run the Markov chain for _n_chain_mutations_ steps
                 for j in 0..n_chain_mutations {
@@ -650,7 +650,20 @@ pub fn render_mlt(
                         &p_current,
                         &(l_current * (1.0 as Float - accept) / l_current.y()),
                     );
-                    // WORK
+                    // accept or reject the proposal
+                    if rng.uniform_float() < accept {
+                        p_current = p_proposed;
+                        l_current = l_proposed;
+                        sampler.accept();
+                    // TODO: ++acceptedMutations;
+                    } else {
+                        sampler.reject();
+                    }
+                    // TODO: ++totalMutations;
+                    // if (i * n_total_mutations / integrator.n_chains + j) % progress_frequency == 0 {
+                    //     progress.update();
+                    // }
+                    // TODO: arena.Reset();
                 }
             }
         }

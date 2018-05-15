@@ -9,14 +9,31 @@ use core::scene::Scene;
 pub const CAMERA_STREAM_INDEX: u8 = 0;
 pub const N_SAMPLE_STREAMS: u8 = 3;
 
+#[derive(Debug, Default, Copy, Clone)]
+pub struct PrimarySample {
+    pub value: Float,
+    pub last_modification_iteration: i64,
+    pub value_backup: Float,
+    pub modify_backup: i64,
+}
+
+impl PrimarySample {
+    pub fn restore(&mut self) {
+        self.value = self.value_backup;
+        self.last_modification_iteration = self.modify_backup;
+    }
+}
+
 pub struct MLTSampler {
     pub samples_per_pixel: i64,
     pub rng: Rng,
     pub sigma: Float,
     pub large_step_probability: Float,
     pub stream_count: i32,
+    pub x: Vec<PrimarySample>,
     pub current_iteration: i64,
     pub large_step: bool,
+    pub last_large_step_iteration: i64,
     pub stream_index: i32,
     pub sample_index: i32,
     // inherited from class Sampler (see sampler.h)
@@ -46,8 +63,10 @@ impl MLTSampler {
             sigma: sigma,
             large_step_probability: large_step_probability,
             stream_count: stream_count,
+            x: Vec::new(),
             current_iteration: 0_i64,
             large_step: true,
+            last_large_step_iteration: 0_i64,
             stream_index: 0_i32,
             sample_index: 0_i32,
             current_pixel: Point2i::default(),
@@ -63,6 +82,20 @@ impl MLTSampler {
     pub fn start_iteration(&mut self) {
         self.current_iteration += 1;
         self.large_step = self.rng.uniform_float() < self.large_step_probability;
+    }
+    pub fn accept(&mut self) {
+        if self.large_step {
+            self.last_large_step_iteration = self.current_iteration;
+        }
+    }
+    pub fn reject(&mut self) {
+        for mut i in 0..self.x.len() {
+            let mut xi: PrimarySample = self.x[i];
+            if xi.last_modification_iteration == self.current_iteration {
+                xi.restore();
+            }
+        }
+        self.current_iteration -= 1;
     }
     pub fn start_stream(&mut self, index: i32) {
         self.stream_index = index;
@@ -118,8 +151,10 @@ impl Clone for MLTSampler {
             sigma: self.sigma,
             large_step_probability: self.large_step_probability,
             stream_count: self.stream_count,
+            x: self.x.iter().cloned().collect(),
             current_iteration: self.current_iteration,
             large_step: self.large_step,
+            last_large_step_iteration: self.last_large_step_iteration,
             stream_index: self.stream_index,
             sample_index: self.sample_index,
             current_pixel: self.current_pixel,
@@ -161,12 +196,13 @@ impl MLTIntegrator {
             large_step_probability: large_step_probability,
         }
     }
-    pub fn l(&self,
-             scene: &Scene,
-             light_distr: &Distribution1D,
-             sampler: &mut MLTSampler,
-             depth: u32,
-             p_raster: &mut Point2f,
+    pub fn l(
+        &self,
+        scene: &Scene,
+        light_distr: &Distribution1D,
+        sampler: &mut MLTSampler,
+        depth: u32,
+        p_raster: &mut Point2f,
     ) -> Spectrum {
         sampler.start_stream(CAMERA_STREAM_INDEX as i32);
         // WORK
