@@ -165,6 +165,8 @@ impl MLTIntegrator {
              scene: &Scene,
              light_distr: &Distribution1D,
              sampler: &mut MLTSampler,
+             depth: u32,
+             p_raster: &mut Point2f,
     ) -> Spectrum {
         sampler.start_stream(CAMERA_STREAM_INDEX as i32);
         // WORK

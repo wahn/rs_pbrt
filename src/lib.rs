@@ -595,9 +595,10 @@ pub fn render_mlt(
                         integrator.large_step_probability,
                         N_SAMPLE_STREAMS as i32,
                     );
-                    let p_raster: Point2f = Point2f::default();
-                    bootstrap_weights[rng_index as usize] =
-                        integrator.l(scene, &light_distr, &mut sampler).y();
+                    let mut p_raster: Point2f = Point2f::default();
+                    bootstrap_weights[rng_index as usize] = integrator
+                        .l(scene, &light_distr, &mut sampler, depth, &mut p_raster)
+                        .y();
                 }
                 // TODO: if ((i + 1) % 256 == 0) progress.Update();
             }
@@ -621,7 +622,7 @@ pub fn render_mlt(
                 let mut rng: Rng = Rng::default();
                 rng.set_sequence(i as u64);
                 let bootstrap_index: usize = bootstrap.sample_discrete(rng.uniform_float(), None);
-                let depth: i32 = bootstrap_index as i32 % (integrator.max_depth as i32 + 1);
+                let depth: u32 = bootstrap_index as u32 % (integrator.max_depth as u32 + 1);
                 // initialize local variables for selected state
                 let mut sampler: MLTSampler = MLTSampler::new(
                     integrator.mutations_per_pixel as i64,
@@ -630,15 +631,25 @@ pub fn render_mlt(
                     integrator.large_step_probability,
                     N_SAMPLE_STREAMS as i32,
                 );
-                // Point2f pCurrent;
-                let l_current: Spectrum = integrator.l(
-                    scene,
-                    &light_distr,
-                    &mut sampler,
-                );
+                let mut p_current: Point2f = Point2f::default();
+                let l_current: Spectrum =
+                    integrator.l(scene, &light_distr, &mut sampler, depth, &mut p_current);
                 // run the Markov chain for _n_chain_mutations_ steps
                 for j in 0..n_chain_mutations {
                     sampler.start_iteration();
+                    let mut p_proposed: Point2f = Point2f::default();
+                    let l_proposed: Spectrum =
+                        integrator.l(scene, &light_distr, &mut sampler, depth, &mut p_proposed);
+                    // compute acceptance probability for proposed sample
+                    let accept: Float = (1.0 as Float).min(l_proposed.y() / l_current.y());
+                    // splat both current and proposed samples to _film_
+                    if accept > 0.0 as Float {
+                        film.add_splat(&p_proposed, &(l_proposed * accept / l_proposed.y()));
+                    }
+                    film.add_splat(
+                        &p_current,
+                        &(l_current * (1.0 as Float - accept) / l_current.y()),
+                    );
                     // WORK
                 }
             }
