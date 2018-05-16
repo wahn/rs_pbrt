@@ -5,6 +5,7 @@ use core::rng::Rng;
 use core::sampler::Sampler;
 use core::sampling::Distribution1D;
 use core::scene::Scene;
+use integrators::bdpt::Vertex;
 
 pub const CAMERA_STREAM_INDEX: u8 = 0;
 pub const N_SAMPLE_STREAMS: u8 = 3;
@@ -205,6 +206,28 @@ impl MLTIntegrator {
         p_raster: &mut Point2f,
     ) -> Spectrum {
         sampler.start_stream(CAMERA_STREAM_INDEX as i32);
+        // determine the number of available strategies and pick a specific one
+        let mut s: i32 = 0;
+        let mut t: i32 = 0;
+        let mut n_strategies: i32 = 0;
+        if (depth == 0_u32) {
+            n_strategies = 1;
+            s = 0;
+            t = 2;
+        } else {
+            // n_strategies = depth as i32 + 2;
+            // s = std::min((int)(sampler.Get1D() * n_strategies), n_strategies - 1);
+            // t = n_strategies - s;
+        }
+        // generate a camera subpath with exactly _t_ vertices
+        let mut camera_vertices: Vec<Vertex> = Vec::with_capacity(t as usize);
+        // Bounds2f sampleBounds = (Bounds2f)camera->film->GetSampleBounds();
+        // let film: Arc<Film> = self.camera.get_film();
+        // *pRaster = sampleBounds.Lerp(sampler.Get2D());
+        // if (GenerateCameraSubpath(scene, sampler, arena, t, *camera, *pRaster,
+        //                           cameraVertices) != t) {
+        //     return Spectrum::default();
+        // }
         // WORK
         Spectrum::default()
     }
