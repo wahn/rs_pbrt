@@ -176,7 +176,7 @@ fn morton2(p: &(u32, u32)) -> u32 {
 /// available cores).
 pub fn render(
     scene: &Scene,
-    camera: &Box<Camera + Send + Sync>,
+    camera: &Arc<Camera + Send + Sync>,
     sampler: &mut Box<Sampler + Send + Sync>,
     integrator: &mut Box<SamplerIntegrator + Send + Sync>,
     num_threads: u8,
@@ -336,7 +336,7 @@ pub fn render(
 /// ![bdpt](https://www.janwalter.org/assets/uml/pbrt/render_bdpt.png)
 pub fn render_bdpt(
     scene: &Scene,
-    camera: &Box<Camera + Send + Sync>,
+    camera: &Arc<Camera + Send + Sync>,
     sampler: &mut Box<Sampler + Send + Sync>,
     integrator: &mut Box<BDPTIntegrator>,
     num_threads: u8,
@@ -455,7 +455,7 @@ pub fn render_bdpt(
                                                     scene,
                                                     &mut tile_sampler,
                                                     integrator.max_depth + 2,
-                                                    camera,
+                                                    *camera,
                                                     &p_film,
                                                     &mut camera_vertices,
                                                 );
@@ -572,7 +572,7 @@ pub fn render_bdpt(
 /// available cores) with **Metropolis Light Transport** (MLT).
 pub fn render_mlt(
     scene: &Scene,
-    camera: &Box<Camera + Send + Sync>,
+    camera: &Arc<Camera + Send + Sync>,
     sampler: &mut Box<Sampler + Send + Sync>,
     integrator: &mut Box<MLTIntegrator>,
     num_threads: u8,

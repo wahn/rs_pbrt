@@ -1,5 +1,8 @@
+// std
+use std::sync::Arc;
 // pbrt
-use core::geometry::{Point2f, Point2i};
+use core::camera::Camera;
+use core::geometry::{Bounds2i, Point2f, Point2i};
 use core::pbrt::{Float, Spectrum};
 use core::rng::Rng;
 use core::sampler::Sampler;
@@ -171,6 +174,7 @@ impl Clone for MLTSampler {
 }
 
 pub struct MLTIntegrator {
+    pub camera: Arc<Camera + Sync + Send>,
     pub max_depth: u32,
     pub n_bootstrap: u32,
     pub n_chains: u32,
@@ -181,6 +185,7 @@ pub struct MLTIntegrator {
 
 impl MLTIntegrator {
     pub fn new(
+        camera: Arc<Camera + Sync + Send>,
         max_depth: u32,
         n_bootstrap: u32,
         n_chains: u32,
@@ -189,6 +194,7 @@ impl MLTIntegrator {
         large_step_probability: Float,
     ) -> Self {
         MLTIntegrator {
+            camera: camera,
             max_depth: max_depth,
             n_bootstrap: n_bootstrap,
             n_chains: n_chains,
@@ -222,6 +228,8 @@ impl MLTIntegrator {
         // generate a camera subpath with exactly _t_ vertices
         let mut camera_vertices: Vec<Vertex> = Vec::with_capacity(t as usize);
         // Bounds2f sampleBounds = (Bounds2f)camera->film->GetSampleBounds();
+        let film = self.camera.get_film();
+        let sample_bounds: Bounds2i = film.get_sample_bounds();
         // let film: Arc<Film> = self.camera.get_film();
         // *pRaster = sampleBounds.Lerp(sampler.Get2D());
         // if (GenerateCameraSubpath(scene, sampler, arena, t, *camera, *pRaster,

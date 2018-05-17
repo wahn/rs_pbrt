@@ -1279,7 +1279,7 @@ fn pbrt_world_end() {
                             // MakeCamera
                             // TODO: let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
                             let mut some_camera: Option<
-                                Box<Camera + Sync + Send>,
+                                Arc<Camera + Sync + Send>,
                             > = None;
                             let medium_interface: MediumInterface = create_medium_interface();
                             let animated_cam_to_world: AnimatedTransform =
@@ -1288,7 +1288,7 @@ fn pbrt_world_end() {
                                                        &ro.camera_to_world.t[1],
                                                        ro.transform_end_time);
                             if ro.camera_name == String::from("perspective") {
-                                let camera: Box<
+                                let camera: Arc<
                                     Camera + Send + Sync,
                                 > = PerspectiveCamera::create(
                                     &ro.camera_params,
@@ -1488,7 +1488,7 @@ fn pbrt_world_end() {
                                         let sigma: Float = ro.integrator_params
                                             .find_one_float(String::from("sigma"), 0.01 as Float);
                                         let mut integrator = Box::new(MLTIntegrator::new(
-                                            // camera,
+                                            camera.clone(),
                                             max_depth as u32,
                                             n_bootstrap as u32,
                                             n_chains as u32,
@@ -1593,7 +1593,7 @@ fn pbrt_world_end() {
                                             let num_threads: u8 = NUMBER_OF_THREADS;
                                             pbrt::render(
                                                 &scene,
-                                                &camera,
+                                                &camera.clone(),
                                                 &mut sampler,
                                                 &mut integrator,
                                                 num_threads,

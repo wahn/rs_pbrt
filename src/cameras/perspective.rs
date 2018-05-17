@@ -132,7 +132,7 @@ impl PerspectiveCamera {
         cam2world: AnimatedTransform,
         film: Arc<Film>,
         medium: Option<Arc<Medium + Send + Sync>>,
-    ) -> Box<Camera + Send + Sync> {
+    ) -> Arc<Camera + Send + Sync> {
         let shutteropen: Float = params.find_one_float(String::from("shutteropen"), 0.0);
         let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
@@ -161,7 +161,7 @@ impl PerspectiveCamera {
         //     params.find_one_float(String::from("halffov"), -1.0);
         // TODO: if (halffov > 0.f)
         // TODO: let perspective_camera: Arc<Camera + Sync + Send> =
-        let camera = Box::new(PerspectiveCamera::new(
+        let camera = Arc::new(PerspectiveCamera::new(
             cam2world,
             screen,
             shutteropen,

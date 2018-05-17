@@ -609,7 +609,7 @@ fn main() {
         1.0,
         std::f32::INFINITY,
     ));
-    let camera: Box<Camera + Send + Sync> = Box::new(PerspectiveCamera::new(
+    let camera: Arc<Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(
         animated_cam_to_world,
         screen,
         shutteropen,

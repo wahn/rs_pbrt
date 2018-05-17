@@ -31,7 +31,7 @@ pub struct EndpointInteraction<'a> {
     pub n: Normal3f,
     pub medium_interface: Option<Arc<MediumInterface>>,
     // EndpointInteraction Public Data
-    pub camera: Option<&'a Box<Camera + Send + Sync>>,
+    pub camera: Option<&'a Arc<Camera + Send + Sync>>,
     pub light: Option<&'a Arc<Light + Send + Sync>>,
 }
 
@@ -45,13 +45,13 @@ impl<'a> EndpointInteraction<'a> {
     }
     pub fn new_interaction_from_camera(
         it: &InteractionCommon,
-        camera: &'a Box<Camera + Send + Sync>,
+        camera: &'a Arc<Camera + Send + Sync>,
     ) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&it.p, it.time);
         ei.camera = Some(camera);
         ei
     }
-    pub fn new_camera(camera: &'a Box<Camera + Send + Sync>, ray: &Ray) -> Self {
+    pub fn new_camera(camera: &'a Arc<Camera + Send + Sync>, ray: &Ray) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction {
             p: ray.o,
             time: ray.time,
@@ -199,7 +199,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         }
     }
     pub fn create_camera_from_ray(
-        camera: &'a Box<Camera + Send + Sync>,
+        camera: &'a Arc<Camera + Send + Sync>,
         ray: &Ray,
         beta: &Spectrum,
     ) -> Vertex<'a, 'p, 's> {
@@ -210,7 +210,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         )
     }
     pub fn create_camera_from_interaction(
-        camera: &'a Box<Camera + Send + Sync>,
+        camera: &'a Arc<Camera + Send + Sync>,
         it: &InteractionCommon,
         beta: &Spectrum,
     ) -> Vertex<'a, 'p, 's> {
@@ -839,7 +839,7 @@ pub fn generate_camera_subpath<'a>(
     scene: &'a Scene,
     sampler: &mut Box<Sampler + Send + Sync>,
     max_depth: u32,
-    camera: &'a Box<Camera + Send + Sync>,
+    camera: &'a Arc<Camera + Send + Sync>,
     p_film: &Point2f,
     path: &mut Vec<Vertex<'a, 'a, 'a>>,
 ) -> (usize, Point3f, Float) {
@@ -1286,7 +1286,7 @@ pub fn mis_weight<'a>(
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+            let mut camera: Option<&Arc<Camera + Send + Sync>> = None;
             let mut light: Option<&Arc<Light + Send + Sync>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
@@ -1364,7 +1364,7 @@ pub fn mis_weight<'a>(
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+            let mut camera: Option<&Arc<Camera + Send + Sync>> = None;
             let mut light: Option<&Arc<Light + Send + Sync>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
@@ -1446,7 +1446,7 @@ pub fn mis_weight<'a>(
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref cv_ei) = camera_vertices[t - 1].ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+            let mut camera: Option<&Arc<Camera + Send + Sync>> = None;
             let mut light: Option<&Arc<Light + Send + Sync>> = None;
             if let Some(ref medium_interface_arc) = cv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
@@ -1527,7 +1527,7 @@ pub fn mis_weight<'a>(
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = light_vertices[s - 1].ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+            let mut camera: Option<&Arc<Camera + Send + Sync>> = None;
             let mut light: Option<&Arc<Light + Send + Sync>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
@@ -1626,7 +1626,7 @@ pub fn mis_weight<'a>(
             let mut si: Option<SurfaceInteraction> = None;
             if let Some(ref cv_ei) = camera_vertices[t - 2].ei {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
-                let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+                let mut camera: Option<&Arc<Camera + Send + Sync>> = None;
                 let mut light: Option<&Arc<Light + Send + Sync>> = None;
                 if let Some(ref medium_interface_arc) = cv_ei.medium_interface {
                     medium_interface = Some(medium_interface_arc.clone());
@@ -1726,7 +1726,7 @@ pub fn mis_weight<'a>(
             let mut si: Option<SurfaceInteraction> = None;
             if let Some(ref lv_ei) = light_vertices[s - 2].ei {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
-                let mut camera: Option<&Box<Camera + Send + Sync>> = None;
+                let mut camera: Option<&Arc<Camera + Send + Sync>> = None;
                 let mut light: Option<&Arc<Light + Send + Sync>> = None;
                 if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                     medium_interface = Some(medium_interface_arc.clone());
@@ -1895,7 +1895,7 @@ pub fn connect_bdpt<'a>(
     s: usize,
     t: usize,
     light_distr: &Arc<Distribution1D>,
-    camera: &'a Box<Camera + Send + Sync>,
+    camera: &'a Arc<Camera + Send + Sync>,
     sampler: &mut Box<Sampler + Send + Sync>,
     p_raster: &mut Point2f,
     mis_weight_opt: Option<&mut Float>,
