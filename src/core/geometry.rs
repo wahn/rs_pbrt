@@ -1324,6 +1324,15 @@ impl<T> Bounds2<T> {
     }
 }
 
+impl Bounds2<Float> {
+    pub fn lerp(&self, t: &Point2f) -> Point2f {
+        Point2f {
+            x: lerp(t.x, self.p_min.x, self.p_max.x),
+            y: lerp(t.y, self.p_min.y, self.p_max.y),
+        }
+    }
+}
+
 pub struct Bounds2Iterator<'a> {
     p: Point2i,
     bounds: &'a Bounds2i,

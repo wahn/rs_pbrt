@@ -2,7 +2,7 @@
 use std::sync::Arc;
 // pbrt
 use core::camera::Camera;
-use core::geometry::{Bounds2i, Point2f, Point2i};
+use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i};
 use core::pbrt::{Float, Spectrum};
 use core::rng::Rng;
 use core::sampler::Sampler;
@@ -227,11 +227,19 @@ impl MLTIntegrator {
         }
         // generate a camera subpath with exactly _t_ vertices
         let mut camera_vertices: Vec<Vertex> = Vec::with_capacity(t as usize);
-        // Bounds2f sampleBounds = (Bounds2f)camera->film->GetSampleBounds();
         let film = self.camera.get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();
-        // let film: Arc<Film> = self.camera.get_film();
-        // *pRaster = sampleBounds.Lerp(sampler.Get2D());
+        let sample_bounds_f: Bounds2f = Bounds2f {
+            p_min: Point2f {
+                x: sample_bounds.p_min.x as Float,
+                y: sample_bounds.p_min.y as Float,
+            },
+            p_max: Point2f {
+                x: sample_bounds.p_max.x as Float,
+                y: sample_bounds.p_max.y as Float,
+            },
+        };
+        *p_raster = sample_bounds_f.lerp(&sampler.get_2d());
         // if (GenerateCameraSubpath(scene, sampler, arena, t, *camera, *pRaster,
         //                           cameraVertices) != t) {
         //     return Spectrum::default();
