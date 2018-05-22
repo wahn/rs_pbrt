@@ -9,8 +9,11 @@ use core::sampler::Sampler;
 use core::sampling::Distribution1D;
 use core::scene::Scene;
 use integrators::bdpt::Vertex;
+use integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_subpath};
 
 pub const CAMERA_STREAM_INDEX: u8 = 0;
+pub const LIGHT_STREAM_INDEX: u8 = 1;
+pub const CONNECTION_STREAM_INDEX: u8 = 2;
 pub const N_SAMPLE_STREAMS: u8 = 3;
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -206,22 +209,22 @@ impl MLTIntegrator {
     pub fn l(
         &self,
         scene: &Scene,
-        light_distr: &Distribution1D,
+        light_distr: &Arc<Distribution1D>,
         sampler: &mut MLTSampler,
         depth: u32,
         p_raster: &mut Point2f,
     ) -> Spectrum {
         sampler.start_stream(CAMERA_STREAM_INDEX as i32);
         // determine the number of available strategies and pick a specific one
-        let mut s: i32 = 0;
-        let mut t: i32 = 0;
-        let mut n_strategies: i32 = 0;
+        let mut s: u32 = 0;
+        let mut t: u32 = 0;
+        let mut n_strategies: u32 = 0;
         if (depth == 0_u32) {
             n_strategies = 1;
             s = 0;
             t = 2;
         } else {
-            // n_strategies = depth as i32 + 2;
+            // n_strategies = depth as u32 + 2;
             // s = std::min((int)(sampler.Get1D() * n_strategies), n_strategies - 1);
             // t = n_strategies - s;
         }
@@ -240,11 +243,57 @@ impl MLTIntegrator {
             },
         };
         *p_raster = sample_bounds_f.lerp(&sampler.get_2d());
-        // if (GenerateCameraSubpath(scene, sampler, arena, t, *camera, *pRaster,
-        //                           cameraVertices) != t) {
-        //     return Spectrum::default();
-        // }
-        // WORK
-        Spectrum::default()
+        let mut n_camera;
+        {
+            let mut sampler: Box<Sampler + Sync + Send> = Box::new(sampler.clone());
+            let (n_camera_new, p_new, time_new) = generate_camera_subpath(
+                scene,
+                &mut sampler,
+                t,
+                &self.camera,
+                p_raster,
+                &mut camera_vertices,
+            );
+            n_camera = n_camera_new;
+        }
+        if n_camera != t as usize {
+            return Spectrum::default();
+        }
+        // generate a light subpath with exactly _s_ vertices
+        sampler.start_stream(LIGHT_STREAM_INDEX as i32);
+        let mut light_vertices: Vec<Vertex> = Vec::with_capacity(s as usize);
+        let mut n_light;
+        {
+            let mut sampler: Box<Sampler + Sync + Send> = Box::new(sampler.clone());
+            let time: Float = camera_vertices[0].time();
+            n_light = generate_light_subpath(
+                scene,
+                &mut sampler,
+                s,
+                time,
+                &light_distr,
+                // light_to_index,
+                &mut light_vertices,
+            );
+        }
+        if n_light != s as usize {
+            return Spectrum::default();
+        }
+        // execute connection strategy and return the radiance estimate
+        sampler.start_stream(CONNECTION_STREAM_INDEX as i32);
+        let mut sampler: Box<Sampler + Sync + Send> = Box::new(sampler.clone());
+        connect_bdpt(
+            scene,
+            &light_vertices,
+            &camera_vertices,
+            s as usize,
+            t as usize,
+            &light_distr,
+            // light_to_index,
+            &self.camera,
+            &mut sampler,
+            p_raster,
+            None,
+        ) * (n_strategies as Float)
     }
 }
