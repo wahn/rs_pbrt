@@ -108,11 +108,22 @@ impl MLTSampler {
         self.stream_index = index;
         self.sample_index = 0;
     }
+    pub fn get_next_index(&mut self) -> i32 {
+        self.sample_index += 1;
+        self.stream_index + self.stream_count * self.sample_index
+    }
+    // private
+    fn ensure_ready(&mut self, index: i32) {
+    }
 }
 
 impl Sampler for MLTSampler {
     fn start_pixel(&mut self, p: &Point2i) {}
     fn get_1d(&mut self) -> Float {
+        // TODO: ProfilePhase _(Prof::GetSample);
+        let index: i32 = self.get_next_index();
+        self.ensure_ready(index);
+        // return X[index].value;
         // WORK
         0.0 as Float
     }
