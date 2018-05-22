@@ -25,6 +25,10 @@ pub struct PrimarySample {
 }
 
 impl PrimarySample {
+    pub fn backup(&mut self) {
+        self.value_backup = self.value;
+        self.modify_backup = self.last_modification_iteration;
+    }
     pub fn restore(&mut self) {
         self.value = self.value_backup;
         self.last_modification_iteration = self.modify_backup;
@@ -114,6 +118,33 @@ impl MLTSampler {
     }
     // private
     fn ensure_ready(&mut self, index: i32) {
+        // enlarge _MLTSampler::x_ if necessary and get current $\VEC{X}_i$
+        if index as usize >= self.x.len() {
+            self.x.resize((index + 1) as usize, PrimarySample::default());
+        }
+        let mut xi: PrimarySample = self.x[index as usize];
+        // reset $\VEC{X}_i$ if a large step took place in the meantime
+        if xi.last_modification_iteration < self.last_large_step_iteration {
+            xi.value = self.rng.uniform_float();
+            xi.last_modification_iteration = self.last_large_step_iteration;
+        }
+        // apply remaining sequence of mutations to _sample_
+        xi.backup();
+        if self.large_step {
+            xi.value = self.rng.uniform_float();
+        } else {
+            // TODO
+            // int64_t n_small = self.current_iteration - xi.last_modification_iteration;
+            // // apply _n_small_ small step mutations
+            // // sample the standard normal distribution $N(0, 1)$
+            // Float normal_sample = Sqrt2 * ErfInv(2 * rng.uniform_float() - 1);
+            // // compute the effective standard deviation and apply perturbation to
+            // // $\VEC{X}_i$
+            // Float effSigma = sigma * std::sqrt((Float)n_small);
+            // xi.value += normal_sample * effSigma;
+            // xi.value -= std::floor(xi.value);
+        }
+        xi.last_modification_iteration = self.current_iteration;
     }
 }
 
