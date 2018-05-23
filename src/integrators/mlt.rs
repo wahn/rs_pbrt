@@ -5,7 +5,7 @@ use core::camera::Camera;
 use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i};
 use core::pbrt::{Float, Spectrum};
 use core::rng::Rng;
-use core::sampler::Sampler;
+use core::sampler::{Sampler, SamplerClone};
 use core::sampling::Distribution1D;
 use core::scene::Scene;
 use integrators::bdpt::Vertex;
@@ -121,7 +121,8 @@ impl MLTSampler {
     fn ensure_ready(&mut self, index: i32) {
         // enlarge _MLTSampler::x_ if necessary and get current $\VEC{X}_i$
         if index as usize >= self.x.len() {
-            self.x.resize((index + 1) as usize, PrimarySample::default());
+            self.x
+                .resize((index + 1) as usize, PrimarySample::default());
         }
         if let Some(xi) = self.x.get_mut(index as usize) {
             // reset $\VEC{X}_i$ if a large step took place in the meantime
@@ -163,10 +164,7 @@ impl Sampler for MLTSampler {
     fn get_2d(&mut self) -> Point2f {
         let x: Float = self.get_1d();
         let y: Float = self.get_1d();
-        Point2f {
-            x: x,
-            y: y,
-        }
+        Point2f { x: x, y: y }
     }
     fn reseed(&mut self, seed: u64) {
         // WORK
@@ -202,7 +200,7 @@ impl Clone for MLTSampler {
     fn clone(&self) -> MLTSampler {
         MLTSampler {
             samples_per_pixel: self.samples_per_pixel,
-            rng: Rng::default(),
+            rng: self.rng.clone(),
             sigma: self.sigma,
             large_step_probability: self.large_step_probability,
             stream_count: self.stream_count,
@@ -258,11 +256,11 @@ impl MLTIntegrator {
         &self,
         scene: &Scene,
         light_distr: &Arc<Distribution1D>,
-        sampler: &mut MLTSampler,
+        mlt_sampler: &mut MLTSampler,
         depth: u32,
         p_raster: &mut Point2f,
     ) -> Spectrum {
-        sampler.start_stream(CAMERA_STREAM_INDEX as i32);
+        mlt_sampler.start_stream(CAMERA_STREAM_INDEX as i32);
         // determine the number of available strategies and pick a specific one
         let mut s: u32 = 0;
         let mut t: u32 = 0;
@@ -272,9 +270,9 @@ impl MLTIntegrator {
             s = 0;
             t = 2;
         } else {
-            // n_strategies = depth as u32 + 2;
-            // s = std::min((int)(sampler.Get1D() * n_strategies), n_strategies - 1);
-            // t = n_strategies - s;
+            n_strategies = depth + 2;
+            s = ((mlt_sampler.get_1d() * n_strategies as Float) as u32).min(n_strategies - 1);
+            t = n_strategies - s;
         }
         // generate a camera subpath with exactly _t_ vertices
         let mut camera_vertices: Vec<Vertex> = Vec::with_capacity(t as usize);
@@ -290,33 +288,34 @@ impl MLTIntegrator {
                 y: sample_bounds.p_max.y as Float,
             },
         };
-        *p_raster = sample_bounds_f.lerp(&sampler.get_2d());
+        *p_raster = sample_bounds_f.lerp(&mlt_sampler.get_2d());
         let mut n_camera;
+        let mut p;
+        let mut time;
         {
-            let mut sampler: Box<Sampler + Sync + Send> = Box::new(sampler.clone());
             let (n_camera_new, p_new, time_new) = generate_camera_subpath(
                 scene,
-                &mut sampler,
+                &mut mlt_sampler.box_clone(),
                 t,
                 &self.camera,
                 p_raster,
                 &mut camera_vertices,
             );
             n_camera = n_camera_new;
+            p = p_new;
+            time = time_new;
         }
         if n_camera != t as usize {
             return Spectrum::default();
         }
         // generate a light subpath with exactly _s_ vertices
-        sampler.start_stream(LIGHT_STREAM_INDEX as i32);
+        mlt_sampler.start_stream(LIGHT_STREAM_INDEX as i32);
         let mut light_vertices: Vec<Vertex> = Vec::with_capacity(s as usize);
         let mut n_light;
         {
-            let mut sampler: Box<Sampler + Sync + Send> = Box::new(sampler.clone());
-            let time: Float = camera_vertices[0].time();
             n_light = generate_light_subpath(
                 scene,
-                &mut sampler,
+                &mut mlt_sampler.box_clone(),
                 s,
                 time,
                 &light_distr,
@@ -328,8 +327,7 @@ impl MLTIntegrator {
             return Spectrum::default();
         }
         // execute connection strategy and return the radiance estimate
-        sampler.start_stream(CONNECTION_STREAM_INDEX as i32);
-        let mut sampler: Box<Sampler + Sync + Send> = Box::new(sampler.clone());
+        mlt_sampler.start_stream(CONNECTION_STREAM_INDEX as i32);
         connect_bdpt(
             scene,
             &light_vertices,
@@ -339,7 +337,7 @@ impl MLTIntegrator {
             &light_distr,
             // light_to_index,
             &self.camera,
-            &mut sampler,
+            &mut mlt_sampler.box_clone(),
             p_raster,
             None,
         ) * (n_strategies as Float)
