@@ -111,6 +111,7 @@ impl MLTSampler {
         self.current_iteration -= 1;
     }
     pub fn start_stream(&mut self, index: i32) {
+        assert!(index < self.stream_count);
         self.stream_index = index;
         self.sample_index = 0;
     }
@@ -157,7 +158,13 @@ impl MLTSampler {
 }
 
 impl Sampler for MLTSampler {
-    fn start_pixel(&mut self, p: &Point2i) {}
+    fn start_pixel(&mut self, p: &Point2i) {
+        // Sampler::StartPixel(p);
+        self.current_pixel = *p;
+        self.current_pixel_sample_index = 0_i64;
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
+    }
     fn get_1d(&mut self) -> Float {
         // TODO: ProfilePhase _(Prof::GetSample);
         let index: i32 = self.get_next_index();
@@ -170,23 +177,42 @@ impl Sampler for MLTSampler {
         Point2f { x: x, y: y }
     }
     fn reseed(&mut self, seed: u64) {
-        // WORK
+        self.rng.set_sequence(seed);
     }
     fn request_2d_array(&mut self, n: i32) {
-        // WORK
+        assert_eq!(self.round_count(n), n);
+        self.samples_2d_array_sizes.push(n);
+        let size: usize = (n * self.samples_per_pixel as i32) as usize;
+        let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
+        self.sample_array_2d.push(additional_points);
     }
     fn round_count(&self, count: i32) -> i32 {
-        // WORK
-        0_i32
+        count
     }
     fn get_2d_array(&mut self, n: i32) -> Vec<Point2f> {
         let mut samples: Vec<Point2f> = Vec::new();
-        // WORK
+        if self.array_2d_offset == self.sample_array_2d.len() {
+            return samples;
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
+        self.array_2d_offset += 1;
         samples
     }
     fn start_next_sample(&mut self) -> bool {
-        // WORK
-        false
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
+        self.current_pixel_sample_index += 1_i64;
+        self.current_pixel_sample_index < self.samples_per_pixel
     }
     fn get_current_pixel(&self) -> Point2i {
         self.current_pixel
