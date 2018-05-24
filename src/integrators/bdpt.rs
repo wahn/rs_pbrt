@@ -837,7 +837,7 @@ pub fn correct_shading_normal(
 
 pub fn generate_camera_subpath<'a>(
     scene: &'a Scene,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Sampler,
     max_depth: u32,
     camera: &'a Arc<Camera + Send + Sync>,
     p_film: &Point2f,
@@ -883,7 +883,7 @@ pub fn generate_camera_subpath<'a>(
 
 pub fn generate_light_subpath<'a>(
     scene: &'a Scene,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Sampler,
     max_depth: u32,
     time: Float,
     light_distr: &Arc<Distribution1D>,
@@ -964,7 +964,7 @@ pub fn generate_light_subpath<'a>(
 pub fn random_walk<'a>(
     scene: &'a Scene,
     ray: &mut Ray,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Sampler,
     beta: &mut Spectrum,
     pdf: Float,
     max_depth: u32,
@@ -1153,7 +1153,7 @@ pub fn random_walk<'a>(
 
 pub fn g<'a>(
     scene: &'a Scene,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Sampler,
     v0: &Vertex,
     v1: &Vertex,
 ) -> Spectrum {
@@ -1896,7 +1896,7 @@ pub fn connect_bdpt<'a>(
     t: usize,
     light_distr: &Arc<Distribution1D>,
     camera: &'a Arc<Camera + Send + Sync>,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Sampler,
     p_raster: &mut Point2f,
     mis_weight_opt: Option<&mut Float>,
 ) -> Spectrum {

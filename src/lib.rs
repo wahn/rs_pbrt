@@ -453,7 +453,7 @@ pub fn render_bdpt(
                                             let (n_camera_new, p_new, time_new) =
                                                 generate_camera_subpath(
                                                     scene,
-                                                    &mut tile_sampler,
+                                                    &mut *tile_sampler,
                                                     integrator.max_depth + 2,
                                                     *camera,
                                                     &p_film,
@@ -472,7 +472,7 @@ pub fn render_bdpt(
                                         {
                                             n_light = generate_light_subpath(
                                                 scene,
-                                                &mut tile_sampler,
+                                                &mut *tile_sampler,
                                                 integrator.max_depth + 1,
                                                 time,
                                                 &light_distr,
@@ -508,7 +508,7 @@ pub fn render_bdpt(
                                                     t,
                                                     &light_distr,
                                                     camera,
-                                                    &mut tile_sampler,
+                                                    &mut *tile_sampler,
                                                     &mut p_film_new,
                                                     mis_weight.as_mut(),
                                                 );
