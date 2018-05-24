@@ -3,6 +3,8 @@ use std::sync::Arc;
 // pbrt
 use core::camera::Camera;
 use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i};
+use core::pbrt::erf_inv;
+use core::pbrt::SQRT_2;
 use core::pbrt::{Float, Spectrum};
 use core::rng::Rng;
 use core::sampler::{Sampler, SamplerClone};
@@ -135,16 +137,17 @@ impl MLTSampler {
             if self.large_step {
                 xi.value = self.rng.uniform_float();
             } else {
-                // TODO
-                // int64_t n_small = self.current_iteration - xi.last_modification_iteration;
-                // // apply _n_small_ small step mutations
-                // // sample the standard normal distribution $N(0, 1)$
-                // Float normal_sample = Sqrt2 * ErfInv(2 * rng.uniform_float() - 1);
-                // // compute the effective standard deviation and apply perturbation to
-                // // $\VEC{X}_i$
-                // Float effSigma = sigma * std::sqrt((Float)n_small);
-                // xi.value += normal_sample * effSigma;
-                // xi.value -= std::floor(xi.value);
+                let n_small: i64 = self.current_iteration - xi.last_modification_iteration;
+                // apply _n_small_ small step mutations
+
+                // sample the standard normal distribution $N(0, 1)$
+                let normal_sample: Float =
+                    SQRT_2 * erf_inv(2.0 as Float * self.rng.uniform_float() - 1.0 as Float);
+                // compute the effective standard deviation and apply perturbation to
+                // $\VEC{X}_i$
+                let eff_sigma: Float = self.sigma * (n_small as Float).sqrt();
+                xi.value += normal_sample * eff_sigma;
+                xi.value -= xi.value.floor();
             }
             xi.last_modification_iteration = self.current_iteration;
         } else {
@@ -265,7 +268,7 @@ impl MLTIntegrator {
         let mut s: u32 = 0;
         let mut t: u32 = 0;
         let mut n_strategies: u32 = 0;
-        if (depth == 0_u32) {
+        if depth == 0_u32 {
             n_strategies = 1;
             s = 0;
             t = 2;

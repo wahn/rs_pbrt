@@ -20,6 +20,7 @@ pub const INV_2_PI: Float = 0.15915494309189533577;
 pub const INV_4_PI: Float = 0.07957747154594766788;
 pub const PI_OVER_2: Float = 1.57079632679489661923;
 pub const PI_OVER_4: Float = 0.78539816339744830961;
+pub const SQRT_2: Float = 1.41421356237309504880;
 
 /// Use **unsafe**
 /// [std::mem::transmute_copy][transmute_copy]
@@ -254,4 +255,34 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
         }
         true
     }
+}
+
+pub fn erf_inv(x: Float) -> Float {
+    let clamped_x: Float = clamp_t(x, -0.99999, 0.99999);
+    let mut w: Float = -((1.0 as Float - clamped_x) * (1.0 as Float + clamped_x)).ln();
+    let mut p: Float;
+    if w < 5.0 as Float {
+        w = w - 2.5 as Float;
+        p = 2.81022636e-08;
+        p = 3.43273939e-07 + p * w;
+        p = -3.5233877e-06 + p * w;
+        p = -4.39150654e-06 + p * w;
+        p = 0.00021858087 + p * w;
+        p = -0.00125372503 + p * w;
+        p = -0.00417768164 + p * w;
+        p = 0.246640727 + p * w;
+        p = 1.50140941 + p * w;
+    } else {
+        w = w.sqrt() - 3.0 as Float;
+        p = -0.000200214257;
+        p = 0.000100950558 + p * w;
+        p = 0.00134934322 + p * w;
+        p = -0.00367342844 + p * w;
+        p = 0.00573950773 + p * w;
+        p = -0.0076224613 + p * w;
+        p = 0.00943887047 + p * w;
+        p = 1.00167406 + p * w;
+        p = 2.83297682 + p * w;
+    }
+    p * clamped_x
 }
