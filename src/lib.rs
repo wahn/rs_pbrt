@@ -577,32 +577,50 @@ pub fn render_mlt(
     integrator: &mut Box<MLTIntegrator>,
     num_threads: u8,
 ) {
+    let num_cores: usize;
+    if num_threads == 0_u8 {
+        num_cores = num_cpus::get();
+    } else {
+        num_cores = num_threads as usize;
+    }
     if let Some(light_distr) = compute_light_power_distribution(scene) {
+        println!("Generating bootstrap paths ...");
         // generate bootstrap samples and compute normalization constant $b$
         let n_bootstrap_samples: u32 = integrator.n_bootstrap * (integrator.max_depth + 1);
         let mut bootstrap_weights: Vec<Float> = vec![0.0 as Float; n_bootstrap_samples as usize];
         if scene.lights.len() > 0 {
             // TODO: ProgressReporter progress(nBootstrap / 256, "Generating bootstrap paths");
-            let chunk_size: u32 = clamp_t(integrator.n_bootstrap / 128, 1, 8192);
-            for i in 0..integrator.n_bootstrap {
-                // generate _i_th bootstrap sample
-                for depth in 0..(integrator.max_depth + 1) {
-                    let rng_index: u64 = (i * (integrator.max_depth + 1) + depth) as u64;
-                    let mut sampler: MLTSampler = MLTSampler::new(
-                        integrator.mutations_per_pixel as i64,
-                        rng_index,
-                        integrator.sigma,
-                        integrator.large_step_probability,
-                        N_SAMPLE_STREAMS as i32,
-                    );
-                    let mut p_raster: Point2f = Point2f::default();
-                    bootstrap_weights[rng_index as usize] = integrator
-                        .l(scene, &light_distr, &mut sampler, depth, &mut p_raster)
-                        .y();
-                }
-                // TODO: if ((i + 1) % 256 == 0) progress.Update();
+            // let chunk_size: u32 = clamp_t(integrator.n_bootstrap / 128, 1, 8192);
+            let chunk_size: usize = (n_bootstrap_samples / num_cores as u32) as usize;
+            {
+                let bands: Vec<&mut [Float]> = bootstrap_weights.chunks_mut(chunk_size).collect();
+                let integrator = &integrator;
+                let light_distr = &light_distr;
+                crossbeam::scope(|scope| {
+                    for (b, band) in bands.into_iter().enumerate() {
+                        scope.spawn(move || {
+                            for (w, weight) in band.into_iter().enumerate() {
+                                let rng_index: u64 = ((b * chunk_size) + w) as u64;
+                                let depth: u32 =
+                                    (rng_index % (integrator.max_depth + 1) as u64) as u32;
+                                let mut sampler: MLTSampler = MLTSampler::new(
+                                    integrator.mutations_per_pixel as i64,
+                                    rng_index,
+                                    integrator.sigma,
+                                    integrator.large_step_probability,
+                                    N_SAMPLE_STREAMS as i32,
+                                );
+                                let mut p_raster: Point2f = Point2f::default();
+                                *weight = integrator
+                                    .l(scene, &light_distr, &mut sampler, depth, &mut p_raster)
+                                    .y();
+                            }
+                        });
+                    }
+                });
             }
         }
+        println!("Rendering ...");
         let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
         let b: Float = bootstrap.func_int * (integrator.max_depth + 1) as Float;
         // run _n_chains_ Markov chains in parallel
