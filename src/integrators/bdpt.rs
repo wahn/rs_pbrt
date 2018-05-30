@@ -874,7 +874,6 @@ pub fn generate_camera_subpath<'a>(
             max_depth - 1_u32,
             TransportMode::Radiance,
             path,
-            None,
         ) + 1_usize,
         p,
         time,
@@ -928,34 +927,30 @@ pub fn generate_light_subpath<'a>(
         //     "Starting light subpath. Ray: {:?}, Le {:?}, beta {:?}, pdf_pos {:?}, pdf_dir {:?}",
         //     ray, le, beta, pdf_pos, pdf_dir
         // );
+
+        // set spatial density of _path[1]_ for infinite area
+        // light is done in random_walk !!!
+        n_vertices = random_walk(
+            scene,
+            &mut ray,
+            sampler,
+            &mut beta,
+            pdf_dir,
+            max_depth - 1,
+            TransportMode::Importance,
+            path,
+        );
+        // correct subpath sampling densities for infinite area lights
         if is_infinite_light {
-            // set spatial density of _path[1]_ for infinite area
-            // light is done in random_walk !!!
-            n_vertices = random_walk(
-                scene,
-                &mut ray,
-                sampler,
-                &mut beta,
-                pdf_dir,
-                max_depth - 1,
-                TransportMode::Importance,
-                path,
-                Some(pdf_pos),
-            );
+            // set spatial density of _path[1]_ for infinite area light
+            if n_vertices > 0 {
+                path[1].pdf_fwd = pdf_pos;
+                if path[1].is_on_surface() {
+                    path[1].pdf_fwd *= vec3_abs_dot_nrm(&ray.d, &path[1].ng());
+                }
+            }
             // set spatial density of _path[0]_ for infinite area light
             path[0].pdf_fwd = infinite_light_density(scene, light_distr, &ray.d);
-        } else {
-            n_vertices = random_walk(
-                scene,
-                &mut ray,
-                sampler,
-                &mut beta,
-                pdf_dir,
-                max_depth - 1,
-                TransportMode::Importance,
-                path,
-                None,
-            );
         }
     }
     n_vertices + 1
@@ -963,15 +958,16 @@ pub fn generate_light_subpath<'a>(
 
 pub fn random_walk<'a>(
     scene: &'a Scene,
-    ray: &mut Ray,
+    ray: &Ray,
     sampler: &mut Sampler,
     beta: &mut Spectrum,
     pdf: Float,
     max_depth: u32,
     mode: TransportMode,
     path: &mut Vec<Vertex<'a, 'a, 'a>>,
-    density_info: Option<Float>,
 ) -> usize {
+    // create a copy of the ray which can be mutated
+    let mut ray: Ray = ray.clone();
     let mut bounces: usize = 0_usize;
     if max_depth == 0_u32 {
         return bounces;
@@ -989,14 +985,14 @@ pub fn random_walk<'a>(
         let mut si_opt: Option<SurfaceInteraction> = None;
         // trace a ray and sample the medium, if any
         let found_intersection: bool;
-        if let Some(isect) = scene.intersect(ray) {
+        if let Some(isect) = scene.intersect(&mut ray) {
             si_opt = Some(isect);
             found_intersection = true;
         } else {
             found_intersection = false;
         }
         if let Some(ref medium) = ray.medium {
-            let (spectrum, option) = medium.sample(ray, sampler);
+            let (spectrum, option) = medium.sample(&ray, sampler);
             *beta *= spectrum;
             if let Some(mi) = option {
                 mi_opt = Some(mi);
@@ -1027,7 +1023,7 @@ pub fn random_walk<'a>(
                 pdf_rev = pdf_fwd;
                 if let Some(ref mi) = vertex.mi {
                     let new_ray = mi.spawn_ray(&wi);
-                    *ray = new_ray;
+                    ray = new_ray;
                 }
                 // compute reverse area density at preceding vertex
                 let mut new_pdf_rev;
@@ -1045,7 +1041,7 @@ pub fn random_walk<'a>(
                 // capture escaped rays when tracing from the camera
                 if mode.clone() == TransportMode::Radiance {
                     let vertex: Vertex = Vertex::create_light_interaction(
-                        EndpointInteraction::new_ray(ray),
+                        EndpointInteraction::new_ray(&ray),
                         &beta,
                         pdf_fwd,
                     );
@@ -1058,11 +1054,11 @@ pub fn random_walk<'a>(
             if let Some(mut isect) = si_opt {
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
-                isect.compute_scattering_functions(ray /*, arena, */, true, mode.clone());
+                isect.compute_scattering_functions(&ray /*, arena, */, true, mode.clone());
                 if let Some(ref _bsdf) = isect.clone().bsdf {
                 } else {
                     let new_ray = isect.spawn_ray(&ray.d);
-                    *ray = new_ray;
+                    ray = new_ray;
                     continue;
                 }
                 // initialize _vertex_ with surface intersection information
@@ -1115,7 +1111,7 @@ pub fn random_walk<'a>(
                     //     beta
                     // );
                     let new_ray = isect.spawn_ray(&wi);
-                    *ray = new_ray;
+                    ray = new_ray;
                 }
                 // compute reverse area density at preceding vertex
                 let mut new_pdf_rev: Float;
@@ -1129,18 +1125,6 @@ pub fn random_walk<'a>(
                 path.push(vertex);
             }
         }
-    }
-    // correct subpath sampling densities for infinite area lights
-    if let Some(pdf_pos) = density_info {
-        // set spatial density of _path[1]_ for infinite area light
-        if bounces > 0 {
-            path[1].pdf_fwd = pdf_pos;
-            if path[1].is_on_surface() {
-                path[1].pdf_fwd *= vec3_abs_dot_nrm(&ray.d, &path[1].ng());
-            }
-        }
-        // set spatial density of _path[0]_ for infinite area light
-        // path[0].pdf_fwd = infinite_light_density(scene, light_distr, light_to_index, ray.d);
     }
     assert!(
         bounces + 1 == path.len(),

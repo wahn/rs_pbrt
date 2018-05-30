@@ -53,7 +53,6 @@ use core::integrator::SamplerIntegrator;
 // use core::light::Light;
 use core::film::Film;
 use core::lightdistrib::create_light_sample_distribution;
-use core::pbrt::clamp_t;
 use core::pbrt::{Float, Spectrum};
 use core::rng::Rng;
 use core::sampler::Sampler;
