@@ -90,6 +90,19 @@ impl Light for SpotLight {
         // TODO: ProfilePhase _(Prof::LightSample);
         *wi = vec3_normalize(&(self.p_light - iref.p));
         *pdf = 1.0 as Float;
+        // medium_interface1
+        let mut inside: Option<Arc<Medium + Send + Sync>> = None;
+        let mut outside: Option<Arc<Medium + Send + Sync>> = None;
+        if let Some(ref mi_arc) = iref.medium_interface {
+            if let Some(ref mi_inside_arc) = mi_arc.get_inside() {
+                inside = Some(mi_inside_arc.clone());
+            }
+            if let Some(ref mi_outside_arc) = mi_arc.get_outside() {
+                outside = Some(mi_outside_arc.clone());
+            }
+        }
+        let medium_interface1_arc: Arc<MediumInterface> = Arc::new(MediumInterface::new(inside, outside));
+        // medium_interface2
         let mut inside: Option<Arc<Medium + Send + Sync>> = None;
         let mut outside: Option<Arc<Medium + Send + Sync>> = None;
         if let Some(ref mi_inside_arc) = self.medium_interface.inside {
@@ -98,7 +111,7 @@ impl Light for SpotLight {
         if let Some(ref mi_outside_arc) = self.medium_interface.outside {
             outside = Some(mi_outside_arc.clone());
         }
-        let medium_interface_arc: Arc<MediumInterface> = Arc::new(MediumInterface::new(inside, outside));
+        let medium_interface2_arc: Arc<MediumInterface> = Arc::new(MediumInterface::new(inside, outside));
         *vis = VisibilityTester {
             p0: InteractionCommon {
                 p: iref.p,
@@ -106,7 +119,7 @@ impl Light for SpotLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
-                medium_interface: Some(medium_interface_arc.clone()),
+                medium_interface: Some(medium_interface1_arc.clone()),
             },
             p1: InteractionCommon {
                 p: self.p_light,
@@ -114,7 +127,7 @@ impl Light for SpotLight {
                 p_error: Vector3f::default(),
                 wo: Vector3f::default(),
                 n: Normal3f::default(),
-                medium_interface: Some(medium_interface_arc.clone()),
+                medium_interface: Some(medium_interface2_arc.clone()),
             },
         };
         self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
