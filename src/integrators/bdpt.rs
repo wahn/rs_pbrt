@@ -48,6 +48,9 @@ impl<'a> EndpointInteraction<'a> {
         camera: &'a Arc<Camera + Send + Sync>,
     ) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&it.p, it.time);
+        ei.p_error = it.p_error;
+        ei.wo = it.wo;
+        ei.n = it.n;
         ei.camera = Some(camera);
         ei
     }

@@ -1165,7 +1165,11 @@ where
         }
     }
     fn ne(&self, rhs: &Normal3<T>) -> bool {
-        !self.eq(rhs)
+        if self.x != rhs.x || self.y != rhs.y || self.z != rhs.z {
+            true
+        } else {
+            false
+        }
     }
 }
 
