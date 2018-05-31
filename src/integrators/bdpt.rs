@@ -1854,7 +1854,8 @@ pub fn mis_weight<'a>(
         ri *= numerator / denominator;
         let delta_lightvertex: bool;
         if i > 0 {
-            if i == s as isize - 2 {
+            if i == s as isize - 1 {
+                // i - 1 == s - 2 (qs_minus == light_vertices[s - 2])
                 if let Some(ref lv) = qs_minus {
                     // use modified light vertex
                     delta_lightvertex = lv.delta;
