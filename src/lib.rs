@@ -22,6 +22,7 @@ extern crate num_cpus;
 extern crate openexr;
 extern crate pbr;
 extern crate ply_rs;
+extern crate rayon;
 extern crate time;
 extern crate typed_arena;
 
@@ -46,12 +47,11 @@ pub mod textures;
 
 // pbrt
 use core::camera::{Camera, CameraSample};
+use core::film::Film;
 use core::geometry::pnt2_inside_exclusive;
 use core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i};
 use core::integrator::compute_light_power_distribution;
 use core::integrator::SamplerIntegrator;
-// use core::light::Light;
-use core::film::Film;
 use core::lightdistrib::create_light_sample_distribution;
 use core::pbrt::{Float, Spectrum};
 use core::rng::Rng;
@@ -62,6 +62,8 @@ use integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_su
 use integrators::bdpt::{BDPTIntegrator, Vertex};
 use integrators::mlt::N_SAMPLE_STREAMS;
 use integrators::mlt::{MLTIntegrator, MLTSampler};
+// others
+use rayon::prelude::*;
 
 // see github/tray_rust/src/sampler/block_queue.rs
 
@@ -487,7 +489,8 @@ pub fn render_bdpt(
                                             for s in 0..n_light + 1 {
                                                 // int depth = t + s - 2;
                                                 let depth: isize = (t + s) as isize - 2;
-                                                if (s == 1 && t == 1) || depth < 0
+                                                if (s == 1 && t == 1)
+                                                    || depth < 0
                                                     || depth > integrator.max_depth as isize
                                                 {
                                                     continue;
@@ -630,7 +633,9 @@ pub fn render_mlt(
             let progress_frequency = 32768;
             // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
             //                           "Rendering");
-            for i in 0..integrator.n_chains {
+            // for i in 0..integrator.n_chains {
+            let ivec: Vec<u32> = (0..integrator.n_chains).collect();
+            ivec.par_iter().for_each(|&i| {
                 let n_chain_mutations: u64 = ((i as u64 + 1) * n_total_mutations
                     / integrator.n_chains as u64)
                     .min(n_total_mutations)
@@ -682,7 +687,7 @@ pub fn render_mlt(
                     // }
                     // TODO: arena.Reset();
                 }
-            }
+            });
         }
         // Store final image computed with MLT
         film.write_image(b / integrator.mutations_per_pixel as Float);

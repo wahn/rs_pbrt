@@ -20,6 +20,7 @@ pbr = "1.0"
 pest = "^1.0.0-beta"
 pest_derive = "^1.0.0-beta"
 ply-rs = "0.1.1"
+rayon = "1.0"
 time = "0.1"
 typed-arena = "1.3.0"
 atomic = {version = "0.3", features = ["nightly"]}
