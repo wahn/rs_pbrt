@@ -103,9 +103,12 @@ impl MLTSampler {
     }
     pub fn reject(&mut self) {
         for mut i in 0..self.x.len() {
-            let mut xi: PrimarySample = self.x[i];
-            if xi.last_modification_iteration == self.current_iteration {
-                xi.restore();
+            if let Some(xi) = self.x.get_mut(i as usize) {
+                if xi.last_modification_iteration == self.current_iteration {
+                    xi.restore();
+                }
+            } else {
+                panic!("self.x.get_mut({:?}) failed", i);
             }
         }
         self.current_iteration -= 1;
