@@ -13,7 +13,7 @@ fn main() {
         y: -8.75,
         z: 2.25,
     };
-    let ray = Ray {
+    let _ray = Ray {
         o: origin,
         d: direction,
         t_max: std::f32::INFINITY,

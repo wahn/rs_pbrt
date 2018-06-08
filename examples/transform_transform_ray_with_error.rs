@@ -29,5 +29,5 @@ fn main() {
     };
     let mut o_error: Vector3f = Vector3f::default();
     let mut d_error: Vector3f = Vector3f::default();
-    let tr: Ray = t.transform_ray_with_error(&r, &mut o_error, &mut d_error);
+    let _tr: Ray = t.transform_ray_with_error(&r, &mut o_error, &mut d_error);
 }

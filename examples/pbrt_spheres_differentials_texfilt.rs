@@ -11,7 +11,6 @@ use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point
                            Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
-use pbrt::core::medium::MediumInterface;
 use pbrt::core::mipmap::ImageWrap;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};

@@ -575,7 +575,7 @@ pub fn render_bdpt(
 pub fn render_mlt(
     scene: &Scene,
     camera: &Arc<Camera + Send + Sync>,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    _sampler: &mut Box<Sampler + Send + Sync>,
     integrator: &mut Box<MLTIntegrator>,
     num_threads: u8,
 ) {
@@ -630,7 +630,7 @@ pub fn render_mlt(
         let n_total_mutations: u64 =
             integrator.mutations_per_pixel as u64 * film.get_sample_bounds().area() as u64;
         if scene.lights.len() > 0 {
-            let progress_frequency = 32768;
+            // TODO: let progress_frequency = 32768;
             // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
             //                           "Rendering");
             // for i in 0..integrator.n_chains {
@@ -657,7 +657,7 @@ pub fn render_mlt(
                 let mut l_current: Spectrum =
                     integrator.l(scene, &light_distr, &mut sampler, depth, &mut p_current);
                 // run the Markov chain for _n_chain_mutations_ steps
-                for j in 0..n_chain_mutations {
+                for _j in 0..n_chain_mutations {
                     sampler.start_iteration();
                     let mut p_proposed: Point2f = Point2f::default();
                     let l_proposed: Spectrum =

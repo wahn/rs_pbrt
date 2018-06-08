@@ -294,9 +294,9 @@ impl MLTIntegrator {
     ) -> Spectrum {
         mlt_sampler.start_stream(CAMERA_STREAM_INDEX as i32);
         // determine the number of available strategies and pick a specific one
-        let mut s: u32 = 0;
-        let mut t: u32 = 0;
-        let mut n_strategies: u32 = 0;
+        let s: u32;
+        let t: u32;
+        let n_strategies: u32;
         if depth == 0_u32 {
             n_strategies = 1;
             s = 0;
@@ -321,11 +321,10 @@ impl MLTIntegrator {
             },
         };
         *p_raster = sample_bounds_f.lerp(&mlt_sampler.get_2d());
-        let mut n_camera;
-        let mut p;
-        let mut time;
+        let n_camera;
+        let time;
         {
-            let (n_camera_new, p_new, time_new) = generate_camera_subpath(
+            let (n_camera_new, _p_new, time_new) = generate_camera_subpath(
                 scene,
                 mlt_sampler as &mut Sampler,
                 t,
@@ -334,7 +333,6 @@ impl MLTIntegrator {
                 &mut camera_vertices,
             );
             n_camera = n_camera_new;
-            p = p_new;
             time = time_new;
         }
         if n_camera != t as usize {
@@ -343,7 +341,7 @@ impl MLTIntegrator {
         // generate a light subpath with exactly _s_ vertices
         mlt_sampler.start_stream(LIGHT_STREAM_INDEX as i32);
         let mut light_vertices: Vec<Vertex> = Vec::with_capacity(s as usize);
-        let mut n_light;
+        let n_light;
         {
             n_light = generate_light_subpath(
                 scene,
