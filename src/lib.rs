@@ -64,6 +64,7 @@ use integrators::mlt::N_SAMPLE_STREAMS;
 use integrators::mlt::{MLTIntegrator, MLTSampler};
 // others
 use rayon::prelude::*;
+use std::thread;
 
 // see github/tray_rust/src/sampler/block_queue.rs
 
@@ -599,7 +600,10 @@ pub fn render_mlt(
                 let integrator = &integrator;
                 let light_distr = &light_distr;
                 crossbeam::scope(|scope| {
+                    let (band_tx, band_rx) = mpsc::channel();
+                    // spawn worker threads
                     for (b, band) in bands.into_iter().enumerate() {
+                        let band_tx = band_tx.clone();
                         scope.spawn(move || {
                             for (w, weight) in band.into_iter().enumerate() {
                                 let rng_index: u64 = ((b * chunk_size) + w) as u64;
@@ -618,7 +622,17 @@ pub fn render_mlt(
                                     .y();
                             }
                         });
+                        // send progress through the channel to main thread
+                        band_tx
+                            .send(b)
+                            .expect(&format!("Failed to send progress"));
                     }
+                    // spawn thread to report progress
+                    scope.spawn(move || {
+                        for _ in pbr::PbIter::new(0..num_cores) {
+                            band_rx.recv().unwrap();
+                        }
+                    });
                 });
             }
         }
@@ -633,13 +647,23 @@ pub fn render_mlt(
             // TODO: let progress_frequency = 32768;
             // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
             //                           "Rendering");
-            // for i in 0..integrator.n_chains {
-            let ivec: Vec<u32> = (0..integrator.n_chains).collect();
-            ivec.par_iter().for_each(|&i| {
+            // use parallel iterator (par_iter_with) from rayon crate
+            let (sender, receiver) = mpsc::channel();
+            let n_chains = integrator.n_chains;
+            // spawn thread to report progress
+            let finish = thread::spawn(move || {
+                for _ in pbr::PbIter::new(0..n_chains) {
+                    receiver.recv().unwrap();
+                }
+            });
+            // for i in 0..n_chains {
+            let ivec: Vec<u32> = (0..n_chains).collect();
+            ivec.par_iter().for_each_with(sender, |s, &i| {
+                s.send(i).expect(&format!("Failed to send chain"));
                 let n_chain_mutations: u64 = ((i as u64 + 1) * n_total_mutations
-                    / integrator.n_chains as u64)
+                    / n_chains as u64)
                     .min(n_total_mutations)
-                    - i as u64 * n_total_mutations / integrator.n_chains as u64;
+                    - i as u64 * n_total_mutations / n_chains as u64;
                 // select initial state from the set of bootstrap samples
                 let mut rng: Rng = Rng::default();
                 rng.set_sequence(i as u64);
@@ -682,12 +706,13 @@ pub fn render_mlt(
                         sampler.reject();
                     }
                     // TODO: ++totalMutations;
-                    // if (i * n_total_mutations / integrator.n_chains + j) % progress_frequency == 0 {
+                    // if (i * n_total_mutations / n_chains + j) % progress_frequency == 0 {
                     //     progress.update();
                     // }
                     // TODO: arena.Reset();
                 }
             });
+            finish.join().unwrap();
         }
         // Store final image computed with MLT
         film.write_image(b / integrator.mutations_per_pixel as Float);
