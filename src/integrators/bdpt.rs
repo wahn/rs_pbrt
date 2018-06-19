@@ -1095,8 +1095,8 @@ pub fn random_walk<'a>(
                     //     wi, f, pdf_fwd
                     // );
                     if f.is_black() || pdf_fwd == 0.0 as Float {
-                        // in C++ code ++bounces is called after continue !!!
-                        bounces -= 1;
+                        // store new vertex
+                        path.push(vertex);
                         break;
                     }
                     *beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf_fwd;
