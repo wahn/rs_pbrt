@@ -51,16 +51,14 @@ examples: release
 	./target/release/examples/geometry_spherical_direction_vec3
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
-	./target/release/examples/pbrt
 	./target/release/examples/lights_diffuse_area_light_new
 	./target/release/examples/lights_distant_light_new
 	./target/release/examples/lights_infinite_area_light_new
 	./target/release/examples/lights_point_light_new
-	./target/release/examples/pbrt
 	./target/release/examples/pbrt_spheres_differentials_texfilt
 	./target/release/examples/pbrt_teapot_area_light
 	./target/release/examples/pest_test
-	./target/release/examples/quaternion_default
+	./target/release/examples/rs_pbrt
 	./target/release/examples/shapes_cylinder_create_cylinder_shape
 	./target/release/examples/shapes_disk_create_disk_shape
 	./target/release/examples/shapes_sphere_create_sphere_shape
@@ -72,6 +70,7 @@ examples: release
 	./target/release/examples/transform_matrix4x4_identity
 	./target/release/examples/transform_matrix4x4_new
 	./target/release/examples/transform_matrix4x4_transpose
+	./target/release/examples/transform_quaternion_default
 	./target/release/examples/transform_transform_identity
 	./target/release/examples/transform_transform_look_at
 	./target/release/examples/transform_transform_new
