@@ -5,8 +5,7 @@ rust:
   - nightly
 matrix:
   allow_failures:
-    - rust: stable
-    - rust: beta
+    - rust: nightly
 env:
   global:
     - MAKEFLAGS="-j 2"
