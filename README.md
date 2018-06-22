@@ -57,6 +57,13 @@ rs_pbrt](https://www.janwalter.org/assets/classroom_pbrt_rust.png)
 
 [classroom_pbrt.tar.gz][classroom_pbrt]
 
+## The White Room by [Jay-Artist][jay-artist]
+
+![The White Room rendered by
+rs_pbrt](https://www.janwalter.org/assets/living-room-2_pbrt_rust_mlt.png)
+
+[living-room-2_pbrt.tar.gz][living-room-2_pbrt]
+
 ## Country Kitchen by [Jay-Artist][jay-artist]
 
 ![Kitchen rendered by
