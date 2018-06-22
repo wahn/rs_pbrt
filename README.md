@@ -107,6 +107,7 @@ https://bitbucket.org/abusch/rustracer
 [jay-artist]:           https://www.blendswap.com/user/Jay-Artist
 [wig42]:                https://www.blendswap.com/user/Wig42
 [classroom_pbrt]:       https://www.janwalter.org/Download/Scenes/PBRT/classroom_pbrt.tar.gz
+[living-room-2_pbrt]:   https://www.janwalter.org/Download/Scenes/PBRT/living-room-2_pbrt.tar.gz
 [kitchen_pbrt]:         https://www.janwalter.org/Download/Scenes/PBRT/kitchen_pbrt.tar.gz
 [staircase_pbrt]:       https://www.janwalter.org/Download/Scenes/PBRT/staircase_pbrt.tar.gz
 [conference_room_pbrt]: https://www.janwalter.org/Download/Scenes/conference_room_pbrt.tar.gz
