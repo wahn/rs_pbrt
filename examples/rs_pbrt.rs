@@ -1,6 +1,13 @@
 // extern crate pbrt;
 extern crate getopts;
 extern crate num_cpus;
+// pest
+extern crate pest;
+#[macro_use]
+extern crate pest_derive;
+
+// parser
+use pest::Parser;
 
 // use pbrt::{Bounds2, Point2};
 
@@ -8,10 +15,19 @@ extern crate num_cpus;
 use getopts::Options;
 // std
 use std::env;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::Read;
+use std::path::{Path, PathBuf};
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 static mut NUMBER_OF_THREADS: u8 = 0_u8;
+static mut SEARCH_DIRECTORY: Option<Box<PathBuf>> = None;
+
+#[derive(Parser)]
+#[grammar = "../examples/pbrt.pest"]
+struct PbrtParser;
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
@@ -68,8 +84,40 @@ fn main() {
                 let num_cores = num_cpus::get();
                 println!("pbrt version {} [Detected {} cores]", VERSION, num_cores);
                 println!("Copyright (c)2016-2018 Jan Douglas Bert Walter.");
-                println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
+                println!(
+                    "Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob."
+                );
                 println!("FILE = {}", x);
+                let f = File::open(x.clone()).unwrap();
+                let ip: &Path = Path::new(x.as_str());
+                if ip.is_relative() {
+                    let cp: PathBuf = env::current_dir().unwrap();
+                    let pb: PathBuf = cp.join(ip);
+                    let search_directory: &Path = pb.as_path().parent().unwrap();
+                    println!("search_directory is {}", search_directory.display());
+                    unsafe {
+                        SEARCH_DIRECTORY = Some(Box::new(PathBuf::from(search_directory)));
+                    }
+                }
+                let mut reader = BufReader::new(f);
+                let mut str_buf: String = String::default();
+                let num_bytes = reader.read_to_string(&mut str_buf);
+                if num_bytes.is_ok() {
+                    let n_bytes = num_bytes.unwrap();
+                    println!("{} bytes read", n_bytes);
+                }
+                // parser
+                let pairs =
+                    PbrtParser::parse(Rule::pbrt, &str_buf).unwrap_or_else(|e| panic!("{}", e));
+                println!("do something with created tokens ...");
+                for pair in pairs {
+                    let span = pair.clone().into_span();
+                    println!("Rule:    {:?}", pair.as_rule());
+                    println!("Span:    {:?}", span);
+                    println!("Text:    {}", span.as_str());
+                    // WORK
+                }
+                println!("done.");
             }
             None => panic!("No input file name."),
         }
