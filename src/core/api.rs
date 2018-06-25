@@ -149,3 +149,105 @@ impl GraphicsState {
         }
     }
 }
+
+pub fn pbrt_transform(tr: Transform) {
+    println!("DONE: {:?}", tr);
+    // TODO
+    // VERIFY_INITIALIZED("Transform");
+    // FOR_ACTIVE_TRANSFORMS(
+    //     curTransform[i] = Transform(Matrix4x4(
+    //         tr[0], tr[4], tr[8], tr[12], tr[1], tr[5], tr[9], tr[13], tr[2],
+    //         tr[6], tr[10], tr[14], tr[3], tr[7], tr[11], tr[15]));)
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sTransform [ ", catIndentCount, "");
+    //     for (int i = 0; i < 16; ++i) printf("%.9g ", tr[i]);
+    //     printf(" ]\n");
+    // }
+}
+
+pub fn pbrt_scale(sx: Float, sy: Float, sz: Float) {
+    println!("DONE: Scale {:?} {:?} {:?}", sx, sy, sz);
+    // TODO
+    //     VERIFY_INITIALIZED("Scale");
+    //     FOR_ACTIVE_TRANSFORMS(curTransform[i] =
+    //                               curTransform[i] * Scale(sx, sy, sz);)
+    //     if (PbrtOptions.cat || PbrtOptions.toPly)
+    //         printf("%*sScale %.9g %.9g %.9g\n", catIndentCount, "", sx, sy, sz);
+}
+
+pub fn pbrt_look_at(
+    ex: Float,
+    ey: Float,
+    ez: Float,
+    lx: Float,
+    ly: Float,
+    lz: Float,
+    ux: Float,
+    uy: Float,
+    uz: Float,
+) {
+    println!(
+        "DONE: LookAt {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?}",
+        ex, ey, ez, lx, ly, lz, ux, uy, uz
+    );
+    // TODO
+    // VERIFY_INITIALIZED("LookAt");
+    // Transform lookAt =
+    //     LookAt(Point3f(ex, ey, ez), Point3f(lx, ly, lz), Vector3f(ux, uy, uz));
+    // FOR_ACTIVE_TRANSFORMS(curTransform[i] = curTransform[i] * lookAt;);
+    // if (PbrtOptions.cat || PbrtOptions.toPly)
+    //     printf(
+    //         "%*sLookAt %.9g %.9g %.9g\n%*s%.9g %.9g %.9g\n"
+    //         "%*s%.9g %.9g %.9g\n",
+    //         catIndentCount, "", ex, ey, ez, catIndentCount + 8, "", lx, ly, lz,
+    //         catIndentCount + 8, "", ux, uy, uz);
+}
+
+pub fn pbrt_world_begin() {
+    println!("DONE: WorldBegin");
+    // TODO
+    // VERIFY_OPTIONS("WorldBegin");
+    // currentApiState = APIState::WorldBlock;
+    // for (int i = 0; i < MaxTransforms; ++i) curTransform[i] = Transform();
+    // activeTransformBits = AllTransformsBits;
+    // namedCoordinateSystems["world"] = curTransform;
+    // if (PbrtOptions.cat || PbrtOptions.toPly)
+    //     printf("\n\nWorldBegin\n\n");
+}
+
+pub fn pbrt_attribute_begin() {
+    println!("DONE: AttributeBegin");
+    // TODO
+    // VERIFY_WORLD("AttributeBegin");
+    // pushedGraphicsStates.push_back(graphicsState);
+    // graphicsState.floatTexturesShared = graphicsState.spectrumTexturesShared =
+    //     graphicsState.namedMaterialsShared = true;
+    // pushedTransforms.push_back(curTransform);
+    // pushedActiveTransformBits.push_back(activeTransformBits);
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("\n%*sAttributeBegin\n", catIndentCount, "");
+    //     catIndentCount += 4;
+    // }
+}
+
+pub fn pbrt_attribute_end() {
+    println!("DONE: AttributeEnd");
+    // TODO
+    // VERIFY_WORLD("AttributeEnd");
+    // if (!pushedGraphicsStates.size()) {
+    //     Error(
+    //         "Unmatched pbrtAttributeEnd() encountered. "
+    //         "Ignoring it.");
+    //     return;
+    // }
+    // graphicsState = std::move(pushedGraphicsStates.back());
+    // pushedGraphicsStates.pop_back();
+    // curTransform = pushedTransforms.back();
+    // pushedTransforms.pop_back();
+    // activeTransformBits = pushedActiveTransformBits.back();
+    // pushedActiveTransformBits.pop_back();
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     catIndentCount -= 4;
+    //     printf("%*sAttributeEnd\n", catIndentCount, "");
+    // }
+}
