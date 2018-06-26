@@ -150,7 +150,7 @@ impl GraphicsState {
     }
 }
 
-pub fn pbrt_transform(tr: Transform) {
+pub fn pbrt_transform(tr: &Transform) {
     println!("DONE: {:?}", tr);
     // TODO
     // VERIFY_INITIALIZED("Transform");
@@ -201,6 +201,21 @@ pub fn pbrt_look_at(
     //         "%*s%.9g %.9g %.9g\n",
     //         catIndentCount, "", ex, ey, ez, catIndentCount + 8, "", lx, ly, lz,
     //         catIndentCount + 8, "", ux, uy, uz);
+}
+
+pub fn pbrt_camera(name: String, params: &ParamSet) {
+    println!("DONE: Camera \"{}\"", name);
+    // TODO
+    // VERIFY_OPTIONS("Camera");
+    // renderOptions->CameraName = name;
+    // renderOptions->CameraParams = params;
+    // renderOptions->CameraToWorld = Inverse(curTransform);
+    // namedCoordinateSystems["camera"] = renderOptions->CameraToWorld;
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sCamera \"%s\" ", catIndentCount, "", name.c_str());
+    //     params.Print(catIndentCount);
+    //     printf("\n");
+    // }
 }
 
 pub fn pbrt_world_begin() {

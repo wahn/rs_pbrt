@@ -13,9 +13,10 @@ use pest::Parser;
 use getopts::Options;
 // pbrt
 use pbrt::core::api::{
-    pbrt_attribute_begin, pbrt_attribute_end, pbrt_look_at, pbrt_scale, pbrt_transform,
-    pbrt_world_begin,
+    pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_look_at, pbrt_scale,
+    pbrt_transform, pbrt_world_begin,
 };
+use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::Float;
 use pbrt::core::transform::Transform;
 // std
@@ -42,6 +43,80 @@ fn print_usage(program: &str, opts: Options) {
 
 fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
+}
+
+fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<Float>)
+{
+    let mut floats: Vec<Float> = Vec::new();
+    // single float or several floats using brackets
+    let ident = pairs.next();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let mut number = pairs.next();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            if pair.as_str() == String::from("]") {
+                // closing bracket found
+                break;
+            } else {
+                let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
+                floats.push(float);
+            }
+            number = pairs.next();
+        }
+    } else {
+        // no brackets
+        let mut number = option.clone();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
+            floats.push(float);
+            number = pairs.next();
+        }
+    }
+    (string, floats)
+}
+
+fn extract_name_params(pairs: pest::iterators::Pair<Rule>) -> (String, ParamSet) {
+    let mut name: String = String::from("");
+    let mut params: ParamSet = ParamSet::default();
+    for pair in pairs.into_inner() {
+        let span = pair.clone().into_span();
+        println!("Rule:    {:?}", pair.as_rule());
+        println!("Span:    {:?}", span);
+        println!("Text:    {}", span.as_str());
+        match pair.as_rule() {
+            Rule::string => {
+                let mut string_pairs = pair.into_inner();
+                let ident = string_pairs.next();
+                name = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+            }
+            Rule::parameter => {
+                for parameter_pair in pair.into_inner() {
+                    match parameter_pair.as_rule() {
+                        Rule::float_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 1 {
+                                params.add_float(string, floats[0]);
+                            } else {
+                                params.add_floats(string, floats);
+                            }
+                        }
+                        // TODO: more rules
+                        _ => println!("TODO: {:?}", parameter_pair.as_rule()),
+                    }
+                }
+            }
+            _ => println!("TODO: {:?}", pair.as_rule()),
+        }
+    }
+    (name, params)
 }
 
 fn main() {
@@ -150,6 +225,17 @@ fn main() {
                                 }
                                 pbrt_look_at(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]);
                             }
+                            Rule::named_statement => {
+                                for rule_pair in inner_pair.into_inner() {
+                                    match rule_pair.as_rule() {
+                                        Rule::camera => {
+                                            let (name, params) = extract_name_params(rule_pair);
+                                            pbrt_camera(name, &params);
+                                        }
+                                        _ => println!("TODO: {:?}", rule_pair.as_rule()),
+                                    }
+                                }
+                            }
                             Rule::scale => {
                                 // Scale x y z
                                 let mut v: Vec<Float> = Vec::new();
@@ -194,7 +280,7 @@ fn main() {
                                     m00, m10, m20, m30, m01, m11, m21, m31, m02, m12, m22, m32,
                                     m03, m13, m23, m33,
                                 );
-                                pbrt_transform(tr);
+                                pbrt_transform(&tr);
                             }
                             // WORK
                             _ => println!("TODO: {:?}", inner_pair.as_rule()),
