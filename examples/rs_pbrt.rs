@@ -13,11 +13,13 @@ use pest::Parser;
 use getopts::Options;
 // pbrt
 use pbrt::core::api::{
-    pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_look_at, pbrt_scale,
-    pbrt_transform, pbrt_world_begin,
+    pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_film,
+    pbrt_integrator, pbrt_look_at, pbrt_make_named_material, pbrt_named_material, pbrt_sampler,
+    pbrt_scale, pbrt_shape, pbrt_transform, pbrt_world_begin,
 };
+use pbrt::core::geometry::Point3f;
 use pbrt::core::paramset::ParamSet;
-use pbrt::core::pbrt::Float;
+use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::transform::Transform;
 // std
 use std::env;
@@ -45,8 +47,7 @@ fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
 }
 
-fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<Float>)
-{
+fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<Float>) {
     let mut floats: Vec<Float> = Vec::new();
     // single float or several floats using brackets
     let ident = pairs.next();
@@ -80,14 +81,71 @@ fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Ve
     (string, floats)
 }
 
+fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<i32>) {
+    let mut integers: Vec<i32> = Vec::new();
+    // single integer or several integers using brackets
+    let ident = pairs.next();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let mut number = pairs.next();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            if pair.as_str() == String::from("]") {
+                // closing bracket found
+                break;
+            } else {
+                let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
+                integers.push(integer);
+            }
+            number = pairs.next();
+        }
+    } else {
+        // no brackets
+        let mut number = option.clone();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
+            integers.push(integer);
+            number = pairs.next();
+        }
+    }
+    (string, integers)
+}
+
+fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, String) {
+    // single string with or without brackets
+    let ident = pairs.next();
+    let string1: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    let string2: String;
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let string = pairs.next();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    } else {
+        // no brackets
+        let string = option.clone();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    }
+    (string1, string2)
+}
+
 fn extract_name_params(pairs: pest::iterators::Pair<Rule>) -> (String, ParamSet) {
     let mut name: String = String::from("");
     let mut params: ParamSet = ParamSet::default();
     for pair in pairs.into_inner() {
         let span = pair.clone().into_span();
-        println!("Rule:    {:?}", pair.as_rule());
-        println!("Span:    {:?}", span);
-        println!("Text:    {}", span.as_str());
+        // println!("Rule:    {:?}", pair.as_rule());
+        // println!("Span:    {:?}", span);
+        // println!("Text:    {}", span.as_str());
         match pair.as_rule() {
             Rule::string => {
                 let mut string_pairs = pair.into_inner();
@@ -107,6 +165,50 @@ fn extract_name_params(pairs: pest::iterators::Pair<Rule>) -> (String, ParamSet)
                             } else {
                                 params.add_floats(string, floats);
                             }
+                        }
+                        Rule::integer_param => {
+                            let tuple: (String, Vec<i32>) =
+                                pbrt_integer_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let integers: Vec<i32> = tuple.1;
+                            if integers.len() == 1 {
+                                params.add_int(string, integers[0]);
+                            } else {
+                                params.add_ints(string, integers);
+                            }
+                        }
+                        Rule::point_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            params.add_point3f(
+                                string,
+                                Point3f {
+                                    x: floats[0],
+                                    y: floats[1],
+                                    z: floats[2],
+                                },
+                            );
+                        }
+                        Rule::rgb_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            params.add_rgb_spectrum(
+                                string,
+                                Spectrum {
+                                    c: [floats[0], floats[1], floats[2]],
+                                },
+                            );
+                        }
+                        Rule::string_param => {
+                            let tuple: (String, String) =
+                                pbrt_string_parameter(&mut parameter_pair.into_inner());
+                            let string1: String = tuple.0;
+                            let string2: String = tuple.1;
+                            params.add_string(string1, string2);
                         }
                         // TODO: more rules
                         _ => println!("TODO: {:?}", parameter_pair.as_rule()),
@@ -193,9 +295,9 @@ fn main() {
                 println!("do something with created tokens ...");
                 for pair in pairs {
                     let span = pair.clone().into_span();
-                    println!("Rule:    {:?}", pair.as_rule());
-                    println!("Span:    {:?}", span);
-                    println!("Text:    {}", span.as_str());
+                    // println!("Rule:    {:?}", pair.as_rule());
+                    // println!("Span:    {:?}", span);
+                    // println!("Text:    {}", span.as_str());
                     for inner_pair in pair.into_inner() {
                         match inner_pair.as_rule() {
                             Rule::keyword => {
@@ -228,9 +330,37 @@ fn main() {
                             Rule::named_statement => {
                                 for rule_pair in inner_pair.into_inner() {
                                     match rule_pair.as_rule() {
+                                        Rule::area_light_source => {
+                                            let (name, params) = extract_name_params(rule_pair);
+                                            pbrt_area_light_source(name, &params);
+                                        }
                                         Rule::camera => {
                                             let (name, params) = extract_name_params(rule_pair);
                                             pbrt_camera(name, &params);
+                                        }
+                                        Rule::film => {
+                                            let (name, params) = extract_name_params(rule_pair);
+                                            pbrt_film(name, &params);
+                                        }
+                                        Rule::integrator => {
+                                            let (name, params) = extract_name_params(rule_pair);
+                                            pbrt_integrator(name, &params);
+                                        }
+                                        Rule::make_named_material => {
+                                            let (name, params) = extract_name_params(rule_pair);
+                                            pbrt_make_named_material(name, &params);
+                                        }
+                                        Rule::named_material => {
+                                            let (name, params) = extract_name_params(rule_pair);
+                                            pbrt_named_material(name, &params);
+                                        }
+                                        Rule::sampler => {
+                                            let (name, params) = extract_name_params(rule_pair);
+                                            pbrt_sampler(name, &params);
+                                        }
+                                        Rule::shape => {
+                                            let (name, params) = extract_name_params(rule_pair);
+                                            pbrt_shape(name, &params);
                                         }
                                         _ => println!("TODO: {:?}", rule_pair.as_rule()),
                                     }

@@ -151,7 +151,7 @@ impl GraphicsState {
 }
 
 pub fn pbrt_transform(tr: &Transform) {
-    println!("DONE: {:?}", tr);
+    println!("TODO: {:?}", tr);
     // TODO
     // VERIFY_INITIALIZED("Transform");
     // FOR_ACTIVE_TRANSFORMS(
@@ -166,7 +166,7 @@ pub fn pbrt_transform(tr: &Transform) {
 }
 
 pub fn pbrt_scale(sx: Float, sy: Float, sz: Float) {
-    println!("DONE: Scale {:?} {:?} {:?}", sx, sy, sz);
+    println!("TODO: Scale {:?} {:?} {:?}", sx, sy, sz);
     // TODO
     //     VERIFY_INITIALIZED("Scale");
     //     FOR_ACTIVE_TRANSFORMS(curTransform[i] =
@@ -187,7 +187,7 @@ pub fn pbrt_look_at(
     uz: Float,
 ) {
     println!(
-        "DONE: LookAt {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?}",
+        "TODO: LookAt {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?}",
         ex, ey, ez, lx, ly, lz, ux, uy, uz
     );
     // TODO
@@ -203,8 +203,46 @@ pub fn pbrt_look_at(
     //         catIndentCount + 8, "", ux, uy, uz);
 }
 
+pub fn pbrt_film(name: String, params: &ParamSet) {
+    println!("TODO: Film \"{}\"", name);
+    // TODO
+    // VERIFY_OPTIONS("Film");
+    // renderOptions->FilmParams = params;
+    // renderOptions->FilmName = type;
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sFilm \"%s\" ", catIndentCount, "", type.c_str());
+    //     params.Print(catIndentCount);
+    //     printf("\n");
+    // }
+}
+
+pub fn pbrt_sampler(name: String, params: &ParamSet) {
+    println!("TODO: Sampler \"{}\"", name);
+    // TODO
+    // VERIFY_OPTIONS("Sampler");
+    // renderOptions->SamplerName = name;
+    // renderOptions->SamplerParams = params;
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sSampler \"%s\" ", catIndentCount, "", name.c_str());
+    //     params.Print(catIndentCount);
+    //     printf("\n");
+    // }
+}
+
+pub fn pbrt_integrator(name: String, params: &ParamSet) {
+    println!("TODO: Integrator \"{}\"", name);
+    // VERIFY_OPTIONS("Integrator");
+    // renderOptions->IntegratorName = name;
+    // renderOptions->IntegratorParams = params;
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sIntegrator \"%s\" ", catIndentCount, "", name.c_str());
+    //     params.Print(catIndentCount);
+    //     printf("\n");
+    // }
+}
+
 pub fn pbrt_camera(name: String, params: &ParamSet) {
-    println!("DONE: Camera \"{}\"", name);
+    println!("TODO: Camera \"{}\"", name);
     // TODO
     // VERIFY_OPTIONS("Camera");
     // renderOptions->CameraName = name;
@@ -219,7 +257,7 @@ pub fn pbrt_camera(name: String, params: &ParamSet) {
 }
 
 pub fn pbrt_world_begin() {
-    println!("DONE: WorldBegin");
+    println!("TODO: WorldBegin");
     // TODO
     // VERIFY_OPTIONS("WorldBegin");
     // currentApiState = APIState::WorldBlock;
@@ -231,7 +269,7 @@ pub fn pbrt_world_begin() {
 }
 
 pub fn pbrt_attribute_begin() {
-    println!("DONE: AttributeBegin");
+    println!("TODO: AttributeBegin");
     // TODO
     // VERIFY_WORLD("AttributeBegin");
     // pushedGraphicsStates.push_back(graphicsState);
@@ -246,7 +284,7 @@ pub fn pbrt_attribute_begin() {
 }
 
 pub fn pbrt_attribute_end() {
-    println!("DONE: AttributeEnd");
+    println!("TODO: AttributeEnd");
     // TODO
     // VERIFY_WORLD("AttributeEnd");
     // if (!pushedGraphicsStates.size()) {
@@ -264,5 +302,162 @@ pub fn pbrt_attribute_end() {
     // if (PbrtOptions.cat || PbrtOptions.toPly) {
     //     catIndentCount -= 4;
     //     printf("%*sAttributeEnd\n", catIndentCount, "");
+    // }
+}
+
+pub fn pbrt_make_named_material(name: String, params: &ParamSet) {
+    println!("TODO: MakeNamedMaterial \"{}\"", name);
+    // TODO
+    // VERIFY_WORLD("MakeNamedMaterial");
+    // // error checking, warning if replace, what to use for transform?
+    // ParamSet emptyParams;
+    // TextureParams mp(params, emptyParams, *graphicsState.floatTextures,
+    //                  *graphicsState.spectrumTextures);
+    // std::string matName = mp.FindString("type");
+    // WARN_IF_ANIMATED_TRANSFORM("MakeNamedMaterial");
+    // if (matName == "")
+    //     Error("No parameter string \"type\" found in MakeNamedMaterial");
+
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sMakeNamedMaterial \"%s\" ", catIndentCount, "",
+    //            name.c_str());
+    //     params.Print(catIndentCount);
+    //     printf("\n");
+    // } else {
+    //     std::shared_ptr<Material> mtl = MakeMaterial(matName, mp);
+    //     if (graphicsState.namedMaterials->find(name) !=
+    //         graphicsState.namedMaterials->end())
+    //         Warning("Named material \"%s\" redefined.", name.c_str());
+    //     if (graphicsState.namedMaterialsShared) {
+    //         graphicsState.namedMaterials =
+    //             std::make_shared<GraphicsState::NamedMaterialMap>(*graphicsState.namedMaterials);
+    //         graphicsState.namedMaterialsShared = false;
+    //     }
+    //     (*graphicsState.namedMaterials)[name] =
+    //         std::make_shared<MaterialInstance>(matName, mtl, params);
+    // }
+}
+
+pub fn pbrt_named_material(name: String, params: &ParamSet) {
+    println!("TODO: NamedMaterial \"{}\"", name);
+    // TODO
+    // VERIFY_WORLD("NamedMaterial");
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sNamedMaterial \"%s\"\n", catIndentCount, "", name.c_str());
+    //     return;
+    // }
+
+    // auto iter = graphicsState.namedMaterials->find(name);
+    // if (iter == graphicsState.namedMaterials->end()) {
+    //     Error("NamedMaterial \"%s\" unknown.", name.c_str());
+    //     return;
+    // }
+    // graphicsState.currentMaterial = iter->second;
+}
+
+pub fn pbrt_area_light_source(name: String, params: &ParamSet) {
+    println!("TODO: AreaLightSource \"{}\"", name);
+    // TODO
+    // VERIFY_WORLD("AreaLightSource");
+    // graphicsState.areaLight = name;
+    // graphicsState.areaLightParams = params;
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sAreaLightSource \"%s\" ", catIndentCount, "", name.c_str());
+    //     params.Print(catIndentCount);
+    //     printf("\n");
+    // }
+}
+
+pub fn pbrt_shape(name: String, params: &ParamSet) {
+    println!("TODO: Shape \"{}\"", name);
+    // TODO
+    // VERIFY_WORLD("Shape");
+    // std::vector<std::shared_ptr<Primitive>> prims;
+    // std::vector<std::shared_ptr<AreaLight>> areaLights;
+    // if (PbrtOptions.cat || (PbrtOptions.toPly && name != "trianglemesh")) {
+    //     printf("%*sShape \"%s\" ", catIndentCount, "", name.c_str());
+    //     params.Print(catIndentCount);
+    //     printf("\n");
+    // }
+
+    // if (!curTransform.IsAnimated()) {
+    //     // Initialize _prims_ and _areaLights_ for static shape
+
+    //     // Create shapes for shape _name_
+    //     Transform *ObjToWorld = transformCache.Lookup(curTransform[0]);
+    //     Transform *WorldToObj = transformCache.Lookup(Inverse(curTransform[0]));
+    //     std::vector<std::shared_ptr<Shape>> shapes =
+    //         MakeShapes(name, ObjToWorld, WorldToObj,
+    //                    graphicsState.reverseOrientation, params);
+    //     if (shapes.empty()) return;
+    //     std::shared_ptr<Material> mtl = graphicsState.GetMaterialForShape(params);
+    //     params.ReportUnused();
+    //     MediumInterface mi = graphicsState.CreateMediumInterface();
+    //     prims.reserve(shapes.size());
+    //     for (auto s : shapes) {
+    //         // Possibly create area light for shape
+    //         std::shared_ptr<AreaLight> area;
+    //         if (graphicsState.areaLight != "") {
+    //             area = MakeAreaLight(graphicsState.areaLight, curTransform[0],
+    //                                  mi, graphicsState.areaLightParams, s);
+    //             if (area) areaLights.push_back(area);
+    //         }
+    //         prims.push_back(
+    //             std::make_shared<GeometricPrimitive>(s, mtl, area, mi));
+    //     }
+    // } else {
+    //     // Initialize _prims_ and _areaLights_ for animated shape
+
+    //     // Create initial shape or shapes for animated shape
+    //     if (graphicsState.areaLight != "")
+    //         Warning(
+    //             "Ignoring currently set area light when creating "
+    //             "animated shape");
+    //     Transform *identity = transformCache.Lookup(Transform());
+    //     std::vector<std::shared_ptr<Shape>> shapes = MakeShapes(
+    //         name, identity, identity, graphicsState.reverseOrientation, params);
+    //     if (shapes.empty()) return;
+
+    //     // Create _GeometricPrimitive_(s) for animated shape
+    //     std::shared_ptr<Material> mtl = graphicsState.GetMaterialForShape(params);
+    //     params.ReportUnused();
+    //     MediumInterface mi = graphicsState.CreateMediumInterface();
+    //     prims.reserve(shapes.size());
+    //     for (auto s : shapes)
+    //         prims.push_back(
+    //             std::make_shared<GeometricPrimitive>(s, mtl, nullptr, mi));
+
+    //     // Create single _TransformedPrimitive_ for _prims_
+
+    //     // Get _animatedObjectToWorld_ transform for shape
+    //     static_assert(MaxTransforms == 2,
+    //                   "TransformCache assumes only two transforms");
+    //     Transform *ObjToWorld[2] = {
+    //         transformCache.Lookup(curTransform[0]),
+    //         transformCache.Lookup(curTransform[1])
+    //     };
+    //     AnimatedTransform animatedObjectToWorld(
+    //         ObjToWorld[0], renderOptions->transformStartTime, ObjToWorld[1],
+    //         renderOptions->transformEndTime);
+    //     if (prims.size() > 1) {
+    //         std::shared_ptr<Primitive> bvh = std::make_shared<BVHAccel>(prims);
+    //         prims.clear();
+    //         prims.push_back(bvh);
+    //     }
+    //     prims[0] = std::make_shared<TransformedPrimitive>(
+    //         prims[0], animatedObjectToWorld);
+    // }
+    // // Add _prims_ and _areaLights_ to scene or current instance
+    // if (renderOptions->currentInstance) {
+    //     if (areaLights.size())
+    //         Warning("Area lights not supported with object instancing");
+    //     renderOptions->currentInstance->insert(
+    //         renderOptions->currentInstance->end(), prims.begin(), prims.end());
+    // } else {
+    //     renderOptions->primitives.insert(renderOptions->primitives.end(),
+    //                                      prims.begin(), prims.end());
+    //     if (areaLights.size())
+    //         renderOptions->lights.insert(renderOptions->lights.end(),
+    //                                      areaLights.begin(), areaLights.end());
     // }
 }
