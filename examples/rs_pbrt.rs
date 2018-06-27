@@ -12,10 +12,11 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
+use pbrt::core::api::ApiState;
 use pbrt::core::api::{
-    pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_film,
-    pbrt_integrator, pbrt_look_at, pbrt_make_named_material, pbrt_named_material, pbrt_sampler,
-    pbrt_scale, pbrt_shape, pbrt_transform, pbrt_world_begin,
+    pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
+    pbrt_film, pbrt_init, pbrt_integrator, pbrt_look_at, pbrt_make_named_material,
+    pbrt_named_material, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_transform, pbrt_world_begin,
 };
 use pbrt::core::geometry::Point3f;
 use pbrt::core::paramset::ParamSet;
@@ -142,7 +143,7 @@ fn extract_name_params(pairs: pest::iterators::Pair<Rule>) -> (String, ParamSet)
     let mut name: String = String::from("");
     let mut params: ParamSet = ParamSet::default();
     for pair in pairs.into_inner() {
-        let span = pair.clone().into_span();
+        // let span = pair.clone().into_span();
         // println!("Rule:    {:?}", pair.as_rule());
         // println!("Span:    {:?}", span);
         // println!("Text:    {}", span.as_str());
@@ -270,31 +271,32 @@ fn main() {
                 println!(
                     "Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob."
                 );
-                println!("FILE = {}", x);
+                // println!("FILE = {}", x);
                 let f = File::open(x.clone()).unwrap();
                 let ip: &Path = Path::new(x.as_str());
                 if ip.is_relative() {
                     let cp: PathBuf = env::current_dir().unwrap();
                     let pb: PathBuf = cp.join(ip);
                     let search_directory: &Path = pb.as_path().parent().unwrap();
-                    println!("search_directory is {}", search_directory.display());
+                    // println!("search_directory is {}", search_directory.display());
                     unsafe {
                         SEARCH_DIRECTORY = Some(Box::new(PathBuf::from(search_directory)));
                     }
                 }
                 let mut reader = BufReader::new(f);
                 let mut str_buf: String = String::default();
-                let num_bytes = reader.read_to_string(&mut str_buf);
-                if num_bytes.is_ok() {
-                    let n_bytes = num_bytes.unwrap();
-                    println!("{} bytes read", n_bytes);
-                }
+                let _num_bytes = reader.read_to_string(&mut str_buf);
+                // if num_bytes.is_ok() {
+                //     let n_bytes = num_bytes.unwrap();
+                //     println!("{} bytes read", n_bytes);
+                // }
                 // parser
                 let pairs =
                     PbrtParser::parse(Rule::pbrt, &str_buf).unwrap_or_else(|e| panic!("{}", e));
-                println!("do something with created tokens ...");
+                // println!("do something with created tokens ...");
+                let mut api_state: ApiState = pbrt_init();
                 for pair in pairs {
-                    let span = pair.clone().into_span();
+                    // let span = pair.clone().into_span();
                     // println!("Rule:    {:?}", pair.as_rule());
                     // println!("Span:    {:?}", span);
                     // println!("Text:    {}", span.as_str());
@@ -304,13 +306,13 @@ fn main() {
                                 for rule_pair in inner_pair.into_inner() {
                                     match rule_pair.as_rule() {
                                         Rule::attribute_begin => {
-                                            pbrt_attribute_begin();
+                                            pbrt_attribute_begin(&mut api_state);
                                         }
                                         Rule::attribute_end => {
-                                            pbrt_attribute_end();
+                                            pbrt_attribute_end(&mut api_state);
                                         }
                                         Rule::world_begin => {
-                                            pbrt_world_begin();
+                                            pbrt_world_begin(&mut api_state);
                                         }
                                         _ => println!("TODO: {:?}", rule_pair.as_rule()),
                                     }
@@ -325,42 +327,42 @@ fn main() {
                                     ).unwrap();
                                     v.push(number);
                                 }
-                                pbrt_look_at(v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]);
+                                pbrt_look_at(&mut api_state, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]);
                             }
                             Rule::named_statement => {
                                 for rule_pair in inner_pair.into_inner() {
                                     match rule_pair.as_rule() {
                                         Rule::area_light_source => {
                                             let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_area_light_source(name, &params);
+                                            pbrt_area_light_source(&mut api_state, name, &params);
                                         }
                                         Rule::camera => {
                                             let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_camera(name, &params);
+                                            pbrt_camera(&mut api_state, name, &params);
                                         }
                                         Rule::film => {
                                             let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_film(name, &params);
+                                            pbrt_film(&mut api_state, name, &params);
                                         }
                                         Rule::integrator => {
                                             let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_integrator(name, &params);
+                                            pbrt_integrator(&mut api_state, name, &params);
                                         }
                                         Rule::make_named_material => {
                                             let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_make_named_material(name, &params);
+                                            pbrt_make_named_material(&mut api_state, name, &params);
                                         }
                                         Rule::named_material => {
                                             let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_named_material(name, &params);
+                                            pbrt_named_material(&mut api_state, name, &params);
                                         }
                                         Rule::sampler => {
                                             let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_sampler(name, &params);
+                                            pbrt_sampler(&mut api_state, name, &params);
                                         }
                                         Rule::shape => {
                                             let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_shape(name, &params);
+                                            pbrt_shape(&mut api_state, name, &params);
                                         }
                                         _ => println!("TODO: {:?}", rule_pair.as_rule()),
                                     }
@@ -375,7 +377,7 @@ fn main() {
                                     ).unwrap();
                                     v.push(number);
                                 }
-                                pbrt_scale(v[0], v[1], v[2]);
+                                pbrt_scale(&mut api_state, v[0], v[1], v[2]);
                             }
                             Rule::transform => {
                                 let mut m: Vec<Float> = Vec::new();
@@ -410,14 +412,15 @@ fn main() {
                                     m00, m10, m20, m30, m01, m11, m21, m31, m02, m12, m22, m32,
                                     m03, m13, m23, m33,
                                 );
-                                pbrt_transform(&tr);
+                                pbrt_transform(&mut api_state, &tr);
                             }
                             // WORK
                             _ => println!("TODO: {:?}", inner_pair.as_rule()),
                         };
                     }
                 }
-                println!("done.");
+                pbrt_cleanup();
+                // println!("done.");
             }
             None => panic!("No input file name."),
         }

@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{Point3f, Vector3f};
 use core::light::Light;
 use core::material::Material;
 use core::medium::Medium;
@@ -13,6 +14,53 @@ use core::transform::{Matrix4x4, Transform};
 use materials::matte::MatteMaterial;
 
 // see api.cpp
+
+pub struct ApiState {
+    cur_transform: TransformSet,
+    active_transform_bits: u8,
+    named_coordinate_systems: HashMap<&'static str, TransformSet>,
+    render_options: RenderOptions,
+    graphics_state: GraphicsState,
+    pushed_graphics_states: Vec<GraphicsState>,
+    pushed_transforms: Vec<TransformSet>,
+    pushed_active_transform_bits: Vec<u8>,
+    param_set: ParamSet,
+}
+
+impl Default for ApiState {
+    fn default() -> Self {
+        ApiState {
+            cur_transform: TransformSet {
+                t: [Transform {
+                    m: Matrix4x4 {
+                        m: [
+                            [1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                    },
+                    m_inv: Matrix4x4 {
+                        m: [
+                            [1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                    },
+                }; 2],
+            },
+            named_coordinate_systems: HashMap::new(),
+            active_transform_bits: 3_u8, // 0x11 for MaxTransforms = 2
+            render_options: RenderOptions::default(),
+            graphics_state: GraphicsState::new(),
+            pushed_graphics_states: Vec::new(),
+            pushed_transforms: Vec::new(),
+            pushed_active_transform_bits: Vec::new(),
+            param_set: ParamSet::default(),
+        }
+    }
+}
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct TransformSet {
@@ -150,32 +198,37 @@ impl GraphicsState {
     }
 }
 
-pub fn pbrt_transform(tr: &Transform) {
-    println!("TODO: {:?}", tr);
-    // TODO
-    // VERIFY_INITIALIZED("Transform");
-    // FOR_ACTIVE_TRANSFORMS(
-    //     curTransform[i] = Transform(Matrix4x4(
-    //         tr[0], tr[4], tr[8], tr[12], tr[1], tr[5], tr[9], tr[13], tr[2],
-    //         tr[6], tr[10], tr[14], tr[3], tr[7], tr[11], tr[15]));)
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sTransform [ ", catIndentCount, "");
-    //     for (int i = 0; i < 16; ++i) printf("%.9g ", tr[i]);
-    //     printf(" ]\n");
-    // }
+pub fn pbrt_init() -> ApiState {
+    ApiState::default()
 }
 
-pub fn pbrt_scale(sx: Float, sy: Float, sz: Float) {
-    println!("TODO: Scale {:?} {:?} {:?}", sx, sy, sz);
-    // TODO
-    //     VERIFY_INITIALIZED("Scale");
-    //     FOR_ACTIVE_TRANSFORMS(curTransform[i] =
-    //                               curTransform[i] * Scale(sx, sy, sz);)
-    //     if (PbrtOptions.cat || PbrtOptions.toPly)
-    //         printf("%*sScale %.9g %.9g %.9g\n", catIndentCount, "", sx, sy, sz);
+pub fn pbrt_cleanup() {}
+
+pub fn pbrt_transform(api_state: &mut ApiState, tr: &Transform) {
+    if api_state.active_transform_bits & 1_u8 > 0_u8 {
+        // 0x?1
+        api_state.cur_transform.t[0] = api_state.cur_transform.t[0] * *tr;
+    }
+    if api_state.active_transform_bits & 2_u8 > 0_u8 {
+        // 0x1?
+        api_state.cur_transform.t[1] = api_state.cur_transform.t[1] * *tr;
+    }
+}
+
+pub fn pbrt_scale(api_state: &mut ApiState, sx: Float, sy: Float, sz: Float) {
+    let scale: Transform = Transform::scale(sx, sy, sz);
+    if api_state.active_transform_bits & 1_u8 > 0_u8 {
+        // 0x?1
+        api_state.cur_transform.t[0] = api_state.cur_transform.t[0] * scale;
+    }
+    if api_state.active_transform_bits & 2_u8 > 0_u8 {
+        // 0x1?
+        api_state.cur_transform.t[1] = api_state.cur_transform.t[1] * scale;
+    }
 }
 
 pub fn pbrt_look_at(
+    api_state: &mut ApiState,
     ex: Float,
     ey: Float,
     ez: Float,
@@ -186,278 +239,186 @@ pub fn pbrt_look_at(
     uy: Float,
     uz: Float,
 ) {
-    println!(
-        "TODO: LookAt {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?} {:?}",
-        ex, ey, ez, lx, ly, lz, ux, uy, uz
+    let pos: Point3f = Point3f {
+        x: ex,
+        y: ey,
+        z: ez,
+    };
+    let look: Point3f = Point3f {
+        x: lx,
+        y: ly,
+        z: lz,
+    };
+    let up: Vector3f = Vector3f {
+        x: ux,
+        y: uy,
+        z: uz,
+    };
+    let look_at: Transform = Transform::look_at(&pos, &look, &up);
+    if api_state.active_transform_bits & 1_u8 > 0_u8 {
+        // 0x?1
+        api_state.cur_transform.t[0] = api_state.cur_transform.t[0] * look_at;
+    }
+    if api_state.active_transform_bits & 2_u8 > 0_u8 {
+        // 0x1?
+        api_state.cur_transform.t[1] = api_state.cur_transform.t[1] * look_at;
+    }
+}
+
+pub fn pbrt_film(api_state: &mut ApiState, name: String, params: &ParamSet) {
+    api_state.render_options.film_name = name;
+}
+
+pub fn pbrt_sampler(api_state: &mut ApiState, name: String, params: &ParamSet) {
+    api_state.render_options.sampler_name = name;
+}
+
+pub fn pbrt_integrator(api_state: &mut ApiState, name: String, params: &ParamSet) {
+    api_state.render_options.integrator_name = name;
+}
+
+pub fn pbrt_camera(api_state: &mut ApiState, name: String, params: &ParamSet) {
+    api_state.render_options.camera_name = name;
+    api_state.render_options.camera_to_world.t[0] =
+        Transform::inverse(&api_state.cur_transform.t[0]);
+    api_state.render_options.camera_to_world.t[1] =
+        Transform::inverse(&api_state.cur_transform.t[1]);
+    api_state.named_coordinate_systems.insert(
+        "camera",
+        TransformSet {
+            t: [
+                api_state.render_options.camera_to_world.t[0],
+                api_state.render_options.camera_to_world.t[1],
+            ],
+        },
     );
-    // TODO
-    // VERIFY_INITIALIZED("LookAt");
-    // Transform lookAt =
-    //     LookAt(Point3f(ex, ey, ez), Point3f(lx, ly, lz), Vector3f(ux, uy, uz));
-    // FOR_ACTIVE_TRANSFORMS(curTransform[i] = curTransform[i] * lookAt;);
-    // if (PbrtOptions.cat || PbrtOptions.toPly)
-    //     printf(
-    //         "%*sLookAt %.9g %.9g %.9g\n%*s%.9g %.9g %.9g\n"
-    //         "%*s%.9g %.9g %.9g\n",
-    //         catIndentCount, "", ex, ey, ez, catIndentCount + 8, "", lx, ly, lz,
-    //         catIndentCount + 8, "", ux, uy, uz);
 }
 
-pub fn pbrt_film(name: String, params: &ParamSet) {
-    println!("TODO: Film \"{}\"", name);
-    // TODO
-    // VERIFY_OPTIONS("Film");
-    // renderOptions->FilmParams = params;
-    // renderOptions->FilmName = type;
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sFilm \"%s\" ", catIndentCount, "", type.c_str());
-    //     params.Print(catIndentCount);
-    //     printf("\n");
-    // }
+pub fn pbrt_world_begin(api_state: &mut ApiState) {
+    api_state.cur_transform.t[0] = Transform::default();
+    api_state.cur_transform.t[1] = Transform::default();
+    api_state.active_transform_bits = 3_u8; // 0x11
+    api_state.named_coordinate_systems.insert(
+        "world",
+        TransformSet {
+            t: [Transform::default(); 2],
+        },
+    );
 }
 
-pub fn pbrt_sampler(name: String, params: &ParamSet) {
-    println!("TODO: Sampler \"{}\"", name);
-    // TODO
-    // VERIFY_OPTIONS("Sampler");
-    // renderOptions->SamplerName = name;
-    // renderOptions->SamplerParams = params;
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sSampler \"%s\" ", catIndentCount, "", name.c_str());
-    //     params.Print(catIndentCount);
-    //     printf("\n");
-    // }
+pub fn pbrt_attribute_begin(api_state: &mut ApiState) {
+    let mut material_param_set: ParamSet = ParamSet::default();
+    material_param_set.copy_from(&api_state.graphics_state.material_params);
+    let mut area_light_param_set: ParamSet = ParamSet::default();
+    area_light_param_set.copy_from(&api_state.graphics_state.area_light_params);
+    api_state.pushed_graphics_states.push(GraphicsState {
+        current_inside_medium: api_state.graphics_state.current_inside_medium.clone(),
+        current_outside_medium: api_state.graphics_state.current_outside_medium.clone(),
+        float_textures: api_state.graphics_state.float_textures.clone(),
+        spectrum_textures: api_state.graphics_state.spectrum_textures.clone(),
+        material_params: material_param_set,
+        material: String::from(api_state.graphics_state.material.as_ref()),
+        named_materials: api_state.graphics_state.named_materials.clone(),
+        current_material: String::from(api_state.graphics_state.current_material.as_ref()),
+        area_light_params: area_light_param_set,
+        area_light: String::from(api_state.graphics_state.area_light.as_ref()),
+        reverse_orientation: api_state.graphics_state.reverse_orientation,
+    });
+    api_state.pushed_transforms.push(TransformSet {
+        t: [
+            Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            },
+            Transform {
+                m: api_state.cur_transform.t[1].m,
+                m_inv: api_state.cur_transform.t[1].m_inv,
+            },
+        ],
+    });
+    api_state
+        .pushed_active_transform_bits
+        .push(api_state.active_transform_bits);
 }
 
-pub fn pbrt_integrator(name: String, params: &ParamSet) {
-    println!("TODO: Integrator \"{}\"", name);
-    // VERIFY_OPTIONS("Integrator");
-    // renderOptions->IntegratorName = name;
-    // renderOptions->IntegratorParams = params;
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sIntegrator \"%s\" ", catIndentCount, "", name.c_str());
-    //     params.Print(catIndentCount);
-    //     printf("\n");
-    // }
+pub fn pbrt_attribute_end(api_state: &mut ApiState) {
+    if !(api_state.pushed_graphics_states.len() >= 1_usize) {
+        panic!("Unmatched pbrtAttributeEnd() encountered.")
+    }
+    let pgs: GraphicsState = api_state.pushed_graphics_states.pop().unwrap();
+    // current_inside_medium
+    api_state.graphics_state.current_inside_medium =
+        String::from(pgs.current_inside_medium.as_ref());
+    // current_outside_medium
+    api_state.graphics_state.current_outside_medium =
+        String::from(pgs.current_outside_medium.as_ref());
+    // material_params
+    api_state.graphics_state.material_params.reset(
+        String::new(),
+        String::from(""),
+        String::from(""),
+        String::new(),
+    );
+    api_state
+        .graphics_state
+        .material_params
+        .copy_from(&pgs.material_params);
+    // material
+    api_state.graphics_state.material = String::from(pgs.material.as_ref());
+    // area_light_params
+    api_state.graphics_state.area_light_params.reset(
+        String::new(),
+        String::from(""),
+        String::from(""),
+        String::new(),
+    );
+    api_state
+        .graphics_state
+        .area_light_params
+        .copy_from(&pgs.area_light_params);
+    // area_light
+    api_state.graphics_state.area_light = String::from(pgs.area_light.as_ref());
+    // reverse_orientation
+    api_state.graphics_state.reverse_orientation = pgs.reverse_orientation;
+    let popped_transform_set: TransformSet = api_state.pushed_transforms.pop().unwrap();
+    api_state.cur_transform.t[0] = popped_transform_set.t[0];
+    api_state.cur_transform.t[1] = popped_transform_set.t[1];
+    let active_transform_bits: u8 = api_state.pushed_active_transform_bits.pop().unwrap();
+    api_state.active_transform_bits = active_transform_bits;
 }
 
-pub fn pbrt_camera(name: String, params: &ParamSet) {
-    println!("TODO: Camera \"{}\"", name);
-    // TODO
-    // VERIFY_OPTIONS("Camera");
-    // renderOptions->CameraName = name;
-    // renderOptions->CameraParams = params;
-    // renderOptions->CameraToWorld = Inverse(curTransform);
-    // namedCoordinateSystems["camera"] = renderOptions->CameraToWorld;
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sCamera \"%s\" ", catIndentCount, "", name.c_str());
-    //     params.Print(catIndentCount);
-    //     printf("\n");
-    // }
+pub fn pbrt_make_named_material(api_state: &mut ApiState, name: String, params: &ParamSet) {
+    api_state.param_set.reset(
+        String::from("MakeNamedMaterial"),
+        String::from(name.clone()),
+        String::from(""),
+        String::from(""),
+    );
 }
 
-pub fn pbrt_world_begin() {
-    println!("TODO: WorldBegin");
-    // TODO
-    // VERIFY_OPTIONS("WorldBegin");
-    // currentApiState = APIState::WorldBlock;
-    // for (int i = 0; i < MaxTransforms; ++i) curTransform[i] = Transform();
-    // activeTransformBits = AllTransformsBits;
-    // namedCoordinateSystems["world"] = curTransform;
-    // if (PbrtOptions.cat || PbrtOptions.toPly)
-    //     printf("\n\nWorldBegin\n\n");
+pub fn pbrt_named_material(api_state: &mut ApiState, name: String, params: &ParamSet) {
+    api_state.param_set.reset(
+        String::from("NamedMaterial"),
+        String::from(name.clone()),
+        String::from(""),
+        String::from(""),
+    );
 }
 
-pub fn pbrt_attribute_begin() {
-    println!("TODO: AttributeBegin");
-    // TODO
-    // VERIFY_WORLD("AttributeBegin");
-    // pushedGraphicsStates.push_back(graphicsState);
-    // graphicsState.floatTexturesShared = graphicsState.spectrumTexturesShared =
-    //     graphicsState.namedMaterialsShared = true;
-    // pushedTransforms.push_back(curTransform);
-    // pushedActiveTransformBits.push_back(activeTransformBits);
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("\n%*sAttributeBegin\n", catIndentCount, "");
-    //     catIndentCount += 4;
-    // }
+pub fn pbrt_area_light_source(api_state: &mut ApiState, name: String, params: &ParamSet) {
+    api_state.param_set.reset(
+        String::from("AreaLightSource"),
+        String::from(name.clone()),
+        String::from(""),
+        String::from(""),
+    );
 }
 
-pub fn pbrt_attribute_end() {
-    println!("TODO: AttributeEnd");
-    // TODO
-    // VERIFY_WORLD("AttributeEnd");
-    // if (!pushedGraphicsStates.size()) {
-    //     Error(
-    //         "Unmatched pbrtAttributeEnd() encountered. "
-    //         "Ignoring it.");
-    //     return;
-    // }
-    // graphicsState = std::move(pushedGraphicsStates.back());
-    // pushedGraphicsStates.pop_back();
-    // curTransform = pushedTransforms.back();
-    // pushedTransforms.pop_back();
-    // activeTransformBits = pushedActiveTransformBits.back();
-    // pushedActiveTransformBits.pop_back();
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     catIndentCount -= 4;
-    //     printf("%*sAttributeEnd\n", catIndentCount, "");
-    // }
-}
-
-pub fn pbrt_make_named_material(name: String, params: &ParamSet) {
-    println!("TODO: MakeNamedMaterial \"{}\"", name);
-    // TODO
-    // VERIFY_WORLD("MakeNamedMaterial");
-    // // error checking, warning if replace, what to use for transform?
-    // ParamSet emptyParams;
-    // TextureParams mp(params, emptyParams, *graphicsState.floatTextures,
-    //                  *graphicsState.spectrumTextures);
-    // std::string matName = mp.FindString("type");
-    // WARN_IF_ANIMATED_TRANSFORM("MakeNamedMaterial");
-    // if (matName == "")
-    //     Error("No parameter string \"type\" found in MakeNamedMaterial");
-
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sMakeNamedMaterial \"%s\" ", catIndentCount, "",
-    //            name.c_str());
-    //     params.Print(catIndentCount);
-    //     printf("\n");
-    // } else {
-    //     std::shared_ptr<Material> mtl = MakeMaterial(matName, mp);
-    //     if (graphicsState.namedMaterials->find(name) !=
-    //         graphicsState.namedMaterials->end())
-    //         Warning("Named material \"%s\" redefined.", name.c_str());
-    //     if (graphicsState.namedMaterialsShared) {
-    //         graphicsState.namedMaterials =
-    //             std::make_shared<GraphicsState::NamedMaterialMap>(*graphicsState.namedMaterials);
-    //         graphicsState.namedMaterialsShared = false;
-    //     }
-    //     (*graphicsState.namedMaterials)[name] =
-    //         std::make_shared<MaterialInstance>(matName, mtl, params);
-    // }
-}
-
-pub fn pbrt_named_material(name: String, params: &ParamSet) {
-    println!("TODO: NamedMaterial \"{}\"", name);
-    // TODO
-    // VERIFY_WORLD("NamedMaterial");
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sNamedMaterial \"%s\"\n", catIndentCount, "", name.c_str());
-    //     return;
-    // }
-
-    // auto iter = graphicsState.namedMaterials->find(name);
-    // if (iter == graphicsState.namedMaterials->end()) {
-    //     Error("NamedMaterial \"%s\" unknown.", name.c_str());
-    //     return;
-    // }
-    // graphicsState.currentMaterial = iter->second;
-}
-
-pub fn pbrt_area_light_source(name: String, params: &ParamSet) {
-    println!("TODO: AreaLightSource \"{}\"", name);
-    // TODO
-    // VERIFY_WORLD("AreaLightSource");
-    // graphicsState.areaLight = name;
-    // graphicsState.areaLightParams = params;
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sAreaLightSource \"%s\" ", catIndentCount, "", name.c_str());
-    //     params.Print(catIndentCount);
-    //     printf("\n");
-    // }
-}
-
-pub fn pbrt_shape(name: String, params: &ParamSet) {
-    println!("TODO: Shape \"{}\"", name);
-    // TODO
-    // VERIFY_WORLD("Shape");
-    // std::vector<std::shared_ptr<Primitive>> prims;
-    // std::vector<std::shared_ptr<AreaLight>> areaLights;
-    // if (PbrtOptions.cat || (PbrtOptions.toPly && name != "trianglemesh")) {
-    //     printf("%*sShape \"%s\" ", catIndentCount, "", name.c_str());
-    //     params.Print(catIndentCount);
-    //     printf("\n");
-    // }
-
-    // if (!curTransform.IsAnimated()) {
-    //     // Initialize _prims_ and _areaLights_ for static shape
-
-    //     // Create shapes for shape _name_
-    //     Transform *ObjToWorld = transformCache.Lookup(curTransform[0]);
-    //     Transform *WorldToObj = transformCache.Lookup(Inverse(curTransform[0]));
-    //     std::vector<std::shared_ptr<Shape>> shapes =
-    //         MakeShapes(name, ObjToWorld, WorldToObj,
-    //                    graphicsState.reverseOrientation, params);
-    //     if (shapes.empty()) return;
-    //     std::shared_ptr<Material> mtl = graphicsState.GetMaterialForShape(params);
-    //     params.ReportUnused();
-    //     MediumInterface mi = graphicsState.CreateMediumInterface();
-    //     prims.reserve(shapes.size());
-    //     for (auto s : shapes) {
-    //         // Possibly create area light for shape
-    //         std::shared_ptr<AreaLight> area;
-    //         if (graphicsState.areaLight != "") {
-    //             area = MakeAreaLight(graphicsState.areaLight, curTransform[0],
-    //                                  mi, graphicsState.areaLightParams, s);
-    //             if (area) areaLights.push_back(area);
-    //         }
-    //         prims.push_back(
-    //             std::make_shared<GeometricPrimitive>(s, mtl, area, mi));
-    //     }
-    // } else {
-    //     // Initialize _prims_ and _areaLights_ for animated shape
-
-    //     // Create initial shape or shapes for animated shape
-    //     if (graphicsState.areaLight != "")
-    //         Warning(
-    //             "Ignoring currently set area light when creating "
-    //             "animated shape");
-    //     Transform *identity = transformCache.Lookup(Transform());
-    //     std::vector<std::shared_ptr<Shape>> shapes = MakeShapes(
-    //         name, identity, identity, graphicsState.reverseOrientation, params);
-    //     if (shapes.empty()) return;
-
-    //     // Create _GeometricPrimitive_(s) for animated shape
-    //     std::shared_ptr<Material> mtl = graphicsState.GetMaterialForShape(params);
-    //     params.ReportUnused();
-    //     MediumInterface mi = graphicsState.CreateMediumInterface();
-    //     prims.reserve(shapes.size());
-    //     for (auto s : shapes)
-    //         prims.push_back(
-    //             std::make_shared<GeometricPrimitive>(s, mtl, nullptr, mi));
-
-    //     // Create single _TransformedPrimitive_ for _prims_
-
-    //     // Get _animatedObjectToWorld_ transform for shape
-    //     static_assert(MaxTransforms == 2,
-    //                   "TransformCache assumes only two transforms");
-    //     Transform *ObjToWorld[2] = {
-    //         transformCache.Lookup(curTransform[0]),
-    //         transformCache.Lookup(curTransform[1])
-    //     };
-    //     AnimatedTransform animatedObjectToWorld(
-    //         ObjToWorld[0], renderOptions->transformStartTime, ObjToWorld[1],
-    //         renderOptions->transformEndTime);
-    //     if (prims.size() > 1) {
-    //         std::shared_ptr<Primitive> bvh = std::make_shared<BVHAccel>(prims);
-    //         prims.clear();
-    //         prims.push_back(bvh);
-    //     }
-    //     prims[0] = std::make_shared<TransformedPrimitive>(
-    //         prims[0], animatedObjectToWorld);
-    // }
-    // // Add _prims_ and _areaLights_ to scene or current instance
-    // if (renderOptions->currentInstance) {
-    //     if (areaLights.size())
-    //         Warning("Area lights not supported with object instancing");
-    //     renderOptions->currentInstance->insert(
-    //         renderOptions->currentInstance->end(), prims.begin(), prims.end());
-    // } else {
-    //     renderOptions->primitives.insert(renderOptions->primitives.end(),
-    //                                      prims.begin(), prims.end());
-    //     if (areaLights.size())
-    //         renderOptions->lights.insert(renderOptions->lights.end(),
-    //                                      areaLights.begin(), areaLights.end());
-    // }
+pub fn pbrt_shape(api_state: &mut ApiState, name: String, params: &ParamSet) {
+    api_state.param_set.reset(
+        String::from("Shape"),
+        String::from(name.clone()),
+        String::from(""),
+        String::from(""),
+    );
 }
