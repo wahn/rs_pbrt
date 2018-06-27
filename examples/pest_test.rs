@@ -4028,7 +4028,7 @@ fn main() {
                                                                     {
                                                                         param_set.reset(
                                                                             String::from(
-                                                                                "MakeNamedMaterial",
+                                                                                "NamedMaterial",
                                                                             ),
                                                                             String::from(
                                                                                 name.clone(),
