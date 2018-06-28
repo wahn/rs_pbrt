@@ -5,8 +5,9 @@ use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f,
-                           Vector3f};
+use pbrt::core::geometry::{
+    Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f,
+};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::medium::MediumInterface;
@@ -17,6 +18,7 @@ use pbrt::core::scene::Scene;
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::integrators::render;
 use pbrt::lights::point::PointLight;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::plastic::PlasticMaterial;
@@ -168,22 +170,8 @@ fn main() {
     // we need camera transformation below to transform triangles
     // INFO: The order in PBRT file is different !!!
     let t: Transform = Transform::new(
-        0.828849,
-        -0.559473,
-        -0.000000,
-        0.000000,
-        -0.295370,
-        -0.437585,
-        0.849280,
-        0.000000,
-        -0.475149,
-        -0.703924,
-        -0.527943,
-        0.000000,
-        0.000000,
-        0.000000,
-        0.000000,
-        1.000000,
+        0.828849, -0.559473, -0.000000, 0.000000, -0.295370, -0.437585, 0.849280, 0.000000,
+        -0.475149, -0.703924, -0.527943, 0.000000, 0.000000, 0.000000, 0.000000, 1.000000,
     );
     let t: Transform = t * Transform::translate(&Vector3f {
         x: -4.86,
@@ -2062,5 +2050,5 @@ fn main() {
     let mut integrator: Box<SamplerIntegrator + Send + Sync> = Box::new(
         DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds),
     );
-    pbrt::render(&scene, &camera, &mut sampler, &mut integrator, 0_u8);
+    render(&scene, &camera, &mut sampler, &mut integrator, 0_u8);
 }

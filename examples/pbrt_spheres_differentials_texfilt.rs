@@ -7,8 +7,9 @@ use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f,
-                           Vector3f};
+use pbrt::core::geometry::{
+    Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f,
+};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::mipmap::ImageWrap;
@@ -20,6 +21,7 @@ use pbrt::core::texture::{PlanarMapping2D, UVMapping2D};
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::integrators::render;
 use pbrt::lights::distant::DistantLight;
 use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::matte::MatteMaterial;
@@ -624,5 +626,5 @@ fn main() {
     let mut integrator: Box<SamplerIntegrator + Send + Sync> = Box::new(
         DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds),
     );
-    pbrt::render(&scene, &camera, &mut sampler, &mut integrator, 0_u8);
+    render(&scene, &camera, &mut sampler, &mut integrator, 0_u8);
 }

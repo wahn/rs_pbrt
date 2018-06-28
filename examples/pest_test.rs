@@ -12,8 +12,8 @@ use pbrt::core::api::{GraphicsState, RenderOptions, TransformSet};
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use pbrt::core::geometry::{vec3_coordinate_system, vec3_normalize};
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
@@ -33,10 +33,13 @@ use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::filters::gaussian::GaussianFilter;
 use pbrt::filters::triangle::TriangleFilter;
 use pbrt::integrators::ao::AOIntegrator;
+use pbrt::integrators::bdpt::render_bdpt;
 use pbrt::integrators::bdpt::BDPTIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::integrators::mlt::render_mlt;
 use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
+use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
@@ -1591,7 +1594,7 @@ fn pbrt_world_end() {
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render(
+                                            render(
                                                 &scene,
                                                 &camera.clone(),
                                                 &mut sampler,
@@ -1612,7 +1615,7 @@ fn pbrt_world_end() {
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render(
+                                            render(
                                                 &scene,
                                                 &camera,
                                                 &mut sampler,
@@ -1629,7 +1632,7 @@ fn pbrt_world_end() {
                                         // because we can't call
                                         // integrator.render() yet,
                                         // let us repeat some code and
-                                        // call pbrt::render_bdpt(...)
+                                        // call render_bdpt(...)
                                         // instead:
 
                                         // MakeIntegrator
@@ -1671,7 +1674,7 @@ fn pbrt_world_end() {
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render_bdpt(
+                                            render_bdpt(
                                                 &scene,
                                                 &camera,
                                                 &mut sampler,
@@ -1692,7 +1695,7 @@ fn pbrt_world_end() {
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render_bdpt(
+                                            render_bdpt(
                                                 &scene,
                                                 &camera,
                                                 &mut sampler,
@@ -1709,7 +1712,7 @@ fn pbrt_world_end() {
                                         // because we can't call
                                         // integrator.render() yet,
                                         // let us repeat some code and
-                                        // call pbrt::render_bdpt(...)
+                                        // call render_mlt(...)
                                         // instead:
 
                                         // MakeIntegrator
@@ -1751,7 +1754,7 @@ fn pbrt_world_end() {
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render_mlt(
+                                            render_mlt(
                                                 &scene,
                                                 &camera,
                                                 &mut sampler,
@@ -1772,7 +1775,7 @@ fn pbrt_world_end() {
                                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                                             // TODO: lights.erase(lights.begin(), lights.end());
                                             let num_threads: u8 = NUMBER_OF_THREADS;
-                                            pbrt::render_mlt(
+                                            render_mlt(
                                                 &scene,
                                                 &camera,
                                                 &mut sampler,
