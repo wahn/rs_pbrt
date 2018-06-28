@@ -19,7 +19,7 @@ pub struct GaussianFilter {
 }
 
 impl GaussianFilter {
-    pub fn create(ps: &mut ParamSet) -> Arc<Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Arc<Filter + Sync + Send> {
         let xw: Float = ps.find_one_float(String::from("xwidth"), 2.0);
         let yw: Float = ps.find_one_float(String::from("ywidth"), 2.0);
         let alpha: Float = ps.find_one_float(String::from("alpha"), 2.0);

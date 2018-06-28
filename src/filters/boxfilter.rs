@@ -16,7 +16,7 @@ pub struct BoxFilter {
 }
 
 impl BoxFilter {
-    pub fn create(ps: &mut ParamSet) -> Arc<Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Arc<Filter + Sync + Send> {
         let xw: Float = ps.find_one_float(String::from("xwidth"), 0.5);
         let yw: Float = ps.find_one_float(String::from("ywidth"), 0.5);
         let box_filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {

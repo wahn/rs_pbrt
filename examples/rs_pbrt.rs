@@ -32,9 +32,6 @@ use std::str::FromStr;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-static mut NUMBER_OF_THREADS: u8 = 0_u8;
-static mut SEARCH_DIRECTORY: Option<Box<PathBuf>> = None;
-
 #[derive(Parser)]
 #[grammar = "../examples/pbrt.pest"]
 struct PbrtParser;
@@ -140,7 +137,6 @@ fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, S
 }
 
 fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> ParamSet {
-    let mut name: String = String::from("");
     let mut params: ParamSet = ParamSet::default();
     params.key_word = key_word;
     for pair in pairs.into_inner() {
@@ -152,8 +148,7 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
             Rule::string => {
                 let mut string_pairs = pair.into_inner();
                 let ident = string_pairs.next();
-                name = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
-                params.name = name;
+                params.name = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
             }
             Rule::parameter => {
                 for parameter_pair in pair.into_inner() {
@@ -250,6 +245,7 @@ fn main() {
         print_usage(&program, opts);
         return;
     } else if matches.opt_present("i") {
+        let mut number_of_threads: u8 = 0_u8;
         if matches.opt_present("t") {
             let nthreads = matches.opt_str("t");
             match nthreads {
@@ -261,9 +257,7 @@ fn main() {
                     );
                     let num_threads: u8 = number_result.unwrap();
                     println!("nthreads = {:?}", num_threads);
-                    unsafe {
-                        NUMBER_OF_THREADS = num_threads;
-                    }
+                    number_of_threads = num_threads;
                 }
                 None => panic!("No argument for number of threads given."),
             }
@@ -280,14 +274,13 @@ fn main() {
                 // println!("FILE = {}", x);
                 let f = File::open(x.clone()).unwrap();
                 let ip: &Path = Path::new(x.as_str());
+                let mut api_state: ApiState = pbrt_init(number_of_threads);
                 if ip.is_relative() {
                     let cp: PathBuf = env::current_dir().unwrap();
                     let pb: PathBuf = cp.join(ip);
                     let search_directory: &Path = pb.as_path().parent().unwrap();
                     // println!("search_directory is {}", search_directory.display());
-                    unsafe {
-                        SEARCH_DIRECTORY = Some(Box::new(PathBuf::from(search_directory)));
-                    }
+                    api_state.search_directory = Some(Box::new(PathBuf::from(search_directory)));
                 }
                 let mut reader = BufReader::new(f);
                 let mut str_buf: String = String::default();
@@ -300,7 +293,6 @@ fn main() {
                 let pairs =
                     PbrtParser::parse(Rule::pbrt, &str_buf).unwrap_or_else(|e| panic!("{}", e));
                 // println!("do something with created tokens ...");
-                let mut api_state: ApiState = pbrt_init();
                 for pair in pairs {
                     // let span = pair.clone().into_span();
                     // println!("Rule:    {:?}", pair.as_rule());
@@ -425,7 +417,7 @@ fn main() {
                         };
                     }
                 }
-                pbrt_cleanup();
+                pbrt_cleanup(&mut api_state);
                 // println!("done.");
             }
             None => panic!("No input file name."),
