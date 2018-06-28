@@ -11,7 +11,16 @@ use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::texture::Texture;
 use core::transform::{Matrix4x4, Transform};
+use materials::glass::GlassMaterial;
+use materials::hair::HairMaterial;
 use materials::matte::MatteMaterial;
+use materials::metal::MetalMaterial;
+use materials::mirror::MirrorMaterial;
+use materials::mixmat::MixMaterial;
+use materials::plastic::PlasticMaterial;
+use materials::substrate::SubstrateMaterial;
+use materials::uber::UberMaterial;
+use textures::constant::ConstantTexture;
 
 // see api.cpp
 
@@ -198,13 +207,232 @@ impl GraphicsState {
     }
 }
 
+fn create_material(api_state: &ApiState) -> Option<Arc<Material + Send + Sync>> {
+    // CreateMaterial
+    let mut material_params = ParamSet::default();
+    material_params.copy_from(&api_state.graphics_state.material_params);
+    let mut mp: TextureParams = TextureParams {
+        float_textures: api_state.graphics_state.float_textures.clone(),
+        spectrum_textures: api_state.graphics_state.spectrum_textures.clone(),
+        geom_params: ParamSet::default(),
+        material_params: material_params,
+    };
+    if api_state.graphics_state.current_material != String::new() {
+        match api_state
+            .graphics_state
+            .named_materials
+            .get(api_state.graphics_state.current_material.as_str())
+        {
+            Some(named_material) => {
+                return named_material.clone();
+            }
+            None => {
+                println!(
+                    "WARNING: Named material \"{}\" not defined. Using \"matte\".",
+                    api_state.graphics_state.current_material
+                );
+            }
+        }
+    } else {
+        // MakeMaterial
+        if api_state.graphics_state.material == String::from("")
+            || api_state.graphics_state.material == String::from("none")
+        {
+            return None;
+        } else if api_state.graphics_state.material == String::from("matte") {
+            return Some(MatteMaterial::create(&mut mp));
+        } else if api_state.graphics_state.material == String::from("plastic") {
+            let kd = mp.get_spectrum_texture(String::from("Kd"), Spectrum::new(0.25 as Float));
+            let ks = mp.get_spectrum_texture(String::from("Ks"), Spectrum::new(0.25 as Float));
+            let roughness = mp.get_float_texture(String::from("roughness"), 0.1 as Float);
+            // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
+            let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
+            let plastic = Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
+            return Some(plastic);
+        } else if api_state.graphics_state.material == String::from("translucent") {
+            println!("TODO: CreateTranslucentMaterial");
+        } else if api_state.graphics_state.material == String::from("glass") {
+            let kr = mp.get_spectrum_texture(String::from("Kr"), Spectrum::new(1.0 as Float));
+            let kt = mp.get_spectrum_texture(String::from("Kt"), Spectrum::new(1.0 as Float));
+            // let some_eta = mp.get_float_texture_or_null(String::from("eta"));
+            // if let Some(eta) = some_eta {
+            //     println!("some eta");
+            // } else {
+            let eta = mp.get_float_texture(String::from("index"), 1.5);
+            // }
+            // std::shared_ptr<Texture<Float>> roughu =
+            //     mp.GetFloatTexture("uroughness", 0.f);
+            let roughu = mp.get_float_texture(String::from("uroughness"), 0.0 as Float);
+            // std::shared_ptr<Texture<Float>> roughv =
+            //     mp.GetFloatTexture("vroughness", 0.f);
+            let roughv = mp.get_float_texture(String::from("vroughness"), 0.0 as Float);
+            // std::shared_ptr<Texture<Float>> bumpMap =
+            //     mp.GetFloatTextureOrNull("bumpmap");
+            let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
+            let glass = Arc::new(GlassMaterial {
+                kr: kr,
+                kt: kt,
+                u_roughness: roughu,
+                v_roughness: roughv,
+                index: eta,
+                remap_roughness: remap_roughness,
+            });
+            return Some(glass);
+        } else if api_state.graphics_state.material == String::from("mirror") {
+            let kr = mp.get_spectrum_texture(String::from("Kr"), Spectrum::new(0.9 as Float));
+            // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
+            let mirror = Arc::new(MirrorMaterial { kr: kr });
+            return Some(mirror);
+        } else if api_state.graphics_state.material == String::from("hair") {
+            return Some(HairMaterial::create(&mut mp));
+        } else if api_state.graphics_state.material == String::from("mix") {
+            let m1: String = mp.find_string(String::from("namedmaterial1"), String::from(""));
+            let m2: String = mp.find_string(String::from("namedmaterial2"), String::from(""));
+            let mat1 = match api_state.graphics_state.named_materials.get(&m1) {
+                Some(named_material) => named_material,
+                None => {
+                    panic!("Material \"{}\" unknown.", m1);
+                }
+            };
+            let mat2 = match api_state.graphics_state.named_materials.get(&m2) {
+                Some(named_material) => named_material,
+                None => {
+                    panic!("Material \"{}\" unknown.", m2);
+                }
+            };
+            let scale: Arc<Texture<Spectrum> + Send + Sync> =
+                mp.get_spectrum_texture(String::from("amount"), Spectrum::new(0.5));
+            if let Some(m1) = mat1 {
+                if let Some(m2) = mat2 {
+                    let mix = Arc::new(MixMaterial::new(m1.clone(), m2.clone(), scale));
+                    return Some(mix);
+                }
+            }
+            return None;
+        } else if api_state.graphics_state.material == String::from("metal") {
+            return Some(MetalMaterial::create(&mut mp));
+        } else if api_state.graphics_state.material == String::from("substrate") {
+            return Some(SubstrateMaterial::create(&mut mp));
+        } else if api_state.graphics_state.material == String::from("uber") {
+            return Some(UberMaterial::create(&mut mp));
+        } else if api_state.graphics_state.material == String::from("subsurface") {
+            println!("TODO: CreateSubsurfaceMaterial");
+        } else if api_state.graphics_state.material == String::from("kdsubsurface") {
+            println!("TODO: CreateKdsubsurfaceMaterial");
+        } else if api_state.graphics_state.material == String::from("fourier") {
+            println!("TODO: CreateFourierMaterial");
+        } else {
+            panic!(
+                "Material \"{}\" unknown.",
+                api_state.graphics_state.material
+            );
+        }
+    }
+    let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
+    let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+    Some(Arc::new(MatteMaterial::new(kd, sigma)))
+}
+
+fn print_params(params: &ParamSet) {
+    for p in &params.strings {
+        if p.n_values == 1_usize {
+            println!("  \"string {}\" [\"{}\"]", p.name, p.values[0]);
+        }
+    }
+    for p in &params.bools {
+        if p.n_values == 1_usize {
+            println!("  \"bool {}\" [{}]", p.name, p.values[0]);
+        } else {
+            print!("  \"bool {}\" [ ", p.name);
+            for i in 0..p.n_values {
+                print!("{} ", p.values[i]);
+            }
+            println!("]");
+        }
+    }
+    for p in &params.ints {
+        if p.n_values == 1_usize {
+            println!("  \"integer {}\" [{}]", p.name, p.values[0]);
+        } else {
+            print!("  \"integer {}\" [ ", p.name);
+            for i in 0..p.n_values {
+                print!("{} ", p.values[i]);
+            }
+            println!("]");
+        }
+    }
+    for p in &params.floats {
+        if p.n_values == 1_usize {
+            println!("  \"float {}\" [{}]", p.name, p.values[0]);
+        } else {
+            print!("  \"float {}\" [ ", p.name);
+            for i in 0..p.n_values {
+                print!("{} ", p.values[i]);
+            }
+            println!("]");
+        }
+    }
+    for p in &params.point3fs {
+        if p.n_values == 1_usize {
+            println!(
+                "  \"point {}\" [{} {} {}]",
+                p.name, p.values[0].x, p.values[0].y, p.values[0].z
+            );
+        } else {
+            println!("  \"point {}\" [", p.name);
+            for i in 0..p.n_values {
+                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+            }
+            println!("  ]");
+        }
+    }
+    for p in &params.vector3fs {
+        if p.n_values == 1_usize {
+            println!(
+                "  \"vector {}\" [{} {} {}]",
+                p.name, p.values[0].x, p.values[0].y, p.values[0].z
+            );
+        }
+    }
+    for p in &params.normals {
+        if p.n_values == 1_usize {
+            println!(
+                "  \"normal {}\" [{} {} {}]",
+                p.name, p.values[0].x, p.values[0].y, p.values[0].z
+            );
+        } else {
+            println!("  \"normal {}\" [", p.name);
+            for i in 0..p.n_values {
+                println!("    {} {} {} ", p.values[i].x, p.values[i].y, p.values[i].z);
+            }
+            println!("  ]");
+        }
+    }
+    for p in &params.spectra {
+        if p.n_values == 1_usize {
+            println!(
+                "  \"rgb {}\" [{} {} {}]",
+                p.name, p.values[0].c[0], p.values[0].c[1], p.values[0].c[2]
+            );
+        }
+    }
+    for p in &params.textures {
+        if p.n_values == 1_usize {
+            println!("  \"texture {}\" \"{}\"", p.name, p.values[0]);
+        }
+    }
+}
+
 pub fn pbrt_init() -> ApiState {
     ApiState::default()
 }
 
-pub fn pbrt_cleanup() {}
+pub fn pbrt_cleanup() {
+    println!("WorldEnd");
+}
 
 pub fn pbrt_transform(api_state: &mut ApiState, tr: &Transform) {
+    println!("{:?}", tr);
     if api_state.active_transform_bits & 1_u8 > 0_u8 {
         // 0x?1
         api_state.cur_transform.t[0] = api_state.cur_transform.t[0] * *tr;
@@ -216,6 +444,7 @@ pub fn pbrt_transform(api_state: &mut ApiState, tr: &Transform) {
 }
 
 pub fn pbrt_scale(api_state: &mut ApiState, sx: Float, sy: Float, sz: Float) {
+    println!("Scale {} {} {}", sx, sy, sz);
     let scale: Transform = Transform::scale(sx, sy, sz);
     if api_state.active_transform_bits & 1_u8 > 0_u8 {
         // 0x?1
@@ -239,6 +468,10 @@ pub fn pbrt_look_at(
     uy: Float,
     uz: Float,
 ) {
+    println!(
+        "LookAt {} {} {} {} {} {} {} {} {}",
+        ex, ey, ez, lx, ly, lz, ux, uy, uz
+    );
     let pos: Point3f = Point3f {
         x: ex,
         y: ey,
@@ -265,20 +498,32 @@ pub fn pbrt_look_at(
     }
 }
 
-pub fn pbrt_film(api_state: &mut ApiState, name: String, params: &ParamSet) {
-    api_state.render_options.film_name = name;
+pub fn pbrt_film(api_state: &mut ApiState, params: ParamSet) {
+    println!("Film \"{}\" ", params.name);
+    print_params(&params);
+    api_state.render_options.film_name = params.name.clone();
+    api_state.param_set = params;
 }
 
-pub fn pbrt_sampler(api_state: &mut ApiState, name: String, params: &ParamSet) {
-    api_state.render_options.sampler_name = name;
+pub fn pbrt_sampler(api_state: &mut ApiState, params: ParamSet) {
+    println!("Sampler \"{}\" ", params.name);
+    print_params(&params);
+    api_state.render_options.sampler_name = params.name.clone();
+    api_state.param_set = params;
 }
 
-pub fn pbrt_integrator(api_state: &mut ApiState, name: String, params: &ParamSet) {
-    api_state.render_options.integrator_name = name;
+pub fn pbrt_integrator(api_state: &mut ApiState, params: ParamSet) {
+    println!("Integrator \"{}\" ", params.name);
+    print_params(&params);
+    api_state.render_options.integrator_name = params.name.clone();
+    api_state.param_set = params;
 }
 
-pub fn pbrt_camera(api_state: &mut ApiState, name: String, params: &ParamSet) {
-    api_state.render_options.camera_name = name;
+pub fn pbrt_camera(api_state: &mut ApiState, params: ParamSet) {
+    println!("Camera \"{}\" ", params.name);
+    print_params(&params);
+    api_state.render_options.camera_name = params.name.clone();
+    api_state.param_set = params;
     api_state.render_options.camera_to_world.t[0] =
         Transform::inverse(&api_state.cur_transform.t[0]);
     api_state.render_options.camera_to_world.t[1] =
@@ -295,6 +540,7 @@ pub fn pbrt_camera(api_state: &mut ApiState, name: String, params: &ParamSet) {
 }
 
 pub fn pbrt_world_begin(api_state: &mut ApiState) {
+    println!("WorldBegin");
     api_state.cur_transform.t[0] = Transform::default();
     api_state.cur_transform.t[1] = Transform::default();
     api_state.active_transform_bits = 3_u8; // 0x11
@@ -307,6 +553,7 @@ pub fn pbrt_world_begin(api_state: &mut ApiState) {
 }
 
 pub fn pbrt_attribute_begin(api_state: &mut ApiState) {
+    println!("AttributeBegin");
     let mut material_param_set: ParamSet = ParamSet::default();
     material_param_set.copy_from(&api_state.graphics_state.material_params);
     let mut area_light_param_set: ParamSet = ParamSet::default();
@@ -342,6 +589,7 @@ pub fn pbrt_attribute_begin(api_state: &mut ApiState) {
 }
 
 pub fn pbrt_attribute_end(api_state: &mut ApiState) {
+    println!("AttributeEnd");
     if !(api_state.pushed_graphics_states.len() >= 1_usize) {
         panic!("Unmatched pbrtAttributeEnd() encountered.")
     }
@@ -387,38 +635,52 @@ pub fn pbrt_attribute_end(api_state: &mut ApiState) {
     api_state.active_transform_bits = active_transform_bits;
 }
 
-pub fn pbrt_make_named_material(api_state: &mut ApiState, name: String, params: &ParamSet) {
-    api_state.param_set.reset(
-        String::from("MakeNamedMaterial"),
-        String::from(name.clone()),
-        String::from(""),
-        String::from(""),
-    );
+pub fn pbrt_make_named_material(api_state: &mut ApiState, params: ParamSet) {
+    println!("MakeNamedMaterial \"{}\" ", params.name);
+    print_params(&params);
+    api_state.param_set = params;
+    let mat_type: String = api_state
+        .param_set
+        .find_one_string(String::from("type"), String::new());
+    if mat_type == String::new() {
+        panic!("No parameter string \"type\" found in MakeNamedMaterial");
+    }
+    api_state.graphics_state.material = mat_type.clone();
+    api_state
+        .graphics_state
+        .material_params
+        .copy_from(&api_state.param_set);
+    api_state.graphics_state.current_material = String::new();
+    let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state);
+    match api_state
+        .graphics_state
+        .named_materials
+        .get(api_state.param_set.name.as_str())
+    {
+        Some(_named_material) => {
+            println!("Named material \"{}\" redefined", mat_type);
+        }
+        None => {}
+    }
+    api_state
+        .graphics_state
+        .named_materials
+        .insert(api_state.param_set.name.clone(), mtl);
 }
 
-pub fn pbrt_named_material(api_state: &mut ApiState, name: String, params: &ParamSet) {
-    api_state.param_set.reset(
-        String::from("NamedMaterial"),
-        String::from(name.clone()),
-        String::from(""),
-        String::from(""),
-    );
+pub fn pbrt_named_material(api_state: &mut ApiState, params: ParamSet) {
+    println!("NamedMaterial \"{}\" ", params.name);
+    api_state.param_set = params;
 }
 
-pub fn pbrt_area_light_source(api_state: &mut ApiState, name: String, params: &ParamSet) {
-    api_state.param_set.reset(
-        String::from("AreaLightSource"),
-        String::from(name.clone()),
-        String::from(""),
-        String::from(""),
-    );
+pub fn pbrt_area_light_source(api_state: &mut ApiState, params: ParamSet) {
+    println!("AreaLightSource \"{}\" ", params.name);
+    print_params(&params);
+    api_state.param_set = params;
 }
 
-pub fn pbrt_shape(api_state: &mut ApiState, name: String, params: &ParamSet) {
-    api_state.param_set.reset(
-        String::from("Shape"),
-        String::from(name.clone()),
-        String::from(""),
-        String::from(""),
-    );
+pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
+    println!("Shape \"{}\" ", params.name);
+    print_params(&params);
+    api_state.param_set = params;
 }

@@ -139,9 +139,10 @@ fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, S
     (string1, string2)
 }
 
-fn extract_name_params(pairs: pest::iterators::Pair<Rule>) -> (String, ParamSet) {
+fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> ParamSet {
     let mut name: String = String::from("");
     let mut params: ParamSet = ParamSet::default();
+    params.key_word = key_word;
     for pair in pairs.into_inner() {
         // let span = pair.clone().into_span();
         // println!("Rule:    {:?}", pair.as_rule());
@@ -152,6 +153,7 @@ fn extract_name_params(pairs: pest::iterators::Pair<Rule>) -> (String, ParamSet)
                 let mut string_pairs = pair.into_inner();
                 let ident = string_pairs.next();
                 name = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                params.name = name;
             }
             Rule::parameter => {
                 for parameter_pair in pair.into_inner() {
@@ -183,14 +185,18 @@ fn extract_name_params(pairs: pest::iterators::Pair<Rule>) -> (String, ParamSet)
                                 pbrt_float_parameter(&mut parameter_pair.into_inner());
                             let string: String = tuple.0;
                             let floats: Vec<Float> = tuple.1;
-                            params.add_point3f(
-                                string,
-                                Point3f {
-                                    x: floats[0],
-                                    y: floats[1],
-                                    z: floats[2],
-                                },
-                            );
+                            if floats.len() == 3 {
+                                params.add_point3f(
+                                    string,
+                                    Point3f {
+                                        x: floats[0],
+                                        y: floats[1],
+                                        z: floats[2],
+                                    },
+                                );
+                            } else {
+                                params.add_point3fs(string, floats);
+                            }
                         }
                         Rule::rgb_param => {
                             let tuple: (String, Vec<Float>) =
@@ -219,7 +225,7 @@ fn extract_name_params(pairs: pest::iterators::Pair<Rule>) -> (String, ParamSet)
             _ => println!("TODO: {:?}", pair.as_rule()),
         }
     }
-    (name, params)
+    params
 }
 
 fn main() {
@@ -333,36 +339,36 @@ fn main() {
                                 for rule_pair in inner_pair.into_inner() {
                                     match rule_pair.as_rule() {
                                         Rule::area_light_source => {
-                                            let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_area_light_source(&mut api_state, name, &params);
+                                            let params = extract_params(String::from("AreaLightSource"), rule_pair);
+                                            pbrt_area_light_source(&mut api_state, params);
                                         }
                                         Rule::camera => {
-                                            let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_camera(&mut api_state, name, &params);
+                                            let params = extract_params(String::from("Camera"), rule_pair);
+                                            pbrt_camera(&mut api_state, params);
                                         }
                                         Rule::film => {
-                                            let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_film(&mut api_state, name, &params);
+                                            let params = extract_params(String::from("Film"), rule_pair);
+                                            pbrt_film(&mut api_state, params);
                                         }
                                         Rule::integrator => {
-                                            let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_integrator(&mut api_state, name, &params);
+                                            let params = extract_params(String::from("Integrator"), rule_pair);
+                                            pbrt_integrator(&mut api_state, params);
                                         }
                                         Rule::make_named_material => {
-                                            let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_make_named_material(&mut api_state, name, &params);
+                                            let params = extract_params(String::from("MakeNamedMaterial"), rule_pair);
+                                            pbrt_make_named_material(&mut api_state, params);
                                         }
                                         Rule::named_material => {
-                                            let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_named_material(&mut api_state, name, &params);
+                                            let params = extract_params(String::from("NamedMaterial"), rule_pair);
+                                            pbrt_named_material(&mut api_state, params);
                                         }
                                         Rule::sampler => {
-                                            let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_sampler(&mut api_state, name, &params);
+                                            let params = extract_params(String::from("Sampler"), rule_pair);
+                                            pbrt_sampler(&mut api_state, params);
                                         }
                                         Rule::shape => {
-                                            let (name, params) = extract_name_params(rule_pair);
-                                            pbrt_shape(&mut api_state, name, &params);
+                                            let params = extract_params(String::from("Shape"), rule_pair);
+                                            pbrt_shape(&mut api_state, params);
                                         }
                                         _ => println!("TODO: {:?}", rule_pair.as_rule()),
                                     }
