@@ -5,16 +5,12 @@ LookAt 0.0 -4.572000056505203 1.3106400743341453 # position
        0.0 0.0 1.0 # up
 Camera "perspective"
   "float fov" [ 45.00000240668388 ]
-#   "float focaldistance" [ 0.0 ]
-#   "float lensradius" [ 0.0 ]
 Film "image"
   "integer xresolution" [ 500 ]
   "integer yresolution" [ 500 ]
-#Sampler "metropolis"
-Sampler "lowdiscrepancy" "integer pixelsamples" [32] # [1024] # [8]
+Sampler "lowdiscrepancy" "integer pixelsamples" [32]
 PixelFilter "gaussian" "float xwidth" [2.000000 ] "float ywidth" [2.000000 ]
-Integrator "path"
-##Integrator "directlighting" "integer maxdepth" [10]
+Integrator "bdpt" "integer maxdepth" [3]
 WorldBegin
   # antique_copper
   MakeNamedMaterial "antique_copper"
