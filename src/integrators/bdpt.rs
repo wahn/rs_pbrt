@@ -2195,9 +2195,7 @@ pub fn render_bdpt(
     // partition the image into tiles
     let film = camera.get_film();
     let sample_bounds: Bounds2i = film.get_sample_bounds();
-    println!("sample_bounds = {:?}", sample_bounds);
     let sample_extent: Vector2i = sample_bounds.diagonal();
-    println!("sample_extent = {:?}", sample_extent);
     let tile_size: i32 = 16;
     let n_x_tiles: i32 = (sample_extent.x + tile_size - 1) / tile_size;
     let n_y_tiles: i32 = (sample_extent.y + tile_size - 1) / tile_size;
@@ -2207,7 +2205,6 @@ pub fn render_bdpt(
     // render and write the output image to disk
     if scene.lights.len() > 0 {
         let samples_per_pixel: i64 = sampler.get_samples_per_pixel();
-        println!("samples_per_pixel = {:?}", samples_per_pixel);
         let num_cores: usize;
         if num_threads == 0_u8 {
             num_cores = num_cpus::get();
@@ -2224,7 +2221,6 @@ pub fn render_bdpt(
                 (tile_size as u32, tile_size as u32),
                 (0, 0),
             );
-            println!("block_queue.len() = {}", block_queue.len());
             let integrator = &integrator;
             let bq = &block_queue;
             let sampler = sampler;
@@ -2404,7 +2400,6 @@ pub fn render_bdpt(
                 });
             });
         }
-        println!("Rendering finished");
         film.write_image(1.0 as Float / samples_per_pixel as Float);
         // TODO: Write buffers for debug visualization
     }

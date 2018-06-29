@@ -85,16 +85,13 @@ pub fn render(
     // SamplerIntegrator::Render (integrator.cpp)
     let film = camera.get_film();
     let sample_bounds: Bounds2i = film.get_sample_bounds();
-    println!("sample_bounds = {:?}", sample_bounds);
     integrator.preprocess(scene, sampler);
     // use camera below
     let sample_extent: Vector2i = sample_bounds.diagonal();
-    println!("sample_extent = {:?}", sample_extent);
     let tile_size: i32 = 16;
     let x: i32 = (sample_extent.x + tile_size - 1) / tile_size;
     let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
     let n_tiles: Point2i = Point2i { x: x, y: y };
-    println!("n_tiles = {:?}", n_tiles);
     // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
     let num_cores: usize;
     if num_threads == 0_u8 {
@@ -112,7 +109,6 @@ pub fn render(
             (tile_size as u32, tile_size as u32),
             (0, 0),
         );
-        println!("block_queue.len() = {}", block_queue.len());
         let integrator = &integrator;
         let bq = &block_queue;
         let sampler = sampler;
@@ -227,6 +223,5 @@ pub fn render(
             });
         });
     }
-    println!("Rendering finished");
     film.write_image(1.0 as Float);
 }

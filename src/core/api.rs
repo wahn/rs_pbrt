@@ -1007,7 +1007,6 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             .render_options
                             .integrator_params
                             .find_one_float(String::from("rrthreshold"), 1.0 as Float);
-                        println!("DEBUG: rr_threshold = {:?}", rr_threshold);
                         // std::string lightStrategy =
                         //     params.FindOneString("lightsamplestrategy", "spatial");
                         let light_strategy: String =
@@ -1117,16 +1116,10 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 //     Error("Degenerate \"pixelbounds\" specified.");
                             }
                         }
-                        let rr_threshold: Float = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_float(String::from("rrthreshold"), 1.0 as Float);
-                        println!("DEBUG: rr_threshold = {:?}", rr_threshold);
                         let cos_sample: bool = api_state
                             .render_options
                             .integrator_params
                             .find_one_bool(String::from("cossample"), true);
-                        println!("DEBUG: cos_sample = {:?}", cos_sample);
                         // int nSamples = params.Find_One_Int("nsamples", 64);
                         let n_samples: i32 = api_state
                             .render_options
@@ -1486,6 +1479,17 @@ pub fn pbrt_look_at(
         // 0x1?
         api_state.cur_transform.t[1] = api_state.cur_transform.t[1] * look_at;
     }
+}
+
+pub fn pbrt_pixel_filter(api_state: &mut ApiState, params: ParamSet) {
+    // println!("PixelFilter \"{}\" ", params.name);
+    print_params(&params);
+    api_state.render_options.filter_name = params.name.clone();
+    api_state.param_set = params;
+    api_state
+        .render_options
+        .filter_params
+        .copy_from(&api_state.param_set);
 }
 
 pub fn pbrt_film(api_state: &mut ApiState, params: ParamSet) {

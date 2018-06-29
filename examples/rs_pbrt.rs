@@ -16,9 +16,10 @@ use pbrt::core::api::ApiState;
 use pbrt::core::api::{
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
     pbrt_film, pbrt_init, pbrt_integrator, pbrt_look_at, pbrt_make_named_material,
-    pbrt_named_material, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_transform, pbrt_world_begin,
+    pbrt_named_material, pbrt_pixel_filter, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_transform,
+    pbrt_world_begin,
 };
-use pbrt::core::geometry::Point3f;
+use pbrt::core::geometry::{Normal3f, Point3f};
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::transform::Transform;
@@ -43,6 +44,42 @@ fn print_usage(program: &str, opts: Options) {
 
 fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
+}
+
+fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, bool) {
+    // single string with or without brackets
+    let ident = pairs.next();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    let string2: String;
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let string = pairs.next();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    } else {
+        // no brackets
+        let string = option.clone();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    }
+    // return boolean (instead of string)
+    let b: bool;
+    if string2 == String::from("true") {
+        b = true;
+    } else if string2 == String::from("false") {
+        b = false
+    } else {
+        println!(
+            "WARNING: parameter {:?} not well defined, defaulting to false",
+            string
+        );
+        b = false
+    }
+    (string, b)
 }
 
 fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<Float>) {
@@ -148,11 +185,19 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
             Rule::string => {
                 let mut string_pairs = pair.into_inner();
                 let ident = string_pairs.next();
-                params.name = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                params.name =
+                    String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
             }
             Rule::parameter => {
                 for parameter_pair in pair.into_inner() {
                     match parameter_pair.as_rule() {
+                        Rule::bool_param => {
+                            let tuple: (String, bool) =
+                                pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let b: bool = tuple.1;
+                            params.add_bool(string, b);
+                        }
                         Rule::float_param => {
                             let tuple: (String, Vec<Float>) =
                                 pbrt_float_parameter(&mut parameter_pair.into_inner());
@@ -191,6 +236,24 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                                 );
                             } else {
                                 params.add_point3fs(string, floats);
+                            }
+                        }
+                        Rule::normal_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 3 {
+                                params.add_normal3f(
+                                    string,
+                                    Normal3f {
+                                        x: floats[0],
+                                        y: floats[1],
+                                        z: floats[2],
+                                    },
+                                );
+                            } else {
+                                params.add_normal3fs(string, floats);
                             }
                         }
                         Rule::rgb_param => {
@@ -325,41 +388,75 @@ fn main() {
                                     ).unwrap();
                                     v.push(number);
                                 }
-                                pbrt_look_at(&mut api_state, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8]);
+                                pbrt_look_at(
+                                    &mut api_state,
+                                    v[0],
+                                    v[1],
+                                    v[2],
+                                    v[3],
+                                    v[4],
+                                    v[5],
+                                    v[6],
+                                    v[7],
+                                    v[8],
+                                );
                             }
                             Rule::named_statement => {
                                 for rule_pair in inner_pair.into_inner() {
                                     match rule_pair.as_rule() {
                                         Rule::area_light_source => {
-                                            let params = extract_params(String::from("AreaLightSource"), rule_pair);
+                                            let params = extract_params(
+                                                String::from("AreaLightSource"),
+                                                rule_pair,
+                                            );
                                             pbrt_area_light_source(&mut api_state, params);
                                         }
                                         Rule::camera => {
-                                            let params = extract_params(String::from("Camera"), rule_pair);
+                                            let params =
+                                                extract_params(String::from("Camera"), rule_pair);
                                             pbrt_camera(&mut api_state, params);
                                         }
                                         Rule::film => {
-                                            let params = extract_params(String::from("Film"), rule_pair);
+                                            let params =
+                                                extract_params(String::from("Film"), rule_pair);
                                             pbrt_film(&mut api_state, params);
                                         }
                                         Rule::integrator => {
-                                            let params = extract_params(String::from("Integrator"), rule_pair);
+                                            let params = extract_params(
+                                                String::from("Integrator"),
+                                                rule_pair,
+                                            );
                                             pbrt_integrator(&mut api_state, params);
                                         }
                                         Rule::make_named_material => {
-                                            let params = extract_params(String::from("MakeNamedMaterial"), rule_pair);
+                                            let params = extract_params(
+                                                String::from("MakeNamedMaterial"),
+                                                rule_pair,
+                                            );
                                             pbrt_make_named_material(&mut api_state, params);
                                         }
                                         Rule::named_material => {
-                                            let params = extract_params(String::from("NamedMaterial"), rule_pair);
+                                            let params = extract_params(
+                                                String::from("NamedMaterial"),
+                                                rule_pair,
+                                            );
                                             pbrt_named_material(&mut api_state, params);
                                         }
+                                        Rule::pixel_filter => {
+                                            let params = extract_params(
+                                                String::from("PixelFilter"),
+                                                rule_pair,
+                                            );
+                                            pbrt_pixel_filter(&mut api_state, params);
+                                        }
                                         Rule::sampler => {
-                                            let params = extract_params(String::from("Sampler"), rule_pair);
+                                            let params =
+                                                extract_params(String::from("Sampler"), rule_pair);
                                             pbrt_sampler(&mut api_state, params);
                                         }
                                         Rule::shape => {
-                                            let params = extract_params(String::from("Shape"), rule_pair);
+                                            let params =
+                                                extract_params(String::from("Shape"), rule_pair);
                                             pbrt_shape(&mut api_state, params);
                                         }
                                         _ => println!("TODO: {:?}", rule_pair.as_rule()),
