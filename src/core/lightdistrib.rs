@@ -135,10 +135,6 @@ impl SpatialLightDistribution {
             };
             hash_table.push(hash_entry);
         }
-        println!(
-            "SpatialLightDistribution: scene bounds {:?}, voxel res ({:?}, {:?}, {:?})",
-            b, n_voxels[0], n_voxels[1], n_voxels[2]
-        );
         SpatialLightDistribution {
             scene: scene.clone(),
             n_voxels: n_voxels,

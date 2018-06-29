@@ -1423,7 +1423,6 @@ fn pbrt_world_end() {
                                             ro.integrator_params
                                             .find_one_float(String::from("rrthreshold"),
                                                             1.0 as Float);
-                                        println!("DEBUG: rr_threshold = {:?}", rr_threshold);
                                         // std::string lightStrategy =
                                         //     params.FindOneString("lightsamplestrategy", "spatial");
                                         let light_strategy: String =
@@ -1519,15 +1518,9 @@ fn pbrt_world_end() {
                                                 //     Error("Degenerate \"pixelbounds\" specified.");
                                             }
                                         }
-                                        let rr_threshold: Float =
-                                            ro.integrator_params
-                                            .find_one_float(String::from("rrthreshold"),
-                                                            1.0 as Float);
-                                        println!("DEBUG: rr_threshold = {:?}", rr_threshold);
                                         let cos_sample: bool =
                                             ro.integrator_params
                                             .find_one_bool(String::from("cossample"), true);
-                                        println!("DEBUG: cos_sample = {:?}", cos_sample);
                                         // int nSamples = params.Find_One_Int("nsamples", 64);
                                         let n_samples: i32 = ro.integrator_params
                                             .find_one_int(String::from("nsamples"), 64 as i32);

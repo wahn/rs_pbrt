@@ -362,7 +362,6 @@ impl Film {
     }
     #[cfg(not(feature = "openexr"))]
     pub fn write_image(&self, splat_scale: Float) {
-        println!("Converting image to RGB and computing final weighted pixel values");
         let mut rgb: Vec<Float> =
             vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
         let mut offset;
@@ -454,7 +453,6 @@ impl Film {
     }
     #[cfg(feature = "openexr")]
     pub fn write_image(&self, splat_scale: Float) {
-        println!("Converting image to RGB and computing final weighted pixel values");
         let mut rgb: Vec<Float> =
             vec![0.0 as Float; (3 * self.cropped_pixel_bounds.area()) as usize];
         let mut exr: Vec<(Float, Float, Float)> = // copy data for OpenEXR image
