@@ -16,8 +16,8 @@ use pbrt::core::api::ApiState;
 use pbrt::core::api::{
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
     pbrt_film, pbrt_init, pbrt_integrator, pbrt_look_at, pbrt_make_named_material,
-    pbrt_named_material, pbrt_pixel_filter, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_transform,
-    pbrt_world_begin,
+    pbrt_named_material, pbrt_pixel_filter, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture,
+    pbrt_transform, pbrt_world_begin,
 };
 use pbrt::core::geometry::{Normal3f, Point3f};
 use pbrt::core::paramset::ParamSet;
@@ -173,9 +173,33 @@ fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, S
     (string1, string2)
 }
 
+fn pbrt_texture_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, String) {
+    // single string with or without brackets
+    let ident = pairs.next();
+    let string1: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    let string2: String;
+    if lbrack.as_str() == String::from("[") {
+        // check for brackets
+        let string = pairs.next();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    } else {
+        // no brackets
+        let string = option.clone();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    }
+    (string1, string2)
+}
+
 fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> ParamSet {
     let mut params: ParamSet = ParamSet::default();
     params.key_word = key_word;
+    let mut counter: u8 = 0_u8;
     for pair in pairs.into_inner() {
         // let span = pair.clone().into_span();
         // println!("Rule:    {:?}", pair.as_rule());
@@ -183,10 +207,31 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
         // println!("Text:    {}", span.as_str());
         match pair.as_rule() {
             Rule::string => {
-                let mut string_pairs = pair.into_inner();
-                let ident = string_pairs.next();
-                params.name =
-                    String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                match counter {
+                    0 => {
+                        // name
+                        let mut string_pairs = pair.into_inner();
+                        let ident = string_pairs.next();
+                        params.name =
+                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                    }
+                    1 => {
+                        // tex_type
+                        let mut string_pairs = pair.into_inner();
+                        let ident = string_pairs.next();
+                        params.tex_type =
+                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                    }
+                    2 => {
+                        // tex_name
+                        let mut string_pairs = pair.into_inner();
+                        let ident = string_pairs.next();
+                        params.tex_name =
+                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                    }
+                    _ => unreachable!(),
+                };
+                counter += 1_u8;
             }
             Rule::parameter => {
                 for parameter_pair in pair.into_inner() {
@@ -274,6 +319,13 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                             let string1: String = tuple.0;
                             let string2: String = tuple.1;
                             params.add_string(string1, string2);
+                        }
+                        Rule::texture_param => {
+                            let tuple: (String, String) =
+                                pbrt_texture_parameter(&mut parameter_pair.into_inner());
+                            let string1: String = tuple.0;
+                            let string2: String = tuple.1;
+                            params.add_texture(string1, string2);
                         }
                         // TODO: more rules
                         _ => println!("TODO: {:?}", parameter_pair.as_rule()),
@@ -458,6 +510,11 @@ fn main() {
                                             let params =
                                                 extract_params(String::from("Shape"), rule_pair);
                                             pbrt_shape(&mut api_state, params);
+                                        }
+                                        Rule::texture => {
+                                            let params =
+                                                extract_params(String::from("Texture"), rule_pair);
+                                            pbrt_texture(&mut api_state, params);
                                         }
                                         _ => println!("TODO: {:?}", rule_pair.as_rule()),
                                     }
