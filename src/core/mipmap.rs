@@ -52,12 +52,12 @@ impl MipMap {
                 x: round_up_pow2_32(resolution.x),
                 y: round_up_pow2_32(resolution.y),
             };
-            println!(
-                "Resampling MIPMap from {:?} to {:?}. Ratio= {:?}",
-                resolution,
-                res_pow_2,
-                (res_pow_2.x * res_pow_2.y) as Float / (resolution.x * resolution.y) as Float
-            );
+            // println!(
+            //     "Resampling MIPMap from {:?} to {:?}. Ratio= {:?}",
+            //     resolution,
+            //     res_pow_2,
+            //     (res_pow_2.x * res_pow_2.y) as Float / (resolution.x * resolution.y) as Float
+            // );
             // resample image in $s$ direction
             let s_weights: Vec<ResampleWeight> =
                 MipMap::resample_weights(resolution.x, res_pow_2.x);
