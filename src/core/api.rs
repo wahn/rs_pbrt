@@ -9,6 +9,7 @@ use cameras::perspective::PerspectiveCamera;
 use core::camera::Camera;
 use core::film::Film;
 use core::filter::Filter;
+use core::geometry::{vec3_coordinate_system, vec3_normalize};
 use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use core::integrator::SamplerIntegrator;
 use core::light::Light;
@@ -36,6 +37,10 @@ use integrators::mlt::MLTIntegrator;
 use integrators::path::PathIntegrator;
 use integrators::render;
 use lights::diffuse::DiffuseAreaLight;
+use lights::distant::DistantLight;
+use lights::infinite::InfiniteAreaLight;
+use lights::point::PointLight;
+use lights::spot::SpotLight;
 use materials::glass::GlassMaterial;
 use materials::hair::HairMaterial;
 use materials::matte::MatteMaterial;
@@ -407,6 +412,151 @@ fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
         }
     }
     m
+}
+
+fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
+    // MakeLight (api.cpp:591)
+    if api_state.param_set.name == String::from("point") {
+        let i: Spectrum = api_state
+            .param_set
+            .find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+        // return std::make_shared<PointLight>(l2w, medium, I * sc);
+        let point_light = Arc::new(PointLight::new(
+            &api_state.cur_transform.t[0],
+            medium_interface,
+            &(i * sc),
+        ));
+        api_state.render_options.lights.push(point_light);
+    } else if api_state.param_set.name == String::from("spot") {
+        // CreateSpotLight
+        let i: Spectrum = api_state
+            .param_set
+            .find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+        let coneangle: Float = api_state
+            .param_set
+            .find_one_float(String::from("coneangle"), 30.0 as Float);
+        let conedelta: Float = api_state
+            .param_set
+            .find_one_float(String::from("conedeltaangle"), 5.0 as Float);
+        // compute spotlight world to light transformation
+        let from: Point3f = api_state.param_set.find_one_point3f(
+            String::from("from"),
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let to: Point3f = api_state.param_set.find_one_point3f(
+            String::from("to"),
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+        );
+        let dir: Vector3f = vec3_normalize(&(to - from));
+        let mut du: Vector3f = Vector3f::default();
+        let mut dv: Vector3f = Vector3f::default();
+        vec3_coordinate_system(&dir, &mut du, &mut dv);
+        let dir_to_z: Transform = Transform::new(
+            du.x, du.y, du.z, 0.0, dv.x, dv.y, dv.z, 0.0, dir.x, dir.y, dir.z, 0.0, 0.0, 0.0, 0.0,
+            1.0,
+        );
+        let light2world: Transform = api_state.cur_transform.t[0]
+            * Transform::translate(&Vector3f {
+                x: from.x,
+                y: from.y,
+                z: from.z,
+            }) * Transform::inverse(&dir_to_z);
+        // return std::make_shared<SpotLight>(light2world, medium, I * sc, coneangle, coneangle - conedelta);
+        let spot_light = Arc::new(SpotLight::new(
+            &light2world,
+            medium_interface,
+            &(i * sc),
+            coneangle,
+            coneangle - conedelta,
+        ));
+        api_state.render_options.lights.push(spot_light);
+    } else if api_state.param_set.name == String::from("goniometric") {
+        println!("TODO: CreateGoniometricLight");
+    } else if api_state.param_set.name == String::from("projection") {
+        println!("TODO: CreateProjectionLight");
+    } else if api_state.param_set.name == String::from("distant") {
+        // CreateDistantLight
+        let l: Spectrum = api_state
+            .param_set
+            .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+        let from: Point3f = api_state.param_set.find_one_point3f(
+            String::from("from"),
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let to: Point3f = api_state.param_set.find_one_point3f(
+            String::from("to"),
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let dir: Vector3f = from - to;
+        // return std::make_shared<DistantLight>(light2world, L * sc, dir);
+        let distant_light = Arc::new(DistantLight::new(
+            &api_state.cur_transform.t[0],
+            &(l * sc),
+            &dir,
+        ));
+        api_state.render_options.lights.push(distant_light);
+    } else if api_state.param_set.name == String::from("infinite")
+        || api_state.param_set.name == String::from("exinfinite")
+    {
+        let l: Spectrum = api_state
+            .param_set
+            .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+        let mut texmap: String = api_state
+            .param_set
+            .find_one_filename(String::from("mapname"), String::from(""));
+        if texmap != String::from("") {
+            if let Some(ref search_directory) = api_state.search_directory {
+                // texmap = AbsolutePath(ResolveFilename(texmap));
+                let mut path_buf: PathBuf = PathBuf::from("/");
+                path_buf.push(search_directory.as_ref());
+                path_buf.push(texmap);
+                texmap = String::from(path_buf.to_str().unwrap());
+            }
+        }
+        let n_samples: i32 = api_state
+            .param_set
+            .find_one_int(String::from("nsamples"), 1 as i32);
+        // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
+
+        // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
+        let infinte_light = Arc::new(InfiniteAreaLight::new(
+            &api_state.cur_transform.t[0],
+            &(l * sc),
+            n_samples,
+            texmap,
+        ));
+        api_state.render_options.lights.push(infinte_light);
+    } else {
+        panic!("MakeLight: unknown name {}", api_state.param_set.name);
+    }
 }
 
 fn make_texture(api_state: &mut ApiState) {
@@ -1269,7 +1419,6 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         ));
                         some_bdpt_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == String::from("mlt") {
-                        println!("WORK: CreateMLTIntegrator");
                         // CreateMLTIntegrator
                         let mut max_depth: i32 = api_state
                             .render_options
@@ -1850,6 +1999,34 @@ pub fn pbrt_attribute_end(api_state: &mut ApiState) {
     api_state.active_transform_bits = active_transform_bits;
 }
 
+pub fn pbrt_transform_begin(api_state: &mut ApiState) {
+    // println!("TransformBegin");
+    api_state.pushed_transforms.push(TransformSet {
+        t: [
+            Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            },
+            Transform {
+                m: api_state.cur_transform.t[1].m,
+                m_inv: api_state.cur_transform.t[1].m_inv,
+            },
+        ],
+    });
+    api_state
+        .pushed_active_transform_bits
+        .push(api_state.active_transform_bits);
+}
+
+pub fn pbrt_transform_end(api_state: &mut ApiState) {
+    // println!("TransformEnd");
+    let popped_transform_set: TransformSet = api_state.pushed_transforms.pop().unwrap();
+    api_state.cur_transform.t[0] = popped_transform_set.t[0];
+    api_state.cur_transform.t[1] = popped_transform_set.t[1];
+    let active_transform_bits: u8 = api_state.pushed_active_transform_bits.pop().unwrap();
+    api_state.active_transform_bits = active_transform_bits;
+}
+
 pub fn pbrt_texture(api_state: &mut ApiState, params: ParamSet) {
     // println!(
     //     "Texture \"{}\" \"{}\" \"{}\" ",
@@ -1897,6 +2074,14 @@ pub fn pbrt_named_material(api_state: &mut ApiState, params: ParamSet) {
     // println!("NamedMaterial \"{}\" ", params.name);
     api_state.param_set = params;
     api_state.graphics_state.current_material = api_state.param_set.name.clone();
+}
+
+pub fn pbrt_light_source(api_state: &mut ApiState, params: ParamSet) {
+    // println!("LightSource \"{}\" ", params.name);
+    // print_params(&params);
+    api_state.param_set = params;
+    let mi: MediumInterface = create_medium_interface(&api_state);
+    make_light(api_state, &mi);
 }
 
 pub fn pbrt_area_light_source(api_state: &mut ApiState, params: ParamSet) {

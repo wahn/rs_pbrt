@@ -15,9 +15,10 @@ use getopts::Options;
 use pbrt::core::api::ApiState;
 use pbrt::core::api::{
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
-    pbrt_film, pbrt_init, pbrt_integrator, pbrt_look_at, pbrt_make_named_material,
-    pbrt_named_material, pbrt_pixel_filter, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture,
-    pbrt_transform, pbrt_world_begin,
+    pbrt_film, pbrt_init, pbrt_integrator, pbrt_light_source, pbrt_look_at,
+    pbrt_make_named_material, pbrt_named_material, pbrt_pixel_filter, pbrt_sampler, pbrt_scale,
+    pbrt_shape, pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end,
+    pbrt_world_begin,
 };
 use pbrt::core::geometry::{Normal3f, Point3f};
 use pbrt::core::paramset::ParamSet;
@@ -424,6 +425,12 @@ fn main() {
                                         Rule::attribute_end => {
                                             pbrt_attribute_end(&mut api_state);
                                         }
+                                        Rule::transform_begin => {
+                                            pbrt_transform_begin(&mut api_state);
+                                        }
+                                        Rule::transform_end => {
+                                            pbrt_transform_end(&mut api_state);
+                                        }
                                         Rule::world_begin => {
                                             pbrt_world_begin(&mut api_state);
                                         }
@@ -479,6 +486,13 @@ fn main() {
                                                 rule_pair,
                                             );
                                             pbrt_integrator(&mut api_state, params);
+                                        }
+                                        Rule::light_source => {
+                                            let params = extract_params(
+                                                String::from("Light_Source"),
+                                                rule_pair,
+                                            );
+                                            pbrt_light_source(&mut api_state, params);
                                         }
                                         Rule::make_named_material => {
                                             let params = extract_params(
