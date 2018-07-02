@@ -14,11 +14,12 @@ use getopts::Options;
 // pbrt
 use pbrt::core::api::ApiState;
 use pbrt::core::api::{
+    pbrt_active_transform_all, pbrt_active_transform_end_time, pbrt_active_transform_start_time,
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
     pbrt_film, pbrt_init, pbrt_integrator, pbrt_light_source, pbrt_look_at,
-    pbrt_make_named_material, pbrt_material, pbrt_named_material, pbrt_pixel_filter, pbrt_sampler,
-    pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end,
-    pbrt_world_begin,
+    pbrt_make_named_material, pbrt_material, pbrt_named_material, pbrt_pixel_filter,
+    pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture,
+    pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_translate, pbrt_world_begin,
 };
 use pbrt::core::geometry::{Normal3f, Point3f};
 use pbrt::core::paramset::ParamSet;
@@ -416,6 +417,22 @@ fn main() {
                     // println!("Text:    {}", span.as_str());
                     for inner_pair in pair.into_inner() {
                         match inner_pair.as_rule() {
+                            Rule::active_transform => {
+                                for rule_pair in inner_pair.into_inner() {
+                                    match rule_pair.as_rule() {
+                                        Rule::all => {
+                                            pbrt_active_transform_all(&mut api_state);
+                                        }
+                                        Rule::start_time => {
+                                            pbrt_active_transform_start_time(&mut api_state);
+                                        }
+                                        Rule::end_time => {
+                                            pbrt_active_transform_end_time(&mut api_state);
+                                        }
+                                        _ => unreachable!(),
+                                    }
+                                }
+                            }
                             Rule::keyword => {
                                 for rule_pair in inner_pair.into_inner() {
                                     match rule_pair.as_rule() {
@@ -430,6 +447,9 @@ fn main() {
                                         }
                                         Rule::transform_end => {
                                             pbrt_transform_end(&mut api_state);
+                                        }
+                                        Rule::reverse_orientation => {
+                                            pbrt_reverse_orientation(&mut api_state);
                                         }
                                         Rule::world_begin => {
                                             pbrt_world_begin(&mut api_state);
@@ -539,6 +559,17 @@ fn main() {
                                     }
                                 }
                             }
+                            Rule::rotate => {
+                                // Rotate angle x y z
+                                let mut v: Vec<Float> = Vec::new();
+                                for rule_pair in inner_pair.into_inner() {
+                                    let number: Float = f32::from_str(
+                                        rule_pair.clone().into_span().as_str(),
+                                    ).unwrap();
+                                    v.push(number);
+                                }
+                                pbrt_rotate(&mut api_state, v[0], v[1], v[2], v[3]);
+                            }
                             Rule::scale => {
                                 // Scale x y z
                                 let mut v: Vec<Float> = Vec::new();
@@ -584,6 +615,17 @@ fn main() {
                                     m03, m13, m23, m33,
                                 );
                                 pbrt_transform(&mut api_state, &tr);
+                            }
+                            Rule::translate => {
+                                // Translate x y z
+                                let mut v: Vec<Float> = Vec::new();
+                                for rule_pair in inner_pair.into_inner() {
+                                    let number: Float = f32::from_str(
+                                        rule_pair.clone().into_span().as_str(),
+                                    ).unwrap();
+                                    v.push(number);
+                                }
+                                pbrt_translate(&mut api_state, v[0], v[1], v[2]);
                             }
                             // WORK
                             _ => println!("TODO: {:?}", inner_pair.as_rule()),

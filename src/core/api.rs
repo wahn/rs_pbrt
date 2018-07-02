@@ -1776,6 +1776,23 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
     }
 }
 
+pub fn pbrt_translate(api_state: &mut ApiState, dx: Float, dy: Float, dz: Float) {
+    // println!("Translate {} {} {}", dx, dy, dz);
+    let translate: Transform = Transform::translate(&Vector3f {
+        x: dx,
+        y: dy,
+        z: dz,
+    });
+    if api_state.active_transform_bits & 1_u8 > 0_u8 {
+        // 0x?1
+        api_state.cur_transform.t[0] = api_state.cur_transform.t[0] * translate;
+    }
+    if api_state.active_transform_bits & 2_u8 > 0_u8 {
+        // 0x1?
+        api_state.cur_transform.t[1] = api_state.cur_transform.t[1] * translate;
+    }
+}
+
 pub fn pbrt_transform(api_state: &mut ApiState, tr: &Transform) {
     // println!("{:?}", tr);
     if api_state.active_transform_bits & 1_u8 > 0_u8 {
@@ -1785,6 +1802,26 @@ pub fn pbrt_transform(api_state: &mut ApiState, tr: &Transform) {
     if api_state.active_transform_bits & 2_u8 > 0_u8 {
         // 0x1?
         api_state.cur_transform.t[1] = api_state.cur_transform.t[1] * *tr;
+    }
+}
+
+pub fn pbrt_rotate(api_state: &mut ApiState, angle: Float, dx: Float, dy: Float, dz: Float) {
+    // println!("Rotate {} {} {} {}", angle, dx, dy, dz);
+    let rotate: Transform = Transform::rotate(
+        angle,
+        &Vector3f {
+            x: dx,
+            y: dy,
+            z: dz,
+        },
+    );
+    if api_state.active_transform_bits & 1_u8 > 0_u8 {
+        // 0x?1
+        api_state.cur_transform.t[0] = api_state.cur_transform.t[0] * rotate;
+    }
+    if api_state.active_transform_bits & 2_u8 > 0_u8 {
+        // 0x1?
+        api_state.cur_transform.t[1] = api_state.cur_transform.t[1] * rotate;
     }
 }
 
@@ -1841,6 +1878,21 @@ pub fn pbrt_look_at(
         // 0x1?
         api_state.cur_transform.t[1] = api_state.cur_transform.t[1] * look_at;
     }
+}
+
+pub fn pbrt_active_transform_all(api_state: &mut ApiState) {
+    // println!("ActiveTransform All");
+    api_state.active_transform_bits = 3_u8 // 0x11
+}
+
+pub fn pbrt_active_transform_end_time(api_state: &mut ApiState) {
+    // println!("ActiveTransform EndTime");
+    api_state.active_transform_bits = 2_u8 // 0x10
+}
+
+pub fn pbrt_active_transform_start_time(api_state: &mut ApiState) {
+    // println!("ActiveTransform StartTime");
+    api_state.active_transform_bits = 1_u8 // 0x01
 }
 
 pub fn pbrt_pixel_filter(api_state: &mut ApiState, params: ParamSet) {
@@ -2042,7 +2094,10 @@ pub fn pbrt_material(api_state: &mut ApiState, params: ParamSet) {
     // print_params(&params);
     api_state.param_set = params;
     api_state.graphics_state.material = api_state.param_set.name.clone();
-    api_state.graphics_state.material_params.copy_from(&api_state.param_set);
+    api_state
+        .graphics_state
+        .material_params
+        .copy_from(&api_state.param_set);
     api_state.graphics_state.current_material = String::new();
 }
 
@@ -2231,4 +2286,9 @@ pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
             api_state.render_options.lights.push(area_light);
         }
     }
+}
+
+pub fn pbrt_reverse_orientation(api_state: &mut ApiState) {
+    // println!("ReverseOrientation");
+    api_state.graphics_state.reverse_orientation = !api_state.graphics_state.reverse_orientation;
 }
