@@ -2037,6 +2037,15 @@ pub fn pbrt_texture(api_state: &mut ApiState, params: ParamSet) {
     make_texture(api_state);
 }
 
+pub fn pbrt_material(api_state: &mut ApiState, params: ParamSet) {
+    // println!("MakeMaterial \"{}\" ", params.name);
+    // print_params(&params);
+    api_state.param_set = params;
+    api_state.graphics_state.material = api_state.param_set.name.clone();
+    api_state.graphics_state.material_params.copy_from(&api_state.param_set);
+    api_state.graphics_state.current_material = String::new();
+}
+
 pub fn pbrt_make_named_material(api_state: &mut ApiState, params: ParamSet) {
     // println!("MakeNamedMaterial \"{}\" ", params.name);
     // print_params(&params);

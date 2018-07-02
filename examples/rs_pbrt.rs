@@ -16,8 +16,8 @@ use pbrt::core::api::ApiState;
 use pbrt::core::api::{
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
     pbrt_film, pbrt_init, pbrt_integrator, pbrt_light_source, pbrt_look_at,
-    pbrt_make_named_material, pbrt_named_material, pbrt_pixel_filter, pbrt_sampler, pbrt_scale,
-    pbrt_shape, pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end,
+    pbrt_make_named_material, pbrt_material, pbrt_named_material, pbrt_pixel_filter, pbrt_sampler,
+    pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end,
     pbrt_world_begin,
 };
 use pbrt::core::geometry::{Normal3f, Point3f};
@@ -500,6 +500,11 @@ fn main() {
                                                 rule_pair,
                                             );
                                             pbrt_make_named_material(&mut api_state, params);
+                                        }
+                                        Rule::material => {
+                                            let params =
+                                                extract_params(String::from("Material"), rule_pair);
+                                            pbrt_material(&mut api_state, params);
                                         }
                                         Rule::named_material => {
                                             let params = extract_params(
