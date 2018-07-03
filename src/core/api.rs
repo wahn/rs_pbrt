@@ -14,6 +14,7 @@ use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ve
 use core::integrator::SamplerIntegrator;
 use core::light::Light;
 use core::material::Material;
+use core::medium::get_medium_scattering_properties;
 use core::medium::{Medium, MediumInterface};
 use core::mipmap::ImageWrap;
 use core::paramset::{ParamSet, TextureParams};
@@ -50,6 +51,7 @@ use materials::mixmat::MixMaterial;
 use materials::plastic::PlasticMaterial;
 use materials::substrate::SubstrateMaterial;
 use materials::uber::UberMaterial;
+use media::homogeneous::HomogeneousMedium;
 use samplers::halton::HaltonSampler;
 use samplers::random::RandomSampler;
 use samplers::sobol::SobolSampler;
@@ -556,6 +558,56 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         api_state.render_options.lights.push(infinte_light);
     } else {
         panic!("MakeLight: unknown name {}", api_state.param_set.name);
+    }
+}
+
+fn make_medium(api_state: &mut ApiState) {
+    let medium_type: String = api_state
+        .param_set
+        .find_one_string(String::from("type"), String::new());
+    if medium_type == String::from("") {
+        panic!("ERROR: No parameter string \"type\" found in MakeNamedMedium");
+    }
+    // MakeMedium (api.cpp:685)
+    let sig_a_rgb: [Float; 3] = [0.0011, 0.0024, 0.014];
+    let sig_s_rgb: [Float; 3] = [2.55, 3.21, 3.77];
+    let mut sig_a: Spectrum = Spectrum::from_rgb(&sig_a_rgb);
+    let mut sig_s: Spectrum = Spectrum::from_rgb(&sig_s_rgb);
+    let preset: String = api_state
+        .param_set
+        .find_one_string(String::from("preset"), String::new());
+    let found: bool = get_medium_scattering_properties(&preset, &mut sig_a, &mut sig_s);
+    if preset != String::from("") && !found {
+        println!(
+            "WARNING: Material preset \"{:?}\" not found.  Using defaults.",
+            preset
+        );
+    }
+    let scale: Float = api_state
+        .param_set
+        .find_one_float(String::from("scale"), 1.0 as Float);
+    let g: Float = api_state
+        .param_set
+        .find_one_float(String::from("g"), 0.0 as Float);
+    sig_a = api_state
+        .param_set
+        .find_one_spectrum(String::from("sigma_a"), sig_a) * scale;
+    sig_s = api_state
+        .param_set
+        .find_one_spectrum(String::from("sigma_s"), sig_s) * scale;
+    let some_medium: Option<Arc<Medium + Sync + Send>>;
+    if medium_type == String::from("homogeneous") {
+        some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
+    } else if medium_type == String::from("heterogeneous") {
+        panic!("TODO: make_medium(\"heterogeneous\")");
+    } else {
+        panic!("MakeMedium: unknown name {}", medium_type);
+    }
+    if let Some(medium) = some_medium {
+        api_state
+            .render_options
+            .named_media
+            .insert(api_state.param_set.name.clone(), medium);
     }
 }
 
@@ -1797,6 +1849,18 @@ pub fn pbrt_transform(api_state: &mut ApiState, tr: &Transform) {
     // println!("{:?}", tr);
     if api_state.active_transform_bits & 1_u8 > 0_u8 {
         // 0x?1
+        api_state.cur_transform.t[0] = *tr;
+    }
+    if api_state.active_transform_bits & 2_u8 > 0_u8 {
+        // 0x1?
+        api_state.cur_transform.t[1] = *tr;
+    }
+}
+
+pub fn pbrt_concat_transform(api_state: &mut ApiState, tr: &Transform) {
+    // println!("Concat{:?}", tr);
+    if api_state.active_transform_bits & 1_u8 > 0_u8 {
+        // 0x?1
         api_state.cur_transform.t[0] = api_state.cur_transform.t[0] * *tr;
     }
     if api_state.active_transform_bits & 2_u8 > 0_u8 {
@@ -1880,6 +1944,26 @@ pub fn pbrt_look_at(
     }
 }
 
+pub fn pbrt_coord_sys_transform(api_state: &mut ApiState, params: ParamSet) {
+    // println!("CoordSysTransform \"{}\"", params.name);
+    api_state.param_set = params;
+    match api_state
+        .named_coordinate_systems
+        .get(api_state.param_set.name.as_str())
+    {
+        Some(transform_set) => {
+            api_state.cur_transform.t[0] = transform_set.t[0];
+            api_state.cur_transform.t[1] = transform_set.t[1];
+        }
+        None => {
+            println!(
+                "Couldn't find named coordinate system \"{}\"",
+                api_state.param_set.name
+            );
+        }
+    };
+}
+
 pub fn pbrt_active_transform_all(api_state: &mut ApiState) {
     // println!("ActiveTransform All");
     api_state.active_transform_bits = 3_u8 // 0x11
@@ -1896,7 +1980,7 @@ pub fn pbrt_active_transform_start_time(api_state: &mut ApiState) {
 }
 
 pub fn pbrt_pixel_filter(api_state: &mut ApiState, params: ParamSet) {
-    // println!("PixelFilter \"{}\" ", params.name);
+    // println!("PixelFilter \"{}\"", params.name);
     print_params(&params);
     api_state.render_options.filter_name = params.name.clone();
     api_state.param_set = params;
@@ -1907,7 +1991,7 @@ pub fn pbrt_pixel_filter(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_film(api_state: &mut ApiState, params: ParamSet) {
-    println!("Film \"{}\" ", params.name);
+    println!("Film \"{}\"", params.name);
     print_params(&params);
     api_state.render_options.film_name = params.name.clone();
     api_state.param_set = params;
@@ -1918,21 +2002,21 @@ pub fn pbrt_film(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_sampler(api_state: &mut ApiState, params: ParamSet) {
-    println!("Sampler \"{}\" ", params.name);
+    println!("Sampler \"{}\"", params.name);
     print_params(&params);
     api_state.render_options.sampler_name = params.name.clone();
     api_state.param_set = params;
 }
 
 pub fn pbrt_integrator(api_state: &mut ApiState, params: ParamSet) {
-    println!("Integrator \"{}\" ", params.name);
+    println!("Integrator \"{}\"", params.name);
     print_params(&params);
     api_state.render_options.integrator_name = params.name.clone();
     api_state.param_set = params;
 }
 
 pub fn pbrt_camera(api_state: &mut ApiState, params: ParamSet) {
-    // println!("Camera \"{}\" ", params.name);
+    // println!("Camera \"{}\"", params.name);
     // print_params(&params);
     api_state.render_options.camera_name = params.name.clone();
     api_state.param_set = params;
@@ -1953,6 +2037,24 @@ pub fn pbrt_camera(api_state: &mut ApiState, params: ParamSet) {
         .render_options
         .camera_params
         .copy_from(&api_state.param_set);
+}
+
+pub fn pbrt_make_named_medium(api_state: &mut ApiState, params: ParamSet) {
+    // println!("MakeNamedMedium \"{}\"", params.name);
+    print_params(&api_state.param_set);
+    api_state.param_set = params;
+    make_medium(api_state);
+}
+
+pub fn pbrt_medium_interface(
+    api_state: &mut ApiState,
+    inside_name: &String,
+    outside_name: &String,
+) {
+    // println!("MediumInterface \"{}\" \"{}\"", inside_name, outside_name);
+    api_state.graphics_state.current_inside_medium = inside_name.clone();
+    api_state.graphics_state.current_outside_medium = outside_name.clone();
+    api_state.render_options.have_scattering_media = true;
 }
 
 pub fn pbrt_world_begin(api_state: &mut ApiState) {
@@ -2081,7 +2183,7 @@ pub fn pbrt_transform_end(api_state: &mut ApiState) {
 
 pub fn pbrt_texture(api_state: &mut ApiState, params: ParamSet) {
     // println!(
-    //     "Texture \"{}\" \"{}\" \"{}\" ",
+    //     "Texture \"{}\" \"{}\" \"{}\"",
     //     params.name, params.tex_type, params.tex_name
     // );
     // print_params(&params);
@@ -2090,7 +2192,7 @@ pub fn pbrt_texture(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_material(api_state: &mut ApiState, params: ParamSet) {
-    // println!("MakeMaterial \"{}\" ", params.name);
+    // println!("MakeMaterial \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
     api_state.graphics_state.material = api_state.param_set.name.clone();
@@ -2102,7 +2204,7 @@ pub fn pbrt_material(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_make_named_material(api_state: &mut ApiState, params: ParamSet) {
-    // println!("MakeNamedMaterial \"{}\" ", params.name);
+    // println!("MakeNamedMaterial \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
     let mat_type: String = api_state
@@ -2135,13 +2237,13 @@ pub fn pbrt_make_named_material(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_named_material(api_state: &mut ApiState, params: ParamSet) {
-    // println!("NamedMaterial \"{}\" ", params.name);
+    // println!("NamedMaterial \"{}\"", params.name);
     api_state.param_set = params;
     api_state.graphics_state.current_material = api_state.param_set.name.clone();
 }
 
 pub fn pbrt_light_source(api_state: &mut ApiState, params: ParamSet) {
-    // println!("LightSource \"{}\" ", params.name);
+    // println!("LightSource \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
     let mi: MediumInterface = create_medium_interface(&api_state);
@@ -2149,7 +2251,7 @@ pub fn pbrt_light_source(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_area_light_source(api_state: &mut ApiState, params: ParamSet) {
-    // println!("AreaLightSource \"{}\" ", params.name);
+    // println!("AreaLightSource \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
     api_state.graphics_state.area_light = api_state.param_set.name.clone();
@@ -2165,7 +2267,7 @@ pub fn pbrt_area_light_source(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
-    // println!("Shape \"{}\" ", params.name);
+    // println!("Shape \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
     // collect area lights

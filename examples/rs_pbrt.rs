@@ -16,8 +16,9 @@ use pbrt::core::api::ApiState;
 use pbrt::core::api::{
     pbrt_active_transform_all, pbrt_active_transform_end_time, pbrt_active_transform_start_time,
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
-    pbrt_film, pbrt_init, pbrt_integrator, pbrt_light_source, pbrt_look_at,
-    pbrt_make_named_material, pbrt_material, pbrt_named_material, pbrt_pixel_filter,
+    pbrt_concat_transform, pbrt_coord_sys_transform, pbrt_film, pbrt_init, pbrt_integrator,
+    pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_make_named_medium,
+    pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_pixel_filter,
     pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture,
     pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_translate, pbrt_world_begin,
 };
@@ -208,6 +209,8 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
         // println!("Span:    {:?}", span);
         // println!("Text:    {}", span.as_str());
         match pair.as_rule() {
+            Rule::empty_string => {
+            }
             Rule::string => {
                 match counter {
                     0 => {
@@ -244,6 +247,13 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                             let string: String = tuple.0;
                             let b: bool = tuple.1;
                             params.add_bool(string, b);
+                        }
+                        Rule::blackbody_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            params.add_blackbody_spectrum(string, floats);
                         }
                         Rule::float_param => {
                             let tuple: (String, Vec<Float>) =
@@ -433,6 +443,42 @@ fn main() {
                                     }
                                 }
                             }
+                            Rule::concat_transform => {
+                                // ConcatTransform m00 .. m33
+                                let mut m: Vec<Float> = Vec::new();
+                                for rule_pair in inner_pair.into_inner() {
+                                    // ignore brackets
+                                    let not_opening: bool = rule_pair.as_str() != String::from("[");
+                                    let not_closing: bool = rule_pair.as_str() != String::from("]");
+                                    if not_opening && not_closing {
+                                        let number: Float =
+                                            f32::from_str(rule_pair.clone().into_span().as_str())
+                                                .unwrap();
+                                        m.push(number);
+                                    }
+                                }
+                                let m00: Float = m[0];
+                                let m01: Float = m[1];
+                                let m02: Float = m[2];
+                                let m03: Float = m[3];
+                                let m10: Float = m[4];
+                                let m11: Float = m[5];
+                                let m12: Float = m[6];
+                                let m13: Float = m[7];
+                                let m20: Float = m[8];
+                                let m21: Float = m[9];
+                                let m22: Float = m[10];
+                                let m23: Float = m[11];
+                                let m30: Float = m[12];
+                                let m31: Float = m[13];
+                                let m32: Float = m[14];
+                                let m33: Float = m[15];
+                                let tr: Transform = Transform::new(
+                                    m00, m10, m20, m30, m01, m11, m21, m31, m02, m12, m22, m32,
+                                    m03, m13, m23, m33,
+                                );
+                                pbrt_concat_transform(&mut api_state, &tr);
+                            }
                             Rule::keyword => {
                                 for rule_pair in inner_pair.into_inner() {
                                     match rule_pair.as_rule() {
@@ -480,6 +526,28 @@ fn main() {
                                     v[8],
                                 );
                             }
+                            Rule::medium_interface => {
+                                let mut strings: Vec<String> = Vec::new();
+                                for rule_pair in inner_pair.into_inner() {
+                                    match rule_pair.as_rule() {
+                                        Rule::empty_string => {
+                                            strings.push(String::from(""));
+                                        }
+                                        Rule::string => {
+                                            let ident = rule_pair.into_inner().next();
+                                            let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                                            strings.push(string);
+                                        }
+                                        _ => unreachable!(),
+                                    }
+                                }
+                                assert!(
+                                    strings.len() == 2_usize,
+                                    "ERROR: expected two strings, found {:?}",
+                                    strings.len()
+                                );
+                                pbrt_medium_interface(&mut api_state, &strings[0], &strings[1]);
+                            }
                             Rule::named_statement => {
                                 for rule_pair in inner_pair.into_inner() {
                                     match rule_pair.as_rule() {
@@ -494,6 +562,13 @@ fn main() {
                                             let params =
                                                 extract_params(String::from("Camera"), rule_pair);
                                             pbrt_camera(&mut api_state, params);
+                                        }
+                                        Rule::coord_sys_transform => {
+                                            let params = extract_params(
+                                                String::from("CoordSysTransform"),
+                                                rule_pair,
+                                            );
+                                            pbrt_coord_sys_transform(&mut api_state, params);
                                         }
                                         Rule::film => {
                                             let params =
@@ -520,6 +595,13 @@ fn main() {
                                                 rule_pair,
                                             );
                                             pbrt_make_named_material(&mut api_state, params);
+                                        }
+                                        Rule::make_named_medium => {
+                                            let params = extract_params(
+                                                String::from("MakeNamedMedium"),
+                                                rule_pair,
+                                            );
+                                            pbrt_make_named_medium(&mut api_state, params);
                                         }
                                         Rule::material => {
                                             let params =
@@ -582,6 +664,7 @@ fn main() {
                                 pbrt_scale(&mut api_state, v[0], v[1], v[2]);
                             }
                             Rule::transform => {
+                                // Transform m00 .. m33
                                 let mut m: Vec<Float> = Vec::new();
                                 for rule_pair in inner_pair.into_inner() {
                                     // ignore brackets
