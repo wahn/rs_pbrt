@@ -5341,11 +5341,11 @@ fn main() {
                                                                                       m03, m13, m23, m33);
                                             if ACTIVE_TRANSFORM_BITS & 1_u8 > 0_u8 {
                                                 // 0x?1
-                                                CUR_TRANSFORM.t[0] = CUR_TRANSFORM.t[0] * transform;
+                                                CUR_TRANSFORM.t[0] = transform;
                                             }
                                             if ACTIVE_TRANSFORM_BITS & 2_u8 > 0_u8 {
                                                 // 0x1?
-                                                CUR_TRANSFORM.t[1] = CUR_TRANSFORM.t[1] * transform;
+                                                CUR_TRANSFORM.t[1] = transform;
                                             }
                                         }
                                         Rule::transform_times => {
