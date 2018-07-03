@@ -1979,6 +1979,12 @@ pub fn pbrt_active_transform_start_time(api_state: &mut ApiState) {
     api_state.active_transform_bits = 1_u8 // 0x01
 }
 
+pub fn pbrt_transform_times(api_state: &mut ApiState, start: Float, end: Float) {
+    println!("TransformTimes {} {}", start, end);
+    api_state.render_options.transform_start_time = start;
+    api_state.render_options.transform_end_time = end;
+}
+
 pub fn pbrt_pixel_filter(api_state: &mut ApiState, params: ParamSet) {
     // println!("PixelFilter \"{}\"", params.name);
     print_params(&params);
@@ -2006,6 +2012,10 @@ pub fn pbrt_sampler(api_state: &mut ApiState, params: ParamSet) {
     print_params(&params);
     api_state.render_options.sampler_name = params.name.clone();
     api_state.param_set = params;
+    api_state
+        .render_options
+        .sampler_params
+        .copy_from(&api_state.param_set);
 }
 
 pub fn pbrt_integrator(api_state: &mut ApiState, params: ParamSet) {

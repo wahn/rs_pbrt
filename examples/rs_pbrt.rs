@@ -20,7 +20,8 @@ use pbrt::core::api::{
     pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_make_named_medium,
     pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_pixel_filter,
     pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture,
-    pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_translate, pbrt_world_begin,
+    pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_transform_times, pbrt_translate,
+    pbrt_world_begin,
 };
 use pbrt::core::geometry::{Normal3f, Point3f};
 use pbrt::core::paramset::ParamSet;
@@ -209,8 +210,7 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
         // println!("Span:    {:?}", span);
         // println!("Text:    {}", span.as_str());
         match pair.as_rule() {
-            Rule::empty_string => {
-            }
+            Rule::empty_string => {}
             Rule::string => {
                 match counter {
                     0 => {
@@ -698,6 +698,17 @@ fn main() {
                                     m03, m13, m23, m33,
                                 );
                                 pbrt_transform(&mut api_state, &tr);
+                            }
+                            Rule::transform_times => {
+                                // TransformTimes start end
+                                let mut v: Vec<Float> = Vec::new();
+                                for rule_pair in inner_pair.into_inner() {
+                                    let number: Float = f32::from_str(
+                                        rule_pair.clone().into_span().as_str(),
+                                    ).unwrap();
+                                    v.push(number);
+                                }
+                                pbrt_transform_times(&mut api_state, v[0], v[1]);
                             }
                             Rule::translate => {
                                 // Translate x y z
