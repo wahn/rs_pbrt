@@ -12,19 +12,11 @@ Current **Rust** documentation:
 
 https://www.janwalter.org/doc/rust/pbrt/index.html
 
-**Warning:** If you want to compile the **pest_test** executable you
-  need to download and compile with **Rust nightly**:
-
-```
-rustup install nightly
-rustup default nightly
-```
-
 ## Usage
 
 ```shell
-> ./target/release/examples/pest_test -h
-Usage: ./target/release/examples/pest_test [options]
+> ./target/release/examples/rs_pbrt -h
+Usage: ./target/release/examples/rs_pbrt [options]
 
 Options:
     -h, --help          print this help menu
@@ -32,6 +24,11 @@ Options:
     -t, --nthreads NUM  use specified number of threads for rendering
     -v, --version       print version number
 ```
+
+## Test Scenes
+
+Some images of the test scenes are shown below, but you can find more
+test scenes on [GitLab][test-scenes].
 
 ## Ganesha Statue
 
@@ -101,6 +98,7 @@ Here you find another Rust implementation:
 
 https://bitbucket.org/abusch/rustracer
 
+[test-scenes]:          https://gitlab.com/jdb-walter/rs-pbrt-test-scenes/wikis/home
 [wiki]:                 https://github.com/wahn/rs_pbrt/wiki
 [release-notes]:        https://github.com/wahn/rs_pbrt/wiki/Release-Notes
 [novazeeke]:            https://www.blendswap.com/user/NovaZeeke
