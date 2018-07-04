@@ -429,7 +429,7 @@ dependencies = [
 
 [[package]]
 name = "pbrt"
-version = "0.3.2"
+version = "0.4.0"
 dependencies = [
  "atomic 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",

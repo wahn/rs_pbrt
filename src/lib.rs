@@ -4,10 +4,20 @@
 //! book][book]'s C++ code. You can find a copy of the current code
 //! [here][repo].
 //!
+//! The main render loop for integrators implementing the
+//! `SamplerIntegrator` trait can be found [here].
+//!
+//! There are two more render loops:
+//!
+//! 1. [render_bdpt][render_bdpt] for bidirectional path tracing
+//! 2. [render_mlt][render_mlt] for Metropolis Light Transport
+//!
 //! [rust]: https://www.rust-lang.org/en-US
 //! [book]: http://www.pbrt.org
 //! [repo]: https://github.com/wahn/rs_pbrt
-//!
+//! [here]: https://www.janwalter.org/doc/rust/pbrt/integrators/fn.render.html
+//! [render_bdpt]: https://www.janwalter.org/doc/rust/pbrt/integrators/bdpt/fn.render_bdpt.html
+//! [render_mlt]: https://www.janwalter.org/doc/rust/pbrt/integrators/mlt/fn.render_mlt.html
 
 #[macro_use]
 extern crate hexf;

@@ -386,6 +386,8 @@ impl MLTIntegrator {
 
 /// **Main function** to **render** a scene multi-threaded (using all
 /// available cores) with **Metropolis Light Transport** (MLT).
+///
+/// ![bdpt](https://www.janwalter.org/assets/uml/pbrt/render_mlt.png)
 pub fn render_mlt(
     scene: &Scene,
     camera: &Arc<Camera + Send + Sync>,
