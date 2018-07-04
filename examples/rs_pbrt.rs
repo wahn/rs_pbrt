@@ -23,7 +23,7 @@ use pbrt::core::api::{
     pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_transform_times, pbrt_translate,
     pbrt_world_begin,
 };
-use pbrt::core::geometry::{Normal3f, Point3f};
+use pbrt::core::geometry::{Normal3f, Point3f, Vector3f};
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::transform::Transform;
@@ -325,6 +325,18 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                                 },
                             );
                         }
+                        Rule::spectrum_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            params.add_rgb_spectrum(
+                                string,
+                                Spectrum {
+                                    c: [floats[0], floats[1], floats[2]],
+                                },
+                            );
+                        }
                         Rule::string_param => {
                             let tuple: (String, String) =
                                 pbrt_string_parameter(&mut parameter_pair.into_inner());
@@ -338,6 +350,24 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                             let string1: String = tuple.0;
                             let string2: String = tuple.1;
                             params.add_texture(string1, string2);
+                        }
+                        Rule::vector_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 3 {
+                                params.add_vector3f(
+                                    string,
+                                    Vector3f {
+                                        x: floats[0],
+                                        y: floats[1],
+                                        z: floats[2],
+                                    },
+                                );
+                            } else {
+                                params.add_vector3fs(string, floats);
+                            }
                         }
                         // TODO: more rules
                         _ => println!("TODO: {:?}", parameter_pair.as_rule()),
