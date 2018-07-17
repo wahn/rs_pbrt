@@ -2023,6 +2023,10 @@ pub fn pbrt_integrator(api_state: &mut ApiState, params: ParamSet) {
     print_params(&params);
     api_state.render_options.integrator_name = params.name.clone();
     api_state.param_set = params;
+    api_state
+        .render_options
+        .integrator_params
+        .copy_from(&api_state.param_set);
 }
 
 pub fn pbrt_camera(api_state: &mut ApiState, params: ParamSet) {
