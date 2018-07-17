@@ -80,7 +80,8 @@ impl Light for DistantLight {
         self.l
     }
     fn power(&self) -> Spectrum {
-        Spectrum::default()
+        let world_radius: Float = *self.world_radius.read().unwrap();
+        self.l * PI * world_radius * world_radius
     }
     /// Some of the **DistanceLight** methods need to know the bounds
     /// of the scene. Because lights are created before the scene
