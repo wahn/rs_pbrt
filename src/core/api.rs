@@ -2273,11 +2273,6 @@ pub fn pbrt_area_light_source(api_state: &mut ApiState, params: ParamSet) {
         .graphics_state
         .area_light_params
         .copy_from(&api_state.param_set);
-    api_state.graphics_state.area_light = api_state.param_set.name.clone();
-    api_state
-        .graphics_state
-        .area_light_params
-        .copy_from(&api_state.param_set);
 }
 
 pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
