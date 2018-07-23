@@ -1452,7 +1452,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             .render_options
                             .integrator_params
                             .find_one_bool(String::from("visualizeweights"), false);
-                        if visualize_strategies || visualize_weights || max_depth > 5_i32 {
+                        if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
                             println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
                             max_depth = 5;
                         }
