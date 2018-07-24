@@ -8,7 +8,7 @@ default = ["openexr"]
 
 [dependencies]
 
-crossbeam = "0.3"
+crossbeam = "0.4"
 getopts="0.2.15"
 half="1"
 hexf = "0.1.0"
