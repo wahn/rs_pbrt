@@ -72,6 +72,24 @@ impl ImageTexture {
     }
 }
 
+impl Texture<Float> for ImageTexture {
+    fn evaluate(&self, si: &SurfaceInteraction) -> Float {
+        // Vector2f dstdx, dstdy;
+        // Point2f st = mapping->Map(si, &dstdx, &dstdy);
+        // Tmemory mem = mipmap->Lookup(st, dstdx, dstdy);
+        // Treturn ret;
+        // convertOut(mem, &ret);
+        // return ret;
+        // let mut dstdx: Vector2f = Vector2f::default();
+        // let mut dstdy: Vector2f = Vector2f::default();
+        // let st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
+        // let mem: Spectrum = self.mipmap.lookup_pnt_vec_vec(&st, &mut dstdx, &mut dstdy);
+        let mut ret: Float = 0.0 as Float;
+        // ImageTexture::convert_out(&mem, &mut ret);
+        ret
+    }
+}
+
 impl Texture<Spectrum> for ImageTexture {
     fn evaluate(&self, si: &SurfaceInteraction) -> Spectrum {
         // Vector2f dstdx, dstdy;

@@ -646,7 +646,90 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == String::from("bilerp") {
             println!("TODO: CreateBilerpFloatTexture");
         } else if api_state.param_set.tex_name == String::from("imagemap") {
-            println!("TODO: CreateImageFloatTexture");
+            println!("WORK: CreateImageFloatTexture");
+            // CreateImageFloatTexture
+            let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+            let mapping: String = tp.find_string(String::from("mapping"), String::from("uv"));
+            if mapping == String::from("uv") {
+                let su: Float = tp.find_float(String::from("uscale"), 1.0);
+                let sv: Float = tp.find_float(String::from("vscale"), 1.0);
+                let du: Float = tp.find_float(String::from("udelta"), 0.0);
+                let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
+                map = Some(Box::new(UVMapping2D {
+                    su: su,
+                    sv: sv,
+                    du: du,
+                    dv: dv,
+                }));
+            } else if mapping == String::from("spherical") {
+                println!("TODO: SphericalMapping2D");
+            } else if mapping == String::from("cylindrical") {
+                println!("TODO: CylindricalMapping2D");
+            } else if mapping == String::from("planar") {
+                map = Some(Box::new(PlanarMapping2D {
+                    vs: tp.find_vector3f(
+                        String::from("v1"),
+                        Vector3f {
+                            x: 1.0,
+                            y: 0.0,
+                            z: 0.0,
+                        },
+                    ),
+                    vt: tp.find_vector3f(
+                        String::from("v2"),
+                        Vector3f {
+                            x: 0.0,
+                            y: 1.0,
+                            z: 0.0,
+                        },
+                    ),
+                    ds: tp.find_float(String::from("udelta"), 0.0),
+                    dt: tp.find_float(String::from("vdelta"), 0.0),
+                }));
+            } else {
+                panic!("2D texture mapping \"{}\" unknown", mapping);
+            }
+            // initialize _ImageTexture_ parameters
+            let max_aniso: Float = tp.find_float(String::from("maxanisotropy"), 8.0);
+            let do_trilinear: bool = tp.find_bool(String::from("trilinear"), false);
+            let wrap: String = tp.find_string(String::from("wrap"), String::from("repeat"));
+            let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
+            if wrap == String::from("black") {
+                wrap_mode = ImageWrap::Black;
+            } else if wrap == String::from("clamp") {
+                wrap_mode = ImageWrap::Clamp;
+            }
+            let scale: Float = tp.find_float(String::from("scale"), 1.0);
+            let mut filename: String = tp.find_filename(String::from("filename"), String::new());
+            if let Some(ref search_directory) = api_state.search_directory {
+                // filename = AbsolutePath(ResolveFilename(filename));
+                let mut path_buf: PathBuf = PathBuf::from("/");
+                path_buf.push(search_directory.as_ref());
+                path_buf.push(filename);
+                filename = String::from(path_buf.to_str().unwrap());
+            }
+            // TODO: default depends on:
+            // HasExtension(filename,
+            // ".tga") ||
+            // HasExtension(filename,
+            // ".png"));
+            let gamma: bool = tp.find_bool(String::from("gamma"), true);
+
+            if let Some(mapping) = map {
+                let ft = Arc::new(ImageTexture::new(
+                    mapping,
+                    filename,
+                    do_trilinear,
+                    max_aniso,
+                    wrap_mode,
+                    scale,
+                    gamma,
+                ));
+                api_state
+                    .graphics_state
+                    .float_textures
+                    .insert(api_state.param_set.name.clone(), ft);
+            }
         } else if api_state.param_set.tex_name == String::from("uv") {
             println!("TODO: CreateUVFloatTexture");
         } else if api_state.param_set.tex_name == String::from("checkerboard") {
