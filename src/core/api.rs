@@ -624,7 +624,51 @@ fn make_texture(api_state: &mut ApiState) {
         material_params: material_params,
     };
     if api_state.param_set.tex_type == String::from("float") {
-        println!("TODO: MakeFloatTexture");
+        match api_state
+            .graphics_state
+            .spectrum_textures
+            .get(api_state.param_set.name.as_str())
+        {
+            Some(_spectrum_texture) => {
+                println!("Texture \"{}\" being redefined", api_state.param_set.name);
+            }
+            None => {}
+        }
+        // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
+        // MakeFloatTexture(texname, curTransform[0], tp);
+        println!("WORK: MakeFloatTexture");
+        if api_state.param_set.tex_name == String::from("constant") {
+            println!("TODO: CreateConstantFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("scale") {
+            println!("TODO: CreateScaleFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("mix") {
+            println!("TODO: CreateMixFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("bilerp") {
+            println!("TODO: CreateBilerpFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("imagemap") {
+            println!("TODO: CreateImageFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("uv") {
+            println!("TODO: CreateUVFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("checkerboard") {
+            println!("TODO: CreateCheckerboardFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("dots") {
+            println!("TODO: CreateDotsFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("fbm") {
+            println!("TODO: CreateFBmFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("wrinkled") {
+            println!("TODO: CreateWrinkledFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("marble") {
+            println!("TODO: CreateMarbleFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("windy") {
+            println!("TODO: CreateWindyFloatTexture");
+        } else if api_state.param_set.tex_name == String::from("ptex") {
+            println!("TODO: CreatePtexFloatTexture");
+        } else {
+            println!(
+                "Float texture \"{}\" unknown.",
+                api_state.param_set.tex_name
+            );
+        }
     } else if api_state.param_set.tex_type == String::from("color")
         || api_state.param_set.tex_type == String::from("spectrum")
     {
@@ -638,6 +682,7 @@ fn make_texture(api_state: &mut ApiState) {
             }
             None => {}
         }
+        // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeSpectrumTexture(texname, curTransform[0], tp);
         if api_state.param_set.tex_name == String::from("constant") {
             println!("TODO: CreateConstantSpectrumTexture");
