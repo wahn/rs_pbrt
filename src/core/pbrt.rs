@@ -226,8 +226,16 @@ where
 }
 
 /// Interpolate linearly between two provided values.
-pub fn lerp(t: Float, v1: Float, v2: Float) -> Float {
-    (1.0 as Float - t) * v1 + t * v2
+pub fn lerp<S, T>(t: S, a: T, b: T) -> T
+where
+    S: num::One,
+    S: Sub<S, Output = S>,
+    S: Copy,
+    T: Add<T, Output = T>,
+    T: Mul<S, Output = T>,
+{
+    let one: S = num::One::one();
+    a * (one - t) + b * t
 }
 
 /// Find solution(s) of the quadratic equation at<sup>2</sup> + bt + c = 0.

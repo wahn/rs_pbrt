@@ -7,7 +7,7 @@ use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Neg, Sub};
 // others
 use num::Zero;
 // pbrt
-use core::pbrt::{Float, Spectrum};
+use core::pbrt::{Float};
 use core::pbrt::{clamp_t, find_interval, lerp};
 
 // see spectrum.h
@@ -1798,11 +1798,6 @@ pub fn rgb_to_xyz(rgb: &[Float; 3], xyz: &mut [Float; 3]) {
     xyz[0] = 0.412453 * rgb[0] + 0.357580 * rgb[1] + 0.180423 * rgb[2];
     xyz[1] = 0.212671 * rgb[0] + 0.715160 * rgb[1] + 0.072169 * rgb[2];
     xyz[2] = 0.019334 * rgb[0] + 0.119193 * rgb[1] + 0.950227 * rgb[2];
-}
-
-/// Interpolate linearly between two provided values.
-pub fn lerp_rgb(t: Float, s1: &Spectrum, s2: &Spectrum) -> Spectrum {
-    *s1 * (1.0 as Float - t) + *s2 * t
 }
 
 // see spectrum.cpp

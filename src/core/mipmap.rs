@@ -3,9 +3,8 @@ use std;
 // pbrt
 use core::geometry::{Point2f, Point2i, Vector2f};
 use core::memory::BlockedArray;
-use core::pbrt::{clamp_t, is_power_of_2, mod_t, round_up_pow2_32};
+use core::pbrt::{clamp_t, is_power_of_2, mod_t, round_up_pow2_32, lerp};
 use core::pbrt::{Float, Spectrum};
-use core::spectrum::lerp_rgb;
 use core::texture::lanczos;
 
 // see mipmap.h
@@ -223,10 +222,10 @@ impl MipMap {
         } else {
             let i_level: usize = level.floor() as usize;
             let delta: Float = level - i_level as Float;
-            return lerp_rgb(
+            return lerp(
                 delta,
-                &self.triangle(i_level, st),
-                &self.triangle(i_level + 1_usize, st),
+                self.triangle(i_level, st),
+                self.triangle(i_level + 1_usize, st),
             );
         }
     }
@@ -276,7 +275,7 @@ impl MipMap {
         let ilod: usize = lod.floor() as usize;
         let col2: Spectrum = self.ewa(ilod + 1, st.clone(), dst0.clone(), dst1.clone());
         let col1: Spectrum = self.ewa(ilod, st.clone(), dst0.clone(), dst1.clone());
-        let ret: Spectrum = lerp_rgb(lod - ilod as Float, &col1, &col2);
+        let ret: Spectrum = lerp(lod - ilod as Float, col1, col2);
         ret
     }
     fn resample_weights(old_res: i32, new_res: i32) -> Vec<ResampleWeight> {
