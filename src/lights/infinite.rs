@@ -50,7 +50,7 @@ fn decode_f16(half: u16) -> f32 {
 
 pub struct InfiniteAreaLight {
     // private data (see infinte.h)
-    pub lmap: Arc<MipMap>,
+    pub lmap: Arc<MipMap<Spectrum>>,
     pub world_center: RwLock<Point3f>,
     pub world_radius: RwLock<Float>,
     pub distribution: Arc<Distribution2D>,

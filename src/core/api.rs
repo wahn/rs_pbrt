@@ -65,6 +65,7 @@ use shapes::triangle::{Triangle, TriangleMesh};
 use textures::checkerboard::Checkerboard2DTexture;
 use textures::constant::ConstantTexture;
 use textures::imagemap::ImageTexture;
+use textures::imagemap::{convert_to_float, convert_to_spectrum};
 
 // see api.cpp
 
@@ -636,7 +637,6 @@ fn make_texture(api_state: &mut ApiState) {
         }
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeFloatTexture(texname, curTransform[0], tp);
-        println!("WORK: MakeFloatTexture");
         if api_state.param_set.tex_name == String::from("constant") {
             println!("TODO: CreateConstantFloatTexture");
         } else if api_state.param_set.tex_name == String::from("scale") {
@@ -646,7 +646,6 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == String::from("bilerp") {
             println!("TODO: CreateBilerpFloatTexture");
         } else if api_state.param_set.tex_name == String::from("imagemap") {
-            println!("WORK: CreateImageFloatTexture");
             // CreateImageFloatTexture
             let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
             let mapping: String = tp.find_string(String::from("mapping"), String::from("uv"));
@@ -724,6 +723,7 @@ fn make_texture(api_state: &mut ApiState) {
                     wrap_mode,
                     scale,
                     gamma,
+                    convert_to_float,
                 ));
                 api_state
                     .graphics_state
@@ -853,6 +853,7 @@ fn make_texture(api_state: &mut ApiState) {
                     wrap_mode,
                     scale,
                     gamma,
+                    convert_to_spectrum,
                 ));
                 api_state
                     .graphics_state

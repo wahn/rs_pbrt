@@ -76,7 +76,8 @@ where
         let ou = self.offset(u);
         let ov = self.offset(v);
         let offset = self.block_size() * self.block_size() * (self.u_blocks * bv + bu)
-            + self.block_size() * ov + ou;
+            + self.block_size() * ov
+            + ou;
         &self.data[offset]
     }
 }
@@ -92,7 +93,8 @@ where
         let ou = self.offset(u);
         let ov = self.offset(v);
         let offset = self.block_size() * self.block_size() * (self.u_blocks * bv + bu)
-            + self.block_size() * ov + ou;
+            + self.block_size() * ov
+            + ou;
         &mut self.data[offset]
     }
 }

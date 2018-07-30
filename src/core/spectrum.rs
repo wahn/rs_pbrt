@@ -7,7 +7,7 @@ use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Neg, Sub};
 // others
 use num::Zero;
 // pbrt
-use core::pbrt::{Float};
+use core::pbrt::Float;
 use core::pbrt::{clamp_t, find_interval, lerp};
 
 // see spectrum.h
@@ -1531,16 +1531,21 @@ impl RGBSpectrum {
         RGBSpectrum { c: [r, g, b] }
     }
     pub fn from_srgb(rgb: &[u8; 3]) -> RGBSpectrum {
-        fn convert(v: u8) -> Float {
-            let value = v as Float / 255.0;
-            // see InverseGammaCorrect(Float value) in pbrt.h
-            if value <= 0.04045 {
-                value / 12.92
-            } else {
-                ((value + 0.055) * 1.0 / 1.055).powf(2.4)
-            }
+        fn as_float(v: u8) -> Float {
+            v as Float / 255.0
         }
-        RGBSpectrum::rgb(convert(rgb[0]), convert(rgb[1]), convert(rgb[2]))
+        RGBSpectrum::rgb(
+            inverse_gamma_convert_float(as_float(rgb[0])),
+            inverse_gamma_convert_float(as_float(rgb[1])),
+            inverse_gamma_convert_float(as_float(rgb[2])),
+        )
+    }
+    pub fn inverse_gamma_correct(&self) -> RGBSpectrum {
+        RGBSpectrum::rgb(
+            inverse_gamma_convert_float(self.c[0]),
+            inverse_gamma_convert_float(self.c[1]),
+            inverse_gamma_convert_float(self.c[2]),
+        )
     }
     pub fn from_rgb(rgb: &[Float; 3]) -> RGBSpectrum {
         let mut s: RGBSpectrum = RGBSpectrum::new(0.0 as Float);
@@ -1828,4 +1833,20 @@ pub fn interpolate_spectrum_samples(lambda: &[Float], vals: &[Float], n: i32, l:
     assert!(l >= lambda[offset] && l <= lambda[offset + 1]);
     let t: Float = (l - lambda[offset]) / (lambda[offset + 1] - lambda[offset]);
     lerp(t, vals[offset], vals[offset + 1])
+}
+
+pub fn inverse_gamma_convert_float(v: Float) -> Float {
+    if v <= 0.04045 {
+        v / 12.92
+    } else {
+        ((v + 0.055) * 1.0 / 1.055).powf(2.4)
+    }
+}
+
+pub fn gamma_correct(v: Float) -> Float {
+    if v <= 0.0031308 {
+        12.92 * v
+    } else {
+        1.055 * Float::powf(v, 1.0 / 2.4) - 0.055
+    }
 }

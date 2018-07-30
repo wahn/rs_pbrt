@@ -32,6 +32,7 @@ use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::checkerboard::Checkerboard2DTexture;
 use pbrt::textures::constant::ConstantTexture;
 use pbrt::textures::imagemap::ImageTexture;
+use pbrt::textures::imagemap::convert_to_spectrum;
 use std::env;
 use std::string::String;
 use std::sync::Arc;
@@ -499,6 +500,7 @@ fn main() {
             wrap_mode,
             scale,
             gamma,
+            convert_to_spectrum,
         ));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(lines_tex, sigma));
