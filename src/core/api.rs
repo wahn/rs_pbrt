@@ -66,6 +66,7 @@ use textures::checkerboard::Checkerboard2DTexture;
 use textures::constant::ConstantTexture;
 use textures::imagemap::ImageTexture;
 use textures::imagemap::{convert_to_float, convert_to_spectrum};
+use textures::scale::ScaleTexture;
 
 // see api.cpp
 
@@ -640,7 +641,14 @@ fn make_texture(api_state: &mut ApiState) {
         if api_state.param_set.tex_name == String::from("constant") {
             println!("TODO: CreateConstantFloatTexture");
         } else if api_state.param_set.tex_name == String::from("scale") {
-            println!("TODO: CreateScaleFloatTexture");
+            let ft = Arc::new(ScaleTexture::<Float>::new(
+                tp.get_float_texture(String::from("tex1"), 1.0 as Float),
+                tp.get_float_texture(String::from("tex2"), 1.0 as Float),
+            ));
+            api_state
+                .graphics_state
+                .float_textures
+                .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == String::from("mix") {
             println!("TODO: CreateMixFloatTexture");
         } else if api_state.param_set.tex_name == String::from("bilerp") {
