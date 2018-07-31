@@ -177,7 +177,7 @@ impl Default for RenderOptions {
             sampler_params: ParamSet::default(),
             accelerator_name: String::from("bvh"),
             accelerator_params: ParamSet::default(),
-            integrator_name: String::from("image"),
+            integrator_name: String::from("path"),
             integrator_params: ParamSet::default(),
             camera_name: String::from("perspective"),
             camera_params: ParamSet::default(),
