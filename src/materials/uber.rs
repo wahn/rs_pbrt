@@ -7,8 +7,10 @@ use core::material::{Material, TransportMode};
 use core::microfacet::TrowbridgeReitzDistribution;
 use core::paramset::TextureParams;
 use core::pbrt::{Float, Spectrum};
-use core::reflection::{Bsdf, Bxdf, FresnelDielectric, LambertianReflection, MicrofacetReflection,
-                       SpecularReflection, SpecularTransmission};
+use core::reflection::{
+    Bsdf, Bxdf, FresnelDielectric, LambertianReflection, MicrofacetReflection, SpecularReflection,
+    SpecularTransmission,
+};
 use core::texture::Texture;
 
 // see uber.h
@@ -18,12 +20,12 @@ pub struct UberMaterial {
     pub ks: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
     pub kr: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.0
     pub kt: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.0
+    pub opacity: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
     pub roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.1
     pub u_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
     pub v_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
     pub eta: Arc<Texture<Float> + Sync + Send>, // default: 1.5
-    pub opacity: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
-    // TODO: bump_map
+    pub bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
     pub remap_roughness: bool,
 }
 
@@ -36,8 +38,9 @@ impl UberMaterial {
         roughness: Arc<Texture<Float> + Sync + Send>,
         u_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
         v_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-        eta: Arc<Texture<Float> + Send + Sync>,
         opacity: Arc<Texture<Spectrum> + Sync + Send>,
+        eta: Arc<Texture<Float> + Send + Sync>,
+        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         UberMaterial {
@@ -45,11 +48,12 @@ impl UberMaterial {
             ks: ks,
             kr: kr,
             kt: kt,
+            opacity: opacity,
             roughness: roughness,
             u_roughness: u_roughness,
             v_roughness: v_roughness,
             eta: eta,
-            opacity: opacity,
+            bump_map: bump_map,
             remap_roughness: remap_roughness,
         }
     }
@@ -70,7 +74,8 @@ impl UberMaterial {
             mp.get_float_texture_or_null(String::from("vroughness"));
         let opacity: Arc<Texture<Spectrum> + Send + Sync> =
             mp.get_spectrum_texture(String::from("opacity"), Spectrum::new(1.0));
-        // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
+        let bump_map: Option<Arc<Texture<Float> + Send + Sync>> =
+            mp.get_float_texture_or_null(String::from("bumpmap"));
         let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
         let eta_option: Option<Arc<Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null(String::from("eta"));
@@ -83,8 +88,9 @@ impl UberMaterial {
                 roughness,
                 u_roughness,
                 v_roughness,
-                eta.clone(),
                 opacity,
+                eta.clone(),
+                bump_map,
                 remap_roughness,
             ))
         } else {
@@ -98,8 +104,9 @@ impl UberMaterial {
                 roughness,
                 u_roughness,
                 v_roughness,
-                eta,
                 opacity,
+                eta,
+                bump_map,
                 remap_roughness,
             ))
         }
