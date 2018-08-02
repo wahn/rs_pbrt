@@ -556,7 +556,7 @@ impl TextureParams {
         }
         if name != String::new() {
             match self.spectrum_textures.get(name.as_str()) {
-                Some(_spectrum_texture) => {}
+                Some(spectrum_texture) => return Some(spectrum_texture.clone()),
                 None => {
                     println!(
                         "Couldn't find spectrum texture named \"{}\" for parameter \"{}\"",
@@ -581,24 +581,14 @@ impl TextureParams {
         n: String,
         def: Float,
     ) -> Arc<Texture<Float> + Send + Sync> {
-        let mut name: String = self.geom_params.find_texture(n.clone());
-        if name == String::new() {
-            name = self.material_params.find_texture(n.clone());
+        let tex_option = self.get_float_texture_or_null(n.clone());
+        if let Some(tex) = tex_option {
+            tex
+        } else {
+            let mut val: Float = self.material_params.find_one_float(n.clone(), def);
+            val = self.geom_params.find_one_float(n.clone(), val);
+            Arc::new(ConstantTexture { value: val })
         }
-        if name != String::new() {
-            match self.float_textures.get(name.as_str()) {
-                Some(_float_texture) => {}
-                None => {
-                    panic!(
-                        "Couldn't find float texture named \"{}\" for parameter \"{}\"",
-                        name, n
-                    );
-                }
-            }
-        }
-        let mut val: Float = self.material_params.find_one_float(n.clone(), def);
-        val = self.geom_params.find_one_float(n.clone(), val);
-        Arc::new(ConstantTexture { value: val })
     }
     pub fn get_float_texture_or_null(
         &mut self,
@@ -606,11 +596,22 @@ impl TextureParams {
     ) -> Option<Arc<Texture<Float> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n.clone());
         if name == String::new() {
+            let s: Vec<Float> = self.geom_params.find_float(n.clone());
+            if s.len() > 1 {
+                println!(
+                    "Ignoring excess values provided with parameter \"{}\"",
+                    n.clone()
+                );
+            } else if s.len() != 0 {
+                return Some(Arc::new(ConstantTexture { value: s[0] }))
+            }
             name = self.material_params.find_texture(n.clone());
         }
         if name != String::new() {
             match self.float_textures.get(name.as_str()) {
-                Some(_float_texture) => {}
+                Some(float_texture) => {
+                    return Some(float_texture.clone());
+                }
                 None => {
                     println!(
                         "Couldn't find float texture named \"{}\" for parameter \"{}\"",

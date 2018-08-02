@@ -111,8 +111,11 @@ impl UberMaterial {
             ))
         }
     }
-    pub fn bsdf(&self, si: &SurfaceInteraction, mode: TransportMode) -> Bsdf {
+    pub fn bsdf(&self, si: &mut SurfaceInteraction, mode: TransportMode) -> Bsdf {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        if let Some(ref bump_map) = self.bump_map {
+            UberMaterial::bump(bump_map, si);
+        }
         let e: Float = self.eta.evaluate(si);
         let op: Spectrum = self.opacity
             .evaluate(si)

@@ -1,6 +1,8 @@
 //! The abstract **Material** class defines the interface that
 //! material implementations must provide.
 
+//std
+use std::sync::Arc;
 // pbrt
 use core::geometry::{nrm_normalize, vec3_cross_vec3};
 use core::geometry::{Normal3f, Vector2f, Vector3f};
@@ -36,7 +38,7 @@ pub trait Material {
     );
     /// Computing the effect of bump mapping at the point being shaded
     /// given a particular displacement texture.
-    fn bump(d: &Texture<Float>, si: &mut SurfaceInteraction)
+    fn bump(d: &Arc<Texture<Float> + Send + Sync>, si: &mut SurfaceInteraction)
     where
         Self: Sized,
     {
