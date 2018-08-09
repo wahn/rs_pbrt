@@ -1,0 +1,11 @@
+node:         gaussian_filter
+type:         filter
+output:       (null)
+parameters:   2
+filename:     <built-in>
+version:      5.1.1.2
+
+Type          Name                              Default
+------------  --------------------------------  --------------------------------
+FLOAT         width                             2
+STRING        name                              

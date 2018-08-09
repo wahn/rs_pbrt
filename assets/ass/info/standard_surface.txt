@@ -1,0 +1,70 @@
+node:         standard_surface
+type:         shader
+output:       CLOSURE
+parameters:   61
+filename:     <built-in>
+version:      5.1.1.2
+
+Type          Name                              Default
+------------  --------------------------------  --------------------------------
+FLOAT         base                              0.8
+RGB           base_color                        1, 1, 1
+FLOAT         diffuse_roughness                 0
+FLOAT         specular                          1
+RGB           specular_color                    1, 1, 1
+FLOAT         specular_roughness                0.1
+FLOAT         specular_IOR                      1.52
+FLOAT         specular_anisotropy               0
+FLOAT         specular_rotation                 0
+FLOAT         metalness                         0
+FLOAT         transmission                      0
+RGB           transmission_color                1, 1, 1
+FLOAT         transmission_depth                0
+RGB           transmission_scatter              0, 0, 0
+FLOAT         transmission_scatter_anisotropy   0
+FLOAT         transmission_dispersion           0
+FLOAT         transmission_extra_roughness      0
+BOOL          transmit_aovs                     false
+FLOAT         subsurface                        0
+RGB           subsurface_color                  1, 1, 1
+RGB           subsurface_radius                 1, 1, 1
+FLOAT         subsurface_scale                  1
+FLOAT         subsurface_anisotropy             0
+ENUM          subsurface_type                   diffusion
+BOOL          thin_walled                       false
+VECTOR        normal                            0, 0, 0
+VECTOR        tangent                           0, 0, 0
+FLOAT         coat                              0
+RGB           coat_color                        1, 1, 1
+FLOAT         coat_roughness                    0.1
+FLOAT         coat_IOR                          1.5
+VECTOR        coat_normal                       0, 0, 0
+FLOAT         coat_affect_color                 0
+FLOAT         coat_affect_roughness             0
+FLOAT         thin_film_thickness               0
+FLOAT         thin_film_IOR                     1.5
+FLOAT         emission                          0
+RGB           emission_color                    1, 1, 1
+RGB           opacity                           1, 1, 1
+BOOL          caustics                          false
+BOOL          internal_reflections              true
+BOOL          exit_to_background                false
+FLOAT         indirect_diffuse                  1
+FLOAT         indirect_specular                 1
+STRING        aov_id1                           
+RGB           id1                               0, 0, 0
+STRING        aov_id2                           
+RGB           id2                               0, 0, 0
+STRING        aov_id3                           
+RGB           id3                               0, 0, 0
+STRING        aov_id4                           
+RGB           id4                               0, 0, 0
+STRING        aov_id5                           
+RGB           id5                               0, 0, 0
+STRING        aov_id6                           
+RGB           id6                               0, 0, 0
+STRING        aov_id7                           
+RGB           id7                               0, 0, 0
+STRING        aov_id8                           
+RGB           id8                               0, 0, 0
+STRING        name                              

@@ -1,0 +1,32 @@
+node:         mesh_light
+type:         light
+output:       (null)
+parameters:   23
+filename:     <built-in>
+version:      5.1.1.2
+
+Type          Name                              Default
+------------  --------------------------------  --------------------------------
+MATRIX[]      matrix                            identity
+RGB           color                             1, 1, 1
+FLOAT         intensity                         1
+FLOAT         exposure                          0
+BOOL          cast_shadows                      true
+BOOL          cast_volumetric_shadows           true
+FLOAT         shadow_density                    1
+RGB           shadow_color                      0, 0, 0
+INT           samples                           1
+BOOL          normalize                         true
+FLOAT         diffuse                           1
+FLOAT         specular                          1
+FLOAT         sss                               1
+FLOAT         indirect                          1
+INT           max_bounces                       999
+NODE[]        filters                           (empty)
+FLOAT         motion_start                      0
+FLOAT         motion_end                        1
+INT           volume_samples                    2
+FLOAT         volume                            1
+STRING        aov                               default
+NODE          mesh                              (null)
+STRING        name                              

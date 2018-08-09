@@ -1,0 +1,112 @@
+node:         options
+type:         options
+output:       (null)
+parameters:   103
+filename:     <built-in>
+version:      5.1.1.2
+
+Type          Name                              Default
+------------  --------------------------------  --------------------------------
+INT           AA_samples                        1
+INT           AA_seed                           1
+FLOAT         AA_sample_clamp                   1e+30
+FLOAT         indirect_sample_clamp             10
+BOOL          AA_sample_clamp_affects_aovs      false
+INT           AA_samples_max                    0
+FLOAT         AA_adaptive_threshold             0.05
+ENUM          AA_adaptive_criterion             perceptual
+INT           threads                           0
+ENUM          thread_priority                   normal
+ENUM          pin_threads                       auto
+BOOL          abort_on_error                    true
+BOOL          abort_on_license_fail             false
+BOOL          skip_license_check                false
+RGB           error_color_bad_texture           1, 0, 0
+RGB           error_color_bad_pixel             0, 0, 1
+RGB           error_color_bad_shader            1, 0, 1
+STRING[]      outputs                           (empty)
+STRING[]      light_path_expressions            (empty)
+NODE[]        aov_shaders                       (empty)
+INT           xres                              320
+INT           yres                              240
+INT           region_min_x                      -2147483648
+INT           region_min_y                      -2147483648
+INT           region_max_x                      -2147483648
+INT           region_max_y                      -2147483648
+FLOAT         pixel_aspect_ratio                1
+ENUM          fis_filter                        none
+FLOAT         fis_filter_width                  3
+INT           bucket_size                       64
+ENUM          bucket_scanning                   spiral
+VECTOR2[]     buckets                           (empty)
+BOOL          ignore_textures                   false
+BOOL          ignore_shaders                    false
+BOOL          ignore_atmosphere                 false
+BOOL          ignore_lights                     false
+BOOL          ignore_shadows                    false
+BOOL          ignore_subdivision                false
+BOOL          ignore_displacement               false
+BOOL          ignore_bump                       false
+BOOL          ignore_motion_blur                false
+BOOL          ignore_dof                        false
+BOOL          ignore_smoothing                  false
+BOOL          ignore_sss                        false
+BOOL          ignore_operators                  false
+STRING[]      ignore_list                       (empty)
+INT           auto_transparency_depth           10
+INT           texture_max_open_files            0
+FLOAT         texture_max_memory_MB             2048
+BOOL          texture_per_file_stats            false
+STRING        texture_searchpath                
+BOOL          texture_automip                   true
+INT           texture_autotile                  0
+BOOL          texture_accept_untiled            true
+BOOL          texture_accept_unmipped           true
+INT           texture_failure_retries           0
+BOOL          texture_conservative_lookups      true
+FLOAT         texture_specular_blur             0
+FLOAT         texture_diffuse_blur              0
+FLOAT         texture_sss_blur                  0
+FLOAT         texture_max_sharpen               1.5
+NODE          camera                            (null)
+NODE          subdiv_dicing_camera              (null)
+BOOL          subdiv_frustum_culling            false
+FLOAT         subdiv_frustum_padding            0
+NODE          background                        (null)
+BYTE          background_visibility             255
+NODE          atmosphere                        (null)
+NODE          shader_override                   (null)
+NODE          color_manager                     (null)
+NODE          operator                          (null)
+FLOAT         indirect_specular_blur            1
+FLOAT         luminaire_bias                    1e-06
+FLOAT         low_light_threshold               0.001
+BOOL          skip_background_atmosphere        false
+BOOL          sss_use_autobump                  false
+BYTE          max_subdivisions                  255
+FLOAT         reference_time                    0
+FLOAT         frame                             0
+FLOAT         fps                               24
+STRING        procedural_searchpath             
+STRING        plugin_searchpath                 
+BOOL          enable_procedural_cache           true
+BOOL          parallel_node_init                true
+BOOL          enable_new_quad_light_sampler     true
+BOOL          enable_dithered_sampling          true
+BOOL          enable_progressive_render         false
+BOOL          enable_progressive_pattern        false
+BOOL          enable_adaptive_sampling          false
+BOOL          enable_dependency_graph           false
+INT           GI_diffuse_depth                  0
+INT           GI_specular_depth                 0
+INT           GI_transmission_depth             2
+INT           GI_volume_depth                   0
+INT           GI_total_depth                    10
+INT           GI_diffuse_samples                2
+INT           GI_specular_samples               2
+INT           GI_transmission_samples           2
+INT           GI_sss_samples                    2
+INT           GI_volume_samples                 2
+STRING        default_gpu_names                 *
+INT           default_gpu_min_memory_MB         512
+STRING        name                              

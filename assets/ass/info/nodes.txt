@@ -1,0 +1,177 @@
+built-in nodes sorted by name:
+ abs                              shader
+ add                              shader
+ alembic                          shape (procedural)
+ ambient_occlusion                shader
+ aov_write_float                  shader
+ aov_write_int                    shader
+ aov_write_rgb                    shader
+ aov_write_rgba                   shader
+ atan                             shader
+ atmosphere_volume                shader
+ barndoor                         shader
+ blackbody                        shader
+ blackman_harris_filter           filter
+ box                              shape
+ box_filter                       filter
+ bump2d                           shader
+ bump3d                           shader
+ cache                            shader
+ camera_projection                shader
+ car_paint                        shader
+ catrom_filter                    filter
+ checkerboard                     shader
+ clamp                            shader
+ closest_filter                   filter
+ collection                       operator
+ color_convert                    shader
+ color_correct                    shader
+ color_jitter                     shader
+ color_manager_ocio               color_manager
+ compare                          shader
+ complement                       shader
+ complex_ior                      shader
+ composite                        shader          [deprecated]
+ cone                             shape
+ contour_filter                   filter
+ cross                            shader
+ curvature                        shader
+ curves                           shape
+ cyl_camera                       camera
+ cylinder                         shape
+ cylinder_light                   light
+ denoise_optix_filter             filter
+ diff_filter                      filter
+ disable                          operator
+ disk                             shape
+ disk_light                       light
+ distant_light                    light
+ divide                           shader
+ dot                              shader
+ driver_deepexr                   driver
+ driver_exr                       driver
+ driver_jpeg                      driver
+ driver_png                       driver
+ driver_tiff                      driver
+ exp                              shader
+ facing_ratio                     shader
+ farthest_filter                  filter
+ fisheye_camera                   camera
+ flakes                           shader
+ flat                             shader
+ float_to_int                     shader
+ float_to_matrix                  shader
+ float_to_rgb                     shader
+ float_to_rgba                    shader
+ fog                              shader
+ fraction                         shader
+ gaussian_filter                  filter
+ ginstance                        shape
+ gobo                             shader
+ hair                             shader          [deprecated]
+ heatmap_filter                   filter
+ image                            shader
+ implicit                         shape (implicit)
+ is_finite                        shader
+ lambert                          shader
+ layer_float                      shader
+ layer_rgba                       shader
+ layer_shader                     shader
+ length                           shader
+ light_blocker                    shader
+ light_decay                      shader
+ log                              shader
+ materialx                        operator
+ matte                            shader
+ max                              shader
+ merge                            operator
+ mesh_light                       light
+ min                              shader
+ mitnet_filter                    filter
+ mix_rgba                         shader
+ mix_shader                       shader
+ modulo                           shader
+ motion_vector                    shader
+ multiply                         shader
+ negate                           shader
+ noise                            shader
+ normal_map                       shader
+ normalize                        shader
+ nurbs                            shape
+ options                          options
+ ortho_camera                     camera
+ osl                              shader
+ override                         override
+ passthrough                      shader
+ persp_camera                     camera
+ photometric_light                light
+ physical_sky                     shader
+ plane                            shape
+ point_light                      light
+ points                           shape
+ polymesh                         shape
+ pow                              shader
+ procedural                       shape (procedural)
+ quad_light                       light
+ ramp_float                       shader
+ ramp_rgb                         shader
+ random                           shader
+ range                            shader
+ ray_switch_rgba                  shader
+ ray_switch_shader                shader
+ reciprocal                       shader
+ rgb_to_float                     shader
+ rgb_to_vector                    shader
+ rgba_to_float                    shader
+ set_parameter                    operator
+ set_transform                    operator
+ shadow_matte                     shader
+ shuffle                          shader
+ sign                             shader
+ sinc_filter                      filter
+ skin                             shader          [deprecated]
+ sky                              shader          [deprecated]
+ skydome_light                    light
+ space_transform                  shader
+ sphere                           shape
+ spherical_camera                 camera
+ spot_light                       light
+ sqrt                             shader
+ standard                         shader          [deprecated]
+ standard_hair                    shader
+ standard_surface                 shader
+ standard_volume                  shader
+ state_float                      shader
+ state_int                        shader
+ state_vector                     shader
+ subtract                         shader
+ switch_operator                  operator
+ switch_rgba                      shader
+ switch_shader                    shader
+ thin_film                        shader          [deprecated]
+ toon                             shader
+ trace_set                        shader
+ triangle_filter                  filter
+ trigo                            shader
+ triplanar                        shader
+ two_sided                        shader
+ user_data_float                  shader
+ user_data_int                    shader
+ user_data_rgb                    shader
+ user_data_rgba                   shader
+ user_data_string                 shader
+ utility                          shader
+ uv_transform                     shader
+ variance_filter                  filter
+ vector_map                       shader
+ vector_to_rgb                    shader
+ volume                           shape (volume)
+ volume_collector                 shader          [deprecated]
+ volume_implicit                  shape (implicit)
+ volume_sample_float              shader
+ volume_sample_rgb                shader
+ vr_camera                        camera
+ wireframe                        shader
+
+loading plugins from .
+none

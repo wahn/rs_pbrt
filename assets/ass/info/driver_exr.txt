@@ -1,0 +1,19 @@
+node:         driver_exr
+type:         driver
+output:       (null)
+parameters:   10
+filename:     <built-in>
+version:      5.1.1.2
+
+Type          Name                              Default
+------------  --------------------------------  --------------------------------
+STRING        filename                          output.exr
+ENUM          compression                       zip
+BOOL          half_precision                    false
+BOOL          tiled                             true
+STRING        color_space                       auto
+BOOL          preserve_layer_name               false
+BOOL          autocrop                          false
+BOOL          append                            false
+STRING[]      custom_attributes                 (empty)
+STRING        name                              
