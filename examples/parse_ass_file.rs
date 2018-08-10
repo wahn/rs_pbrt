@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 
 #[derive(Parser)]
 #[grammar = "../examples/ass.pest"]
-struct PbrtParser;
+struct AssParser;
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
@@ -64,6 +64,18 @@ fn main() {
                 if num_bytes.is_ok() {
                     let n_bytes = num_bytes.unwrap();
                     println!("{} bytes read", n_bytes);
+                }
+                // parser
+                let pairs =
+                    AssParser::parse(Rule::ass, &str_buf).unwrap_or_else(|e| panic!("{}", e));
+                println!("do something with created tokens ...");
+                // let tokens: Vec<_> = pairs.flatten().tokens().collect();
+                // println!("{} pairs", tokens.len());
+                for pair in pairs {
+                    let span = pair.clone().into_span();
+                    println!("Rule:    {:?}", pair.as_rule());
+                    println!("Span:    {:?}", span);
+                    println!("Text:    {}", span.as_str());
                 }
             }
             None => panic!("No input file name."),

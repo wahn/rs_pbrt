@@ -1,7 +1,7 @@
 ass = _{ whitespace? ~ (node | comment)* }
-node = { ident ~ "{" ~ parameters ~ "}" }
+node = { ident ~ "{" ~ parameters}
 ident =  { ('a'..'z' | 'A'..'Z' ) ~
            ('a'..'z' | 'A'..'Z' | "_" | "-" | ":" | '0'..'9')* }
-parameters = { any* }
+parameters = _{ (!("\r" | "\n" | "}") ~ any)* ~ "}" }
 whitespace = _{ (" " | "\t" | "\r" | "\n") }
 comment = _{ ( "#" ~ (!("\r" | "\n") ~ any)* ~ ("\n" | "\r\n" | "\r" | eoi) ) }
