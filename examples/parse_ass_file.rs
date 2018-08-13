@@ -1,4 +1,5 @@
 extern crate getopts;
+extern crate pbrt;
 // pest
 extern crate pest;
 #[macro_use]
@@ -9,12 +10,15 @@ use pest::Parser;
 
 // getopts
 use getopts::Options;
+// pbrt
+use pbrt::core::geometry::Point2i;
 // std
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 #[derive(Parser)]
 #[grammar = "../examples/ass.pest"]
@@ -46,6 +50,8 @@ fn main() {
         print_usage(&program, opts);
         return;
     } else if matches.opt_present("i") {
+        let mut xres: i32 = 1280;
+        let mut yres: i32 = 720;
         let infile = matches.opt_str("i");
         match infile {
             Some(x) => {
@@ -88,6 +94,18 @@ fn main() {
                                                 if let Some(name) = iter.next() {
                                                     print!(" {} {} ", next, name);
                                                 }
+                                            } else if node_type == String::from("options") {
+                                                if next == String::from("xres") {
+                                                    if let Some(xres_str) = iter.next() {
+                                                        xres = i32::from_str(xres_str).unwrap();
+                                                        print!("\n xres {} ", xres);
+                                                    }
+                                                } else if next == String::from("yres") {
+                                                    if let Some(yres_str) = iter.next() {
+                                                        yres = i32::from_str(yres_str).unwrap();
+                                                        print!("\n yres {} ", yres);
+                                                    }
+                                                }
                                             }
                                         } else {
                                             println!("}}");
@@ -105,6 +123,8 @@ fn main() {
             }
             None => panic!("No input file name."),
         }
+        let resolution: Point2i = Point2i { x: xres, y: yres };
+        println!("resolution = {:?}", resolution);
         return;
     } else if matches.opt_present("v") {
         print_version(&program);
