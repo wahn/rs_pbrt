@@ -68,14 +68,39 @@ fn main() {
                 // parser
                 let pairs =
                     AssParser::parse(Rule::ass, &str_buf).unwrap_or_else(|e| panic!("{}", e));
-                println!("do something with created tokens ...");
                 // let tokens: Vec<_> = pairs.flatten().tokens().collect();
                 // println!("{} pairs", tokens.len());
                 for pair in pairs {
                     let span = pair.clone().into_span();
-                    println!("Rule:    {:?}", pair.as_rule());
-                    println!("Span:    {:?}", span);
-                    println!("Text:    {}", span.as_str());
+                    // println!("Rule:    {:?}", pair.as_rule());
+                    // println!("Span:    {:?}", span);
+                    // println!("Text:    {}", span.as_str());
+                    for inner_pair in pair.into_inner() {
+                        match inner_pair.as_rule() {
+                            Rule::ident => {
+                                let node_type = inner_pair.clone().into_span().as_str();
+                                print!("{} {{", node_type);
+                                let mut iter = span.as_str().split_whitespace();
+                                loop {
+                                    if let Some(next) = iter.next() {
+                                        if next != String::from("}") {
+                                            if next == String::from("name") {
+                                                if let Some(name) = iter.next() {
+                                                    print!(" {} {} ", next, name);
+                                                }
+                                            }
+                                        } else {
+                                            println!("}}");
+                                        }
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                            // WORK
+                            _ => println!("TODO: {:?}", inner_pair.as_rule()),
+                        }
+                    }
                 }
             }
             None => panic!("No input file name."),
