@@ -11,7 +11,12 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
-use pbrt::core::geometry::Point2i;
+use pbrt::core::film::Film;
+use pbrt::core::filter::Filter;
+use pbrt::core::geometry::{Bounds2f, Point2f, Point2i};
+use pbrt::core::paramset::ParamSet;
+use pbrt::core::pbrt::Float;
+use pbrt::filters::gaussian::GaussianFilter;
 // std
 use std::env;
 use std::fs::File;
@@ -19,6 +24,7 @@ use std::io::BufReader;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
+use std::sync::Arc;
 
 #[derive(Parser)]
 #[grammar = "../examples/ass.pest"]
@@ -50,8 +56,12 @@ fn main() {
         print_usage(&program, opts);
         return;
     } else if matches.opt_present("i") {
+        // default values
+        let mut filter_name: String = String::from("box");
+        let mut filter_width: Float = 2.0;
         let mut xres: i32 = 1280;
         let mut yres: i32 = 720;
+        // input (.ass) file
         let infile = matches.opt_str("i");
         match infile {
             Some(x) => {
@@ -106,6 +116,16 @@ fn main() {
                                                         print!("\n yres {} ", yres);
                                                     }
                                                 }
+                                            } else if node_type == String::from("gaussian_filter") {
+                                                filter_name = String::from("gaussian");
+                                                if next == String::from("width") {
+                                                    if let Some(filter_width_str) = iter.next() {
+                                                        filter_width =
+                                                            f32::from_str(filter_width_str)
+                                                                .unwrap();
+                                                        print!("\n filter_width {} ", filter_width);
+                                                    }
+                                                }
                                             }
                                         } else {
                                             println!("}}");
@@ -123,8 +143,47 @@ fn main() {
             }
             None => panic!("No input file name."),
         }
+        println!("filter_name = {:?}", filter_name);
+        println!("filter_width = {:?}", filter_width);
+        // MakeFilter
+        let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
+        if filter_name == String::from("box") {
+            println!("TODO: CreateBoxFilter");
+        } else if filter_name == String::from("gaussian") {
+            let mut filter_params: ParamSet = ParamSet::default();
+            filter_params.add_float(String::from("xwidth"), filter_width);
+            filter_params.add_float(String::from("ywidth"), filter_width);
+            some_filter = Some(GaussianFilter::create(&filter_params));
+        } else if filter_name == String::from("mitchell") {
+            println!("TODO: CreateMitchellFilter");
+        } else if filter_name == String::from("sinc") {
+            println!("TODO: CreateSincFilter");
+        } else if filter_name == String::from("triangle") {
+            println!("TODO: CreateTriangleFilter");
+        } else {
+            panic!("Filter \"{}\" unknown.", filter_name);
+        }
+        // MakeFilm
         let resolution: Point2i = Point2i { x: xres, y: yres };
         println!("resolution = {:?}", resolution);
+        if let Some(filter) = some_filter {
+            let crop: Bounds2f = Bounds2f {
+                p_min: Point2f { x: 0.0, y: 0.0 },
+                p_max: Point2f { x: 1.0, y: 1.0 },
+            };
+            let diagonal: Float = 35.0;
+            let scale: Float = 1.0;
+            let max_sample_luminance: Float = std::f32::INFINITY;
+            let film: Arc<Film> = Arc::new(Film::new(
+                resolution,
+                crop,
+                filter,
+                diagonal,
+                String::from(""),
+                scale,
+                max_sample_luminance,
+            ));
+        }
         return;
     } else if matches.opt_present("v") {
         print_version(&program);
