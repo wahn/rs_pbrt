@@ -11,11 +11,15 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
+use pbrt::cameras::perspective::PerspectiveCamera;
+use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Point2f, Point2i};
+use pbrt::core::medium::{Medium, MediumInterface};
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::Float;
+use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
 use pbrt::filters::gaussian::GaussianFilter;
 // std
 use std::env;
@@ -29,6 +33,28 @@ use std::sync::Arc;
 #[derive(Parser)]
 #[grammar = "../examples/ass.pest"]
 struct AssParser;
+
+// TransformSet (copied from api.rs)
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct TransformSet {
+    pub t: [Transform; 2],
+}
+
+impl TransformSet {
+    pub fn is_animated(&self) -> bool {
+        // for (int i = 0; i < MaxTransforms - 1; ++i)
+        //     if (t[i] != t[i + 1]) return true;
+        // return false;
+
+        // we have only 2 transforms
+        if self.t[0] != self.t[1] {
+            true
+        } else {
+            false
+        }
+    }
+}
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
@@ -57,8 +83,12 @@ fn main() {
         return;
     } else if matches.opt_present("i") {
         // default values
+        let mut node_name: String = String::from(""); // no default name
         let mut filter_name: String = String::from("box");
         let mut filter_width: Float = 2.0;
+        let mut render_camera: String = String::from(""); // no default name
+        let mut camera_name: String = String::from("perspective");
+        let mut fov: Float = 90.0;
         let mut xres: i32 = 1280;
         let mut yres: i32 = 720;
         // input (.ass) file
@@ -102,9 +132,11 @@ fn main() {
                                         if next != String::from("}") {
                                             if next == String::from("name") {
                                                 if let Some(name) = iter.next() {
-                                                    print!(" {} {} ", next, name);
+                                                    node_name = name.to_string();
+                                                    print!(" {} {} ", next, node_name);
                                                 }
-                                            } else if node_type == String::from("options") {
+                                            }
+                                            if node_type == String::from("options") {
                                                 if next == String::from("xres") {
                                                     if let Some(xres_str) = iter.next() {
                                                         xres = i32::from_str(xres_str).unwrap();
@@ -114,6 +146,22 @@ fn main() {
                                                     if let Some(yres_str) = iter.next() {
                                                         yres = i32::from_str(yres_str).unwrap();
                                                         print!("\n yres {} ", yres);
+                                                    }
+                                                } else if next == String::from("camera") {
+                                                    if let Some(camera_str) = iter.next() {
+                                                        // strip surrounding double quotes
+                                                        let v: Vec<&str> = camera_str.split('"').collect();
+                                                        render_camera = v[1].to_string();
+                                                        print!("\n camera {:?} ", render_camera);
+                                                    }
+                                                }
+                                            } else if node_type == String::from("persp_camera")
+                                                && node_name == render_camera
+                                            {
+                                                if next == String::from("fov") {
+                                                    if let Some(fov_str) = iter.next() {
+                                                        fov = f32::from_str(fov_str).unwrap();
+                                                        print!("\n fov {} ", fov);
                                                     }
                                                 }
                                             } else if node_type == String::from("gaussian_filter") {
@@ -143,6 +191,8 @@ fn main() {
             }
             None => panic!("No input file name."),
         }
+        println!("render_camera = {:?} ", render_camera);
+        println!("fov = {:?} ", fov);
         println!("filter_name = {:?}", filter_name);
         println!("filter_width = {:?}", filter_width);
         // MakeFilter
@@ -183,6 +233,56 @@ fn main() {
                 scale,
                 max_sample_luminance,
             ));
+            // MakeCamera
+            let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
+            let mut medium_interface: MediumInterface = MediumInterface::default();
+            let camera_to_world: TransformSet = TransformSet {
+                t: [Transform {
+                    m: Matrix4x4 {
+                        m: [
+                            [1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                    },
+                    m_inv: Matrix4x4 {
+                        m: [
+                            [1.0, 0.0, 0.0, 0.0],
+                            [0.0, 1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0, 0.0],
+                            [0.0, 0.0, 0.0, 1.0],
+                        ],
+                    },
+                }; 2],
+            };
+            let transform_start_time: Float = 0.0;
+            let transform_end_time: Float = 1.0;
+            let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(
+                &camera_to_world.t[0],
+                transform_start_time,
+                &camera_to_world.t[1],
+                transform_end_time,
+            );
+            if camera_name == String::from("perspective") {
+                let mut camera_params: ParamSet = ParamSet::default();
+                camera_params.add_float(String::from("fov"), fov);
+                let camera: Arc<Camera + Send + Sync> = PerspectiveCamera::create(
+                    &camera_params,
+                    animated_cam_to_world,
+                    film,
+                    medium_interface.outside,
+                );
+                some_camera = Some(camera);
+            } else if camera_name == String::from("orthographic") {
+                println!("TODO: CreateOrthographicCamera");
+            } else if camera_name == String::from("realistic") {
+                println!("TODO: CreateRealisticCamera");
+            } else if camera_name == String::from("environment") {
+                println!("TODO: CreateEnvironmentCamera");
+            } else {
+                panic!("Camera \"{}\" unknown.", camera_name);
+            }
         }
         return;
     } else if matches.opt_present("v") {
