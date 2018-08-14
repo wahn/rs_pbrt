@@ -16,7 +16,7 @@ use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Point2f, Point2i};
-use pbrt::core::medium::{Medium, MediumInterface};
+use pbrt::core::medium::MediumInterface;
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::Float;
 use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
@@ -65,6 +65,23 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
+}
+
+fn strip_comments(input: &str) -> String {
+    let mut output = String::with_capacity(input.len());
+    let v: Vec<&str> = input.lines().map(str::trim).collect();
+    for line in v {
+        if let Some(_found) = line.find('#') {
+            let v2: Vec<&str> = line.split('#').collect();
+            let stripped_line = v2[0];
+            output.push_str(stripped_line);
+            output.push_str("\n");
+        } else {
+            output.push_str(line);
+            output.push_str("\n");
+        }
+    }
+    output
 }
 
 fn main() {
@@ -126,7 +143,8 @@ fn main() {
                             Rule::ident => {
                                 let node_type = inner_pair.clone().into_span().as_str();
                                 print!("{} {{", node_type);
-                                let mut iter = span.as_str().split_whitespace();
+                                let stripped = strip_comments(span.as_str());
+                                let mut iter = stripped.split_whitespace();
                                 loop {
                                     if let Some(next) = iter.next() {
                                         if next != String::from("}") {
@@ -158,6 +176,7 @@ fn main() {
                                             } else if node_type == String::from("persp_camera")
                                                 && node_name == render_camera
                                             {
+                                                camera_name = String::from("perspective");
                                                 if next == String::from("fov") {
                                                     if let Some(fov_str) = iter.next() {
                                                         fov = f32::from_str(fov_str).unwrap();
