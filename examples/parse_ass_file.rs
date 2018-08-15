@@ -17,7 +17,7 @@ use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i};
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Point3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::medium::MediumInterface;
@@ -211,6 +211,84 @@ fn main() {
                                                                 .unwrap();
                                                         print!("\n filter_width {} ", filter_width);
                                                     }
+                                                }
+                                            } else if node_type == String::from("polymesh") {
+                                                if next == String::from("vlist") {
+                                                    // parameter_name: vlist
+                                                    // <num_elements>
+                                                    // <num_motionblur_keys>
+                                                    // <data_type>: VECTOR
+                                                    // <elem1> <elem2>
+                                                    // <elem3> <elem4>
+                                                    // ...
+                                                    let mut num_elements: u32 = 0;
+                                                    let mut num_motionblur_keys: u32 = 1;
+                                                    let data_type: String = String::from("VECTOR");
+                                                    let mut elems: Vec<Float> = Vec::new();
+                                                    if let Some(num_elements_str) = iter.next() {
+                                                        num_elements =
+                                                            u32::from_str(num_elements_str)
+                                                                .unwrap();
+                                                        if let Some(num_motionblur_keys_str) =
+                                                            iter.next()
+                                                        {
+                                                            num_motionblur_keys =
+                                                                u32::from_str(num_motionblur_keys_str).unwrap();
+                                                            if let Some(data_type_str) = iter.next()
+                                                            {
+                                                                if data_type_str != data_type {
+                                                                    panic!(
+                                                                        "ERROR: {} expected ...",
+                                                                        data_type
+                                                                    );
+                                                                } else {
+                                                                    let expected: u32 = num_elements * num_motionblur_keys * 3;
+                                                                    for _i in 0..expected {
+                                                                        if let Some(elem_str) =
+                                                                            iter.next()
+                                                                        {
+                                                                            let elem: f32 =
+                                                                                f32::from_str(elem_str)
+                                                                                .unwrap();
+                                                                            elems.push(
+                                                                                elem as Float,
+                                                                            );
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    print!(
+                                                        "\n vlist {} {} VECTOR ... ",
+                                                        num_elements, num_motionblur_keys
+                                                    );
+                                                    println!("\n {:?}", elems);
+                                                    // TriangleMesh
+                                                    let mut x: Float = 0.0;
+                                                    let mut y: Float = 0.0;
+                                                    let mut z;
+                                                    let mut p: Vec<Point3f> = Vec::new();
+                                                    for i in 0..elems.len() {
+                                                        if i % 3 == 0 {
+                                                            x = elems[i];
+                                                        } else if i % 3 == 1 {
+                                                            y = elems[i];
+                                                        } else {
+                                                            // i % 3 == 2
+                                                            z = elems[i];
+                                                            // store as Point3f
+                                                            p.push(Point3f {
+                                                                x: x,
+                                                                y: y,
+                                                                z: z,
+                                                            });
+                                                        }
+                                                    }
+                                                    for point in p {
+                                                        println!(" {:?}", point);
+                                                    }
+
                                                 }
                                             }
                                         } else {
