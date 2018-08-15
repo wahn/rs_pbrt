@@ -1,4 +1,5 @@
 extern crate getopts;
+extern crate num_cpus;
 extern crate pbrt;
 // pest
 extern crate pest;
@@ -11,16 +12,25 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
+use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{Bounds2f, Point2f, Point2i};
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i};
+use pbrt::core::integrator::SamplerIntegrator;
+use pbrt::core::light::Light;
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::Float;
+use pbrt::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
+use pbrt::core::sampler::Sampler;
+use pbrt::core::scene::Scene;
 use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
 use pbrt::filters::gaussian::GaussianFilter;
+use pbrt::integrators::path::PathIntegrator;
+use pbrt::integrators::render;
+use pbrt::samplers::sobol::SobolSampler;
 // std
 use std::env;
 use std::fs::File;
@@ -105,11 +115,14 @@ fn main() {
         let mut filter_width: Float = 2.0;
         let mut render_camera: String = String::from(""); // no default name
         let mut camera_name: String = String::from("perspective");
-        let mut fov: Float = 90.0;
-        let mut xres: i32 = 1280;
-        let mut yres: i32 = 720;
-        // input (.ass) file
+        let mut fov: Float = 90.0; // read persp_camera.fov
+        let mut xres: i32 = 1280; // read options.xres
+        let mut yres: i32 = 720; // read options.yres
+        let mut max_depth: i32 = 5; // read options.GI_total_depth
+                                    // input (.ass) file
         let infile = matches.opt_str("i");
+        let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
+        let lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
         match infile {
             Some(x) => {
                 println!("FILE = {}", x);
@@ -172,6 +185,12 @@ fn main() {
                                                         render_camera = v[1].to_string();
                                                         print!("\n camera {:?} ", render_camera);
                                                     }
+                                                } else if next == String::from("GI_total_depth") {
+                                                    if let Some(max_depth_str) = iter.next() {
+                                                        max_depth =
+                                                            i32::from_str(max_depth_str).unwrap();
+                                                        print!("\n GI_total_depth {} ", max_depth);
+                                                    }
                                                 }
                                             } else if node_type == String::from("persp_camera")
                                                 && node_name == render_camera
@@ -214,6 +233,7 @@ fn main() {
         println!("fov = {:?} ", fov);
         println!("filter_name = {:?}", filter_name);
         println!("filter_width = {:?}", filter_width);
+        println!("max_depth = {:?}", max_depth);
         // MakeFilter
         let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
         if filter_name == String::from("box") {
@@ -301,6 +321,61 @@ fn main() {
                 println!("TODO: CreateEnvironmentCamera");
             } else {
                 panic!("Camera \"{}\" unknown.", camera_name);
+            }
+            if let Some(camera) = some_camera {
+                // MakeSampler
+                let mut some_sampler: Option<Box<Sampler + Sync + Send>> = None;
+                // use SobolSampler for now
+                let nsamp: i64 = 16; // TODO: something from .ass file
+                let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                let sampler = Box::new(SobolSampler::new(nsamp, sample_bounds));
+                some_sampler = Some(sampler);
+                if let Some(mut sampler) = some_sampler {
+                    // MakeIntegrator
+                    let mut some_integrator: Option<
+                        Box<SamplerIntegrator + Sync + Send>,
+                    > = None;
+                    // CreatePathIntegrator
+                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    let rr_threshold: Float = 1.0;
+                    let light_strategy: String = String::from("spatial");
+                    let integrator = Box::new(PathIntegrator::new(
+                        max_depth as u32,
+                        pixel_bounds,
+                        rr_threshold,
+                        light_strategy,
+                    ));
+                    some_integrator = Some(integrator);
+                    if let Some(mut integrator) = some_integrator {
+                        // MakeIntegrator
+                        if lights.is_empty() {
+                            // warn if no light sources are defined
+                            print!("WARNING: No light sources defined in scene; ");
+                            println!("rendering a black image.");
+                        }
+                        if !primitives.is_empty() {
+                            let split_method = SplitMethod::SAH;
+                            let max_prims_in_node: i32 = 4;
+                            let accelerator = Arc::new(BVHAccel::new(
+                                primitives.clone(),
+                                max_prims_in_node as usize,
+                                split_method,
+                            ));
+                            let scene: Scene = Scene::new(accelerator.clone(), lights.clone());
+                            let num_threads: u8 = num_cpus::get() as u8;
+                            render(
+                                &scene,
+                                &camera.clone(),
+                                &mut sampler,
+                                &mut integrator,
+                                num_threads,
+                            );
+                        } else {
+                            print!("WARNING: No primitives defined in scene; ");
+                            println!("no need to render anything.");
+                        }
+                    }
+                }
             }
         }
         return;
