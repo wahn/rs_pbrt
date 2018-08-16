@@ -157,7 +157,7 @@ fn main() {
                                 let node_type = inner_pair.clone().into_span().as_str();
                                 print!("{} {{", node_type);
                                 let stripped = strip_comments(span.as_str());
-                                let mut iter = stripped.split_whitespace();
+                                let mut iter = stripped.split_whitespace().peekable();
                                 loop {
                                     if let Some(next) = iter.next() {
                                         if next != String::from("}") {
@@ -278,17 +278,67 @@ fn main() {
                                                             // i % 3 == 2
                                                             z = elems[i];
                                                             // store as Point3f
-                                                            p.push(Point3f {
-                                                                x: x,
-                                                                y: y,
-                                                                z: z,
-                                                            });
+                                                            p.push(Point3f { x: x, y: y, z: z });
                                                         }
                                                     }
                                                     for point in p {
                                                         println!(" {:?}", point);
                                                     }
-
+                                                } else if next == String::from("nsides") {
+                                                    let mut elems: Vec<u32> = Vec::new();
+                                                    loop {
+                                                        let mut is_int: bool = false;
+                                                        // check if next string can be converted to u32
+                                                        if let Some(ref check_for_int_str) =
+                                                            iter.peek()
+                                                        {
+                                                            if u32::from_str(check_for_int_str)
+                                                                .is_ok()
+                                                            {
+                                                                is_int = true;
+                                                            } else {
+                                                                // if not ... break the loop
+                                                                break;
+                                                            }
+                                                        }
+                                                        // if we can convert use next()
+                                                        if is_int {
+                                                            if let Some(nside_str) = iter.next() {
+                                                                let nside: u32 = u32::from_str(nside_str).unwrap();
+                                                                elems.push(nside);
+                                                            }
+                                                        }
+                                                    }
+                                                    let mut followed_by_uint: bool = false;
+                                                    // check if next string is 'UINT' (or not)
+                                                    if let Some(check_for_uint_str) = iter.peek() {
+                                                        if **check_for_uint_str
+                                                            == String::from("UINT")
+                                                        {
+                                                            followed_by_uint = true;
+                                                        }
+                                                    }
+                                                    if followed_by_uint {
+                                                        // skip next (we checked already)
+                                                        iter.next();
+                                                        let num_elements = elems[0];
+                                                        let num_motionblur_keys = elems[1];
+                                                        print!(
+                                                            "\n nsides {} {} UINT ... ",
+                                                            num_elements, num_motionblur_keys
+                                                        );
+                                                        let expected: u32 = num_elements * num_motionblur_keys;
+                                                        elems = Vec::new();
+                                                        for _i in 0..expected {
+                                                            if let Some(nside_str) = iter.next() {
+                                                                let nside: u32 = u32::from_str(nside_str).unwrap();
+                                                                elems.push(nside);
+                                                            }
+                                                        }
+                                                    } else {
+                                                        print!("\n nsides ... ");
+                                                    }
+                                                    print!("\n {:?} ", elems);
                                                 }
                                             }
                                         } else {
