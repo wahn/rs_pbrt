@@ -119,7 +119,8 @@ fn main() {
         let mut xres: i32 = 1280; // read options.xres
         let mut yres: i32 = 720; // read options.yres
         let mut max_depth: i32 = 5; // read options.GI_total_depth
-                                    // input (.ass) file
+        let mut cur_transform: Transform = Transform::default();
+        // input (.ass) file
         let infile = matches.opt_str("i");
         let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
@@ -161,12 +162,48 @@ fn main() {
                                 loop {
                                     if let Some(next) = iter.next() {
                                         if next != String::from("}") {
+                                            // for all nodes
                                             if next == String::from("name") {
                                                 if let Some(name) = iter.next() {
                                                     node_name = name.to_string();
                                                     print!(" {} {} ", next, node_name);
                                                 }
+                                            } else if next == String::from("matrix") {
+                                                let mut elems: Vec<Float> = Vec::new();
+                                                let expected: u32 = 16;
+                                                for _i in 0..expected {
+                                                    if let Some(elem_str) = iter.next() {
+                                                        let elem: f32 = f32::from_str(elem_str).unwrap();
+                                                        elems.push(elem as Float);
+                                                    }
+                                                }
+                                                print!("\n matrix ... ");
+                                                print!("\n {:?}", elems);
+                                                let m00: Float = elems[0];
+                                                let m01: Float = elems[1];
+                                                let m02: Float = elems[2];
+                                                let m03: Float = elems[3];
+                                                let m10: Float = elems[4];
+                                                let m11: Float = elems[5];
+                                                let m12: Float = elems[6];
+                                                let m13: Float = elems[7];
+                                                let m20: Float = elems[8];
+                                                let m21: Float = elems[9];
+                                                let m22: Float = elems[10];
+                                                let m23: Float = elems[11];
+                                                let m30: Float = elems[12];
+                                                let m31: Float = elems[13];
+                                                let m32: Float = elems[14];
+                                                let m33: Float = elems[15];
+                                                cur_transform = Transform::new(
+                                                    m00, m10, m20, m30,
+                                                    m01, m11, m21, m31,
+                                                    m02, m12, m22, m32,
+                                                    m03, m13, m23, m33
+                                                );
+                                                print!("\n {:?}", cur_transform);
                                             }
+                                            // by node type
                                             if node_type == String::from("options") {
                                                 if next == String::from("xres") {
                                                     if let Some(xres_str) = iter.next() {
@@ -263,7 +300,7 @@ fn main() {
                                                         "\n vlist {} {} VECTOR ... ",
                                                         num_elements, num_motionblur_keys
                                                     );
-                                                    println!("\n {:?}", elems);
+                                                    print!("\n {:?}", elems);
                                                     // TriangleMesh
                                                     let mut x: Float = 0.0;
                                                     let mut y: Float = 0.0;
@@ -281,6 +318,7 @@ fn main() {
                                                             p.push(Point3f { x: x, y: y, z: z });
                                                         }
                                                     }
+                                                    println!("");
                                                     for point in p {
                                                         println!(" {:?}", point);
                                                     }
@@ -338,6 +376,55 @@ fn main() {
                                                     } else {
                                                         print!("\n nsides ... ");
                                                     }
+                                                    print!("\n {:?} ", elems);
+                                                } else if next == String::from("vidxs") {
+                                                    // parameter_name: vidxs
+                                                    // <num_elements>
+                                                    // <num_motionblur_keys>
+                                                    // <data_type>: UINT
+                                                    // <elem1> <elem2>
+                                                    // <elem3> <elem4>
+                                                    // ...
+                                                    let mut num_elements: u32 = 0;
+                                                    let mut num_motionblur_keys: u32 = 1;
+                                                    let data_type: String = String::from("UINT");
+                                                    let mut elems: Vec<u32> = Vec::new();
+                                                    if let Some(num_elements_str) = iter.next() {
+                                                        num_elements =
+                                                            u32::from_str(num_elements_str)
+                                                                .unwrap();
+                                                        if let Some(num_motionblur_keys_str) =
+                                                            iter.next()
+                                                        {
+                                                            num_motionblur_keys =
+                                                                u32::from_str(num_motionblur_keys_str).unwrap();
+                                                            if let Some(data_type_str) = iter.next()
+                                                            {
+                                                                if data_type_str != data_type {
+                                                                    panic!(
+                                                                        "ERROR: {} expected ...",
+                                                                        data_type
+                                                                    );
+                                                                } else {
+                                                                    let expected: u32 = num_elements * num_motionblur_keys;
+                                                                    for _i in 0..expected {
+                                                                        if let Some(elem_str) =
+                                                                            iter.next()
+                                                                        {
+                                                                            let elem: u32 =
+                                                                                u32::from_str(elem_str)
+                                                                                .unwrap();
+                                                                            elems.push(elem);
+                                                                        }
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    }
+                                                    print!(
+                                                        "\n vidxs {} {} UINT ... ",
+                                                        num_elements, num_motionblur_keys
+                                                    );
                                                     print!("\n {:?} ", elems);
                                                 }
                                             }
