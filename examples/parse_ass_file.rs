@@ -17,20 +17,26 @@ use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Point3f};
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
+use pbrt::core::material::Material;
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::paramset::ParamSet;
-use pbrt::core::pbrt::Float;
+use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
+use pbrt::core::shape::Shape;
 use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
 use pbrt::filters::gaussian::GaussianFilter;
+use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
+use pbrt::materials::matte::MatteMaterial;
 use pbrt::samplers::sobol::SobolSampler;
+use pbrt::shapes::triangle::{Triangle, TriangleMesh};
+use pbrt::textures::constant::ConstantTexture;
 // std
 use std::env;
 use std::fs::File;
@@ -116,14 +122,20 @@ fn main() {
         let mut render_camera: String = String::from(""); // no default name
         let mut camera_name: String = String::from("perspective");
         let mut fov: Float = 90.0; // read persp_camera.fov
+        let mut animated_cam_to_world: AnimatedTransform = AnimatedTransform::default();
         let mut xres: i32 = 1280; // read options.xres
         let mut yres: i32 = 720; // read options.yres
         let mut max_depth: i32 = 5; // read options.GI_total_depth
         let mut cur_transform: Transform = Transform::default();
+        let mut obj_to_world: Transform = Transform::default();
+        let mut world_to_obj: Transform = Transform::default();
+        let mut p_ws: Vec<Point3f> = Vec::new();
+        let mut p_ws_len: usize = 0;
+        let mut vi: Vec<u32> = Vec::new();
+        let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
+        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
         // input (.ass) file
         let infile = matches.opt_str("i");
-        let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
-        let lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
         match infile {
             Some(x) => {
                 println!("FILE = {}", x);
@@ -196,12 +208,30 @@ fn main() {
                                                 let m32: Float = elems[14];
                                                 let m33: Float = elems[15];
                                                 cur_transform = Transform::new(
-                                                    m00, m10, m20, m30,
-                                                    m01, m11, m21, m31,
-                                                    m02, m12, m22, m32,
-                                                    m03, m13, m23, m33
+                                                    m00, m10, m20, m30, m01, m11, m21, m31, m02,
+                                                    m12, m22, m32, m03, m13, m23, m33,
                                                 );
                                                 print!("\n {:?}", cur_transform);
+                                                obj_to_world = Transform {
+                                                    m: cur_transform.m,
+                                                    m_inv: cur_transform.m_inv,
+                                                };
+                                                world_to_obj = Transform {
+                                                    m: cur_transform.m_inv,
+                                                    m_inv: cur_transform.m,
+                                                };
+                                                if node_type == String::from("persp_camera")
+                                                    && node_name == render_camera
+                                                {
+                                                    let transform_start_time: Float = 0.0;
+                                                    let transform_end_time: Float = 1.0;
+                                                    let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(
+                                                        &cur_transform,
+                                                        transform_start_time,
+                                                        &cur_transform,
+                                                        transform_end_time,
+                                                    );
+                                                }
                                             }
                                             // by node type
                                             if node_type == String::from("options") {
@@ -318,6 +348,16 @@ fn main() {
                                                             p.push(Point3f { x: x, y: y, z: z });
                                                         }
                                                     }
+                                                    // transform mesh vertices to world space
+                                                    p_ws = Vec::new();
+                                                    let n_vertices: usize = p.len();
+                                                    for i in 0..n_vertices {
+                                                        p_ws.push(
+                                                            obj_to_world.transform_point(&p[i]),
+                                                        );
+                                                    }
+                                                    p_ws_len = p_ws.len();
+                                                    // print info
                                                     println!("");
                                                     for point in p {
                                                         println!(" {:?}", point);
@@ -388,7 +428,7 @@ fn main() {
                                                     let mut num_elements: u32 = 0;
                                                     let mut num_motionblur_keys: u32 = 1;
                                                     let data_type: String = String::from("UINT");
-                                                    let mut elems: Vec<u32> = Vec::new();
+                                                    vi = Vec::new();
                                                     if let Some(num_elements_str) = iter.next() {
                                                         num_elements =
                                                             u32::from_str(num_elements_str)
@@ -414,7 +454,7 @@ fn main() {
                                                                             let elem: u32 =
                                                                                 u32::from_str(elem_str)
                                                                                 .unwrap();
-                                                                            elems.push(elem);
+                                                                            vi.push(elem);
                                                                         }
                                                                     }
                                                                 }
@@ -425,18 +465,86 @@ fn main() {
                                                         "\n vidxs {} {} UINT ... ",
                                                         num_elements, num_motionblur_keys
                                                     );
-                                                    print!("\n {:?} ", elems);
+                                                    print!("\n {:?} ", vi);
                                                 }
                                             }
                                         } else {
                                             println!("}}");
+                                            for i in 0..vi.len() {
+                                                if vi[i] as usize >= p_ws_len {
+                                                    panic!(
+                                                        "trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)",
+                                                        vi[i],
+                                                        p_ws_len
+                                                    );
+                                                }
+                                            }
+                                            if node_type == String::from("polymesh") {
+                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+                                                let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
+                                                let s_ws: Vec<Vector3f> = Vec::new();
+                                                let n_ws: Vec<Normal3f> = Vec::new();
+                                                let uvs: Vec<Point2f> = Vec::new();
+                                                // vertex indices are expected as usize, not u32
+                                                let mut vertex_indices: Vec<usize> = Vec::new();
+                                                for i in 0..vi.len() {
+                                                    vertex_indices.push(vi[i] as usize);
+                                                }
+                                                let mesh = Arc::new(TriangleMesh::new(
+                                                    obj_to_world,
+                                                    world_to_obj,
+                                                    false,        // reverse_orientation,
+                                                    false,        // transform_swaps_handedness
+                                                    vi.len() / 3, // n_triangles
+                                                    vertex_indices,
+                                                    p_ws_len,
+                                                    p_ws.clone(), // in world space
+                                                    s_ws,         // in world space
+                                                    n_ws,         // in world space
+                                                    uvs,
+                                                ));
+                                                let kd = Arc::new(ConstantTexture::new(
+                                                    Spectrum::new(0.0),
+                                                ));
+                                                let sigma =
+                                                    Arc::new(ConstantTexture::new(0.0 as Float));
+                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
+                                                let mtl: Option<Arc<Material + Send + Sync>> = Some(matte);
+                                                for id in 0..mesh.n_triangles {
+                                                    let triangle = Arc::new(Triangle::new(
+                                                        mesh.object_to_world,
+                                                        mesh.world_to_object,
+                                                        mesh.reverse_orientation,
+                                                        mesh.clone(),
+                                                        id,
+                                                    ));
+                                                    shapes.push(triangle.clone());
+                                                    materials.push(mtl.clone());
+                                                }
+                                                let mi: MediumInterface = MediumInterface::default();
+                                                let mut prims: Vec<Arc<Primitive + Send + Sync>> = Vec::new();
+                                                for i in 0..shapes.len() {
+                                                    let shape = &shapes[i];
+                                                    let material = &materials[i];
+                                                    let geo_prim =
+                                                        Arc::new(GeometricPrimitive::new(
+                                                            shape.clone(),
+                                                            material.clone(),
+                                                            None,
+                                                            Some(Arc::new(mi.clone())),
+                                                        ));
+                                                    prims.push(geo_prim.clone());
+                                                }
+                                                for prim in prims {
+                                                    primitives.push(prim.clone());
+                                                }
+                                            }
                                         }
                                     } else {
                                         break;
                                     }
                                 }
                             }
-                            // WORK
                             _ => println!("TODO: {:?}", inner_pair.as_rule()),
                         }
                     }
@@ -490,34 +598,6 @@ fn main() {
             // MakeCamera
             let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
             let mut medium_interface: MediumInterface = MediumInterface::default();
-            let camera_to_world: TransformSet = TransformSet {
-                t: [Transform {
-                    m: Matrix4x4 {
-                        m: [
-                            [1.0, 0.0, 0.0, 0.0],
-                            [0.0, 1.0, 0.0, 0.0],
-                            [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0],
-                        ],
-                    },
-                    m_inv: Matrix4x4 {
-                        m: [
-                            [1.0, 0.0, 0.0, 0.0],
-                            [0.0, 1.0, 0.0, 0.0],
-                            [0.0, 0.0, 1.0, 0.0],
-                            [0.0, 0.0, 0.0, 1.0],
-                        ],
-                    },
-                }; 2],
-            };
-            let transform_start_time: Float = 0.0;
-            let transform_end_time: Float = 1.0;
-            let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(
-                &camera_to_world.t[0],
-                transform_start_time,
-                &camera_to_world.t[1],
-                transform_end_time,
-            );
             if camera_name == String::from("perspective") {
                 let mut camera_params: ParamSet = ParamSet::default();
                 camera_params.add_float(String::from("fov"), fov);
@@ -550,16 +630,22 @@ fn main() {
                     let mut some_integrator: Option<
                         Box<SamplerIntegrator + Sync + Send>,
                     > = None;
-                    // CreatePathIntegrator
+                    // CreateAOIntegrator
                     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    let rr_threshold: Float = 1.0;
-                    let light_strategy: String = String::from("spatial");
-                    let integrator = Box::new(PathIntegrator::new(
-                        max_depth as u32,
-                        pixel_bounds,
-                        rr_threshold,
-                        light_strategy,
-                    ));
+                    let cos_sample: bool = true;
+                    let n_samples: i32 = 64;
+                    let integrator =
+                        Box::new(AOIntegrator::new(cos_sample, n_samples, pixel_bounds));
+                    // CreatePathIntegrator
+                    // let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    // let rr_threshold: Float = 1.0;
+                    // let light_strategy: String = String::from("spatial");
+                    // let integrator = Box::new(PathIntegrator::new(
+                    //     max_depth as u32,
+                    //     pixel_bounds,
+                    //     rr_threshold,
+                    //     light_strategy,
+                    // ));
                     some_integrator = Some(integrator);
                     if let Some(mut integrator) = some_integrator {
                         // MakeIntegrator
