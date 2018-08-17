@@ -129,6 +129,7 @@ fn main() {
         let mut cur_transform: Transform = Transform::default();
         let mut obj_to_world: Transform = Transform::default();
         let mut world_to_obj: Transform = Transform::default();
+        let mut nsides: Vec<u32> = Vec::new();
         let mut p_ws: Vec<Point3f> = Vec::new();
         let mut p_ws_len: usize = 0;
         let mut vi: Vec<u32> = Vec::new();
@@ -200,7 +201,12 @@ fn main() {
                                                 let m12: Float = elems[6];
                                                 let m13: Float = elems[7];
                                                 let m20: Float = elems[8];
-                                                let m21: Float = elems[9];
+                                                let m21: Float;
+                                                if node_type == String::from("persp_camera") {
+                                                    m21 = -elems[9]; // use negative value!
+                                                } else {
+                                                    m21 = elems[9];
+                                                }
                                                 let m22: Float = elems[10];
                                                 let m23: Float = elems[11];
                                                 let m30: Float = elems[12];
@@ -225,7 +231,7 @@ fn main() {
                                                 {
                                                     let transform_start_time: Float = 0.0;
                                                     let transform_end_time: Float = 1.0;
-                                                    let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(
+                                                    animated_cam_to_world = AnimatedTransform::new(
                                                         &cur_transform,
                                                         transform_start_time,
                                                         &cur_transform,
@@ -363,7 +369,7 @@ fn main() {
                                                         println!(" {:?}", point);
                                                     }
                                                 } else if next == String::from("nsides") {
-                                                    let mut elems: Vec<u32> = Vec::new();
+                                                    nsides = Vec::new();
                                                     loop {
                                                         let mut is_int: bool = false;
                                                         // check if next string can be converted to u32
@@ -383,7 +389,7 @@ fn main() {
                                                         if is_int {
                                                             if let Some(nside_str) = iter.next() {
                                                                 let nside: u32 = u32::from_str(nside_str).unwrap();
-                                                                elems.push(nside);
+                                                                nsides.push(nside);
                                                             }
                                                         }
                                                     }
@@ -399,24 +405,24 @@ fn main() {
                                                     if followed_by_uint {
                                                         // skip next (we checked already)
                                                         iter.next();
-                                                        let num_elements = elems[0];
-                                                        let num_motionblur_keys = elems[1];
+                                                        let num_elements = nsides[0];
+                                                        let num_motionblur_keys = nsides[1];
                                                         print!(
                                                             "\n nsides {} {} UINT ... ",
                                                             num_elements, num_motionblur_keys
                                                         );
                                                         let expected: u32 = num_elements * num_motionblur_keys;
-                                                        elems = Vec::new();
+                                                        nsides = Vec::new();
                                                         for _i in 0..expected {
                                                             if let Some(nside_str) = iter.next() {
                                                                 let nside: u32 = u32::from_str(nside_str).unwrap();
-                                                                elems.push(nside);
+                                                                nsides.push(nside);
                                                             }
                                                         }
                                                     } else {
                                                         print!("\n nsides ... ");
                                                     }
-                                                    print!("\n {:?} ", elems);
+                                                    print!("\n {:?} ", nsides);
                                                 } else if next == String::from("vidxs") {
                                                     // parameter_name: vidxs
                                                     // <num_elements>
@@ -470,16 +476,47 @@ fn main() {
                                             }
                                         } else {
                                             println!("}}");
-                                            for i in 0..vi.len() {
-                                                if vi[i] as usize >= p_ws_len {
-                                                    panic!(
-                                                        "trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)",
-                                                        vi[i],
-                                                        p_ws_len
-                                                    );
-                                                }
-                                            }
                                             if node_type == String::from("polymesh") {
+                                                // make sure there are no out of-bounds vertex indices
+                                                for i in 0..vi.len() {
+                                                    if vi[i] as usize >= p_ws_len {
+                                                        panic!(
+                                                            "trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)",
+                                                            vi[i],
+                                                            p_ws_len
+                                                        );
+                                                    }
+                                                }
+                                                // convert quads to triangles
+                                                let mut vi_tri: Vec<u32> = Vec::new();
+                                                let mut count: usize = 0;
+                                                for i in 0..nsides.len() {
+                                                    let nside = nsides[i];
+                                                    if nside == 3 {
+                                                        // triangle
+                                                        vi_tri.push(vi[count]);
+                                                        count += 1;
+                                                        vi_tri.push(vi[count]);
+                                                        count += 1;
+                                                        vi_tri.push(vi[count]);
+                                                        count += 1;
+                                                    } else if nside == 4 {
+                                                        // quad gets split into 2 triangles
+                                                        vi_tri.push(vi[count]);
+                                                        vi_tri.push(vi[count + 1]);
+                                                        vi_tri.push(vi[count + 2]);
+                                                        vi_tri.push(vi[count]);
+                                                        vi_tri.push(vi[count + 2]);
+                                                        vi_tri.push(vi[count + 3]);
+                                                        count += 4;
+                                                    } else {
+                                                        panic!(
+                                                            "{}-sided poygons are not supported",
+                                                            nside
+                                                        );
+                                                    }
+                                                }
+                                                // TriangleMesh
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
                                                 let s_ws: Vec<Vector3f> = Vec::new();
@@ -487,15 +524,15 @@ fn main() {
                                                 let uvs: Vec<Point2f> = Vec::new();
                                                 // vertex indices are expected as usize, not u32
                                                 let mut vertex_indices: Vec<usize> = Vec::new();
-                                                for i in 0..vi.len() {
-                                                    vertex_indices.push(vi[i] as usize);
+                                                for i in 0..vi_tri.len() {
+                                                    vertex_indices.push(vi_tri[i] as usize);
                                                 }
                                                 let mesh = Arc::new(TriangleMesh::new(
                                                     obj_to_world,
                                                     world_to_obj,
-                                                    false,        // reverse_orientation,
-                                                    false,        // transform_swaps_handedness
-                                                    vi.len() / 3, // n_triangles
+                                                    false,            // reverse_orientation,
+                                                    false,            // transform_swaps_handedness
+                                                    vi_tri.len() / 3, // n_triangles
                                                     vertex_indices,
                                                     p_ws_len,
                                                     p_ws.clone(), // in world space
