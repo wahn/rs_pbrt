@@ -1,0 +1,411 @@
+### exported: Fri Aug 17 14:57:00 2018
+### from:     Arnold 5.1.1.2 [73211a44] linux clang-5.0.0 oiio-1.7.17 osl-1.9.0 vdb-4.0.0 clm-1.0.3.513 rlm-12.2.2 2018/07/24 09:25:51
+### host app: Blender 2.79.0
+
+
+
+options
+{
+ AA_samples 2
+ outputs 8 1 STRING
+  "RGBA RGBA filter driver"
+  "emission RGB filter driver_emission"
+  "diffuse_direct RGB filter driver_diffuse_direct"
+  "specular_direct RGB filter driver_specular_direct"
+  "transmission_direct RGB filter driver_transmission_direct"
+  "transmission_indirect RGB filter driver_transmission_indirect"
+  "diffuse_indirect RGB filter driver_diffuse_indirect"
+  "specular_indirect RGB filter driver_specular_indirect"
+ xres 500
+ yres 500
+ bucket_scanning "hilbert"
+ camera "CAcam4"
+ plugin_searchpath "/Users/jan/Graphics/Rendering/Arnold/shaders/current"
+ GI_diffuse_depth 1
+ GI_specular_depth 1
+ GI_transmission_depth 3
+ GI_volume_depth 1
+ GI_total_depth 11
+ GI_diffuse_samples 3
+ GI_specular_samples 3
+ GI_transmission_samples 3
+ GI_sss_samples 1
+ GI_volume_samples 1
+}
+
+persp_camera
+{
+ name CAcam4
+ matrix
+ 0.172380283 0.985030472 0 0
+ 0 0 1 0
+ 0.985030472 -0.172380283 0 0
+ 25 2.5 2.7249999 1
+ fov 45.0000038
+ focus_distance 0
+ flat_field_focus off
+ aperture_size 0
+}
+
+standard_surface
+{
+ name MAdefault
+}
+
+gaussian_filter
+{
+ name filter
+}
+
+driver_exr
+{
+ name driver
+ filename "arnold.exr"
+}
+
+driver_exr
+{
+ name driver_emission
+ filename "arnold_aov_emission.exr"
+}
+
+driver_exr
+{
+ name driver_diffuse_direct
+ filename "arnold_aov_diffuse_direct.exr"
+}
+
+driver_exr
+{
+ name driver_specular_direct
+ filename "arnold_aov_specular_direct.exr"
+}
+
+driver_exr
+{
+ name driver_transmission_direct
+ filename "arnold_aov_transmission_direct.exr"
+}
+
+driver_exr
+{
+ name driver_transmission_indirect
+ filename "arnold_aov_transmission_indirect.exr"
+}
+
+driver_exr
+{
+ name driver_diffuse_indirect
+ filename "arnold_aov_diffuse_indirect.exr"
+}
+
+driver_exr
+{
+ name driver_specular_indirect
+ filename "arnold_aov_specular_indirect.exr"
+}
+
+persp_camera
+{
+ name CAcam3
+ matrix
+ 0 1 0 0
+ -0.258036047 0 0.966135323 0
+ 0.966135263 0 0.258036017 0
+ 7.6170001 0.987999976 2.86999989 1
+ fov 45.0000038
+ focus_distance 0
+ flat_field_focus off
+ aperture_size 0
+}
+
+persp_camera
+{
+ name CAcam2
+ matrix
+ 0.0685600266 0.997647047 -4.65661343e-10 0
+ 0.0941538364 -0.00647041434 0.995536566 0
+ 0.993194103 -0.0682540163 -0.0943759009 0
+ 3.93199992 0.916000009 0.893000007 1
+ fov 45.0000038
+ focus_distance 0
+ flat_field_focus off
+ aperture_size 0
+}
+
+persp_camera
+{
+ name CAcam1
+ matrix
+ 0.44721365 0.894427299 0 0
+ -0.365148395 0.182574198 0.912870944 0
+ 0.816496551 -0.408248276 0.408248276 0
+ 2.25 0.375 1 1
+ fov 45.0000038
+ focus_distance 0
+ flat_field_focus off
+ aperture_size 0
+}
+
+polymesh
+{
+ name MEwindow
+ matrix
+ 0.00999999046 0 0 0
+ 0 0.75 0 0
+ 0 0 0.75 0
+ 2.99000001 0.625 0.625 1
+ shader "MAwindow_glass"
+ opaque off
+ nsides 6 1 UINT
+4 4 4 4 4 4
+ vidxs 24 1 UINT
+  1 0 4 5 5 6 2 1 6 7 3 2 0 3 7 4 0 1 2 3 7 6 5 4
+ shidxs 6 1 BYTE
+0 0 0 0 0 0
+ vlist 8 1 VECTOR
+0 0 0 0 1 0 1 1 0 1 0 0 0 0 1 0 1 1 1 1 1 1 0 1
+}
+
+standard_surface
+{
+ name MAwindow_glass
+ base 0.119999997
+ base_color 0.959999979 0.959999979 0.959999979
+ specular 0
+ specular_color 1 1 1
+ specular_roughness 0
+ specular_IOR 1.51999998
+ metalness 0.119999997
+ transmission 0.879999995
+ transmission_color 1 1 1
+}
+
+sphere
+{
+ name CUfixture
+ visibility 253
+ matrix
+ 0.125 0 0 0
+ 0 0.125 0 0
+ 0 0 0.125 0
+ 2 1 1.5 1
+ shader "MAbright"
+ opaque on
+ radius 1
+}
+
+ray_switch_rgba
+{
+ name MAbright
+ camera 100 100 100 1
+ shadow 0 0 0 1
+ diffuse_reflection 100 100 100 1
+ diffuse_transmission 100 100 100 1
+ specular_reflection 100 100 100 1
+ specular_transmission 100 100 100 1
+}
+
+point_light
+{
+ name LAfixture_un0000
+ matrix
+ 1 0 0 0
+ 0 1 0 0
+ 0 0 1 0
+ 2 1 1.5 1
+ color 1 1 1
+ intensity 100
+ samples 1
+ specular 1
+ radius 0.125
+}
+
+polymesh
+{
+ name MEbuilding
+ matrix
+ 10 0 0 0
+ 0 10 0 0
+ 0 0 2 0
+ 10 5 0 1
+ shader "MAreflect20"
+ opaque on
+ nsides 6 1 UINT
+4 4 4 4 4 4
+ vidxs 24 1 UINT
+  1 0 4 5 5 6 2 1 6 7 3 2 0 3 7 4 0 1 2 3 7 6 5 4
+ shidxs 6 1 BYTE
+0 0 0 0 0 0
+ vlist 8 1 VECTOR
+0 0 0 0 1 0 1 1 0 1 0 0 0 0 1 0 1 1 1 1 1 1 0 1
+}
+
+standard_surface
+{
+ name MAreflect20
+ base 1
+ base_color 0.150000006 0.200000003 0.200000003
+ specular 0
+ specular_color 1 1 1
+ specular_roughness 0
+ metalness 1
+}
+
+disk
+{
+ name CUgroundplane
+ matrix
+ 1 0 0 0
+ 0 1 0 0
+ 0 0 1 0
+ 0 0 -0.00999999978 1
+ shader "MAground_mat"
+ opaque on
+ radius 30
+ hole 0
+}
+
+standard_surface
+{
+ name MAground_mat
+ base 1
+ base_color 0.280000001 0.180000007 0.119999997
+ specular 0
+ specular_color 1 1 1
+}
+
+polymesh
+{
+ name MEbox
+ matrix
+ 0.482962847 0.129409447 0 0
+ -0.129409447 0.482962847 0 0
+ 0 0 0.5 0
+ 0.5 0.75 0 1
+ shader "MAblue_plastic"
+ opaque on
+ nsides 6 1 UINT
+4 4 4 4 4 4
+ vidxs 24 1 UINT
+  1 0 4 5 5 6 2 1 6 7 3 2 0 3 7 4 0 1 2 3 7 6 5 4
+ shidxs 6 1 BYTE
+0 0 0 0 0 0
+ vlist 8 1 VECTOR
+0 0 0 0 1 0 1 1 0 1 0 0 0 0 1 0 1 1 1 1 1 1 0 1
+}
+
+standard_surface
+{
+ name MAblue_plastic
+ base 0.949999988
+ base_color 0.100000001 0.100000001 0.600000024
+ specular 0.0500000007
+ specular_color 1 1 1
+ specular_roughness 0.316227764
+}
+
+polymesh
+{
+ name MEroom
+ matrix
+ 1 0 0 0
+ 0 1 0 0
+ 0 0 1 0
+ 0 0 0 1
+ shader 3 1 NODE
+"MAwhite" "MAgray_paint" "MAbrown"
+ opaque on
+ nsides 9 1 UINT
+  4 4 4 4 4 4 4 4 4
+ vidxs 36 1 UINT
+  0 1 2 3 6 8 9 5 10 4 5 9 11 7 4 10 8 6 7 11 12 13 14 15 16 17 18 19 20 21 22 23 24
+  25 26 27
+ shidxs 9 1 BYTE
+  0 1 1 1 1 1 2 1 1
+ vlist 28 1 VECTOR
+  3 2 1.75 3 0 1.75 0 0 1.75 0 2 1.75 3 2 1.75 3 2 0 3 0 0 3 0 1.75 3 0.625 0.625 3 1.375 0.625
+  3 1.375 1.375 3 0.625 1.375 3 2 1.75 0 2 1.75 0 2 0 3 2 0 0 0 0 3 0 0 3 2 0 0 2 0
+  0 0 0 0 2 0 0 2 1.75 0 0 1.75 0 0 0 0 0 1.75 3 0 1.75 3 0 0
+}
+
+standard_surface
+{
+ name MAwhite
+ base 1
+ base_color 0.699999988 0.699999988 0.699999988
+ specular 0
+ specular_color 1 1 1
+}
+
+standard_surface
+{
+ name MAgray_paint
+ base 1
+ base_color 0.5 0.5 0.5
+ specular 0
+ specular_color 1 1 1
+}
+
+standard_surface
+{
+ name MAbrown
+ base 1
+ base_color 0.200000003 0.100000001 0.100000001
+ specular 0
+ specular_color 1 1 1
+}
+
+cylinder
+{
+ name CUfixture_support
+ matrix
+ 0.0500000119 0 0 0
+ 0 0.0500000119 0 0
+ 0 0 0.149999976 0
+ 2 1 1.60000002 1
+ shader "MAchrome"
+ opaque on
+ bottom 0 0 0
+ top 0 0 1
+ radius 1
+}
+
+standard_surface
+{
+ name MAchrome
+ base 0.899999976
+ base_color 0.800000012 0.800000012 0.800000012
+ specular 0
+ specular_color 1 1 1
+ specular_roughness 0
+ metalness 0.899999976
+}
+
+sphere
+{
+ name CUball
+ matrix
+ 0.125 0 0 0
+ 0 0.125 0 0
+ 0 0 0.125 0
+ 0.699999988 1.125 0.625 1
+ shader "MAcrystal"
+ opaque off
+ radius 1
+}
+
+standard_surface
+{
+ name MAcrystal
+ base 0.0799999982
+ base_color 0.5 0.5 0.5
+ specular 0
+ specular_color 1 1 1
+ specular_roughness 0
+ specular_IOR 1.5
+ metalness 0.0799999982
+ transmission 0.920000017
+ transmission_color 1 1 1
+}
+

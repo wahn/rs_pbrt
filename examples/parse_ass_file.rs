@@ -35,6 +35,7 @@ use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::samplers::sobol::SobolSampler;
+use pbrt::shapes::disk::Disk;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
 // std
@@ -122,6 +123,7 @@ fn main() {
         let mut render_camera: String = String::from(""); // no default name
         let mut camera_name: String = String::from("perspective");
         let mut fov: Float = 90.0; // read persp_camera.fov
+        let mut radius: Float = 0.5; // read [cylinder, disk, sphere].radius
         let mut animated_cam_to_world: AnimatedTransform = AnimatedTransform::default();
         let mut xres: i32 = 1280; // read options.xres
         let mut yres: i32 = 720; // read options.yres
@@ -191,7 +193,7 @@ fn main() {
                                                     }
                                                 }
                                                 print!("\n matrix ... ");
-                                                print!("\n {:?}", elems);
+                                                // print!("\n {:?}", elems);
                                                 let m00: Float = elems[0];
                                                 let m01: Float = elems[1];
                                                 let m02: Float = elems[2];
@@ -201,12 +203,7 @@ fn main() {
                                                 let m12: Float = elems[6];
                                                 let m13: Float = elems[7];
                                                 let m20: Float = elems[8];
-                                                let m21: Float;
-                                                if node_type == String::from("persp_camera") {
-                                                    m21 = -elems[9]; // use negative value!
-                                                } else {
-                                                    m21 = elems[9];
-                                                }
+                                                let m21: Float = elems[9];
                                                 let m22: Float = elems[10];
                                                 let m23: Float = elems[11];
                                                 let m30: Float = elems[12];
@@ -217,7 +214,7 @@ fn main() {
                                                     m00, m10, m20, m30, m01, m11, m21, m31, m02,
                                                     m12, m22, m32, m03, m13, m23, m33,
                                                 );
-                                                print!("\n {:?}", cur_transform);
+                                                // print!("\n {:?}", cur_transform);
                                                 obj_to_world = Transform {
                                                     m: cur_transform.m,
                                                     m_inv: cur_transform.m_inv,
@@ -231,6 +228,10 @@ fn main() {
                                                 {
                                                     let transform_start_time: Float = 0.0;
                                                     let transform_end_time: Float = 1.0;
+                                                    let scale: Transform = Transform::scale(1.0 as Float,
+                                                                                            1.0 as Float,
+                                                                                            -1.0 as Float);
+                                                    cur_transform = cur_transform * scale;
                                                     animated_cam_to_world = AnimatedTransform::new(
                                                         &cur_transform,
                                                         transform_start_time,
@@ -336,7 +337,7 @@ fn main() {
                                                         "\n vlist {} {} VECTOR ... ",
                                                         num_elements, num_motionblur_keys
                                                     );
-                                                    print!("\n {:?}", elems);
+                                                    // print!("\n {:?}", elems);
                                                     // TriangleMesh
                                                     let mut x: Float = 0.0;
                                                     let mut y: Float = 0.0;
@@ -363,11 +364,11 @@ fn main() {
                                                         );
                                                     }
                                                     p_ws_len = p_ws.len();
-                                                    // print info
-                                                    println!("");
-                                                    for point in p {
-                                                        println!(" {:?}", point);
-                                                    }
+                                                // print info
+                                                // println!("");
+                                                // for point in p {
+                                                //     println!(" {:?}", point);
+                                                // }
                                                 } else if next == String::from("nsides") {
                                                     nsides = Vec::new();
                                                     loop {
@@ -422,7 +423,7 @@ fn main() {
                                                     } else {
                                                         print!("\n nsides ... ");
                                                     }
-                                                    print!("\n {:?} ", nsides);
+                                                // print!("\n {:?} ", nsides);
                                                 } else if next == String::from("vidxs") {
                                                     // parameter_name: vidxs
                                                     // <num_elements>
@@ -471,7 +472,15 @@ fn main() {
                                                         "\n vidxs {} {} UINT ... ",
                                                         num_elements, num_motionblur_keys
                                                     );
-                                                    print!("\n {:?} ", vi);
+                                                    // print!("\n {:?} ", vi);
+                                                }
+                                            } else if node_type == String::from("disk") {
+                                                if next == String::from("radius") {
+                                                    if let Some(radius_str) = iter.next() {
+                                                        radius = 0.5; // reset
+                                                        radius = f32::from_str(radius_str).unwrap();
+                                                        print!("\n radius {} ", radius);
+                                                    }
                                                 }
                                             }
                                         } else {
@@ -558,6 +567,45 @@ fn main() {
                                                     shapes.push(triangle.clone());
                                                     materials.push(mtl.clone());
                                                 }
+                                                let mi: MediumInterface = MediumInterface::default();
+                                                let mut prims: Vec<Arc<Primitive + Send + Sync>> = Vec::new();
+                                                for i in 0..shapes.len() {
+                                                    let shape = &shapes[i];
+                                                    let material = &materials[i];
+                                                    let geo_prim =
+                                                        Arc::new(GeometricPrimitive::new(
+                                                            shape.clone(),
+                                                            material.clone(),
+                                                            None,
+                                                            Some(Arc::new(mi.clone())),
+                                                        ));
+                                                    prims.push(geo_prim.clone());
+                                                }
+                                                for prim in prims {
+                                                    primitives.push(prim.clone());
+                                                }
+                                            } else if node_type == String::from("disk") {
+                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+                                                let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
+                                                let kd = Arc::new(ConstantTexture::new(
+                                                    Spectrum::new(0.0),
+                                                ));
+                                                let sigma =
+                                                    Arc::new(ConstantTexture::new(0.0 as Float));
+                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
+                                                let mtl: Option<Arc<Material + Send + Sync>> = Some(matte);
+                                                let disk = Arc::new(Disk::new(
+                                                    obj_to_world,
+                                                    world_to_obj,
+                                                    false,
+                                                    false,
+                                                    0.0 as Float, // height
+                                                    radius,
+                                                    0.0 as Float, // inner_radius
+                                                    360.0 as Float, // phi_max
+                                                ));
+                                                shapes.push(disk.clone());
+                                                materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let mut prims: Vec<Arc<Primitive + Send + Sync>> = Vec::new();
                                                 for i in 0..shapes.len() {
