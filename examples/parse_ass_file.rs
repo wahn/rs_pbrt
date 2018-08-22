@@ -33,12 +33,15 @@ use pbrt::filters::gaussian::GaussianFilter;
 use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
+use pbrt::lights::diffuse::DiffuseAreaLight;
+use pbrt::lights::point::PointLight;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::samplers::sobol::SobolSampler;
 use pbrt::shapes::disk::Disk;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
 // std
+use std::collections::HashMap;
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
@@ -121,13 +124,17 @@ fn main() {
         let mut filter_name: String = String::from("box");
         let mut filter_width: Float = 2.0;
         let mut render_camera: String = String::from(""); // no default name
+        let mut mesh: String = String::from(""); // no default name
         let mut camera_name: String = String::from("perspective");
         let mut fov: Float = 90.0; // read persp_camera.fov
+        let mut intensity: Float = 1.0; // read mesh_light.intensity
         let mut radius: Float = 0.5; // read [cylinder, disk, sphere].radius
+        let mut color: Spectrum = Spectrum::new(1.0 as Float);
         let mut animated_cam_to_world: AnimatedTransform = AnimatedTransform::default();
         let mut xres: i32 = 1280; // read options.xres
         let mut yres: i32 = 720; // read options.yres
         let mut max_depth: i32 = 5; // read options.GI_total_depth
+        let mut samples: i32 = 1; // read mesh_light.samples
         let mut cur_transform: Transform = Transform::default();
         let mut obj_to_world: Transform = Transform::default();
         let mut world_to_obj: Transform = Transform::default();
@@ -137,6 +144,7 @@ fn main() {
         let mut vi: Vec<u32> = Vec::new();
         let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+        let mut named_primitives: HashMap<String, Vec<Arc<GeometricPrimitive>>> = HashMap::new();
         // input (.ass) file
         let infile = matches.opt_str("i");
         match infile {
@@ -284,6 +292,46 @@ fn main() {
                                                             f32::from_str(filter_width_str)
                                                                 .unwrap();
                                                         print!("\n filter_width {} ", filter_width);
+                                                    }
+                                                }
+                                            } else if node_type == String::from("mesh_light") {
+                                                if next == String::from("intensity") {
+                                                    if let Some(intensity_str) = iter.next() {
+                                                        intensity =
+                                                            f32::from_str(intensity_str).unwrap();
+                                                        print!("\n intensity {} ", intensity);
+                                                    }
+                                                } else if next == String::from("color") {
+                                                    let mut color_r: Float = 0.0;
+                                                    let mut color_g: Float = 0.0;
+                                                    let mut color_b: Float = 0.0;
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_r = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_g = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_b = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    color =
+                                                        Spectrum::rgb(color_r, color_g, color_b);
+                                                    print!(
+                                                        "\n color {} {} {} ",
+                                                        color_r, color_g, color_b
+                                                    );
+                                                } else if next == String::from("samples") {
+                                                    if let Some(samples_str) = iter.next() {
+                                                        samples =
+                                                            i32::from_str(samples_str).unwrap();
+                                                        print!("\n samples {} ", samples);
+                                                    }
+                                                } else if next == String::from("mesh") {
+                                                    if let Some(mesh_str) = iter.next() {
+                                                        // strip surrounding double quotes
+                                                        let v: Vec<&str> = mesh_str.split('"').collect();
+                                                        mesh = v[1].to_string();
+                                                        print!("\n mesh {:?} ", mesh);
                                                     }
                                                 }
                                             } else if node_type == String::from("polymesh") {
@@ -485,7 +533,54 @@ fn main() {
                                             }
                                         } else {
                                             println!("}}");
-                                            if node_type == String::from("polymesh") {
+                                            if node_type == String::from("mesh_light") {
+                                                match named_primitives.get_mut(mesh.as_str()) {
+                                                    Some(prims) => {
+                                                        // for i in 0..prims.len() {
+                                                        //     let mut prim = &mut prims[i];
+                                                        for prim in prims.iter_mut() {
+                                                            let shape = prim.shape.clone();
+                                                            let geo_prim_opt = Arc::get_mut(prim);
+                                                            let mi: MediumInterface =
+                                                                MediumInterface::default();
+                                                            let l_emit: Spectrum = color * intensity;
+                                                            let two_sided: bool = false;
+                                                            let area_light: Arc<DiffuseAreaLight> =
+                                                                Arc::new(DiffuseAreaLight::new(
+                                                                    &cur_transform,
+                                                                    &mi,
+                                                                    &l_emit,
+                                                                    samples,
+                                                                    shape,
+                                                                    two_sided,
+                                                                ));
+                                                            lights.push(area_light.clone());
+                                                            // pointer from prim to area light
+                                                            if geo_prim_opt.is_some() {
+                                                                let mut geo_prim = geo_prim_opt.unwrap();
+                                                                geo_prim.area_light =
+                                                                    Some(area_light.clone());
+                                                            } else {
+                                                                println!("WARNING: no pointer from prim to area light");
+                                                            }
+                                                        }
+                                                    }
+                                                    None => {
+                                                        panic!(
+                                                            "ERROR: mesh_light({:?}) without mesh",
+                                                            mesh
+                                                        );
+                                                    }
+                                                }
+                                            } else if node_type == String::from("point_light") {
+                                                let mi: MediumInterface = MediumInterface::default();
+                                                let point_light = Arc::new(PointLight::new(
+                                                    &cur_transform,
+                                                    &mi,
+                                                    &(color * intensity),
+                                                ));
+                                                lights.push(point_light);
+                                            } else if node_type == String::from("polymesh") {
                                                 // make sure there are no out of-bounds vertex indices
                                                 for i in 0..vi.len() {
                                                     if vi[i] as usize >= p_ws_len {
@@ -550,7 +645,7 @@ fn main() {
                                                     uvs,
                                                 ));
                                                 let kd = Arc::new(ConstantTexture::new(
-                                                    Spectrum::new(0.0),
+                                                    Spectrum::new(0.5),
                                                 ));
                                                 let sigma =
                                                     Arc::new(ConstantTexture::new(0.0 as Float));
@@ -568,7 +663,7 @@ fn main() {
                                                     materials.push(mtl.clone());
                                                 }
                                                 let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<Arc<Primitive + Send + Sync>> = Vec::new();
+                                                let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let material = &materials[i];
@@ -581,9 +676,7 @@ fn main() {
                                                         ));
                                                     prims.push(geo_prim.clone());
                                                 }
-                                                for prim in prims {
-                                                    primitives.push(prim.clone());
-                                                }
+                                                named_primitives.insert(node_name.clone(), prims);
                                             } else if node_type == String::from("disk") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
@@ -601,13 +694,13 @@ fn main() {
                                                     false,
                                                     0.0 as Float, // height
                                                     radius,
-                                                    0.0 as Float, // inner_radius
+                                                    0.0 as Float,   // inner_radius
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(disk.clone());
                                                 materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<Arc<Primitive + Send + Sync>> = Vec::new();
+                                                let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let material = &materials[i];
@@ -620,9 +713,7 @@ fn main() {
                                                         ));
                                                     prims.push(geo_prim.clone());
                                                 }
-                                                for prim in prims {
-                                                    primitives.push(prim.clone());
-                                                }
+                                                named_primitives.insert(node_name.clone(), prims);
                                             }
                                         }
                                     } else {
@@ -642,6 +733,12 @@ fn main() {
         println!("filter_name = {:?}", filter_name);
         println!("filter_width = {:?}", filter_width);
         println!("max_depth = {:?}", max_depth);
+        for value in named_primitives.values() {
+            for prim in value {
+                primitives.push(prim.clone());
+            }
+        }
+        println!("number of primitives = {:?}", primitives.len());
         // MakeFilter
         let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
         if filter_name == String::from("box") {
@@ -716,21 +813,21 @@ fn main() {
                         Box<SamplerIntegrator + Sync + Send>,
                     > = None;
                     // CreateAOIntegrator
-                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    let cos_sample: bool = true;
-                    let n_samples: i32 = 64;
-                    let integrator =
-                        Box::new(AOIntegrator::new(cos_sample, n_samples, pixel_bounds));
-                    // CreatePathIntegrator
                     // let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    // let rr_threshold: Float = 1.0;
-                    // let light_strategy: String = String::from("spatial");
-                    // let integrator = Box::new(PathIntegrator::new(
-                    //     max_depth as u32,
-                    //     pixel_bounds,
-                    //     rr_threshold,
-                    //     light_strategy,
-                    // ));
+                    // let cos_sample: bool = true;
+                    // let n_samples: i32 = 64;
+                    // let integrator =
+                    //     Box::new(AOIntegrator::new(cos_sample, n_samples, pixel_bounds));
+                    // CreatePathIntegrator
+                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    let rr_threshold: Float = 1.0;
+                    let light_strategy: String = String::from("spatial");
+                    let integrator = Box::new(PathIntegrator::new(
+                        max_depth as u32,
+                        pixel_bounds,
+                        rr_threshold,
+                        light_strategy,
+                    ));
                     some_integrator = Some(integrator);
                     if let Some(mut integrator) = some_integrator {
                         // MakeIntegrator
