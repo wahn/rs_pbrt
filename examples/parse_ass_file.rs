@@ -152,6 +152,7 @@ fn main() {
         let mut radius: Float = 0.5; // read [cylinder, disk, sphere].radius
         let mut hole: Float = 0.0; // read disk.hole
         let mut color: Spectrum = Spectrum::new(1.0 as Float);
+        let mut base_color: Spectrum = Spectrum::new(1.0 as Float);
         let mut animated_cam_to_world: AnimatedTransform = AnimatedTransform::default();
         let mut xres: i32 = 1280; // read options.xres
         let mut yres: i32 = 720; // read options.yres
@@ -166,7 +167,9 @@ fn main() {
         let mut vi: Vec<u32> = Vec::new();
         let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+        let mut named_materials: HashMap<String, Arc<Material>> = HashMap::new();
         let mut named_primitives: HashMap<String, Vec<Arc<GeometricPrimitive>>> = HashMap::new();
+        let mut shader: String = String::from(""); // no default name
         // input (.ass) file
         let infile = matches.opt_str("i");
         match infile {
@@ -202,6 +205,7 @@ fn main() {
                             Rule::ident => {
                                 let node_type = inner_pair.clone().into_span().as_str();
                                 if node_type == String::from("options")
+                                    || node_type == String::from("standard_surface")
                                     || node_type == String::from("spot_light")
                                     || node_type == String::from("point_light")
                                 {
@@ -217,7 +221,9 @@ fn main() {
                                                 if let Some(name) = iter.next() {
                                                     node_name = name.to_string();
                                                 }
-                                            // print!(" {} {} ", next, node_name);
+                                                if node_type == String::from("standard_surface") {
+                                                    print!(" {} {} ", next, node_name);
+                                                }
                                             } else if next == String::from("matrix") {
                                                 let mut elems: Vec<Float> = Vec::new();
                                                 let expected: u32 = 16;
@@ -639,6 +645,34 @@ fn main() {
                                                         // print!("\n radius {} ", radius);
                                                     }
                                                 }
+                                            } else if node_type == String::from("standard_surface")
+                                            {
+                                                if next == String::from("base_color") {
+                                                    let mut color_r: Float = 0.0;
+                                                    let mut color_g: Float = 0.0;
+                                                    let mut color_b: Float = 0.0;
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_r = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_g = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_b = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    base_color =
+                                                        Spectrum::rgb(color_r, color_g, color_b);
+                                                    print!(
+                                                        "\n base_color {} {} {} ",
+                                                        color_r, color_g, color_b
+                                                    );
+                                                }
+                                                // TODO: create a matte material for now
+                                                let kd = Arc::new(ConstantTexture::new(base_color));
+                                                let sigma =
+                                                    Arc::new(ConstantTexture::new(0.0 as Float));
+                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
+                                                named_materials.insert(node_name.clone(), matte);
                                             }
                                         } else {
                                             // by node type
@@ -775,9 +809,7 @@ fn main() {
                                                     n_ws,         // in world space
                                                     uvs,
                                                 ));
-                                                let kd = Arc::new(ConstantTexture::new(
-                                                    Spectrum::new(0.5),
-                                                ));
+                                                let kd = Arc::new(ConstantTexture::new(base_color));
                                                 let sigma =
                                                     Arc::new(ConstantTexture::new(0.0 as Float));
                                                 let matte = Arc::new(MatteMaterial::new(kd, sigma));
@@ -922,7 +954,10 @@ fn main() {
                                                     prims.push(geo_prim.clone());
                                                 }
                                                 named_primitives.insert(node_name.clone(), prims);
-                                                // println!("}}");
+                                            // println!("}}");
+                                            } else if node_type == String::from("standard_surface")
+                                            {
+                                                println!("}}");
                                             }
                                         }
                                     } else {
