@@ -35,6 +35,7 @@ use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::point::PointLight;
+use pbrt::lights::spot::SpotLight;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::samplers::sobol::SobolSampler;
 use pbrt::shapes::disk::Disk;
@@ -128,7 +129,10 @@ fn main() {
         let mut camera_name: String = String::from("perspective");
         let mut fov: Float = 90.0; // read persp_camera.fov
         let mut intensity: Float = 1.0; // read mesh_light.intensity
+        let mut cone_angle: Float = 30.0; // read spot_light.cone_angle
+        let mut cone_delta_angle: Float = 5.0;
         let mut radius: Float = 0.5; // read [cylinder, disk, sphere].radius
+        let mut hole: Float = 0.0; // read disk.hole
         let mut color: Spectrum = Spectrum::new(1.0 as Float);
         let mut animated_cam_to_world: AnimatedTransform = AnimatedTransform::default();
         let mut xres: i32 = 1280; // read options.xres
@@ -179,7 +183,11 @@ fn main() {
                         match inner_pair.as_rule() {
                             Rule::ident => {
                                 let node_type = inner_pair.clone().into_span().as_str();
-                                print!("{} {{", node_type);
+                                if node_type == String::from("options")
+                                    || node_type == String::from("spot_light")
+                                {
+                                    print!("{} {{", node_type);
+                                }
                                 let stripped = strip_comments(span.as_str());
                                 let mut iter = stripped.split_whitespace().peekable();
                                 loop {
@@ -189,8 +197,8 @@ fn main() {
                                             if next == String::from("name") {
                                                 if let Some(name) = iter.next() {
                                                     node_name = name.to_string();
-                                                    print!(" {} {} ", next, node_name);
                                                 }
+                                            // print!(" {} {} ", next, node_name);
                                             } else if next == String::from("matrix") {
                                                 let mut elems: Vec<Float> = Vec::new();
                                                 let expected: u32 = 16;
@@ -200,7 +208,7 @@ fn main() {
                                                         elems.push(elem as Float);
                                                     }
                                                 }
-                                                print!("\n matrix ... ");
+                                                // print!("\n matrix ... ");
                                                 // print!("\n {:?}", elems);
                                                 let m00: Float = elems[0];
                                                 let m01: Float = elems[1];
@@ -281,7 +289,7 @@ fn main() {
                                                 if next == String::from("fov") {
                                                     if let Some(fov_str) = iter.next() {
                                                         fov = f32::from_str(fov_str).unwrap();
-                                                        print!("\n fov {} ", fov);
+                                                        // print!("\n fov {} ", fov);
                                                     }
                                                 }
                                             } else if node_type == String::from("gaussian_filter") {
@@ -291,10 +299,50 @@ fn main() {
                                                         filter_width =
                                                             f32::from_str(filter_width_str)
                                                                 .unwrap();
-                                                        print!("\n filter_width {} ", filter_width);
+                                                        // print!("\n filter_width {} ", filter_width);
                                                     }
                                                 }
                                             } else if node_type == String::from("mesh_light") {
+                                                if next == String::from("intensity") {
+                                                    if let Some(intensity_str) = iter.next() {
+                                                        intensity =
+                                                            f32::from_str(intensity_str).unwrap();
+                                                        // print!("\n intensity {} ", intensity);
+                                                    }
+                                                } else if next == String::from("color") {
+                                                    let mut color_r: Float = 0.0;
+                                                    let mut color_g: Float = 0.0;
+                                                    let mut color_b: Float = 0.0;
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_r = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_g = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_b = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    color =
+                                                        Spectrum::rgb(color_r, color_g, color_b);
+                                                // print!(
+                                                //     "\n color {} {} {} ",
+                                                //     color_r, color_g, color_b
+                                                // );
+                                                } else if next == String::from("samples") {
+                                                    if let Some(samples_str) = iter.next() {
+                                                        samples =
+                                                            i32::from_str(samples_str).unwrap();
+                                                        // print!("\n samples {} ", samples);
+                                                    }
+                                                } else if next == String::from("mesh") {
+                                                    if let Some(mesh_str) = iter.next() {
+                                                        // strip surrounding double quotes
+                                                        let v: Vec<&str> = mesh_str.split('"').collect();
+                                                        mesh = v[1].to_string();
+                                                        // print!("\n mesh {:?} ", mesh);
+                                                    }
+                                                }
+                                            } else if node_type == String::from("spot_light") {
                                                 if next == String::from("intensity") {
                                                     if let Some(intensity_str) = iter.next() {
                                                         intensity =
@@ -316,22 +364,15 @@ fn main() {
                                                     }
                                                     color =
                                                         Spectrum::rgb(color_r, color_g, color_b);
-                                                    print!(
-                                                        "\n color {} {} {} ",
-                                                        color_r, color_g, color_b
-                                                    );
-                                                } else if next == String::from("samples") {
-                                                    if let Some(samples_str) = iter.next() {
-                                                        samples =
-                                                            i32::from_str(samples_str).unwrap();
-                                                        print!("\n samples {} ", samples);
-                                                    }
-                                                } else if next == String::from("mesh") {
-                                                    if let Some(mesh_str) = iter.next() {
-                                                        // strip surrounding double quotes
-                                                        let v: Vec<&str> = mesh_str.split('"').collect();
-                                                        mesh = v[1].to_string();
-                                                        print!("\n mesh {:?} ", mesh);
+                                                print!(
+                                                    "\n color {} {} {} ",
+                                                    color_r, color_g, color_b
+                                                );
+                                                } else if next == String::from("cone_angle") {
+                                                    if let Some(cone_angle_str) = iter.next() {
+                                                        cone_angle =
+                                                            f32::from_str(cone_angle_str).unwrap();
+                                                        print!("\n cone_angle {} ", cone_angle);
                                                     }
                                                 }
                                             } else if node_type == String::from("polymesh") {
@@ -381,10 +422,10 @@ fn main() {
                                                             }
                                                         }
                                                     }
-                                                    print!(
-                                                        "\n vlist {} {} VECTOR ... ",
-                                                        num_elements, num_motionblur_keys
-                                                    );
+                                                    // print!(
+                                                    //     "\n vlist {} {} VECTOR ... ",
+                                                    //     num_elements, num_motionblur_keys
+                                                    // );
                                                     // print!("\n {:?}", elems);
                                                     // TriangleMesh
                                                     let mut x: Float = 0.0;
@@ -456,10 +497,10 @@ fn main() {
                                                         iter.next();
                                                         let num_elements = nsides[0];
                                                         let num_motionblur_keys = nsides[1];
-                                                        print!(
-                                                            "\n nsides {} {} UINT ... ",
-                                                            num_elements, num_motionblur_keys
-                                                        );
+                                                        // print!(
+                                                        //     "\n nsides {} {} UINT ... ",
+                                                        //     num_elements, num_motionblur_keys
+                                                        // );
                                                         let expected: u32 = num_elements * num_motionblur_keys;
                                                         nsides = Vec::new();
                                                         for _i in 0..expected {
@@ -469,7 +510,7 @@ fn main() {
                                                             }
                                                         }
                                                     } else {
-                                                        print!("\n nsides ... ");
+                                                        // print!("\n nsides ... ");
                                                     }
                                                 // print!("\n {:?} ", nsides);
                                                 } else if next == String::from("vidxs") {
@@ -516,10 +557,10 @@ fn main() {
                                                             }
                                                         }
                                                     }
-                                                    print!(
-                                                        "\n vidxs {} {} UINT ... ",
-                                                        num_elements, num_motionblur_keys
-                                                    );
+                                                    // print!(
+                                                    //     "\n vidxs {} {} UINT ... ",
+                                                    //     num_elements, num_motionblur_keys
+                                                    // );
                                                     // print!("\n {:?} ", vi);
                                                 }
                                             } else if node_type == String::from("disk") {
@@ -527,13 +568,27 @@ fn main() {
                                                     if let Some(radius_str) = iter.next() {
                                                         radius = 0.5; // reset
                                                         radius = f32::from_str(radius_str).unwrap();
-                                                        print!("\n radius {} ", radius);
+                                                        // print!("\n radius {} ", radius);
+                                                    }
+                                                } else if next == String::from("hole") {
+                                                    if let Some(hole_str) = iter.next() {
+                                                        hole = 0.0; // reset
+                                                        hole = f32::from_str(hole_str).unwrap();
+                                                        // print!("\n hole {} ", hole);
                                                     }
                                                 }
                                             }
                                         } else {
-                                            println!("}}");
-                                            if node_type == String::from("mesh_light") {
+                                            // by node type
+                                            if node_type == String::from("options") {
+                                                println!("}}");
+                                            } else if node_type == String::from("persp_camera")
+                                                && node_name == render_camera
+                                            {
+                                                // println!("}}");
+                                            } else if node_type == String::from("gaussian_filter") {
+                                                // println!("}}");
+                                            } else if node_type == String::from("mesh_light") {
                                                 match named_primitives.get_mut(mesh.as_str()) {
                                                     Some(prims) => {
                                                         // for i in 0..prims.len() {
@@ -557,7 +612,8 @@ fn main() {
                                                             lights.push(area_light.clone());
                                                             // pointer from prim to area light
                                                             if geo_prim_opt.is_some() {
-                                                                let mut geo_prim = geo_prim_opt.unwrap();
+                                                                let mut geo_prim =
+                                                                    geo_prim_opt.unwrap();
                                                                 geo_prim.area_light =
                                                                     Some(area_light.clone());
                                                             } else {
@@ -572,6 +628,7 @@ fn main() {
                                                         );
                                                     }
                                                 }
+                                            // println!("}}");
                                             } else if node_type == String::from("point_light") {
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let point_light = Arc::new(PointLight::new(
@@ -580,6 +637,18 @@ fn main() {
                                                     &(color * intensity),
                                                 ));
                                                 lights.push(point_light);
+                                            // println!("}}");
+                                            } else if node_type == String::from("spot_light") {
+                                                let mi: MediumInterface = MediumInterface::default();
+                                                let spot_light = Arc::new(SpotLight::new(
+                                                    &cur_transform,
+                                                    &mi,
+                                                    &(color * intensity),
+                                                    cone_angle,
+                                                    cone_angle - cone_delta_angle,
+                                                ));
+                                                lights.push(spot_light);
+                                                println!("}}");
                                             } else if node_type == String::from("polymesh") {
                                                 // make sure there are no out of-bounds vertex indices
                                                 for i in 0..vi.len() {
@@ -677,6 +746,7 @@ fn main() {
                                                     prims.push(geo_prim.clone());
                                                 }
                                                 named_primitives.insert(node_name.clone(), prims);
+                                            // println!("}}");
                                             } else if node_type == String::from("disk") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
@@ -694,7 +764,7 @@ fn main() {
                                                     false,
                                                     0.0 as Float, // height
                                                     radius,
-                                                    0.0 as Float,   // inner_radius
+                                                    hole,
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(disk.clone());
@@ -714,6 +784,7 @@ fn main() {
                                                     prims.push(geo_prim.clone());
                                                 }
                                                 named_primitives.insert(node_name.clone(), prims);
+                                                // println!("}}");
                                             }
                                         }
                                     } else {
