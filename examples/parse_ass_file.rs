@@ -38,7 +38,9 @@ use pbrt::lights::point::PointLight;
 use pbrt::lights::spot::SpotLight;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::samplers::sobol::SobolSampler;
+use pbrt::shapes::cylinder::Cylinder;
 use pbrt::shapes::disk::Disk;
+use pbrt::shapes::sphere::Sphere;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
 // std
@@ -111,6 +113,7 @@ fn main() {
     let mut opts = Options::new();
     opts.optflag("h", "help", "print this help menu");
     opts.optopt("i", "", "parse an input file", "FILE");
+    opts.optopt("s", "samples", "samples per pixel", "NUM");
     opts.optflag("v", "version", "print version number");
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -120,6 +123,21 @@ fn main() {
         print_usage(&program, opts);
         return;
     } else if matches.opt_present("i") {
+        let mut samples_per_pixel: u8 = 16;
+        if matches.opt_present("s") {
+            let spp = matches.opt_str("s");
+            match spp {
+                Some(x) => {
+                    let number_result = x.parse::<u8>();
+                    assert!(
+                        !number_result.is_err(),
+                        "ERROR: 8 bit unsigned integer expected"
+                    );
+                    samples_per_pixel = number_result.unwrap();
+                }
+                None => panic!("No argument for samples per pixel given."),
+            }
+        }
         // default values
         let mut node_name: String = String::from(""); // no default name
         let mut filter_name: String = String::from("box");
@@ -185,6 +203,7 @@ fn main() {
                                 let node_type = inner_pair.clone().into_span().as_str();
                                 if node_type == String::from("options")
                                     || node_type == String::from("spot_light")
+                                    || node_type == String::from("point_light")
                                 {
                                     print!("{} {{", node_type);
                                 }
@@ -342,6 +361,33 @@ fn main() {
                                                         // print!("\n mesh {:?} ", mesh);
                                                     }
                                                 }
+                                            } else if node_type == String::from("point_light") {
+                                                if next == String::from("intensity") {
+                                                    if let Some(intensity_str) = iter.next() {
+                                                        intensity =
+                                                            f32::from_str(intensity_str).unwrap();
+                                                        print!("\n intensity {} ", intensity);
+                                                    }
+                                                } else if next == String::from("color") {
+                                                    let mut color_r: Float = 0.0;
+                                                    let mut color_g: Float = 0.0;
+                                                    let mut color_b: Float = 0.0;
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_r = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_g = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_b = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    color =
+                                                        Spectrum::rgb(color_r, color_g, color_b);
+                                                    print!(
+                                                        "\n color {} {} {} ",
+                                                        color_r, color_g, color_b
+                                                    );
+                                                }
                                             } else if node_type == String::from("spot_light") {
                                                 if next == String::from("intensity") {
                                                     if let Some(intensity_str) = iter.next() {
@@ -364,10 +410,10 @@ fn main() {
                                                     }
                                                     color =
                                                         Spectrum::rgb(color_r, color_g, color_b);
-                                                print!(
-                                                    "\n color {} {} {} ",
-                                                    color_r, color_g, color_b
-                                                );
+                                                    print!(
+                                                        "\n color {} {} {} ",
+                                                        color_r, color_g, color_b
+                                                    );
                                                 } else if next == String::from("cone_angle") {
                                                     if let Some(cone_angle_str) = iter.next() {
                                                         cone_angle =
@@ -577,6 +623,22 @@ fn main() {
                                                         // print!("\n hole {} ", hole);
                                                     }
                                                 }
+                                            } else if node_type == String::from("sphere") {
+                                                if next == String::from("radius") {
+                                                    if let Some(radius_str) = iter.next() {
+                                                        radius = 0.5; // reset
+                                                        radius = f32::from_str(radius_str).unwrap();
+                                                        // print!("\n radius {} ", radius);
+                                                    }
+                                                }
+                                            } else if node_type == String::from("cylinder") {
+                                                if next == String::from("radius") {
+                                                    if let Some(radius_str) = iter.next() {
+                                                        radius = 0.5; // reset
+                                                        radius = f32::from_str(radius_str).unwrap();
+                                                        // print!("\n radius {} ", radius);
+                                                    }
+                                                }
                                             }
                                         } else {
                                             // by node type
@@ -637,7 +699,7 @@ fn main() {
                                                     &(color * intensity),
                                                 ));
                                                 lights.push(point_light);
-                                            // println!("}}");
+                                                println!("}}");
                                             } else if node_type == String::from("spot_light") {
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let spot_light = Arc::new(SpotLight::new(
@@ -751,7 +813,7 @@ fn main() {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
                                                 let kd = Arc::new(ConstantTexture::new(
-                                                    Spectrum::new(0.0),
+                                                    Spectrum::new(0.5),
                                                 ));
                                                 let sigma =
                                                     Arc::new(ConstantTexture::new(0.0 as Float));
@@ -768,6 +830,82 @@ fn main() {
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(disk.clone());
+                                                materials.push(mtl.clone());
+                                                let mi: MediumInterface = MediumInterface::default();
+                                                let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
+                                                for i in 0..shapes.len() {
+                                                    let shape = &shapes[i];
+                                                    let material = &materials[i];
+                                                    let geo_prim =
+                                                        Arc::new(GeometricPrimitive::new(
+                                                            shape.clone(),
+                                                            material.clone(),
+                                                            None,
+                                                            Some(Arc::new(mi.clone())),
+                                                        ));
+                                                    prims.push(geo_prim.clone());
+                                                }
+                                                named_primitives.insert(node_name.clone(), prims);
+                                            // println!("}}");
+                                            } else if node_type == String::from("sphere") {
+                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+                                                let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
+                                                let kd = Arc::new(ConstantTexture::new(
+                                                    Spectrum::new(0.5),
+                                                ));
+                                                let sigma =
+                                                    Arc::new(ConstantTexture::new(0.0 as Float));
+                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
+                                                let mtl: Option<Arc<Material + Send + Sync>> = Some(matte);
+                                                let sphere = Arc::new(Sphere::new(
+                                                    obj_to_world,
+                                                    world_to_obj,
+                                                    false,
+                                                    false,
+                                                    radius,
+                                                    -radius,        // z_min
+                                                    radius,         // z_max
+                                                    360.0 as Float, // phi_max
+                                                ));
+                                                shapes.push(sphere.clone());
+                                                materials.push(mtl.clone());
+                                                let mi: MediumInterface = MediumInterface::default();
+                                                let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
+                                                for i in 0..shapes.len() {
+                                                    let shape = &shapes[i];
+                                                    let material = &materials[i];
+                                                    let geo_prim =
+                                                        Arc::new(GeometricPrimitive::new(
+                                                            shape.clone(),
+                                                            material.clone(),
+                                                            None,
+                                                            Some(Arc::new(mi.clone())),
+                                                        ));
+                                                    prims.push(geo_prim.clone());
+                                                }
+                                                named_primitives.insert(node_name.clone(), prims);
+                                            // println!("}}");
+                                            } else if node_type == String::from("cylinder") {
+                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+                                                let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
+                                                let kd = Arc::new(ConstantTexture::new(
+                                                    Spectrum::new(0.5),
+                                                ));
+                                                let sigma =
+                                                    Arc::new(ConstantTexture::new(0.0 as Float));
+                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
+                                                let mtl: Option<Arc<Material + Send + Sync>> = Some(matte);
+                                                // TODO: assumption about z_min and z_max
+                                                let cylinder = Arc::new(Cylinder::new(
+                                                    obj_to_world,
+                                                    world_to_obj,
+                                                    false,
+                                                    radius,
+                                                    0.0 as Float,   // z_min
+                                                    radius,         // z_max
+                                                    360.0 as Float, // phi_max
+                                                ));
+                                                shapes.push(cylinder.clone());
                                                 materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
@@ -809,6 +947,8 @@ fn main() {
                 primitives.push(prim.clone());
             }
         }
+        println!("samples_per_pixel = {:?}", samples_per_pixel);
+        println!("number of lights = {:?}", lights.len());
         println!("number of primitives = {:?}", primitives.len());
         // MakeFilter
         let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
@@ -874,9 +1014,8 @@ fn main() {
                 // MakeSampler
                 let mut some_sampler: Option<Box<Sampler + Sync + Send>> = None;
                 // use SobolSampler for now
-                let nsamp: i64 = 16; // TODO: something from .ass file
                 let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                let sampler = Box::new(SobolSampler::new(nsamp, sample_bounds));
+                let sampler = Box::new(SobolSampler::new(samples_per_pixel as i64, sample_bounds));
                 some_sampler = Some(sampler);
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
