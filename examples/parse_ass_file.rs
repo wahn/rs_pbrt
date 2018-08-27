@@ -162,6 +162,7 @@ fn main() {
         let mut obj_to_world: Transform = Transform::default();
         let mut world_to_obj: Transform = Transform::default();
         let mut nsides: Vec<u32> = Vec::new();
+        let mut shidxs: Vec<u32> = Vec::new();
         let mut p_ws: Vec<Point3f> = Vec::new();
         let mut p_ws_len: usize = 0;
         let mut vi: Vec<u32> = Vec::new();
@@ -169,8 +170,12 @@ fn main() {
         let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
         let mut named_materials: HashMap<String, Arc<Material>> = HashMap::new();
         let mut named_primitives: HashMap<String, Vec<Arc<GeometricPrimitive>>> = HashMap::new();
+        // let mut named_primitives: HashMap<
+        //     String,
+        //     (Vec<String>, Vec<(u32, Arc<GeometricPrimitive>)>),
+        // > = HashMap::new();
         let mut shader: String = String::from(""); // no default name
-        // input (.ass) file
+                                                   // input (.ass) file
         let infile = matches.opt_str("i");
         match infile {
             Some(x) => {
@@ -205,6 +210,7 @@ fn main() {
                             Rule::ident => {
                                 let node_type = inner_pair.clone().into_span().as_str();
                                 if node_type == String::from("options")
+                                    || node_type == String::from("polymesh")
                                     || node_type == String::from("standard_surface")
                                     || node_type == String::from("spot_light")
                                     || node_type == String::from("point_light")
@@ -474,10 +480,10 @@ fn main() {
                                                             }
                                                         }
                                                     }
-                                                    // print!(
-                                                    //     "\n vlist {} {} VECTOR ... ",
-                                                    //     num_elements, num_motionblur_keys
-                                                    // );
+                                                    print!(
+                                                        "\n vlist {} {} VECTOR ... ",
+                                                        num_elements, num_motionblur_keys
+                                                    );
                                                     // print!("\n {:?}", elems);
                                                     // TriangleMesh
                                                     let mut x: Float = 0.0;
@@ -549,10 +555,10 @@ fn main() {
                                                         iter.next();
                                                         let num_elements = nsides[0];
                                                         let num_motionblur_keys = nsides[1];
-                                                        // print!(
-                                                        //     "\n nsides {} {} UINT ... ",
-                                                        //     num_elements, num_motionblur_keys
-                                                        // );
+                                                        print!(
+                                                            "\n nsides {} {} UINT ... ",
+                                                            num_elements, num_motionblur_keys
+                                                        );
                                                         let expected: u32 = num_elements * num_motionblur_keys;
                                                         nsides = Vec::new();
                                                         for _i in 0..expected {
@@ -562,7 +568,7 @@ fn main() {
                                                             }
                                                         }
                                                     } else {
-                                                        // print!("\n nsides ... ");
+                                                        print!("\n nsides ... ");
                                                     }
                                                 // print!("\n {:?} ", nsides);
                                                 } else if next == String::from("vidxs") {
@@ -609,11 +615,121 @@ fn main() {
                                                             }
                                                         }
                                                     }
-                                                    // print!(
-                                                    //     "\n vidxs {} {} UINT ... ",
-                                                    //     num_elements, num_motionblur_keys
-                                                    // );
-                                                    // print!("\n {:?} ", vi);
+                                                    print!(
+                                                        "\n vidxs {} {} UINT ... ",
+                                                        num_elements, num_motionblur_keys
+                                                    );
+                                                // print!("\n {:?} ", vi);
+                                                } else if next == String::from("shidxs") {
+                                                    shidxs = Vec::new();
+                                                    loop {
+                                                        let mut is_int: bool = false;
+                                                        // check if next string can be converted to u32
+                                                        if let Some(ref check_for_int_str) =
+                                                            iter.peek()
+                                                        {
+                                                            if u32::from_str(check_for_int_str)
+                                                                .is_ok()
+                                                            {
+                                                                is_int = true;
+                                                            } else {
+                                                                // if not ... break the loop
+                                                                break;
+                                                            }
+                                                        }
+                                                        // if we can convert use next()
+                                                        if is_int {
+                                                            if let Some(shidx_str) = iter.next() {
+                                                                let shidx: u32 = u32::from_str(shidx_str).unwrap();
+                                                                shidxs.push(shidx);
+                                                            }
+                                                        }
+                                                    }
+                                                    let mut followed_by_byte: bool = false;
+                                                    // check if next string is 'BYTE' (or not)
+                                                    if let Some(check_for_uint_str) = iter.peek() {
+                                                        if **check_for_uint_str
+                                                            == String::from("BYTE")
+                                                        {
+                                                            followed_by_byte = true;
+                                                        }
+                                                    }
+                                                    if followed_by_byte {
+                                                        // skip next (we checked already)
+                                                        iter.next();
+                                                        let num_elements = shidxs[0];
+                                                        let num_motionblur_keys = shidxs[1];
+                                                        print!(
+                                                            "\n shidxs {} {} BYTE ... ",
+                                                            num_elements, num_motionblur_keys
+                                                        );
+                                                        let expected: u32 = num_elements * num_motionblur_keys;
+                                                        shidxs = Vec::new();
+                                                        for _i in 0..expected {
+                                                            if let Some(shidx_str) = iter.next() {
+                                                                let shidx: u32 = u32::from_str(shidx_str).unwrap();
+                                                                shidxs.push(shidx);
+                                                            }
+                                                        }
+                                                    } else {
+                                                        print!("\n shidxs ... ");
+                                                    }
+                                                    print!("\n {:?} ", shidxs);
+                                                } else if next == String::from("shader") {
+                                                    let mut is_int: bool = false;
+                                                    let mut shader_names: Vec<String> = Vec::new();
+                                                    // check if next string can be converted to u32
+                                                    if let Some(ref check_for_int_str) = iter.peek()
+                                                    {
+                                                        if u32::from_str(check_for_int_str).is_ok()
+                                                        {
+                                                            is_int = true;
+                                                        }
+                                                    }
+                                                    if is_int {
+                                                        // use next()
+                                                        if let Some(num_elements_str) = iter.next()
+                                                        {
+                                                            let num_elements: u32 = u32::from_str(num_elements_str).unwrap();
+                                                            if let Some(num_motionblur_keys_str) =
+                                                                iter.next()
+                                                            {
+                                                                let num_motionblur_keys: u32 =
+                                                                    u32::from_str(num_motionblur_keys_str).unwrap();
+                                                                // skip next (TODO: without checking for NODE)
+                                                                if let Some(node_str) = iter.next() {
+                                                                    print!(
+                                                                        "\n shader {} {} {} ... ",
+                                                                        num_elements,
+                                                                        num_motionblur_keys,
+                                                                        node_str
+                                                                    );
+                                                                }
+                                                                let expected: u32 = num_elements * num_motionblur_keys;
+                                                                for _i in 0..expected {
+                                                                    // expect several shader names
+                                                                    if let Some(shader_str) =
+                                                                        iter.next()
+                                                                    {
+                                                                        // strip surrounding double quotes
+                                                                        let v: Vec<&str> = shader_str.split('"').collect();
+                                                                        let shader: String = v[1].to_string();
+                                                                        shader_names.push(shader);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    } else {
+                                                        // expect single shader name
+                                                        if let Some(shader_str) = iter.next() {
+                                                            // strip surrounding double quotes
+                                                            let v: Vec<&str> = shader_str.split('"').collect();
+                                                            let shader: String = v[1].to_string();
+                                                            print!("\n shader {:?} ", shader);
+                                                            shader_names.push(shader);
+                                                        }
+                                                    }
+                                                    print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("disk") {
                                                 if next == String::from("radius") {
@@ -840,7 +956,7 @@ fn main() {
                                                     prims.push(geo_prim.clone());
                                                 }
                                                 named_primitives.insert(node_name.clone(), prims);
-                                            // println!("}}");
+                                                println!("}}");
                                             } else if node_type == String::from("disk") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
