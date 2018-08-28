@@ -148,7 +148,7 @@ fn main() {
         let mut fov: Float = 90.0; // read persp_camera.fov
         let mut intensity: Float = 1.0; // read mesh_light.intensity
         let mut cone_angle: Float = 30.0; // read spot_light.cone_angle
-        let mut cone_delta_angle: Float = 5.0;
+        let cone_delta_angle: Float = 5.0; // TODO: read from .ass file?
         let mut radius: Float = 0.5; // read [cylinder, disk, sphere].radius
         let mut hole: Float = 0.0; // read disk.hole
         let mut color: Spectrum = Spectrum::new(1.0 as Float);
@@ -169,13 +169,12 @@ fn main() {
         let mut vi: Vec<u32> = Vec::new();
         let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
-        let mut named_materials: HashMap<String, Arc<Material>> = HashMap::new();
+        let mut named_materials: HashMap<String, Arc<Material + Sync + Send>> = HashMap::new();
         let mut named_primitives: HashMap<
             String,
             (Vec<String>, Vec<(u32, Arc<GeometricPrimitive>)>),
         > = HashMap::new();
-        let mut shader: String = String::from(""); // no default name
-                                                   // input (.ass) file
+        // input (.ass) file
         let infile = matches.opt_str("i");
         match infile {
             Some(x) => {
@@ -1109,16 +1108,23 @@ fn main() {
         println!("filter_name = {:?}", filter_name);
         println!("filter_width = {:?}", filter_width);
         println!("max_depth = {:?}", max_depth);
-        for value in named_primitives.values() {
+        for value in named_primitives.values_mut() {
             let (shader_names, tuple_vec) = value;
-            let mut count: usize = 0;
-            for (shader_idx, prim) in tuple_vec.iter() {
-                println!(
-                    "#{}: {} -> {:?}",
-                    count, shader_idx, shader_names[*shader_idx as usize]
-                );
+            // let mut count: usize = 0;
+            for (shader_idx, prim) in tuple_vec.iter_mut() {
+                let shader_name: String = shader_names[*shader_idx as usize].clone();
+                if let Some(named_material) = named_materials.get(&shader_name) {
+                    // println!("#{}: {} -> {:?}", count, shader_idx, shader_name);
+                    let geo_prim_opt = Arc::get_mut(prim);
+                    if geo_prim_opt.is_some() {
+                        let mut geo_prim = geo_prim_opt.unwrap();
+                        geo_prim.material = Some(named_material.clone());
+                    } else {
+                        println!("WARNING: Can't replace GeometricPrimitive.material");
+                    }
+                }
                 primitives.push(prim.clone());
-                count += 1;
+                // count += 1;
             }
         }
         println!("samples_per_pixel = {:?}", samples_per_pixel);
@@ -1186,7 +1192,7 @@ fn main() {
             }
             if let Some(camera) = some_camera {
                 // MakeSampler
-                let mut some_sampler: Option<Box<Sampler + Sync + Send>> = None;
+                let mut some_sampler: Option<Box<Sampler + Sync + Send>>;
                 // use SobolSampler for now
                 let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                 let sampler = Box::new(SobolSampler::new(samples_per_pixel as i64, sample_bounds));
@@ -1195,7 +1201,7 @@ fn main() {
                     // MakeIntegrator
                     let mut some_integrator: Option<
                         Box<SamplerIntegrator + Sync + Send>,
-                    > = None;
+                    >;
                     // CreateAOIntegrator
                     // let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                     // let cos_sample: bool = true;
