@@ -24,13 +24,13 @@ use pbrt::core::material::Material;
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::{Float, Spectrum};
-use pbrt::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
+use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
 use pbrt::core::shape::Shape;
-use pbrt::core::transform::{AnimatedTransform, Matrix4x4, Transform};
+use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::gaussian::GaussianFilter;
-use pbrt::integrators::ao::AOIntegrator;
+// use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
@@ -163,17 +163,17 @@ fn main() {
         let mut world_to_obj: Transform = Transform::default();
         let mut nsides: Vec<u32> = Vec::new();
         let mut shidxs: Vec<u32> = Vec::new();
+        let mut shader_names: Vec<String> = Vec::new();
         let mut p_ws: Vec<Point3f> = Vec::new();
         let mut p_ws_len: usize = 0;
         let mut vi: Vec<u32> = Vec::new();
         let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
         let mut named_materials: HashMap<String, Arc<Material>> = HashMap::new();
-        let mut named_primitives: HashMap<String, Vec<Arc<GeometricPrimitive>>> = HashMap::new();
-        // let mut named_primitives: HashMap<
-        //     String,
-        //     (Vec<String>, Vec<(u32, Arc<GeometricPrimitive>)>),
-        // > = HashMap::new();
+        let mut named_primitives: HashMap<
+            String,
+            (Vec<String>, Vec<(u32, Arc<GeometricPrimitive>)>),
+        > = HashMap::new();
         let mut shader: String = String::from(""); // no default name
                                                    // input (.ass) file
         let infile = matches.opt_str("i");
@@ -677,7 +677,7 @@ fn main() {
                                                     print!("\n {:?} ", shidxs);
                                                 } else if next == String::from("shader") {
                                                     let mut is_int: bool = false;
-                                                    let mut shader_names: Vec<String> = Vec::new();
+                                                    shader_names = Vec::new();
                                                     // check if next string can be converted to u32
                                                     if let Some(ref check_for_int_str) = iter.peek()
                                                     {
@@ -697,7 +697,8 @@ fn main() {
                                                                 let num_motionblur_keys: u32 =
                                                                     u32::from_str(num_motionblur_keys_str).unwrap();
                                                                 // skip next (TODO: without checking for NODE)
-                                                                if let Some(node_str) = iter.next() {
+                                                                if let Some(node_str) = iter.next()
+                                                                {
                                                                     print!(
                                                                         "\n shader {} {} {} ... ",
                                                                         num_elements,
@@ -734,13 +735,11 @@ fn main() {
                                             } else if node_type == String::from("disk") {
                                                 if next == String::from("radius") {
                                                     if let Some(radius_str) = iter.next() {
-                                                        radius = 0.5; // reset
                                                         radius = f32::from_str(radius_str).unwrap();
                                                         // print!("\n radius {} ", radius);
                                                     }
                                                 } else if next == String::from("hole") {
                                                     if let Some(hole_str) = iter.next() {
-                                                        hole = 0.0; // reset
                                                         hole = f32::from_str(hole_str).unwrap();
                                                         // print!("\n hole {} ", hole);
                                                     }
@@ -748,7 +747,6 @@ fn main() {
                                             } else if node_type == String::from("sphere") {
                                                 if next == String::from("radius") {
                                                     if let Some(radius_str) = iter.next() {
-                                                        radius = 0.5; // reset
                                                         radius = f32::from_str(radius_str).unwrap();
                                                         // print!("\n radius {} ", radius);
                                                     }
@@ -756,7 +754,6 @@ fn main() {
                                             } else if node_type == String::from("cylinder") {
                                                 if next == String::from("radius") {
                                                     if let Some(radius_str) = iter.next() {
-                                                        radius = 0.5; // reset
                                                         radius = f32::from_str(radius_str).unwrap();
                                                         // print!("\n radius {} ", radius);
                                                     }
@@ -802,10 +799,12 @@ fn main() {
                                                 // println!("}}");
                                             } else if node_type == String::from("mesh_light") {
                                                 match named_primitives.get_mut(mesh.as_str()) {
-                                                    Some(prims) => {
+                                                    Some((_shader_names, prims_vec)) => {
                                                         // for i in 0..prims.len() {
                                                         //     let mut prim = &mut prims[i];
-                                                        for prim in prims.iter_mut() {
+                                                        for (_shader_idx, prim) in
+                                                            prims_vec.iter_mut()
+                                                        {
                                                             let shape = prim.shape.clone();
                                                             let geo_prim_opt = Arc::get_mut(prim);
                                                             let mi: MediumInterface =
@@ -874,26 +873,33 @@ fn main() {
                                                 }
                                                 // convert quads to triangles
                                                 let mut vi_tri: Vec<u32> = Vec::new();
-                                                let mut count: usize = 0;
+                                                let mut shidxs_tri: Vec<u32> = Vec::new();
+                                                let mut count_vi: usize = 0;
+                                                let mut count_shidxs: usize = 0;
                                                 for i in 0..nsides.len() {
                                                     let nside = nsides[i];
                                                     if nside == 3 {
                                                         // triangle
-                                                        vi_tri.push(vi[count]);
-                                                        count += 1;
-                                                        vi_tri.push(vi[count]);
-                                                        count += 1;
-                                                        vi_tri.push(vi[count]);
-                                                        count += 1;
+                                                        vi_tri.push(vi[count_vi]);
+                                                        count_vi += 1;
+                                                        vi_tri.push(vi[count_vi]);
+                                                        count_vi += 1;
+                                                        vi_tri.push(vi[count_vi]);
+                                                        count_vi += 1;
+                                                        shidxs_tri.push(shidxs[count_shidxs]);
+                                                        count_shidxs += 1;
                                                     } else if nside == 4 {
                                                         // quad gets split into 2 triangles
-                                                        vi_tri.push(vi[count]);
-                                                        vi_tri.push(vi[count + 1]);
-                                                        vi_tri.push(vi[count + 2]);
-                                                        vi_tri.push(vi[count]);
-                                                        vi_tri.push(vi[count + 2]);
-                                                        vi_tri.push(vi[count + 3]);
-                                                        count += 4;
+                                                        vi_tri.push(vi[count_vi]);
+                                                        vi_tri.push(vi[count_vi + 1]);
+                                                        vi_tri.push(vi[count_vi + 2]);
+                                                        vi_tri.push(vi[count_vi]);
+                                                        vi_tri.push(vi[count_vi + 2]);
+                                                        vi_tri.push(vi[count_vi + 3]);
+                                                        count_vi += 4;
+                                                        shidxs_tri.push(shidxs[count_shidxs]);
+                                                        shidxs_tri.push(shidxs[count_shidxs]);
+                                                        count_shidxs += 1;
                                                     } else {
                                                         panic!(
                                                             "{}-sided poygons are not supported",
@@ -901,6 +907,8 @@ fn main() {
                                                         );
                                                     }
                                                 }
+                                                let n_triangles: usize = vi_tri.len() / 3;
+                                                assert!(shidxs_tri.len() == n_triangles);
                                                 // TriangleMesh
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
@@ -915,9 +923,9 @@ fn main() {
                                                 let mesh = Arc::new(TriangleMesh::new(
                                                     obj_to_world,
                                                     world_to_obj,
-                                                    false,            // reverse_orientation,
-                                                    false,            // transform_swaps_handedness
-                                                    vi_tri.len() / 3, // n_triangles
+                                                    false, // reverse_orientation,
+                                                    false, // transform_swaps_handedness
+                                                    n_triangles,
                                                     vertex_indices,
                                                     p_ws_len,
                                                     p_ws.clone(), // in world space
@@ -942,9 +950,11 @@ fn main() {
                                                     materials.push(mtl.clone());
                                                 }
                                                 let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
+                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
+                                                assert!(shidxs_tri.len() == shapes.len());
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
+                                                    let shidx = shidxs_tri[i];
                                                     let material = &materials[i];
                                                     let geo_prim =
                                                         Arc::new(GeometricPrimitive::new(
@@ -953,9 +963,12 @@ fn main() {
                                                             None,
                                                             Some(Arc::new(mi.clone())),
                                                         ));
-                                                    prims.push(geo_prim.clone());
+                                                    prims.push((shidx, geo_prim.clone()));
                                                 }
-                                                named_primitives.insert(node_name.clone(), prims);
+                                                named_primitives.insert(
+                                                    node_name.clone(),
+                                                    (shader_names.clone(), prims),
+                                                );
                                                 println!("}}");
                                             } else if node_type == String::from("disk") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
@@ -980,7 +993,7 @@ fn main() {
                                                 shapes.push(disk.clone());
                                                 materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
+                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let material = &materials[i];
@@ -991,9 +1004,10 @@ fn main() {
                                                             None,
                                                             Some(Arc::new(mi.clone())),
                                                         ));
-                                                    prims.push(geo_prim.clone());
+                                                    prims.push((0, geo_prim.clone())); // TODO: use shader index
                                                 }
-                                                named_primitives.insert(node_name.clone(), prims);
+                                                named_primitives
+                                                    .insert(node_name.clone(), (Vec::new(), prims));
                                             // println!("}}");
                                             } else if node_type == String::from("sphere") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
@@ -1018,7 +1032,7 @@ fn main() {
                                                 shapes.push(sphere.clone());
                                                 materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
+                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let material = &materials[i];
@@ -1029,9 +1043,10 @@ fn main() {
                                                             None,
                                                             Some(Arc::new(mi.clone())),
                                                         ));
-                                                    prims.push(geo_prim.clone());
+                                                    prims.push((0, geo_prim.clone())); // TODO: use shader index
                                                 }
-                                                named_primitives.insert(node_name.clone(), prims);
+                                                named_primitives
+                                                    .insert(node_name.clone(), (Vec::new(), prims));
                                             // println!("}}");
                                             } else if node_type == String::from("cylinder") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
@@ -1056,7 +1071,7 @@ fn main() {
                                                 shapes.push(cylinder.clone());
                                                 materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<Arc<GeometricPrimitive>> = Vec::new();
+                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let material = &materials[i];
@@ -1067,9 +1082,10 @@ fn main() {
                                                             None,
                                                             Some(Arc::new(mi.clone())),
                                                         ));
-                                                    prims.push(geo_prim.clone());
+                                                    prims.push((0, geo_prim.clone())); // TODO: use shader index
                                                 }
-                                                named_primitives.insert(node_name.clone(), prims);
+                                                named_primitives
+                                                    .insert(node_name.clone(), (Vec::new(), prims));
                                             // println!("}}");
                                             } else if node_type == String::from("standard_surface")
                                             {
@@ -1094,8 +1110,15 @@ fn main() {
         println!("filter_width = {:?}", filter_width);
         println!("max_depth = {:?}", max_depth);
         for value in named_primitives.values() {
-            for prim in value {
+            let (shader_names, tuple_vec) = value;
+            let mut count: usize = 0;
+            for (shader_idx, prim) in tuple_vec.iter() {
+                println!(
+                    "#{}: {} -> {:?}",
+                    count, shader_idx, shader_names[*shader_idx as usize]
+                );
                 primitives.push(prim.clone());
+                count += 1;
             }
         }
         println!("samples_per_pixel = {:?}", samples_per_pixel);
