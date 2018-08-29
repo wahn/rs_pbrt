@@ -49,6 +49,7 @@ use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
+use std::iter::Peekable;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -105,6 +106,53 @@ fn strip_comments(input: &str) -> String {
         }
     }
     output
+}
+
+fn get_shader_names(iter: &mut Peekable<std::str::SplitWhitespace<'_>>) -> Vec<String> {
+    let mut shader_names: Vec<String> = Vec::new();
+    let mut is_int: bool = false;
+    // check if next string can be converted to u32
+    if let Some(ref check_for_int_str) = iter.peek() {
+        if u32::from_str(check_for_int_str).is_ok() {
+            is_int = true;
+        }
+    }
+    if is_int {
+        // use next()
+        if let Some(num_elements_str) = iter.next() {
+            let num_elements: u32 = u32::from_str(num_elements_str).unwrap();
+            if let Some(num_motionblur_keys_str) = iter.next() {
+                let num_motionblur_keys: u32 = u32::from_str(num_motionblur_keys_str).unwrap();
+                // skip next (TODO: without checking for NODE)
+                if let Some(node_str) = iter.next() {
+                    print!(
+                        "\n shader {} {} {} ... ",
+                        num_elements, num_motionblur_keys, node_str
+                    );
+                }
+                let expected: u32 = num_elements * num_motionblur_keys;
+                for _i in 0..expected {
+                    // expect several shader names
+                    if let Some(shader_str) = iter.next() {
+                        // strip surrounding double quotes
+                        let v: Vec<&str> = shader_str.split('"').collect();
+                        let shader: String = v[1].to_string();
+                        shader_names.push(shader);
+                    }
+                }
+            }
+        }
+    } else {
+        // expect single shader name
+        if let Some(shader_str) = iter.next() {
+            // strip surrounding double quotes
+            let v: Vec<&str> = shader_str.split('"').collect();
+            let shader: String = v[1].to_string();
+            print!("\n shader {:?} ", shader);
+            shader_names.push(shader);
+        }
+    }
+    shader_names
 }
 
 fn main() {
@@ -210,6 +258,9 @@ fn main() {
                                 let node_type = inner_pair.clone().into_span().as_str();
                                 if node_type == String::from("options")
                                     || node_type == String::from("polymesh")
+                                    || node_type == String::from("disk")
+                                    || node_type == String::from("sphere")
+                                    || node_type == String::from("cylinder")
                                     || node_type == String::from("standard_surface")
                                     || node_type == String::from("spot_light")
                                     || node_type == String::from("point_light")
@@ -675,60 +726,7 @@ fn main() {
                                                     }
                                                     print!("\n {:?} ", shidxs);
                                                 } else if next == String::from("shader") {
-                                                    let mut is_int: bool = false;
-                                                    shader_names = Vec::new();
-                                                    // check if next string can be converted to u32
-                                                    if let Some(ref check_for_int_str) = iter.peek()
-                                                    {
-                                                        if u32::from_str(check_for_int_str).is_ok()
-                                                        {
-                                                            is_int = true;
-                                                        }
-                                                    }
-                                                    if is_int {
-                                                        // use next()
-                                                        if let Some(num_elements_str) = iter.next()
-                                                        {
-                                                            let num_elements: u32 = u32::from_str(num_elements_str).unwrap();
-                                                            if let Some(num_motionblur_keys_str) =
-                                                                iter.next()
-                                                            {
-                                                                let num_motionblur_keys: u32 =
-                                                                    u32::from_str(num_motionblur_keys_str).unwrap();
-                                                                // skip next (TODO: without checking for NODE)
-                                                                if let Some(node_str) = iter.next()
-                                                                {
-                                                                    print!(
-                                                                        "\n shader {} {} {} ... ",
-                                                                        num_elements,
-                                                                        num_motionblur_keys,
-                                                                        node_str
-                                                                    );
-                                                                }
-                                                                let expected: u32 = num_elements * num_motionblur_keys;
-                                                                for _i in 0..expected {
-                                                                    // expect several shader names
-                                                                    if let Some(shader_str) =
-                                                                        iter.next()
-                                                                    {
-                                                                        // strip surrounding double quotes
-                                                                        let v: Vec<&str> = shader_str.split('"').collect();
-                                                                        let shader: String = v[1].to_string();
-                                                                        shader_names.push(shader);
-                                                                    }
-                                                                }
-                                                            }
-                                                        }
-                                                    } else {
-                                                        // expect single shader name
-                                                        if let Some(shader_str) = iter.next() {
-                                                            // strip surrounding double quotes
-                                                            let v: Vec<&str> = shader_str.split('"').collect();
-                                                            let shader: String = v[1].to_string();
-                                                            print!("\n shader {:?} ", shader);
-                                                            shader_names.push(shader);
-                                                        }
-                                                    }
+                                                    shader_names = get_shader_names(&mut iter);
                                                     print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("disk") {
@@ -742,6 +740,9 @@ fn main() {
                                                         hole = f32::from_str(hole_str).unwrap();
                                                         // print!("\n hole {} ", hole);
                                                     }
+                                                } else if next == String::from("shader") {
+                                                    shader_names = get_shader_names(&mut iter);
+                                                    print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("sphere") {
                                                 if next == String::from("radius") {
@@ -749,6 +750,9 @@ fn main() {
                                                         radius = f32::from_str(radius_str).unwrap();
                                                         // print!("\n radius {} ", radius);
                                                     }
+                                                } else if next == String::from("shader") {
+                                                    shader_names = get_shader_names(&mut iter);
+                                                    print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("cylinder") {
                                                 if next == String::from("radius") {
@@ -756,6 +760,9 @@ fn main() {
                                                         radius = f32::from_str(radius_str).unwrap();
                                                         // print!("\n radius {} ", radius);
                                                     }
+                                                } else if next == String::from("shader") {
+                                                    shader_names = get_shader_names(&mut iter);
+                                                    print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("standard_surface")
                                             {
@@ -779,12 +786,6 @@ fn main() {
                                                         color_r, color_g, color_b
                                                     );
                                                 }
-                                                // TODO: create a matte material for now
-                                                let kd = Arc::new(ConstantTexture::new(base_color));
-                                                let sigma =
-                                                    Arc::new(ConstantTexture::new(0.0 as Float));
-                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
-                                                named_materials.insert(node_name.clone(), matte);
                                             }
                                         } else {
                                             // by node type
@@ -910,7 +911,6 @@ fn main() {
                                                 assert!(shidxs_tri.len() == n_triangles);
                                                 // TriangleMesh
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
-                                                let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
                                                 let s_ws: Vec<Vector3f> = Vec::new();
                                                 let n_ws: Vec<Normal3f> = Vec::new();
                                                 let uvs: Vec<Point2f> = Vec::new();
@@ -932,11 +932,6 @@ fn main() {
                                                     n_ws,         // in world space
                                                     uvs,
                                                 ));
-                                                let kd = Arc::new(ConstantTexture::new(base_color));
-                                                let sigma =
-                                                    Arc::new(ConstantTexture::new(0.0 as Float));
-                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
-                                                let mtl: Option<Arc<Material + Send + Sync>> = Some(matte);
                                                 for id in 0..mesh.n_triangles {
                                                     let triangle = Arc::new(Triangle::new(
                                                         mesh.object_to_world,
@@ -946,7 +941,6 @@ fn main() {
                                                         id,
                                                     ));
                                                     shapes.push(triangle.clone());
-                                                    materials.push(mtl.clone());
                                                 }
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
@@ -954,11 +948,10 @@ fn main() {
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let shidx = shidxs_tri[i];
-                                                    let material = &materials[i];
                                                     let geo_prim =
                                                         Arc::new(GeometricPrimitive::new(
                                                             shape.clone(),
-                                                            material.clone(),
+                                                            None,
                                                             None,
                                                             Some(Arc::new(mi.clone())),
                                                         ));
@@ -971,14 +964,6 @@ fn main() {
                                                 println!("}}");
                                             } else if node_type == String::from("disk") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
-                                                let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
-                                                let kd = Arc::new(ConstantTexture::new(
-                                                    Spectrum::new(0.5),
-                                                ));
-                                                let sigma =
-                                                    Arc::new(ConstantTexture::new(0.0 as Float));
-                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
-                                                let mtl: Option<Arc<Material + Send + Sync>> = Some(matte);
                                                 let disk = Arc::new(Disk::new(
                                                     obj_to_world,
                                                     world_to_obj,
@@ -990,34 +975,27 @@ fn main() {
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(disk.clone());
-                                                materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
+                                                let shidx: u32 = 0;
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
-                                                    let material = &materials[i];
                                                     let geo_prim =
                                                         Arc::new(GeometricPrimitive::new(
                                                             shape.clone(),
-                                                            material.clone(),
+                                                            None,
                                                             None,
                                                             Some(Arc::new(mi.clone())),
                                                         ));
-                                                    prims.push((0, geo_prim.clone())); // TODO: use shader index
+                                                    prims.push((shidx, geo_prim.clone()));
                                                 }
-                                                named_primitives
-                                                    .insert(node_name.clone(), (Vec::new(), prims));
-                                            // println!("}}");
+                                                named_primitives.insert(
+                                                    node_name.clone(),
+                                                    (shader_names.clone(), prims),
+                                                );
+                                                println!("}}");
                                             } else if node_type == String::from("sphere") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
-                                                let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
-                                                let kd = Arc::new(ConstantTexture::new(
-                                                    Spectrum::new(0.5),
-                                                ));
-                                                let sigma =
-                                                    Arc::new(ConstantTexture::new(0.0 as Float));
-                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
-                                                let mtl: Option<Arc<Material + Send + Sync>> = Some(matte);
                                                 let sphere = Arc::new(Sphere::new(
                                                     obj_to_world,
                                                     world_to_obj,
@@ -1029,34 +1007,27 @@ fn main() {
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(sphere.clone());
-                                                materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
+                                                let shidx: u32 = 0;
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
-                                                    let material = &materials[i];
                                                     let geo_prim =
                                                         Arc::new(GeometricPrimitive::new(
                                                             shape.clone(),
-                                                            material.clone(),
+                                                            None,
                                                             None,
                                                             Some(Arc::new(mi.clone())),
                                                         ));
-                                                    prims.push((0, geo_prim.clone())); // TODO: use shader index
+                                                    prims.push((shidx, geo_prim.clone()));
                                                 }
-                                                named_primitives
-                                                    .insert(node_name.clone(), (Vec::new(), prims));
-                                            // println!("}}");
+                                                named_primitives.insert(
+                                                    node_name.clone(),
+                                                    (shader_names.clone(), prims),
+                                                );
+                                                println!("}}");
                                             } else if node_type == String::from("cylinder") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
-                                                let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
-                                                let kd = Arc::new(ConstantTexture::new(
-                                                    Spectrum::new(0.5),
-                                                ));
-                                                let sigma =
-                                                    Arc::new(ConstantTexture::new(0.0 as Float));
-                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
-                                                let mtl: Option<Arc<Material + Send + Sync>> = Some(matte);
                                                 // TODO: assumption about z_min and z_max
                                                 let cylinder = Arc::new(Cylinder::new(
                                                     obj_to_world,
@@ -1068,26 +1039,33 @@ fn main() {
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(cylinder.clone());
-                                                materials.push(mtl.clone());
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
+                                                let shidx: u32 = 0;
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
-                                                    let material = &materials[i];
                                                     let geo_prim =
                                                         Arc::new(GeometricPrimitive::new(
                                                             shape.clone(),
-                                                            material.clone(),
+                                                            None,
                                                             None,
                                                             Some(Arc::new(mi.clone())),
                                                         ));
-                                                    prims.push((0, geo_prim.clone())); // TODO: use shader index
+                                                    prims.push((shidx, geo_prim.clone()));
                                                 }
-                                                named_primitives
-                                                    .insert(node_name.clone(), (Vec::new(), prims));
-                                            // println!("}}");
+                                                named_primitives.insert(
+                                                    node_name.clone(),
+                                                    (shader_names.clone(), prims),
+                                                );
+                                                println!("}}");
                                             } else if node_type == String::from("standard_surface")
                                             {
+                                                // TODO: create a matte material for now
+                                                let kd = Arc::new(ConstantTexture::new(base_color));
+                                                let sigma =
+                                                    Arc::new(ConstantTexture::new(0.0 as Float));
+                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
+                                                named_materials.insert(node_name.clone(), matte);
                                                 println!("}}");
                                             }
                                         }
@@ -1112,16 +1090,20 @@ fn main() {
             let (shader_names, tuple_vec) = value;
             // let mut count: usize = 0;
             for (shader_idx, prim) in tuple_vec.iter_mut() {
-                let shader_name: String = shader_names[*shader_idx as usize].clone();
-                if let Some(named_material) = named_materials.get(&shader_name) {
-                    // println!("#{}: {} -> {:?}", count, shader_idx, shader_name);
-                    let geo_prim_opt = Arc::get_mut(prim);
-                    if geo_prim_opt.is_some() {
-                        let mut geo_prim = geo_prim_opt.unwrap();
-                        geo_prim.material = Some(named_material.clone());
-                    } else {
-                        println!("WARNING: Can't replace GeometricPrimitive.material");
+                if shader_names.len() > 0 as usize {
+                    let shader_name: String = shader_names[*shader_idx as usize].clone();
+                    if let Some(named_material) = named_materials.get(&shader_name) {
+                        // println!("#{}: {} -> {:?}", count, shader_idx, shader_name);
+                        let geo_prim_opt = Arc::get_mut(prim);
+                        if geo_prim_opt.is_some() {
+                            let mut geo_prim = geo_prim_opt.unwrap();
+                            geo_prim.material = Some(named_material.clone());
+                        } else {
+                            println!("WARNING: Can't replace GeometricPrimitive.material");
+                        }
                     }
+                } else {
+                    println!("WARNING: No shader names");
                 }
                 primitives.push(prim.clone());
                 // count += 1;
