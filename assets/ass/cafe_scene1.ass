@@ -26,7 +26,7 @@ options
  GI_specular_depth 1
  GI_transmission_depth 3
  GI_volume_depth 1
- GI_total_depth 11
+ GI_total_depth 4
  GI_diffuse_samples 3
  GI_specular_samples 3
  GI_transmission_samples 3

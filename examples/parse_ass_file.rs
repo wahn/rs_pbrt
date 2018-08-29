@@ -28,21 +28,25 @@ use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
 use pbrt::core::shape::Shape;
+use pbrt::core::texture::Texture;
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::gaussian::GaussianFilter;
-// use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::point::PointLight;
 use pbrt::lights::spot::SpotLight;
 use pbrt::materials::matte::MatteMaterial;
+use pbrt::materials::metal::MetalMaterial;
+use pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
+use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::samplers::sobol::SobolSampler;
 use pbrt::shapes::cylinder::Cylinder;
 use pbrt::shapes::disk::Disk;
 use pbrt::shapes::sphere::Sphere;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
+// use pbrt::integrators::ao::AOIntegrator;
 // std
 use std::collections::HashMap;
 use std::env;
@@ -124,11 +128,11 @@ fn get_shader_names(iter: &mut Peekable<std::str::SplitWhitespace<'_>>) -> Vec<S
             if let Some(num_motionblur_keys_str) = iter.next() {
                 let num_motionblur_keys: u32 = u32::from_str(num_motionblur_keys_str).unwrap();
                 // skip next (TODO: without checking for NODE)
-                if let Some(node_str) = iter.next() {
-                    print!(
-                        "\n shader {} {} {} ... ",
-                        num_elements, num_motionblur_keys, node_str
-                    );
+                if let Some(_node_str) = iter.next() {
+                    // print!(
+                    //     "\n shader {} {} {} ... ",
+                    //     num_elements, num_motionblur_keys, node_str
+                    // );
                 }
                 let expected: u32 = num_elements * num_motionblur_keys;
                 for _i in 0..expected {
@@ -148,7 +152,7 @@ fn get_shader_names(iter: &mut Peekable<std::str::SplitWhitespace<'_>>) -> Vec<S
             // strip surrounding double quotes
             let v: Vec<&str> = shader_str.split('"').collect();
             let shader: String = v[1].to_string();
-            print!("\n shader {:?} ", shader);
+            // print!("\n shader {:?} ", shader);
             shader_names.push(shader);
         }
     }
@@ -200,7 +204,12 @@ fn main() {
         let mut radius: Float = 0.5; // read [cylinder, disk, sphere].radius
         let mut hole: Float = 0.0; // read disk.hole
         let mut color: Spectrum = Spectrum::new(1.0 as Float);
-        let mut base_color: Spectrum = Spectrum::new(1.0 as Float);
+        // read standard_surface.base_color
+        let mut base_color: Spectrum = Spectrum::new(0.5 as Float);
+        // read standard_surface.specular_color
+        let mut specular_color: Spectrum = Spectrum::new(1.0 as Float);
+        let mut specular_roughness: Float = 0.01; // read standard_surface.specular_roughness
+        let mut metalness: Float = 0.0; // read standard_surface.metalness
         let mut animated_cam_to_world: AnimatedTransform = AnimatedTransform::default();
         let mut xres: i32 = 1280; // read options.xres
         let mut yres: i32 = 720; // read options.yres
@@ -257,10 +266,6 @@ fn main() {
                             Rule::ident => {
                                 let node_type = inner_pair.clone().into_span().as_str();
                                 if node_type == String::from("options")
-                                    || node_type == String::from("polymesh")
-                                    || node_type == String::from("disk")
-                                    || node_type == String::from("sphere")
-                                    || node_type == String::from("cylinder")
                                     || node_type == String::from("standard_surface")
                                     || node_type == String::from("spot_light")
                                     || node_type == String::from("point_light")
@@ -492,8 +497,8 @@ fn main() {
                                                     // <elem1> <elem2>
                                                     // <elem3> <elem4>
                                                     // ...
-                                                    let mut num_elements: u32 = 0;
-                                                    let mut num_motionblur_keys: u32 = 1;
+                                                    let mut num_elements: u32;
+                                                    let mut num_motionblur_keys: u32;
                                                     let data_type: String = String::from("VECTOR");
                                                     let mut elems: Vec<Float> = Vec::new();
                                                     if let Some(num_elements_str) = iter.next() {
@@ -530,10 +535,10 @@ fn main() {
                                                             }
                                                         }
                                                     }
-                                                    print!(
-                                                        "\n vlist {} {} VECTOR ... ",
-                                                        num_elements, num_motionblur_keys
-                                                    );
+                                                    // print!(
+                                                    //     "\n vlist {} {} VECTOR ... ",
+                                                    //     num_elements, num_motionblur_keys
+                                                    // );
                                                     // print!("\n {:?}", elems);
                                                     // TriangleMesh
                                                     let mut x: Float = 0.0;
@@ -605,10 +610,10 @@ fn main() {
                                                         iter.next();
                                                         let num_elements = nsides[0];
                                                         let num_motionblur_keys = nsides[1];
-                                                        print!(
-                                                            "\n nsides {} {} UINT ... ",
-                                                            num_elements, num_motionblur_keys
-                                                        );
+                                                        // print!(
+                                                        //     "\n nsides {} {} UINT ... ",
+                                                        //     num_elements, num_motionblur_keys
+                                                        // );
                                                         let expected: u32 = num_elements * num_motionblur_keys;
                                                         nsides = Vec::new();
                                                         for _i in 0..expected {
@@ -618,7 +623,7 @@ fn main() {
                                                             }
                                                         }
                                                     } else {
-                                                        print!("\n nsides ... ");
+                                                        // print!("\n nsides ... ");
                                                     }
                                                 // print!("\n {:?} ", nsides);
                                                 } else if next == String::from("vidxs") {
@@ -665,10 +670,10 @@ fn main() {
                                                             }
                                                         }
                                                     }
-                                                    print!(
-                                                        "\n vidxs {} {} UINT ... ",
-                                                        num_elements, num_motionblur_keys
-                                                    );
+                                                // print!(
+                                                //     "\n vidxs {} {} UINT ... ",
+                                                //     num_elements, num_motionblur_keys
+                                                // );
                                                 // print!("\n {:?} ", vi);
                                                 } else if next == String::from("shidxs") {
                                                     shidxs = Vec::new();
@@ -709,10 +714,10 @@ fn main() {
                                                         iter.next();
                                                         let num_elements = shidxs[0];
                                                         let num_motionblur_keys = shidxs[1];
-                                                        print!(
-                                                            "\n shidxs {} {} BYTE ... ",
-                                                            num_elements, num_motionblur_keys
-                                                        );
+                                                        // print!(
+                                                        //     "\n shidxs {} {} BYTE ... ",
+                                                        //     num_elements, num_motionblur_keys
+                                                        // );
                                                         let expected: u32 = num_elements * num_motionblur_keys;
                                                         shidxs = Vec::new();
                                                         for _i in 0..expected {
@@ -722,12 +727,12 @@ fn main() {
                                                             }
                                                         }
                                                     } else {
-                                                        print!("\n shidxs ... ");
+                                                        // print!("\n shidxs ... ");
                                                     }
-                                                    print!("\n {:?} ", shidxs);
+                                                // print!("\n {:?} ", shidxs);
                                                 } else if next == String::from("shader") {
                                                     shader_names = get_shader_names(&mut iter);
-                                                    print!("\n {:?} ", shader_names);
+                                                    // print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("disk") {
                                                 if next == String::from("radius") {
@@ -742,7 +747,7 @@ fn main() {
                                                     }
                                                 } else if next == String::from("shader") {
                                                     shader_names = get_shader_names(&mut iter);
-                                                    print!("\n {:?} ", shader_names);
+                                                    // print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("sphere") {
                                                 if next == String::from("radius") {
@@ -752,7 +757,7 @@ fn main() {
                                                     }
                                                 } else if next == String::from("shader") {
                                                     shader_names = get_shader_names(&mut iter);
-                                                    print!("\n {:?} ", shader_names);
+                                                    // print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("cylinder") {
                                                 if next == String::from("radius") {
@@ -762,7 +767,7 @@ fn main() {
                                                     }
                                                 } else if next == String::from("shader") {
                                                     shader_names = get_shader_names(&mut iter);
-                                                    print!("\n {:?} ", shader_names);
+                                                    // print!("\n {:?} ", shader_names);
                                                 }
                                             } else if node_type == String::from("standard_surface")
                                             {
@@ -785,6 +790,44 @@ fn main() {
                                                         "\n base_color {} {} {} ",
                                                         color_r, color_g, color_b
                                                     );
+                                                } else if next == String::from("specular_color") {
+                                                    let mut color_r: Float = 0.0;
+                                                    let mut color_g: Float = 0.0;
+                                                    let mut color_b: Float = 0.0;
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_r = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_g = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    if let Some(color_str) = iter.next() {
+                                                        color_b = f32::from_str(color_str).unwrap();
+                                                    }
+                                                    specular_color =
+                                                        Spectrum::rgb(color_r, color_g, color_b);
+                                                    print!(
+                                                        "\n specular_color {} {} {} ",
+                                                        color_r, color_g, color_b
+                                                    );
+                                                } else if next == String::from("specular_roughness")
+                                                {
+                                                    if let Some(specular_roughness_str) =
+                                                        iter.next()
+                                                    {
+                                                        specular_roughness =
+                                                            f32::from_str(specular_roughness_str)
+                                                                .unwrap();
+                                                        print!(
+                                                            "\n specular_roughness {} ",
+                                                            specular_roughness
+                                                        );
+                                                    }
+                                                } else if next == String::from("metalness") {
+                                                    if let Some(metalness_str) = iter.next() {
+                                                        metalness =
+                                                            f32::from_str(metalness_str).unwrap();
+                                                        print!("\n metalness {} ", metalness);
+                                                    }
                                                 }
                                             }
                                         } else {
@@ -961,7 +1004,7 @@ fn main() {
                                                     node_name.clone(),
                                                     (shader_names.clone(), prims),
                                                 );
-                                                println!("}}");
+                                            // println!("}}");
                                             } else if node_type == String::from("disk") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let disk = Arc::new(Disk::new(
@@ -993,7 +1036,7 @@ fn main() {
                                                     node_name.clone(),
                                                     (shader_names.clone(), prims),
                                                 );
-                                                println!("}}");
+                                            // println!("}}");
                                             } else if node_type == String::from("sphere") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let sphere = Arc::new(Sphere::new(
@@ -1025,7 +1068,7 @@ fn main() {
                                                     node_name.clone(),
                                                     (shader_names.clone(), prims),
                                                 );
-                                                println!("}}");
+                                            // println!("}}");
                                             } else if node_type == String::from("cylinder") {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 // TODO: assumption about z_min and z_max
@@ -1057,15 +1100,64 @@ fn main() {
                                                     node_name.clone(),
                                                     (shader_names.clone(), prims),
                                                 );
-                                                println!("}}");
+                                            // println!("}}");
                                             } else if node_type == String::from("standard_surface")
                                             {
-                                                // TODO: create a matte material for now
-                                                let kd = Arc::new(ConstantTexture::new(base_color));
-                                                let sigma =
-                                                    Arc::new(ConstantTexture::new(0.0 as Float));
-                                                let matte = Arc::new(MatteMaterial::new(kd, sigma));
-                                                named_materials.insert(node_name.clone(), matte);
+                                                if metalness > 0.0 as Float {
+                                                    if metalness == 1.0 as Float {
+                                                        let kr = Arc::new(ConstantTexture::new(
+                                                            specular_color,
+                                                        ));
+                                                        let mirror =
+                                                            Arc::new(MirrorMaterial { kr: kr });
+                                                        named_materials
+                                                            .insert(node_name.clone(), mirror);
+                                                    } else {
+                                                        let copper_n: Spectrum =
+                                                            Spectrum::from_sampled(&COPPER_WAVELENGTHS,
+                                                                                   &COPPER_N,
+                                                                                   COPPER_SAMPLES as i32);
+                                                        let eta: Arc<Texture<Spectrum> + Send + Sync> =
+                                                            Arc::new(ConstantTexture::new(copper_n));
+                                                        let copper_k: Spectrum =
+                                                            Spectrum::from_sampled(&COPPER_WAVELENGTHS,
+                                                                                   &COPPER_K,
+                                                                                   COPPER_SAMPLES as i32);
+                                                        let k: Arc<Texture<Spectrum> + Send + Sync> =
+                                                            Arc::new(ConstantTexture::new(copper_k));
+                                                        let roughness =
+                                                            Arc::new(ConstantTexture::new(
+                                                                specular_roughness as Float,
+                                                            ));
+                                                        let remap_roughness: bool = true;
+                                                        let metal = Arc::new(MetalMaterial::new(
+                                                            eta,
+                                                            k,
+                                                            roughness,
+                                                            None,
+                                                            None,
+                                                            remap_roughness,
+                                                        ));
+                                                        named_materials
+                                                            .insert(node_name.clone(), metal);
+                                                    }
+                                                } else {
+                                                    // TODO: create a matte material for now
+                                                    let kd =
+                                                        Arc::new(ConstantTexture::new(base_color));
+                                                    let sigma = Arc::new(ConstantTexture::new(
+                                                        0.0 as Float,
+                                                    ));
+                                                    let matte =
+                                                        Arc::new(MatteMaterial::new(kd, sigma));
+                                                    named_materials
+                                                        .insert(node_name.clone(), matte);
+                                                }
+                                                // reset
+                                                base_color = Spectrum::new(0.5 as Float);
+                                                specular_color = Spectrum::new(1.0 as Float);
+                                                specular_roughness = 0.01 as Float;
+                                                metalness = 0.0 as Float;
                                                 println!("}}");
                                             }
                                         }
