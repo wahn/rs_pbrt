@@ -23,7 +23,7 @@ use pbrt::core::api::{
     pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_transform_times, pbrt_translate,
     pbrt_world_begin,
 };
-use pbrt::core::geometry::{Normal3f, Point3f, Vector3f};
+use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::transform::Transform;
@@ -293,6 +293,23 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                                 );
                             } else {
                                 params.add_point3fs(string, floats);
+                            }
+                        }
+                        Rule::point2_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 2 {
+                                params.add_point2f(
+                                    string,
+                                    Point2f {
+                                        x: floats[0],
+                                        y: floats[1],
+                                    },
+                                );
+                            } else {
+                                params.add_point2fs(string, floats);
                             }
                         }
                         Rule::normal_param => {

@@ -634,8 +634,8 @@ fn main() {
                                                     // <elem1> <elem2>
                                                     // <elem3> <elem4>
                                                     // ...
-                                                    let mut num_elements: u32 = 0;
-                                                    let mut num_motionblur_keys: u32 = 1;
+                                                    let mut num_elements: u32;
+                                                    let mut num_motionblur_keys: u32;
                                                     let data_type: String = String::from("UINT");
                                                     vi = Vec::new();
                                                     if let Some(num_elements_str) = iter.next() {

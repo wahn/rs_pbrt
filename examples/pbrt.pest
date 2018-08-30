@@ -29,6 +29,7 @@ parameter = { bool_param |
               blackbody_param |
               float_param |
               integer_param |
+              point2_param |
               point_param |
               normal_param |
               rgb_param |
@@ -36,7 +37,8 @@ parameter = { bool_param |
               string_param |
               texture_param |
               vector_param }
-bool_param = { ("\"bool" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack) }
+bool_param = { ("\"bool" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack) |
+               ("\"bool" ~ ident ~ "\"" ~ string) }
 blackbody_param = { ("\"blackbody" ~ ident ~ "\"" ~ lbrack ~ number ~ number+ ~ rbrack) }
 float_param = { ("\"float" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack) |
                 ("\"float" ~ ident ~ "\"" ~ number) }
@@ -44,6 +46,7 @@ string_param = { "\"string" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack |
                  "\"string" ~ ident ~ "\"" ~ string }
 integer_param = { ("\"integer" ~ ident ~ "\"" ~ lbrack ~ integer+ ~ rbrack) |
                   ("\"integer" ~ ident ~ "\"" ~ integer) }
+point2_param = { "\"point2" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
 point_param = { "\"point" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
 vector_param = { "\"vector" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack }
 normal_param = { "\"normal" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
@@ -178,7 +181,8 @@ ident =  { ('a'..'z' | 'A'..'Z' | "_" | '0'..'9') ~
            ('a'..'z' | 'A'..'Z' | "_" | "-" | ":" | '0'..'9')* }
 string = { ("\"" ~ ident ~ "\"") | ("\"" ~ filename ~ "\"") }
 empty_string = { "\"" ~ "\"" }
-filename = { ('a'..'z' | 'A'..'Z' | "_") ~ // TODO: can be a full path
+filename = { ("/")? ~ // optional (can be a full path)
+             ('a'..'z' | 'A'..'Z' | "_") ~
              ('a'..'z' | 'A'..'Z' | "_" | "-" | "." | "/" | '0'..'9')* }
 // "" { return LBRACK; }
 lbrack = { "[" }

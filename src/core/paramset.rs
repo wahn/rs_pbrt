@@ -97,6 +97,36 @@ impl ParamSet {
             looked_up: false,
         });
     }
+    pub fn add_point2f(&mut self, name: String, value: Point2f) {
+        self.point2fs.push(ParamSetItem::<Point2f> {
+            name: name,
+            values: vec![value],
+            n_values: 1_usize,
+            looked_up: false,
+        });
+    }
+    pub fn add_point2fs(&mut self, name: String, values: Vec<Float>) {
+        let n_values: usize = values.len();
+        let mut p_values: Vec<Point2f> = Vec::new();
+        let n_points: usize = values.len() / 2_usize;
+        assert!(
+            n_values % 2 == 0,
+            "point parameters need 2 coordinates ({} found for {:?})",
+            n_values,
+            name
+        );
+        for i in 0..n_points {
+            let x: Float = values[i * 2 + 0];
+            let y: Float = values[i * 2 + 1];
+            p_values.push(Point2f { x: x, y: y });
+        }
+        self.point2fs.push(ParamSetItem::<Point2f> {
+            name: name,
+            values: p_values,
+            n_values: n_points,
+            looked_up: false,
+        });
+    }
     pub fn add_point3f(&mut self, name: String, value: Point3f) {
         self.point3fs.push(ParamSetItem::<Point3f> {
             name: name,
@@ -109,7 +139,12 @@ impl ParamSet {
         let n_values: usize = values.len();
         let mut p_values: Vec<Point3f> = Vec::new();
         let n_points: usize = values.len() / 3_usize;
-        assert!(n_values % 3 == 0, "point parameters need 3 coordinates");
+        assert!(
+            n_values % 3 == 0,
+            "point parameters need 3 coordinates ({} found for {:?})",
+            n_values,
+            name
+        );
         for i in 0..n_points {
             let x: Float = values[i * 3 + 0];
             let y: Float = values[i * 3 + 1];
@@ -603,7 +638,7 @@ impl TextureParams {
                     n.clone()
                 );
             } else if s.len() != 0 {
-                return Some(Arc::new(ConstantTexture { value: s[0] }))
+                return Some(Arc::new(ConstantTexture { value: s[0] }));
             }
             name = self.material_params.find_texture(n.clone());
         }

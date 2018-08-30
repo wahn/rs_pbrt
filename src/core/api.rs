@@ -778,7 +778,15 @@ fn make_texture(api_state: &mut ApiState) {
         if api_state.param_set.tex_name == String::from("constant") {
             println!("TODO: CreateConstantSpectrumTexture");
         } else if api_state.param_set.tex_name == String::from("scale") {
-            println!("TODO: CreateScaleSpectrumTexture");
+            let tex1: Arc<Texture<Spectrum> + Send + Sync> =
+                tp.get_spectrum_texture(String::from("tex1"), Spectrum::new(1.0));
+            let tex2: Arc<Texture<Spectrum> + Send + Sync> =
+                tp.get_spectrum_texture(String::from("tex2"), Spectrum::new(0.0));
+            let ft = Arc::new(ScaleTexture::<Spectrum>::new(tex1, tex2));
+            api_state
+                .graphics_state
+                .spectrum_textures
+                .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == String::from("mix") {
             println!("TODO: CreateMixSpectrumTexture");
         } else if api_state.param_set.tex_name == String::from("bilerp") {
