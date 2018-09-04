@@ -52,7 +52,7 @@ vector_param = { "\"vector" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~
 normal_param = { "\"normal" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
 rgb_param = { ("\"rgb" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack) |
               ("\"color" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack) }
-spectrum_param = { "\"spectrum\"" ~ string }
+spectrum_param = { "\"spectrum" ~ ident ~ "\"" ~ string }
 texture_param = { "\"texture" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack |
                   "\"texture" ~ ident ~ "\"" ~ string }
 // Translate x y z
@@ -178,7 +178,7 @@ reverse_orientation = { "ReverseOrientation" }
 world_begin = { "WorldBegin" }
 // IDENT a-zA-Z_a-zA-Z_0-9*
 ident =  { ('a'..'z' | 'A'..'Z' | "_" | '0'..'9') ~
-           ('a'..'z' | 'A'..'Z' | "_" | "-" | ":" | '0'..'9')* }
+           ('a'..'z' | 'A'..'Z' | " " | "_" | "-" | ":" | '0'..'9')* }
 string = { ("\"" ~ ident ~ "\"") | ("\"" ~ filename ~ "\"") }
 empty_string = { "\"" ~ "\"" }
 filename = { ("/")? ~ // optional (can be a full path)
