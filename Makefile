@@ -1,7 +1,7 @@
 all: without-exr
 
 clean:
-	-rm -f *~ examples/*~ src/*~ examples/*.rs.bk src/*.rs.bk
+	-rm -f *~ examples/*~ src/*~ examples/*.rs.bk src/*.rs.bk *.exr *.png
 
 clobber: clean
 	-rm -fr target
@@ -36,6 +36,7 @@ examples: release
 	./target/release/examples/core_next_float_down
 	./target/release/examples/core_next_float_up
 	./target/release/examples/core_quadratic
+	./target/release/examples/core_read_float_file
 	./target/release/examples/core_rng_set_sequence
 	./target/release/examples/filters_create_box_filter
 	./target/release/examples/filters_create_gaussian_filter
