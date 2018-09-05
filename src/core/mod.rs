@@ -5,6 +5,7 @@ pub mod camera;
 pub mod efloat;
 pub mod film;
 pub mod filter;
+pub mod floatfile;
 pub mod geometry;
 pub mod integrator;
 pub mod interaction;

@@ -18,10 +18,10 @@ use pbrt::core::api::{
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
     pbrt_concat_transform, pbrt_coord_sys_transform, pbrt_film, pbrt_init, pbrt_integrator,
     pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_make_named_medium,
-    pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_pixel_filter,
-    pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture,
-    pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_transform_times, pbrt_translate,
-    pbrt_world_begin,
+    pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_object_begin, pbrt_object_end,
+    pbrt_object_instance, pbrt_pixel_filter, pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler,
+    pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end,
+    pbrt_transform_times, pbrt_translate, pbrt_world_begin,
 };
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use pbrt::core::paramset::ParamSet;
@@ -343,16 +343,26 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                             );
                         }
                         Rule::spectrum_param => {
-                            let tuple: (String, Vec<Float>) =
-                                pbrt_float_parameter(&mut parameter_pair.into_inner());
-                            let string: String = tuple.0;
-                            let floats: Vec<Float> = tuple.1;
-                            params.add_rgb_spectrum(
-                                string,
-                                Spectrum {
-                                    c: [floats[0], floats[1], floats[2]],
-                                },
-                            );
+                            // TODO: "spectrum Kd" [ 300 .3  400 .6   410 .65  415 .8  500 .2  600 .1 ]
+                            // let tuple: (String, Vec<Float>) =
+                            //     pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            // let string: String = tuple.0;
+                            // let floats: Vec<Float> = tuple.1;
+                            // params.add_rgb_spectrum(
+                            //     string,
+                            //     Spectrum {
+                            //         c: [floats[0], floats[1], floats[2]],
+                            //     },
+                            // );
+                            // or
+                            // "spectrum Kd" "filename"
+                            let tuple: (String, String) =
+                                pbrt_string_parameter(&mut parameter_pair.into_inner());
+                            let string1: String = tuple.0;
+                            let string2: String = tuple.1;
+                            let mut strings: Vec<String> = Vec::with_capacity(1_usize);
+                            strings.push(string2);
+                            params.add_sampled_spectrum_files(string1, strings);
                         }
                         Rule::string_param => {
                             let tuple: (String, String) =
@@ -534,6 +544,23 @@ fn main() {
                                         }
                                         Rule::attribute_end => {
                                             pbrt_attribute_end(&mut api_state);
+                                        }
+                                        Rule::object_begin => {
+                                            let params = extract_params(
+                                                String::from("ObjectBegin"),
+                                                rule_pair,
+                                            );
+                                            pbrt_object_begin(&mut api_state, params);
+                                        }
+                                        Rule::object_end => {
+                                            pbrt_object_end(&mut api_state);
+                                        }
+                                        Rule::object_instance => {
+                                            let params = extract_params(
+                                                String::from("ObjectInstance"),
+                                                rule_pair,
+                                            );
+                                            pbrt_object_instance(&mut api_state, params);
                                         }
                                         Rule::transform_begin => {
                                             pbrt_transform_begin(&mut api_state);

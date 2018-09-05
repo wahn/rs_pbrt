@@ -52,6 +52,9 @@ vector_param = { "\"vector" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~
 normal_param = { "\"normal" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
 rgb_param = { ("\"rgb" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack) |
               ("\"color" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack) }
+// TODO: "spectrum Kd" [ 300 .3  400 .6   410 .65  415 .8  500 .2  600 .1 ]
+// or
+// "spectrum Kd" "filename"
 spectrum_param = { "\"spectrum" ~ ident ~ "\"" ~ string }
 texture_param = { "\"texture" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack |
                   "\"texture" ~ ident ~ "\"" ~ string }
@@ -158,9 +161,9 @@ keyword = {
      "CoordinateSystem" |
      "Identity" |
      "Include" |
-     "ObjectBegin" |
-     "ObjectEnd" |
-     "ObjectInstance" |
+     object_begin |
+     object_end |
+     object_instance |
      reverse_orientation |
      transform_begin |
      transform_end |
@@ -170,6 +173,9 @@ keyword = {
 all = { "All" }
 attribute_begin = { "AttributeBegin" }
 attribute_end = { "AttributeEnd" }
+object_begin = { "ObjectBegin" ~ string }
+object_end = { "ObjectEnd" }
+object_instance = { "ObjectInstance" ~ string }
 transform_begin = { "TransformBegin" }
 transform_end = { "TransformEnd" }
 end_time = { "EndTime" }

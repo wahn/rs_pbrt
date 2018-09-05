@@ -162,6 +162,7 @@ pub struct RenderOptions {
     pub primitives: Vec<Arc<Primitive + Sync + Send>>,
     // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
     // TODO: std::vector<std::shared_ptr<Primitive>> *currentInstance = nullptr;
+    pub current_instance: Option<Arc<Primitive + Sync + Send>>,
     pub have_scattering_media: bool, // false
 }
 
@@ -205,6 +206,7 @@ impl Default for RenderOptions {
             named_media: HashMap::new(),
             lights: Vec::new(),
             primitives: Vec::new(),
+            current_instance: None,
             have_scattering_media: false,
         }
     }
@@ -2547,4 +2549,73 @@ pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
 pub fn pbrt_reverse_orientation(api_state: &mut ApiState) {
     // println!("ReverseOrientation");
     api_state.graphics_state.reverse_orientation = !api_state.graphics_state.reverse_orientation;
+}
+
+pub fn pbrt_object_begin(api_state: &mut ApiState, params: ParamSet) {
+    println!("ObjectBegin \"{}\"", params.name);
+    // VERIFY_WORLD("ObjectBegin");
+    // pbrtAttributeBegin();
+    // if (renderOptions->currentInstance)
+    //     Error("ObjectBegin called inside of instance definition");
+    // renderOptions->instances[name] = std::vector<std::shared_ptr<Primitive>>();
+    // renderOptions->currentInstance = &renderOptions->instances[name];
+    // if (PbrtOptions.cat || PbrtOptions.toPly)
+    //     printf("%*sObjectBegin \"%s\"\n", catIndentCount, "", name.c_str());
+}
+
+pub fn pbrt_object_end(api_state: &mut ApiState) {
+    println!("ObjectEnd");
+    // VERIFY_WORLD("ObjectEnd");
+    // if (!renderOptions->currentInstance)
+    //     Error("ObjectEnd called outside of instance definition");
+    // renderOptions->currentInstance = nullptr;
+    // pbrtAttributeEnd();
+    // ++nObjectInstancesCreated;
+    // if (PbrtOptions.cat || PbrtOptions.toPly)
+    //     printf("%*sObjectEnd\n", catIndentCount, "");
+}
+
+pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
+    println!("ObjectInstance \"{}\"", params.name);
+    // VERIFY_WORLD("ObjectInstance");
+    // if (PbrtOptions.cat || PbrtOptions.toPly) {
+    //     printf("%*sObjectInstance \"%s\"\n", catIndentCount, "", name.c_str());
+    //     return;
+    // }
+
+    // // Perform object instance error checking
+    // if (renderOptions->currentInstance) {
+    //     Error("ObjectInstance can't be called inside instance definition");
+    //     return;
+    // }
+    // if (renderOptions->instances.find(name) == renderOptions->instances.end()) {
+    //     Error("Unable to find instance named \"%s\"", name.c_str());
+    //     return;
+    // }
+    // std::vector<std::shared_ptr<Primitive>> &in =
+    //     renderOptions->instances[name];
+    // if (in.empty()) return;
+    // ++nObjectInstancesUsed;
+    // if (in.size() > 1) {
+    //     // Create aggregate for instance _Primitive_s
+    //     std::shared_ptr<Primitive> accel(
+    //         MakeAccelerator(renderOptions->AcceleratorName, std::move(in),
+    //                         renderOptions->AcceleratorParams));
+    //     if (!accel) accel = std::make_shared<BVHAccel>(in);
+    //     in.clear();
+    //     in.push_back(accel);
+    // }
+    // static_assert(MaxTransforms == 2,
+    //               "TransformCache assumes only two transforms");
+    // // Create _animatedInstanceToWorld_ transform for instance
+    // Transform *InstanceToWorld[2] = {
+    //     transformCache.Lookup(curTransform[0]),
+    //     transformCache.Lookup(curTransform[1])
+    // };
+    // AnimatedTransform animatedInstanceToWorld(
+    //     InstanceToWorld[0], renderOptions->transformStartTime,
+    //     InstanceToWorld[1], renderOptions->transformEndTime);
+    // std::shared_ptr<Primitive> prim(
+    //     std::make_shared<TransformedPrimitive>(in[0], animatedInstanceToWorld));
+    // renderOptions->primitives.push_back(prim);
 }

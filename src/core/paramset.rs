@@ -158,6 +158,10 @@ impl ParamSet {
             looked_up: false,
         });
     }
+    pub fn add_sampled_spectrum_files(&mut self, name: String, names: Vec<String>) {
+        self.erase_spectrum(name);
+        // WORK
+    }
     pub fn add_string(&mut self, name: String, value: String) {
         self.strings.push(ParamSetItem::<String> {
             name: name,
@@ -351,6 +355,15 @@ impl ParamSet {
                 looked_up: false,
             });
         }
+    }
+    pub fn erase_spectrum(&mut self, name: String) -> bool {
+        for i in 0..self.spectra.len() {
+            if self.spectra[i].name == name {
+                self.spectra.remove(i);
+                return true;
+            }
+        }
+        false
     }
     pub fn find_one_float(&self, name: String, d: Float) -> Float {
         for v in &self.floats {
