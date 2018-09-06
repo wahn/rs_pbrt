@@ -1,7 +1,11 @@
 // std
 use std::collections::HashMap;
+use std::env;
+use std::fs::File;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 // pbrt
+use core::floatfile::read_float_file;
 use core::geometry::{Normal3f, Point2f, Point3f, Vector2f, Vector3f};
 use core::pbrt::{Float, Spectrum};
 use core::spectrum::blackbody_normalized;
@@ -159,8 +163,53 @@ impl ParamSet {
         });
     }
     pub fn add_sampled_spectrum_files(&mut self, name: String, names: Vec<String>) {
-        self.erase_spectrum(name);
-        // WORK
+        // TODO: cachedSpectra
+        self.erase_spectrum(name.clone());
+        let mut s: Vec<Spectrum> = Vec::with_capacity(names.len());
+        for i in 0..names.len() {
+            // std::string filename = AbsolutePath(ResolveFilename(names[i]));
+            let fn_str: &String = &names[i];
+            let f = File::open(fn_str.clone()).unwrap();
+            let ip: &Path = Path::new(fn_str.as_str());
+            if ip.is_relative() {
+                let cp: PathBuf = env::current_dir().unwrap();
+                let pb: PathBuf = cp.join(ip);
+                let search_directory: &Path = pb.as_path().parent().unwrap();
+                let mut path_buf: PathBuf = PathBuf::from("/");
+                path_buf.push(search_directory);
+                path_buf.push(ip.file_name().unwrap());
+                let filename = String::from(path_buf.to_str().unwrap());
+                let mut vals: Vec<Float> = Vec::new();
+                if !read_float_file(&filename, &mut vals) {
+                    println!(
+                        "WARNING: Unable to read SPD file {:?}. Using black distribution.",
+                        filename
+                    );
+                    s.push(Spectrum::default());
+                } else {
+                    if vals.len() % 2 == 1_usize {
+                        println!(
+                            "WARNING: Extra value found in spectrum file {:?}. Ignoring it.",
+                            filename
+                        );
+                    }
+                    let mut wls: Vec<Float> = Vec::new();
+                    let mut v: Vec<Float> = Vec::new();
+                    for j in 0..(vals.len() / 2_usize) {
+                        wls.push(vals[2 * j]);
+                        v.push(vals[2 * j + 1]);
+                    }
+                    s.push(Spectrum::from_sampled(&wls[..], &v[..], wls.len() as i32));
+                }
+            }
+        }
+        let n_values: usize = s.len();
+        self.spectra.push(ParamSetItem::<Spectrum> {
+            name: name.clone(),
+            values: s,
+            n_values: n_values,
+            looked_up: false,
+        });
     }
     pub fn add_string(&mut self, name: String, value: String) {
         self.strings.push(ParamSetItem::<String> {
