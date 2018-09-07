@@ -12,7 +12,6 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
-use pbrt::core::api::ApiState;
 use pbrt::core::api::{
     pbrt_active_transform_all, pbrt_active_transform_end_time, pbrt_active_transform_start_time,
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
@@ -458,7 +457,7 @@ fn main() {
                 // println!("FILE = {}", x);
                 let f = File::open(x.clone()).unwrap();
                 let ip: &Path = Path::new(x.as_str());
-                let mut api_state: ApiState = pbrt_init(number_of_threads);
+                let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
                 if ip.is_relative() {
                     let cp: PathBuf = env::current_dir().unwrap();
                     let pb: PathBuf = cp.join(ip);
@@ -668,7 +667,11 @@ fn main() {
                                                 String::from("MakeNamedMaterial"),
                                                 rule_pair,
                                             );
-                                            pbrt_make_named_material(&mut api_state, params);
+                                            pbrt_make_named_material(
+                                                &mut api_state,
+                                                &mut bsdf_state,
+                                                params,
+                                            );
                                         }
                                         Rule::make_named_medium => {
                                             let params = extract_params(
@@ -704,7 +707,7 @@ fn main() {
                                         Rule::shape => {
                                             let params =
                                                 extract_params(String::from("Shape"), rule_pair);
-                                            pbrt_shape(&mut api_state, params);
+                                            pbrt_shape(&mut api_state, &mut bsdf_state, params);
                                         }
                                         Rule::texture => {
                                             let params =

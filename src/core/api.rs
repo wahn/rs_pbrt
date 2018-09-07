@@ -21,6 +21,7 @@ use core::paramset::{ParamSet, TextureParams};
 use core::pbrt::clamp_t;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
+use core::reflection::FourierBSDFTable;
 use core::sampler::Sampler;
 use core::scene::Scene;
 use core::shape::Shape;
@@ -42,6 +43,7 @@ use lights::distant::DistantLight;
 use lights::infinite::InfiniteAreaLight;
 use lights::point::PointLight;
 use lights::spot::SpotLight;
+use materials::fourier::FourierMaterial;
 use materials::glass::GlassMaterial;
 use materials::hair::HairMaterial;
 use materials::matte::MatteMaterial;
@@ -69,6 +71,18 @@ use textures::imagemap::{convert_to_float, convert_to_spectrum};
 use textures::scale::ScaleTexture;
 
 // see api.cpp
+
+pub struct BsdfState {
+    pub loaded_bsdfs: HashMap<String, Arc<FourierBSDFTable>>,
+}
+
+impl Default for BsdfState {
+    fn default() -> Self {
+        BsdfState {
+            loaded_bsdfs: HashMap::new(),
+        }
+    }
+}
 
 pub struct ApiState {
     number_of_threads: u8,
@@ -259,7 +273,10 @@ impl GraphicsState {
     }
 }
 
-fn create_material(api_state: &ApiState) -> Option<Arc<Material + Send + Sync>> {
+fn create_material(
+    api_state: &ApiState,
+    bsdf_state: &mut BsdfState,
+) -> Option<Arc<Material + Send + Sync>> {
     // CreateMaterial
     let mut material_params = ParamSet::default();
     material_params.copy_from(&api_state.graphics_state.material_params);
@@ -372,7 +389,7 @@ fn create_material(api_state: &ApiState) -> Option<Arc<Material + Send + Sync>> 
         } else if api_state.graphics_state.material == String::from("kdsubsurface") {
             println!("TODO: CreateKdsubsurfaceMaterial");
         } else if api_state.graphics_state.material == String::from("fourier") {
-            println!("TODO: CreateFourierMaterial");
+            return Some(FourierMaterial::create(&mut mp, bsdf_state));
         } else {
             panic!(
                 "Material \"{}\" unknown.",
@@ -970,6 +987,7 @@ fn make_texture(api_state: &mut ApiState) {
 
 fn get_shapes_and_materials(
     api_state: &ApiState,
+    bsdf_state: &mut BsdfState,
 ) -> (
     Vec<Arc<Shape + Send + Sync>>,
     Vec<Option<Arc<Material + Send + Sync>>>,
@@ -1021,7 +1039,7 @@ fn get_shapes_and_materials(
             z_max,
             phi_max,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state);
+        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(sphere.clone());
         materials.push(mtl);
     } else if api_state.param_set.name == String::from("cylinder") {
@@ -1046,7 +1064,7 @@ fn get_shapes_and_materials(
             z_max,
             phi_max,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state);
+        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(cylinder.clone());
         materials.push(mtl.clone());
     } else if api_state.param_set.name == String::from("disk") {
@@ -1072,7 +1090,7 @@ fn get_shapes_and_materials(
             inner_radius,
             phi_max,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state);
+        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(disk.clone());
         materials.push(mtl.clone());
     } else if api_state.param_set.name == String::from("cone") {
@@ -1082,7 +1100,7 @@ fn get_shapes_and_materials(
     } else if api_state.param_set.name == String::from("hyperboloid") {
         println!("TODO: CreateHyperboloidShape");
     } else if api_state.param_set.name == String::from("curve") {
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state);
+        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         let curve_shapes: Vec<Arc<Shape + Send + Sync>> = create_curve_shape(
             &obj_to_world,
             &world_to_obj,
@@ -1180,7 +1198,7 @@ fn get_shapes_and_materials(
             n_ws, // in world space
             uvs,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state);
+        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Triangle::new(
                 mesh.object_to_world,
@@ -1194,7 +1212,7 @@ fn get_shapes_and_materials(
         }
     } else if api_state.param_set.name == String::from("plymesh") {
         if let Some(ref search_directory) = api_state.search_directory {
-            let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state);
+            let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
             let ply_shapes: Vec<Arc<Shape + Send + Sync>> = create_ply_mesh(
                 &obj_to_world,
                 &world_to_obj,
@@ -1313,10 +1331,11 @@ fn print_params(params: &ParamSet) {
     }
 }
 
-pub fn pbrt_init(number_of_threads: u8) -> ApiState {
+pub fn pbrt_init(number_of_threads: u8) -> (ApiState, BsdfState) {
     let mut api_state: ApiState = ApiState::default();
+    let mut bsdf_state: BsdfState = BsdfState::default();
     api_state.number_of_threads = number_of_threads;
-    api_state
+    (api_state, bsdf_state)
 }
 
 pub fn pbrt_cleanup(api_state: &ApiState) {
@@ -2364,7 +2383,11 @@ pub fn pbrt_material(api_state: &mut ApiState, params: ParamSet) {
     api_state.graphics_state.current_material = String::new();
 }
 
-pub fn pbrt_make_named_material(api_state: &mut ApiState, params: ParamSet) {
+pub fn pbrt_make_named_material(
+    api_state: &mut ApiState,
+    bsdf_state: &mut BsdfState,
+    params: ParamSet,
+) {
     // println!("MakeNamedMaterial \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
@@ -2380,7 +2403,7 @@ pub fn pbrt_make_named_material(api_state: &mut ApiState, params: ParamSet) {
         .material_params
         .copy_from(&api_state.param_set);
     api_state.graphics_state.current_material = String::new();
-    let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state);
+    let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
     match api_state
         .graphics_state
         .named_materials
@@ -2422,7 +2445,7 @@ pub fn pbrt_area_light_source(api_state: &mut ApiState, params: ParamSet) {
         .copy_from(&api_state.param_set);
 }
 
-pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
+pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: ParamSet) {
     // println!("Shape \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
@@ -2436,7 +2459,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
             || api_state.graphics_state.area_light == String::from("diffuse")
         {
             // first create the shape
-            let (shapes, materials) = get_shapes_and_materials(&api_state);
+            let (shapes, materials) = get_shapes_and_materials(&api_state, bsdf_state);
             assert_eq!(shapes.len(), materials.len());
             // MediumInterface
             let mi: MediumInterface = create_medium_interface(&api_state);
@@ -2485,7 +2508,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
         }
     } else {
         // continue with shape itself
-        let (shapes, materials) = get_shapes_and_materials(&api_state);
+        let (shapes, materials) = get_shapes_and_materials(&api_state, bsdf_state);
         assert_eq!(shapes.len(), materials.len());
         // MediumInterface
         let mi: MediumInterface = create_medium_interface(&api_state);
@@ -2599,32 +2622,32 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, _params: ParamSet) {
             instance_vec.len(),
             api_state.param_set.name.clone()
         );
-        // std::vector<std::shared_ptr<Primitive>> &in =
-        //     api_state.render_options.instances[name];
-        // if (in.empty()) return;
-        // ++nObjectInstancesUsed;
-        // if (in.size() > 1) {
-        //     // Create aggregate for instance _Primitive_s
-        //     std::shared_ptr<Primitive> accel(
-        //         MakeAccelerator(api_state.render_options.AcceleratorName, std::move(in),
-        //                         api_state.render_options.AcceleratorParams));
-        //     if (!accel) accel = std::make_shared<BVHAccel>(in);
-        //     in.clear();
-        //     in.push_back(accel);
-        // }
-        // static_assert(MaxTransforms == 2,
-        //               "TransformCache assumes only two transforms");
-        // // Create _animatedInstanceToWorld_ transform for instance
-        // Transform *InstanceToWorld[2] = {
-        //     transformCache.Lookup(curTransform[0]),
-        //     transformCache.Lookup(curTransform[1])
-        // };
-        // AnimatedTransform animatedInstanceToWorld(
-        //     InstanceToWorld[0], api_state.render_options.transformStartTime,
-        //     InstanceToWorld[1], api_state.render_options.transformEndTime);
-        // std::shared_ptr<Primitive> prim(
-        //     std::make_shared<TransformedPrimitive>(in[0], animatedInstanceToWorld));
-        // api_state.render_options.primitives.push_back(prim);
+    // std::vector<std::shared_ptr<Primitive>> &in =
+    //     api_state.render_options.instances[name];
+    // if (in.empty()) return;
+    // ++nObjectInstancesUsed;
+    // if (in.size() > 1) {
+    //     // Create aggregate for instance _Primitive_s
+    //     std::shared_ptr<Primitive> accel(
+    //         MakeAccelerator(api_state.render_options.AcceleratorName, std::move(in),
+    //                         api_state.render_options.AcceleratorParams));
+    //     if (!accel) accel = std::make_shared<BVHAccel>(in);
+    //     in.clear();
+    //     in.push_back(accel);
+    // }
+    // static_assert(MaxTransforms == 2,
+    //               "TransformCache assumes only two transforms");
+    // // Create _animatedInstanceToWorld_ transform for instance
+    // Transform *InstanceToWorld[2] = {
+    //     transformCache.Lookup(curTransform[0]),
+    //     transformCache.Lookup(curTransform[1])
+    // };
+    // AnimatedTransform animatedInstanceToWorld(
+    //     InstanceToWorld[0], api_state.render_options.transformStartTime,
+    //     InstanceToWorld[1], api_state.render_options.transformEndTime);
+    // std::shared_ptr<Primitive> prim(
+    //     std::make_shared<TransformedPrimitive>(in[0], animatedInstanceToWorld));
+    // api_state.render_options.primitives.push_back(prim);
     } else {
         println!(
             "ERROR: Unable to find instance named {:?}",
