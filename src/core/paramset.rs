@@ -169,7 +169,7 @@ impl ParamSet {
         for i in 0..names.len() {
             // std::string filename = AbsolutePath(ResolveFilename(names[i]));
             let fn_str: &String = &names[i];
-            let f = File::open(fn_str.clone()).unwrap();
+            let _f = File::open(fn_str.clone()).unwrap();
             let ip: &Path = Path::new(fn_str.as_str());
             if ip.is_relative() {
                 let cp: PathBuf = env::current_dir().unwrap();

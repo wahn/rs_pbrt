@@ -160,9 +160,8 @@ pub struct RenderOptions {
     pub named_media: HashMap<String, Arc<Medium + Sync + Send>>,
     pub lights: Vec<Arc<Light + Sync + Send>>,
     pub primitives: Vec<Arc<Primitive + Sync + Send>>,
-    // TODO: std::map<std::string, std::vector<std::shared_ptr<Primitive>>> instances;
-    // TODO: std::vector<std::shared_ptr<Primitive>> *currentInstance = nullptr;
-    pub current_instance: Option<Arc<Primitive + Sync + Send>>,
+    pub instances: HashMap<String, Vec<Arc<Primitive + Sync + Send>>>,
+    pub current_instance: Option<Vec<Arc<Primitive + Sync + Send>>>,
     pub have_scattering_media: bool, // false
 }
 
@@ -206,6 +205,7 @@ impl Default for RenderOptions {
             named_media: HashMap::new(),
             lights: Vec::new(),
             primitives: Vec::new(),
+            instances: HashMap::new(),
             current_instance: None,
             have_scattering_media: false,
         }
@@ -2526,22 +2526,21 @@ pub fn pbrt_shape(api_state: &mut ApiState, params: ParamSet) {
         }
     }
     // add _prims_ and _areaLights_ to scene or current instance
-    // if (renderOptions->currentInstance) {
-    //     if (areaLights.size())
-    //         Warning("Area lights not supported with object instancing");
-    //     renderOptions->currentInstance->insert(
-    //         renderOptions->currentInstance->end(), prims.begin(), prims.end());
-    // } else {
-    // renderOptions->primitives.insert(renderOptions->primitives.end(),
-    //     prims.begin(), prims.end());
-    for prim in prims {
-        api_state.render_options.primitives.push(prim.clone());
-    }
-    // api_state.render_options.primitives.insert(api_state.render_options.primitives.end(),
-    //                      prims.begin(), prims.end());
-    if area_lights.len() > 0 {
-        for area_light in area_lights {
-            api_state.render_options.lights.push(area_light);
+    if let Some(ref mut current_instance) = api_state.render_options.current_instance {
+        if area_lights.len() > 0 {
+            println!("WARNING: Area lights not supported with object instancing");
+        }
+        for prim in prims {
+            current_instance.push(prim.clone());
+        }
+    } else {
+        for prim in prims {
+            api_state.render_options.primitives.push(prim.clone());
+        }
+        if area_lights.len() > 0 {
+            for area_light in area_lights {
+                api_state.render_options.lights.push(area_light);
+            }
         }
     }
 }
@@ -2551,71 +2550,86 @@ pub fn pbrt_reverse_orientation(api_state: &mut ApiState) {
     api_state.graphics_state.reverse_orientation = !api_state.graphics_state.reverse_orientation;
 }
 
-pub fn pbrt_object_begin(api_state: &mut ApiState, params: ParamSet) {
-    println!("ObjectBegin \"{}\"", params.name);
-    // VERIFY_WORLD("ObjectBegin");
-    // pbrtAttributeBegin();
-    // if (renderOptions->currentInstance)
-    //     Error("ObjectBegin called inside of instance definition");
-    // renderOptions->instances[name] = std::vector<std::shared_ptr<Primitive>>();
-    // renderOptions->currentInstance = &renderOptions->instances[name];
-    // if (PbrtOptions.cat || PbrtOptions.toPly)
-    //     printf("%*sObjectBegin \"%s\"\n", catIndentCount, "", name.c_str());
+pub fn pbrt_object_begin(api_state: &mut ApiState, _params: ParamSet) {
+    // println!("ObjectBegin \"{}\"", params.name);
+    pbrt_attribute_begin(api_state);
+    if let Some(ref _current_instance) = api_state.render_options.current_instance {
+        println!("ERROR: ObjectBegin called inside of instance definition");
+    }
+    api_state
+        .render_options
+        .instances
+        .insert(api_state.param_set.name.clone(), Vec::new());
+    if let Some(instance) = api_state
+        .render_options
+        .instances
+        .get(&api_state.param_set.name.clone())
+    {
+        api_state.render_options.current_instance = Some(instance.clone());
+    }
 }
 
 pub fn pbrt_object_end(api_state: &mut ApiState) {
-    println!("ObjectEnd");
-    // VERIFY_WORLD("ObjectEnd");
-    // if (!renderOptions->currentInstance)
-    //     Error("ObjectEnd called outside of instance definition");
-    // renderOptions->currentInstance = nullptr;
-    // pbrtAttributeEnd();
-    // ++nObjectInstancesCreated;
-    // if (PbrtOptions.cat || PbrtOptions.toPly)
-    //     printf("%*sObjectEnd\n", catIndentCount, "");
+    // println!("ObjectEnd");
+    if let Some(ref _current_instance) = api_state.render_options.current_instance {
+    } else {
+        println!("ERROR: ObjectEnd called inside of instance definition");
+    }
+    api_state.render_options.current_instance = None;
+    pbrt_attribute_end(api_state);
 }
 
-pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
-    println!("ObjectInstance \"{}\"", params.name);
-    // VERIFY_WORLD("ObjectInstance");
-    // if (PbrtOptions.cat || PbrtOptions.toPly) {
-    //     printf("%*sObjectInstance \"%s\"\n", catIndentCount, "", name.c_str());
-    //     return;
-    // }
-
-    // // Perform object instance error checking
-    // if (renderOptions->currentInstance) {
-    //     Error("ObjectInstance can't be called inside instance definition");
-    //     return;
-    // }
-    // if (renderOptions->instances.find(name) == renderOptions->instances.end()) {
-    //     Error("Unable to find instance named \"%s\"", name.c_str());
-    //     return;
-    // }
-    // std::vector<std::shared_ptr<Primitive>> &in =
-    //     renderOptions->instances[name];
-    // if (in.empty()) return;
-    // ++nObjectInstancesUsed;
-    // if (in.size() > 1) {
-    //     // Create aggregate for instance _Primitive_s
-    //     std::shared_ptr<Primitive> accel(
-    //         MakeAccelerator(renderOptions->AcceleratorName, std::move(in),
-    //                         renderOptions->AcceleratorParams));
-    //     if (!accel) accel = std::make_shared<BVHAccel>(in);
-    //     in.clear();
-    //     in.push_back(accel);
-    // }
-    // static_assert(MaxTransforms == 2,
-    //               "TransformCache assumes only two transforms");
-    // // Create _animatedInstanceToWorld_ transform for instance
-    // Transform *InstanceToWorld[2] = {
-    //     transformCache.Lookup(curTransform[0]),
-    //     transformCache.Lookup(curTransform[1])
-    // };
-    // AnimatedTransform animatedInstanceToWorld(
-    //     InstanceToWorld[0], renderOptions->transformStartTime,
-    //     InstanceToWorld[1], renderOptions->transformEndTime);
-    // std::shared_ptr<Primitive> prim(
-    //     std::make_shared<TransformedPrimitive>(in[0], animatedInstanceToWorld));
-    // renderOptions->primitives.push_back(prim);
+pub fn pbrt_object_instance(api_state: &mut ApiState, _params: ParamSet) {
+    // println!("ObjectInstance \"{}\"", params.name);
+    // perform object instance error checking
+    if let Some(ref _current_instance) = api_state.render_options.current_instance {
+        println!("ERROR: ObjectInstance can't be called inside instance definition");
+        return;
+    }
+    if let Some(instance_vec) = api_state
+        .render_options
+        .instances
+        .get(&api_state.param_set.name.clone())
+    {
+        if instance_vec.is_empty() {
+            return;
+        }
+        panic!(
+            "{} instances found for {:?}",
+            instance_vec.len(),
+            api_state.param_set.name.clone()
+        );
+        // std::vector<std::shared_ptr<Primitive>> &in =
+        //     api_state.render_options.instances[name];
+        // if (in.empty()) return;
+        // ++nObjectInstancesUsed;
+        // if (in.size() > 1) {
+        //     // Create aggregate for instance _Primitive_s
+        //     std::shared_ptr<Primitive> accel(
+        //         MakeAccelerator(api_state.render_options.AcceleratorName, std::move(in),
+        //                         api_state.render_options.AcceleratorParams));
+        //     if (!accel) accel = std::make_shared<BVHAccel>(in);
+        //     in.clear();
+        //     in.push_back(accel);
+        // }
+        // static_assert(MaxTransforms == 2,
+        //               "TransformCache assumes only two transforms");
+        // // Create _animatedInstanceToWorld_ transform for instance
+        // Transform *InstanceToWorld[2] = {
+        //     transformCache.Lookup(curTransform[0]),
+        //     transformCache.Lookup(curTransform[1])
+        // };
+        // AnimatedTransform animatedInstanceToWorld(
+        //     InstanceToWorld[0], api_state.render_options.transformStartTime,
+        //     InstanceToWorld[1], api_state.render_options.transformEndTime);
+        // std::shared_ptr<Primitive> prim(
+        //     std::make_shared<TransformedPrimitive>(in[0], animatedInstanceToWorld));
+        // api_state.render_options.primitives.push_back(prim);
+    } else {
+        println!(
+            "ERROR: Unable to find instance named {:?}",
+            api_state.param_set.name.clone()
+        );
+        return;
+    }
 }
