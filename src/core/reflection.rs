@@ -23,6 +23,21 @@ use core::sampling::cosine_sample_hemisphere;
 
 // see reflection.h
 
+#[derive(Default)]
+pub struct FourierBSDFTable {
+    pub eta: Float,
+    pub m_max: u32,
+    pub m_channels: u32,
+    pub n_mu: u32,
+    pub mu: Float,
+    pub m: u32,
+    pub a_offset: u32,
+    pub a: Float,
+    pub a0: Float,
+    pub cfd: Float,
+    pub recip: Float,
+}
+
 pub struct Bsdf {
     pub eta: Float,
     /// shading normal

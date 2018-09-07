@@ -24,6 +24,7 @@
 //!
 //! ![SubstrateMaterial](https://www.janwalter.org/assets/ganesha.png)
 
+pub mod fourier;
 pub mod glass;
 pub mod hair;
 pub mod matte;
