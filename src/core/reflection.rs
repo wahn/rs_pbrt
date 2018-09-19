@@ -7,17 +7,21 @@
 // std
 use std;
 use std::f32::consts::PI;
+use std::fs::File;
+use std::io::Read;
+use std::path::Path;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{
+    nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3, vec3_normalize,
+};
 use core::geometry::{Normal3f, Point2f, Vector3f};
-use core::geometry::{nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm,
-                     vec3_dot_vec3, vec3_normalize};
 use core::interaction::SurfaceInteraction;
 use core::material::TransportMode;
 use core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use core::pbrt::INV_PI;
-use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, radians};
+use core::pbrt::{Float, Spectrum};
 use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::sampling::cosine_sample_hemisphere;
 
@@ -36,6 +40,33 @@ pub struct FourierBSDFTable {
     pub a0: Float,
     pub cfd: Float,
     pub recip: Float,
+}
+
+impl FourierBSDFTable {
+    pub fn read(&mut self, filename: &String) -> bool {
+        let path = Path::new(&filename);
+        let result = File::open(path);
+        if !result.is_ok() {
+            println!("ERROR: Unable to open tabulated BSDF file {:?}", filename);
+            return false;
+        }
+        // header
+        let mut file = result.unwrap();
+        let mut buffer = [0; 8];
+        let io_result = file.read_exact(&mut buffer);
+        if io_result.is_ok() {
+            let header_exp: [u8; 8] = [b'S', b'C', b'A', b'T', b'F', b'U', b'N', 0x01_u8];
+            if buffer == header_exp {
+                panic!("WORK: Header found");
+            } else {
+                panic!(
+                    "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                );
+            }
+            // WORK
+        }
+        false
+    }
 }
 
 pub struct Bsdf {
@@ -589,7 +620,8 @@ impl Bxdf for FresnelSpecular {
         }
     }
     fn get_type(&self) -> u8 {
-        BxdfType::BsdfReflection as u8 | BxdfType::BsdfTransmission as u8
+        BxdfType::BsdfReflection as u8
+            | BxdfType::BsdfTransmission as u8
             | BxdfType::BsdfSpecular as u8
     }
 }
@@ -815,7 +847,8 @@ impl FresnelBlend {
 
 impl Bxdf for FresnelBlend {
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
-        let diffuse: Spectrum = self.rd * (Spectrum::new(1.0 as Float) - self.rs)
+        let diffuse: Spectrum = self.rd
+            * (Spectrum::new(1.0 as Float) - self.rs)
             * (28.0 as Float / (23.0 as Float * PI))
             * (1.0 - pow5(1.0 - 0.5 * abs_cos_theta(wi)))
             * (1.0 - pow5(1.0 - 0.5 * abs_cos_theta(wo)));
@@ -829,7 +862,8 @@ impl Bxdf for FresnelBlend {
             assert!(schlick_fresnel.c[0] >= 0.0, "wi = {:?}; wh = {:?}", wi, wh);
             let specular: Spectrum = schlick_fresnel
                 * (distribution.d(&wh)
-                    / (4.0 * vec3_dot_vec3(wi, &wh).abs()
+                    / (4.0
+                        * vec3_dot_vec3(wi, &wh).abs()
                         * f32::max(abs_cos_theta(wi), abs_cos_theta(wo))));
             diffuse + specular
         } else {

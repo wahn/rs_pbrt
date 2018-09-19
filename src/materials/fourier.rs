@@ -34,6 +34,8 @@ impl FourierMaterial {
             // TODO: use the BSDF table found
         } else {
             // TODO: read BSDF table from file
+            let mut bsdf_table: FourierBSDFTable = FourierBSDFTable::default();
+            println!("reading {:?} returns {}", bsdffile, bsdf_table.read(&bsdffile));
         }
         Arc::new(FourierMaterial::new(
             // TODO: bsdf_table,
