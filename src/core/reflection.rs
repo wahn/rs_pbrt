@@ -11,6 +11,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use std::sync::Arc;
+// others
+use byteorder::{LittleEndian, ReadBytesExt};
 // pbrt
 use core::geometry::{
     nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3, vec3_normalize,
@@ -30,12 +32,12 @@ use core::sampling::cosine_sample_hemisphere;
 #[derive(Default)]
 pub struct FourierBSDFTable {
     pub eta: Float,
-    pub m_max: u32,
-    pub m_channels: u32,
-    pub n_mu: u32,
+    pub m_max: i32,
+    pub n_channels: i32,
+    pub n_mu: i32,
     pub mu: Float,
-    pub m: u32,
-    pub a_offset: u32,
+    pub m: i32,
+    pub a_offset: i32,
     pub a: Float,
     pub a0: Float,
     pub cfd: Float,
@@ -57,7 +59,26 @@ impl FourierBSDFTable {
         if io_result.is_ok() {
             let header_exp: [u8; 8] = [b'S', b'C', b'A', b'T', b'F', b'U', b'N', 0x01_u8];
             if buffer == header_exp {
-                panic!("WORK: Header found");
+                let mut buffer: [i32; 6] = [0; 6]; // 6 32-bit (signed) integers
+                let io_result = file.read_i32_into::<LittleEndian>(&mut buffer);
+                if io_result.is_ok() {
+                    let flags: i32 = buffer[0];
+                    println!("WORK: flags = {:?}", flags);
+                    self.n_mu = buffer[1];
+                    println!("WORK: n_mu = {:?}", self.n_mu);
+                    let n_coeffs: i32 = buffer[2];
+                    println!("WORK: n_coeffs = {:?}", n_coeffs);
+                    self.m_max = buffer[3];
+                    println!("WORK: m_max = {:?}", self.m_max);
+                    self.n_channels = buffer[4];
+                    println!("WORK: n_channels = {:?}", self.n_channels);
+                    let n_bases: i32 = buffer[5];
+                    println!("WORK: n_bases = {:?}", n_bases);
+                } else {
+                    panic!(
+                        "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                    );
+                }
             } else {
                 panic!(
                     "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."

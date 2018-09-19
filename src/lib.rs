@@ -22,6 +22,7 @@
 #[macro_use]
 extern crate hexf;
 extern crate atomic;
+extern crate byteorder;
 #[cfg(feature = "openexr")]
 extern crate half;
 extern crate image;
