@@ -35,13 +35,13 @@ pub struct FourierBSDFTable {
     pub m_max: i32,
     pub n_channels: i32,
     pub n_mu: i32,
-    pub mu: Float,
-    pub m: i32,
-    pub a_offset: i32,
-    pub a: Float,
-    pub a0: Float,
-    pub cfd: Float,
-    pub recip: Float,
+    pub mu: Vec<Float>,
+    pub m: Vec<i32>,
+    pub a_offset: Vec<i32>,
+    pub a: Vec<Float>,
+    pub a0: Vec<Float>,
+    pub cdf: Vec<Float>,
+    pub recip: Vec<Float>,
 }
 
 impl FourierBSDFTable {
@@ -59,7 +59,7 @@ impl FourierBSDFTable {
         if io_result.is_ok() {
             let header_exp: [u8; 8] = [b'S', b'C', b'A', b'T', b'F', b'U', b'N', 0x01_u8];
             if buffer == header_exp {
-                let mut buffer: [i32; 6] = [0; 6]; // 6 32-bit (signed) integers
+                let mut buffer: [i32; 9] = [0; 9]; // 9 32-bit (signed) integers (the last 3 are unused)
                 let io_result = file.read_i32_into::<LittleEndian>(&mut buffer);
                 if io_result.is_ok() {
                     let flags: i32 = buffer[0];
@@ -74,6 +74,97 @@ impl FourierBSDFTable {
                     println!("WORK: n_channels = {:?}", self.n_channels);
                     let n_bases: i32 = buffer[5];
                     println!("WORK: n_bases = {:?}", n_bases);
+                    let mut buffer: [f32; 1] = [0_f32; 1]; // 1 32-bit float
+                    let io_result = file.read_f32_into::<LittleEndian>(&mut buffer);
+                    if io_result.is_ok() {
+                        self.eta = buffer[0];
+                        println!("WORK: eta = {:?}", self.eta);
+                        let mut buffer: [i32; 4] = [0; 4]; // 4 32-bit (signed) integers are unused
+                        let io_result = file.read_i32_into::<LittleEndian>(&mut buffer);
+                        if io_result.is_ok() {
+                            // only a subset of BSDF files are
+                            // supported for simplicity, in
+                            // particular: monochromatic and RGB files
+                            // with uniform (i.e. non-textured)
+                            // material properties
+                            if flags != 1_i32
+                                || (self.n_channels != 1_i32 && self.n_channels != 3_i32)
+                                || n_bases != 1_i32
+                            {
+                                panic!(
+                                    "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                                );
+                            }
+                            // self.mu
+                            self.mu.reserve_exact(self.n_mu as usize);
+                            for _ in 0..self.n_mu as usize {
+                                let f: f32 = file.read_f32::<LittleEndian>().unwrap();
+                                self.mu.push(f as Float);
+                            }
+                            println!("WORK: {} f32 values read for mu", self.mu.len());
+                            // self.cdf
+                            self.cdf
+                                .reserve_exact(self.n_mu as usize * self.n_mu as usize);
+                            for _ in 0..(self.n_mu as usize * self.n_mu as usize) {
+                                let f: f32 = file.read_f32::<LittleEndian>().unwrap();
+                                self.cdf.push(f as Float);
+                            }
+                            println!("WORK: {} f32 values read for cdf", self.cdf.len());
+                            // self.a0
+                            self.a0
+                                .reserve_exact(self.n_mu as usize * self.n_mu as usize);
+                            // offset_and_length
+                            let mut offset_and_length: Vec<i32> = Vec::with_capacity(
+                                self.n_mu as usize * self.n_mu as usize * 2_usize,
+                            );
+                            for _ in 0..(self.n_mu as usize * self.n_mu as usize * 2_usize) {
+                                let i: i32 = file.read_i32::<LittleEndian>().unwrap();
+                                offset_and_length.push(i);
+                            }
+                            println!(
+                                "WORK: {} f32 values read for offset_and_length",
+                                offset_and_length.len()
+                            );
+                            // self.a_offset
+                            self.a_offset
+                                .reserve_exact(self.n_mu as usize * self.n_mu as usize);
+                            // self.m
+                            self.m
+                                .reserve_exact(self.n_mu as usize * self.n_mu as usize);
+                            // self.a
+                            self.a.reserve_exact(n_coeffs as usize);
+                            for _ in 0..n_coeffs as usize {
+                                let f: f32 = file.read_f32::<LittleEndian>().unwrap();
+                                self.a.push(f as Float);
+                            }
+                            println!("WORK: {} f32 values read for a", self.a.len());
+                            // fill self.a_offset, self.m, and self.a0 vectors
+                            for i in 0..(self.n_mu as usize * self.n_mu as usize) {
+                                let offset: i32 = offset_and_length[(2 * i) as usize];
+                                let length: i32 = offset_and_length[(2 * i + 1) as usize];
+                                self.a_offset.push(offset);
+                                self.m.push(length);
+                                if length > 0 {
+                                    self.a0.push(self.a[offset as usize]);
+                                } else {
+                                    self.a0.push(0.0 as Float);
+                                }
+                            }
+                            // self.recip
+                            self.recip.reserve_exact(self.m_max as usize);
+                            for i in 0..self.m_max as usize {
+                                self.recip.push(1.0 as Float / i as Float);
+                            }
+                        } else {
+                            panic!(
+                                "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                            );
+                        }
+                    } else {
+                        panic!(
+                            "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                        );
+                    }
                 } else {
                     panic!(
                         "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
@@ -84,9 +175,8 @@ impl FourierBSDFTable {
                     "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
                 );
             }
-            // WORK
         }
-        false
+        true
     }
 }
 
