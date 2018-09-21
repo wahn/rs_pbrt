@@ -14,7 +14,7 @@ crossbeam = "0.4"
 getopts="0.2.15"
 half="1"
 hexf = "0.1.0"
-image="0.19"
+image="*"
 num="*"
 num_cpus = "1.2"
 openexr = { version = "0.6", optional = true }
