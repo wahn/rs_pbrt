@@ -178,6 +178,15 @@ impl FourierBSDFTable {
         }
         true
     }
+    pub fn get_weights_and_offset(
+        &self,
+        cos_theta: Float,
+        offset: &mut i32,
+        weights: &mut [Float; 4],
+    ) -> bool {
+        // TODO: catmull_rom_weights(nMu, mu, cosTheta, offset, weights)
+        false
+    }
 }
 
 pub struct Bsdf {
@@ -1029,12 +1038,32 @@ impl Bxdf for FresnelBlend {
     }
 }
 
-pub struct FourierBSDF {}
+pub struct FourierBSDF {
+    pub bsdf_table: Arc<FourierBSDFTable>,
+    pub mode: TransportMode,
+}
 
-impl FourierBSDF {}
+impl FourierBSDF {
+    pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> Self {
+        FourierBSDF {
+            bsdf_table: bsdf_table,
+            mode: mode,
+        }
+    }
+}
 
 impl Bxdf for FourierBSDF {
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+        // find the zenith angle cosines and azimuth difference angle
+        let mu_i: Float = cos_theta(&-(*wi));
+        let mu_o: Float = cos_theta(wo);
+        let cos_phi: Float = cos_d_phi(&-(*wi), wo);
+        // compute Fourier coefficients
+
+        // determine offsets and weights
+        let mut offset_i: i32 = 0;
+        let mut weights_i: [Float; 4] = [0.0 as Float; 4];
+        self.bsdf_table.get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i);
         // WORK
         Spectrum::default()
     }
@@ -1128,6 +1157,17 @@ pub fn cos_2_phi(w: &Vector3f) -> Float {
 /// Utility function to calculate square sine via spherical coordinates.
 pub fn sin_2_phi(w: &Vector3f) -> Float {
     sin_phi(w) * sin_phi(w)
+}
+
+/// Utility function to calculate the cosine of the angle between two
+/// vectors in the shading coordinate system.
+pub fn cos_d_phi(wa: &Vector3f, wb: &Vector3f) -> Float {
+    clamp_t(
+        ((wa.x * wb.x + wa.y * wb.y) / ((wa.x * wa.x + wa.y * wa.y) * (wb.x * wb.x + wb.y * wb.y)))
+            .sqrt(),
+        -1.0 as Float,
+        1.0 as Float,
+    )
 }
 
 /// Computes the reflection direction given an incident direction and
