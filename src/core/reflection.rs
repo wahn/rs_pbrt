@@ -1029,6 +1029,37 @@ impl Bxdf for FresnelBlend {
     }
 }
 
+pub struct FourierBSDF {}
+
+impl FourierBSDF {}
+
+impl Bxdf for FourierBSDF {
+    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+    fn sample_f(
+        &self,
+        wo: &Vector3f,
+        wi: &mut Vector3f,
+        sample: &Point2f,
+        pdf: &mut Float,
+        _sampled_type: &mut u8,
+    ) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        // WORK
+        0.0 as Float
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfReflection as u8
+            | BxdfType::BsdfTransmission as u8
+            | BxdfType::BsdfGlossy as u8
+    }
+}
+
 /// Utility function to calculate cosine via spherical coordinates.
 pub fn cos_theta(w: &Vector3f) -> Float {
     w.z
