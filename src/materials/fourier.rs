@@ -12,16 +12,19 @@ use core::texture::Texture;
 // see fourier.h
 
 pub struct FourierMaterial {
-    // pub bsdf_table: FourierBSDFTable,
+    pub bsdf_table: Arc<FourierBSDFTable>,
     pub bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
 }
 
 impl FourierMaterial {
     pub fn new(
-        // TODO: bsdf_table,
+        bsdf_table: Arc<FourierBSDFTable>,
         bump_map: Option<Arc<Texture<Float> + Sync + Send>>
     ) -> Self {
-        FourierMaterial { bump_map: bump_map }
+        FourierMaterial {
+            bump_map: bump_map,
+            bsdf_table: bsdf_table,
+        }
     }
     pub fn create(
         mp: &mut TextureParams,
@@ -31,20 +34,24 @@ impl FourierMaterial {
             mp.get_float_texture_or_null(String::from("bumpmap"));
         let bsdffile: String = mp.find_filename(String::from("bsdffile"), String::new());
         if let Some(bsdf_table) = bsdf_state.loaded_bsdfs.get(&bsdffile.clone()) {
-            // TODO: use the BSDF table found
+            // use the BSDF table found
+            Arc::new(FourierMaterial::new(bsdf_table.clone(), bump_map))
         } else {
-            // TODO: read BSDF table from file
+            // read BSDF table from file
             let mut bsdf_table: FourierBSDFTable = FourierBSDFTable::default();
-            println!("reading {:?} returns {}", bsdffile, bsdf_table.read(&bsdffile));
+            println!(
+                "reading {:?} returns {}",
+                bsdffile,
+                bsdf_table.read(&bsdffile)
+            );
+            Arc::new(FourierMaterial::new(Arc::new(bsdf_table), bump_map))
         }
-        Arc::new(FourierMaterial::new(
-            // TODO: bsdf_table,
-            bump_map,
-        ))
     }
-    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
-        let // mut 
-            bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+    pub fn bsdf(&self, si: &mut SurfaceInteraction) -> Bsdf {
+        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        if let Some(ref bump_map) = self.bump_map {
+            FourierMaterial::bump(bump_map, si);
+        }
         // WORK
         Bsdf::new(si, 1.0, bxdfs)
     }
