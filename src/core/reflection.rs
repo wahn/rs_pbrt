@@ -19,6 +19,7 @@ use core::geometry::{
 };
 use core::geometry::{Normal3f, Point2f, Vector3f};
 use core::interaction::SurfaceInteraction;
+use core::interpolation::catmull_rom_weights;
 use core::material::TransportMode;
 use core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use core::pbrt::INV_PI;
@@ -178,14 +179,17 @@ impl FourierBSDFTable {
         }
         true
     }
+    pub fn get_ak(&self, offset_i: i32, offset_o: i32, mptr: &mut i32) -> Float {
+        *mptr = self.m[(offset_o * self.n_mu + offset_i) as usize];
+        self.a[self.a_offset[(offset_o * self.n_mu + offset_i) as usize] as usize]
+    }
     pub fn get_weights_and_offset(
         &self,
         cos_theta: Float,
         offset: &mut i32,
         weights: &mut [Float; 4],
     ) -> bool {
-        // TODO: catmull_rom_weights(nMu, mu, cosTheta, offset, weights)
-        false
+        catmull_rom_weights(&self.mu, cos_theta, offset, weights)
     }
 }
 
@@ -1062,8 +1066,30 @@ impl Bxdf for FourierBSDF {
 
         // determine offsets and weights
         let mut offset_i: i32 = 0;
+        let mut offset_o: i32 = 0;
         let mut weights_i: [Float; 4] = [0.0 as Float; 4];
-        self.bsdf_table.get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i);
+        let mut weights_o: [Float; 4] = [0.0 as Float; 4];
+        if !self
+            .bsdf_table
+            .get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i)
+            || !self
+                .bsdf_table
+                .get_weights_and_offset(mu_o, &mut offset_o, &mut weights_o)
+        {
+            return Spectrum::default();
+        }
+        // accumulate weighted sums of nearby $a_k$ coefficients
+        let mut m_max: i32 = 0;
+        for b in 0..4 {
+            for a in 0..4 {
+                // add contribution of _(a, b)_ to $a_k$ values
+                let weight: Float = weights_i[a] * weights_o[b];
+                if weight != 0.0 as Float {
+                    // TODO: call bsdfTable.get_ak()
+                    // TODO: use resulting pointer?
+                }
+            }
+        }
         // WORK
         Spectrum::default()
     }

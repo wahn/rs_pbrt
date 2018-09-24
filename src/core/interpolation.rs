@@ -2,8 +2,10 @@
 use core::pbrt::find_interval;
 use core::pbrt::Float;
 
+/// Calculates an offset and four weights for Catmull-Rom spline
+/// interpolation.
 pub fn catmull_rom_weights(
-    nodes: Vec<Float>,
+    nodes: &Vec<Float>,
     x: Float,
     offset: &mut i32,
     weights: &mut [Float; 4],
