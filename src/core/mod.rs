@@ -9,6 +9,7 @@ pub mod floatfile;
 pub mod geometry;
 pub mod integrator;
 pub mod interaction;
+pub mod interpolation;
 pub mod light;
 pub mod lightdistrib;
 pub mod lowdiscrepancy;
