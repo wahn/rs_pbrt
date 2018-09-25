@@ -179,9 +179,9 @@ impl FourierBSDFTable {
         }
         true
     }
-    pub fn get_ak(&self, offset_i: i32, offset_o: i32, mptr: &mut i32) -> Float {
+    pub fn get_ak(&self, offset_i: i32, offset_o: i32, mptr: &mut i32) -> usize {
         *mptr = self.m[(offset_o * self.n_mu + offset_i) as usize];
-        self.a[self.a_offset[(offset_o * self.n_mu + offset_i) as usize] as usize]
+        self.a_offset[(offset_o * self.n_mu + offset_i) as usize] as usize
     }
     pub fn get_weights_and_offset(
         &self,
@@ -1078,6 +1078,12 @@ impl Bxdf for FourierBSDF {
         {
             return Spectrum::default();
         }
+        // allocate storage to accumulate _ak_ coefficients
+        let mut ak: Vec<Float> =
+            Vec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
+        for _i in 0..(self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize {
+            ak.push(0.0 as Float); // initialize with 0
+        }
         // accumulate weighted sums of nearby $a_k$ coefficients
         let mut m_max: i32 = 0;
         for b in 0..4 {
@@ -1085,11 +1091,20 @@ impl Bxdf for FourierBSDF {
                 // add contribution of _(a, b)_ to $a_k$ values
                 let weight: Float = weights_i[a] * weights_o[b];
                 if weight != 0.0 as Float {
-                    // TODO: call bsdfTable.get_ak()
-                    // TODO: use resulting pointer?
+                    let mut m: i32 = 0;
+                    let a_idx = self.bsdf_table.get_ak(offset_i, offset_o, &mut m);
+                    m_max = std::cmp::max(m_max, m);
+                    for c in 0..self.bsdf_table.n_channels as usize {
+                        for k in 0..m as usize {
+                            ak[c * self.bsdf_table.m_max as usize + k] +=
+                                weight * self.bsdf_table.a[a_idx + c * m as usize + k];
+                        }
+                    }
                 }
             }
         }
+        // evaluate Fourier expansion for angle $\phi$
+        // let y: Float = std::cmp::max(0.0 as Float, Fourier(ak, mMax, cosPhi));
         // WORK
         Spectrum::default()
     }
