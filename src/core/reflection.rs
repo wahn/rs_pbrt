@@ -19,7 +19,7 @@ use core::geometry::{
 };
 use core::geometry::{Normal3f, Point2f, Vector3f};
 use core::interaction::SurfaceInteraction;
-use core::interpolation::catmull_rom_weights;
+use core::interpolation::{catmull_rom_weights, fourier};
 use core::material::TransportMode;
 use core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use core::pbrt::INV_PI;
@@ -1104,9 +1104,31 @@ impl Bxdf for FourierBSDF {
             }
         }
         // evaluate Fourier expansion for angle $\phi$
-        // let y: Float = std::cmp::max(0.0 as Float, Fourier(ak, mMax, cosPhi));
-        // WORK
-        Spectrum::default()
+        let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));
+        let mut scale: Float = 0.0 as Float;
+        if mu_i != 0.0 as Float {
+            scale = 1.0 as Float / mu_i.abs();
+        }
+        // update _scale_ to account for adjoint light transport
+        if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
+            let eta: Float;
+            if mu_i > 0.0 as Float {
+                eta = 1.0 as Float / self.bsdf_table.eta;
+            } else {
+                eta = self.bsdf_table.eta;
+            }
+            scale *= eta * eta;
+        }
+        if self.bsdf_table.n_channels == 1_i32 {
+            Spectrum::new(y * scale)
+        } else {
+            // compute and return RGB colors for tabulated BSDF
+            let r: Float = fourier(&ak, (1_i32 * self.bsdf_table.m_max) as usize, m_max, cos_phi as f64);
+            let b: Float = fourier(&ak, (2_i32 * self.bsdf_table.m_max) as usize, m_max, cos_phi as f64);
+            let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
+            let mut rgb: [Float; 3] = [r * scale, g * scale, b * scale];
+            Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+        }
     }
     fn sample_f(
         &self,

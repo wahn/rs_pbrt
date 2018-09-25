@@ -50,3 +50,19 @@ pub fn catmull_rom_weights(
     }
     true
 }
+
+/// Evaluates the weighted sum of cosines.
+pub fn fourier(a: &Vec<Float>, si: usize, m: i32, cos_phi: f64) -> Float {
+    let mut value: f64 = 0.0;
+    // initialize cosine iterates
+    let mut cos_k_minus_one_phi: f64 = cos_phi;
+    let mut cos_k_phi: f64 = 1.0;
+    for k in 0..m as usize {
+        // add the current summand and update the cosine iterates
+        value += a[si + k] as f64 * cos_k_phi;
+        let cos_k_plus_one_phi: f64 = 2.0 as f64 * cos_phi * cos_k_phi - cos_k_minus_one_phi;
+        cos_k_minus_one_phi = cos_k_phi;
+        cos_k_phi = cos_k_plus_one_phi;
+    }
+    value as Float
+}
