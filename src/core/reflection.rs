@@ -19,7 +19,7 @@ use core::geometry::{
 };
 use core::geometry::{Normal3f, Point2f, Vector3f};
 use core::interaction::SurfaceInteraction;
-use core::interpolation::{catmull_rom_weights, fourier};
+use core::interpolation::{catmull_rom_weights, fourier, sample_catmull_rom_2d};
 use core::material::TransportMode;
 use core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use core::pbrt::INV_PI;
@@ -1123,8 +1123,18 @@ impl Bxdf for FourierBSDF {
             Spectrum::new(y * scale)
         } else {
             // compute and return RGB colors for tabulated BSDF
-            let r: Float = fourier(&ak, (1_i32 * self.bsdf_table.m_max) as usize, m_max, cos_phi as f64);
-            let b: Float = fourier(&ak, (2_i32 * self.bsdf_table.m_max) as usize, m_max, cos_phi as f64);
+            let r: Float = fourier(
+                &ak,
+                (1_i32 * self.bsdf_table.m_max) as usize,
+                m_max,
+                cos_phi as f64,
+            );
+            let b: Float = fourier(
+                &ak,
+                (2_i32 * self.bsdf_table.m_max) as usize,
+                m_max,
+                cos_phi as f64,
+            );
             let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
             let mut rgb: [Float; 3] = [r * scale, g * scale, b * scale];
             Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
@@ -1138,6 +1148,19 @@ impl Bxdf for FourierBSDF {
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
+        // sample zenith angle component for _FourierBSDF_
+        let mu_o: Float = cos_theta(wo);
+        let mut pdf_mu: Float = 0.0;
+        let mu_i: Float = sample_catmull_rom_2d(
+            &self.bsdf_table.mu,
+            &self.bsdf_table.mu,
+            &self.bsdf_table.a0,
+            &self.bsdf_table.cdf,
+            mu_o,
+            sample[1],
+            None,
+            Some(&mut pdf_mu),
+        );
         // WORK
         Spectrum::default()
     }

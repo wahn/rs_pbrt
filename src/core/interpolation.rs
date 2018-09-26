@@ -51,6 +51,118 @@ pub fn catmull_rom_weights(
     true
 }
 
+pub fn sample_catmull_rom_2d(
+    nodes1: &Vec<Float>,
+    nodes2: &Vec<Float>,
+    values: &Vec<Float>,
+    cdf: &Vec<Float>,
+    alpha: Float,
+    u: Float,
+    fval: Option<&mut Float>,
+    pdf: Option<&mut Float>,
+) -> Float {
+    let size1 = nodes1.len();
+    let size2 = nodes2.len();
+    // local copy
+    let mut u: Float = u;
+    // determine offset and coefficients for the _alpha_ parameter
+    let mut offset: i32 = 0;
+    let mut weights: [Float; 4] = [0.0 as Float; 4];
+    if !catmull_rom_weights(nodes1, alpha, &mut offset, &mut weights) {
+        return 0.0 as Float;
+    }
+    // define a lambda function to interpolate table entries
+    let interpolate = |array: &Vec<Float>, idx: usize| -> Float {
+        let mut value: Float = 0.0;
+        for i in 0..4 {
+            if weights[i] != 0.0 as Float {
+                value += array[(offset as usize + i) * size2 + idx] * weights[i];
+            }
+        }
+        value
+    };
+    // map _u_ to a spline interval by inverting the interpolated _cdf_
+    let maximum: Float = interpolate(cdf, size2 - 1_usize);
+    u *= maximum;
+    let idx: usize = find_interval(size2, |index| interpolate(cdf, index) <= u);
+    // look up node positions and interpolated function values
+    let f0: Float = interpolate(values, idx);
+    let f1: Float = interpolate(values, idx + 1);
+    let x0: Float = nodes2[idx];
+    let x1: Float = nodes2[idx + 1];
+    let width: Float = x1 - x0;
+    // re-scale _u_ using the interpolated _cdf_
+    u = (u - interpolate(cdf, idx)) / width;
+    // approximate derivatives using finite differences of the interpolant
+    let d0: Float;
+    let d1: Float;
+    if idx > 0_usize {
+        d0 = width * (f1 - interpolate(values, idx - 1)) / (x1 - nodes2[idx - 1]);
+    } else {
+        d0 = f1 - f0;
+    }
+    if (idx + 2) < size2 {
+        d1 = width * (interpolate(values, idx + 2) - f0) / (nodes2[idx + 2] - x0);
+    } else {
+        d1 = f1 - f0;
+    }
+
+    // invert definite integral over spline segment and return solution
+
+    // set initial guess for $t$ by importance sampling a linear interpolant
+    let mut t: Float;
+    if f0 != f1 {
+        t = (f0
+            - (0.0 as Float)
+                .max(f0 * f0 + 2.0 as Float * u * (f1 - f0))
+                .sqrt())
+            / (f0 - f1);
+    } else {
+        t = u / f0;
+    }
+    let mut a: Float = 0.0;
+    let mut b: Float = 1.0;
+    let mut f_hat: Float = 0.0;
+    let mut fhat: Float = 0.0;
+    loop {
+        // fall back to a bisection step when _t_ is out of bounds
+        if !(t >= a && t <= b) {
+            t = 0.5 as Float * (a + b);
+        }
+        // evaluate target function and its derivative in Horner form
+        f_hat = t
+            * (f0
+                + t * (0.5 as Float * d0
+                    + t * ((1.0 as Float / 3.0 as Float) * (-2.0 as Float * d0 - d1) + f1 - f0
+                        + t * (0.25 as Float * (d0 + d1) + 0.5 as Float * (f0 - f1)))));
+        fhat = f0
+            + t * (d0
+                + t * (-2.0 as Float * d0 - d1
+                    + 3.0 as Float * (f1 - f0)
+                    + t * (d0 + d1 + 2.0 as Float * (f0 - f1))));
+        // stop the iteration if converged
+        if (f_hat - u).abs() < 1e-6 as Float || b - a < 1e-6 as Float {
+            break;
+        }
+        // update bisection bounds using updated _t_
+        if (f_hat - u) < 0.0 as Float {
+            a = t;
+        } else {
+            b = t;
+        }
+        // perform a Newton step
+        t -= (f_hat - u) / fhat;
+    }
+    // return the sample position and function value
+    if let Some(fval) = fval {
+        *fval = fhat;
+    }
+    if let Some(pdf) = pdf {
+        *pdf = fhat / maximum;
+    }
+    x0 + width * t
+}
+
 /// Evaluates the weighted sum of cosines.
 pub fn fourier(a: &Vec<Float>, si: usize, m: i32, cos_phi: f64) -> Float {
     let mut value: f64 = 0.0;
