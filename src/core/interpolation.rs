@@ -1,6 +1,9 @@
+// std
+use std::f64::consts::PI;
 // pbrt
 use core::pbrt::find_interval;
 use core::pbrt::Float;
+use core::pbrt::INV_2_PI;
 
 /// Calculates an offset and four weights for Catmull-Rom spline
 /// interpolation.
@@ -177,4 +180,80 @@ pub fn fourier(a: &Vec<Float>, si: usize, m: i32, cos_phi: f64) -> Float {
         cos_k_phi = cos_k_plus_one_phi;
     }
     value as Float
+}
+
+pub fn sample_fourier(
+    ak: &Vec<Float>,
+    recip: &Vec<Float>,
+    m: i32,
+    u: Float,
+    pdf: &mut Float,
+    phi_ptr: &mut Float,
+) -> Float {
+    // local copy
+    let mut u: Float = u;
+    // pick a side and declare bisection variables
+    let flip: bool;
+    if u >= 0.5 as Float {
+        flip = true;
+        u = 1.0 as Float - 2.0 as Float * (u - 0.5 as Float);
+    } else {
+        flip = false;
+        u *= 2.0 as Float;
+    }
+    let mut a: f64 = 0.0;
+    let mut b: f64 = PI;
+    let mut phi: f64 = 0.5 * PI;
+    let mut cf: f64 = 0.0;
+    let mut f: f64 = 0.0;
+    loop {
+        // evaluate $cf(\phi)$ and its derivative $f(\phi)$
+
+        // initialize sine and cosine iterates
+        let cos_phi: f64 = phi.cos();
+        let sin_phi: f64 = ((0.0 as f64).max(1.0 as f64 - cos_phi * cos_phi)).sqrt();
+        let mut cos_phi_prev: f64 = cos_phi;
+        let mut cos_phi_cur: f64 = 1.0;
+        let mut sin_phi_prev = -sin_phi;
+        let mut sin_phi_cur: f64 = 0.0;
+        // initialize _cf_ and _f_ with the first series term
+        cf = ak[0] as f64 * phi;
+        f = ak[0] as f64;
+        for k in 0..m as usize {
+            // compute next sine and cosine iterates
+            let sin_phi_next: f64 = 2.0 as f64 * cos_phi * sin_phi_cur - sin_phi_prev;
+            let cos_phi_next: f64 = 2.0 as f64 * cos_phi * cos_phi_cur - cos_phi_prev;
+            sin_phi_prev = sin_phi_cur;
+            sin_phi_cur = sin_phi_next;
+            cos_phi_prev = cos_phi_cur;
+            cos_phi_cur = cos_phi_next;
+            // add the next series term to _cf_ and _f_
+            cf += ak[k] as f64 * recip[k] as f64 * sin_phi_next;
+            f += ak[k] as f64 * cos_phi_next;
+        }
+        cf -= u as f64 * ak[0] as f64 * PI;
+        // update bisection bounds using updated $\phi$
+        if cf > 0.0 as f64 {
+            b = phi;
+        } else {
+            a = phi;
+        }
+        // stop the Fourier bisection iteration if converged
+        if cf.abs() < 1e-6 as f64 || b - a < 1e-6 as f64 {
+            break;
+        }
+        // perform a Newton step given $f(\phi)$ and $cf(\phi)$
+        phi -= cf / f;
+        // fall back to a bisection step when $\phi$ is out of bounds
+        if !(phi > a && phi < b) {
+            phi = 0.5 as f64 * (a + b);
+        }
+    }
+    // potentially flip $\phi$ and return the result
+    if flip {
+        phi = 2.0 as f64 * PI - phi;
+    }
+    *pdf = (INV_2_PI as f64 * f / ak[0] as f64) as Float;
+    *phi_ptr = phi as Float;
+    f as Float
 }
