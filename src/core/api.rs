@@ -175,7 +175,7 @@ pub struct RenderOptions {
     pub lights: Vec<Arc<Light + Sync + Send>>,
     pub primitives: Vec<Arc<Primitive + Sync + Send>>,
     pub instances: HashMap<String, Vec<Arc<Primitive + Sync + Send>>>,
-    pub current_instance: Option<Vec<Arc<Primitive + Sync + Send>>>,
+    pub current_instance: String,
     pub have_scattering_media: bool, // false
 }
 
@@ -220,7 +220,7 @@ impl Default for RenderOptions {
             lights: Vec::new(),
             primitives: Vec::new(),
             instances: HashMap::new(),
-            current_instance: None,
+            current_instance: String::from(""),
             have_scattering_media: false,
         }
     }
@@ -497,7 +497,8 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
                 x: from.x,
                 y: from.y,
                 z: from.z,
-            }) * Transform::inverse(&dir_to_z);
+            })
+            * Transform::inverse(&dir_to_z);
         // return std::make_shared<SpotLight>(light2world, medium, I * sc, coneangle, coneangle - conedelta);
         let spot_light = Arc::new(SpotLight::new(
             &light2world,
@@ -612,10 +613,12 @@ fn make_medium(api_state: &mut ApiState) {
         .find_one_float(String::from("g"), 0.0 as Float);
     sig_a = api_state
         .param_set
-        .find_one_spectrum(String::from("sigma_a"), sig_a) * scale;
+        .find_one_spectrum(String::from("sigma_a"), sig_a)
+        * scale;
     sig_s = api_state
         .param_set
-        .find_one_spectrum(String::from("sigma_s"), sig_s) * scale;
+        .find_one_spectrum(String::from("sigma_s"), sig_s)
+        * scale;
     let some_medium: Option<Arc<Medium + Sync + Send>>;
     if medium_type == String::from("homogeneous") {
         some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
@@ -2549,12 +2552,18 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
         }
     }
     // add _prims_ and _areaLights_ to scene or current instance
-    if let Some(ref mut current_instance) = api_state.render_options.current_instance {
+    if api_state.render_options.current_instance != String::from("") {
         if area_lights.len() > 0 {
             println!("WARNING: Area lights not supported with object instancing");
         }
-        for prim in prims {
-            current_instance.push(prim.clone());
+        if let Some(instance_vec) = api_state
+            .render_options
+            .instances
+            .get_mut(&api_state.render_options.current_instance.clone())
+        {
+            for prim in prims {
+                instance_vec.push(prim.clone());
+            }
         }
     } else {
         for prim in prims {
@@ -2576,36 +2585,29 @@ pub fn pbrt_reverse_orientation(api_state: &mut ApiState) {
 pub fn pbrt_object_begin(api_state: &mut ApiState, _params: ParamSet) {
     // println!("ObjectBegin \"{}\"", params.name);
     pbrt_attribute_begin(api_state);
-    if let Some(ref _current_instance) = api_state.render_options.current_instance {
+    if api_state.render_options.current_instance == String::from("") {
         println!("ERROR: ObjectBegin called inside of instance definition");
     }
     api_state
         .render_options
         .instances
         .insert(api_state.param_set.name.clone(), Vec::new());
-    if let Some(instance) = api_state
-        .render_options
-        .instances
-        .get(&api_state.param_set.name.clone())
-    {
-        api_state.render_options.current_instance = Some(instance.clone());
-    }
+    api_state.render_options.current_instance = api_state.param_set.name.clone();
 }
 
 pub fn pbrt_object_end(api_state: &mut ApiState) {
     // println!("ObjectEnd");
-    if let Some(ref _current_instance) = api_state.render_options.current_instance {
-    } else {
+    if api_state.render_options.current_instance == String::from("") {
         println!("ERROR: ObjectEnd called inside of instance definition");
     }
-    api_state.render_options.current_instance = None;
+    api_state.render_options.current_instance = String::from("");
     pbrt_attribute_end(api_state);
 }
 
 pub fn pbrt_object_instance(api_state: &mut ApiState, _params: ParamSet) {
     // println!("ObjectInstance \"{}\"", params.name);
     // perform object instance error checking
-    if let Some(ref _current_instance) = api_state.render_options.current_instance {
+    if api_state.render_options.current_instance != String::from("") {
         println!("ERROR: ObjectInstance can't be called inside instance definition");
         return;
     }
