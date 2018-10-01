@@ -1,4 +1,4 @@
-pbrt = _{ whitespace? ~ (statement | comment)* ~ last_statement }
+pbrt = _{ WHITESPACE? ~ (statement | COMMENT)* ~ last_statement }
 statement = { active_transform |
               concat_transform |
               keyword |
@@ -220,6 +220,6 @@ integer = @{
             | // or
         '0'..'9' // single digit
 }
-last_statement = @{ whitespace? ~ "WorldEnd" ~ (whitespace | comment)* }
-whitespace = _{ (" " | "\t" | "\r" | "\n") }
-comment = _{ ( "#" ~ (!("\r" | "\n") ~ any)* ~ ("\n" | "\r\n" | "\r" | eoi) ) }
+last_statement = @{ WHITESPACE? ~ "WorldEnd" ~ (WHITESPACE | COMMENT)* }
+WHITESPACE = _{ (" " | "\t" | "\r" | "\n") }
+COMMENT = _{ ( "#" ~ (!("\r" | "\n") ~ ANY)* ~ ("\n" | "\r\n" | "\r" | EOI) ) }
