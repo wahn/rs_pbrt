@@ -64,7 +64,6 @@ pub fn sample_catmull_rom_2d(
     fval: Option<&mut Float>,
     pdf: Option<&mut Float>,
 ) -> Float {
-    let size1 = nodes1.len();
     let size2 = nodes2.len();
     // local copy
     let mut u: Float = u;
@@ -125,8 +124,8 @@ pub fn sample_catmull_rom_2d(
     }
     let mut a: Float = 0.0;
     let mut b: Float = 1.0;
-    let mut f_hat: Float = 0.0;
-    let mut fhat: Float = 0.0;
+    let mut f_hat;
+    let mut fhat;
     loop {
         // fall back to a bisection step when _t_ is out of bounds
         if !(t >= a && t <= b) {
@@ -204,8 +203,8 @@ pub fn sample_fourier(
     let mut a: f64 = 0.0;
     let mut b: f64 = PI;
     let mut phi: f64 = 0.5 * PI;
-    let mut cf: f64 = 0.0;
-    let mut f: f64 = 0.0;
+    let mut cf: f64;
+    let mut f: f64;
     loop {
         // evaluate $cf(\phi)$ and its derivative $f(\phi)$
 

@@ -1136,7 +1136,7 @@ impl Bxdf for FourierBSDF {
                 cos_phi as f64,
             );
             let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
-            let mut rgb: [Float; 3] = [r * scale, g * scale, b * scale];
+            let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
             Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
         }
     }
@@ -1270,7 +1270,7 @@ impl Bxdf for FourierBSDF {
                 cos_phi as f64,
             );
             let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
-            let mut rgb: [Float; 3] = [r * scale, g * scale, b * scale];
+            let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
             Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
         }
     }

@@ -44,7 +44,9 @@ impl FourierMaterial {
                 bsdffile,
                 bsdf_table.read(&bsdffile)
             );
-            Arc::new(FourierMaterial::new(Arc::new(bsdf_table), bump_map))
+            let bsdf_table_arc: Arc<FourierBSDFTable> = Arc::new(bsdf_table);
+            // TODO: bsdf_state.loaded_bsdfs.insert(bsdffile.clone(), bsdf_table_arc.clone());
+            Arc::new(FourierMaterial::new(bsdf_table_arc.clone(), bump_map))
         }
     }
     pub fn bsdf(&self, si: &mut SurfaceInteraction, mode: TransportMode) -> Bsdf {

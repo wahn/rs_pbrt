@@ -5,11 +5,12 @@ use std::sync::Arc;
 use time::PreciseTime;
 use typed_arena::Arena;
 // pbrt
-use core::geometry::{Bounds3f, Point3f, Ray, Vector3f};
 use core::geometry::{bnd3_union_bnd3, bnd3_union_pnt3};
+use core::geometry::{Bounds3f, Point3f, Ray, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::light::AreaLight;
 use core::material::Material;
+use core::paramset::ParamSet;
 use core::pbrt::Float;
 use core::primitive::Primitive;
 
@@ -140,7 +141,7 @@ impl BVHAccel {
         let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
         let mut ordered_prims: Vec<Arc<Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
-        println!("BVHAccel::recursive_build(...)");
+        println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
         let start = PreciseTime::now();
         let root = BVHAccel::recursive_build(
             bvh.clone(), // instead of self
@@ -171,6 +172,32 @@ impl BVHAccel {
         });
         let unwrapped = Arc::try_unwrap(bvh_ordered_prims);
         unwrapped.ok().unwrap()
+    }
+    pub fn create(prims: Vec<Arc<Primitive + Send + Sync>>, ps: &ParamSet) -> Arc<BVHAccel> {
+        let split_method_name: String =
+            ps.find_one_string(String::from("splitmethod"), String::from("sah"));
+        let split_method;
+        if split_method_name == String::from("sah") {
+            split_method = SplitMethod::SAH;
+        } else if split_method_name == String::from("hlbvh") {
+            split_method = SplitMethod::HLBVH;
+        } else if split_method_name == String::from("middle") {
+            split_method = SplitMethod::Middle;
+        } else if split_method_name == String::from("equal") {
+            split_method = SplitMethod::EqualCounts;
+        } else {
+            println!(
+                "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                split_method_name
+            );
+            split_method = SplitMethod::SAH;
+        }
+        let max_prims_in_node: i32 = ps.find_one_int(String::from("maxnodeprims"), 4);
+        Arc::new(BVHAccel::new(
+            prims.clone(),
+            max_prims_in_node as usize,
+            split_method,
+        ))
     }
     pub fn recursive_build<'a>(
         bvh: Arc<BVHAccel>,
@@ -242,8 +269,8 @@ impl BVHAccel {
                             let mut buckets: [BucketInfo; 12] = [BucketInfo::default(); 12];
                             // initialize _BucketInfo_ for SAH partition buckets
                             for i in start..end {
-                                let mut b: usize = (n_buckets as Float
-                                    * centroid_bounds.offset(&primitive_info[i].centroid)[dim])
+                                let mut b: usize = (n_buckets as Float * centroid_bounds
+                                    .offset(&primitive_info[i].centroid)[dim])
                                     as usize;
                                 if b == n_buckets {
                                     b = n_buckets - 1;
@@ -269,9 +296,10 @@ impl BVHAccel {
                                     b1 = bnd3_union_bnd3(&b1, &buckets[j].bounds);
                                     count1 += buckets[j].count;
                                 }
-                                cost[i] = 1.0 + (count0 as Float * b0.surface_area()
-                                    + count1 as Float * b1.surface_area())
-                                    / bounds.surface_area();
+                                cost[i] = 1.0
+                                    + (count0 as Float * b0.surface_area()
+                                        + count1 as Float * b1.surface_area())
+                                        / bounds.surface_area();
                             }
                             // find bucket to split at that minimizes SAH metric
                             let mut min_cost: Float = cost[0];

@@ -1336,7 +1336,7 @@ fn print_params(params: &ParamSet) {
 
 pub fn pbrt_init(number_of_threads: u8) -> (ApiState, BsdfState) {
     let mut api_state: ApiState = ApiState::default();
-    let mut bsdf_state: BsdfState = BsdfState::default();
+    let bsdf_state: BsdfState = BsdfState::default();
     api_state.number_of_threads = number_of_threads;
     (api_state, bsdf_state)
 }
@@ -2585,7 +2585,7 @@ pub fn pbrt_reverse_orientation(api_state: &mut ApiState) {
 pub fn pbrt_object_begin(api_state: &mut ApiState, _params: ParamSet) {
     // println!("ObjectBegin \"{}\"", params.name);
     pbrt_attribute_begin(api_state);
-    if api_state.render_options.current_instance == String::from("") {
+    if api_state.render_options.current_instance != String::from("") {
         println!("ERROR: ObjectBegin called inside of instance definition");
     }
     api_state
@@ -2598,7 +2598,7 @@ pub fn pbrt_object_begin(api_state: &mut ApiState, _params: ParamSet) {
 pub fn pbrt_object_end(api_state: &mut ApiState) {
     // println!("ObjectEnd");
     if api_state.render_options.current_instance == String::from("") {
-        println!("ERROR: ObjectEnd called inside of instance definition");
+        println!("ERROR: ObjectEnd called outside of instance definition");
     }
     api_state.render_options.current_instance = String::from("");
     pbrt_attribute_end(api_state);
@@ -2614,42 +2614,74 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, _params: ParamSet) {
     if let Some(instance_vec) = api_state
         .render_options
         .instances
-        .get(&api_state.param_set.name.clone())
+        .get_mut(&api_state.param_set.name.clone())
     {
         if instance_vec.is_empty() {
             return;
         }
-        panic!(
-            "{} instances found for {:?}",
-            instance_vec.len(),
-            api_state.param_set.name.clone()
+        // TODO: ++nObjectInstancesUsed;
+        if instance_vec.len() > 1_usize {
+            // create aggregate for instance _Primitive_s
+            if api_state.render_options.accelerator_name == String::from("bvh") {
+                //  CreateBVHAccelerator
+                let split_method_name: String = api_state
+                    .render_options
+                    .accelerator_params
+                    .find_one_string(String::from("splitmethod"), String::from("sah"));
+                let split_method;
+                if split_method_name == String::from("sah") {
+                    split_method = SplitMethod::SAH;
+                } else if split_method_name == String::from("hlbvh") {
+                    split_method = SplitMethod::HLBVH;
+                } else if split_method_name == String::from("middle") {
+                    split_method = SplitMethod::Middle;
+                } else if split_method_name == String::from("equal") {
+                    split_method = SplitMethod::EqualCounts;
+                } else {
+                    println!(
+                        "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                        split_method_name
+                    );
+                    split_method = SplitMethod::SAH;
+                }
+                let max_prims_in_node: i32 = api_state
+                    .render_options
+                    .accelerator_params
+                    .find_one_int(String::from("maxnodeprims"), 4);
+                let accelerator: Arc<Primitive + Sync + Send> = Arc::new(BVHAccel::new(
+                    instance_vec.clone(),
+                    max_prims_in_node as usize,
+                    split_method,
+                ));
+                instance_vec.clear();
+                instance_vec.push(accelerator);
+            } else if api_state.render_options.accelerator_name == String::from("kdtree") {
+                // println!("TODO: CreateKdTreeAccelerator");
+                // WARNING: Use BVHAccel for now !!!
+                let accelerator: Arc<Primitive + Sync + Send> =
+                    Arc::new(BVHAccel::new(instance_vec.clone(), 4, SplitMethod::SAH));
+                instance_vec.clear();
+                instance_vec.push(accelerator);
+            } else {
+                panic!(
+                    "Accelerator \"{}\" unknown.",
+                    api_state.render_options.accelerator_name
+                );
+            }
+        }
+        // create _animatedInstanceToWorld_ transform for instance
+        let animated_instance_to_world: AnimatedTransform = AnimatedTransform::new(
+            &api_state.cur_transform.t[0],
+            api_state.render_options.transform_start_time,
+            &api_state.cur_transform.t[1],
+            api_state.render_options.transform_end_time,
         );
-    // std::vector<std::shared_ptr<Primitive>> &in =
-    //     api_state.render_options.instances[name];
-    // if (in.empty()) return;
-    // ++nObjectInstancesUsed;
-    // if (in.size() > 1) {
-    //     // Create aggregate for instance _Primitive_s
-    //     std::shared_ptr<Primitive> accel(
-    //         MakeAccelerator(api_state.render_options.AcceleratorName, std::move(in),
-    //                         api_state.render_options.AcceleratorParams));
-    //     if (!accel) accel = std::make_shared<BVHAccel>(in);
-    //     in.clear();
-    //     in.push_back(accel);
-    // }
-    // static_assert(MaxTransforms == 2,
-    //               "TransformCache assumes only two transforms");
-    // // Create _animatedInstanceToWorld_ transform for instance
-    // Transform *InstanceToWorld[2] = {
-    //     transformCache.Lookup(curTransform[0]),
-    //     transformCache.Lookup(curTransform[1])
-    // };
-    // AnimatedTransform animatedInstanceToWorld(
-    //     InstanceToWorld[0], api_state.render_options.transformStartTime,
-    //     InstanceToWorld[1], api_state.render_options.transformEndTime);
-    // std::shared_ptr<Primitive> prim(
-    //     std::make_shared<TransformedPrimitive>(in[0], animatedInstanceToWorld));
-    // api_state.render_options.primitives.push_back(prim);
+        let prim: Arc<Primitive + Send + Sync> = Arc::new(TransformedPrimitive::new(
+            instance_vec[0].clone(),
+            animated_instance_to_world,
+        ));
+        api_state.render_options.primitives.push(prim.clone());
+        
     } else {
         println!(
             "ERROR: Unable to find instance named {:?}",
