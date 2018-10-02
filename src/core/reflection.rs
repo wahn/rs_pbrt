@@ -358,7 +358,7 @@ impl Bsdf {
                 *pdf /= matching_comps as Float;
             }
             // compute value of BSDF for sampled direction
-            if (bxdf.get_type() & BxdfType::BsdfSpecular as u8 == 0_u8) && matching_comps > 1_u8 {
+            if bxdf.get_type() & BxdfType::BsdfSpecular as u8 == 0_u8 {
                 let reflect: bool = vec3_dot_nrm(&*wi_world, &self.ng)
                     * vec3_dot_nrm(wo_world, &self.ng)
                     > 0.0 as Float;

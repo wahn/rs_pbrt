@@ -1619,6 +1619,9 @@ impl RGBSpectrum {
         for i in 0..n_spectrum_samples {
             ret.c[i] = clamp_t(self.c[i], low, high);
         }
+        if ret.has_nans() {
+            println!("DEBUG: Set a breakpoint here ...");
+        }
         assert!(!ret.has_nans());
         ret
     }
