@@ -18,10 +18,11 @@ pub fn catmull_rom_weights(
         return false;
     }
     // search for the interval _idx_ containing _x_
-    let idx: usize = find_interval(nodes.len(), |index| nodes[index as usize] <= x);
-    *offset = idx as i32 - 1;
-    let x0: Float = nodes[idx];
-    let x1: Float = nodes[idx + 1];
+    let idx: i32 = find_interval(nodes.len() as i32, |index| nodes[index as usize] <= x);
+    *offset = idx - 1;
+    assert!(idx >= 0);
+    let x0: Float = nodes[idx as usize];
+    let x1: Float = nodes[(idx + 1) as usize];
     // compute the $t$ parameter and powers
     let t: Float = (x - x0) / (x1 - x0);
     let t2: Float = t * t;
@@ -30,8 +31,8 @@ pub fn catmull_rom_weights(
     weights[1] = 2.0 as Float * t3 - 3.0 as Float * t2 + 1.0 as Float;
     weights[2] = -2.0 as Float * t3 + 3.0 as Float * t2;
     // compute first node weight $w_0$
-    if idx > 0_usize {
-        let w0: Float = (t3 - 2.0 as Float * t2 + t) * (x1 - x0) / (x1 - nodes[idx - 1]);
+    if idx > 0_i32 {
+        let w0: Float = (t3 - 2.0 as Float * t2 + t) * (x1 - x0) / (x1 - nodes[(idx - 1) as usize]);
         weights[0] = -w0;
         weights[2] += w0;
     } else {
@@ -41,8 +42,8 @@ pub fn catmull_rom_weights(
         weights[2] += w0;
     }
     // compute last node weight $w_3$
-    if (idx + 2) < nodes.len() {
-        let w3: Float = (t3 - t2) * (x1 - x0) / (nodes[idx + 2] - x0);
+    if (idx + 2) < nodes.len() as i32 {
+        let w3: Float = (t3 - t2) * (x1 - x0) / (nodes[(idx + 2) as usize] - x0);
         weights[1] -= w3;
         weights[3] = w3;
     } else {
@@ -64,7 +65,7 @@ pub fn sample_catmull_rom_2d(
     fval: Option<&mut Float>,
     pdf: Option<&mut Float>,
 ) -> Float {
-    let size2 = nodes2.len();
+    let size2: i32 = nodes2.len() as i32;
     // local copy
     let mut u: Float = u;
     // determine offset and coefficients for the _alpha_ parameter
@@ -74,37 +75,40 @@ pub fn sample_catmull_rom_2d(
         return 0.0 as Float;
     }
     // define a lambda function to interpolate table entries
-    let interpolate = |array: &Vec<Float>, idx: usize| -> Float {
+    let interpolate = |array: &Vec<Float>, idx: i32| -> Float {
         let mut value: Float = 0.0;
         for i in 0..4 {
             if weights[i] != 0.0 as Float {
-                value += array[(offset as usize + i) * size2 + idx] * weights[i];
+                let index: i32 = (offset + i as i32) * size2 + idx;
+                assert!(index >= 0);
+                value += array[index as usize] * weights[i];
             }
         }
         value
     };
     // map _u_ to a spline interval by inverting the interpolated _cdf_
-    let maximum: Float = interpolate(cdf, size2 - 1_usize);
+    let maximum: Float = interpolate(cdf, size2 - 1_i32);
     u *= maximum;
-    let idx: usize = find_interval(size2, |index| interpolate(cdf, index) <= u);
+    let idx: i32 = find_interval(size2, |index| interpolate(cdf, index) <= u);
     // look up node positions and interpolated function values
     let f0: Float = interpolate(values, idx);
     let f1: Float = interpolate(values, idx + 1);
-    let x0: Float = nodes2[idx];
-    let x1: Float = nodes2[idx + 1];
+    assert!(idx >= 0);
+    let x0: Float = nodes2[idx as usize];
+    let x1: Float = nodes2[(idx + 1) as usize];
     let width: Float = x1 - x0;
     // re-scale _u_ using the interpolated _cdf_
     u = (u - interpolate(cdf, idx)) / width;
     // approximate derivatives using finite differences of the interpolant
     let d0: Float;
     let d1: Float;
-    if idx > 0_usize {
-        d0 = width * (f1 - interpolate(values, idx - 1)) / (x1 - nodes2[idx - 1]);
+    if idx > 0_i32 {
+        d0 = width * (f1 - interpolate(values, idx - 1)) / (x1 - nodes2[(idx - 1) as usize]);
     } else {
         d0 = f1 - f0;
     }
     if (idx + 2) < size2 {
-        d1 = width * (interpolate(values, idx + 2) - f0) / (nodes2[idx + 2] - x0);
+        d1 = width * (interpolate(values, idx + 2) - f0) / (nodes2[(idx + 2) as usize] - x0);
     } else {
         d1 = f1 - f0;
     }

@@ -999,12 +999,6 @@ pub fn random_walk<'a>(
         let mut si_opt: Option<SurfaceInteraction> = None;
         // trace a ray and sample the medium, if any
         let found_intersection: bool;
-        // DEBUG
-        let current_pixel: Point2i = sampler.get_current_pixel();
-        if current_pixel.x == 9_i32 && current_pixel.y == 3_i32 {
-            println!("DEBUG: Set a breakpoint here ...");
-        }
-        // DEBUG
         if let Some(isect) = scene.intersect(&mut ray) {
             si_opt = Some(isect);
             found_intersection = true;

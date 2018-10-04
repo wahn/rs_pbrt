@@ -179,9 +179,17 @@ impl FourierBSDFTable {
         }
         true
     }
-    pub fn get_ak(&self, offset_i: i32, offset_o: i32, mptr: &mut i32) -> usize {
-        *mptr = self.m[(offset_o * self.n_mu + offset_i) as usize];
-        self.a_offset[(offset_o * self.n_mu + offset_i) as usize] as usize
+    pub fn get_ak(&self, offset_i: i32, offset_o: i32, mptr: &mut i32) -> i32 {
+        let idx: i32 = offset_o * self.n_mu + offset_i;
+        assert!(
+            idx >= 0,
+            "get_ak({:?}, {:?}, ...) with idx = {:?}",
+            offset_i,
+            offset_o,
+            idx
+        );
+        *mptr = self.m[idx as usize];
+        self.a_offset[idx as usize]
     }
     pub fn get_weights_and_offset(
         &self,
@@ -1092,12 +1100,13 @@ impl Bxdf for FourierBSDF {
                 let weight: Float = weights_i[a] * weights_o[b];
                 if weight != 0.0 as Float {
                     let mut m: i32 = 0;
-                    let a_idx = self.bsdf_table.get_ak(offset_i, offset_o, &mut m);
+                    let a_idx: i32 = self.bsdf_table.get_ak(offset_i + a as i32, offset_o + b as i32, &mut m);
                     m_max = std::cmp::max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels as usize {
                         for k in 0..m as usize {
-                            ak[c * self.bsdf_table.m_max as usize + k] +=
-                                weight * self.bsdf_table.a[a_idx + c * m as usize + k];
+                            ak[c * self.bsdf_table.m_max as usize + k] += weight * self
+                                .bsdf_table
+                                .a[(a_idx + c as i32 * m + k as i32) as usize];
                         }
                     }
                 }
@@ -1197,8 +1206,9 @@ impl Bxdf for FourierBSDF {
                     m_max = std::cmp::max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels as usize {
                         for k in 0..m as usize {
-                            ak[c * self.bsdf_table.m_max as usize + k] +=
-                                weight * self.bsdf_table.a[a_idx + c * m as usize + k];
+                            ak[c * self.bsdf_table.m_max as usize + k] += weight * self
+                                .bsdf_table
+                                .a[(a_idx + c as i32 * m + k as i32) as usize];
                         }
                     }
                 }
@@ -1307,12 +1317,12 @@ impl Bxdf for FourierBSDF {
                     continue;
                 }
                 let mut order: i32 = 0;
-                let a_idx =
+                let a_idx: i32 =
                     self.bsdf_table
                         .get_ak(offset_i + i as i32, offset_o + o as i32, &mut order);
                 m_max = std::cmp::max(m_max, order);
                 for k in 0..order as usize {
-                    ak[k] += weight * self.bsdf_table.a[a_idx + k];
+                    ak[k] += weight * self.bsdf_table.a[(a_idx + k as i32) as usize];
                 }
             }
         }
@@ -1416,8 +1426,8 @@ pub fn sin_2_phi(w: &Vector3f) -> Float {
 /// vectors in the shading coordinate system.
 pub fn cos_d_phi(wa: &Vector3f, wb: &Vector3f) -> Float {
     clamp_t(
-        ((wa.x * wb.x + wa.y * wb.y) / ((wa.x * wa.x + wa.y * wa.y) * (wb.x * wb.x + wb.y * wb.y)))
-            .sqrt(),
+        (wa.x * wb.x + wa.y * wb.y)
+            / ((wa.x * wa.x + wa.y * wa.y) * (wb.x * wb.x + wb.y * wb.y)).sqrt(),
         -1.0 as Float,
         1.0 as Float,
     )

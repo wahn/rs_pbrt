@@ -205,12 +205,12 @@ pub fn round_up_pow2_64(v: i64) -> i64 {
 }
 
 /// Helper function which emulates the behavior of std::upper_bound().
-pub fn find_interval<P>(size: usize, pred: P) -> usize
+pub fn find_interval<P>(size: i32, pred: P) -> i32
 where
-    P: Fn(usize) -> bool,
+    P: Fn(i32) -> bool,
 {
-    let mut first = 0;
-    let mut len = size;
+    let mut first: i32 = 0;
+    let mut len: i32 = size;
     while len > 0 {
         let half = len >> 1;
         let middle = first + half;

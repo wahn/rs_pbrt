@@ -1619,9 +1619,6 @@ impl RGBSpectrum {
         for i in 0..n_spectrum_samples {
             ret.c[i] = clamp_t(self.c[i], low, high);
         }
-        if ret.has_nans() {
-            println!("DEBUG: Set a breakpoint here ...");
-        }
         assert!(!ret.has_nans());
         ret
     }
@@ -1832,7 +1829,7 @@ pub fn interpolate_spectrum_samples(lambda: &[Float], vals: &[Float], n: i32, l:
     if l >= lambda[(n - 1) as usize] {
         return vals[(n - 1) as usize];
     }
-    let offset: usize = find_interval(n as usize, |index| lambda[index as usize] <= l);
+    let offset: usize = find_interval(n, |index| lambda[index as usize] <= l) as usize;
     assert!(l >= lambda[offset] && l <= lambda[offset + 1]);
     let t: Float = (l - lambda[offset]) / (lambda[offset + 1] - lambda[offset]);
     lerp(t, vals[offset], vals[offset + 1])
