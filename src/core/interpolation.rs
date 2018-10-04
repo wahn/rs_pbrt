@@ -220,14 +220,14 @@ pub fn sample_fourier(
         f = ak[0] as f64;
         for k in 1..m as usize {
             // compute next sine and cosine iterates
-            let sin_phi_next: f64 = 2.0_f64 * cos_phi * sin_phi_cur - sin_phi_prev;
-            let cos_phi_next: f64 = 2.0_f64 * cos_phi * cos_phi_cur - cos_phi_prev;
+            let sin_phi_next: f64 = (2.0_f64 * cos_phi) * sin_phi_cur - sin_phi_prev;
+            let cos_phi_next: f64 = (2.0_f64 * cos_phi) * cos_phi_cur - cos_phi_prev;
             sin_phi_prev = sin_phi_cur;
             sin_phi_cur = sin_phi_next;
             cos_phi_prev = cos_phi_cur;
             cos_phi_cur = cos_phi_next;
             // add the next series term to _cf_ and _f_
-            cf += ak[k] as f64 * recip[k] as f64 * sin_phi_next;
+            cf += (ak[k] * recip[k]) as f64 * sin_phi_next;
             f += ak[k] as f64 * cos_phi_next;
         }
         cf -= (u * ak[0] * PI) as f64;
