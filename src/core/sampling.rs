@@ -1,3 +1,5 @@
+//! Draw random samples from a chosen probability distribution.
+
 // std
 use std::f32::consts::PI;
 use std::sync::Arc;

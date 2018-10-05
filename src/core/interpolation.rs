@@ -1,3 +1,6 @@
+//! Spline-based interpolation to reconstruct BSDF values (instead of
+//! using large lookup tables).
+
 // std
 use std::f32::consts::PI;
 // pbrt
@@ -55,6 +58,7 @@ pub fn catmull_rom_weights(
     true
 }
 
+/// Importance sampling of 2D functions via spline interpolants.
 pub fn sample_catmull_rom_2d(
     nodes1: &Vec<Float>,
     nodes2: &Vec<Float>,
@@ -185,6 +189,8 @@ pub fn fourier(a: &Vec<Float>, si: usize, m: i32, cos_phi: f64) -> Float {
     value as Float
 }
 
+/// Returns the value of the Fourier expansion at the sampled
+/// position.
 pub fn sample_fourier(
     ak: &Vec<Float>,
     recip: &Vec<Float>,
