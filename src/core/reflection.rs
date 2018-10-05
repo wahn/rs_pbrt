@@ -558,11 +558,7 @@ impl Bxdf for SpecularReflection {
         self.fresnel.evaluate(&mut cos_theta_i) * self.r / abs_cos_theta(&*wi)
     }
     fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
-        if vec3_same_hemisphere_vec3(wo, wi) {
-            abs_cos_theta(wi) * INV_PI
-        } else {
-            0.0 as Float
-        }
+        0.0 as Float
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
