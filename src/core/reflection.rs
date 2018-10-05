@@ -557,7 +557,7 @@ impl Bxdf for SpecularReflection {
         let mut cos_theta_i: Float = cos_theta(&*wi);
         self.fresnel.evaluate(&mut cos_theta_i) * self.r / abs_cos_theta(&*wi)
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0 as Float
     }
     fn get_type(&self) -> u8 {
