@@ -1,9 +1,10 @@
 // std
 use std;
+use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{pnt3_distance_squared, vec3_normalize};
+use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::medium::{Medium, MediumInterface};
@@ -85,7 +86,7 @@ impl Light for PointLight {
         self.i / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     fn power(&self) -> Spectrum {
-        Spectrum::default()
+        self.i * (4.0 as Float * PI)
     }
     fn preprocess(&self, _scene: &Scene) {}
     /// Default implementation returns no emitted radiance for a ray

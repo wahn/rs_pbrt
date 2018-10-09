@@ -446,9 +446,16 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         let sc: Spectrum = api_state
             .param_set
             .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
-        // return std::make_shared<PointLight>(l2w, medium, I * sc);
+        let p: Point3f = api_state
+            .param_set
+            .find_one_point3f(String::from("from"), Point3f::default());
+        let l2w: Transform = Transform::translate(&Vector3f {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+        }) * api_state.cur_transform.t[0];
         let point_light = Arc::new(PointLight::new(
-            &api_state.cur_transform.t[0],
+            &l2w,
             medium_interface,
             &(i * sc),
         ));
@@ -2681,7 +2688,6 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, _params: ParamSet) {
             animated_instance_to_world,
         ));
         api_state.render_options.primitives.push(prim.clone());
-        
     } else {
         println!(
             "ERROR: Unable to find instance named {:?}",
