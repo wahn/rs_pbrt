@@ -2589,8 +2589,9 @@ pub fn pbrt_reverse_orientation(api_state: &mut ApiState) {
     api_state.graphics_state.reverse_orientation = !api_state.graphics_state.reverse_orientation;
 }
 
-pub fn pbrt_object_begin(api_state: &mut ApiState, _params: ParamSet) {
+pub fn pbrt_object_begin(api_state: &mut ApiState, params: ParamSet) {
     // println!("ObjectBegin \"{}\"", params.name);
+    api_state.param_set = params;
     pbrt_attribute_begin(api_state);
     if api_state.render_options.current_instance != String::from("") {
         println!("ERROR: ObjectBegin called inside of instance definition");
@@ -2611,8 +2612,9 @@ pub fn pbrt_object_end(api_state: &mut ApiState) {
     pbrt_attribute_end(api_state);
 }
 
-pub fn pbrt_object_instance(api_state: &mut ApiState, _params: ParamSet) {
+pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
     // println!("ObjectInstance \"{}\"", params.name);
+    api_state.param_set = params;
     // perform object instance error checking
     if api_state.render_options.current_instance != String::from("") {
         println!("ERROR: ObjectInstance can't be called inside instance definition");
