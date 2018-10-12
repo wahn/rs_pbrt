@@ -1,0 +1,92 @@
+# untitled.pbrt
+# exported from Blender 2.79.0 by Jan Walter's PBRT exporter
+
+Scale -1 1 1 # swap x-axis direction
+# Camera
+LookAt 3.498302936553955 -3.16400146484375 1.3659619092941284 # position
+       2.7809646129608154 -2.5152127742767334 1.1119956970214844 # target
+       -0.18835535645484924 0.1703559309244156 0.9672130346298218 # up
+Camera "perspective"
+  "float fov" [ 28.841546255021974 ]
+Film "image"
+  "integer xresolution" [ 960 ]
+  "integer yresolution" [ 540 ]
+Sampler "sobol" "integer pixelsamples" [1]
+Integrator "directlighting"
+WorldBegin
+  # Mesh
+  MakeNamedMaterial "Mesh"
+    "string type" [ "matte" ]
+    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
+  # SurfPatch
+  MakeNamedMaterial "SurfPatch"
+    "string type" [ "matte" ]
+    "color Kd" [ 0.800000011920929 0.800000011920929 0.800000011920929 ]
+  # Point
+  AttributeBegin
+    LightSource "point"
+      "color scale" [ 10.0 10.0 10.0 ]
+      "color I" [ 1.0 1.0 1.0 ]
+      "point from" [ 3.498302936553955 -3.16400146484375 1.3659619092941284 ]
+  AttributeEnd
+  # SurfPatch
+  AttributeBegin
+    Transform [
+      1.0 0.0 0.0 0.0
+      0.0 1.0 0.0 0.0
+      0.0 0.0 1.0 0.0
+      0.0 0.0 0.0 1.0
+    ]
+    NamedMaterial "SurfPatch"
+    Shape "nurbs"
+      "integer nu" [ 4 ]
+      "integer nv" [ 4 ]
+      "integer uorder" [ 3 ]
+      "integer vorder" [ 3 ]
+      "float uknots" [ 0.0 0.0 0.0 0.5 1.0 1.0 1.0 ]
+      "float vknots" [ 0.0 0.0 0.0 0.5 1.0 1.0 1.0 ]
+      "float u0" [ 0.0 ]
+      "float v0" [ 0.0 ]
+      "float u1" [ 1.0 ]
+      "float v1" [ 1.0 ]
+      "point P" [
+        -1.5 -1.5 0.0
+        -1.5 -0.5 0.0
+        -1.5 0.5 0.0
+        -1.5 1.5 0.0
+        -0.5 -1.5 0.0
+        -0.5 -0.5 1.0
+        -0.5 0.5 1.0
+        -0.5 1.5 0.0
+        0.5 -1.5 0.0
+        0.5 -0.5 1.0
+        0.5 0.5 1.0
+        0.5 1.5 0.0
+        1.5 -1.5 0.0
+        1.5 -0.5 0.0
+        1.5 0.5 0.0
+        1.5 1.5 0.0
+      ]
+  AttributeEnd
+  # Mesh
+  AttributeBegin
+    Transform [
+      1.0 0.0 0.0 0.0
+      0.0 1.0 0.0 0.0
+      0.0 0.0 1.0 0.0
+      0.0 0.0 0.0 1.0
+    ]
+    NamedMaterial "Mesh"
+    Shape "trianglemesh"
+      "point P" [
+        -1.5 -1.5 0.0
+        1.5 -1.5 0.0
+        -1.5 1.5 0.0
+        1.5 1.5 0.0
+      ]
+      "integer indices" [
+        0 1 3
+        0 3 2
+      ]
+  AttributeEnd
+WorldEnd
