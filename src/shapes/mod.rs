@@ -62,6 +62,7 @@
 pub mod curve;
 pub mod cylinder;
 pub mod disk;
+pub mod nurbs;
 pub mod plymesh;
 pub mod sphere;
 pub mod triangle;

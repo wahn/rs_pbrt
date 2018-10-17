@@ -18,7 +18,7 @@ use core::medium::get_medium_scattering_properties;
 use core::medium::{Medium, MediumInterface};
 use core::mipmap::ImageWrap;
 use core::paramset::{ParamSet, TextureParams};
-use core::pbrt::clamp_t;
+use core::pbrt::{clamp_t, lerp};
 use core::pbrt::{Float, Spectrum};
 use core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
 use core::reflection::FourierBSDFTable;
@@ -61,6 +61,7 @@ use samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use shapes::curve::create_curve_shape;
 use shapes::cylinder::Cylinder;
 use shapes::disk::Disk;
+use shapes::nurbs::Homogeneous3;
 use shapes::plymesh::create_ply_mesh;
 use shapes::sphere::Sphere;
 use shapes::triangle::{Triangle, TriangleMesh};
@@ -454,11 +455,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             y: p.y,
             z: p.z,
         }) * api_state.cur_transform.t[0];
-        let point_light = Arc::new(PointLight::new(
-            &l2w,
-            medium_interface,
-            &(i * sc),
-        ));
+        let point_light = Arc::new(PointLight::new(&l2w, medium_interface, &(i * sc)));
         api_state.render_options.lights.push(point_light);
     } else if api_state.param_set.name == String::from("spot") {
         // CreateSpotLight
@@ -1244,7 +1241,145 @@ fn get_shapes_and_materials(
     } else if api_state.param_set.name == String::from("loopsubdiv") {
         println!("TODO: CreateLoopSubdiv");
     } else if api_state.param_set.name == String::from("nurbs") {
-        println!("TODO: CreateNURBS");
+        println!("WORK: CreateNURBS");
+        // CreateNURBS
+        let nu: i32 = api_state.param_set.find_one_int(String::from("nu"), -1);
+        if nu == -1_i32 {
+            panic!("Must provide number of control points \"nu\" with NURBS shape.");
+        }
+        let uorder: i32 = api_state.param_set.find_one_int(String::from("uorder"), -1);
+        if uorder == -1_i32 {
+            panic!("Must provide u order \"uorder\" with NURBS shape.");
+        }
+        let uknots: Vec<Float> = api_state
+            .param_set
+            .find_float(String::from("uknots"));
+        if uknots.is_empty() {
+            panic!("Must provide u knot vector \"uknots\" with NURBS shape.");
+        }
+        if uknots.len() != (nu + uorder) as usize {
+            panic!("Number of knots in u knot vector {} doesn't match sum of number of u control points {} and u order {}.",
+                   uknots.len(), nu, uorder);
+        }
+        let u0: Float = api_state
+            .param_set
+            .find_one_float(String::from("u0"), uknots[(uorder - 1) as usize]);
+        let u1: Float = api_state
+            .param_set
+            .find_one_float(String::from("u1"), uknots[nu as usize]);
+        let nv: i32 = api_state.param_set.find_one_int(String::from("nv"), -1);
+        if nv == -1_i32 {
+            panic!("Must provide number of control points \"nv\" with NURBS shape.");
+        }
+        let vorder: i32 = api_state.param_set.find_one_int(String::from("vorder"), -1);
+        if vorder == -1_i32 {
+            panic!("Must provide u order \"vorder\" with NURBS shape.");
+        }
+        let vknots: Vec<Float> = api_state
+            .param_set
+            .find_float(String::from("vknots"));
+        if vknots.is_empty() {
+            panic!("Must provide u knot vector \"vknots\" with NURBS shape.");
+        }
+        if vknots.len() != (nv + vorder) as usize {
+            panic!("Number of knots in v knot vector {} doesn't match sum of number of v control points {} and v order {}.",
+                   vknots.len(), nv, vorder);
+        }
+        let v0: Float = api_state
+            .param_set
+            .find_one_float(String::from("v0"), vknots[(vorder - 1) as usize]);
+        let v1: Float = api_state
+            .param_set
+            .find_one_float(String::from("v1"), vknots[nv as usize]);
+        let mut is_homogeneous: bool = false;
+        let mut p: Vec<Point3f> = api_state.param_set.find_point3f(String::from("P"));
+        let mut pw: Vec<Float> = Vec::new();
+        let mut npts: usize = p.len();
+        if p.is_empty() {
+            pw = api_state.param_set.find_float(String::from("Pw"));
+            if pw.is_empty() {
+                panic!("Must provide control points via \"P\" or \"Pw\" parameter to NURBS shape.");
+            }
+            if pw.len() % 4 != 0 {
+                panic!("Number of \"Pw\" control points provided to NURBS shape must be multiple of four");
+            }
+            npts = pw.len() / 4_usize;
+            is_homogeneous = true;
+        }
+        if npts != (nu * nv) as usize {
+            panic!(
+                "NURBS shape was expecting {}x{}={} control points, was given {}",
+                nu,
+                nv,
+                nu * nv,
+                npts
+            );
+        }
+        // compute NURBS dicing rates
+        let diceu: usize = 30;
+        let dicev: usize = 30;
+        let mut ueval: Vec<Float> = Vec::with_capacity(diceu);
+        let mut veval: Vec<Float> = Vec::with_capacity(dicev);
+        let mut eval_ps: Vec<Point3f> = Vec::with_capacity(diceu * dicev);
+        let mut eval_ns: Vec<Normal3f> = Vec::with_capacity(diceu * dicev);
+        for i in 0..diceu {
+            ueval.push(lerp(i as Float / (diceu - 1) as Float, u0, u1));
+        }
+        for i in 0..dicev {
+            veval.push(lerp(i as Float / (dicev - 1) as Float, v0, v1));
+        }
+        // evaluate NURBS over grid of points
+        let mut uvs: Vec<Point2f> = Vec::with_capacity(diceu * dicev);
+        // turn NURBS into triangles
+        let mut hom3: Vec<Homogeneous3> = Vec::with_capacity((nu * nv) as usize);
+        if is_homogeneous {
+            for i in 0..(nu * nv) as usize {
+                hom3.push(Homogeneous3{
+                    x: pw[4 * i],
+                    y: pw[4 * i + 1],
+                    z: pw[4 * i + 2],
+                    w: pw[4 * i + 3],
+                });
+            }
+        } else {
+            for i in 0..(nu * nv) as usize {
+                hom3.push(Homogeneous3{
+                    x: p[i].x,
+                    y: p[i].y,
+                    z: p[i].z,
+                    w: 1.0 as Float,
+                });
+            }
+        }
+        // for (int v = 0; v < dicev; ++v) {
+        //     for (int u = 0; u < diceu; ++u) {
+        //         uvs[(v * diceu + u)].x = ueval[u];
+        //         uvs[(v * diceu + u)].y = veval[v];
+
+        //         Vector3f dpdu, dpdv;
+        //         Point3f pt = NURBSEvaluateSurface(uorder, uknots, nu, ueval[u],
+        //                                           vorder, vknots, nv, veval[v],
+        //                                           Pw.get(), &dpdu, &dpdv);
+        //         evalPs[v * diceu + u].x = pt.x;
+        //         evalPs[v * diceu + u].y = pt.y;
+        //         evalPs[v * diceu + u].z = pt.z;
+        //         evalNs[v * diceu + u] = Normal3f(Normalize(Cross(dpdu, dpdv)));
+        //     }
+        // }
+        // WORK
+        // let sphere = Arc::new(Sphere::new(
+        //     obj_to_world,
+        //     world_to_obj,
+        //     false,
+        //     false,
+        //     radius,
+        //     z_min,
+        //     z_max,
+        //     phi_max,
+        // ));
+        // let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        // shapes.push(sphere.clone());
+        // materials.push(mtl);
     } else {
         panic!("Shape \"{}\" unknown.", api_state.param_set.name);
     }
