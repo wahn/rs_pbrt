@@ -9,7 +9,7 @@ use cameras::perspective::PerspectiveCamera;
 use core::camera::Camera;
 use core::film::Film;
 use core::filter::Filter;
-use core::geometry::{vec3_coordinate_system, vec3_normalize};
+use core::geometry::{vec3_coordinate_system, vec3_cross_vec3, vec3_normalize};
 use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use core::integrator::SamplerIntegrator;
 use core::light::Light;
@@ -61,6 +61,7 @@ use samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use shapes::curve::create_curve_shape;
 use shapes::cylinder::Cylinder;
 use shapes::disk::Disk;
+use shapes::nurbs::nurbs_evaluate_surface;
 use shapes::nurbs::Homogeneous3;
 use shapes::plymesh::create_ply_mesh;
 use shapes::sphere::Sphere;
@@ -1251,9 +1252,7 @@ fn get_shapes_and_materials(
         if uorder == -1_i32 {
             panic!("Must provide u order \"uorder\" with NURBS shape.");
         }
-        let uknots: Vec<Float> = api_state
-            .param_set
-            .find_float(String::from("uknots"));
+        let uknots: Vec<Float> = api_state.param_set.find_float(String::from("uknots"));
         if uknots.is_empty() {
             panic!("Must provide u knot vector \"uknots\" with NURBS shape.");
         }
@@ -1275,9 +1274,7 @@ fn get_shapes_and_materials(
         if vorder == -1_i32 {
             panic!("Must provide u order \"vorder\" with NURBS shape.");
         }
-        let vknots: Vec<Float> = api_state
-            .param_set
-            .find_float(String::from("vknots"));
+        let vknots: Vec<Float> = api_state.param_set.find_float(String::from("vknots"));
         if vknots.is_empty() {
             panic!("Must provide u knot vector \"vknots\" with NURBS shape.");
         }
@@ -1334,7 +1331,7 @@ fn get_shapes_and_materials(
         let mut hom3: Vec<Homogeneous3> = Vec::with_capacity((nu * nv) as usize);
         if is_homogeneous {
             for i in 0..(nu * nv) as usize {
-                hom3.push(Homogeneous3{
+                hom3.push(Homogeneous3 {
                     x: pw[4 * i],
                     y: pw[4 * i + 1],
                     z: pw[4 * i + 2],
@@ -1343,7 +1340,7 @@ fn get_shapes_and_materials(
             }
         } else {
             for i in 0..(nu * nv) as usize {
-                hom3.push(Homogeneous3{
+                hom3.push(Homogeneous3 {
                     x: p[i].x,
                     y: p[i].y,
                     z: p[i].z,
@@ -1351,35 +1348,48 @@ fn get_shapes_and_materials(
                 });
             }
         }
-        // for (int v = 0; v < dicev; ++v) {
-        //     for (int u = 0; u < diceu; ++u) {
-        //         uvs[(v * diceu + u)].x = ueval[u];
-        //         uvs[(v * diceu + u)].y = veval[v];
-
-        //         Vector3f dpdu, dpdv;
-        //         Point3f pt = NURBSEvaluateSurface(uorder, uknots, nu, ueval[u],
-        //                                           vorder, vknots, nv, veval[v],
-        //                                           Pw.get(), &dpdu, &dpdv);
-        //         evalPs[v * diceu + u].x = pt.x;
-        //         evalPs[v * diceu + u].y = pt.y;
-        //         evalPs[v * diceu + u].z = pt.z;
-        //         evalNs[v * diceu + u] = Normal3f(Normalize(Cross(dpdu, dpdv)));
-        //     }
-        // }
-        // WORK
-        // let sphere = Arc::new(Sphere::new(
-        //     obj_to_world,
-        //     world_to_obj,
-        //     false,
-        //     false,
-        //     radius,
-        //     z_min,
-        //     z_max,
-        //     phi_max,
-        // ));
-        // let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
-        // shapes.push(sphere.clone());
-        // materials.push(mtl);
+        for v in 0..dicev {
+            for u in 0..diceu {
+                uvs.push(Point2f {
+                    x: ueval[u],
+                    y: veval[v],
+                });
+                let mut dpdu: Vector3f = Vector3f::default();
+                let mut dpdv: Vector3f = Vector3f::default();
+                let pt: Point3f = nurbs_evaluate_surface(
+                    uorder,
+                    &uknots,
+                    nu,
+                    ueval[u],
+                    vorder,
+                    &vknots,
+                    nv,
+                    veval[v],
+                    &hom3,
+                    &mut dpdu,
+                    &mut dpdv,
+                );
+                eval_ps[v * diceu + u].x = pt.x;
+                eval_ps[v * diceu + u].y = pt.y;
+                eval_ps[v * diceu + u].z = pt.z;
+                eval_ns[v * diceu + u] =
+                    Normal3f::from(vec3_normalize(&vec3_cross_vec3(&dpdu, &dpdv)));
+            }
+        }
+    // WORK
+    // let sphere = Arc::new(Sphere::new(
+    //     obj_to_world,
+    //     world_to_obj,
+    //     false,
+    //     false,
+    //     radius,
+    //     z_min,
+    //     z_max,
+    //     phi_max,
+    // ));
+    // let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+    // shapes.push(sphere.clone());
+    // materials.push(mtl);
     } else {
         panic!("Shape \"{}\" unknown.", api_state.param_set.name);
     }
