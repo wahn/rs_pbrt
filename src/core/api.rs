@@ -1289,7 +1289,7 @@ fn get_shapes_and_materials(
             .param_set
             .find_one_float(String::from("v1"), vknots[nv as usize]);
         let mut is_homogeneous: bool = false;
-        let mut p: Vec<Point3f> = api_state.param_set.find_point3f(String::from("P"));
+        let p: Vec<Point3f> = api_state.param_set.find_point3f(String::from("P"));
         let mut pw: Vec<Float> = Vec::new();
         let mut npts: usize = p.len();
         if p.is_empty() {
@@ -1366,8 +1366,8 @@ fn get_shapes_and_materials(
                     nv,
                     veval[v],
                     &hom3,
-                    &mut dpdu,
-                    &mut dpdv,
+                    Some(&mut dpdu),
+                    Some(&mut dpdv),
                 );
                 eval_ps[v * diceu + u].x = pt.x;
                 eval_ps[v * diceu + u].y = pt.y;
@@ -1376,20 +1376,46 @@ fn get_shapes_and_materials(
                     Normal3f::from(vec3_normalize(&vec3_cross_vec3(&dpdu, &dpdv)));
             }
         }
-    // WORK
-    // let sphere = Arc::new(Sphere::new(
-    //     obj_to_world,
-    //     world_to_obj,
-    //     false,
-    //     false,
-    //     radius,
-    //     z_min,
-    //     z_max,
-    //     phi_max,
-    // ));
-    // let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
-    // shapes.push(sphere.clone());
-    // materials.push(mtl);
+        // generate points-polygons mesh
+        let n_tris: usize = 2 * (diceu - 1) * (dicev - 1);
+        let mut vertices: Vec<usize> = Vec::with_capacity(3 * n_tris);
+        // compute the vertex offset numbers for the triangles
+        for v in 0_usize..(dicev - 1) as usize {
+            for u in 0_usize..(diceu - 1) as usize {
+                vertices.push(v * diceu + u);
+                vertices.push(v * diceu + u + 1);
+                vertices.push((v + 1) * diceu + u + 1);
+                vertices.push(v * diceu + u);
+                vertices.push((v + 1) * diceu + u + 1);
+                vertices.push((v + 1) * diceu + u);
+            }
+        }
+        let n_verts: usize = diceu * dicev;
+        let mesh = Arc::new(TriangleMesh::new(
+            obj_to_world,
+            world_to_obj,
+            api_state.graphics_state.reverse_orientation,
+            false, // transform_swaps_handedness
+            n_tris, // n_triangles
+            vertices,
+            n_verts,
+            eval_ps, // in world space
+            Vec::new(), // in world space
+            eval_ns, // in world space
+            uvs,
+        ));
+        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        for id in 0..mesh.n_triangles {
+            let triangle = Arc::new(Triangle::new(
+                mesh.object_to_world,
+                mesh.world_to_object,
+                mesh.reverse_orientation,
+                mesh.clone(),
+                id,
+            ));
+            shapes.push(triangle.clone());
+            materials.push(mtl.clone());
+        }
     } else {
         panic!("Shape \"{}\" unknown.", api_state.param_set.name);
     }

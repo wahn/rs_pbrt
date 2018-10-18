@@ -34,12 +34,12 @@ pub fn nurbs_evaluate(
     np: i32,
     cp_stride: i32,
     t: Float,
-    // TODO: deriv,
+    deriv_opt: Option<&mut Vector3f>,
 ) -> Homogeneous3 {
-    let mut alpha: Float = 0.0;
+    let mut alpha: Float;
     let knot_offset: usize = knot_offset(knot, order, np, t);
     let cp_offset: usize = knot_offset + 1 - order as usize;
-    assert!(cp_offset >= 0 && cp_offset < np as usize);
+    assert!(cp_offset < np as usize);
     let mut cp_work: Vec<Homogeneous3> = Vec::with_capacity(order as usize);
     for i in 0..order {
         cp_work.push(cp[cp_start + (cp_offset + i as usize) * cp_stride as usize]);
@@ -64,23 +64,24 @@ pub fn nurbs_evaluate(
     alpha = (knot[knot_offset + 1] - t) / (knot[knot_offset + 1] - knot[knot_offset + 0]);
     assert!(alpha >= 0.0 as Float && alpha <= 1.0 as Float);
     let one_minus_alpha: Float = 1.0 as Float - alpha;
-    let val: Homogeneous3 = Homogeneous3{
+    let val: Homogeneous3 = Homogeneous3 {
         x: cp_work[0].x * alpha + cp_work[1].x * one_minus_alpha,
         y: cp_work[0].y * alpha + cp_work[1].y * one_minus_alpha,
         z: cp_work[0].z * alpha + cp_work[1].z * one_minus_alpha,
-        w: cp_work[0].w * alpha + cp_work[1].w * one_minus_alpha
+        w: cp_work[0].w * alpha + cp_work[1].w * one_minus_alpha,
     };
-    // if (deriv) {
-    //     Float factor = (order - 1) / (knot[knot_offset + 1] - knot[knot_offset + 0]);
-    //     Homogeneous3 delta((cp_work[1].x - cp_work[0].x) * factor,
-    //                        (cp_work[1].y - cp_work[0].y) * factor,
-    //                        (cp_work[1].z - cp_work[0].z) * factor,
-    //                        (cp_work[1].w - cp_work[0].w) * factor);
-
-    //     deriv->x = delta.x / val.w - (val.x * delta.w / (val.w * val.w));
-    //     deriv->y = delta.y / val.w - (val.y * delta.w / (val.w * val.w));
-    //     deriv->z = delta.z / val.w - (val.z * delta.w / (val.w * val.w));
-    // }
+    if let Some(deriv) = deriv_opt {
+        let factor: Float = (order - 1) as Float / (knot[knot_offset + 1] - knot[knot_offset + 0]);
+        let delta: Homogeneous3 = Homogeneous3 {
+            x: (cp_work[1].x - cp_work[0].x) * factor,
+            y: (cp_work[1].y - cp_work[0].y) * factor,
+            z: (cp_work[1].z - cp_work[0].z) * factor,
+            w: (cp_work[1].w - cp_work[0].w) * factor,
+        };
+        deriv.x = delta.x / val.w - (val.x * delta.w / (val.w * val.w));
+        deriv.y = delta.y / val.w - (val.y * delta.w / (val.w * val.w));
+        deriv.z = delta.z / val.w - (val.z * delta.w / (val.w * val.w));
+    }
     val
 }
 
@@ -94,13 +95,13 @@ pub fn nurbs_evaluate_surface(
     vcp: i32,
     v: Float,
     cp: &Vec<Homogeneous3>,
-    dpdu: &mut Vector3f,
-    dpfc: &mut Vector3f,
+    dpdu_opt: Option<&mut Vector3f>,
+    dpdv_opt: Option<&mut Vector3f>,
 ) -> Point3f {
     let mut iso: Vec<Homogeneous3> = Vec::with_capacity(std::cmp::max(u_order, v_order) as usize);
     let u_offset: usize = knot_offset(u_knot, u_order, ucp, u);
     let u_first_cp: usize = u_offset + 1 - u_order as usize;
-    assert!(u_first_cp >= 0 && u_first_cp + u_order as usize - 1 < ucp as usize);
+    assert!(u_first_cp + u_order as usize - 1 < ucp as usize);
     for i in 0..u_order {
         iso.push(nurbs_evaluate(
             v_order,
@@ -110,20 +111,37 @@ pub fn nurbs_evaluate_surface(
             vcp,
             ucp,
             v,
+            None,
         ));
     }
     let v_offset: usize = knot_offset(v_knot, v_order, vcp, v);
-    // int v_first_cp = v_offset - v_order + 1;
-    // CHECK(v_first_cp >= 0 && v_first_cp + v_order - 1 < vcp);
-    // Homogeneous3 P =
-    //     NURBSEvaluate(u_order, u_knot, iso - u_first_cp, ucp, 1, u, dpdu);
-    // if (dpdv) {
-    //     for (int i = 0; i < v_order; ++i)
-    //         iso[i] = NURBSEvaluate(u_order, u_knot, &cp[(v_first_cp + i) * ucp],
-    //                                ucp, 1, u);
-    //     (void)NURBSEvaluate(v_order, v_knot, iso - v_first_cp, vcp, 1, v, dpdv);
-    // }
-    // return Point3f(P.x / P.w, P.y / P.w, P.z / P.w);
-    // WORK
-    Point3f::default()
+    let v_first_cp: usize = v_offset + 1 - v_order as usize;
+    assert!(v_first_cp + v_order as usize - 1 < vcp as usize);
+    let p: Homogeneous3 = nurbs_evaluate(
+        u_order, u_knot, &iso, 0, // - u_first_cp
+        ucp, 1, u, dpdu_opt,
+    );
+    if let Some(dpdv) = dpdv_opt {
+        for i in 0..v_order {
+            iso[i as usize] = nurbs_evaluate(
+                u_order,
+                u_knot,
+                &cp,
+                (v_first_cp + i as usize) * ucp as usize,
+                ucp,
+                1,
+                u,
+                None,
+            );
+        }
+        nurbs_evaluate(
+            v_order, v_knot, &iso, 0, // - v_first_cp
+            vcp, 1, v, Some(dpdv),
+        );
+    }
+    Point3f {
+        x: p.x / p.w,
+        y: p.y / p.w,
+        z: p.z / p.w,
+    }
 }
