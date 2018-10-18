@@ -30,7 +30,7 @@ pub fn nurbs_evaluate(
     order: i32,
     knot: &Vec<Float>,
     cp: &Vec<Homogeneous3>,
-    cp_start: usize,
+    cp_start: i32,
     np: i32,
     cp_stride: i32,
     t: Float,
@@ -41,8 +41,8 @@ pub fn nurbs_evaluate(
     let cp_offset: usize = knot_offset + 1 - order as usize;
     assert!(cp_offset < np as usize);
     let mut cp_work: Vec<Homogeneous3> = Vec::with_capacity(order as usize);
-    for i in 0..order {
-        cp_work.push(cp[cp_start + (cp_offset + i as usize) * cp_stride as usize]);
+    for i in 0_usize..order as usize {
+        cp_work.push(cp[(cp_start + (cp_offset + i) as i32 * cp_stride) as usize]);
     }
     for i in 0..(order - 2) {
         for j in 0..(order - 1 - i) {
@@ -107,7 +107,7 @@ pub fn nurbs_evaluate_surface(
             v_order,
             v_knot,
             &cp,
-            u_first_cp + i as usize,
+            u_first_cp as i32 + i,
             vcp,
             ucp,
             v,
@@ -118,7 +118,7 @@ pub fn nurbs_evaluate_surface(
     let v_first_cp: usize = v_offset + 1 - v_order as usize;
     assert!(v_first_cp + v_order as usize - 1 < vcp as usize);
     let p: Homogeneous3 = nurbs_evaluate(
-        u_order, u_knot, &iso, 0, // - u_first_cp
+        u_order, u_knot, &iso, -(u_first_cp as i32),
         ucp, 1, u, dpdu_opt,
     );
     if let Some(dpdv) = dpdv_opt {
@@ -127,7 +127,7 @@ pub fn nurbs_evaluate_surface(
                 u_order,
                 u_knot,
                 &cp,
-                (v_first_cp + i as usize) * ucp as usize,
+                (v_first_cp as i32 + i) * ucp,
                 ucp,
                 1,
                 u,
@@ -135,7 +135,7 @@ pub fn nurbs_evaluate_surface(
             );
         }
         nurbs_evaluate(
-            v_order, v_knot, &iso, 0, // - v_first_cp
+            v_order, v_knot, &iso, -(v_first_cp as i32),
             vcp, 1, v, Some(dpdv),
         );
     }

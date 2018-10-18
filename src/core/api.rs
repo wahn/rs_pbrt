@@ -1242,7 +1242,6 @@ fn get_shapes_and_materials(
     } else if api_state.param_set.name == String::from("loopsubdiv") {
         println!("TODO: CreateLoopSubdiv");
     } else if api_state.param_set.name == String::from("nurbs") {
-        println!("WORK: CreateNURBS");
         // CreateNURBS
         let nu: i32 = api_state.param_set.find_one_int(String::from("nu"), -1);
         if nu == -1_i32 {
@@ -1369,11 +1368,14 @@ fn get_shapes_and_materials(
                     Some(&mut dpdu),
                     Some(&mut dpdv),
                 );
-                eval_ps[v * diceu + u].x = pt.x;
-                eval_ps[v * diceu + u].y = pt.y;
-                eval_ps[v * diceu + u].z = pt.z;
-                eval_ns[v * diceu + u] =
-                    Normal3f::from(vec3_normalize(&vec3_cross_vec3(&dpdu, &dpdv)));
+                eval_ps.push(Point3f {
+                    x: pt.x,
+                    y: pt.y,
+                    z: pt.z,
+                });
+                eval_ns.push(Normal3f::from(vec3_normalize(&vec3_cross_vec3(
+                    &dpdu, &dpdv,
+                ))));
             }
         }
         // generate points-polygons mesh
@@ -1395,13 +1397,13 @@ fn get_shapes_and_materials(
             obj_to_world,
             world_to_obj,
             api_state.graphics_state.reverse_orientation,
-            false, // transform_swaps_handedness
+            false,  // transform_swaps_handedness
             n_tris, // n_triangles
             vertices,
             n_verts,
-            eval_ps, // in world space
+            eval_ps,    // in world space
             Vec::new(), // in world space
-            eval_ns, // in world space
+            eval_ns,    // in world space
             uvs,
         ));
         let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
