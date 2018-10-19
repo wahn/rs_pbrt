@@ -2726,19 +2726,17 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                 api_state.render_options.transform_end_time,
             );
             if prims.len() > 1 {
-                println!("TODO: prims.len() > 1");
                 let bvh: Arc<Primitive + Send + Sync> =
                     Arc::new(BVHAccel::new(prims.clone(), 4, SplitMethod::SAH));
                 prims.clear();
                 prims.push(bvh.clone());
-            } else {
-                if let Some(primitive) = prims.pop() {
-                    let geo_prim = Arc::new(TransformedPrimitive::new(
-                        primitive,
-                        animated_object_to_world,
-                    ));
-                    prims.push(geo_prim.clone());
-                }
+            }
+            if let Some(primitive) = prims.pop() {
+                let geo_prim = Arc::new(TransformedPrimitive::new(
+                    primitive,
+                    animated_object_to_world,
+                ));
+                prims.push(geo_prim.clone());
             }
         }
     }
