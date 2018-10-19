@@ -1392,7 +1392,18 @@ fn get_shapes_and_materials(
                 vertices.push((v + 1) * diceu + u);
             }
         }
-        let n_verts: usize = diceu * dicev;
+        // transform mesh vertices to world space
+        let mut p_ws: Vec<Point3f> = Vec::new();
+        let n_vertices: usize = eval_ps.len();
+        for i in 0..n_vertices {
+            p_ws.push(obj_to_world.transform_point(&eval_ps[i]));
+        }
+        // transform normals to world space
+        let mut n_ws: Vec<Normal3f> = Vec::new();
+        let n_normals: usize = eval_ns.len();
+        for i in 0..n_normals {
+            n_ws.push(obj_to_world.transform_normal(&eval_ns[i]));
+        }
         let mesh = Arc::new(TriangleMesh::new(
             obj_to_world,
             world_to_obj,
@@ -1400,10 +1411,10 @@ fn get_shapes_and_materials(
             false,  // transform_swaps_handedness
             n_tris, // n_triangles
             vertices,
-            n_verts,
-            eval_ps,    // in world space
+            n_vertices,
+            p_ws,    // in world space
             Vec::new(), // in world space
-            eval_ns,    // in world space
+            n_ws,    // in world space
             uvs,
         ));
         let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
