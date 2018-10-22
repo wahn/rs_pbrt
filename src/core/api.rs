@@ -61,6 +61,7 @@ use samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use shapes::curve::create_curve_shape;
 use shapes::cylinder::Cylinder;
 use shapes::disk::Disk;
+use shapes::loopsubdiv::loop_subdivide;
 use shapes::nurbs::nurbs_evaluate_surface;
 use shapes::nurbs::Homogeneous3;
 use shapes::plymesh::create_ply_mesh;
@@ -1259,8 +1260,14 @@ fn get_shapes_and_materials(
         let scheme: String = api_state
             .param_set
             .find_one_string(String::from("scheme"), String::from("loop"));
-    // return LoopSubdivide(o2w, w2o, reverseOrientation, n_levels, nIndices,
-    //                      vertex_indices, nps, P);
+        loop_subdivide(
+            &obj_to_world,
+            &world_to_obj,
+            api_state.graphics_state.reverse_orientation,
+            n_levels,
+            &vertex_indices,
+            &p,
+        );
     } else if api_state.param_set.name == String::from("nurbs") {
         // CreateNURBS
         let nu: i32 = api_state.param_set.find_one_int(String::from("nu"), -1);

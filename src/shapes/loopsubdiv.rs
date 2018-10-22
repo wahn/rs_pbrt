@@ -15,12 +15,55 @@ use core::transform::Transform;
 
 // see loopsubdiv.cpp
 
-pub fn create_loop_subdiv(
-    o2w: &Transform,
-    w2o: &Transform,
+#[derive(Debug, Default, Copy, Clone)]
+struct SDVertex {
+    p: Point3f,
+}
+
+impl SDVertex {
+    pub fn new(p: Point3f) -> Self {
+        SDVertex {
+            p: p,
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+struct SDFace {
+    v: [Option<Arc<SDVertex>>; 3],
+    f: [Option<Arc<SDFace>>; 3],
+    children: [Option<Arc<SDFace>>; 4]
+}
+
+pub fn loop_subdivide(
+    object_to_world: &Transform,
+    world_to_object: &Transform,
     reverse_orientation: bool,
-    params: &ParamSet,
+    n_levels: i32,
+    vertex_indices: &Vec<i32>,
+    p: &Vec<Point3f>,
 ) -> Vec<Arc<Shape + Send + Sync>> {
+    let mut vertices: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
+    // allocate _LoopSubdiv_ vertices and faces
+    let mut verts: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
+    for i in 0..p.len() {
+        verts.push(Arc::new(SDVertex::new(p[i])));
+        vertices.push(verts[i].clone());
+    }
+    let n_faces: usize = vertex_indices.len() / 3;
+    let mut faces: Vec<Arc<SDFace>> = Vec::with_capacity(n_faces);
+    for i in 0..n_faces {
+        faces.push(Arc::new(SDFace::default()));
+    }
+    // set face to vertex pointers
+    // for i in 0..n_faces {
+    //     let f = Arc::get_mut(faces[i]);
+    //     for j in 0..3_usize {
+    //         let vertex_index: usize = vertex_indices[i * 3 + j] as usize;
+    //         f.v[j] = Some(vertices[vertex_index].clone());
+    //         // v->startFace = f;
+    //     }
+    // }
     // WORK
     Vec::new()
 }
