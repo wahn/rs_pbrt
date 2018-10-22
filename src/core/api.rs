@@ -1240,7 +1240,27 @@ fn get_shapes_and_materials(
     } else if api_state.param_set.name == String::from("heightfield") {
         println!("TODO: CreateHeightfield");
     } else if api_state.param_set.name == String::from("loopsubdiv") {
-        println!("TODO: CreateLoopSubdiv");
+        // CreateLoopSubdiv
+        println!("WORK: CreateLoopSubdiv");
+        let n_levels: i32 = api_state.param_set.find_one_int(
+            String::from("levels"),
+            api_state.param_set.find_one_int(String::from("nlevels"), 3),
+        );
+        // int nps, nIndices;
+        let vertex_indices: Vec<i32> = api_state.param_set.find_int(String::from("indices"));
+        let p = api_state.param_set.find_point3f(String::from("P"));
+        if vertex_indices.is_empty() {
+            panic!("Vertex indices \"indices\" not provided for LoopSubdiv shape.");
+        }
+        if p.is_empty() {
+            panic!("Vertex positions \"P\" not provided for LoopSubdiv shape.");
+        }
+        // don't actually use this for now...
+        let scheme: String = api_state
+            .param_set
+            .find_one_string(String::from("scheme"), String::from("loop"));
+    // return LoopSubdivide(o2w, w2o, reverseOrientation, n_levels, nIndices,
+    //                      vertex_indices, nps, P);
     } else if api_state.param_set.name == String::from("nurbs") {
         // CreateNURBS
         let nu: i32 = api_state.param_set.find_one_int(String::from("nu"), -1);
@@ -1412,9 +1432,9 @@ fn get_shapes_and_materials(
             n_tris, // n_triangles
             vertices,
             n_vertices,
-            p_ws,    // in world space
+            p_ws,       // in world space
             Vec::new(), // in world space
-            n_ws,    // in world space
+            n_ws,       // in world space
             uvs,
         ));
         let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
