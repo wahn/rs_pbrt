@@ -15,24 +15,26 @@ use core::transform::Transform;
 
 // see loopsubdiv.cpp
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Clone)]
 struct SDVertex {
     p: Point3f,
+    start_face: usize,
 }
 
 impl SDVertex {
     pub fn new(p: Point3f) -> Self {
         SDVertex {
             p: p,
+            start_face: 0_usize,
         }
     }
 }
 
 #[derive(Debug, Default, Clone)]
 struct SDFace {
-    v: [Option<Arc<SDVertex>>; 3],
-    f: [Option<Arc<SDFace>>; 3],
-    children: [Option<Arc<SDFace>>; 4]
+    v: [usize; 3],
+    f: [usize; 3],
+    children: [usize; 4]
 }
 
 pub fn loop_subdivide(
@@ -43,12 +45,12 @@ pub fn loop_subdivide(
     vertex_indices: &Vec<i32>,
     p: &Vec<Point3f>,
 ) -> Vec<Arc<Shape + Send + Sync>> {
-    let mut vertices: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
+    //let mut vertices: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
     // allocate _LoopSubdiv_ vertices and faces
     let mut verts: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
     for i in 0..p.len() {
         verts.push(Arc::new(SDVertex::new(p[i])));
-        vertices.push(verts[i].clone());
+        //vertices.push(verts[i].clone());
     }
     let n_faces: usize = vertex_indices.len() / 3;
     let mut faces: Vec<Arc<SDFace>> = Vec::with_capacity(n_faces);
@@ -56,14 +58,22 @@ pub fn loop_subdivide(
         faces.push(Arc::new(SDFace::default()));
     }
     // set face to vertex pointers
-    // for i in 0..n_faces {
-    //     let f = Arc::get_mut(faces[i]);
-    //     for j in 0..3_usize {
-    //         let vertex_index: usize = vertex_indices[i * 3 + j] as usize;
-    //         f.v[j] = Some(vertices[vertex_index].clone());
-    //         // v->startFace = f;
-    //     }
-    // }
+    for i in 0..n_faces {
+        let fi = i; // face index
+        for j in 0..3_usize {
+            let vi: usize = vertex_indices[i * 3 + j] as usize; // vertex index
+            if let Some(f) = Arc::get_mut(&mut faces[fi]) {
+                f.v[j] = vi;
+            } else {
+                panic!("Arc::get_mut(&mut faces[{}]) failed", fi);
+            }
+            if let Some(v) = Arc::get_mut(&mut verts[vi as usize]) {
+                v.start_face = fi;
+            } else {
+                panic!("Arc::get_mut(&mut verts[{}] failed", vi as usize);
+            }
+        }
+    }
     // WORK
     Vec::new()
 }
