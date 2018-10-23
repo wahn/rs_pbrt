@@ -1,10 +1,15 @@
 // std
+use std;
+use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 // pbrt
+use core::geometry::{
+    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, nrm_cross_vec3, nrm_dot_nrm, nrm_normalize,
+    pnt3_distance, pnt3_distance_squared, pnt3_lerp, vec2_dot, vec3_coordinate_system,
+    vec3_cross_vec3, vec3_normalize,
+};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
-use core::geometry::{nrm_dot_nrm, nrm_normalize, bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3,
-                     nrm_cross_vec3, pnt3_distance, pnt3_distance_squared, pnt3_lerp, vec2_dot,
-                     vec3_coordinate_system, vec3_cross_vec3, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::paramset::ParamSet;
@@ -14,6 +19,14 @@ use core::shape::Shape;
 use core::transform::Transform;
 
 // see loopsubdiv.cpp
+
+fn next(i: usize) -> usize {
+    (i + 1) % 3
+}
+
+fn prev(i: usize) -> usize {
+    (i + 2) % 3
+}
 
 #[derive(Debug, Default, Clone)]
 struct SDVertex {
@@ -34,7 +47,43 @@ impl SDVertex {
 struct SDFace {
     v: [usize; 3],
     f: [usize; 3],
-    children: [usize; 4]
+    children: [usize; 4],
+}
+
+#[derive(Debug, Default, Clone)]
+struct SDEdge {
+    v: [usize; 2],
+    f: [usize; 2],
+    f0_edge_num: i32,
+}
+
+impl SDEdge {
+    pub fn new(v0: usize, v1: usize) -> Self {
+        SDEdge {
+            v: [std::cmp::min(v0, v1), std::cmp::max(v0, v1)],
+            f: [0_usize, 0_usize],
+            f0_edge_num: -1,
+        }
+    }
+}
+
+impl PartialEq for SDEdge {
+    fn eq(&self, other: &SDEdge) -> bool {
+        if self.v[0] == other.v[0] {
+            self.v[1] == other.v[1]
+        } else {
+            false
+        }
+    }
+}
+
+impl Eq for SDEdge {}
+
+impl Hash for SDEdge {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.v[0].hash(state);
+        self.v[1].hash(state);
+    }
 }
 
 pub fn loop_subdivide(
@@ -71,6 +120,40 @@ pub fn loop_subdivide(
                 v.start_face = fi;
             } else {
                 panic!("Arc::get_mut(&mut verts[{}] failed", vi as usize);
+            }
+        }
+    }
+    // set neighbor pointers in _faces_
+    let mut edges: HashSet<SDEdge> = HashSet::new();
+    for i in 0..n_faces {
+        let fi = i; // face index
+        for edge_num in 0..3_usize {
+            // update neighbor pointer for _edge_num_
+            let v0: usize = edge_num;
+            let v1: usize = next(edge_num);
+            let mut e: SDEdge = SDEdge::new(faces[i].v[v0], faces[i].v[v1]);
+            if !edges.contains(&e) {
+                // handle new edge
+                e.f[0] = fi;
+                e.f0_edge_num = edge_num as i32;
+                edges.insert(e);
+            } else {
+                // handle previously seen edge
+                let e_opt = edges.take(&e);
+                if let Some(e) = e_opt {
+                    // e.f[0]->f[e.f0_edge_num] = f;
+                    if let Some(f) = Arc::get_mut(&mut faces[e.f[0]]) {
+                        f.f[e.f0_edge_num as usize] = fi;
+                    } else {
+                        panic!("Arc::get_mut(&mut faces[{}]) failed", e.f[0]);
+                    }
+                    // f->f[edge_num] = e.f[0];
+                    if let Some(f) = Arc::get_mut(&mut faces[fi]) {
+                        f.f[edge_num] = e.f[0];
+                    } else {
+                        panic!("Arc::get_mut(&mut faces[{}]) failed", fi);
+                    }
+                }
             }
         }
     }
