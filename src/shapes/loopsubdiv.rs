@@ -1,6 +1,6 @@
 // std
 use std;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 // pbrt
@@ -218,6 +218,18 @@ impl SDFace {
         }
         self.v[prev(fi) as usize]
     }
+    pub fn other_vert(&self, vi0: i32, vi1: i32) -> i32 {
+        let mut fi: i32 = -1;
+        for i in 0..3_usize {
+            if self.v[i] != vi0 && self.v[i] != vi1 {
+                return self.v[i];
+            }
+        }
+        if fi == -1_i32 {
+            panic!("other_vert({:?}, {}, {})", self, vi0, vi1);
+        }
+        -1_i32
+    }
 }
 
 impl Default for SDFace {
@@ -424,62 +436,60 @@ pub fn loop_subdivide(
                 }
             }
         }
-
-        //     // Compute new odd edge vertices
-        //     std::map<SDEdge, SDVertex *> edgeVerts;
-        //     for (SDFace *face : f) {
-        //         for (int k = 0; k < 3; ++k) {
-        //             // Compute odd vertex on _k_th edge
-        //             SDEdge edge(face->v[k], face->v[NEXT(k)]);
-        //             SDVertex *vert = edgeVerts[edge];
-        //             if (!vert) {
-        //                 // Create and initialize new odd vertex
-        //                 vert = arena.Alloc<SDVertex>();
-        //                 new_vertices.push_back(vert);
-        //                 vert->regular = true;
-        //                 vert->boundary = (face->f[k] == nullptr);
-        //                 vert->startFace = face->children[3];
-
-        //                 // Apply edge rules to compute new vertex position
-        //                 if (vert->boundary) {
-        //                     vert->p = 0.5f * edge.v[0]->p;
-        //                     vert->p += 0.5f * edge.v[1]->p;
-        //                 } else {
-        //                     vert->p = 3.f / 8.f * edge.v[0]->p;
-        //                     vert->p += 3.f / 8.f * edge.v[1]->p;
-        //                     vert->p += 1.f / 8.f *
-        //                                face->otherVert(edge.v[0], edge.v[1])->p;
-        //                     vert->p +=
-        //                         1.f / 8.f *
-        //                         face->f[k]->otherVert(edge.v[0], edge.v[1])->p;
-        //                 }
-        //                 edgeVerts[edge] = vert;
-        //             }
-        //         }
-        //     }
-
-        //     // Update new mesh topology
-
-        //     // Update even vertex face pointers
+        // compute new odd edge vertices
+        let mut edge_verts: HashMap<SDEdge, i32> = HashMap::new();
+        for fi in 0..faces.len() {
+            for k in 0..3 {
+                // compute odd vertex on _k_th edge
+                let edge: SDEdge =
+                    SDEdge::new(faces[fi].v[k as usize], faces[fi].v[next(k) as usize]);
+                let contains_edge: bool = edge_verts.contains_key(&edge);
+                if !contains_edge {
+                    // create and initialize new odd vertex
+                    let nvi = new_vertices.len();
+                    new_vertices.push(Arc::new(SDVertex::default()));
+                    if let Some(vert) = Arc::get_mut(&mut new_vertices[nvi]) {
+                        vert.regular = true;
+                        vert.boundary = (faces[fi].f[k as usize] == -1_i32);
+                        vert.start_face = faces[fi].children[3];
+                        // apply edge rules to compute new vertex position
+                        if vert.boundary {
+                            vert.p = verts[edge.v[0] as usize].p * 0.5 as Float;
+                            vert.p += verts[edge.v[1] as usize].p * 0.5 as Float;
+                        } else {
+                            vert.p = verts[edge.v[0] as usize].p * (3.0 as Float / 8.0 as Float);
+                            vert.p += verts[edge.v[1] as usize].p * (3.0 as Float / 8.0 as Float);
+                            let vi = faces[fi].other_vert(edge.v[0], edge.v[1]);
+                            vert.p += verts[vi as usize].p * (1.0 as Float / 8.0 as Float);
+                            let vi = faces[faces[fi].f[k as usize] as usize]
+                                .other_vert(edge.v[0], edge.v[1]);
+                            vert.p += verts[vi as usize].p * (1.0 as Float / 8.0 as Float);
+                        }
+                        edge_verts.insert(edge, nvi as i32);
+                    }
+                }
+            }
+        }
+        // update even vertex face pointers
         //     for (SDVertex *vertex : v) {
-        //         int vertNum = vertex->startFace->vnum(vertex);
-        //         vertex->child->startFace = vertex->startFace->children[vertNum];
+        //         int vertNum = vertex->startface.vnum(vertex);
+        //         vertex->child->start_face = vertex->startface.children[vertNum];
         //     }
 
         //     // Update face neighbor pointers
         //     for (SDFace *face : f) {
         //         for (int j = 0; j < 3; ++j) {
         //             // Update children _f_ pointers for siblings
-        //             face->children[3]->f[j] = face->children[NEXT(j)];
-        //             face->children[j]->f[NEXT(j)] = face->children[3];
+        //             face.children[3]->f[j] = face.children[NEXT(j)];
+        //             face.children[j]->f[NEXT(j)] = face.children[3];
 
         //             // Update children _f_ pointers for neighbor children
-        //             SDFace *f2 = face->f[j];
-        //             face->children[j]->f[j] =
-        //                 f2 ? f2->children[f2->vnum(face->v[j])] : nullptr;
-        //             f2 = face->f[PREV(j)];
-        //             face->children[j]->f[PREV(j)] =
-        //                 f2 ? f2->children[f2->vnum(face->v[j])] : nullptr;
+        //             SDFace *f2 = face.f[j];
+        //             face.children[j]->f[j] =
+        //                 f2 ? f2->children[f2->vnum(face.v[j])] : nullptr;
+        //             f2 = face.f[PREV(j)];
+        //             face.children[j]->f[PREV(j)] =
+        //                 f2 ? f2->children[f2->vnum(face.v[j])] : nullptr;
         //         }
         //     }
 
@@ -487,14 +497,14 @@ pub fn loop_subdivide(
         //     for (SDFace *face : f) {
         //         for (int j = 0; j < 3; ++j) {
         //             // Update child vertex pointer to new even vertex
-        //             face->children[j]->v[j] = face->v[j]->child;
+        //             face.children[j]->v[j] = face.v[j]->child;
 
         //             // Update child vertex pointer to new odd vertex
         //             SDVertex *vert =
-        //                 edgeVerts[SDEdge(face->v[j], face->v[NEXT(j)])];
-        //             face->children[j]->v[NEXT(j)] = vert;
-        //             face->children[NEXT(j)]->v[j] = vert;
-        //             face->children[3]->v[j] = vert;
+        //                 edge_verts[SDEdge(face.v[j], face.v[NEXT(j)])];
+        //             face.children[j]->v[NEXT(j)] = vert;
+        //             face.children[NEXT(j)]->v[j] = vert;
+        //             face.children[3]->v[j] = vert;
         //         }
         //     }
 
@@ -583,17 +593,16 @@ fn weight_one_ring(
 ) -> Point3f {
     // put _vert_ one-ring in _p_ring_
     let valence: i32 = vert.valence(vi, faces);
-    // Point3f *p_ring = ALLOCA(Point3f, valence);
     let mut p_ring: Vec<Point3f> = Vec::with_capacity(valence as usize);
     for _i in 0..valence as usize {
         p_ring.push(Point3f::default());
     }
     vert.one_ring(&mut p_ring, vi, faces, verts);
-    // Point3f p = (1 - valence * beta) * vert->p;
-    // for (int i = 0; i < valence; ++i) p += beta * p_ring[i];
-    // return p;
-    // WORK
-    Point3f::default()
+    let mut p: Point3f = vert.p * (1.0 as Float - valence as Float * beta);
+    for i in 0..valence as usize {
+        p += p_ring[i] * beta;
+    }
+    p
 }
 
 fn weight_boundary(
@@ -605,16 +614,13 @@ fn weight_boundary(
 ) -> Point3f {
     // put _vert_ one-ring in _p_ring_
     let valence: i32 = vert.valence(vi, faces);
-    // Point3f *p_ring = ALLOCA(Point3f, valence);
     let mut p_ring: Vec<Point3f> = Vec::with_capacity(valence as usize);
     for _i in 0..valence as usize {
         p_ring.push(Point3f::default());
     }
     vert.one_ring(&mut p_ring, vi, faces, verts);
-    // Point3f p = (1 - 2 * beta) * vert->p;
-    // p += beta * p_ring[0];
-    // p += beta * p_ring[valence - 1];
-    // return p;
-    // WORK
-    Point3f::default()
+    let mut p: Point3f = vert.p * (1.0 as Float - 2.0 as Float * beta);
+    p += p_ring[0] * beta;
+    p += p_ring[(valence - 1) as usize] * beta;
+    p
 }

@@ -762,6 +762,17 @@ pub struct Point3<T> {
     pub z: T,
 }
 
+impl<T> AddAssign<Point3<T>> for Point3<T>
+where
+    T: AddAssign,
+{
+    fn add_assign(&mut self, rhs: Point3<T>) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
 impl<T> Add<Point3<T>> for Point3<T>
 where
     T: Add<T, Output = T>,
