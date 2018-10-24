@@ -47,20 +47,51 @@ impl SDVertex {
             boundary: false,
         }
     }
-    pub fn one_ring(&self, p: Point3f, vi: i32, faces: &Vec<Arc<SDFace>>) {
+    pub fn one_ring(
+        &self,
+        p: &mut Vec<Point3f>,
+        vi: i32,
+        faces: &Vec<Arc<SDFace>>,
+        verts: &Vec<Arc<SDVertex>>,
+    ) {
         if !self.boundary {
             // get one-ring vertices for interior vertex
             let mut fi: i32 = self.start_face;
+            let mut pi = 0_usize;
             loop {
                 let nvi = faces[fi as usize].next_vert(vi);
-                // WORK
+                p[pi] = verts[nvi as usize].p;
+                pi += 1_usize;
+                fi = faces[fi as usize].next_face(vi);
                 if fi == self.start_face {
                     break;
                 }
             }
         } else {
             // get one-ring vertices for boundary vertex
-            // WORK
+            let mut fi: i32 = self.start_face;
+            let mut fi2: i32 = -1_i32;
+            let mut pi = 0_usize;
+            loop {
+                fi2 = faces[fi as usize].next_face(vi);
+                if fi2 == -1_i32 {
+                    break;
+                } else {
+                    fi = fi2;
+                }
+            }
+            let nvi = faces[fi as usize].next_vert(vi);
+            p[pi] = verts[nvi as usize].p;
+            pi += 1_usize;
+            loop {
+                let nvi = faces[fi as usize].prev_vert(vi);
+                p[pi] = verts[nvi as usize].p;
+                pi += 1_usize;
+                fi = faces[fi as usize].prev_face(vi);
+                if fi == -1_i32 {
+                    break;
+                }
+            }
         }
     }
     pub fn valence(&self, vi: i32, faces: &Vec<Arc<SDFace>>) -> i32 {
@@ -370,6 +401,7 @@ pub fn loop_subdivide(
                             1.0 as Float / 16.0 as Float,
                             vi as i32,
                             &faces,
+                            &verts,
                         );
                     } else {
                         child.p = weight_one_ring(
@@ -377,6 +409,7 @@ pub fn loop_subdivide(
                             beta(verts[vi].valence(vi as i32, &faces)),
                             vi as i32,
                             &faces,
+                            &verts,
                         );
                     }
                 } else {
@@ -386,6 +419,7 @@ pub fn loop_subdivide(
                         1.0 as Float / 8.0 as Float,
                         vi as i32,
                         &faces,
+                        &verts,
                     );
                 }
             }
@@ -540,11 +574,21 @@ pub fn loop_subdivide(
     Vec::new()
 }
 
-fn weight_one_ring(vert: Arc<SDVertex>, beta: Float, vi: i32, faces: &Vec<Arc<SDFace>>) -> Point3f {
+fn weight_one_ring(
+    vert: Arc<SDVertex>,
+    beta: Float,
+    vi: i32,
+    faces: &Vec<Arc<SDFace>>,
+    verts: &Vec<Arc<SDVertex>>,
+) -> Point3f {
     // put _vert_ one-ring in _p_ring_
     let valence: i32 = vert.valence(vi, faces);
     // Point3f *p_ring = ALLOCA(Point3f, valence);
-    // vert.one_ring(p_ring);
+    let mut p_ring: Vec<Point3f> = Vec::with_capacity(valence as usize);
+    for _i in 0..valence as usize {
+        p_ring.push(Point3f::default());
+    }
+    vert.one_ring(&mut p_ring, vi, faces, verts);
     // Point3f p = (1 - valence * beta) * vert->p;
     // for (int i = 0; i < valence; ++i) p += beta * p_ring[i];
     // return p;
@@ -552,11 +596,21 @@ fn weight_one_ring(vert: Arc<SDVertex>, beta: Float, vi: i32, faces: &Vec<Arc<SD
     Point3f::default()
 }
 
-fn weight_boundary(vert: Arc<SDVertex>, beta: Float, vi: i32, faces: &Vec<Arc<SDFace>>) -> Point3f {
+fn weight_boundary(
+    vert: Arc<SDVertex>,
+    beta: Float,
+    vi: i32,
+    faces: &Vec<Arc<SDFace>>,
+    verts: &Vec<Arc<SDVertex>>,
+) -> Point3f {
     // put _vert_ one-ring in _p_ring_
     let valence: i32 = vert.valence(vi, faces);
     // Point3f *p_ring = ALLOCA(Point3f, valence);
-    // vert.one_ring(p_ring);
+    let mut p_ring: Vec<Point3f> = Vec::with_capacity(valence as usize);
+    for _i in 0..valence as usize {
+        p_ring.push(Point3f::default());
+    }
+    vert.one_ring(&mut p_ring, vi, faces, verts);
     // Point3f p = (1 - 2 * beta) * vert->p;
     // p += beta * p_ring[0];
     // p += beta * p_ring[valence - 1];
