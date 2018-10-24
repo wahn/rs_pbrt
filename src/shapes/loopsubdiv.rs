@@ -28,7 +28,7 @@ fn prev(i: i32) -> i32 {
     (i + 2) % 3
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Clone)]
 struct SDVertex {
     p: Point3f,
     start_face: i32,
@@ -45,6 +45,22 @@ impl SDVertex {
             child: -1_i32,
             regular: false,
             boundary: false,
+        }
+    }
+    pub fn one_ring(&self, p: Point3f, vi: i32, faces: &Vec<Arc<SDFace>>) {
+        if !self.boundary {
+            // get one-ring vertices for interior vertex
+            let mut fi: i32 = self.start_face;
+            loop {
+                let nvi = faces[fi as usize].next_vert(vi);
+                // WORK
+                if fi == self.start_face {
+                    break;
+                }
+            }
+        } else {
+            // get one-ring vertices for boundary vertex
+            // WORK
         }
     }
     pub fn valence(&self, vi: i32, faces: &Vec<Arc<SDFace>>) -> i32 {
@@ -95,6 +111,18 @@ impl SDVertex {
     }
 }
 
+impl Default for SDVertex {
+    fn default() -> SDVertex {
+        SDVertex {
+            p: Point3f::default(),
+            start_face: -1_i32,
+            child: -1_i32,
+            regular: false,
+            boundary: false,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct SDFace {
     v: [i32; 3],
@@ -130,6 +158,34 @@ impl SDFace {
             panic!("next_face({:?}, {})", self, vi);
         }
         self.f[prev(fi) as usize]
+    }
+    pub fn next_vert(&self, vi: i32) -> i32 {
+        // see int vnum(SDVertex *vert) const {...}
+        let mut fi: i32 = -1;
+        for i in 0..3_usize {
+            if self.v[i] == vi {
+                fi = i as i32;
+                break;
+            }
+        }
+        if fi == -1_i32 {
+            panic!("next_face({:?}, {})", self, vi);
+        }
+        self.v[next(fi) as usize]
+    }
+    pub fn prev_vert(&self, vi: i32) -> i32 {
+        // see int vnum(SDVertex *vert) const {...}
+        let mut fi: i32 = -1;
+        for i in 0..3_usize {
+            if self.v[i] == vi {
+                fi = i as i32;
+                break;
+            }
+        }
+        if fi == -1_i32 {
+            panic!("next_face({:?}, {})", self, vi);
+        }
+        self.v[prev(fi) as usize]
     }
 }
 
@@ -179,6 +235,14 @@ impl Hash for SDEdge {
     }
 }
 
+fn beta(valence: i32) -> Float {
+    if valence == 3_i32 {
+        3.0 as Float / 16.0 as Float
+    } else {
+        3.0 as Float / (8.0 as Float * valence as Float)
+    }
+}
+
 pub fn loop_subdivide(
     object_to_world: &Transform,
     world_to_object: &Transform,
@@ -187,12 +251,10 @@ pub fn loop_subdivide(
     vertex_indices: &Vec<i32>,
     p: &Vec<Point3f>,
 ) -> Vec<Arc<Shape + Send + Sync>> {
-    //let mut vertices: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
     // allocate _LoopSubdiv_ vertices and faces
     let mut verts: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
     for i in 0..p.len() {
         verts.push(Arc::new(SDVertex::new(p[i])));
-        //vertices.push(verts[i].clone());
     }
     let n_faces: usize = vertex_indices.len() / 3;
     let mut faces: Vec<Arc<SDFace>> = Vec::with_capacity(n_faces);
@@ -234,13 +296,11 @@ pub fn loop_subdivide(
                 // handle previously seen edge
                 let e_opt = edges.take(&e);
                 if let Some(e) = e_opt {
-                    // e.f[0]->f[e.f0_edge_num] = f;
                     if let Some(f) = Arc::get_mut(&mut faces[e.f[0] as usize]) {
                         f.f[e.f0_edge_num as usize] = fi;
                     } else {
                         panic!("Arc::get_mut(&mut faces[{}]) failed", e.f[0]);
                     }
-                    // f->f[edge_num] = e.f[0];
                     if let Some(f) = Arc::get_mut(&mut faces[fi as usize]) {
                         f.f[edge_num] = e.f[0];
                     } else {
@@ -272,6 +332,235 @@ pub fn loop_subdivide(
             }
         }
     }
+    // refine _LoopSubdiv_ into triangles
+    for i in 0..n_levels {
+        // update _faces_ and _verts_ for next level of subdivision
+        let mut new_faces: Vec<Arc<SDFace>> = Vec::new();
+        let mut new_vertices: Vec<Arc<SDVertex>> = Vec::new();
+        // allocate next level of children in mesh tree
+        for vi in 0..verts.len() {
+            if let Some(vertex) = Arc::get_mut(&mut verts[vi]) {
+                let ci = new_vertices.len();
+                vertex.child = ci as i32;
+                new_vertices.push(Arc::new(SDVertex::default()));
+                if let Some(child) = Arc::get_mut(&mut new_vertices[ci]) {
+                    child.regular = vertex.regular;
+                    child.boundary = vertex.boundary;
+                }
+            }
+        }
+        for fi in 0..faces.len() {
+            if let Some(face) = Arc::get_mut(&mut faces[fi]) {
+                for k in 0..4 {
+                    let ci = new_faces.len();
+                    new_faces.push(Arc::new(SDFace::default()));
+                    face.children[k] = ci as i32;
+                }
+            }
+        }
+        // update vertex positions for even vertices
+        for vi in 0..verts.len() {
+            let ci = verts[vi].child as usize;
+            if let Some(child) = Arc::get_mut(&mut new_vertices[ci]) {
+                if !verts[vi].boundary {
+                    // apply one-ring rule for even vertex
+                    if (verts[vi].regular) {
+                        child.p = weight_one_ring(
+                            verts[vi].clone(),
+                            1.0 as Float / 16.0 as Float,
+                            vi as i32,
+                            &faces,
+                        );
+                    } else {
+                        child.p = weight_one_ring(
+                            verts[vi].clone(),
+                            beta(verts[vi].valence(vi as i32, &faces)),
+                            vi as i32,
+                            &faces,
+                        );
+                    }
+                } else {
+                    // apply boundary rule for even vertex
+                    child.p = weight_boundary(
+                        verts[vi].clone(),
+                        1.0 as Float / 8.0 as Float,
+                        vi as i32,
+                        &faces,
+                    );
+                }
+            }
+        }
+
+        //     // Compute new odd edge vertices
+        //     std::map<SDEdge, SDVertex *> edgeVerts;
+        //     for (SDFace *face : f) {
+        //         for (int k = 0; k < 3; ++k) {
+        //             // Compute odd vertex on _k_th edge
+        //             SDEdge edge(face->v[k], face->v[NEXT(k)]);
+        //             SDVertex *vert = edgeVerts[edge];
+        //             if (!vert) {
+        //                 // Create and initialize new odd vertex
+        //                 vert = arena.Alloc<SDVertex>();
+        //                 new_vertices.push_back(vert);
+        //                 vert->regular = true;
+        //                 vert->boundary = (face->f[k] == nullptr);
+        //                 vert->startFace = face->children[3];
+
+        //                 // Apply edge rules to compute new vertex position
+        //                 if (vert->boundary) {
+        //                     vert->p = 0.5f * edge.v[0]->p;
+        //                     vert->p += 0.5f * edge.v[1]->p;
+        //                 } else {
+        //                     vert->p = 3.f / 8.f * edge.v[0]->p;
+        //                     vert->p += 3.f / 8.f * edge.v[1]->p;
+        //                     vert->p += 1.f / 8.f *
+        //                                face->otherVert(edge.v[0], edge.v[1])->p;
+        //                     vert->p +=
+        //                         1.f / 8.f *
+        //                         face->f[k]->otherVert(edge.v[0], edge.v[1])->p;
+        //                 }
+        //                 edgeVerts[edge] = vert;
+        //             }
+        //         }
+        //     }
+
+        //     // Update new mesh topology
+
+        //     // Update even vertex face pointers
+        //     for (SDVertex *vertex : v) {
+        //         int vertNum = vertex->startFace->vnum(vertex);
+        //         vertex->child->startFace = vertex->startFace->children[vertNum];
+        //     }
+
+        //     // Update face neighbor pointers
+        //     for (SDFace *face : f) {
+        //         for (int j = 0; j < 3; ++j) {
+        //             // Update children _f_ pointers for siblings
+        //             face->children[3]->f[j] = face->children[NEXT(j)];
+        //             face->children[j]->f[NEXT(j)] = face->children[3];
+
+        //             // Update children _f_ pointers for neighbor children
+        //             SDFace *f2 = face->f[j];
+        //             face->children[j]->f[j] =
+        //                 f2 ? f2->children[f2->vnum(face->v[j])] : nullptr;
+        //             f2 = face->f[PREV(j)];
+        //             face->children[j]->f[PREV(j)] =
+        //                 f2 ? f2->children[f2->vnum(face->v[j])] : nullptr;
+        //         }
+        //     }
+
+        //     // Update face vertex pointers
+        //     for (SDFace *face : f) {
+        //         for (int j = 0; j < 3; ++j) {
+        //             // Update child vertex pointer to new even vertex
+        //             face->children[j]->v[j] = face->v[j]->child;
+
+        //             // Update child vertex pointer to new odd vertex
+        //             SDVertex *vert =
+        //                 edgeVerts[SDEdge(face->v[j], face->v[NEXT(j)])];
+        //             face->children[j]->v[NEXT(j)] = vert;
+        //             face->children[NEXT(j)]->v[j] = vert;
+        //             face->children[3]->v[j] = vert;
+        //         }
+        //     }
+
+        // prepare for next level of subdivision
+        faces = new_faces.split_off(0);
+        verts = new_vertices.split_off(0);
+    }
+
+    // // Push vertices to limit surface
+    // std::unique_ptr<Point3f[]> pLimit(new Point3f[v.size()]);
+    // for (size_t i = 0; i < v.size(); ++i) {
+    //     if (v[i]->boundary)
+    //         pLimit[i] = weight_boundary(v[i], 1.f / 5.f);
+    //     else
+    //         pLimit[i] = weight_one_ring(v[i], loopGamma(v[i]->valence()));
+    // }
+    // for (size_t i = 0; i < v.size(); ++i) v[i]->p = pLimit[i];
+
+    // // Compute vertex tangents on limit surface
+    // std::vector<Normal3f> Ns;
+    // Ns.reserve(v.size());
+    // std::vector<Point3f> pRing(16, Point3f());
+    // for (SDVertex *vertex : v) {
+    //     Vector3f S(0, 0, 0), T(0, 0, 0);
+    //     int valence = vertex->valence();
+    //     if (valence > (int)pRing.size()) pRing.resize(valence);
+    //     vertex->oneRing(&pRing[0]);
+    //     if (!vertex->boundary) {
+    //         // Compute tangents of interior face
+    //         for (int j = 0; j < valence; ++j) {
+    //             S += std::cos(2 * Pi * j / valence) * Vector3f(pRing[j]);
+    //             T += std::sin(2 * Pi * j / valence) * Vector3f(pRing[j]);
+    //         }
+    //     } else {
+    //         // Compute tangents of boundary face
+    //         S = pRing[valence - 1] - pRing[0];
+    //         if (valence == 2)
+    //             T = Vector3f(pRing[0] + pRing[1] - 2 * vertex->p);
+    //         else if (valence == 3)
+    //             T = pRing[1] - vertex->p;
+    //         else if (valence == 4)  // regular
+    //             T = Vector3f(-1 * pRing[0] + 2 * pRing[1] + 2 * pRing[2] +
+    //                          -1 * pRing[3] + -2 * vertex->p);
+    //         else {
+    //             Float theta = Pi / float(valence - 1);
+    //             T = Vector3f(std::sin(theta) * (pRing[0] + pRing[valence - 1]));
+    //             for (int k = 1; k < valence - 1; ++k) {
+    //                 Float wt = (2 * std::cos(theta) - 2) * std::sin((k)*theta);
+    //                 T += Vector3f(wt * pRing[k]);
+    //             }
+    //             T = -T;
+    //         }
+    //     }
+    //     Ns.push_back(Normal3f(Cross(S, T)));
+    // }
+
+    // // Create triangle mesh from subdivision mesh
+    // {
+    //     size_t ntris = f.size();
+    //     std::unique_ptr<int[]> verts(new int[3 * ntris]);
+    //     int *vp = verts.get();
+    //     size_t totVerts = v.size();
+    //     std::map<SDVertex *, int> usedVerts;
+    //     for (size_t i = 0; i < totVerts; ++i) usedVerts[v[i]] = i;
+    //     for (size_t i = 0; i < ntris; ++i) {
+    //         for (int j = 0; j < 3; ++j) {
+    //             *vp = usedVerts[f[i]->v[j]];
+    //             ++vp;
+    //         }
+    //     }
+    //     return CreateTriangleMesh(ObjectToWorld, WorldToObject,
+    //                               reverseOrientation, ntris, verts.get(),
+    //                               totVerts, pLimit.get(), nullptr, &Ns[0],
+    //                               nullptr, nullptr, nullptr);
+    // }
     // WORK
     Vec::new()
+}
+
+fn weight_one_ring(vert: Arc<SDVertex>, beta: Float, vi: i32, faces: &Vec<Arc<SDFace>>) -> Point3f {
+    // put _vert_ one-ring in _p_ring_
+    let valence: i32 = vert.valence(vi, faces);
+    // Point3f *p_ring = ALLOCA(Point3f, valence);
+    // vert.one_ring(p_ring);
+    // Point3f p = (1 - valence * beta) * vert->p;
+    // for (int i = 0; i < valence; ++i) p += beta * p_ring[i];
+    // return p;
+    // WORK
+    Point3f::default()
+}
+
+fn weight_boundary(vert: Arc<SDVertex>, beta: Float, vi: i32, faces: &Vec<Arc<SDFace>>) -> Point3f {
+    // put _vert_ one-ring in _p_ring_
+    let valence: i32 = vert.valence(vi, faces);
+    // Point3f *p_ring = ALLOCA(Point3f, valence);
+    // vert.one_ring(p_ring);
+    // Point3f p = (1 - 2 * beta) * vert->p;
+    // p += beta * p_ring[0];
+    // p += beta * p_ring[valence - 1];
+    // return p;
+    // WORK
+    Point3f::default()
 }
