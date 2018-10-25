@@ -162,8 +162,7 @@ struct SDFace {
 }
 
 impl SDFace {
-    pub fn next_face(&self, vi: i32) -> i32 {
-        // see int vnum(SDVertex *vert) const {...}
+    pub fn vnum(&self, vi: i32) -> i32 {
         let mut fi: i32 = -1;
         for i in 0..3_usize {
             if self.v[i] == vi {
@@ -171,48 +170,31 @@ impl SDFace {
                 break;
             }
         }
+        fi
+    }
+    pub fn next_face(&self, vi: i32) -> i32 {
+        let fi: i32 = self.vnum(vi);
         if fi == -1_i32 {
             panic!("next_face({:?}, {})", self, vi);
         }
         self.f[fi as usize]
     }
     pub fn prev_face(&self, vi: i32) -> i32 {
-        // see int vnum(SDVertex *vert) const {...}
-        let mut fi: i32 = -1;
-        for i in 0..3_usize {
-            if self.v[i] == vi {
-                fi = i as i32;
-                break;
-            }
-        }
+        let fi: i32 = self.vnum(vi);
         if fi == -1_i32 {
             panic!("next_face({:?}, {})", self, vi);
         }
         self.f[prev(fi) as usize]
     }
     pub fn next_vert(&self, vi: i32) -> i32 {
-        // see int vnum(SDVertex *vert) const {...}
-        let mut fi: i32 = -1;
-        for i in 0..3_usize {
-            if self.v[i] == vi {
-                fi = i as i32;
-                break;
-            }
-        }
+        let fi: i32 = self.vnum(vi);
         if fi == -1_i32 {
             panic!("next_face({:?}, {})", self, vi);
         }
         self.v[next(fi) as usize]
     }
     pub fn prev_vert(&self, vi: i32) -> i32 {
-        // see int vnum(SDVertex *vert) const {...}
-        let mut fi: i32 = -1;
-        for i in 0..3_usize {
-            if self.v[i] == vi {
-                fi = i as i32;
-                break;
-            }
-        }
+        let fi: i32 = self.vnum(vi);
         if fi == -1_i32 {
             panic!("next_face({:?}, {})", self, vi);
         }
@@ -471,34 +453,71 @@ pub fn loop_subdivide(
             }
         }
         // update even vertex face pointers
-        //     for (SDVertex *vertex : v) {
-        //         int vertNum = vertex->startface.vnum(vertex);
-        //         vertex->child->start_face = vertex->startface.children[vertNum];
-        //     }
-
-        //     // Update face neighbor pointers
-        //     for (SDFace *face : f) {
-        //         for (int j = 0; j < 3; ++j) {
-        //             // Update children _f_ pointers for siblings
-        //             face.children[3]->f[j] = face.children[NEXT(j)];
-        //             face.children[j]->f[NEXT(j)] = face.children[3];
-
-        //             // Update children _f_ pointers for neighbor children
-        //             SDFace *f2 = face.f[j];
-        //             face.children[j]->f[j] =
-        //                 f2 ? f2->children[f2->vnum(face.v[j])] : nullptr;
-        //             f2 = face.f[PREV(j)];
-        //             face.children[j]->f[PREV(j)] =
-        //                 f2 ? f2->children[f2->vnum(face.v[j])] : nullptr;
-        //         }
-        //     }
-
-        //     // Update face vertex pointers
+        for vi in 0..verts.len() {
+            let mut ci = -1_i32;
+            let mut face_child = -1_i32;
+            if let Some(vertex) = Arc::get_mut(&mut verts[vi]) {
+                let start_face = vertex.start_face as usize;
+                let face = faces[start_face].clone();
+                let vert_num: usize = face.vnum(vi as i32) as usize;
+                ci = vertex.child;
+                face_child = face.children[vert_num];
+            }
+            if ci != -1_i32 {
+                if let Some(child) = Arc::get_mut(&mut new_vertices[ci as usize]) {
+                    child.start_face = face_child; // index into new_faces !!!
+                }
+            }
+        }
+        // update face neighbor pointers
+        for fi in 0..faces.len() {
+            let face = faces[fi].clone();
+            for j in 0..3 {
+                // update children _f_ pointers for siblings
+                let ci = face.children[3] as usize;
+                if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                    child.f[j] = face.children[next(j as i32) as usize];
+                }
+                let ci = face.children[j] as usize;
+                if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                    child.f[next(j as i32) as usize] = face.children[3];
+                }
+                // update children _f_ pointers for neighbor children
+                let mut fi2 = face.f[j];
+                if fi2 != -1_i32 {
+                    let f2 = faces[fi2 as usize].clone();
+                    let ci2 = f2.children[f2.vnum(face.v[j]) as usize];
+                    let ci = face.children[j] as usize;
+                    if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                        child.f[j] = ci2;
+                    }
+                } else {
+                    let ci = face.children[j] as usize;
+                    if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                        child.f[j] = -1_i32;
+                    }
+                }
+                let mut fi2 = face.f[prev(j as i32) as usize];
+                if fi2 != -1_i32 {
+                    let f2 = faces[fi2 as usize].clone();
+                    let ci2 = f2.children[f2.vnum(face.v[j]) as usize];
+                    let ci = face.children[j] as usize;
+                    if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                        child.f[next(j as i32) as usize] = ci2;
+                    }
+                } else {
+                    let ci = face.children[j] as usize;
+                    if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                        child.f[next(j as i32) as usize] = -1_i32;
+                    }
+                }
+            }
+        }
+        // update face vertex pointers
         //     for (SDFace *face : f) {
         //         for (int j = 0; j < 3; ++j) {
         //             // Update child vertex pointer to new even vertex
         //             face.children[j]->v[j] = face.v[j]->child;
-
         //             // Update child vertex pointer to new odd vertex
         //             SDVertex *vert =
         //                 edge_verts[SDEdge(face.v[j], face.v[NEXT(j)])];
@@ -529,10 +548,10 @@ pub fn loop_subdivide(
     // std::vector<Point3f> pRing(16, Point3f());
     // for (SDVertex *vertex : v) {
     //     Vector3f S(0, 0, 0), T(0, 0, 0);
-    //     int valence = vertex->valence();
+    //     int valence = vertex.valence();
     //     if (valence > (int)pRing.size()) pRing.resize(valence);
-    //     vertex->oneRing(&pRing[0]);
-    //     if (!vertex->boundary) {
+    //     vertex.oneRing(&pRing[0]);
+    //     if (!vertex.boundary) {
     //         // Compute tangents of interior face
     //         for (int j = 0; j < valence; ++j) {
     //             S += std::cos(2 * Pi * j / valence) * Vector3f(pRing[j]);
@@ -542,12 +561,12 @@ pub fn loop_subdivide(
     //         // Compute tangents of boundary face
     //         S = pRing[valence - 1] - pRing[0];
     //         if (valence == 2)
-    //             T = Vector3f(pRing[0] + pRing[1] - 2 * vertex->p);
+    //             T = Vector3f(pRing[0] + pRing[1] - 2 * vertex.p);
     //         else if (valence == 3)
-    //             T = pRing[1] - vertex->p;
+    //             T = pRing[1] - vertex.p;
     //         else if (valence == 4)  // regular
     //             T = Vector3f(-1 * pRing[0] + 2 * pRing[1] + 2 * pRing[2] +
-    //                          -1 * pRing[3] + -2 * vertex->p);
+    //                          -1 * pRing[3] + -2 * vertex.p);
     //         else {
     //             Float theta = Pi / float(valence - 1);
     //             T = Vector3f(std::sin(theta) * (pRing[0] + pRing[valence - 1]));
