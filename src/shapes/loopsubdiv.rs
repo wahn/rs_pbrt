@@ -1,22 +1,15 @@
 // std
 use std;
 use std::collections::{HashMap, HashSet};
+use std::f32::consts::PI;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 // pbrt
-use core::geometry::{
-    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, nrm_cross_vec3, nrm_dot_nrm, nrm_normalize,
-    pnt3_distance, pnt3_distance_squared, pnt3_lerp, vec2_dot, vec3_coordinate_system,
-    vec3_cross_vec3, vec3_normalize,
-};
-use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
-use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
-use core::material::Material;
-use core::paramset::ParamSet;
+use core::geometry::vec3_cross_vec3;
+use core::geometry::{Normal3f, Point3f, Vector3f};
 use core::pbrt::Float;
-use core::pbrt::{clamp_t, float_to_bits, lerp};
-use core::shape::Shape;
 use core::transform::Transform;
+use shapes::triangle::TriangleMesh;
 
 // see loopsubdiv.cpp
 
@@ -70,7 +63,7 @@ impl SDVertex {
         } else {
             // get one-ring vertices for boundary vertex
             let mut fi: i32 = self.start_face;
-            let mut fi2: i32 = -1_i32;
+            let mut fi2: i32;
             let mut pi = 0_usize;
             loop {
                 fi2 = faces[fi as usize].next_face(vi);
@@ -201,7 +194,7 @@ impl SDFace {
         self.v[prev(fi) as usize]
     }
     pub fn other_vert(&self, vi0: i32, vi1: i32) -> i32 {
-        let mut fi: i32 = -1;
+        let fi: i32 = -1;
         for i in 0..3_usize {
             if self.v[i] != vi0 && self.v[i] != vi1 {
                 return self.v[i];
@@ -279,7 +272,7 @@ pub fn loop_subdivide(
     n_levels: i32,
     vertex_indices: &Vec<i32>,
     p: &Vec<Point3f>,
-) -> Vec<Arc<Shape + Send + Sync>> {
+) -> Arc<TriangleMesh> {
     // allocate _LoopSubdiv_ vertices and faces
     let mut verts: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
     for i in 0..p.len() {
@@ -287,7 +280,7 @@ pub fn loop_subdivide(
     }
     let n_faces: usize = vertex_indices.len() / 3;
     let mut faces: Vec<Arc<SDFace>> = Vec::with_capacity(n_faces);
-    for i in 0..n_faces {
+    for _i in 0..n_faces {
         faces.push(Arc::new(SDFace::default()));
     }
     // set face to vertex pointers
@@ -351,7 +344,7 @@ pub fn loop_subdivide(
         }
         let valence = verts[vi].valence(vi as i32, &faces);
         if let Some(v) = Arc::get_mut(&mut verts[vi]) {
-            v.boundary = (fi == -1_i32);
+            v.boundary = fi == -1_i32;
             if !v.boundary && valence == 6 {
                 v.regular = true;
             } else if v.boundary && valence == 4 {
@@ -362,7 +355,7 @@ pub fn loop_subdivide(
         }
     }
     // refine _LoopSubdiv_ into triangles
-    for i in 0..n_levels {
+    for _i in 0..n_levels {
         // update _faces_ and _verts_ for next level of subdivision
         let mut new_faces: Vec<Arc<SDFace>> = Vec::new();
         let mut new_vertices: Vec<Arc<SDVertex>> = Vec::new();
@@ -393,7 +386,7 @@ pub fn loop_subdivide(
             if let Some(child) = Arc::get_mut(&mut new_vertices[ci]) {
                 if !verts[vi].boundary {
                     // apply one-ring rule for even vertex
-                    if (verts[vi].regular) {
+                    if verts[vi].regular {
                         child.p = weight_one_ring(
                             verts[vi].clone(),
                             1.0 as Float / 16.0 as Float,
@@ -436,7 +429,7 @@ pub fn loop_subdivide(
                     new_vertices.push(Arc::new(SDVertex::default()));
                     if let Some(vert) = Arc::get_mut(&mut new_vertices[nvi]) {
                         vert.regular = true;
-                        vert.boundary = (faces[fi].f[k as usize] == -1_i32);
+                        vert.boundary = faces[fi].f[k as usize] == -1_i32;
                         vert.start_face = faces[fi].children[3];
                         // apply edge rules to compute new vertex position
                         if vert.boundary {
@@ -578,66 +571,90 @@ pub fn loop_subdivide(
             v.p = p_limit[i];
         }
     }
-
-    // // Compute vertex tangents on limit surface
-    // std::vector<Normal3f> Ns;
-    // Ns.reserve(v.size());
-    // std::vector<Point3f> pRing(16, Point3f());
-    // for (SDVertex *vertex : v) {
-    //     Vector3f S(0, 0, 0), T(0, 0, 0);
-    //     int valence = vertex.valence();
-    //     if (valence > (int)pRing.size()) pRing.resize(valence);
-    //     vertex.oneRing(&pRing[0]);
-    //     if (!vertex.boundary) {
-    //         // Compute tangents of interior face
-    //         for (int j = 0; j < valence; ++j) {
-    //             S += std::cos(2 * Pi * j / valence) * Vector3f(pRing[j]);
-    //             T += std::sin(2 * Pi * j / valence) * Vector3f(pRing[j]);
-    //         }
-    //     } else {
-    //         // Compute tangents of boundary face
-    //         S = pRing[valence - 1] - pRing[0];
-    //         if (valence == 2)
-    //             T = Vector3f(pRing[0] + pRing[1] - 2 * vertex.p);
-    //         else if (valence == 3)
-    //             T = pRing[1] - vertex.p;
-    //         else if (valence == 4)  // regular
-    //             T = Vector3f(-1 * pRing[0] + 2 * pRing[1] + 2 * pRing[2] +
-    //                          -1 * pRing[3] + -2 * vertex.p);
-    //         else {
-    //             Float theta = Pi / float(valence - 1);
-    //             T = Vector3f(std::sin(theta) * (pRing[0] + pRing[valence - 1]));
-    //             for (int k = 1; k < valence - 1; ++k) {
-    //                 Float wt = (2 * std::cos(theta) - 2) * std::sin((k)*theta);
-    //                 T += Vector3f(wt * pRing[k]);
-    //             }
-    //             T = -T;
-    //         }
-    //     }
-    //     Ns.push_back(Normal3f(Cross(S, T)));
-    // }
-
-    // // Create triangle mesh from subdivision mesh
-    // {
-    //     size_t ntris = f.size();
-    //     std::unique_ptr<int[]> verts(new int[3 * ntris]);
-    //     int *vp = verts.get();
-    //     size_t totVerts = v.size();
-    //     std::map<SDVertex *, int> usedVerts;
-    //     for (size_t i = 0; i < totVerts; ++i) usedVerts[v[i]] = i;
-    //     for (size_t i = 0; i < ntris; ++i) {
-    //         for (int j = 0; j < 3; ++j) {
-    //             *vp = usedVerts[f[i]->v[j]];
-    //             ++vp;
-    //         }
-    //     }
-    //     return CreateTriangleMesh(ObjectToWorld, WorldToObject,
-    //                               reverseOrientation, ntris, verts.get(),
-    //                               totVerts, pLimit.get(), nullptr, &Ns[0],
-    //                               nullptr, nullptr, nullptr);
-    // }
-    // WORK
-    Vec::new()
+    // compute vertex tangents on limit surface
+    let mut ns: Vec<Normal3f> = Vec::with_capacity(verts.len());
+    let mut p_ring: Vec<Point3f> = Vec::new();
+    p_ring.resize(16_usize, Point3f::default());
+    for vi in 0..verts.len() {
+        let vertex = verts[vi].clone();
+        let mut s: Vector3f = Vector3f::default();
+        let mut t: Vector3f = Vector3f::default();
+        let valence: i32 = vertex.valence(vi as i32, &faces);
+        if valence as usize > p_ring.len() {
+            p_ring.resize(valence as usize, Point3f::default());
+        }
+        vertex.one_ring(&mut p_ring, vi as i32, &faces, &verts);
+        if !vertex.boundary {
+            // compute tangents of interior face
+            for j in 0..valence as usize {
+                s += Vector3f::from(p_ring[j])
+                    * (2.0 as Float * PI * j as Float / valence as Float).cos();
+                t += Vector3f::from(p_ring[j])
+                    * (2.0 as Float * PI * j as Float / valence as Float).sin();
+            }
+        } else {
+            // compute tangents of boundary face
+            s = p_ring[(valence - 1) as usize] - p_ring[0_usize];
+            if valence == 2_i32 {
+                t = Vector3f::from(p_ring[0] + p_ring[1] - vertex.p * 2.0 as Float);
+            } else if valence == 3_i32 {
+                t = p_ring[1] - vertex.p;
+            } else if valence == 4_i32 {
+                // regular
+                t = Vector3f::from(
+                    p_ring[0] * -1.0 as Float
+                        + p_ring[1] * 2.0 as Float
+                        + p_ring[2] * 2.0 as Float
+                        + p_ring[3] * -1. * 2.0 as Float
+                        + vertex.p * -2.0 as Float,
+                );
+            } else {
+                let theta: Float = PI / (valence - 1) as Float;
+                t = Vector3f::from((p_ring[0] + p_ring[(valence - 1) as usize]) * theta.sin());
+                for k in 1..(valence - 1) as usize {
+                    let wt: Float =
+                        (2.0 as Float * theta.cos() - 2.0 as Float) * (k as Float * theta).sin();
+                    t += Vector3f::from(p_ring[k] * wt);
+                }
+                t = -t;
+            }
+        }
+        ns.push(Normal3f::from(vec3_cross_vec3(&s, &t)));
+    }
+    // create triangle mesh from subdivision mesh
+    let ntris: usize = faces.len();
+    let mut vertex_indices: Vec<usize> = Vec::with_capacity(3 * ntris);
+    let tot_verts: usize = verts.len();
+    for i in 0..ntris {
+        for j in 0..3_usize {
+            vertex_indices.push(faces[i].v[j] as usize);
+        }
+    }
+    // transform mesh vertices to world space
+    let mut p_ws: Vec<Point3f> = Vec::new();
+    let n_vertices: usize = p_limit.len();
+    for i in 0..n_vertices {
+        p_ws.push(object_to_world.transform_point(&p_limit[i]));
+    }
+    // transform normals to world space
+    let mut n_ws: Vec<Normal3f> = Vec::new();
+    let n_normals: usize = ns.len();
+    for i in 0..n_normals {
+        n_ws.push(object_to_world.transform_normal(&ns[i]));
+    }
+    Arc::new(TriangleMesh::new(
+        *object_to_world,
+        *world_to_object,
+        reverse_orientation,
+        false, // transform_swaps_handedness
+        ntris,
+        vertex_indices,
+        tot_verts,
+        p_ws, // in world space
+        Vec::new(),
+        n_ws, // in world space
+        Vec::new(),
+    ))
 }
 
 fn weight_one_ring(

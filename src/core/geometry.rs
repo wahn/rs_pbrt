@@ -298,6 +298,17 @@ impl<T> Vector3<T> {
     }
 }
 
+impl<T> AddAssign<Vector3<T>> for Vector3<T>
+where
+    T: AddAssign,
+{
+    fn add_assign(&mut self, rhs: Vector3<T>) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+        self.z += rhs.z;
+    }
+}
+
 impl<T> Add for Vector3<T>
 where
     T: Copy + Add<T, Output = T>,
