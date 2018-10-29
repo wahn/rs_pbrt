@@ -514,18 +514,34 @@ pub fn loop_subdivide(
             }
         }
         // update face vertex pointers
-        //     for (SDFace *face : f) {
-        //         for (int j = 0; j < 3; ++j) {
-        //             // Update child vertex pointer to new even vertex
-        //             face.children[j]->v[j] = face.v[j]->child;
-        //             // Update child vertex pointer to new odd vertex
-        //             SDVertex *vert =
-        //                 edge_verts[SDEdge(face.v[j], face.v[NEXT(j)])];
-        //             face.children[j]->v[NEXT(j)] = vert;
-        //             face.children[NEXT(j)]->v[j] = vert;
-        //             face.children[3]->v[j] = vert;
-        //         }
-        //     }
+        for fi in 0..faces.len() {
+            let mut nvi = -1_i32;
+            let face = faces[fi].clone();
+            for j in 0..3_usize {
+                // update child vertex pointer to new even vertex
+                let ci = face.children[j] as usize;
+                if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                    let vi = face.v[j] as usize;
+                    let vertex = verts[vi].clone();
+                    child.v[j] = vertex.child;
+                    // update child vertex pointer to new odd vertex
+                    let key = SDEdge::new(face.v[j], face.v[next(j as i32) as usize]);
+                    let vert_opt = edge_verts.get(&key);
+                    if let Some(vi2) = vert_opt {
+                        nvi = *vi2;
+                        child.v[next(j as i32) as usize] = nvi;
+                    }
+                }
+                let ci = face.children[next(j as i32) as usize] as usize;
+                if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                    child.v[j] = nvi;
+                }
+                let ci = face.children[3_usize] as usize;
+                if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
+                    child.v[j] = nvi;
+                }
+            }
+        }
 
         // prepare for next level of subdivision
         faces = new_faces.split_off(0);
