@@ -605,7 +605,7 @@ pub fn loop_subdivide(
                     p_ring[0] * -1.0 as Float
                         + p_ring[1] * 2.0 as Float
                         + p_ring[2] * 2.0 as Float
-                        + p_ring[3] * -1. * 2.0 as Float
+                        + p_ring[3] * -1.0 as Float
                         + vertex.p * -2.0 as Float,
                 );
             } else {
