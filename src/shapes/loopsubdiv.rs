@@ -182,21 +182,21 @@ impl SDFace {
     pub fn prev_face(&self, vi: i32) -> i32 {
         let fi: i32 = self.vnum(vi);
         if fi == -1_i32 {
-            panic!("next_face({:?}, {})", self, vi);
+            panic!("prev_face({:?}, {})", self, vi);
         }
         self.f[prev(fi) as usize]
     }
     pub fn next_vert(&self, vi: i32) -> i32 {
         let fi: i32 = self.vnum(vi);
         if fi == -1_i32 {
-            panic!("next_face({:?}, {})", self, vi);
+            panic!("next_vert({:?}, {})", self, vi);
         }
         self.v[next(fi) as usize]
     }
     pub fn prev_vert(&self, vi: i32) -> i32 {
         let fi: i32 = self.vnum(vi);
         if fi == -1_i32 {
-            panic!("next_face({:?}, {})", self, vi);
+            panic!("prev_vert({:?}, {})", self, vi);
         }
         self.v[prev(fi) as usize]
     }
@@ -266,6 +266,10 @@ fn beta(valence: i32) -> Float {
     } else {
         3.0 as Float / (8.0 as Float * valence as Float)
     }
+}
+
+fn loop_gamma(valence: i32) -> Float {
+    1.0 as Float / (valence as Float + 3.0 as Float / (8.0 as Float * beta(valence)))
 }
 
 pub fn loop_subdivide(
@@ -503,12 +507,12 @@ pub fn loop_subdivide(
                     let ci2 = f2.children[f2.vnum(face.v[j]) as usize];
                     let ci = face.children[j] as usize;
                     if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
-                        child.f[next(j as i32) as usize] = ci2;
+                        child.f[prev(j as i32) as usize] = ci2;
                     }
                 } else {
                     let ci = face.children[j] as usize;
                     if let Some(child) = Arc::get_mut(&mut new_faces[ci]) {
-                        child.f[next(j as i32) as usize] = -1_i32;
+                        child.f[prev(j as i32) as usize] = -1_i32;
                     }
                 }
             }
@@ -547,16 +551,33 @@ pub fn loop_subdivide(
         faces = new_faces.split_off(0);
         verts = new_vertices.split_off(0);
     }
-
-    // // Push vertices to limit surface
-    // std::unique_ptr<Point3f[]> pLimit(new Point3f[v.size()]);
-    // for (size_t i = 0; i < v.size(); ++i) {
-    //     if (v[i]->boundary)
-    //         pLimit[i] = weight_boundary(v[i], 1.f / 5.f);
-    //     else
-    //         pLimit[i] = weight_one_ring(v[i], loopGamma(v[i]->valence()));
-    // }
-    // for (size_t i = 0; i < v.size(); ++i) v[i]->p = pLimit[i];
+    // push vertices to limit surface
+    let mut p_limit: Vec<Point3f> = Vec::with_capacity(verts.len());
+    for i in 0..verts.len() {
+        let v = verts[i].clone();
+        if v.boundary {
+            p_limit.push(weight_boundary(
+                v.clone(),
+                1.0 as Float / 5.0 as Float,
+                i as i32,
+                &faces,
+                &verts,
+            ));
+        } else {
+            p_limit.push(weight_one_ring(
+                v.clone(),
+                loop_gamma(v.clone().valence(i as i32, &faces)),
+                i as i32,
+                &faces,
+                &verts,
+            ));
+        }
+    }
+    for i in 0..verts.len() {
+        if let Some(v) = Arc::get_mut(&mut verts[i]) {
+            v.p = p_limit[i];
+        }
+    }
 
     // // Compute vertex tangents on limit surface
     // std::vector<Normal3f> Ns;
