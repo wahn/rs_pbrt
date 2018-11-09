@@ -121,7 +121,7 @@ pub fn render(
             for _ in 0..num_cores {
                 let pixel_tx = pixel_tx.clone();
                 let mut tile_sampler: Box<Sampler + Send + Sync> = sampler.box_clone();
-                scope.spawn(move || {
+                scope.spawn(move |_| {
                     while let Some((x, y)) = bq.next() {
                         let tile: Point2i = Point2i {
                             x: x as i32,
@@ -214,14 +214,14 @@ pub fn render(
                 });
             }
             // spawn thread to collect pixels and render image to file
-            scope.spawn(move || {
+            scope.spawn(move |_| {
                 for _ in pbr::PbIter::new(0..bq.len()) {
                     let film_tile = pixel_rx.recv().unwrap();
                     // merge image tile into _Film_
                     film.merge_film_tile(&film_tile);
                 }
             });
-        });
+        }).unwrap();
     }
     film.write_image(1.0 as Float);
 }

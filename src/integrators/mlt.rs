@@ -419,7 +419,7 @@ pub fn render_mlt(
                     // spawn worker threads
                     for (b, band) in bands.into_iter().enumerate() {
                         let band_tx = band_tx.clone();
-                        scope.spawn(move || {
+                        scope.spawn(move |_| {
                             for (w, weight) in band.into_iter().enumerate() {
                                 let rng_index: u64 = ((b * chunk_size) + w) as u64;
                                 let depth: u32 =
@@ -441,12 +441,12 @@ pub fn render_mlt(
                         band_tx.send(b).expect(&format!("Failed to send progress"));
                     }
                     // spawn thread to report progress
-                    scope.spawn(move || {
+                    scope.spawn(move |_| {
                         for _ in pbr::PbIter::new(0..num_cores) {
                             band_rx.recv().unwrap();
                         }
                     });
-                });
+                }).unwrap();
             }
         }
         println!("Rendering ...");
