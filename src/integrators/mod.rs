@@ -20,7 +20,7 @@
 //! whereas points with little geometry on the visible hemisphere
 //! appear light.
 //!
-//! ![Ambient Occlusion](https://www.janwalter.org/assets/cornell_box_pbrt_rust_ao.png)
+//! ![Ambient Occlusion](/doc/img/cornell_box_pbrt_rust_ao.png)
 //!
 //! ## Direct Lighting
 //!
@@ -30,14 +30,14 @@
 //! objects that are not themselfes emissive, except for basic
 //! specular reflection and transmission effects.
 //!
-//! ![Direct Lighting](https://www.janwalter.org/assets/cornell_box_v0.1.13.png)
+//! ![Direct Lighting](/doc/img/cornell_box_pbrt_rust_directlighting.png)
 //!
 //! ## Path Tracing
 //!
 //! Path tracing incrementally generates paths of scattering events
 //! starting at the camera and ending at light sources in the scene.
 //!
-//! ![Path Tracing](https://www.janwalter.org/assets/cornell_box_v0.2.0_high.png)
+//! ![Path Tracing](/doc/img/cornell_box_pbrt_rust_path.png)
 
 //! ## Bidirectional Path Tracing (BDPT)
 //!
@@ -48,7 +48,7 @@
 //! visibility ray.
 //!
 //! ![Bidirectional Path
-//! Tracing](https://www.janwalter.org/assets/art_gallery_pbrt_rust_07n.png)
+//! Tracing](/doc/img/art_gallery_pbrt_rust_bdpt.png)
 
 extern crate crossbeam;
 extern crate num_cpus;

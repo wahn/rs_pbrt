@@ -16,7 +16,7 @@
 //! are simultaneously well distributed over all the dimensions of the
 //! sample vector.
 //!
-//! ![halton](https://www.janwalter.org/assets/pbrt_rust_halton.png)
+//! ![halton](/doc/img/cornell_box_pbrt_rust_halton.png)
 //!
 //! ## Random Sampler
 //!
@@ -25,7 +25,7 @@
 //! simple fast space-efficient statistically good algorithms for
 //! random number generation.
 //!
-//! ![random](https://www.janwalter.org/assets/pbrt_rust_random.png)
+//! ![random](/doc/img/cornell_box_pbrt_rust_random.png)
 //!
 //! ## Sobol Sampler
 //!
@@ -34,7 +34,7 @@
 //! vector. The weakness of the Sobol' points is that they are prone
 //! to structural grid artefacts before convergence.
 //!
-//! ![sobol](https://www.janwalter.org/assets/pbrt_rust_sobol.png)
+//! ![sobol](/doc/img/cornell_box_pbrt_rust_sobol.png)
 //!
 //! ## (0,2)-Sequence Sampler
 //!
@@ -46,7 +46,7 @@
 //! values for all of the pixel samples in the pixel are collectively
 //! well distributed.
 //!
-//! ![lowdiscrepancy](https://www.janwalter.org/assets/pbrt_rust_lowdiscrepancy.png)
+//! ![lowdiscrepancy](/doc/img/cornell_box_pbrt_rust_lowdiscrepancy.png)
 //!
 
 pub mod halton;

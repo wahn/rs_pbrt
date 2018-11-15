@@ -7,6 +7,6 @@
 //!
 //! ## Homogeneous Medium
 //!
-//! ![A Volumetric Caustic](https://www.janwalter.org/assets/volume-caustic.png)
+//! ![A Volumetric Caustic](/doc/img/volume_caustic_pbrt_rust_mlt.png)
 
 pub mod homogeneous;

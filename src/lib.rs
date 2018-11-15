@@ -15,9 +15,9 @@
 //! [rust]: https://www.rust-lang.org/en-US
 //! [book]: http://www.pbrt.org
 //! [repo]: https://github.com/wahn/rs_pbrt
-//! [here]: https://www.janwalter.org/doc/rust/pbrt/integrators/fn.render.html
-//! [render_bdpt]: https://www.janwalter.org/doc/rust/pbrt/integrators/bdpt/fn.render_bdpt.html
-//! [render_mlt]: https://www.janwalter.org/doc/rust/pbrt/integrators/mlt/fn.render_mlt.html
+//! [here]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/fn.render.html
+//! [render_bdpt]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/bdpt/fn.render_bdpt.html
+//! [render_mlt]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/mlt/fn.render_mlt.html
 
 #[macro_use]
 extern crate hexf;

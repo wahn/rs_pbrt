@@ -15,6 +15,6 @@
 //! object's dimensions along the line of sight are shorter than its
 //! dimensions across the line of sight.
 //!
-//! ![Perspective Camera](https://www.janwalter.org/assets/Perspectiva-2.png)
+//! ![Perspective Camera](/doc/img/wikipedia_perspective_camera.png)
 
 pub mod perspective;

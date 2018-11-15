@@ -18,11 +18,11 @@
 //!
 //! ## HairMaterial
 //!
-//! ![HairMaterial](https://www.janwalter.org/assets/hair_rust_pbrt.png)
+//! ![HairMaterial](/doc/img/hair_pbrt_rust.png)
 //!
 //! ## SubstrateMaterial
 //!
-//! ![SubstrateMaterial](https://www.janwalter.org/assets/ganesha.png)
+//! ![SubstrateMaterial](/doc/img/ganesha_pbrt_rust.png)
 
 pub mod fourier;
 pub mod glass;

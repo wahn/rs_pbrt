@@ -2174,7 +2174,7 @@ pub fn infinite_light_density<'a>(
 /// **Main function** to **render** a scene multi-threaded (using all
 /// available cores) with **bidirectional** path tracing.
 ///
-/// ![bdpt](https://www.janwalter.org/assets/uml/pbrt/render_bdpt.png)
+/// ![bdpt](/doc/img/uml_pbrt_rust_render_bdpt.png)
 pub fn render_bdpt(
     scene: &Scene,
     camera: &Arc<Camera + Send + Sync>,
