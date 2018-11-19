@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 // pbrt
 use accelerators::bvh::{BVHAccel, SplitMethod};
+use cameras::orthographic::OrthographicCamera;
 use cameras::perspective::PerspectiveCamera;
 use core::camera::Camera;
 use core::film::Film;
@@ -1679,7 +1680,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 );
                 some_camera = Some(camera);
             } else if api_state.render_options.camera_name == String::from("orthographic") {
-                println!("TODO: CreateOrthographicCamera");
+                let camera: Arc<Camera + Send + Sync> = OrthographicCamera::create(
+                    &api_state.render_options.camera_params,
+                    animated_cam_to_world,
+                    film,
+                    medium_interface.outside,
+                );
+                some_camera = Some(camera);
             } else if api_state.render_options.camera_name == String::from("realistic") {
                 println!("TODO: CreateRealisticCamera");
             } else if api_state.render_options.camera_name == String::from("environment") {

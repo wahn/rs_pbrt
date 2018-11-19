@@ -17,4 +17,5 @@
 //!
 //! ![Perspective Camera](/doc/img/wikipedia_perspective_camera.png)
 
+pub mod orthographic;
 pub mod perspective;
