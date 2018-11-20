@@ -16,6 +16,18 @@
 //! dimensions across the line of sight.
 //!
 //! ![Perspective Camera](/doc/img/wikipedia_perspective_camera.png)
+//!
+//! ## Orthographic Camera
+//!
+//! The orthographic camera is based on the orthographic projection
+//! transformation. The orthographic transformation takes a
+//! rectangular region of the scene and projects it onto the front
+//! face of the box that defines the region. It doesn’t give the
+//! effect of foreshortening - objects becoming smaller on the image
+//! plane as they get farther away - but it does leave parallel lines
+//! parallel, and it preserves relative distance between objects.
+//!
+//! ![Orthographic Camera](/doc/img/wikipedia_orthographic_camera.png)
 
 pub mod orthographic;
 pub mod perspective;
