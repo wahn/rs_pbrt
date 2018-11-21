@@ -183,11 +183,11 @@ start_time = { "StartTime" }
 reverse_orientation = { "ReverseOrientation" }
 world_begin = { "WorldBegin" }
 // IDENT a-zA-Z_a-zA-Z_0-9*
-ident =  { ('a'..'z' | 'A'..'Z' | "_" | '0'..'9') ~
-           ('a'..'z' | 'A'..'Z' | " " | "_" | "-" | ":" | '0'..'9')* }
+ident =  { ('a'..'z' | 'A'..'Z' | "_" | "|" | '0'..'9') ~
+           ('a'..'z' | 'A'..'Z' | " " | "_" | "|" | "-" | ":" | '0'..'9')* }
 string = { ("\"" ~ ident ~ "\"") | ("\"" ~ filename ~ "\"") }
 empty_string = { "\"" ~ "\"" }
-filename = { ("/")? ~ // optional (can be a full path)
+filename = { ("/" | "./" ~ ("../")? | "../" ~ ("../")?)? ~ // optional (can be a full or relative path)
              ('a'..'z' | 'A'..'Z' | "_") ~
              ('a'..'z' | 'A'..'Z' | "_" | "-" | "." | "/" | '0'..'9')* }
 // "" { return LBRACK; }
