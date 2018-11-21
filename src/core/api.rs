@@ -1691,7 +1691,6 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
             } else if api_state.render_options.camera_name == String::from("realistic") {
                 println!("TODO: CreateRealisticCamera");
             } else if api_state.render_options.camera_name == String::from("environment") {
-                println!("WORK: CreateEnvironmentCamera");
                 let camera: Arc<Camera + Send + Sync> = EnvironmentCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
