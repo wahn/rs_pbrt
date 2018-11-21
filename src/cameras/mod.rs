@@ -28,6 +28,14 @@
 //! parallel, and it preserves relative distance between objects.
 //!
 //! ![Orthographic Camera](/doc/img/wikipedia_orthographic_camera.png)
+//!
+//! ## Environment Camera
+//!
+//! A camera model that traces rays in all directions around a point
+//! in the scene, giving a 2D view of everything that is visible from
+//! that point. One important use of this image representation is
+//! environment lighting - a rendering technique that uses image-based
+//! representations of light in a scene.
 
 pub mod environment;
 pub mod orthographic;
