@@ -5,17 +5,14 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
-use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray,
-                     RayDifferential, Vector3f};
-use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
+use core::geometry::{Bounds2f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
-use core::medium::{Medium, MediumInterface};
+use core::medium::Medium;
 use core::paramset::ParamSet;
 use core::pbrt::lerp;
 use core::pbrt::{Float, Spectrum};
-use core::sampling::concentric_sample_disk;
-use core::transform::{AnimatedTransform, Transform};
+use core::transform::AnimatedTransform;
 
 // see environment.h
 
@@ -54,8 +51,8 @@ impl EnvironmentCamera {
         let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
         assert!(shutterclose >= shutteropen);
-        let lensradius: Float = params.find_one_float(String::from("lensradius"), 0.0);
-        let focaldistance: Float = params.find_one_float(String::from("focaldistance"), 1e30);
+        // let lensradius: Float = params.find_one_float(String::from("lensradius"), 0.0);
+        // let focaldistance: Float = params.find_one_float(String::from("focaldistance"), 1e30);
         let frame: Float = params.find_one_float(
             String::from("frameaspectratio"),
             (film.full_resolution.x as Float) / (film.full_resolution.y as Float),
@@ -94,11 +91,31 @@ impl EnvironmentCamera {
     }
 }
 
-
 impl Camera for EnvironmentCamera {
     fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
-        // WORK
-        0.0 as Float
+        let theta: Float = PI * sample.p_film.y / self.film.full_resolution.y as Float;
+        let phi: Float = 2.0 as Float * PI * sample.p_film.x / self.film.full_resolution.x as Float;
+        let dir: Vector3f = Vector3f {
+            x: theta.sin() * phi.cos(),
+            y: theta.cos(),
+            z: theta.sin() * phi.sin(),
+        };
+        let mut in_ray: Ray = Ray {
+            o: Point3f::default(),
+            d: dir,
+            t_max: std::f32::INFINITY,
+            time: lerp(sample.time, self.shutter_open, self.shutter_close),
+            medium: None,
+            differential: None,
+        };
+        // ray->medium = medium;
+        if let Some(ref medium_arc) = self.medium {
+            in_ray.medium = Some(medium_arc.clone());
+        } else {
+            in_ray.medium = None;
+        }
+        *ray = self.camera_to_world.transform_ray(&in_ray);
+        1.0
     }
     fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
         panic!("camera::we() is not implemented!");
