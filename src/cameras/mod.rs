@@ -29,5 +29,6 @@
 //!
 //! ![Orthographic Camera](/doc/img/wikipedia_orthographic_camera.png)
 
+pub mod environment;
 pub mod orthographic;
 pub mod perspective;
