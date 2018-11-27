@@ -90,6 +90,83 @@ impl RealisticCamera {
         ));
         camera
     }
+    pub fn lens_rear_z(&self) -> Float {
+        // WORK
+        0.0
+    }
+    pub fn lens_front_z(&self) -> Float {
+        let mut z_sum = 0.0;
+        // WORK
+        z_sum
+    }
+    pub fn rear_element_radius(&self) -> Float {
+        // WORK
+        0.0
+    }
+    pub fn trace_lenses_from_film(&self, ray: &Ray, r_out: &mut Ray) -> bool {
+        // WORK
+        false
+    }
+    pub fn intersect_spherical_element(
+        &self,
+        radius: Float,
+        z_center: Float,
+        ray: &Ray,
+        t: &mut Float,
+        n: &mut Normal3f,
+    ) -> bool {
+        // WORK
+        false
+    }
+    pub fn trace_lenses_from_scene(&self, r_camera: &Ray, r_out: &mut Ray) -> bool {
+        // WORK
+        false
+    }
+    pub fn draw_lens_system(&self) {
+        // WORK
+    }
+    pub fn draw_ray_path_from_film(r: &Ray, arrow: bool, to_optical_intercept: bool) {
+        // WORK
+    }
+    pub fn draw_ray_path_from_scene(r: &Ray, arrow: bool, to_optical_intercept: bool) {
+        // WORK
+    }
+    pub fn compute_cardinal_points(r_in: &Ray, r_out: &Ray, p: &mut Float, f: &mut Float) {
+        // WORK
+    }
+    pub fn compute_thick_lens_approximation(pz: [Float; 2], f: [Float; 2]) {
+        // WORK
+    }
+    pub fn focus_thick_lens(focus_distance: Float) -> Float {
+        // WORK
+        0.0
+    }
+    pub fn focus_binary_search(focus_distance: Float) -> Float {
+        // WORK
+        0.0
+    }
+    pub fn focus_distance(film_dist: Float) -> Float {
+        // WORK
+        0.0
+    }
+    pub fn bound_exit_pupil(p_film_x0: Float, p_film_x1: Float) -> Bounds2f {
+        // WORK
+        Bounds2f::default()
+    }
+    pub fn render_exit_pupil(sx: Float, sy: Float, filename: String) {
+        // WORK
+    }
+    pub fn sample_exit_pupil(
+        p_film: &Point2f,
+        lens_sample: &Point2f,
+        sample_bounds_area: &mut Float,
+    ) -> Point3f {
+        // WORK
+        Point3f::default()
+    }
+    pub fn test_exit_pupil_bounds() {
+        // WORK
+    }
 }
 
 impl Camera for RealisticCamera {
