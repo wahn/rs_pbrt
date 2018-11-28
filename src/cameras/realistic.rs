@@ -1,6 +1,7 @@
 // std
 use std;
 use std::f32::consts::PI;
+use std::path::PathBuf;
 use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
@@ -69,11 +70,24 @@ impl RealisticCamera {
         cam2world: AnimatedTransform,
         film: Arc<Film>,
         medium: Option<Arc<Medium + Send + Sync>>,
+        search_directory: Option<&Box<PathBuf>>,
     ) -> Arc<Camera + Send + Sync> {
         let shutteropen: Float = params.find_one_float(String::from("shutteropen"), 0.0);
         let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
         assert!(shutterclose >= shutteropen);
+        // realistic camera-specific parameters
+        let mut lens_file: String =
+            params.find_one_filename(String::from("lensfile"), String::from(""));
+        if lens_file != String::from("") {
+            if let Some(ref search_directory) = search_directory {
+                let mut path_buf: PathBuf = PathBuf::from("/");
+                path_buf.push(search_directory.as_ref());
+                path_buf.push(lens_file);
+                lens_file = String::from(path_buf.to_str().unwrap());
+            }
+        }
+        println!("lens_file = {:?}", lens_file);
         // WORK
         let camera = Arc::new(RealisticCamera::new(
             cam2world,

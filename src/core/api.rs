@@ -8,6 +8,7 @@ use accelerators::bvh::{BVHAccel, SplitMethod};
 use cameras::environment::EnvironmentCamera;
 use cameras::orthographic::OrthographicCamera;
 use cameras::perspective::PerspectiveCamera;
+use cameras::realistic::RealisticCamera;
 use core::camera::Camera;
 use core::film::Film;
 use core::filter::Filter;
@@ -1689,7 +1690,28 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 );
                 some_camera = Some(camera);
             } else if api_state.render_options.camera_name == String::from("realistic") {
-                println!("TODO: CreateRealisticCamera");
+                println!("WORK: CreateRealisticCamera");
+                if let Some(ref search_directory) = api_state.search_directory {
+                    let camera: Arc<Camera + Send + Sync> = RealisticCamera::create(
+                        &api_state.render_options.camera_params,
+                        animated_cam_to_world,
+                        film,
+                        medium_interface.outside,
+                        // additional parameters:
+                        Some(search_directory),
+                    );
+                    some_camera = Some(camera);
+                } else {
+                    let camera: Arc<Camera + Send + Sync> = RealisticCamera::create(
+                        &api_state.render_options.camera_params,
+                        animated_cam_to_world,
+                        film,
+                        medium_interface.outside,
+                        // additional parameters:
+                        None,
+                    );
+                    some_camera = Some(camera);
+                }
             } else if api_state.render_options.camera_name == String::from("environment") {
                 let camera: Arc<Camera + Send + Sync> = EnvironmentCamera::create(
                     &api_state.render_options.camera_params,
