@@ -16,15 +16,21 @@ pub fn read_float_file(filename: &String, values: &mut Vec<Float>) -> bool {
         for (line_number, line_result) in reader.lines().enumerate() {
             if line_result.is_ok() {
                 let line = line_result.unwrap();
-                for token in line.split_whitespace() {
-                    match token.parse::<f32>() {
-                        Ok(float) => values.push(float),
-                        Err(_) => {
-                            println!(
-                                "WARNING: Unexpected text found at line {} of float file {:?}",
-                                line_number, filename
-                            );
-                            continue;
+                if !line.is_empty() {
+                    if line.chars().next() == Some('#') {
+                        // ignore comments
+                    } else {
+                        for token in line.split_whitespace() {
+                            match token.parse::<f32>() {
+                                Ok(float) => values.push(float),
+                                Err(_) => {
+                                    println!(
+                                    "WARNING: Unexpected text found at line {} of float file {:?}",
+                                    line_number, filename
+                                );
+                                    continue;
+                                }
+                            }
                         }
                     }
                 }

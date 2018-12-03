@@ -6,6 +6,7 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
+use core::floatfile::read_float_file;
 use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
 use core::geometry::{
     Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f,
@@ -87,17 +88,36 @@ impl RealisticCamera {
                 lens_file = String::from(path_buf.to_str().unwrap());
             }
         }
-        println!("lens_file = {:?}", lens_file);
+        if lens_file == String::from("") {
+            println!("ERROR: No lens description file supplied!");
+        } else {
+            println!("lens_file = {:?}", lens_file);
+        }
+        let aperture_diameter: Float = params.find_one_float(String::from("aperturediameter"), 1.0);
+        let focus_distance: Float = params.find_one_float(String::from("focusdistance"), 10.0);
+        let simple_weighting: bool = params.find_one_bool(String::from("simpleweighting"), true);
+        let mut lens_data: Vec<Float> = Vec::new();
+        if !read_float_file(&lens_file, &mut lens_data) {
+            println!(
+                "ERROR: Error reading lens specification file {:?}.",
+                lens_file
+            );
+        }
+        if lens_data.len() % 4_usize != 0_usize {
+            println!("ERROR: Excess values in lens specification file {:?}; must be multiple-of-four values, read {}.",
+                     lens_file, lens_data.len());
+        }
+        println!("lens_data = {:?}", lens_data);
         // WORK
         let camera = Arc::new(RealisticCamera::new(
             cam2world,
             shutteropen,
             shutterclose,
             // TODO
-            0.0,         // aperture_diameter
-            0.0,         // focus_distance
-            false,       // simple_weighting
-            &Vec::new(), // lens_data
+            aperture_diameter,
+            focus_distance,
+            simple_weighting,
+            &lens_data,
             // TODO
             film,
             medium,
