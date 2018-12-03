@@ -22,6 +22,7 @@ use core::transform::{AnimatedTransform, Transform};
 
 // see realistic.h
 
+#[derive(Debug, Default, Copy, Clone)]
 pub struct LensElementInterface {
     pub curvature_radius: Float,
     pub thickness: Float,
@@ -54,15 +55,36 @@ impl RealisticCamera {
         film: Arc<Film>,
         medium: Option<Arc<Medium + Send + Sync>>,
     ) -> Self {
+        let mut element_interfaces: Vec<LensElementInterface> = Vec::new();
+        for i in (0..lens_data.len()).step_by(4) {
+            let mut diameter: Float = lens_data[i + 3];
+            if lens_data[i] == 0.0 as Float {
+                if aperture_diameter > lens_data[i + 3] {
+                    println!("Specified aperture diameter {} is greater than maximum possible {}.  Clamping it.",
+                             aperture_diameter,
+                             lens_data[i + 3]);
+                } else {
+                    diameter = aperture_diameter;
+                }
+            }
+            element_interfaces.push(LensElementInterface {
+                curvature_radius: lens_data[i] * 0.001 as Float,
+                thickness: lens_data[i + 1] * 0.001 as Float,
+                eta: lens_data[i + 2],
+                aperture_radius: diameter * 0.001 as Float / 2.0 as Float,
+            });
+            println!("{:?}", element_interfaces[i/4]);
+        }
+        // compute lens--film distance for given focus distance
+        // WORK
         RealisticCamera {
             camera_to_world: camera_to_world,
             shutter_open: shutter_open,
             shutter_close: shutter_close,
             film: film,
             medium: medium,
-            // TODO
-            simple_weighting: false,
-            element_interfaces: Vec::new(),
+            simple_weighting: simple_weighting,
+            element_interfaces: element_interfaces,
             exit_pupil_bounds: Vec::new(),
         }
     }
@@ -108,17 +130,14 @@ impl RealisticCamera {
                      lens_file, lens_data.len());
         }
         println!("lens_data = {:?}", lens_data);
-        // WORK
         let camera = Arc::new(RealisticCamera::new(
             cam2world,
             shutteropen,
             shutterclose,
-            // TODO
             aperture_diameter,
             focus_distance,
             simple_weighting,
             &lens_data,
-            // TODO
             film,
             medium,
         ));
