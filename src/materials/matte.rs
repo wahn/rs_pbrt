@@ -38,7 +38,8 @@ impl MatteMaterial {
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
-        let r: Spectrum = self.kd
+        let r: Spectrum = self
+            .kd
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let sig: Float = clamp_t(

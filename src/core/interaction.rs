@@ -11,9 +11,11 @@
 use std;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{
+    nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm,
+    vec3_dot_vec3, vec3_normalize,
+};
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::{nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3,
-                     vec3_dot_nrm, vec3_dot_vec3, vec3_normalize};
 use core::material::TransportMode;
 use core::medium::{Medium, MediumInterface, PhaseFunction};
 use core::pbrt::SHADOW_EPSILON;
@@ -148,7 +150,7 @@ impl MediumInteraction {
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
-                if let Some (ref outside_arc) = medium_interface.outside {
+                if let Some(ref outside_arc) = medium_interface.outside {
                     Some(outside_arc.clone())
                 } else {
                     None
@@ -158,7 +160,7 @@ impl MediumInteraction {
             }
         } else {
             if let Some(ref medium_interface) = self.medium_interface {
-                if let Some (ref inside_arc) = medium_interface.inside {
+                if let Some(ref inside_arc) = medium_interface.inside {
                     Some(inside_arc.clone())
                 } else {
                     None
@@ -308,7 +310,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
-                if let Some (ref outside_arc) = medium_interface.outside {
+                if let Some(ref outside_arc) = medium_interface.outside {
                     Some(outside_arc.clone())
                 } else {
                     None
@@ -318,7 +320,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             }
         } else {
             if let Some(ref medium_interface) = self.medium_interface {
-                if let Some (ref inside_arc) = medium_interface.inside {
+                if let Some(ref inside_arc) = medium_interface.inside {
                     Some(inside_arc.clone())
                 } else {
                     None

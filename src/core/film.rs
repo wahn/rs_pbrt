@@ -21,12 +21,13 @@ use image;
 use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
 // pbrt
 use core::filter::Filter;
+use core::geometry::{
+    bnd2_intersect_bnd2, pnt2_ceil, pnt2_floor, pnt2_inside_exclusive, pnt2_max_pnt2, pnt2_min_pnt2,
+};
 use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2f};
-use core::geometry::{bnd2_intersect_bnd2, pnt2_ceil, pnt2_floor, pnt2_inside_exclusive,
-                     pnt2_max_pnt2, pnt2_min_pnt2};
 use core::parallel::AtomicFloat;
-use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, gamma_correct};
+use core::pbrt::{Float, Spectrum};
 use core::spectrum::xyz_to_rgb;
 
 // see film.h
@@ -119,14 +120,16 @@ impl<'a> FilmTile<'a> {
         // precompute $x$ and $y$ filter table offsets
         let mut ifx: Vec<usize> = Vec::with_capacity(p1.x as usize - p0.x as usize);
         for x in p0.x..p1.x {
-            let fx: Float = ((x as Float - p_film_discrete.x) * self.inv_filter_radius.x
+            let fx: Float = ((x as Float - p_film_discrete.x)
+                * self.inv_filter_radius.x
                 * self.filter_table_size as Float)
                 .abs();
             ifx.push(fx.floor().min(self.filter_table_size as Float - 1.0) as usize);
         }
         let mut ify: Vec<usize> = Vec::with_capacity(p1.y as usize - p0.y as usize);
         for y in p0.y..p1.y {
-            let fy: Float = ((y as Float - p_film_discrete.y) * self.inv_filter_radius.y
+            let fy: Float = ((y as Float - p_film_discrete.y)
+                * self.inv_filter_radius.y
                 * self.filter_table_size as Float)
                 .abs();
             ify.push(fy.floor().min(self.filter_table_size as Float - 1.0) as usize);
@@ -227,13 +230,15 @@ impl Film {
             &(Point2f {
                 x: self.cropped_pixel_bounds.p_min.x as Float,
                 y: self.cropped_pixel_bounds.p_min.y as Float,
-            } + Vector2f { x: 0.5, y: 0.5 } - self.filter.get_radius()),
+            } + Vector2f { x: 0.5, y: 0.5 }
+                - self.filter.get_radius()),
         );
         let c: Point2f = pnt2_ceil(
             &(Point2f {
                 x: self.cropped_pixel_bounds.p_max.x as Float,
                 y: self.cropped_pixel_bounds.p_max.y as Float,
-            } - Vector2f { x: 0.5, y: 0.5 } + self.filter.get_radius()),
+            } - Vector2f { x: 0.5, y: 0.5 }
+                + self.filter.get_radius()),
         );
         let float_bounds: Bounds2f = Bounds2f { p_min: f, p_max: c };
         Bounds2i {

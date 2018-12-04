@@ -3,8 +3,8 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{pnt3_distance_squared, vec3_normalize};
+use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::medium::{Medium, MediumInterface};
@@ -101,7 +101,8 @@ impl Light for SpotLight {
                 outside = Some(mi_outside_arc.clone());
             }
         }
-        let medium_interface1_arc: Arc<MediumInterface> = Arc::new(MediumInterface::new(inside, outside));
+        let medium_interface1_arc: Arc<MediumInterface> =
+            Arc::new(MediumInterface::new(inside, outside));
         // medium_interface2
         let mut inside: Option<Arc<Medium + Send + Sync>> = None;
         let mut outside: Option<Arc<Medium + Send + Sync>> = None;
@@ -111,7 +112,8 @@ impl Light for SpotLight {
         if let Some(ref mi_outside_arc) = self.medium_interface.outside {
             outside = Some(mi_outside_arc.clone());
         }
-        let medium_interface2_arc: Arc<MediumInterface> = Arc::new(MediumInterface::new(inside, outside));
+        let medium_interface2_arc: Arc<MediumInterface> =
+            Arc::new(MediumInterface::new(inside, outside));
         *vis = VisibilityTester {
             p0: InteractionCommon {
                 p: iref.p,
@@ -133,7 +135,9 @@ impl Light for SpotLight {
         self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     fn power(&self) -> Spectrum {
-        self.i * 2.0 as Float * PI
+        self.i
+            * 2.0 as Float
+            * PI
             * (1.0 as Float - 0.5 as Float * (self.cos_falloff_start + self.cos_total_width))
     }
     fn preprocess(&self, _scene: &Scene) {}

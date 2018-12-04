@@ -117,7 +117,8 @@ impl UberMaterial {
             UberMaterial::bump(bump_map, si);
         }
         let e: Float = self.eta.evaluate(si);
-        let op: Spectrum = self.opacity
+        let op: Spectrum = self
+            .opacity
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let t: Spectrum =
@@ -130,13 +131,15 @@ impl UberMaterial {
                 mode.clone(),
             )));
         }
-        let kd: Spectrum = op * self.kd
+        let kd: Spectrum = op * self
+            .kd
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kd.is_black() {
             bxdfs.push(Arc::new(LambertianReflection::new(kd)));
         }
-        let ks: Spectrum = op * self.ks
+        let ks: Spectrum = op * self
+            .ks
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !ks.is_black() {
@@ -164,7 +167,8 @@ impl UberMaterial {
                 Some(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
             bxdfs.push(Arc::new(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
-        let kr: Spectrum = op * self.kr
+        let kr: Spectrum = op * self
+            .kr
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kr.is_black() {
@@ -174,7 +178,8 @@ impl UberMaterial {
             });
             bxdfs.push(Arc::new(SpecularReflection::new(kr, fresnel)));
         }
-        let kt: Spectrum = op * self.kt
+        let kt: Spectrum = op * self
+            .kt
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kt.is_black() {

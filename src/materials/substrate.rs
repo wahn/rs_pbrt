@@ -58,10 +58,12 @@ impl SubstrateMaterial {
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
-        let d: Spectrum = self.kd
+        let d: Spectrum = self
+            .kd
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let s: Spectrum = self.ks
+        let s: Spectrum = self
+            .ks
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let mut roughu: Float = self.nu.evaluate(si);

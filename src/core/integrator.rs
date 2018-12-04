@@ -14,8 +14,8 @@ use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::reflection::BxdfType;
 use core::sampler::Sampler;
-use core::sampling::Distribution1D;
 use core::sampling::power_heuristic;
+use core::sampling::Distribution1D;
 use core::scene::Scene;
 
 // see integrator.h

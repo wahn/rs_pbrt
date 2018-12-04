@@ -1,10 +1,12 @@
 // std
 use std::sync::Arc;
 // pbrt
+use core::geometry::{
+    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, nrm_cross_vec3, nrm_dot_nrm, nrm_normalize,
+    pnt3_distance, pnt3_distance_squared, pnt3_lerp, vec2_dot, vec3_coordinate_system,
+    vec3_cross_vec3, vec3_normalize,
+};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
-use core::geometry::{nrm_dot_nrm, nrm_normalize, bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3,
-                     nrm_cross_vec3, pnt3_distance, pnt3_distance_squared, pnt3_lerp, vec2_dot,
-                     vec3_coordinate_system, vec3_cross_vec3, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::paramset::ParamSet;
@@ -371,7 +373,8 @@ impl Shape for Curve {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object
+        let ray: Ray = self
+            .world_to_object
             .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute object-space control points for curve segment, _cp_obj_

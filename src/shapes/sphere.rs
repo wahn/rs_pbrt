@@ -2,12 +2,14 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::efloat::EFloat;
 use core::efloat::quadratic_efloat;
+use core::efloat::EFloat;
+use core::geometry::{
+    nrm_abs_dot_vec3, nrm_normalize, pnt3_distance, pnt3_distance_squared, pnt3_offset_ray_origin,
+    spherical_direction_vec3, vec3_coordinate_system, vec3_cross_vec3, vec3_dot_vec3,
+    vec3_normalize,
+};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::{nrm_normalize, nrm_abs_dot_vec3, pnt3_distance, pnt3_distance_squared,
-                     pnt3_offset_ray_origin, spherical_direction_vec3, vec3_coordinate_system,
-                     vec3_cross_vec3, vec3_dot_vec3, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::pbrt::Float;
@@ -106,7 +108,8 @@ impl Shape for Sphere {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object
+        let ray: Ray = self
+            .world_to_object
             .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute quadratic sphere coefficients
@@ -153,7 +156,8 @@ impl Shape for Sphere {
         }
         // test sphere intersection against clipping parameters
         if (self.z_min > -self.radius && p_hit.z < self.z_min)
-            || (self.z_max < self.radius && p_hit.z > self.z_max) || phi > self.phi_max
+            || (self.z_max < self.radius && p_hit.z > self.z_max)
+            || phi > self.phi_max
         {
             if t_shape_hit == t1 {
                 return None;
@@ -205,12 +209,14 @@ impl Shape for Sphere {
             x: p_hit.x,
             y: p_hit.y,
             z: 0.0,
-        } * -self.phi_max * self.phi_max;
+        } * -self.phi_max
+            * self.phi_max;
         let d2_p_duv: Vector3f = Vector3f {
             x: -sin_phi,
             y: cos_phi,
             z: 0.0,
-        } * (self.theta_max - self.theta_min) * p_hit.z
+        } * (self.theta_max - self.theta_min)
+            * p_hit.z
             * self.phi_max;
         let d2_p_dvv: Vector3f = Vector3f {
             x: p_hit.x,
@@ -245,21 +251,13 @@ impl Shape for Sphere {
             x: p_hit.x,
             y: p_hit.y,
             z: p_hit.z,
-        }.abs() * gamma(5_i32);
+        }.abs()
+            * gamma(5_i32);
         // initialize _SurfaceInteraction_ from parametric information
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit,
-            &p_error,
-            &uv_hit,
-            &wo,
-            &dpdu,
-            &dpdv,
-            &dndu,
-            &dndv,
-            ray.time,
-            None,
+            &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(_shape) = si.shape {
@@ -274,7 +272,8 @@ impl Shape for Sphere {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object
+        let ray: Ray = self
+            .world_to_object
             .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute quadratic sphere coefficients
@@ -321,7 +320,8 @@ impl Shape for Sphere {
         }
         // test sphere intersection against clipping parameters
         if (self.z_min > -self.radius && p_hit.z < self.z_min)
-            || (self.z_max < self.radius && p_hit.z > self.z_max) || phi > self.phi_max
+            || (self.z_max < self.radius && p_hit.z > self.z_max)
+            || phi > self.phi_max
         {
             if t_shape_hit == t1 {
                 return false;
@@ -439,11 +439,12 @@ impl Shape for Sphere {
         // compute surface normal and sampled point on sphere
         let n_world: Vector3f =
             spherical_direction_vec3(sin_alpha, cos_alpha, phi, &(-wc_x), &(-wc_y), &(-wc));
-        let p_world: Point3f = p_center + Point3f {
-            x: n_world.x,
-            y: n_world.y,
-            z: n_world.z,
-        } * self.radius;
+        let p_world: Point3f = p_center
+            + Point3f {
+                x: n_world.x,
+                y: n_world.y,
+                z: n_world.z,
+            } * self.radius;
         // return _Interaction_ for sampled point on sphere
         let mut it: InteractionCommon = InteractionCommon::default();
         it.p = p_world;

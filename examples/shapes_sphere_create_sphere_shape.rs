@@ -17,14 +17,7 @@ fn main() {
     let z_max: Float = 1.0;
     let phi_max: Float = 360.0;
     let sphere = Sphere::new(
-        translate,
-        inverse,
-        false,
-        false,
-        radius,
-        z_min,
-        z_max,
-        phi_max,
+        translate, inverse, false, false, radius, z_min, z_max, phi_max,
     );
     println!("translate = {:?}", translate);
     println!("inverse = {:?}", inverse);

@@ -5,9 +5,9 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Point2f, Vector2f, Vector3f};
-use core::pbrt::Float;
 use core::pbrt::clamp_t;
-use core::pbrt::{INV_2_PI, INV_4_PI, PI_OVER_2, PI_OVER_4, INV_PI};
+use core::pbrt::Float;
+use core::pbrt::{INV_2_PI, INV_4_PI, INV_PI, PI_OVER_2, PI_OVER_4};
 use core::rng::Rng;
 
 // see sampling.h
@@ -173,7 +173,8 @@ impl Distribution2D {
     pub fn sample_continuous(&self, u: &Point2f, pdf: &mut Float) -> Point2f {
         let mut pdfs: [Float; 2] = [0.0 as Float; 2];
         let mut v: usize = 0_usize;
-        let d1: Float = self.p_marginal
+        let d1: Float = self
+            .p_marginal
             .sample_continuous(u[1], Some(&mut (pdfs[1])), Some(&mut v));
         let d0: Float = self.p_conditional_v[v].sample_continuous(u[0], Some(&mut (pdfs[0])), None);
         *pdf = pdfs[0] * pdfs[1];

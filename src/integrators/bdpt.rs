@@ -2278,8 +2278,7 @@ pub fn render_bdpt(
                                         let p_film: Point2f = Point2f {
                                             x: p_pixel.x as Float,
                                             y: p_pixel.y as Float,
-                                        }
-                                            + tile_sampler.get_2d();
+                                        } + tile_sampler.get_2d();
                                         // trace the camera subpath
                                         let mut camera_vertices: Vec<Vertex> =
                                         Vec::with_capacity((integrator.max_depth + 2) as usize);

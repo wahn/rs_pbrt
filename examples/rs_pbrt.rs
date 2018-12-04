@@ -581,9 +581,9 @@ fn main() {
                                 // LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
                                 let mut v: Vec<Float> = Vec::new();
                                 for rule_pair in inner_pair.into_inner() {
-                                    let number: Float = f32::from_str(
-                                        rule_pair.clone().into_span().as_str(),
-                                    ).unwrap();
+                                    let number: Float =
+                                        f32::from_str(rule_pair.clone().into_span().as_str())
+                                            .unwrap();
                                     v.push(number);
                                 }
                                 pbrt_look_at(
@@ -722,9 +722,9 @@ fn main() {
                                 // Rotate angle x y z
                                 let mut v: Vec<Float> = Vec::new();
                                 for rule_pair in inner_pair.into_inner() {
-                                    let number: Float = f32::from_str(
-                                        rule_pair.clone().into_span().as_str(),
-                                    ).unwrap();
+                                    let number: Float =
+                                        f32::from_str(rule_pair.clone().into_span().as_str())
+                                            .unwrap();
                                     v.push(number);
                                 }
                                 pbrt_rotate(&mut api_state, v[0], v[1], v[2], v[3]);
@@ -733,9 +733,9 @@ fn main() {
                                 // Scale x y z
                                 let mut v: Vec<Float> = Vec::new();
                                 for rule_pair in inner_pair.into_inner() {
-                                    let number: Float = f32::from_str(
-                                        rule_pair.clone().into_span().as_str(),
-                                    ).unwrap();
+                                    let number: Float =
+                                        f32::from_str(rule_pair.clone().into_span().as_str())
+                                            .unwrap();
                                     v.push(number);
                                 }
                                 pbrt_scale(&mut api_state, v[0], v[1], v[2]);
@@ -780,9 +780,9 @@ fn main() {
                                 // TransformTimes start end
                                 let mut v: Vec<Float> = Vec::new();
                                 for rule_pair in inner_pair.into_inner() {
-                                    let number: Float = f32::from_str(
-                                        rule_pair.clone().into_span().as_str(),
-                                    ).unwrap();
+                                    let number: Float =
+                                        f32::from_str(rule_pair.clone().into_span().as_str())
+                                            .unwrap();
                                     v.push(number);
                                 }
                                 pbrt_transform_times(&mut api_state, v[0], v[1]);
@@ -791,9 +791,9 @@ fn main() {
                                 // Translate x y z
                                 let mut v: Vec<Float> = Vec::new();
                                 for rule_pair in inner_pair.into_inner() {
-                                    let number: Float = f32::from_str(
-                                        rule_pair.clone().into_span().as_str(),
-                                    ).unwrap();
+                                    let number: Float =
+                                        f32::from_str(rule_pair.clone().into_span().as_str())
+                                            .unwrap();
                                     v.push(number);
                                 }
                                 pbrt_translate(&mut api_state, v[0], v[1], v[2]);

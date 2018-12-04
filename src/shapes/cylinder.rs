@@ -2,11 +2,13 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::efloat::EFloat;
 use core::efloat::quadratic_efloat;
+use core::efloat::EFloat;
+use core::geometry::{
+    nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared, vec3_cross_vec3, vec3_dot_vec3,
+    vec3_normalize,
+};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::{nrm_normalize, nrm_abs_dot_vec3, pnt3_distance_squared, vec3_cross_vec3,
-                     vec3_dot_vec3, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::pbrt::Float;
@@ -98,7 +100,8 @@ impl Shape for Cylinder {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object
+        let ray: Ray = self
+            .world_to_object
             .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute quadratic cylinder coefficients
@@ -185,7 +188,8 @@ impl Shape for Cylinder {
             x: p_hit.x,
             y: p_hit.y,
             z: 0.0,
-        } * -self.phi_max * self.phi_max;
+        } * -self.phi_max
+            * self.phi_max;
         let d2_p_duv: Vector3f = Vector3f {
             x: 0.0,
             y: 0.0,
@@ -223,21 +227,13 @@ impl Shape for Cylinder {
             x: p_hit.x,
             y: p_hit.y,
             z: 0.0,
-        }.abs() * gamma(3_i32);
+        }.abs()
+            * gamma(3_i32);
         // initialize _SurfaceInteraction_ from parametric information
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit,
-            &p_error,
-            &uv_hit,
-            &wo,
-            &dpdu,
-            &dpdv,
-            &dndu,
-            &dndv,
-            ray.time,
-            None,
+            &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(_shape) = si.shape {
@@ -253,7 +249,8 @@ impl Shape for Cylinder {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object
+        let ray: Ray = self
+            .world_to_object
             .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute quadratic cylinder coefficients
@@ -357,7 +354,8 @@ impl Shape for Cylinder {
             x: p_obj.x,
             y: p_obj.y,
             z: 0.0,
-        }.abs() * gamma(3_i32);
+        }.abs()
+            * gamma(3_i32);
         it.p = self.object_to_world.transform_point_with_abs_error(
             &p_obj,
             &p_obj_error,

@@ -1096,7 +1096,9 @@ impl Bxdf for FourierBSDF {
                 let weight: Float = weights_i[a] * weights_o[b];
                 if weight != 0.0 as Float {
                     let mut m: i32 = 0;
-                    let a_idx: i32 = self.bsdf_table.get_ak(offset_i + a as i32, offset_o + b as i32, &mut m);
+                    let a_idx: i32 =
+                        self.bsdf_table
+                            .get_ak(offset_i + a as i32, offset_o + b as i32, &mut m);
                     m_max = std::cmp::max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels as usize {
                         for k in 0..m as usize {

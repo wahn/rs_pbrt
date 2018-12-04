@@ -6,8 +6,10 @@ use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
 use core::microfacet::TrowbridgeReitzDistribution;
 use core::pbrt::{Float, Spectrum};
-use core::reflection::{Bsdf, Bxdf, FresnelDielectric, FresnelSpecular, MicrofacetReflection,
-                       SpecularReflection, SpecularTransmission};
+use core::reflection::{
+    Bsdf, Bxdf, FresnelDielectric, FresnelSpecular, MicrofacetReflection, SpecularReflection,
+    SpecularTransmission,
+};
 use core::texture::Texture;
 
 // see glass.h
@@ -34,10 +36,12 @@ impl GlassMaterial {
         let eta: Float = self.index.evaluate(si);
         let mut urough: Float = self.u_roughness.evaluate(si);
         let mut vrough: Float = self.v_roughness.evaluate(si);
-        let r: Spectrum = self.kr
+        let r: Spectrum = self
+            .kr
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let t: Spectrum = self.kt
+        let t: Spectrum = self
+            .kt
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;

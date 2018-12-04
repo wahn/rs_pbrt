@@ -5,9 +5,7 @@ use std::sync::Arc;
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::geometry::vec3_normalize;
-use core::geometry::{
-    Bounds2f, Point2f, Point3f, Ray, RayDifferential, Vector3f,
-};
+use core::geometry::{Bounds2f, Point2f, Point3f, Ray, RayDifferential, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::medium::Medium;
@@ -216,7 +214,9 @@ impl Camera for OrthographicCamera {
                 z: 0.0 as Float,
             };
             diff.rx_direction = vec3_normalize(&(p_focus - diff.rx_origin));
-            let p_focus: Point3f = p_camera + self.dy_camera + (Vector3f {
+            let p_focus: Point3f = p_camera
+                + self.dy_camera
+                + (Vector3f {
                     x: 0.0 as Float,
                     y: 0.0 as Float,
                     z: 1.0 as Float,

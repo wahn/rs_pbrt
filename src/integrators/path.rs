@@ -2,13 +2,13 @@
 use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Bounds2i, Ray, Vector3f};
 use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
-use core::integrator::SamplerIntegrator;
+use core::geometry::{Bounds2i, Ray, Vector3f};
 use core::integrator::uniform_sample_one_light;
+use core::integrator::SamplerIntegrator;
 use core::interaction::Interaction;
-use core::lightdistrib::LightDistribution;
 use core::lightdistrib::create_light_sample_distribution;
+use core::lightdistrib::LightDistribution;
 use core::material::TransportMode;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::BxdfType;
@@ -110,7 +110,7 @@ impl SamplerIntegrator for PathIntegrator {
                     ray = isect.spawn_ray(&ray.d);
                     // bounces--;
                     continue;
-                } 
+                }
                 if let Some(ref light_distribution) = self.light_distribution {
                     let distrib: Arc<Distribution1D> = light_distribution.lookup(&isect.p);
                     // Sample illumination from lights to find path contribution.
