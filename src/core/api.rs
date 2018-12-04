@@ -32,6 +32,7 @@ use core::texture::{PlanarMapping2D, Texture, TextureMapping2D, UVMapping2D};
 use core::transform::{AnimatedTransform, Matrix4x4, Transform};
 use filters::boxfilter::BoxFilter;
 use filters::gaussian::GaussianFilter;
+use filters::mitchell::MitchellNetravali;
 use filters::triangle::TriangleFilter;
 use integrators::ao::AOIntegrator;
 use integrators::bdpt::render_bdpt;
@@ -1592,7 +1593,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
             &api_state.render_options.filter_params,
         ));
     } else if api_state.render_options.filter_name == String::from("mitchell") {
-        println!("TODO: CreateMitchellFilter");
+        some_filter = Some(MitchellNetravali::create(
+            &api_state.render_options.filter_params,
+        ));
     } else if api_state.render_options.filter_name == String::from("sinc") {
         println!("TODO: CreateSincFilter");
     } else if api_state.render_options.filter_name == String::from("triangle") {
