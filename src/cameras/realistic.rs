@@ -73,7 +73,7 @@ impl RealisticCamera {
                 eta: lens_data[i + 2],
                 aperture_radius: diameter * 0.001 as Float / 2.0 as Float,
             });
-            println!("{:?}", element_interfaces[i/4]);
+            println!("{:?}", element_interfaces[i / 4]);
         }
         // compute lens--film distance for given focus distance
         // WORK
@@ -178,38 +178,55 @@ impl RealisticCamera {
     pub fn draw_lens_system(&self) {
         // WORK
     }
-    pub fn draw_ray_path_from_film(r: &Ray, arrow: bool, to_optical_intercept: bool) {
+    pub fn draw_ray_path_from_film(&self, r: &Ray, arrow: bool, to_optical_intercept: bool) {
         // WORK
     }
-    pub fn draw_ray_path_from_scene(r: &Ray, arrow: bool, to_optical_intercept: bool) {
+    pub fn draw_ray_path_from_scene(&self, r: &Ray, arrow: bool, to_optical_intercept: bool) {
         // WORK
     }
-    pub fn compute_cardinal_points(r_in: &Ray, r_out: &Ray, p: &mut Float, f: &mut Float) {
+    pub fn compute_cardinal_points(&self, r_in: &Ray, r_out: &Ray, p: &mut Float, f: &mut Float) {
         // WORK
     }
-    pub fn compute_thick_lens_approximation(pz: [Float; 2], f: [Float; 2]) {
+    pub fn compute_thick_lens_approximation(&self, pz: &mut [Float; 2], f: &mut [Float; 2]) {
         // WORK
     }
-    pub fn focus_thick_lens(focus_distance: Float) -> Float {
-        // WORK
-        0.0
-    }
-    pub fn focus_binary_search(focus_distance: Float) -> Float {
+    pub fn focus_thick_lens(&self, focus_distance: Float) -> Float {
         // WORK
         0.0
     }
-    pub fn focus_distance(film_dist: Float) -> Float {
+    pub fn focus_binary_search(&self, focus_distance: Float) -> Float {
+        // Float pz[2], fz[2];
+        let mut pz: [Float; 2] = [0.0 as Float; 2];
+        let mut fz: [Float; 2] = [0.0 as Float; 2];
+        // ComputeThickLensApproximation(pz, fz);
+        self.compute_thick_lens_approximation(&mut pz, &mut fz);
+        // LOG(INFO) << StringPrintf("Cardinal points: p' = %f f' = %f, p = %f f = %f.\n",
+        //                           pz[0], fz[0], pz[1], fz[1]);
+        // LOG(INFO) << StringPrintf("Effective focal length %f\n", fz[0] - pz[0]);
+        // // Compute translation of lens, _delta_, to focus at _focusDistance_
+        // Float f = fz[0] - pz[0];
+        // Float z = -focusDistance;
+        // Float c = (pz[1] - z - pz[0]) * (pz[1] - z - 4 * f - pz[0]);
+        // CHECK_GT(c, 0) << "Coefficient must be positive. It looks focusDistance: " << focusDistance << " is too short for a given lenses configuration";
+        // Float delta =
+        //     0.5f * (pz[1] - z + pz[0] - std::sqrt(c));
+        // return elementInterfaces.back().thickness + delta;
         // WORK
         0.0
     }
-    pub fn bound_exit_pupil(p_film_x0: Float, p_film_x1: Float) -> Bounds2f {
+    pub fn focus_distance(&self, film_dist: Float) -> Float {
+        // WORK
+        0.0
+    }
+    pub fn bound_exit_pupil(&self, p_film_x0: Float, p_film_x1: Float) -> Bounds2f {
         // WORK
         Bounds2f::default()
     }
-    pub fn render_exit_pupil(sx: Float, sy: Float, filename: String) {
+    pub fn render_exit_pupil(&self, sx: Float, sy: Float, filename: String) {
         // WORK
     }
     pub fn sample_exit_pupil(
+        &self,
         p_film: &Point2f,
         lens_sample: &Point2f,
         sample_bounds_area: &mut Float,
@@ -217,7 +234,7 @@ impl RealisticCamera {
         // WORK
         Point3f::default()
     }
-    pub fn test_exit_pupil_bounds() {
+    pub fn test_exit_pupil_bounds(&self) {
         // WORK
     }
 }
