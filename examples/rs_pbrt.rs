@@ -56,7 +56,7 @@ fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, boo
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
-    if lbrack.as_str() == String::from("[") {
+    if lbrack.as_str() == "[" {
         // check for brackets
         let string = pairs.next();
         let pair = string.unwrap().clone();
@@ -71,9 +71,9 @@ fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, boo
     }
     // return boolean (instead of string)
     let b: bool;
-    if string2 == String::from("true") {
+    if string2 == "true" {
         b = true;
-    } else if string2 == String::from("false") {
+    } else if string2 == "false" {
         b = false
     } else {
         println!(
@@ -92,12 +92,12 @@ fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Ve
     let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
-    if lbrack.as_str() == String::from("[") {
+    if lbrack.as_str() == "[" {
         // check for brackets
         let mut number = pairs.next();
         while number.is_some() {
             let pair = number.unwrap().clone();
-            if pair.as_str() == String::from("]") {
+            if pair.as_str() == "]" {
                 // closing bracket found
                 break;
             } else {
@@ -126,12 +126,12 @@ fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
     let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
-    if lbrack.as_str() == String::from("[") {
+    if lbrack.as_str() == "[" {
         // check for brackets
         let mut number = pairs.next();
         while number.is_some() {
             let pair = number.unwrap().clone();
-            if pair.as_str() == String::from("]") {
+            if pair.as_str() == "]" {
                 // closing bracket found
                 break;
             } else {
@@ -160,7 +160,7 @@ fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, S
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
-    if lbrack.as_str() == String::from("[") {
+    if lbrack.as_str() == "[" {
         // check for brackets
         let string = pairs.next();
         let pair = string.unwrap().clone();
@@ -183,7 +183,7 @@ fn pbrt_texture_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
-    if lbrack.as_str() == String::from("[") {
+    if lbrack.as_str() == "[" {
         // check for brackets
         let string = pairs.next();
         let pair = string.unwrap().clone();

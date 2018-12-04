@@ -568,11 +568,11 @@ pub fn create_curve_shape(
     }
     let curve_type_string: String = params.find_one_string("type", String::from("flat"));
     let mut curve_type: CurveType = CurveType::Flat;
-    if curve_type_string == String::from("flat") {
+    if curve_type_string == "flat" {
         curve_type = CurveType::Flat;
-    } else if curve_type_string == String::from("ribbon") {
+    } else if curve_type_string == "ribbon" {
         curve_type = CurveType::Ribbon;
-    } else if curve_type_string == String::from("cylinder") {
+    } else if curve_type_string == "cylinder" {
         curve_type = CurveType::Cylinder;
     } else {
         println!(

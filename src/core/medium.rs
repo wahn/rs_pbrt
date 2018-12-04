@@ -367,7 +367,7 @@ pub fn get_medium_scattering_properties(
     sigma_a: &mut Spectrum,
     sigma_prime_s: &mut Spectrum,
 ) -> bool {
-    if *name == String::from("") {
+    if *name == "" {
         return false;
     }
     for mss in SUBSURFACE_PARAMETER_TABLE.iter() {

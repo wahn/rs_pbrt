@@ -111,7 +111,7 @@ impl RealisticCamera {
                 lens_file = String::from(path_buf.to_str().unwrap());
             }
         }
-        if lens_file == String::from("") {
+        if lens_file == "" {
             println!("ERROR: No lens description file supplied!");
         } else {
             println!("lens_file = {:?}", lens_file);
