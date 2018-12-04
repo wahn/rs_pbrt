@@ -106,7 +106,8 @@ impl Sampler for SobolSampler {
         self.dimension = 0_i64;
         self.interval_sample_index = self.get_index_for_sample(0_u64);
         // compute _self.array_end_dim_ for dimensions used for array samples
-        self.array_end_dim = self.array_start_dim + self.sample_array_1d.len() as i64
+        self.array_end_dim = self.array_start_dim
+            + self.sample_array_1d.len() as i64
             + 2_i64 * self.sample_array_2d.len() as i64;
         // compute 1D array samples for _GlobalSampler_
         for i in 0..self.samples_1d_array_sizes.len() {

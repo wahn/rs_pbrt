@@ -38,7 +38,8 @@ impl MixMaterial {
         allow_multiple_lobes: bool,
     ) -> Bsdf {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
-        let s1: Spectrum = self.scale
+        let s1: Spectrum = self
+            .scale
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let s2: Spectrum =

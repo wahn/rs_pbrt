@@ -7,10 +7,10 @@ use core::geometry::{Point2f, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
 use core::paramset::TextureParams;
-use core::pbrt::{Float, Spectrum};
 use core::pbrt::{clamp_t, radians};
-use core::reflection::{Bsdf, Bxdf, BxdfType};
+use core::pbrt::{Float, Spectrum};
 use core::reflection::{abs_cos_theta, fr_dielectric};
+use core::reflection::{Bsdf, Bxdf, BxdfType};
 use core::texture::Texture;
 use textures::constant::ConstantTexture;
 
@@ -305,7 +305,8 @@ impl HairBSDF {
             let pow5: Float = pow4 * beta_n;
             let f: Float = c.c[i].ln()
                 / (5.969 as Float - 0.215 as Float * beta_n + 2.532 as Float * sqr
-                    - 10.73 as Float * pow3 + 5.574 as Float * pow4
+                    - 10.73 as Float * pow3
+                    + 5.574 as Float * pow4
                     + 0.245 as Float * pow5);
             sigma_a.c[i] = f * f;
         }
@@ -384,17 +385,17 @@ impl Bxdf for HairBSDF {
                     sin_theta_ip,
                     sin_theta_o,
                     self.v[p as usize],
-                ) * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
+                )
+                * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
         }
         // compute contribution of remaining terms after _pMax_
-        fsum += ap[P_MAX as usize]
-            * mp(
-                cos_theta_i,
-                cos_theta_o,
-                sin_theta_i,
-                sin_theta_o,
-                self.v[P_MAX as usize],
-            ) / (2.0 as Float * PI);
+        fsum += ap[P_MAX as usize] * mp(
+            cos_theta_i,
+            cos_theta_o,
+            sin_theta_i,
+            sin_theta_o,
+            self.v[P_MAX as usize],
+        ) / (2.0 as Float * PI);
         if abs_cos_theta(wi) > 0.0 as Float {
             fsum = fsum / abs_cos_theta(wi);
         }
@@ -512,7 +513,8 @@ impl Bxdf for HairBSDF {
                     sin_theta_ip,
                     sin_theta_o,
                     self.v[p as usize],
-                ) * np(dphi, p as i32, self.s, self.gamma_o, gamma_t);
+                )
+                * np(dphi, p as i32, self.s, self.gamma_o, gamma_t);
         }
         *pdf += ap_pdf[P_MAX as usize]
             * mp(
@@ -521,7 +523,8 @@ impl Bxdf for HairBSDF {
                 sin_theta_i,
                 sin_theta_o,
                 self.v[P_MAX as usize],
-            ) * (1.0 as Float / (2.0 as Float * PI));
+            )
+            * (1.0 as Float / (2.0 as Float * PI));
         self.f(wo, &*wi)
     }
     fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
@@ -580,7 +583,8 @@ impl Bxdf for HairBSDF {
                     sin_theta_ip,
                     sin_theta_o,
                     self.v[p as usize],
-                ) * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
+                )
+                * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
         }
         pdf += ap_pdf[P_MAX as usize]
             * mp(
@@ -589,11 +593,13 @@ impl Bxdf for HairBSDF {
                 sin_theta_i,
                 sin_theta_o,
                 self.v[P_MAX as usize],
-            ) * (1.0 as Float / (2.0 as Float * PI));
+            )
+            * (1.0 as Float / (2.0 as Float * PI));
         pdf
     }
     fn get_type(&self) -> u8 {
-        BxdfType::BsdfGlossy as u8 | BxdfType::BsdfReflection as u8
+        BxdfType::BsdfGlossy as u8
+            | BxdfType::BsdfReflection as u8
             | BxdfType::BsdfTransmission as u8
     }
 }
@@ -639,9 +645,9 @@ fn mp(
     let b: Float = sin_theta_i * sin_theta_o / v;
     let mp: Float;
     if v <= 0.1 as Float {
-        mp = (log_i0(a) - b - 1.0 as Float / v + 0.6931 as Float
-            + (1.0 as Float / (2. as Float * v)).ln())
-            .exp();
+        mp = (log_i0(a) - b - 1.0 as Float / v
+            + 0.6931 as Float
+            + (1.0 as Float / (2. as Float * v)).ln()).exp();
     } else {
         mp = ((-b).exp() * i0(a)) / ((1.0 as Float / v).sinh() * 2.0 as Float * v);
     }
@@ -669,8 +675,10 @@ fn i0(x: Float) -> Float {
 #[inline]
 fn log_i0(x: Float) -> Float {
     if x > 12.0 as Float {
-        x + 0.5 * (-((2.0 as Float * PI).ln()) + (1.0 as Float / x).ln()
-            + 1.0 as Float / (8.0 as Float * x))
+        x + 0.5
+            * (-((2.0 as Float * PI).ln())
+                + (1.0 as Float / x).ln()
+                + 1.0 as Float / (8.0 as Float * x))
     } else {
         i0(x).ln()
     }

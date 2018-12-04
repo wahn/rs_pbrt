@@ -2,11 +2,13 @@
 use std::sync::RwLock;
 // pbrt
 use core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
+use core::lowdiscrepancy::{
+    compute_radical_inverse_permutations, inverse_radical_inverse, radical_inverse,
+    scrambled_radical_inverse,
+};
 use core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
-use core::lowdiscrepancy::{compute_radical_inverse_permutations, inverse_radical_inverse,
-                           radical_inverse, scrambled_radical_inverse};
-use core::pbrt::Float;
 use core::pbrt::mod_t;
+use core::pbrt::Float;
 use core::rng::Rng;
 use core::sampler::{GlobalSampler, Sampler};
 
@@ -190,7 +192,8 @@ impl Sampler for HaltonSampler {
         self.dimension = 0_i64;
         self.interval_sample_index = self.get_index_for_sample(0_u64);
         // compute _self.array_end_dim_ for dimensions used for array samples
-        self.array_end_dim = self.array_start_dim + self.sample_array_1d.len() as i64
+        self.array_end_dim = self.array_start_dim
+            + self.sample_array_1d.len() as i64
             + 2_i64 * self.sample_array_2d.len() as i64;
         // compute 1D array samples for _GlobalSampler_
         for i in 0..self.samples_1d_array_sizes.len() {
@@ -299,7 +302,8 @@ impl Clone for HaltonSampler {
         let offset_for_current_pixel: u64 = *self.offset_for_current_pixel.read().unwrap();
         HaltonSampler {
             samples_per_pixel: self.samples_per_pixel,
-            radical_inverse_permutations: self.radical_inverse_permutations
+            radical_inverse_permutations: self
+                .radical_inverse_permutations
                 .iter()
                 .cloned()
                 .collect(),

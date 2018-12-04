@@ -4,8 +4,10 @@ use core::pbrt::Float;
 use core::rng::Rng;
 use core::rng::FLOAT_ONE_MINUS_EPSILON;
 use core::sampling::shuffle;
-use core::sobolmatrices::{SOBOL_MATRICES_32, NUM_SOBOL_DIMENSIONS, SOBOL_MATRIX_SIZE,
-                          VD_C_SOBOL_MATRICES, VD_C_SOBOL_MATRICES_INV};
+use core::sobolmatrices::{
+    NUM_SOBOL_DIMENSIONS, SOBOL_MATRICES_32, SOBOL_MATRIX_SIZE, VD_C_SOBOL_MATRICES,
+    VD_C_SOBOL_MATRICES_INV,
+};
 
 // see lowdiscrepancy.h
 

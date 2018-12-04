@@ -11,16 +11,16 @@ use half::f16;
 #[cfg(feature = "openexr")]
 use openexr::{FrameBufferMut, InputFile, PixelType};
 // pbrt
-use core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system, vec3_normalize};
+use core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::medium::MediumInterface;
 use core::mipmap::{ImageWrap, MipMap};
 use core::pbrt::{Float, Spectrum};
 use core::pbrt::{INV_2_PI, INV_PI};
-use core::sampling::Distribution2D;
 use core::sampling::concentric_sample_disk;
+use core::sampling::Distribution2D;
 use core::scene::Scene;
 use core::transform::Transform;
 

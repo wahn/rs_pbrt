@@ -1,11 +1,13 @@
 // std
 use std::f32::consts::PI;
 // pbrt
-use core::geometry::{Point2f, Vector3f};
 use core::geometry::{spherical_direction, vec3_abs_dot_vec3, vec3_normalize};
+use core::geometry::{Point2f, Vector3f};
 use core::pbrt::Float;
-use core::reflection::{abs_cos_theta, cos_phi, cos_theta, sin_phi, tan_theta, cos_2_phi,
-                       cos_2_theta, sin_2_phi, tan_2_theta, vec3_same_hemisphere_vec3};
+use core::reflection::{
+    abs_cos_theta, cos_2_phi, cos_2_theta, cos_phi, cos_theta, sin_2_phi, sin_phi, tan_2_theta,
+    tan_theta, vec3_same_hemisphere_vec3,
+};
 
 // see microfacet.h
 
@@ -54,7 +56,10 @@ impl TrowbridgeReitzDistribution {
             roughness = limit;
         }
         let x: Float = roughness.ln(); // natural (base e) logarithm
-        1.62142 + 0.819955 * x + 0.1734 * x * x + 0.0171201 * x * x * x
+        1.62142
+            + 0.819955 * x
+            + 0.1734 * x * x
+            + 0.0171201 * x * x * x
             + 0.000640711 * x * x * x * x
     }
     pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
@@ -105,9 +110,14 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
         }
         let cos_4_theta: Float = cos_2_theta(wh) * cos_2_theta(wh);
         let e: Float = (cos_2_phi(wh) / (self.alpha_x * self.alpha_x)
-            + sin_2_phi(wh) / (self.alpha_y * self.alpha_y)) * tan_2_theta;
+            + sin_2_phi(wh) / (self.alpha_y * self.alpha_y))
+            * tan_2_theta;
         1.0 as Float
-            / (PI * self.alpha_x * self.alpha_y * cos_4_theta * (1.0 as Float + e)
+            / (PI
+                * self.alpha_x
+                * self.alpha_y
+                * cos_4_theta
+                * (1.0 as Float + e)
                 * (1.0 as Float + e))
     }
     fn lambda(&self, w: &Vector3f) -> Float {

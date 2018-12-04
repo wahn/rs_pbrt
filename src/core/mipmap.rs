@@ -174,7 +174,8 @@ where
                     ba[(s, t)] = (*mipmap.texel(i - 1, 2 * si, 2 * ti)
                         + *mipmap.texel(i - 1, 2 * si + 1, 2 * ti)
                         + *mipmap.texel(i - 1, 2 * si, 2 * ti + 1)
-                        + *mipmap.texel(i - 1, 2 * si + 1, 2 * ti + 1)) as T
+                        + *mipmap.texel(i - 1, 2 * si + 1, 2 * ti + 1))
+                        as T
                         * 0.25 as Float;
                 }
             }
@@ -249,7 +250,8 @@ where
     }
     pub fn lookup_pnt_vec_vec(&self, st: &Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> T {
         if self.do_trilinear {
-            let width: Float = dst0.x
+            let width: Float = dst0
+                .x
                 .abs()
                 .max(dst0.y.abs())
                 .max(dst1.x.abs().max(dst1.y.abs()));

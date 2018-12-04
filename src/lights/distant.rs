@@ -3,8 +3,8 @@ use std;
 use std::f32::consts::PI;
 use std::sync::RwLock;
 // pbrt
-use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::geometry::{vec3_coordinate_system, vec3_normalize};
+use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
 use core::medium::MediumInterface;

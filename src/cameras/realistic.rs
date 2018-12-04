@@ -73,7 +73,7 @@ impl RealisticCamera {
                 eta: lens_data[i + 2],
                 aperture_radius: diameter * 0.001 as Float / 2.0 as Float,
             });
-            println!("{:?}", element_interfaces[i/4]);
+            println!("{:?}", element_interfaces[i / 4]);
         }
         // compute lens--film distance for given focus distance
         // WORK

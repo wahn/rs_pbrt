@@ -33,11 +33,7 @@ impl Medium for HomogeneousMedium {
         // TODO: ProfilePhase _(Prof::MediumTr);
         (-self.sigma_t * (ray.t_max * ray.d.length()).min(f32::MAX)).exp()
     }
-    fn sample(
-        &self,
-        ray: &Ray,
-        sampler: &mut Sampler,
-    ) -> (Spectrum, Option<MediumInteraction>) {
+    fn sample(&self, ray: &Ray, sampler: &mut Sampler) -> (Spectrum, Option<MediumInteraction>) {
         // TODO: ProfilePhase _(Prof::MediumSample);
         // sample a channel and distance along the ray
         let channel: usize = ((sampler.get_1d() * 3.0 as Float) as usize).min(2_usize);

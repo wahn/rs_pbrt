@@ -18,14 +18,7 @@ fn main() {
     });
     let inverse: Transform = Transform::inverse(&translate);
     let sphere: Sphere = Sphere::new(
-        translate,
-        inverse,
-        false,
-        false,
-        radius,
-        z_min,
-        z_max,
-        phi_max,
+        translate, inverse, false, false, radius, z_min, z_max, phi_max,
     );
     let world_bound: Bounds3f = sphere.world_bound(); // Primitive
                                                       // println!("sphere() = {:?}", sphere);
@@ -37,14 +30,7 @@ fn main() {
     });
     let inverse: Transform = Transform::inverse(&translate);
     let sphere: Sphere = Sphere::new(
-        translate,
-        inverse,
-        false,
-        false,
-        radius,
-        z_min,
-        z_max,
-        phi_max,
+        translate, inverse, false, false, radius, z_min, z_max, phi_max,
     );
     let world_bound: Bounds3f = sphere.world_bound(); // Primitive
                                                       // println!("sphere() = {:?}", sphere);

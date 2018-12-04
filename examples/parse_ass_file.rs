@@ -508,8 +508,9 @@ fn main() {
                                                         if let Some(num_motionblur_keys_str) =
                                                             iter.next()
                                                         {
-                                                            num_motionblur_keys =
-                                                                u32::from_str(num_motionblur_keys_str).unwrap();
+                                                            num_motionblur_keys = u32::from_str(
+                                                                num_motionblur_keys_str,
+                                                            ).unwrap();
                                                             if let Some(data_type_str) = iter.next()
                                                             {
                                                                 if data_type_str != data_type {
@@ -645,8 +646,9 @@ fn main() {
                                                         if let Some(num_motionblur_keys_str) =
                                                             iter.next()
                                                         {
-                                                            num_motionblur_keys =
-                                                                u32::from_str(num_motionblur_keys_str).unwrap();
+                                                            num_motionblur_keys = u32::from_str(
+                                                                num_motionblur_keys_str,
+                                                            ).unwrap();
                                                             if let Some(data_type_str) = iter.next()
                                                             {
                                                                 if data_type_str != data_type {

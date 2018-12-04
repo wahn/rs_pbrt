@@ -1,8 +1,8 @@
 // pbrt
 use core::geometry::{Point2f, Point2i};
-use core::lowdiscrepancy::{van_der_corput, sobol_2d};
-use core::pbrt::Float;
+use core::lowdiscrepancy::{sobol_2d, van_der_corput};
 use core::pbrt::round_up_pow2_32;
+use core::pbrt::Float;
 use core::rng::Rng;
 use core::sampler::{PixelSampler, Sampler};
 

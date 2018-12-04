@@ -118,8 +118,14 @@ pub fn nurbs_evaluate_surface(
     let v_first_cp: usize = v_offset + 1 - v_order as usize;
     assert!(v_first_cp + v_order as usize - 1 < vcp as usize);
     let p: Homogeneous3 = nurbs_evaluate(
-        u_order, u_knot, &iso, -(u_first_cp as i32),
-        ucp, 1, u, dpdu_opt,
+        u_order,
+        u_knot,
+        &iso,
+        -(u_first_cp as i32),
+        ucp,
+        1,
+        u,
+        dpdu_opt,
     );
     if let Some(dpdv) = dpdv_opt {
         for i in 0..v_order {
@@ -135,8 +141,14 @@ pub fn nurbs_evaluate_surface(
             );
         }
         nurbs_evaluate(
-            v_order, v_knot, &iso, -(v_first_cp as i32),
-            vcp, 1, v, Some(dpdv),
+            v_order,
+            v_knot,
+            &iso,
+            -(v_first_cp as i32),
+            vcp,
+            1,
+            v,
+            Some(dpdv),
         );
     }
     Point3f {

@@ -1662,7 +1662,11 @@ where
 
 /// Determine if a given point is inside the bounding box.
 pub fn pnt3_inside_bnd3(p: &Point3f, b: &Bounds3f) -> bool {
-    p.x >= b.p_min.x && p.x <= b.p_max.x && p.y >= b.p_min.y && p.y <= b.p_max.y && p.z >= b.p_min.z
+    p.x >= b.p_min.x
+        && p.x <= b.p_max.x
+        && p.y >= b.p_min.y
+        && p.y <= b.p_max.y
+        && p.z >= b.p_min.z
         && p.z <= b.p_max.z
 }
 

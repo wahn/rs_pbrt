@@ -19,14 +19,7 @@ fn main() {
     });
     let inverse: Transform = Transform::inverse(&translate);
     let sphere: Sphere = Sphere::new(
-        translate,
-        inverse,
-        false,
-        false,
-        radius,
-        z_min,
-        z_max,
-        phi_max,
+        translate, inverse, false, false, radius, z_min, z_max, phi_max,
     );
     // see Sphere::Intersect() in sphere.cpp
     let o: Point3f = Point3f {

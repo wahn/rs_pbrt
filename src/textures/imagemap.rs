@@ -56,14 +56,14 @@ where
             x: rgb.width() as i32,
             y: rgb.height() as i32,
         };
-        let mut texels: Vec<Spectrum> = rgb.pixels()
+        let mut texels: Vec<Spectrum> = rgb
+            .pixels()
             .map(|p| {
                 let r = Float::from(p[0]) / 255.0;
                 let g = Float::from(p[1]) / 255.0;
                 let b = Float::from(p[2]) / 255.0;
                 Spectrum::rgb(r, g, b)
-            })
-            .collect();
+            }).collect();
         // flip image in y; texture coordinate space has (0,0) at the
         // lower left corner.
         for y in 0..res.y / 2 {
@@ -83,8 +83,7 @@ where
                     *p * scale
                 };
                 convert(&s)
-            })
-            .collect();
+            }).collect();
         // create _MipMap_ from converted texels (see above)
         let mipmap = Arc::new(MipMap::new(
             &res,

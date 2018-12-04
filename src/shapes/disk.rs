@@ -2,8 +2,8 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared, vec3_normalize};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::geometry::{nrm_normalize, nrm_abs_dot_vec3, pnt3_distance_squared, vec3_normalize};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
 use core::pbrt::Float;
@@ -97,7 +97,8 @@ impl Shape for Disk {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object
+        let ray: Ray = self
+            .world_to_object
             .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute plane intersection for disk
@@ -138,7 +139,8 @@ impl Shape for Disk {
             x: p_hit.x,
             y: p_hit.y,
             z: 0.0,
-        } * (self.inner_radius - self.radius) / r_hit;
+        } * (self.inner_radius - self.radius)
+            / r_hit;
         let dndu: Normal3f = Normal3f::default();
         let dndv: Normal3f = Normal3f::default();
         // refine disk intersection point
@@ -149,16 +151,7 @@ impl Shape for Disk {
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit,
-            &p_error,
-            &uv_hit,
-            &wo,
-            &dpdu,
-            &dpdv,
-            &dndu,
-            &dndv,
-            ray.time,
-            None,
+            &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(_shape) = si.shape {
@@ -174,7 +167,8 @@ impl Shape for Disk {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
-        let ray: Ray = self.world_to_object
+        let ray: Ray = self
+            .world_to_object
             .transform_ray_with_error(r, &mut o_err, &mut d_err);
 
         // compute plane intersection for disk
@@ -210,7 +204,8 @@ impl Shape for Disk {
         self.transform_swaps_handedness
     }
     fn area(&self) -> Float {
-        self.phi_max * 0.5 as Float
+        self.phi_max
+            * 0.5 as Float
             * (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
     fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {

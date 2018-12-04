@@ -1,6 +1,6 @@
 // pbrt
-use core::geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
 use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
+use core::geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
 use core::integrator::SamplerIntegrator;
 use core::integrator::{uniform_sample_all_lights, uniform_sample_one_light};
 use core::interaction::{Interaction, SurfaceInteraction};
@@ -88,7 +88,8 @@ impl DirectLightingIntegrator {
                     };
                     rd.differential = Some(diff);
                 }
-                return f * self.li(&mut rd, scene, sampler, depth + 1)
+                return f
+                    * self.li(&mut rd, scene, sampler, depth + 1)
                     * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
             } else {
                 Spectrum::new(0.0)
@@ -141,10 +142,12 @@ impl DirectLightingIntegrator {
                     let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
                     let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
                     let mu: Float = eta * vec3_dot_nrm(&w, &ns) - vec3_dot_nrm(&wi, &ns);
-                    let dmudx: Float = (eta - (eta * eta * vec3_dot_nrm(&w, &ns))
-                        / vec3_dot_nrm(&wi, &ns)) * ddndx;
-                    let dmudy: Float = (eta - (eta * eta * vec3_dot_nrm(&w, &ns))
-                        / vec3_dot_nrm(&wi, &ns)) * ddndy;
+                    let dmudx: Float = (eta
+                        - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns))
+                        * ddndx;
+                    let dmudy: Float = (eta
+                        - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns))
+                        * ddndy;
                     let diff: RayDifferential = RayDifferential {
                         rx_origin: isect.p + isect.dpdx,
                         ry_origin: isect.p + isect.dpdy,
@@ -153,7 +156,8 @@ impl DirectLightingIntegrator {
                     };
                     rd.differential = Some(diff);
                 }
-                return f * self.li(&mut rd, scene, sampler, depth + 1)
+                return f
+                    * self.li(&mut rd, scene, sampler, depth + 1)
                     * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
             } else {
                 Spectrum::new(0.0)
@@ -218,17 +222,11 @@ impl SamplerIntegrator for DirectLightingIntegrator {
             if ((depth + 1_i32) as i64) < self.max_depth {
                 // trace rays for specular reflection and refraction
                 l += self.specular_reflect(
-                    ray,
-                    &isect,
-                    scene,
-                    sampler, // arena,
+                    ray, &isect, scene, sampler, // arena,
                     depth,
                 );
                 l += self.specular_transmit(
-                    ray,
-                    &isect,
-                    scene,
-                    sampler, // arena,
+                    ray, &isect, scene, sampler, // arena,
                     depth,
                 );
             }

@@ -2,15 +2,16 @@
 use std::mem;
 use std::sync::Arc;
 // pbrt
+use core::geometry::{
+    bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, nrm_normalize, pnt3_abs,
+    pnt3_distance_squared, pnt3_permute, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3,
+    vec3_max_component, vec3_max_dimension, vec3_normalize, vec3_permute,
+};
 use core::geometry::{Bounds3f, Normal3, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
-use core::geometry::{nrm_faceforward_nrm, nrm_normalize, bnd3_union_pnt3, nrm_abs_dot_vec3,
-                     pnt3_abs, pnt3_distance_squared, pnt3_permute, vec3_coordinate_system,
-                     vec3_cross_nrm, vec3_cross_vec3, vec3_max_component, vec3_max_dimension,
-                     vec3_normalize, vec3_permute};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
-use core::pbrt::Float;
 use core::pbrt::gamma;
+use core::pbrt::Float;
 use core::sampling::uniform_sample_triangle;
 use core::shape::Shape;
 use core::transform::Transform;
@@ -229,34 +230,42 @@ impl Shape for Triangle {
         // ensure that computed triangle $t$ is conservatively greater than zero
 
         // compute $\delta_z$ term for triangle $t$ error bounds
-        let max_zt: Float = vec3_max_component(&Vector3f {
-            x: p0t.z,
-            y: p1t.z,
-            z: p2t.z,
-        }.abs());
+        let max_zt: Float = vec3_max_component(
+            &Vector3f {
+                x: p0t.z,
+                y: p1t.z,
+                z: p2t.z,
+            }.abs(),
+        );
         let delta_z: Float = gamma(3_i32) * max_zt;
         // compute $\delta_x$ and $\delta_y$ terms for triangle $t$ error bounds
-        let max_xt: Float = vec3_max_component(&Vector3f {
-            x: p0t.x,
-            y: p1t.x,
-            z: p2t.x,
-        }.abs());
-        let max_yt: Float = vec3_max_component(&Vector3f {
-            x: p0t.y,
-            y: p1t.y,
-            z: p2t.y,
-        }.abs());
+        let max_xt: Float = vec3_max_component(
+            &Vector3f {
+                x: p0t.x,
+                y: p1t.x,
+                z: p2t.x,
+            }.abs(),
+        );
+        let max_yt: Float = vec3_max_component(
+            &Vector3f {
+                x: p0t.y,
+                y: p1t.y,
+                z: p2t.y,
+            }.abs(),
+        );
         let delta_x: Float = gamma(5) * (max_xt + max_zt);
         let delta_y: Float = gamma(5) * (max_yt + max_zt);
         // compute $\delta_e$ term for triangle $t$ error bounds
         let delta_e: Float =
             2.0 * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
         // compute $\delta_t$ term for triangle $t$ error bounds and check _t_
-        let max_e: Float = vec3_max_component(&Vector3f {
-            x: e0,
-            y: e1,
-            z: e2,
-        }.abs());
+        let max_e: Float = vec3_max_component(
+            &Vector3f {
+                x: e0,
+                y: e1,
+                z: e2,
+            }.abs(),
+        );
         let delta_t: Float =
             3.0 * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
         if t <= delta_t {
@@ -498,34 +507,42 @@ impl Shape for Triangle {
         // ensure that computed triangle $t$ is conservatively greater than zero
 
         // compute $\delta_z$ term for triangle $t$ error bounds
-        let max_zt: Float = vec3_max_component(&Vector3f {
-            x: p0t.z,
-            y: p1t.z,
-            z: p2t.z,
-        }.abs());
+        let max_zt: Float = vec3_max_component(
+            &Vector3f {
+                x: p0t.z,
+                y: p1t.z,
+                z: p2t.z,
+            }.abs(),
+        );
         let delta_z: Float = gamma(3_i32) * max_zt;
         // compute $\delta_x$ and $\delta_y$ terms for triangle $t$ error bounds
-        let max_xt: Float = vec3_max_component(&Vector3f {
-            x: p0t.x,
-            y: p1t.x,
-            z: p2t.x,
-        }.abs());
-        let max_yt: Float = vec3_max_component(&Vector3f {
-            x: p0t.y,
-            y: p1t.y,
-            z: p2t.y,
-        }.abs());
+        let max_xt: Float = vec3_max_component(
+            &Vector3f {
+                x: p0t.x,
+                y: p1t.x,
+                z: p2t.x,
+            }.abs(),
+        );
+        let max_yt: Float = vec3_max_component(
+            &Vector3f {
+                x: p0t.y,
+                y: p1t.y,
+                z: p2t.y,
+            }.abs(),
+        );
         let delta_x: Float = gamma(5) * (max_xt + max_zt);
         let delta_y: Float = gamma(5) * (max_yt + max_zt);
         // compute $\delta_e$ term for triangle $t$ error bounds
         let delta_e: Float =
             2.0 * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
         // compute $\delta_t$ term for triangle $t$ error bounds and check _t_
-        let max_e: Float = vec3_max_component(&Vector3f {
-            x: e0,
-            y: e1,
-            z: e2,
-        }.abs());
+        let max_e: Float = vec3_max_component(
+            &Vector3f {
+                x: e0,
+                y: e1,
+                z: e2,
+            }.abs(),
+        );
         let delta_t: Float =
             3.0 * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
         if t <= delta_t {
@@ -572,7 +589,8 @@ impl Shape for Triangle {
             it.n *= -1.0 as Float;
         }
         // compute error bounds for sampled point on triangle
-        let p_abs_sum: Point3f = pnt3_abs(&(p0 * b[0])) + pnt3_abs(&(p1 * b[1]))
+        let p_abs_sum: Point3f = pnt3_abs(&(p0 * b[0]))
+            + pnt3_abs(&(p1 * b[1]))
             + pnt3_abs(&(p2 * (1.0 as Float - b[0] - b[1])));
         it.p_error = Vector3f {
             x: p_abs_sum.x,

@@ -54,7 +54,7 @@ impl Rng {
         // C++: return (xorshifted >> rot) | (xorshifted << ((~rot + 1u) & 31));
         let (shr, _overflow) = xorshifted.overflowing_shr(rot);
         // bitwise not in Rust is ! (not the ~ operator like in C)
-        let neg= !rot;
+        let neg = !rot;
         let (add, _overflow) = neg.overflowing_add(1_u32);
         let (shl, _overflow) = xorshifted.overflowing_shl(add & 31);
         shr | shl

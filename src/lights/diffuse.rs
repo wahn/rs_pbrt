@@ -3,8 +3,8 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system, vec3_normalize};
+use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{AreaLight, Light, LightFlags, VisibilityTester};
 use core::medium::{Medium, MediumInterface};
