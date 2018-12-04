@@ -108,4 +108,5 @@
 
 pub mod boxfilter;
 pub mod gaussian;
+pub mod mitchell;
 pub mod triangle;
