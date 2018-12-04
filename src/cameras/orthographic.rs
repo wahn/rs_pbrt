@@ -5,9 +5,7 @@ use std::sync::Arc;
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::geometry::vec3_normalize;
-use core::geometry::{
-    Bounds2f, Point2f, Point3f, Ray, RayDifferential, Vector3f,
-};
+use core::geometry::{Bounds2f, Point2f, Point3f, Ray, RayDifferential, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::medium::Medium;
@@ -105,14 +103,14 @@ impl OrthographicCamera {
         film: Arc<Film>,
         medium: Option<Arc<Medium + Send + Sync>>,
     ) -> Arc<Camera + Send + Sync> {
-        let shutteropen: Float = params.find_one_float(String::from("shutteropen"), 0.0);
-        let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
+        let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
+        let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
         assert!(shutterclose >= shutteropen);
-        let lensradius: Float = params.find_one_float(String::from("lensradius"), 0.0);
-        let focaldistance: Float = params.find_one_float(String::from("focaldistance"), 1e6);
+        let lensradius: Float = params.find_one_float("lensradius", 0.0);
+        let focaldistance: Float = params.find_one_float("focaldistance", 1e6);
         let frame: Float = params.find_one_float(
-            String::from("frameaspectratio"),
+            "frameaspectratio",
             (film.full_resolution.x as Float) / (film.full_resolution.y as Float),
         );
         let mut screen: Bounds2f = Bounds2f::default();
@@ -127,7 +125,7 @@ impl OrthographicCamera {
             screen.p_min.y = -1.0 / frame;
             screen.p_max.y = 1.0 / frame;
         }
-        let sw: Vec<Float> = params.find_float(String::from("screenwindow"));
+        let sw: Vec<Float> = params.find_float("screenwindow");
         if sw.len() > 0_usize {
             if sw.len() == 4 {
                 screen.p_min.x = sw[0];
@@ -216,7 +214,9 @@ impl Camera for OrthographicCamera {
                 z: 0.0 as Float,
             };
             diff.rx_direction = vec3_normalize(&(p_focus - diff.rx_origin));
-            let p_focus: Point3f = p_camera + self.dy_camera + (Vector3f {
+            let p_focus: Point3f = p_camera
+                + self.dy_camera
+                + (Vector3f {
                     x: 0.0 as Float,
                     y: 0.0 as Float,
                     z: 1.0 as Float,

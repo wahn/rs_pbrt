@@ -414,7 +414,7 @@ impl ParamSet {
         }
         false
     }
-    pub fn find_one_float(&self, name: String, d: Float) -> Float {
+    pub fn find_one_float(&self, name: &str, d: Float) -> Float {
         for v in &self.floats {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -423,7 +423,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_int(&self, name: String, d: i32) -> i32 {
+    pub fn find_one_int(&self, name: &str, d: i32) -> i32 {
         for v in &self.ints {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -432,7 +432,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_bool(&self, name: String, d: bool) -> bool {
+    pub fn find_one_bool(&self, name: &str, d: bool) -> bool {
         for v in &self.bools {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -441,7 +441,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_point3f(&self, name: String, d: Point3f) -> Point3f {
+    pub fn find_one_point3f(&self, name: &str, d: Point3f) -> Point3f {
         for v in &self.point3fs {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -450,7 +450,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_vector3f(&self, name: String, d: Vector3f) -> Vector3f {
+    pub fn find_one_vector3f(&self, name: &str, d: Vector3f) -> Vector3f {
         for v in &self.vector3fs {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -459,7 +459,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_spectrum(&self, name: String, d: Spectrum) -> Spectrum {
+    pub fn find_one_spectrum(&self, name: &str, d: Spectrum) -> Spectrum {
         for v in &self.spectra {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -468,7 +468,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_string(&self, name: String, d: String) -> String {
+    pub fn find_one_string(&self, name: &str, d: String) -> String {
         for v in &self.strings {
             if v.name == name && v.n_values == 1 {
                 // v.looked_up = true;
@@ -477,7 +477,7 @@ impl ParamSet {
         }
         d
     }
-    pub fn find_one_filename(&self, name: String, d: String) -> String {
+    pub fn find_one_filename(&self, name: &str, d: String) -> String {
         let filename: String = self.find_one_string(name, String::new());
         if filename == String::new() {
             return d;
@@ -485,11 +485,11 @@ impl ParamSet {
         // TODO: filename = AbsolutePath(ResolveFilename(filename));
         filename
     }
-    pub fn find_texture(&self, name: String) -> String {
+    pub fn find_texture(&self, name: &str) -> String {
         let d: String = String::new();
         lookup_one(&self.textures, name, d)
     }
-    pub fn find_int(&self, name: String) -> Vec<i32> {
+    pub fn find_int(&self, name: &str) -> Vec<i32> {
         let mut values: Vec<i32> = Vec::new();
         for v in &self.ints {
             if v.name == name {
@@ -502,7 +502,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_float(&self, name: String) -> Vec<Float> {
+    pub fn find_float(&self, name: &str) -> Vec<Float> {
         let mut values: Vec<Float> = Vec::new();
         for v in &self.floats {
             if v.name == name {
@@ -515,7 +515,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_point2f(&self, name: String) -> Vec<Point2f> {
+    pub fn find_point2f(&self, name: &str) -> Vec<Point2f> {
         let mut values: Vec<Point2f> = Vec::new();
         for v in &self.point2fs {
             if v.name == name {
@@ -528,7 +528,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_vector2f(&self, name: String) -> Vec<Vector2f> {
+    pub fn find_vector2f(&self, name: &str) -> Vec<Vector2f> {
         let mut values: Vec<Vector2f> = Vec::new();
         for v in &self.vector2fs {
             if v.name == name {
@@ -541,7 +541,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_point3f(&self, name: String) -> Vec<Point3f> {
+    pub fn find_point3f(&self, name: &str) -> Vec<Point3f> {
         let mut values: Vec<Point3f> = Vec::new();
         for v in &self.point3fs {
             if v.name == name {
@@ -554,7 +554,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_vector3f(&self, name: String) -> Vec<Vector3f> {
+    pub fn find_vector3f(&self, name: &str) -> Vec<Vector3f> {
         let mut values: Vec<Vector3f> = Vec::new();
         for v in &self.vector3fs {
             if v.name == name {
@@ -567,7 +567,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_normal3f(&self, name: String) -> Vec<Normal3f> {
+    pub fn find_normal3f(&self, name: &str) -> Vec<Normal3f> {
         let mut values: Vec<Normal3f> = Vec::new();
         for v in &self.normals {
             if v.name == name {
@@ -580,7 +580,7 @@ impl ParamSet {
         }
         values
     }
-    pub fn find_spectrum(&self, name: String) -> Vec<Spectrum> {
+    pub fn find_spectrum(&self, name: &str) -> Vec<Spectrum> {
         let mut values: Vec<Spectrum> = Vec::new();
         for v in &self.spectra {
             if v.name == name {
@@ -619,14 +619,14 @@ impl TextureParams {
     }
     pub fn get_spectrum_texture(
         &mut self,
-        n: String,
+        n: &str,
         def: Spectrum,
     ) -> Arc<Texture<Spectrum> + Send + Sync> {
-        let mut name: String = self.geom_params.find_texture(n.clone());
-        if name == String::new() {
-            name = self.material_params.find_texture(n.clone());
+        let mut name: String = self.geom_params.find_texture(n);
+        if name == "" {
+            name = self.material_params.find_texture(n);
         }
-        if name != String::new() {
+        if name != "" {
             match self.spectrum_textures.get(name.as_str()) {
                 Some(spectrum_texture) => {
                     return spectrum_texture.clone();
@@ -645,11 +645,11 @@ impl TextureParams {
     }
     pub fn get_spectrum_texture_or_null(
         &mut self,
-        n: String,
+        n: &str,
     ) -> Option<Arc<Texture<Spectrum> + Send + Sync>> {
-        let mut name: String = self.geom_params.find_texture(n.clone());
+        let mut name: String = self.geom_params.find_texture(n);
         if name == String::new() {
-            name = self.material_params.find_texture(n.clone());
+            name = self.material_params.find_texture(n);
         }
         if name != String::new() {
             match self.spectrum_textures.get(name.as_str()) {
@@ -663,9 +663,9 @@ impl TextureParams {
                 }
             }
         }
-        let mut val: Vec<Spectrum> = self.material_params.find_spectrum(n.clone());
+        let mut val: Vec<Spectrum> = self.material_params.find_spectrum(n);
         if val.len() == 0_usize {
-            val = self.geom_params.find_spectrum(n.clone());
+            val = self.geom_params.find_spectrum(n);
         }
         if val.len() == 0_usize {
             None
@@ -673,27 +673,23 @@ impl TextureParams {
             Some(Arc::new(ConstantTexture { value: val[0] }))
         }
     }
-    pub fn get_float_texture(
-        &mut self,
-        n: String,
-        def: Float,
-    ) -> Arc<Texture<Float> + Send + Sync> {
-        let tex_option = self.get_float_texture_or_null(n.clone());
+    pub fn get_float_texture(&mut self, n: &str, def: Float) -> Arc<Texture<Float> + Send + Sync> {
+        let tex_option = self.get_float_texture_or_null(n);
         if let Some(tex) = tex_option {
             tex
         } else {
-            let mut val: Float = self.material_params.find_one_float(n.clone(), def);
-            val = self.geom_params.find_one_float(n.clone(), val);
+            let mut val: Float = self.material_params.find_one_float(n, def);
+            val = self.geom_params.find_one_float(n, val);
             Arc::new(ConstantTexture { value: val })
         }
     }
     pub fn get_float_texture_or_null(
         &mut self,
-        n: String,
+        n: &str,
     ) -> Option<Arc<Texture<Float> + Send + Sync>> {
-        let mut name: String = self.geom_params.find_texture(n.clone());
+        let mut name: String = self.geom_params.find_texture(n);
         if name == String::new() {
-            let s: Vec<Float> = self.geom_params.find_float(n.clone());
+            let s: Vec<Float> = self.geom_params.find_float(n);
             if s.len() > 1 {
                 println!(
                     "Ignoring excess values provided with parameter \"{}\"",
@@ -702,7 +698,7 @@ impl TextureParams {
             } else if s.len() != 0 {
                 return Some(Arc::new(ConstantTexture { value: s[0] }));
             }
-            name = self.material_params.find_texture(n.clone());
+            name = self.material_params.find_texture(n);
         }
         if name != String::new() {
             match self.float_textures.get(name.as_str()) {
@@ -718,9 +714,9 @@ impl TextureParams {
                 }
             }
         }
-        let mut val: Vec<Float> = self.material_params.find_float(n.clone());
+        let mut val: Vec<Float> = self.material_params.find_float(n);
         if val.len() == 0_usize {
-            val = self.geom_params.find_float(n.clone());
+            val = self.geom_params.find_float(n);
         }
         if val.len() == 0_usize {
             None
@@ -728,46 +724,34 @@ impl TextureParams {
             Some(Arc::new(ConstantTexture { value: val[0] }))
         }
     }
-    pub fn find_float(&mut self, name: String, d: Float) -> Float {
-        self.geom_params.find_one_float(
-            name.clone(),
-            self.material_params.find_one_float(name.clone(), d),
-        )
+    pub fn find_float(&mut self, name: &str, d: Float) -> Float {
+        self.geom_params
+            .find_one_float(name, self.material_params.find_one_float(name, d))
     }
-    pub fn find_string(&mut self, name: String, d: String) -> String {
-        self.geom_params.find_one_string(
-            name.clone(),
-            self.material_params.find_one_string(name.clone(), d),
-        )
+    pub fn find_string(&mut self, name: &str, d: String) -> String {
+        self.geom_params
+            .find_one_string(name, self.material_params.find_one_string(name, d))
     }
-    pub fn find_filename(&mut self, name: String, d: String) -> String {
-        self.geom_params.find_one_filename(
-            name.clone(),
-            self.material_params.find_one_filename(name.clone(), d),
-        )
+    pub fn find_filename(&mut self, name: &str, d: String) -> String {
+        self.geom_params
+            .find_one_filename(name, self.material_params.find_one_filename(name, d))
     }
-    pub fn find_int(&mut self, name: String, d: i32) -> i32 {
-        self.geom_params.find_one_int(
-            name.clone(),
-            self.material_params.find_one_int(name.clone(), d),
-        )
+    pub fn find_int(&mut self, name: &str, d: i32) -> i32 {
+        self.geom_params
+            .find_one_int(name, self.material_params.find_one_int(name, d))
     }
-    pub fn find_bool(&mut self, name: String, d: bool) -> bool {
-        self.geom_params.find_one_bool(
-            name.clone(),
-            self.material_params.find_one_bool(name.clone(), d),
-        )
+    pub fn find_bool(&mut self, name: &str, d: bool) -> bool {
+        self.geom_params
+            .find_one_bool(name, self.material_params.find_one_bool(name, d))
     }
-    pub fn find_vector3f(&mut self, name: String, d: Vector3f) -> Vector3f {
-        self.geom_params.find_one_vector3f(
-            name.clone(),
-            self.material_params.find_one_vector3f(name.clone(), d),
-        )
+    pub fn find_vector3f(&mut self, name: &str, d: Vector3f) -> Vector3f {
+        self.geom_params
+            .find_one_vector3f(name, self.material_params.find_one_vector3f(name, d))
     }
 }
 
 /// Replaces a macro on the C++ side.
-pub fn lookup_one<T>(vec: &Vec<ParamSetItem<T>>, name: String, d: T) -> T
+pub fn lookup_one<T>(vec: &Vec<ParamSetItem<T>>, name: &str, d: T) -> T
 where
     T: Clone,
 {

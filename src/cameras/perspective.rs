@@ -5,9 +5,10 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
-use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray,
-                     RayDifferential, Vector3f};
 use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
+use core::geometry::{
+    Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f,
+};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::medium::{Medium, MediumInterface};
@@ -133,14 +134,14 @@ impl PerspectiveCamera {
         film: Arc<Film>,
         medium: Option<Arc<Medium + Send + Sync>>,
     ) -> Arc<Camera + Send + Sync> {
-        let shutteropen: Float = params.find_one_float(String::from("shutteropen"), 0.0);
-        let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
+        let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
+        let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
         assert!(shutterclose >= shutteropen);
-        let lensradius: Float = params.find_one_float(String::from("lensradius"), 0.0);
-        let focaldistance: Float = params.find_one_float(String::from("focaldistance"), 1e6);
+        let lensradius: Float = params.find_one_float("lensradius", 0.0);
+        let focaldistance: Float = params.find_one_float("focaldistance", 1e6);
         let frame: Float = params.find_one_float(
-            String::from("frameaspectratio"),
+            "frameaspectratio",
             (film.full_resolution.x as Float) / (film.full_resolution.y as Float),
         );
         let mut screen: Bounds2f = Bounds2f::default();
@@ -156,7 +157,7 @@ impl PerspectiveCamera {
             screen.p_max.y = 1.0 / frame;
         }
         // TODO: const Float *sw = params.FindFloat("screenwindow", &swi);
-        let fov: Float = params.find_one_float(String::from("fov"), 90.0);
+        let fov: Float = params.find_one_float("fov", 90.0);
         // let halffov: Float =
         //     params.find_one_float(String::from("halffov"), -1.0);
         // TODO: if (halffov > 0.f)

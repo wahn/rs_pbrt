@@ -17,8 +17,8 @@ pub struct TriangleFilter {
 
 impl TriangleFilter {
     pub fn create(ps: &ParamSet) -> Arc<Filter + Sync + Send> {
-        let xw: Float = ps.find_one_float(String::from("xwidth"), 2.0);
-        let yw: Float = ps.find_one_float(String::from("ywidth"), 2.0);
+        let xw: Float = ps.find_one_float("xwidth", 2.0);
+        let yw: Float = ps.find_one_float("ywidth", 2.0);
         let triangle_filter: Arc<Filter + Sync + Send> = Arc::new(TriangleFilter {
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
