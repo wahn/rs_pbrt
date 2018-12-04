@@ -115,20 +115,18 @@ impl MetalMaterial {
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
         let copper_n: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_N, COPPER_SAMPLES as i32);
-        let eta: Arc<Texture<Spectrum> + Send + Sync> =
-            mp.get_spectrum_texture(String::from("eta"), copper_n);
+        let eta: Arc<Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("eta", copper_n);
         let copper_k: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_K, COPPER_SAMPLES as i32);
-        let k: Arc<Texture<Spectrum> + Send + Sync> =
-            mp.get_spectrum_texture(String::from("k"), copper_k);
+        let k: Arc<Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("k", copper_k);
         let roughness: Arc<Texture<Float> + Send + Sync> =
-            mp.get_float_texture(String::from("roughness"), 0.01 as Float);
+            mp.get_float_texture("roughness", 0.01 as Float);
         let u_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("uroughness"));
+            mp.get_float_texture_or_null("uroughness");
         let v_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("vroughness"));
+            mp.get_float_texture_or_null("vroughness");
         // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
-        let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
+        let remap_roughness: bool = mp.find_bool("remaproughness", true);
         Arc::new(MetalMaterial::new(
             eta,
             k,

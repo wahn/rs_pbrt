@@ -174,8 +174,7 @@ impl BVHAccel {
         unwrapped.ok().unwrap()
     }
     pub fn create(prims: Vec<Arc<Primitive + Send + Sync>>, ps: &ParamSet) -> Arc<BVHAccel> {
-        let split_method_name: String =
-            ps.find_one_string(String::from("splitmethod"), String::from("sah"));
+        let split_method_name: String = ps.find_one_string("splitmethod", String::from("sah"));
         let split_method;
         if split_method_name == String::from("sah") {
             split_method = SplitMethod::SAH;
@@ -192,7 +191,7 @@ impl BVHAccel {
             );
             split_method = SplitMethod::SAH;
         }
-        let max_prims_in_node: i32 = ps.find_one_int(String::from("maxnodeprims"), 4);
+        let max_prims_in_node: i32 = ps.find_one_int("maxnodeprims", 4);
         Arc::new(BVHAccel::new(
             prims.clone(),
             max_prims_in_node as usize,

@@ -59,26 +59,26 @@ impl UberMaterial {
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
         let kd: Arc<Texture<Spectrum> + Sync + Send> =
-            mp.get_spectrum_texture(String::from("Kd"), Spectrum::new(0.25));
+            mp.get_spectrum_texture("Kd", Spectrum::new(0.25));
         let ks: Arc<Texture<Spectrum> + Sync + Send> =
-            mp.get_spectrum_texture(String::from("Ks"), Spectrum::new(0.25));
+            mp.get_spectrum_texture("Ks", Spectrum::new(0.25));
         let kr: Arc<Texture<Spectrum> + Sync + Send> =
-            mp.get_spectrum_texture(String::from("Kr"), Spectrum::new(0.0));
+            mp.get_spectrum_texture("Kr", Spectrum::new(0.0));
         let kt: Arc<Texture<Spectrum> + Sync + Send> =
-            mp.get_spectrum_texture(String::from("Kt"), Spectrum::new(0.0));
+            mp.get_spectrum_texture("Kt", Spectrum::new(0.0));
         let roughness: Arc<Texture<Float> + Send + Sync> =
-            mp.get_float_texture(String::from("roughness"), 0.1 as Float);
+            mp.get_float_texture("roughness", 0.1 as Float);
         let u_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("uroughness"));
+            mp.get_float_texture_or_null("uroughness");
         let v_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("vroughness"));
+            mp.get_float_texture_or_null("vroughness");
         let opacity: Arc<Texture<Spectrum> + Send + Sync> =
-            mp.get_spectrum_texture(String::from("opacity"), Spectrum::new(1.0));
+            mp.get_spectrum_texture("opacity", Spectrum::new(1.0));
         let bump_map: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("bumpmap"));
-        let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
+            mp.get_float_texture_or_null("bumpmap");
+        let remap_roughness: bool = mp.find_bool("remaproughness", true);
         let eta_option: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("eta"));
+            mp.get_float_texture_or_null("eta");
         if let Some(ref eta) = eta_option {
             Arc::new(UberMaterial::new(
                 kd,
@@ -94,8 +94,7 @@ impl UberMaterial {
                 remap_roughness,
             ))
         } else {
-            let eta: Arc<Texture<Float> + Send + Sync> =
-                mp.get_float_texture(String::from("eta"), 1.5 as Float);
+            let eta: Arc<Texture<Float> + Send + Sync> = mp.get_float_texture("eta", 1.5 as Float);
             Arc::new(UberMaterial::new(
                 kd,
                 ks,

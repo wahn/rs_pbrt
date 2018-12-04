@@ -28,7 +28,7 @@ pub fn create_ply_mesh(
     _float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
     search_directory: Option<&Box<PathBuf>>,
 ) -> Vec<Arc<Shape + Send + Sync>> {
-    let mut filename: String = params.find_one_string(String::from("filename"), String::new());
+    let mut filename: String = params.find_one_string("filename", String::new());
     if let Some(ref search_directory) = search_directory {
         let mut path_buf: PathBuf = PathBuf::from("/");
         path_buf.push(search_directory.as_ref());

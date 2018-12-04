@@ -556,18 +556,17 @@ pub fn create_curve_shape(
     reverse_orientation: bool,
     params: &ParamSet,
 ) -> Vec<Arc<Shape + Send + Sync>> {
-    let width: Float = params.find_one_float(String::from("width"), 1.0 as Float);
-    let width0: Float = params.find_one_float(String::from("width0"), width);
-    let width1: Float = params.find_one_float(String::from("width1"), width);
-    let cp = params.find_point3f(String::from("P"));
+    let width: Float = params.find_one_float("width", 1.0 as Float);
+    let width0: Float = params.find_one_float("width0", width);
+    let width1: Float = params.find_one_float("width1", width);
+    let cp = params.find_point3f("P");
     if cp.len() != 4_usize {
         panic!(
             "Must provide 4 control points for \"curve\" primitive. ((Provided {:?}).",
             cp.len()
         );
     }
-    let curve_type_string: String =
-        params.find_one_string(String::from("type"), String::from("flat"));
+    let curve_type_string: String = params.find_one_string("type", String::from("flat"));
     let mut curve_type: CurveType = CurveType::Flat;
     if curve_type_string == String::from("flat") {
         curve_type = CurveType::Flat;
@@ -581,7 +580,7 @@ pub fn create_curve_shape(
             curve_type_string
         );
     }
-    let mut n: Vec<Normal3f> = params.find_normal3f(String::from("N"));
+    let mut n: Vec<Normal3f> = params.find_normal3f("N");
     if !n.is_empty() {
         if curve_type_string != String::from("ribbon") {
             println!("WARNING: Curve normals are only used with \"ribbon\" type curves.");
@@ -593,7 +592,7 @@ pub fn create_curve_shape(
             );
         }
     }
-    let sd: i32 = params.find_one_int(String::from("splitdepth"), 3_i32);
+    let sd: i32 = params.find_one_int("splitdepth", 3_i32);
     if curve_type == CurveType::Ribbon && n.is_empty() {
         panic!("Must provide normals \"N\" at curve endpoints with ribbon curves.");
     }

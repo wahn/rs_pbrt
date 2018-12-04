@@ -49,13 +49,13 @@ impl HairMaterial {
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
         let mut sigma_a: Option<Arc<Texture<Spectrum> + Send + Sync>> =
-            mp.get_spectrum_texture_or_null(String::from("sigma_a"));
+            mp.get_spectrum_texture_or_null("sigma_a");
         let color: Option<Arc<Texture<Spectrum> + Send + Sync>> =
-            mp.get_spectrum_texture_or_null(String::from("color"));
+            mp.get_spectrum_texture_or_null("color");
         let eumelanin: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("eumelanin"));
+            mp.get_float_texture_or_null("eumelanin");
         let pheomelanin: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("pheomelanin"));
+            mp.get_float_texture_or_null("pheomelanin");
         if let Some(_sigma_a) = sigma_a.clone() {
             if let Some(_color) = color.clone() {
                 println!("WARNING: Ignoring \"color\" parameter since \"sigma_a\" was provided.");
@@ -108,10 +108,10 @@ impl HairMaterial {
                 HairBSDF::sigma_a_from_concentration(1.3 as Float, 0.0 as Float),
             )));
         }
-        let eta = mp.get_float_texture(String::from("eta"), 1.55);
-        let beta_m = mp.get_float_texture(String::from("beta_m"), 0.3);
-        let beta_n = mp.get_float_texture(String::from("beta_n"), 0.3);
-        let alpha = mp.get_float_texture(String::from("alpha"), 2.0);
+        let eta = mp.get_float_texture("eta", 1.55);
+        let beta_m = mp.get_float_texture("beta_m", 0.3);
+        let beta_n = mp.get_float_texture("beta_n", 0.3);
+        let alpha = mp.get_float_texture("alpha", 2.0);
         Arc::new(HairMaterial::new(
             sigma_a,
             color,

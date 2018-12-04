@@ -95,13 +95,12 @@ impl RealisticCamera {
         medium: Option<Arc<Medium + Send + Sync>>,
         search_directory: Option<&Box<PathBuf>>,
     ) -> Arc<Camera + Send + Sync> {
-        let shutteropen: Float = params.find_one_float(String::from("shutteropen"), 0.0);
-        let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
+        let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
+        let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
         assert!(shutterclose >= shutteropen);
         // realistic camera-specific parameters
-        let mut lens_file: String =
-            params.find_one_filename(String::from("lensfile"), String::from(""));
+        let mut lens_file: String = params.find_one_filename("lensfile", String::from(""));
         if lens_file != String::from("") {
             if let Some(ref search_directory) = search_directory {
                 let mut path_buf: PathBuf = PathBuf::from("/");
@@ -115,9 +114,9 @@ impl RealisticCamera {
         } else {
             println!("lens_file = {:?}", lens_file);
         }
-        let aperture_diameter: Float = params.find_one_float(String::from("aperturediameter"), 1.0);
-        let focus_distance: Float = params.find_one_float(String::from("focusdistance"), 10.0);
-        let simple_weighting: bool = params.find_one_bool(String::from("simpleweighting"), true);
+        let aperture_diameter: Float = params.find_one_float("aperturediameter", 1.0);
+        let focus_distance: Float = params.find_one_float("focusdistance", 10.0);
+        let simple_weighting: bool = params.find_one_bool("simpleweighting", true);
         let mut lens_data: Vec<Float> = Vec::new();
         if !read_float_file(&lens_file, &mut lens_data) {
             println!(

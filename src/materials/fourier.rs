@@ -31,8 +31,8 @@ impl FourierMaterial {
         bsdf_state: &mut BsdfState,
     ) -> Arc<Material + Send + Sync> {
         let bump_map: Option<Arc<Texture<Float> + Send + Sync>> =
-            mp.get_float_texture_or_null(String::from("bumpmap"));
-        let bsdffile: String = mp.find_filename(String::from("bsdffile"), String::new());
+            mp.get_float_texture_or_null("bumpmap");
+        let bsdffile: String = mp.find_filename("bsdffile", String::new());
         if let Some(bsdf_table) = bsdf_state.loaded_bsdfs.get(&bsdffile.clone()) {
             // use the BSDF table found
             Arc::new(FourierMaterial::new(bsdf_table.clone(), bump_map))

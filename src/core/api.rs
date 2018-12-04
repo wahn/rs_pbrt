@@ -318,33 +318,33 @@ fn create_material(
         } else if api_state.graphics_state.material == String::from("matte") {
             return Some(MatteMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == String::from("plastic") {
-            let kd = mp.get_spectrum_texture(String::from("Kd"), Spectrum::new(0.25 as Float));
-            let ks = mp.get_spectrum_texture(String::from("Ks"), Spectrum::new(0.25 as Float));
-            let roughness = mp.get_float_texture(String::from("roughness"), 0.1 as Float);
+            let kd = mp.get_spectrum_texture("Kd", Spectrum::new(0.25 as Float));
+            let ks = mp.get_spectrum_texture("Ks", Spectrum::new(0.25 as Float));
+            let roughness = mp.get_float_texture("roughness", 0.1 as Float);
             // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
-            let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
+            let remap_roughness: bool = mp.find_bool("remaproughness", true);
             let plastic = Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
             return Some(plastic);
         } else if api_state.graphics_state.material == String::from("translucent") {
             println!("TODO: CreateTranslucentMaterial");
         } else if api_state.graphics_state.material == String::from("glass") {
-            let kr = mp.get_spectrum_texture(String::from("Kr"), Spectrum::new(1.0 as Float));
-            let kt = mp.get_spectrum_texture(String::from("Kt"), Spectrum::new(1.0 as Float));
+            let kr = mp.get_spectrum_texture("Kr", Spectrum::new(1.0 as Float));
+            let kt = mp.get_spectrum_texture("Kt", Spectrum::new(1.0 as Float));
             // let some_eta = mp.get_float_texture_or_null(String::from("eta"));
             // if let Some(eta) = some_eta {
             //     println!("some eta");
             // } else {
-            let eta = mp.get_float_texture(String::from("index"), 1.5);
+            let eta = mp.get_float_texture("index", 1.5);
             // }
             // std::shared_ptr<Texture<Float>> roughu =
             //     mp.GetFloatTexture("uroughness", 0.f);
-            let roughu = mp.get_float_texture(String::from("uroughness"), 0.0 as Float);
+            let roughu = mp.get_float_texture("uroughness", 0.0 as Float);
             // std::shared_ptr<Texture<Float>> roughv =
             //     mp.GetFloatTexture("vroughness", 0.f);
-            let roughv = mp.get_float_texture(String::from("vroughness"), 0.0 as Float);
+            let roughv = mp.get_float_texture("vroughness", 0.0 as Float);
             // std::shared_ptr<Texture<Float>> bumpMap =
             //     mp.GetFloatTextureOrNull("bumpmap");
-            let remap_roughness: bool = mp.find_bool(String::from("remaproughness"), true);
+            let remap_roughness: bool = mp.find_bool("remaproughness", true);
             let glass = Arc::new(GlassMaterial {
                 kr: kr,
                 kt: kt,
@@ -355,15 +355,15 @@ fn create_material(
             });
             return Some(glass);
         } else if api_state.graphics_state.material == String::from("mirror") {
-            let kr = mp.get_spectrum_texture(String::from("Kr"), Spectrum::new(0.9 as Float));
+            let kr = mp.get_spectrum_texture("Kr", Spectrum::new(0.9 as Float));
             // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
             let mirror = Arc::new(MirrorMaterial { kr: kr });
             return Some(mirror);
         } else if api_state.graphics_state.material == String::from("hair") {
             return Some(HairMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == String::from("mix") {
-            let m1: String = mp.find_string(String::from("namedmaterial1"), String::from(""));
-            let m2: String = mp.find_string(String::from("namedmaterial2"), String::from(""));
+            let m1: String = mp.find_string("namedmaterial1", String::from(""));
+            let m2: String = mp.find_string("namedmaterial2", String::from(""));
             let mat1 = match api_state.graphics_state.named_materials.get(&m1) {
                 Some(named_material) => named_material,
                 None => {
@@ -377,7 +377,7 @@ fn create_material(
                 }
             };
             let scale: Arc<Texture<Spectrum> + Send + Sync> =
-                mp.get_spectrum_texture(String::from("amount"), Spectrum::new(0.5));
+                mp.get_spectrum_texture("amount", Spectrum::new(0.5));
             if let Some(m1) = mat1 {
                 if let Some(m2) = mat2 {
                     let mix = Arc::new(MixMaterial::new(m1.clone(), m2.clone(), scale));
@@ -449,13 +449,13 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     if api_state.param_set.name == String::from("point") {
         let i: Spectrum = api_state
             .param_set
-            .find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
+            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
         let sc: Spectrum = api_state
             .param_set
-            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
         let p: Point3f = api_state
             .param_set
-            .find_one_point3f(String::from("from"), Point3f::default());
+            .find_one_point3f("from", Point3f::default());
         let l2w: Transform = Transform::translate(&Vector3f {
             x: p.x,
             y: p.y,
@@ -467,19 +467,19 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         // CreateSpotLight
         let i: Spectrum = api_state
             .param_set
-            .find_one_spectrum(String::from("I"), Spectrum::new(1.0 as Float));
+            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
         let sc: Spectrum = api_state
             .param_set
-            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
         let coneangle: Float = api_state
             .param_set
-            .find_one_float(String::from("coneangle"), 30.0 as Float);
+            .find_one_float("coneangle", 30.0 as Float);
         let conedelta: Float = api_state
             .param_set
-            .find_one_float(String::from("conedeltaangle"), 5.0 as Float);
+            .find_one_float("conedeltaangle", 5.0 as Float);
         // compute spotlight world to light transformation
         let from: Point3f = api_state.param_set.find_one_point3f(
-            String::from("from"),
+            "from",
             Point3f {
                 x: 0.0,
                 y: 0.0,
@@ -487,7 +487,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             },
         );
         let to: Point3f = api_state.param_set.find_one_point3f(
-            String::from("to"),
+            "to",
             Point3f {
                 x: 0.0,
                 y: 0.0,
@@ -526,12 +526,12 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         // CreateDistantLight
         let l: Spectrum = api_state
             .param_set
-            .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
+            .find_one_spectrum("L", Spectrum::new(1.0 as Float));
         let sc: Spectrum = api_state
             .param_set
-            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
         let from: Point3f = api_state.param_set.find_one_point3f(
-            String::from("from"),
+            "from",
             Point3f {
                 x: 0.0,
                 y: 0.0,
@@ -539,7 +539,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             },
         );
         let to: Point3f = api_state.param_set.find_one_point3f(
-            String::from("to"),
+            "to",
             Point3f {
                 x: 0.0,
                 y: 0.0,
@@ -559,13 +559,13 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     {
         let l: Spectrum = api_state
             .param_set
-            .find_one_spectrum(String::from("L"), Spectrum::new(1.0 as Float));
+            .find_one_spectrum("L", Spectrum::new(1.0 as Float));
         let sc: Spectrum = api_state
             .param_set
-            .find_one_spectrum(String::from("scale"), Spectrum::new(1.0 as Float));
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
         let mut texmap: String = api_state
             .param_set
-            .find_one_filename(String::from("mapname"), String::from(""));
+            .find_one_filename("mapname", String::from(""));
         if texmap != String::from("") {
             if let Some(ref search_directory) = api_state.search_directory {
                 // texmap = AbsolutePath(ResolveFilename(texmap));
@@ -575,9 +575,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
                 texmap = String::from(path_buf.to_str().unwrap());
             }
         }
-        let n_samples: i32 = api_state
-            .param_set
-            .find_one_int(String::from("nsamples"), 1 as i32);
+        let n_samples: i32 = api_state.param_set.find_one_int("nsamples", 1 as i32);
         // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
 
         // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
@@ -594,9 +592,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
 }
 
 fn make_medium(api_state: &mut ApiState) {
-    let medium_type: String = api_state
-        .param_set
-        .find_one_string(String::from("type"), String::new());
+    let medium_type: String = api_state.param_set.find_one_string("type", String::new());
     if medium_type == String::from("") {
         panic!("ERROR: No parameter string \"type\" found in MakeNamedMedium");
     }
@@ -605,9 +601,7 @@ fn make_medium(api_state: &mut ApiState) {
     let sig_s_rgb: [Float; 3] = [2.55, 3.21, 3.77];
     let mut sig_a: Spectrum = Spectrum::from_rgb(&sig_a_rgb);
     let mut sig_s: Spectrum = Spectrum::from_rgb(&sig_s_rgb);
-    let preset: String = api_state
-        .param_set
-        .find_one_string(String::from("preset"), String::new());
+    let preset: String = api_state.param_set.find_one_string("preset", String::new());
     let found: bool = get_medium_scattering_properties(&preset, &mut sig_a, &mut sig_s);
     if preset != String::from("") && !found {
         println!(
@@ -615,20 +609,10 @@ fn make_medium(api_state: &mut ApiState) {
             preset
         );
     }
-    let scale: Float = api_state
-        .param_set
-        .find_one_float(String::from("scale"), 1.0 as Float);
-    let g: Float = api_state
-        .param_set
-        .find_one_float(String::from("g"), 0.0 as Float);
-    sig_a = api_state
-        .param_set
-        .find_one_spectrum(String::from("sigma_a"), sig_a)
-        * scale;
-    sig_s = api_state
-        .param_set
-        .find_one_spectrum(String::from("sigma_s"), sig_s)
-        * scale;
+    let scale: Float = api_state.param_set.find_one_float("scale", 1.0 as Float);
+    let g: Float = api_state.param_set.find_one_float("g", 0.0 as Float);
+    sig_a = api_state.param_set.find_one_spectrum("sigma_a", sig_a) * scale;
+    sig_s = api_state.param_set.find_one_spectrum("sigma_s", sig_s) * scale;
     let some_medium: Option<Arc<Medium + Sync + Send>>;
     if medium_type == String::from("homogeneous") {
         some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
@@ -674,8 +658,8 @@ fn make_texture(api_state: &mut ApiState) {
             println!("TODO: CreateConstantFloatTexture");
         } else if api_state.param_set.tex_name == String::from("scale") {
             let ft = Arc::new(ScaleTexture::<Float>::new(
-                tp.get_float_texture(String::from("tex1"), 1.0 as Float),
-                tp.get_float_texture(String::from("tex2"), 1.0 as Float),
+                tp.get_float_texture("tex1", 1.0 as Float),
+                tp.get_float_texture("tex2", 1.0 as Float),
             ));
             api_state
                 .graphics_state
@@ -688,12 +672,12 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == String::from("imagemap") {
             // CreateImageFloatTexture
             let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
-            let mapping: String = tp.find_string(String::from("mapping"), String::from("uv"));
+            let mapping: String = tp.find_string("mapping", String::from("uv"));
             if mapping == String::from("uv") {
-                let su: Float = tp.find_float(String::from("uscale"), 1.0);
-                let sv: Float = tp.find_float(String::from("vscale"), 1.0);
-                let du: Float = tp.find_float(String::from("udelta"), 0.0);
-                let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
+                let su: Float = tp.find_float("uscale", 1.0);
+                let sv: Float = tp.find_float("vscale", 1.0);
+                let du: Float = tp.find_float("udelta", 0.0);
+                let dv: Float = tp.find_float("vdelta", 0.0);
                 map = Some(Box::new(UVMapping2D {
                     su: su,
                     sv: sv,
@@ -707,7 +691,7 @@ fn make_texture(api_state: &mut ApiState) {
             } else if mapping == String::from("planar") {
                 map = Some(Box::new(PlanarMapping2D {
                     vs: tp.find_vector3f(
-                        String::from("v1"),
+                        "v1",
                         Vector3f {
                             x: 1.0,
                             y: 0.0,
@@ -715,31 +699,31 @@ fn make_texture(api_state: &mut ApiState) {
                         },
                     ),
                     vt: tp.find_vector3f(
-                        String::from("v2"),
+                        "v2",
                         Vector3f {
                             x: 0.0,
                             y: 1.0,
                             z: 0.0,
                         },
                     ),
-                    ds: tp.find_float(String::from("udelta"), 0.0),
-                    dt: tp.find_float(String::from("vdelta"), 0.0),
+                    ds: tp.find_float("udelta", 0.0),
+                    dt: tp.find_float("vdelta", 0.0),
                 }));
             } else {
                 panic!("2D texture mapping \"{}\" unknown", mapping);
             }
             // initialize _ImageTexture_ parameters
-            let max_aniso: Float = tp.find_float(String::from("maxanisotropy"), 8.0);
-            let do_trilinear: bool = tp.find_bool(String::from("trilinear"), false);
-            let wrap: String = tp.find_string(String::from("wrap"), String::from("repeat"));
+            let max_aniso: Float = tp.find_float("maxanisotropy", 8.0);
+            let do_trilinear: bool = tp.find_bool("trilinear", false);
+            let wrap: String = tp.find_string("wrap", String::from("repeat"));
             let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
             if wrap == String::from("black") {
                 wrap_mode = ImageWrap::Black;
             } else if wrap == String::from("clamp") {
                 wrap_mode = ImageWrap::Clamp;
             }
-            let scale: Float = tp.find_float(String::from("scale"), 1.0);
-            let mut filename: String = tp.find_filename(String::from("filename"), String::new());
+            let scale: Float = tp.find_float("scale", 1.0);
+            let mut filename: String = tp.find_filename("filename", String::new());
             if let Some(ref search_directory) = api_state.search_directory {
                 // filename = AbsolutePath(ResolveFilename(filename));
                 let mut path_buf: PathBuf = PathBuf::from("/");
@@ -752,7 +736,7 @@ fn make_texture(api_state: &mut ApiState) {
             // ".tga") ||
             // HasExtension(filename,
             // ".png"));
-            let gamma: bool = tp.find_bool(String::from("gamma"), true);
+            let gamma: bool = tp.find_bool("gamma", true);
 
             if let Some(mapping) = map {
                 let ft = Arc::new(ImageTexture::new(
@@ -811,9 +795,9 @@ fn make_texture(api_state: &mut ApiState) {
             println!("TODO: CreateConstantSpectrumTexture");
         } else if api_state.param_set.tex_name == String::from("scale") {
             let tex1: Arc<Texture<Spectrum> + Send + Sync> =
-                tp.get_spectrum_texture(String::from("tex1"), Spectrum::new(1.0));
+                tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
             let tex2: Arc<Texture<Spectrum> + Send + Sync> =
-                tp.get_spectrum_texture(String::from("tex2"), Spectrum::new(0.0));
+                tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
             let ft = Arc::new(ScaleTexture::<Spectrum>::new(tex1, tex2));
             api_state
                 .graphics_state
@@ -826,12 +810,12 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == String::from("imagemap") {
             // CreateImageSpectrumTexture
             let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
-            let mapping: String = tp.find_string(String::from("mapping"), String::from("uv"));
+            let mapping: String = tp.find_string("mapping", String::from("uv"));
             if mapping == String::from("uv") {
-                let su: Float = tp.find_float(String::from("uscale"), 1.0);
-                let sv: Float = tp.find_float(String::from("vscale"), 1.0);
-                let du: Float = tp.find_float(String::from("udelta"), 0.0);
-                let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
+                let su: Float = tp.find_float("uscale", 1.0);
+                let sv: Float = tp.find_float("vscale", 1.0);
+                let du: Float = tp.find_float("udelta", 0.0);
+                let dv: Float = tp.find_float("vdelta", 0.0);
                 map = Some(Box::new(UVMapping2D {
                     su: su,
                     sv: sv,
@@ -845,7 +829,7 @@ fn make_texture(api_state: &mut ApiState) {
             } else if mapping == String::from("planar") {
                 map = Some(Box::new(PlanarMapping2D {
                     vs: tp.find_vector3f(
-                        String::from("v1"),
+                        "v1",
                         Vector3f {
                             x: 1.0,
                             y: 0.0,
@@ -853,31 +837,31 @@ fn make_texture(api_state: &mut ApiState) {
                         },
                     ),
                     vt: tp.find_vector3f(
-                        String::from("v2"),
+                        "v2",
                         Vector3f {
                             x: 0.0,
                             y: 1.0,
                             z: 0.0,
                         },
                     ),
-                    ds: tp.find_float(String::from("udelta"), 0.0),
-                    dt: tp.find_float(String::from("vdelta"), 0.0),
+                    ds: tp.find_float("udelta", 0.0),
+                    dt: tp.find_float("vdelta", 0.0),
                 }));
             } else {
                 panic!("2D texture mapping \"{}\" unknown", mapping);
             }
             // initialize _ImageTexture_ parameters
-            let max_aniso: Float = tp.find_float(String::from("maxanisotropy"), 8.0);
-            let do_trilinear: bool = tp.find_bool(String::from("trilinear"), false);
-            let wrap: String = tp.find_string(String::from("wrap"), String::from("repeat"));
+            let max_aniso: Float = tp.find_float("maxanisotropy", 8.0);
+            let do_trilinear: bool = tp.find_bool("trilinear", false);
+            let wrap: String = tp.find_string("wrap", String::from("repeat"));
             let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
             if wrap == String::from("black") {
                 wrap_mode = ImageWrap::Black;
             } else if wrap == String::from("clamp") {
                 wrap_mode = ImageWrap::Clamp;
             }
-            let scale: Float = tp.find_float(String::from("scale"), 1.0);
-            let mut filename: String = tp.find_filename(String::from("filename"), String::new());
+            let scale: Float = tp.find_float("scale", 1.0);
+            let mut filename: String = tp.find_filename("filename", String::new());
             if let Some(ref search_directory) = api_state.search_directory {
                 // filename = AbsolutePath(ResolveFilename(filename));
                 let mut path_buf: PathBuf = PathBuf::from("/");
@@ -890,7 +874,7 @@ fn make_texture(api_state: &mut ApiState) {
             // ".tga") ||
             // HasExtension(filename,
             // ".png"));
-            let gamma: bool = tp.find_bool(String::from("gamma"), true);
+            let gamma: bool = tp.find_bool("gamma", true);
 
             if let Some(mapping) = map {
                 let st = Arc::new(ImageTexture::new(
@@ -912,22 +896,22 @@ fn make_texture(api_state: &mut ApiState) {
             println!("TODO: CreateUVSpectrumTexture");
         } else if api_state.param_set.tex_name == String::from("checkerboard") {
             // CreateCheckerboardSpectrumTexture
-            let dim: i32 = tp.find_int(String::from("dimension"), 2);
+            let dim: i32 = tp.find_int("dimension", 2);
             if dim != 2 && dim != 3 {
                 panic!("{} dimensional checkerboard texture not supported", dim);
             }
             let tex1: Arc<Texture<Spectrum> + Send + Sync> =
-                tp.get_spectrum_texture(String::from("tex1"), Spectrum::new(1.0));
+                tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
             let tex2: Arc<Texture<Spectrum> + Send + Sync> =
-                tp.get_spectrum_texture(String::from("tex2"), Spectrum::new(0.0));
+                tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
             if dim == 2 {
                 let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
-                let mapping: String = tp.find_string(String::from("mapping"), String::from("uv"));
+                let mapping: String = tp.find_string("mapping", String::from("uv"));
                 if mapping == String::from("uv") {
-                    let su: Float = tp.find_float(String::from("uscale"), 1.0);
-                    let sv: Float = tp.find_float(String::from("vscale"), 1.0);
-                    let du: Float = tp.find_float(String::from("udelta"), 0.0);
-                    let dv: Float = tp.find_float(String::from("vdelta"), 0.0);
+                    let su: Float = tp.find_float("uscale", 1.0);
+                    let sv: Float = tp.find_float("vscale", 1.0);
+                    let du: Float = tp.find_float("udelta", 0.0);
+                    let dv: Float = tp.find_float("vdelta", 0.0);
                     map = Some(Box::new(UVMapping2D {
                         su: su,
                         sv: sv,
@@ -941,7 +925,7 @@ fn make_texture(api_state: &mut ApiState) {
                 } else if mapping == String::from("planar") {
                     map = Some(Box::new(PlanarMapping2D {
                         vs: tp.find_vector3f(
-                            String::from("v1"),
+                            "v1",
                             Vector3f {
                                 x: 1.0,
                                 y: 0.0,
@@ -949,15 +933,15 @@ fn make_texture(api_state: &mut ApiState) {
                             },
                         ),
                         vt: tp.find_vector3f(
-                            String::from("v2"),
+                            "v2",
                             Vector3f {
                                 x: 0.0,
                                 y: 1.0,
                                 z: 0.0,
                             },
                         ),
-                        ds: tp.find_float(String::from("udelta"), 0.0),
-                        dt: tp.find_float(String::from("vdelta"), 0.0),
+                        ds: tp.find_float("udelta", 0.0),
+                        dt: tp.find_float("vdelta", 0.0),
                     }));
                 } else {
                     panic!("2D texture mapping \"{}\" unknown", mapping);
@@ -1030,18 +1014,10 @@ fn get_shapes_and_materials(
     // MakeShapes (api.cpp:296)
     if api_state.param_set.name == String::from("sphere") {
         // CreateSphereShape
-        let radius: Float = api_state
-            .param_set
-            .find_one_float(String::from("radius"), 1.0 as Float);
-        let z_min: Float = api_state
-            .param_set
-            .find_one_float(String::from("zmin"), -radius);
-        let z_max: Float = api_state
-            .param_set
-            .find_one_float(String::from("zmax"), radius);
-        let phi_max: Float = api_state
-            .param_set
-            .find_one_float(String::from("phimax"), 360.0 as Float);
+        let radius: Float = api_state.param_set.find_one_float("radius", 1.0 as Float);
+        let z_min: Float = api_state.param_set.find_one_float("zmin", -radius);
+        let z_max: Float = api_state.param_set.find_one_float("zmax", radius);
+        let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0 as Float);
         let sphere = Arc::new(Sphere::new(
             obj_to_world,
             world_to_obj,
@@ -1056,18 +1032,10 @@ fn get_shapes_and_materials(
         shapes.push(sphere.clone());
         materials.push(mtl);
     } else if api_state.param_set.name == String::from("cylinder") {
-        let radius: Float = api_state
-            .param_set
-            .find_one_float(String::from("radius"), 1.0);
-        let z_min: Float = api_state
-            .param_set
-            .find_one_float(String::from("zmin"), -radius);
-        let z_max: Float = api_state
-            .param_set
-            .find_one_float(String::from("zmax"), radius);
-        let phi_max: Float = api_state
-            .param_set
-            .find_one_float(String::from("phimax"), 360.0 as Float);
+        let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
+        let z_min: Float = api_state.param_set.find_one_float("zmin", -radius);
+        let z_max: Float = api_state.param_set.find_one_float("zmax", radius);
+        let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0 as Float);
         let cylinder = Arc::new(Cylinder::new(
             obj_to_world,
             world_to_obj,
@@ -1081,18 +1049,10 @@ fn get_shapes_and_materials(
         shapes.push(cylinder.clone());
         materials.push(mtl.clone());
     } else if api_state.param_set.name == String::from("disk") {
-        let height: Float = api_state
-            .param_set
-            .find_one_float(String::from("height"), 0.0);
-        let radius: Float = api_state
-            .param_set
-            .find_one_float(String::from("radius"), 1.0);
-        let inner_radius: Float = api_state
-            .param_set
-            .find_one_float(String::from("innerradius"), 0.0);
-        let phi_max: Float = api_state
-            .param_set
-            .find_one_float(String::from("phimax"), 360.0);
+        let height: Float = api_state.param_set.find_one_float("height", 0.0);
+        let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
+        let inner_radius: Float = api_state.param_set.find_one_float("innerradius", 0.0);
+        let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0);
         let disk = Arc::new(Disk::new(
             obj_to_world,
             world_to_obj,
@@ -1124,21 +1084,21 @@ fn get_shapes_and_materials(
             shapes.push(shape.clone());
             materials.push(mtl.clone());
         }
-    } else if api_state.param_set.name == String::from("trianglemesh") {
-        let vi = api_state.param_set.find_int(String::from("indices"));
-        let p = api_state.param_set.find_point3f(String::from("P"));
+    } else if api_state.param_set.name == "trianglemesh" {
+        let vi = api_state.param_set.find_int("indices");
+        let p = api_state.param_set.find_point3f("P");
         // try "uv" with Point2f
-        let mut uvs = api_state.param_set.find_point2f(String::from("uv"));
+        let mut uvs = api_state.param_set.find_point2f("uv");
         if uvs.is_empty() {
             // try "st" with Point2f
-            uvs = api_state.param_set.find_point2f(String::from("st"));
+            uvs = api_state.param_set.find_point2f("st");
         }
         if uvs.is_empty() {
             // try "uv" with float
-            let mut fuv = api_state.param_set.find_float(String::from("uv"));
+            let mut fuv = api_state.param_set.find_float("uv");
             if fuv.is_empty() {
                 // try "st" with float
-                fuv = api_state.param_set.find_float(String::from("st"));
+                fuv = api_state.param_set.find_float("st");
             }
             if !fuv.is_empty() {
                 // found some float UVs
@@ -1156,7 +1116,7 @@ fn get_shapes_and_materials(
         }
         assert!(vi.len() > 0_usize);
         assert!(p.len() > 0_usize);
-        let s = api_state.param_set.find_vector3f(String::from("S"));
+        let s = api_state.param_set.find_vector3f("S");
         let mut s_ws: Vec<Vector3f> = Vec::new();
         if !s.is_empty() {
             assert!(s.len() == p.len());
@@ -1166,7 +1126,7 @@ fn get_shapes_and_materials(
                 s_ws.push(obj_to_world.transform_vector(&s[i]));
             }
         }
-        let n = api_state.param_set.find_normal3f(String::from("N"));
+        let n = api_state.param_set.find_normal3f("N");
         let mut n_ws: Vec<Normal3f> = Vec::new();
         if !n.is_empty() {
             assert!(n.len() == p.len());
@@ -1246,13 +1206,12 @@ fn get_shapes_and_materials(
         println!("TODO: CreateHeightfield");
     } else if api_state.param_set.name == String::from("loopsubdiv") {
         // CreateLoopSubdiv
-        let n_levels: i32 = api_state.param_set.find_one_int(
-            String::from("levels"),
-            api_state.param_set.find_one_int(String::from("nlevels"), 3),
-        );
+        let n_levels: i32 = api_state
+            .param_set
+            .find_one_int("levels", api_state.param_set.find_one_int("nlevels", 3));
         // int nps, nIndices;
-        let vertex_indices: Vec<i32> = api_state.param_set.find_int(String::from("indices"));
-        let p = api_state.param_set.find_point3f(String::from("P"));
+        let vertex_indices: Vec<i32> = api_state.param_set.find_int("indices");
+        let p = api_state.param_set.find_point3f("P");
         if vertex_indices.is_empty() {
             panic!("Vertex indices \"indices\" not provided for LoopSubdiv shape.");
         }
@@ -1262,7 +1221,7 @@ fn get_shapes_and_materials(
         // don't actually use this for now...
         let _scheme: String = api_state
             .param_set
-            .find_one_string(String::from("scheme"), String::from("loop"));
+            .find_one_string("scheme", String::from("loop"));
         let mesh = loop_subdivide(
             &obj_to_world,
             &world_to_obj,
@@ -1285,15 +1244,15 @@ fn get_shapes_and_materials(
         }
     } else if api_state.param_set.name == String::from("nurbs") {
         // CreateNURBS
-        let nu: i32 = api_state.param_set.find_one_int(String::from("nu"), -1);
+        let nu: i32 = api_state.param_set.find_one_int("nu", -1);
         if nu == -1_i32 {
             panic!("Must provide number of control points \"nu\" with NURBS shape.");
         }
-        let uorder: i32 = api_state.param_set.find_one_int(String::from("uorder"), -1);
+        let uorder: i32 = api_state.param_set.find_one_int("uorder", -1);
         if uorder == -1_i32 {
             panic!("Must provide u order \"uorder\" with NURBS shape.");
         }
-        let uknots: Vec<Float> = api_state.param_set.find_float(String::from("uknots"));
+        let uknots: Vec<Float> = api_state.param_set.find_float("uknots");
         if uknots.is_empty() {
             panic!("Must provide u knot vector \"uknots\" with NURBS shape.");
         }
@@ -1303,19 +1262,19 @@ fn get_shapes_and_materials(
         }
         let u0: Float = api_state
             .param_set
-            .find_one_float(String::from("u0"), uknots[(uorder - 1) as usize]);
+            .find_one_float("u0", uknots[(uorder - 1) as usize]);
         let u1: Float = api_state
             .param_set
-            .find_one_float(String::from("u1"), uknots[nu as usize]);
-        let nv: i32 = api_state.param_set.find_one_int(String::from("nv"), -1);
+            .find_one_float("u1", uknots[nu as usize]);
+        let nv: i32 = api_state.param_set.find_one_int("nv", -1);
         if nv == -1_i32 {
             panic!("Must provide number of control points \"nv\" with NURBS shape.");
         }
-        let vorder: i32 = api_state.param_set.find_one_int(String::from("vorder"), -1);
+        let vorder: i32 = api_state.param_set.find_one_int("vorder", -1);
         if vorder == -1_i32 {
             panic!("Must provide u order \"vorder\" with NURBS shape.");
         }
-        let vknots: Vec<Float> = api_state.param_set.find_float(String::from("vknots"));
+        let vknots: Vec<Float> = api_state.param_set.find_float("vknots");
         if vknots.is_empty() {
             panic!("Must provide u knot vector \"vknots\" with NURBS shape.");
         }
@@ -1325,16 +1284,16 @@ fn get_shapes_and_materials(
         }
         let v0: Float = api_state
             .param_set
-            .find_one_float(String::from("v0"), vknots[(vorder - 1) as usize]);
+            .find_one_float("v0", vknots[(vorder - 1) as usize]);
         let v1: Float = api_state
             .param_set
-            .find_one_float(String::from("v1"), vknots[nv as usize]);
+            .find_one_float("v1", vknots[nv as usize]);
         let mut is_homogeneous: bool = false;
-        let p: Vec<Point3f> = api_state.param_set.find_point3f(String::from("P"));
+        let p: Vec<Point3f> = api_state.param_set.find_point3f("P");
         let mut pw: Vec<Float> = Vec::new();
         let mut npts: usize = p.len();
         if p.is_empty() {
-            pw = api_state.param_set.find_float(String::from("Pw"));
+            pw = api_state.param_set.find_float("Pw");
             if pw.is_empty() {
                 panic!("Must provide control points via \"P\" or \"Pw\" parameter to NURBS shape.");
             }
@@ -1613,15 +1572,15 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         let filename: String = api_state
             .render_options
             .film_params
-            .find_one_string(String::from("filename"), String::new());
+            .find_one_string("filename", String::new());
         let xres: i32 = api_state
             .render_options
             .film_params
-            .find_one_int(String::from("xresolution"), 1280);
+            .find_one_int("xresolution", 1280);
         let yres: i32 = api_state
             .render_options
             .film_params
-            .find_one_int(String::from("yresolution"), 720);
+            .find_one_int("yresolution", 720);
         // TODO: if (PbrtOptions.quickRender) xres = std::max(1, xres / 4);
         // TODO: if (PbrtOptions.quickRender) yres = std::max(1, yres / 4);
         let mut crop: Bounds2f = Bounds2f {
@@ -1632,7 +1591,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         let cr: Vec<Float> = api_state
             .render_options
             .film_params
-            .find_float(String::from("cropwindow"));
+            .find_float("cropwindow");
         if cr.len() == 4 {
             crop.p_min.x = clamp_t(cr[0].min(cr[1]), 0.0, 1.0);
             crop.p_max.x = clamp_t(cr[0].max(cr[1]), 0.0, 1.0);
@@ -1647,15 +1606,15 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         let scale: Float = api_state
             .render_options
             .film_params
-            .find_one_float(String::from("scale"), 1.0);
+            .find_one_float("scale", 1.0);
         let diagonal: Float = api_state
             .render_options
             .film_params
-            .find_one_float(String::from("diagonal"), 35.0);
+            .find_one_float("diagonal", 35.0);
         let max_sample_luminance: Float = api_state
             .render_options
             .film_params
-            .find_one_float(String::from("maxsampleluminance"), std::f32::INFINITY);
+            .find_one_float("maxsampleluminance", std::f32::INFINITY);
         if let Some(filter) = some_filter {
             let film: Arc<Film> = Arc::new(Film::new(
                 Point2i { x: xres, y: yres },
@@ -1738,11 +1697,11 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     let nsamp: i32 = api_state
                         .render_options
                         .sampler_params
-                        .find_one_int(String::from("pixelsamples"), 16);
+                        .find_one_int("pixelsamples", 16);
                     let sd: i32 = api_state
                         .render_options
                         .sampler_params
-                        .find_one_int(String::from("dimensions"), 4);
+                        .find_one_int("dimensions", 4);
                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
                     let sampler = Box::new(ZeroTwoSequenceSampler::new(nsamp as i64, sd as i64));
                     some_sampler = Some(sampler);
@@ -1752,12 +1711,12 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     let nsamp: i32 = api_state
                         .render_options
                         .sampler_params
-                        .find_one_int(String::from("pixelsamples"), 16);
+                        .find_one_int("pixelsamples", 16);
                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
                     let sample_at_center: bool = api_state
                         .render_options
                         .integrator_params
-                        .find_one_bool(String::from("samplepixelcenter"), false);
+                        .find_one_bool("samplepixelcenter", false);
                     let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                     let sampler = Box::new(HaltonSampler::new(
                         nsamp as i64,
@@ -1769,7 +1728,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     let nsamp: i32 = api_state
                         .render_options
                         .sampler_params
-                        .find_one_int(String::from("pixelsamples"), 16);
+                        .find_one_int("pixelsamples", 16);
                     let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                     let sampler = Box::new(SobolSampler::new(nsamp as i64, sample_bounds));
                     some_sampler = Some(sampler);
@@ -1777,7 +1736,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     let nsamp: i32 = api_state
                         .render_options
                         .sampler_params
-                        .find_one_int(String::from("pixelsamples"), 4);
+                        .find_one_int("pixelsamples", 4);
                     let sampler = Box::new(RandomSampler::new(nsamp as i64));
                     some_sampler = Some(sampler);
                 } else if api_state.render_options.sampler_name == String::from("stratified") {
@@ -1805,11 +1764,11 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         let max_depth: i32 = api_state
                             .render_options
                             .integrator_params
-                            .find_one_int(String::from("maxdepth"), 5);
+                            .find_one_int("maxdepth", 5);
                         let st: String = api_state
                             .render_options
                             .integrator_params
-                            .find_one_string(String::from("strategy"), String::from("all"));
+                            .find_one_string("strategy", String::from("all"));
                         let strategy: LightStrategy;
                         if st == String::from("one") {
                             strategy = LightStrategy::UniformSampleOne;
@@ -1834,11 +1793,11 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         let max_depth: i32 = api_state
                             .render_options
                             .integrator_params
-                            .find_one_int(String::from("maxdepth"), 5);
+                            .find_one_int("maxdepth", 5);
                         let pb: Vec<i32> = api_state
                             .render_options
                             .integrator_params
-                            .find_int(String::from("pixelbounds"));
+                            .find_int("pixelbounds");
                         let np: usize = pb.len();
                         let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                         if np > 0 as usize {
@@ -1858,14 +1817,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         let rr_threshold: Float = api_state
                             .render_options
                             .integrator_params
-                            .find_one_float(String::from("rrthreshold"), 1.0 as Float);
+                            .find_one_float("rrthreshold", 1.0 as Float);
                         // std::string lightStrategy =
                         //     params.FindOneString("lightsamplestrategy", "spatial");
-                        let light_strategy: String =
-                            api_state.render_options.integrator_params.find_one_string(
-                                String::from("lightsamplestrategy"),
-                                String::from("spatial"),
-                            );
+                        let light_strategy: String = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_string("lightsamplestrategy", String::from("spatial"));
                         let integrator = Box::new(PathIntegrator::new(
                             max_depth as u32,
                             pixel_bounds,
@@ -1880,25 +1838,24 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         let mut max_depth: i32 = api_state
                             .render_options
                             .integrator_params
-                            .find_one_int(String::from("maxdepth"), 5);
+                            .find_one_int("maxdepth", 5);
                         let visualize_strategies: bool = api_state
                             .render_options
                             .integrator_params
-                            .find_one_bool(String::from("visualizestrategies"), false);
+                            .find_one_bool("visualizestrategies", false);
                         let visualize_weights: bool = api_state
                             .render_options
                             .integrator_params
-                            .find_one_bool(String::from("visualizeweights"), false);
+                            .find_one_bool("visualizeweights", false);
                         if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
                             println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
                             max_depth = 5;
                         }
                         let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                        let light_strategy: String =
-                            api_state.render_options.integrator_params.find_one_string(
-                                String::from("lightsamplestrategy"),
-                                String::from("power"),
-                            );
+                        let light_strategy: String = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_string("lightsamplestrategy", String::from("power"));
                         let mut integrator = Box::new(BDPTIntegrator::new(
                             max_depth as u32,
                             // visualize_strategies,
@@ -1912,27 +1869,27 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         let mut max_depth: i32 = api_state
                             .render_options
                             .integrator_params
-                            .find_one_int(String::from("maxdepth"), 5);
+                            .find_one_int("maxdepth", 5);
                         let mut n_bootstrap: i32 = api_state
                             .render_options
                             .integrator_params
-                            .find_one_int(String::from("bootstrapsamples"), 100000);
+                            .find_one_int("bootstrapsamples", 100000);
                         let mut n_chains: i32 = api_state
                             .render_options
                             .integrator_params
-                            .find_one_int(String::from("chains"), 1000);
+                            .find_one_int("chains", 1000);
                         let mut mutations_per_pixel: i32 = api_state
                             .render_options
                             .integrator_params
-                            .find_one_int(String::from("mutationsperpixel"), 100);
+                            .find_one_int("mutationsperpixel", 100);
                         let large_step_probability: Float = api_state
                             .render_options
                             .integrator_params
-                            .find_one_float(String::from("largestepprobability"), 0.3 as Float);
+                            .find_one_float("largestepprobability", 0.3 as Float);
                         let sigma: Float = api_state
                             .render_options
                             .integrator_params
-                            .find_one_float(String::from("sigma"), 0.01 as Float);
+                            .find_one_float("sigma", 0.01 as Float);
                         let mut integrator = Box::new(MLTIntegrator::new(
                             camera.clone(),
                             max_depth as u32,
@@ -1950,7 +1907,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         let pb: Vec<i32> = api_state
                             .render_options
                             .integrator_params
-                            .find_int(String::from("pixelbounds"));
+                            .find_int("pixelbounds");
                         let np: usize = pb.len();
                         let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                         if np > 0 as usize {
@@ -1970,12 +1927,12 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         let cos_sample: bool = api_state
                             .render_options
                             .integrator_params
-                            .find_one_bool(String::from("cossample"), true);
+                            .find_one_bool("cossample", true);
                         // int nSamples = params.Find_One_Int("nsamples", 64);
                         let n_samples: i32 = api_state
                             .render_options
                             .integrator_params
-                            .find_one_int(String::from("nsamples"), 64 as i32);
+                            .find_one_int("nsamples", 64 as i32);
                         // return new AOIntegrator(cosSample, nSamples, camera, sampler, pixelBounds);
 
                         let integrator =
@@ -2012,7 +1969,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             let split_method_name: String = api_state
                                 .render_options
                                 .accelerator_params
-                                .find_one_string(String::from("splitmethod"), String::from("sah"));
+                                .find_one_string("splitmethod", String::from("sah"));
                             let split_method;
                             if split_method_name == String::from("sah") {
                                 split_method = SplitMethod::SAH;
@@ -2032,7 +1989,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             let max_prims_in_node: i32 = api_state
                                 .render_options
                                 .accelerator_params
-                                .find_one_int(String::from("maxnodeprims"), 4);
+                                .find_one_int("maxnodeprims", 4);
                             let accelerator = Arc::new(BVHAccel::new(
                                 api_state.render_options.primitives.clone(),
                                 max_prims_in_node as usize,
@@ -2097,7 +2054,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             let split_method_name: String = api_state
                                 .render_options
                                 .accelerator_params
-                                .find_one_string(String::from("splitmethod"), String::from("sah"));
+                                .find_one_string("splitmethod", String::from("sah"));
                             let split_method;
                             if split_method_name == String::from("sah") {
                                 split_method = SplitMethod::SAH;
@@ -2117,7 +2074,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             let max_prims_in_node: i32 = api_state
                                 .render_options
                                 .accelerator_params
-                                .find_one_int(String::from("maxnodeprims"), 4);
+                                .find_one_int("maxnodeprims", 4);
                             let accelerator = Arc::new(BVHAccel::new(
                                 api_state.render_options.primitives.clone(),
                                 max_prims_in_node as usize,
@@ -2188,7 +2145,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             let split_method_name: String = api_state
                                 .render_options
                                 .accelerator_params
-                                .find_one_string(String::from("splitmethod"), String::from("sah"));
+                                .find_one_string("splitmethod", String::from("sah"));
                             let split_method;
                             if split_method_name == String::from("sah") {
                                 split_method = SplitMethod::SAH;
@@ -2208,7 +2165,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             let max_prims_in_node: i32 = api_state
                                 .render_options
                                 .accelerator_params
-                                .find_one_int(String::from("maxnodeprims"), 4);
+                                .find_one_int("maxnodeprims", 4);
                             let accelerator = Arc::new(BVHAccel::new(
                                 api_state.render_options.primitives.clone(),
                                 max_prims_in_node as usize,
@@ -2662,9 +2619,7 @@ pub fn pbrt_make_named_material(
     // println!("MakeNamedMaterial \"{}\"", params.name);
     // print_params(&params);
     api_state.param_set = params;
-    let mat_type: String = api_state
-        .param_set
-        .find_one_string(String::from("type"), String::new());
+    let mat_type: String = api_state.param_set.find_one_string("type", String::new());
     if mat_type == String::new() {
         panic!("No parameter string \"type\" found in MakeNamedMaterial");
     }
@@ -2742,21 +2697,21 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                 let l: Spectrum = api_state
                     .graphics_state
                     .area_light_params
-                    .find_one_spectrum(String::from("L"), Spectrum::new(1.0));
+                    .find_one_spectrum("L", Spectrum::new(1.0));
                 let sc: Spectrum = api_state
                     .graphics_state
                     .area_light_params
-                    .find_one_spectrum(String::from("scale"), Spectrum::new(1.0));
+                    .find_one_spectrum("scale", Spectrum::new(1.0));
                 let n_samples: i32 = // try "nsamples" first
-                    api_state.graphics_state.area_light_params.find_one_int(String::from("nsamples"),
+                    api_state.graphics_state.area_light_params.find_one_int("nsamples",
                                                                   1);
                 let n_samples: i32 = // try "samples"next
-                    api_state.graphics_state.area_light_params.find_one_int(String::from("samples"),
+                    api_state.graphics_state.area_light_params.find_one_int("samples",
                                                                   n_samples);
                 let two_sided: bool = api_state
                     .graphics_state
                     .area_light_params
-                    .find_one_bool(String::from("twosided"), false);
+                    .find_one_bool("twosided", false);
                 // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
                 let l_emit: Spectrum = l * sc;
                 let area_light: Arc<DiffuseAreaLight> = Arc::new(DiffuseAreaLight::new(
@@ -2895,7 +2850,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
                 let split_method_name: String = api_state
                     .render_options
                     .accelerator_params
-                    .find_one_string(String::from("splitmethod"), String::from("sah"));
+                    .find_one_string("splitmethod", String::from("sah"));
                 let split_method;
                 if split_method_name == String::from("sah") {
                     split_method = SplitMethod::SAH;
@@ -2915,7 +2870,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
                 let max_prims_in_node: i32 = api_state
                     .render_options
                     .accelerator_params
-                    .find_one_int(String::from("maxnodeprims"), 4);
+                    .find_one_int("maxnodeprims", 4);
                 let accelerator: Arc<Primitive + Sync + Send> = Arc::new(BVHAccel::new(
                     instance_vec.clone(),
                     max_prims_in_node as usize,

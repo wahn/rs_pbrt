@@ -47,14 +47,14 @@ impl EnvironmentCamera {
         film: Arc<Film>,
         medium: Option<Arc<Medium + Send + Sync>>,
     ) -> Arc<Camera + Send + Sync> {
-        let shutteropen: Float = params.find_one_float(String::from("shutteropen"), 0.0);
-        let shutterclose: Float = params.find_one_float(String::from("shutterclose"), 1.0);
+        let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
+        let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
         assert!(shutterclose >= shutteropen);
         // let lensradius: Float = params.find_one_float(String::from("lensradius"), 0.0);
         // let focaldistance: Float = params.find_one_float(String::from("focaldistance"), 1e30);
         let frame: Float = params.find_one_float(
-            String::from("frameaspectratio"),
+            "frameaspectratio",
             (film.full_resolution.x as Float) / (film.full_resolution.y as Float),
         );
         let mut screen: Bounds2f = Bounds2f::default();
@@ -69,7 +69,7 @@ impl EnvironmentCamera {
             screen.p_min.y = -1.0 / frame;
             screen.p_max.y = 1.0 / frame;
         }
-        let sw: Vec<Float> = params.find_float(String::from("screenwindow"));
+        let sw: Vec<Float> = params.find_float("screenwindow");
         if sw.len() > 0_usize {
             if sw.len() == 4 {
                 screen.p_min.x = sw[0];

@@ -20,9 +20,9 @@ pub struct GaussianFilter {
 
 impl GaussianFilter {
     pub fn create(ps: &ParamSet) -> Arc<Filter + Sync + Send> {
-        let xw: Float = ps.find_one_float(String::from("xwidth"), 2.0);
-        let yw: Float = ps.find_one_float(String::from("ywidth"), 2.0);
-        let alpha: Float = ps.find_one_float(String::from("alpha"), 2.0);
+        let xw: Float = ps.find_one_float("xwidth", 2.0);
+        let yw: Float = ps.find_one_float("ywidth", 2.0);
+        let alpha: Float = ps.find_one_float("alpha", 2.0);
         // see gaussian.h (GaussianFilter constructor)
         let exp_x: Float = (-alpha * xw * xw).exp();
         let exp_y: Float = (-alpha * yw * yw).exp();

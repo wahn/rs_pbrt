@@ -31,9 +31,8 @@ impl MatteMaterial {
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
         let kd: Arc<Texture<Spectrum> + Sync + Send> =
-            mp.get_spectrum_texture(String::from("Kd"), Spectrum::new(0.5));
-        let sigma: Arc<Texture<Float> + Sync + Send> =
-            mp.get_float_texture(String::from("sigma"), 0.0);
+            mp.get_spectrum_texture("Kd", Spectrum::new(0.5));
+        let sigma: Arc<Texture<Float> + Sync + Send> = mp.get_float_texture("sigma", 0.0);
         Arc::new(MatteMaterial { kd, sigma })
     }
     pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
