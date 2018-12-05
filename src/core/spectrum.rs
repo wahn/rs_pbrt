@@ -1695,6 +1695,15 @@ impl Mul<Float> for RGBSpectrum {
     }
 }
 
+impl Mul<RGBSpectrum> for Float {
+    type Output = RGBSpectrum;
+    fn mul(self, rhs: RGBSpectrum) -> RGBSpectrum {
+        RGBSpectrum {
+            c: [rhs.c[0] * self, rhs.c[1] * self, rhs.c[2] * self],
+        }
+    }
+}
+
 impl MulAssign for RGBSpectrum {
     fn mul_assign(&mut self, rhs: RGBSpectrum) {
         // TODO: DCHECK(!HasNaNs());
