@@ -1622,7 +1622,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
             ));
             // MakeCamera
             // TODO: let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
-            let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
+            let mut some_camera: Option<Arc<Camera + Sync + Send>>;
             let medium_interface: MediumInterface = create_medium_interface(&api_state);
             let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(
                 &api_state.render_options.camera_to_world.t[0],

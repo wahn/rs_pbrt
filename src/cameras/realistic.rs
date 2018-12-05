@@ -1,26 +1,20 @@
 // std
 use std;
-use std::f32::consts::PI;
 use std::path::PathBuf;
 use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::floatfile::read_float_file;
-use core::geometry::{
-    nrm_abs_dot_vec3, nrm_faceforward_vec3, nrm_normalize, vec3_dot_vec3, vec3_normalize,
-};
-use core::geometry::{
-    Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f,
-};
+use core::geometry::{nrm_faceforward_vec3, nrm_normalize, vec3_normalize};
+use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
-use core::medium::{Medium, MediumInterface};
+use core::medium::Medium;
 use core::paramset::ParamSet;
-use core::pbrt::lerp;
 use core::pbrt::quadratic;
 use core::pbrt::{Float, Spectrum};
-use core::sampling::concentric_sample_disk;
+use core::reflection::refract;
 use core::transform::{AnimatedTransform, Transform};
 
 // see realistic.h
@@ -164,54 +158,6 @@ impl RealisticCamera {
         0.0
     }
     pub fn trace_lenses_from_film(&self, r_camera: &Ray, r_out: &mut Ray) -> bool {
-        let mut element_z: Float = -self.lens_front_z();
-        // transform _r_camera_ from camera to lens system space
-        let camera_to_lens: Transform = Transform::scale(1.0 as Float, 1.0 as Float, -1.0 as Float);
-        let r_lens: Ray = camera_to_lens.transform_ray(r_camera);
-        for i in 0..self.element_interfaces.len() {
-            let element = self.element_interfaces[i];
-            // compute intersection of ray with lens element
-            let mut t: Float = 0.0 as Float;
-            let mut n: Normal3f = Normal3f::default();
-            let is_stop: bool = (element.curvature_radius == 0.0 as Float);
-            if is_stop {
-                t = (element_z - r_lens.o.z) / r_lens.d.z;
-            } else {
-                let radius: Float = element.curvature_radius;
-                let z_center: Float = element_z + element.curvature_radius;
-                if self.intersect_spherical_element(radius, z_center, &r_lens, &mut t, &mut n) {
-                    return false;
-                }
-            }
-            //     CHECK_GE(t, 0);
-            assert!(t >= 0.0 as Float);
-            // WORK
-            //     // Test intersection point against element aperture
-            //     Point3f pHit = r_lens(t);
-            //     Float r2 = pHit.x * pHit.x + pHit.y * pHit.y;
-            //     if (r2 > element.apertureRadius * element.apertureRadius) return false;
-            //     r_lens.o = pHit;
-
-            //     // Update ray path for from-scene element interface interaction
-            //     if (!is_stop) {
-            //         Vector3f wt;
-            //         Float etaI = (i == 0 || elementInterfaces[i - 1].eta == 0)
-            //                          ? 1
-            //                          : elementInterfaces[i - 1].eta;
-            //         Float etaT =
-            //             (elementInterfaces[i].eta != 0) ? elementInterfaces[i].eta : 1;
-            //         if (!Refract(Normalize(-r_lens.d), n, etaI / etaT, &wt))
-            //             return false;
-            //         r_lens.d = wt;
-            //     }
-            //     element_z += element.thickness;
-        }
-        // // Transform _r_lens_ from lens system space back to camera space
-        // if (r_out != nullptr) {
-        //     static const Transform LensToCamera = Scale(1, 1, -1);
-        //     *r_out = LensToCamera(r_lens);
-        // }
-        // return true;
         // WORK
         false
     }
@@ -252,9 +198,63 @@ impl RealisticCamera {
         *n = nrm_faceforward_vec3(&nrm_normalize(&*n), &-ray.d);
         true
     }
-    pub fn trace_lenses_from_scene(&self, r_camera: &Ray, r_out: &mut Ray) -> bool {
-        // WORK
-        false
+    pub fn trace_lenses_from_scene(&self, r_camera: &Ray, r_out: Option<&mut Ray>) -> bool {
+        let mut element_z: Float = -self.lens_front_z();
+        // transform _r_camera_ from camera to lens system space
+        let camera_to_lens: Transform = Transform::scale(1.0 as Float, 1.0 as Float, -1.0 as Float);
+        let mut r_lens: Ray = camera_to_lens.transform_ray(r_camera);
+        for i in 0..self.element_interfaces.len() {
+            let element = self.element_interfaces[i];
+            // compute intersection of ray with lens element
+            let mut t: Float = 0.0 as Float;
+            let mut n: Normal3f = Normal3f::default();
+            let is_stop: bool = element.curvature_radius == 0.0 as Float;
+            if is_stop {
+                t = (element_z - r_lens.o.z) / r_lens.d.z;
+            } else {
+                let radius: Float = element.curvature_radius;
+                let z_center: Float = element_z + element.curvature_radius;
+                if self.intersect_spherical_element(radius, z_center, &r_lens, &mut t, &mut n) {
+                    return false;
+                }
+            }
+            assert!(t >= 0.0 as Float);
+            // test intersection point against element aperture
+            let p_hit: Point3f = r_lens.position(t);
+            let r2: Float = p_hit.x * p_hit.x + p_hit.y * p_hit.y;
+            if r2 > element.aperture_radius * element.aperture_radius {
+                return false;
+            }
+            r_lens.o = p_hit;
+            // update ray path for from-scene element interface interaction
+            if !is_stop {
+                let mut wt: Vector3f = Vector3f::default();
+                let eta_i: Float;
+                if i == 0 || self.element_interfaces[i - 1].eta == 0.0 as Float {
+                    eta_i = 0.0 as Float;
+                } else {
+                    eta_i = self.element_interfaces[i - 1].eta;
+                }
+                let eta_t: Float;
+                if self.element_interfaces[i].eta != 0.0 as Float {
+                    eta_t = self.element_interfaces[i].eta;
+                } else {
+                    eta_t = 1.0 as Float;
+                }
+                if !refract(&vec3_normalize(&-r_lens.d), &n, eta_i / eta_t, &mut wt) {
+                    return false;
+                }
+                r_lens.d = wt;
+            }
+            element_z += element.thickness;
+        }
+        // transform _r_lens_ from lens system space back to camera space
+        if let Some(r_out) = r_out {
+            let lens_to_camera: Transform =
+                Transform::scale(1.0 as Float, 1.0 as Float, -1.0 as Float);
+            *r_out = lens_to_camera.transform_ray(&r_lens);
+        }
+        true
     }
     pub fn draw_lens_system(&self) {
         // WORK
@@ -272,7 +272,6 @@ impl RealisticCamera {
         // find height $x$ from optical axis for parallel rays
         let x: Float = 0.001 as Float * self.film.diagonal;
         // compute cardinal points for film side of lens system
-        // Ray r_scene(Point3f(x, 0, LensFrontZ() + 1), Vector3f(0, 0, -1));
         let r_scene: Ray = Ray {
             o: Point3f {
                 x: x,
@@ -289,12 +288,9 @@ impl RealisticCamera {
             medium: None,
             differential: None,
         };
-        // Ray r_film;
         let mut r_film: Ray = Ray::default();
-        // CHECK(TraceLensesFromScene(r_scene, &r_film))
-        //     << "Unable to trace ray from scene to film for thick lens "
-        //        "approximation. Is aperture stop extremely small?";
-        self.trace_lenses_from_film(&r_scene, &mut r_film);
+        assert!(self.trace_lenses_from_scene(&r_scene, Some(&mut r_film)),
+                "Unable to trace ray from scene to film for thick lens approximation. Is aperture stop extremely small?");
         // ComputeCardinalPoints(r_scene, r_film, &pz[0], &fz[0]);
 
         // // Compute cardinal points for scene side of lens system
