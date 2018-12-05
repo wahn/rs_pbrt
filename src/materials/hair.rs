@@ -691,8 +691,8 @@ fn ap(cos_theta_o: Float, eta: Float, h: Float, t: Spectrum) -> [Spectrum; (P_MA
     let x: Float = 1.0 as Float - (h * h);
     assert!(x >= -1e-4);
     let cos_gamma_o: Float = (0.0 as Float).max(x).sqrt();
-    let mut cos_theta: Float = cos_theta_o * cos_gamma_o;
-    let f: Float = fr_dielectric(&mut cos_theta, 1.0 as Float, eta);
+    let cos_theta: Float = cos_theta_o * cos_gamma_o;
+    let f: Float = fr_dielectric(cos_theta, 1.0 as Float, eta);
     ap[0] = Spectrum::new(f);
     // compute $p=1$ attenuation term
     let one_minus_f: Float = 1.0 as Float - f;

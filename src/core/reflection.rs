@@ -506,7 +506,7 @@ impl Bxdf for ScaledBxDF {
 }
 
 pub trait Fresnel {
-    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum;
+    fn evaluate(&self, cos_theta_i: Float) -> Spectrum;
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -517,7 +517,7 @@ pub struct FresnelConductor {
 }
 
 impl Fresnel for FresnelConductor {
-    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum {
+    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         fr_conductor(cos_theta_i, self.eta_i, self.eta_t, self.k)
     }
 }
@@ -529,7 +529,7 @@ pub struct FresnelDielectric {
 }
 
 impl Fresnel for FresnelDielectric {
-    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum {
+    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
     }
 }
@@ -538,7 +538,7 @@ impl Fresnel for FresnelDielectric {
 pub struct FresnelNoOp {}
 
 impl Fresnel for FresnelNoOp {
-    fn evaluate(&self, _cos_theta_i: &mut Float) -> Spectrum {
+    fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
         Spectrum::new(1.0 as Float)
     }
 }
@@ -577,8 +577,8 @@ impl Bxdf for SpecularReflection {
             z: wo.z,
         };
         *pdf = 1.0 as Float;
-        let mut cos_theta_i: Float = cos_theta(&*wi);
-        self.fresnel.evaluate(&mut cos_theta_i) * self.r / abs_cos_theta(&*wi)
+        let cos_theta_i: Float = cos_theta(&*wi);
+        self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
     }
     fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0 as Float
@@ -651,7 +651,7 @@ impl Bxdf for SpecularTransmission {
         }
         *pdf = 1.0;
         let mut ft: Spectrum =
-            self.t * (Spectrum::new(1.0 as Float) - self.fresnel.evaluate(&mut cos_theta(&*wi)));
+            self.t * (Spectrum::new(1.0 as Float) - self.fresnel.evaluate(cos_theta(&*wi)));
         // account for non-symmetry with transmission to different medium
         if self.mode == TransportMode::Radiance {
             ft *= Spectrum::new((eta_i * eta_i) / (eta_t * eta_t));
@@ -702,8 +702,8 @@ impl Bxdf for FresnelSpecular {
         pdf: &mut Float,
         sampled_type: &mut u8,
     ) -> Spectrum {
-        let mut ct: Float = cos_theta(wo);
-        let f: Float = fr_dielectric(&mut ct, self.eta_a, self.eta_b);
+        let ct: Float = cos_theta(wo);
+        let f: Float = fr_dielectric(ct, self.eta_a, self.eta_b);
         if sample[0] < f {
             // compute specular reflection for _FresnelSpecular_
 
@@ -1486,22 +1486,21 @@ pub fn vec3_same_hemisphere_vec3(w: &Vector3f, wp: &Vector3f) -> bool {
 
 /// Computes the Fresnel reflection formula for dielectric materials
 /// and unpolarized light.
-pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Float {
-    let not_clamped: Float = *cos_theta_i;
-    *cos_theta_i = clamp_t(not_clamped, -1.0, 1.0);
+pub fn fr_dielectric(cos_theta_i: Float, eta_i: Float, eta_t: Float) -> Float {
+    let mut cos_theta_i = clamp_t(cos_theta_i, -1.0, 1.0);
     // potentially swap indices of refraction
-    let entering: bool = *cos_theta_i > 0.0;
+    let entering: bool = cos_theta_i > 0.0;
     // use local copies because of potential swap (otherwise eta_i and
     // eta_t would have to be mutable)
     let mut local_eta_i = eta_i;
     let mut local_eta_t = eta_t;
     if !entering {
         std::mem::swap(&mut local_eta_i, &mut local_eta_t);
-        *cos_theta_i = (*cos_theta_i).abs();
+        cos_theta_i = cos_theta_i.abs();
     }
     // compute _cos_theta_t_ using Snell's law
     let sin_theta_i: Float = (0.0 as Float)
-        .max(1.0 as Float - *cos_theta_i * *cos_theta_i)
+        .max(1.0 as Float - cos_theta_i * cos_theta_i)
         .sqrt();
     let sin_theta_t: Float = local_eta_i / local_eta_t * sin_theta_i;
     // handle total internal reflection
@@ -1511,22 +1510,17 @@ pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Flo
     let cos_theta_t: Float = (0.0 as Float)
         .max(1.0 as Float - sin_theta_t * sin_theta_t)
         .sqrt();
-    let r_parl: Float = ((local_eta_t * *cos_theta_i) - (local_eta_i * cos_theta_t))
-        / ((local_eta_t * *cos_theta_i) + (local_eta_i * cos_theta_t));
-    let r_perp: Float = ((local_eta_i * *cos_theta_i) - (local_eta_t * cos_theta_t))
-        / ((local_eta_i * *cos_theta_i) + (local_eta_t * cos_theta_t));
+    let r_parl: Float = ((local_eta_t * cos_theta_i) - (local_eta_i * cos_theta_t))
+        / ((local_eta_t * cos_theta_i) + (local_eta_i * cos_theta_t));
+    let r_perp: Float = ((local_eta_i * cos_theta_i) - (local_eta_t * cos_theta_t))
+        / ((local_eta_i * cos_theta_i) + (local_eta_t * cos_theta_t));
     (r_parl * r_parl + r_perp * r_perp) / 2.0
 }
 
 /// Computes the Fresnel reflectance at the boundary between a
 /// conductor and a dielectric medium.
-pub fn fr_conductor(
-    cos_theta_i: &mut Float,
-    eta_i: Spectrum,
-    eta_t: Spectrum,
-    k: Spectrum,
-) -> Spectrum {
-    let not_clamped: Float = *cos_theta_i;
+pub fn fr_conductor(cos_theta_i: Float, eta_i: Spectrum, eta_t: Spectrum, k: Spectrum) -> Spectrum {
+    let not_clamped: Float = cos_theta_i;
     let cos_theta_i: Float = clamp_t(not_clamped, -1.0, 1.0);
     let eta: Spectrum = eta_t / eta_i;
     let eta_k: Spectrum = k / eta_i;
