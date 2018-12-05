@@ -1076,7 +1076,7 @@ impl Bxdf for MicrofacetTransmission {
         wi: &mut Vector3f,
         u: &Point2f,
         pdf: &mut Float,
-        sampled_type: &mut u8,
+        _sampled_type: &mut u8,
     ) -> Spectrum {
         if wo.z == 0.0 {
             return Spectrum::zero();

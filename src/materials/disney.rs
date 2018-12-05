@@ -370,14 +370,14 @@ impl Bxdf for DisneyClearCoat {
         wh = wh.normalize();
 
         // Clearcoat has ior = 1.5 hardcoded -> F0 = 0.04. It then uses the
-        // GTR1 distribution, which has even fatter tails than Trowbridge-Reitz
+        // gtr1 distribution, which has even fatter tails than Trowbridge-Reitz
         // (which is GTR2).
-        let Dr = GTR1(abs_cos_theta(&wh), self.gloss);
-        let Fr = fr_schlick(0.04, vec3_dot_vec3(wo, &wh));
+        let dr = gtr1(abs_cos_theta(&wh), self.gloss);
+        let fr = fr_schlick(0.04, vec3_dot_vec3(wo, &wh));
         // The geometric term always based on alpha = 0.25.
-        let Gr = smithG_GGX(abs_cos_theta(wo), 0.25) * smithG_GGX(abs_cos_theta(wi), 0.25);
+        let gr = smith_g_ggx(abs_cos_theta(wo), 0.25) * smith_g_ggx(abs_cos_theta(wi), 0.25);
 
-        Spectrum::from(self.weight * Gr * Fr * Dr / 4.0)
+        Spectrum::from(self.weight * gr * fr * dr / 4.0)
     }
 
     fn sample_f(
@@ -386,7 +386,7 @@ impl Bxdf for DisneyClearCoat {
         wi: &mut Vector3f,
         u: &Point2f,
         pdf: &mut Float,
-        sampled_type: &mut u8,
+        _sampled_type: &mut u8,
     ) -> Spectrum {
         if wo.z == 0.0 {
             return Spectrum::zero();
@@ -425,12 +425,12 @@ impl Bxdf for DisneyClearCoat {
         }
         wh = wh.normalize();
 
-        // The sampling routine samples wh exactly from the GTR1 distribution.
+        // The sampling routine samples wh exactly from the gtr1 distribution.
         // Thus, the final value of the PDF is just the value of the
         // distribution for wh converted to a mesure with respect to the
         // surface normal.
-        let Dr = GTR1(abs_cos_theta(&wh), self.gloss);
-        Dr * abs_cos_theta(&wh) / (4.0 * vec3_dot_vec3(wo, &wh))
+        let dr = gtr1(abs_cos_theta(&wh), self.gloss);
+        dr * abs_cos_theta(&wh) / (4.0 * vec3_dot_vec3(wo, &wh))
     }
 
     fn get_type(&self) -> u8 {
@@ -456,11 +456,11 @@ impl DisneyFresnel {
 }
 
 impl Fresnel for DisneyFresnel {
-    fn evaluate(&self, cos_I: Float) -> Spectrum {
+    fn evaluate(&self, cos_i: Float) -> Spectrum {
         lerp(
             self.metallic,
-            Spectrum::from(fr_dielectric(cos_I, 1.0, self.eta)),
-            fr_schlick_spectrum(self.r0, cos_I),
+            Spectrum::from(fr_dielectric(cos_i, 1.0, self.eta)),
+            fr_schlick_spectrum(self.r0, cos_i),
         )
     }
 }
@@ -531,7 +531,7 @@ fn schlick_r0_from_eta(eta: Float) -> Float {
 }
 
 #[inline]
-fn GTR1(cos_theta: Float, alpha: Float) -> Float {
+fn gtr1(cos_theta: Float, alpha: Float) -> Float {
     let alpha2 = alpha * alpha;
 
     (alpha2 - 1.0)
@@ -539,7 +539,7 @@ fn GTR1(cos_theta: Float, alpha: Float) -> Float {
 }
 
 #[inline]
-fn smithG_GGX(cos_theta: Float, alpha: Float) -> Float {
+fn smith_g_ggx(cos_theta: Float, alpha: Float) -> Float {
     let alpha2 = alpha * alpha;
     let cos_theta2 = cos_theta * cos_theta;
 
