@@ -162,8 +162,7 @@ impl UberMaterial {
                 u_rough = TrowbridgeReitzDistribution::roughness_to_alpha(u_rough);
                 v_rough = TrowbridgeReitzDistribution::roughness_to_alpha(v_rough);
             }
-            let distrib: Option<TrowbridgeReitzDistribution> =
-                Some(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
+            let distrib = Arc::new(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
             bxdfs.push(Arc::new(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
         let kr: Spectrum = op * self

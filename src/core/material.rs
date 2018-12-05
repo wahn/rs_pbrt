@@ -15,7 +15,7 @@ use core::texture::Texture;
 /// Is used to inform non-symetric BSDFs about the transported
 /// quantity so that they can correctly switch between the adjoint and
 /// non-adjoint forms.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TransportMode {
     Radiance,
     Importance,

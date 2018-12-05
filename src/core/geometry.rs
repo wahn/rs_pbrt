@@ -298,6 +298,14 @@ impl<T> Vector3<T> {
     }
 }
 
+impl Vector3<Float> {
+    /// Compute a new vector pointing in the same direction but with unit
+    /// length.
+    pub fn normalize(&self) -> Vector3<Float> {
+        *self / self.length()
+    }
+}
+
 impl<T> AddAssign<Vector3<T>> for Vector3<T>
 where
     T: AddAssign,

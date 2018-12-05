@@ -47,6 +47,7 @@ use lights::distant::DistantLight;
 use lights::infinite::InfiniteAreaLight;
 use lights::point::PointLight;
 use lights::spot::SpotLight;
+use materials::disney::DisneyMaterial;
 use materials::fourier::FourierMaterial;
 use materials::glass::GlassMaterial;
 use materials::hair::HairMaterial;
@@ -395,6 +396,8 @@ fn create_material(
             println!("TODO: CreateKdsubsurfaceMaterial");
         } else if api_state.graphics_state.material == "fourier" {
             return Some(FourierMaterial::create(&mut mp, bsdf_state));
+        } else if api_state.graphics_state.material == "disney" {
+            return Some(DisneyMaterial::create(&mut mp));
         } else {
             panic!(
                 "Material \"{}\" unknown.",

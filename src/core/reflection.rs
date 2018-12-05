@@ -13,6 +13,7 @@ use std::path::Path;
 use std::sync::Arc;
 // others
 use byteorder::{LittleEndian, ReadBytesExt};
+use num::Zero;
 // pbrt
 use core::geometry::{
     nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3, vec3_normalize,
@@ -433,15 +434,38 @@ pub trait Bxdf {
         self.get_type() & t == self.get_type()
     }
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum;
+
+    /// Sample the BxDF for the given outgoing direction, using the given pair of uniform samples.
+    ///
+    /// The default implementation uses importance sampling by using a cosine-weighted
+    /// distribution.
     fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
         u: &Point2f,
         pdf: &mut Float,
-        sampled_type: &mut u8,
-    ) -> Spectrum;
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float;
+        _sampled_type: &mut u8,
+    ) -> Spectrum {
+        *wi = cosine_sample_hemisphere(u);
+        if wo.z < 0.0 {
+            wi.z *= -1.0;
+        }
+        *pdf = self.pdf(wo, &wi);
+        self.f(wo, &wi)
+    }
+
+    /// Evaluate the PDF for the given outgoing and incoming directions.
+    ///
+    /// Note: this method needs to be consistent with ```Bxdf::sample_f()```.
+    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0
+        }
+    }
+
     fn get_type(&self) -> u8;
 }
 
@@ -483,7 +507,7 @@ impl Bxdf for ScaledBxDF {
 }
 
 pub trait Fresnel {
-    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum;
+    fn evaluate(&self, cos_theta_i: Float) -> Spectrum;
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -494,7 +518,7 @@ pub struct FresnelConductor {
 }
 
 impl Fresnel for FresnelConductor {
-    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum {
+    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         fr_conductor(cos_theta_i, self.eta_i, self.eta_t, self.k)
     }
 }
@@ -506,7 +530,7 @@ pub struct FresnelDielectric {
 }
 
 impl Fresnel for FresnelDielectric {
-    fn evaluate(&self, cos_theta_i: &mut Float) -> Spectrum {
+    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
     }
 }
@@ -515,7 +539,7 @@ impl Fresnel for FresnelDielectric {
 pub struct FresnelNoOp {}
 
 impl Fresnel for FresnelNoOp {
-    fn evaluate(&self, _cos_theta_i: &mut Float) -> Spectrum {
+    fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
         Spectrum::new(1.0 as Float)
     }
 }
@@ -554,8 +578,8 @@ impl Bxdf for SpecularReflection {
             z: wo.z,
         };
         *pdf = 1.0 as Float;
-        let mut cos_theta_i: Float = cos_theta(&*wi);
-        self.fresnel.evaluate(&mut cos_theta_i) * self.r / abs_cos_theta(&*wi)
+        let cos_theta_i: Float = cos_theta(&*wi);
+        self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
     }
     fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0 as Float
@@ -628,7 +652,7 @@ impl Bxdf for SpecularTransmission {
         }
         *pdf = 1.0;
         let mut ft: Spectrum =
-            self.t * (Spectrum::new(1.0 as Float) - self.fresnel.evaluate(&mut cos_theta(&*wi)));
+            self.t * (Spectrum::new(1.0 as Float) - self.fresnel.evaluate(cos_theta(&*wi)));
         // account for non-symmetry with transmission to different medium
         if self.mode == TransportMode::Radiance {
             ft *= Spectrum::new((eta_i * eta_i) / (eta_t * eta_t));
@@ -679,8 +703,8 @@ impl Bxdf for FresnelSpecular {
         pdf: &mut Float,
         sampled_type: &mut u8,
     ) -> Spectrum {
-        let mut ct: Float = cos_theta(wo);
-        let f: Float = fr_dielectric(&mut ct, self.eta_a, self.eta_b);
+        let ct: Float = cos_theta(wo);
+        let f: Float = fr_dielectric(ct, self.eta_a, self.eta_b);
         if sample[0] < f {
             // compute specular reflection for _FresnelSpecular_
 
@@ -796,6 +820,27 @@ impl Bxdf for LambertianReflection {
     }
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct LambertianTransmission {
+    t: Spectrum,
+}
+
+impl LambertianTransmission {
+    pub fn new(t: Spectrum) -> LambertianTransmission {
+        LambertianTransmission { t }
+    }
+}
+
+impl Bxdf for LambertianTransmission {
+    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+        self.t * INV_PI
+    }
+
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfTransmission as u8
+    }
+}
+
 pub struct OrenNayar {
     pub r: Spectrum,
     pub a: Float,
@@ -869,14 +914,14 @@ impl Bxdf for OrenNayar {
 
 pub struct MicrofacetReflection {
     pub r: Spectrum,
-    pub distribution: Option<TrowbridgeReitzDistribution>, // TODO: MicrofacetDistribution,
+    pub distribution: Arc<MicrofacetDistribution + Send + Sync>,
     pub fresnel: Arc<Fresnel + Send + Sync>,
 }
 
 impl MicrofacetReflection {
     pub fn new(
         r: Spectrum,
-        distribution: Option<TrowbridgeReitzDistribution>,
+        distribution: Arc<MicrofacetDistribution + Send + Sync>,
         fresnel: Arc<Fresnel + Send + Sync>,
     ) -> Self {
         MicrofacetReflection {
@@ -900,15 +945,12 @@ impl Bxdf for MicrofacetReflection {
             return Spectrum::new(0.0);
         }
         wh = vec3_normalize(&wh);
-        let mut dot: Float = vec3_dot_vec3(wi, &wh);
-        let f: Spectrum = self.fresnel.evaluate(&mut dot);
-        if let Some(ref distribution) = self.distribution {
-            return self.r * distribution.d(&wh) * distribution.g(wo, wi) * f
-                / (4.0 as Float * cos_theta_i * cos_theta_o);
-        } else {
-            panic!("MicrofacetReflection::f() needs self.distribution");
-        }
+        let dot: Float = vec3_dot_vec3(wi, &wh);
+        let f: Spectrum = self.fresnel.evaluate(dot);
+        self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f
+            / (4.0 as Float * cos_theta_i * cos_theta_o)
     }
+
     fn sample_f(
         &self,
         wo: &Vector3f,
@@ -921,32 +963,156 @@ impl Bxdf for MicrofacetReflection {
         if wo.z == 0.0 as Float {
             return Spectrum::default();
         }
-        if let Some(ref distribution) = self.distribution {
-            let wh: Vector3f = distribution.sample_wh(wo, u);
-            *wi = reflect(wo, &wh);
-            if !vec3_same_hemisphere_vec3(wo, &*wi) {
-                return Spectrum::default();
-            }
-            // compute PDF of _wi_ for microfacet reflection
-            *pdf = distribution.pdf(wo, &wh) / (4.0 * vec3_dot_vec3(wo, &wh));
-            return self.f(wo, &*wi);
-        } else {
-            panic!("MicrofacetReflection::f() needs self.distribution");
+        let wh: Vector3f = self.distribution.sample_wh(wo, u);
+        *wi = reflect(wo, &wh);
+        if !vec3_same_hemisphere_vec3(wo, &*wi) {
+            return Spectrum::default();
         }
+        // compute PDF of _wi_ for microfacet reflection
+        *pdf = self.distribution.pdf(wo, &wh) / (4.0 * vec3_dot_vec3(wo, &wh));
+        self.f(wo, &*wi)
     }
+
     fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if !vec3_same_hemisphere_vec3(wo, wi) {
             return 0.0 as Float;
         }
         let wh: Vector3f = vec3_normalize(&(*wo + *wi));
-        if let Some(ref distribution) = self.distribution {
-            return distribution.pdf(wo, &wh) / (4.0 * vec3_dot_vec3(wo, &wh));
-        } else {
-            panic!("MicrofacetReflection::f() needs self.distribution");
-        }
+        self.distribution.pdf(wo, &wh) / (4.0 * vec3_dot_vec3(wo, &wh))
     }
+
     fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfGlossy as u8
+    }
+}
+
+// MicrofacetTransmission
+pub struct MicrofacetTransmission {
+    t: Spectrum,
+    distribution: Arc<MicrofacetDistribution + Send + Sync>,
+    eta_a: Float,
+    eta_b: Float,
+    fresnel: FresnelDielectric,
+    mode: TransportMode,
+}
+
+impl MicrofacetTransmission {
+    pub fn new(
+        t: Spectrum,
+        distribution: Arc<MicrofacetDistribution + Send + Sync>,
+        eta_a: Float,
+        eta_b: Float,
+        mode: TransportMode,
+    ) -> MicrofacetTransmission {
+        MicrofacetTransmission {
+            t,
+            distribution,
+            eta_a,
+            eta_b,
+            fresnel: FresnelDielectric {
+                eta_i: eta_a,
+                eta_t: eta_b,
+            },
+            mode,
+        }
+    }
+}
+
+impl Bxdf for MicrofacetTransmission {
+    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            // transmission only
+            return Spectrum::zero();
+        }
+
+        let cos_theta_o = cos_theta(wo);
+        let cos_theta_i = cos_theta(wi);
+        // Handle degenerate case for microfacet reflection
+        if cos_theta_o == 0.0 || cos_theta_i == 0.0 {
+            return Spectrum::zero();
+        }
+
+        let eta = if cos_theta_o > 0.0 {
+            self.eta_b / self.eta_a
+        } else {
+            self.eta_a / self.eta_b
+        };
+
+        let mut wh = (*wo + *wi * eta).normalize();
+        if wh.z < 0.0 {
+            wh = -wh;
+        }
+
+        let f = self.fresnel.evaluate(vec3_dot_vec3(wo, &wh));
+
+        let sqrt_denom = vec3_dot_vec3(wo, &wh) + eta * vec3_dot_vec3(wi, &wh);
+        let factor = match self.mode {
+            TransportMode::Radiance => 1.0 / eta,
+            _ => 1.0,
+        };
+
+        (Spectrum::new(1.0) - f) * self.t * Float::abs(
+            self.distribution.d(&wh)
+                * self.distribution.g(wo, wi)
+                * eta
+                * eta
+                * vec3_dot_vec3(wi, &wh).abs()
+                * vec3_dot_vec3(wo, &wh).abs()
+                * factor
+                * factor
+                / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom),
+        )
+    }
+
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfTransmission as u8 | BxdfType::BsdfGlossy as u8
+    }
+
+    /// Override sample_f() to use a better importance sampling method than weighted cosine based
+    /// on the microface distribution
+    fn sample_f(
+        &self,
+        wo: &Vector3f,
+        wi: &mut Vector3f,
+        u: &Point2f,
+        pdf: &mut Float,
+        sampled_type: &mut u8,
+    ) -> Spectrum {
+        if wo.z == 0.0 {
+            return Spectrum::zero();
+        }
+
+        let wh = self.distribution.sample_wh(wo, u);
+        let eta = if cos_theta(wo) > 0.0 {
+            self.eta_a / self.eta_b
+        } else {
+            self.eta_b / self.eta_a
+        };
+
+        if refract(wo, &wh.into(), eta, wi) {
+            *pdf = self.pdf(wo, &wi);
+            self.f(wo, wi)
+        } else {
+            Spectrum::zero()
+        }
+    }
+
+    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            return 0.0;
+        }
+
+        let eta = if cos_theta(wo) > 0.0 {
+            self.eta_b / self.eta_a
+        } else {
+            self.eta_a / self.eta_b
+        };
+        let wh = (*wo + *wi * eta).normalize();
+
+        let sqrt_denom = vec3_dot_vec3(wo, &wh) + eta * vec3_dot_vec3(wi, &wh);
+        let dwh_dwi = ((eta * eta * vec3_dot_vec3(wi, &wh)) / (sqrt_denom * sqrt_denom)).abs();
+
+        self.distribution.pdf(wo, &wh) * dwh_dwi
     }
 }
 
@@ -1463,22 +1629,21 @@ pub fn vec3_same_hemisphere_vec3(w: &Vector3f, wp: &Vector3f) -> bool {
 
 /// Computes the Fresnel reflection formula for dielectric materials
 /// and unpolarized light.
-pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Float {
-    let not_clamped: Float = *cos_theta_i;
-    *cos_theta_i = clamp_t(not_clamped, -1.0, 1.0);
+pub fn fr_dielectric(cos_theta_i: Float, eta_i: Float, eta_t: Float) -> Float {
+    let mut cos_theta_i = clamp_t(cos_theta_i, -1.0, 1.0);
     // potentially swap indices of refraction
-    let entering: bool = *cos_theta_i > 0.0;
+    let entering: bool = cos_theta_i > 0.0;
     // use local copies because of potential swap (otherwise eta_i and
     // eta_t would have to be mutable)
     let mut local_eta_i = eta_i;
     let mut local_eta_t = eta_t;
     if !entering {
         std::mem::swap(&mut local_eta_i, &mut local_eta_t);
-        *cos_theta_i = (*cos_theta_i).abs();
+        cos_theta_i = cos_theta_i.abs();
     }
     // compute _cos_theta_t_ using Snell's law
     let sin_theta_i: Float = (0.0 as Float)
-        .max(1.0 as Float - *cos_theta_i * *cos_theta_i)
+        .max(1.0 as Float - cos_theta_i * cos_theta_i)
         .sqrt();
     let sin_theta_t: Float = local_eta_i / local_eta_t * sin_theta_i;
     // handle total internal reflection
@@ -1488,22 +1653,17 @@ pub fn fr_dielectric(cos_theta_i: &mut Float, eta_i: Float, eta_t: Float) -> Flo
     let cos_theta_t: Float = (0.0 as Float)
         .max(1.0 as Float - sin_theta_t * sin_theta_t)
         .sqrt();
-    let r_parl: Float = ((local_eta_t * *cos_theta_i) - (local_eta_i * cos_theta_t))
-        / ((local_eta_t * *cos_theta_i) + (local_eta_i * cos_theta_t));
-    let r_perp: Float = ((local_eta_i * *cos_theta_i) - (local_eta_t * cos_theta_t))
-        / ((local_eta_i * *cos_theta_i) + (local_eta_t * cos_theta_t));
+    let r_parl: Float = ((local_eta_t * cos_theta_i) - (local_eta_i * cos_theta_t))
+        / ((local_eta_t * cos_theta_i) + (local_eta_i * cos_theta_t));
+    let r_perp: Float = ((local_eta_i * cos_theta_i) - (local_eta_t * cos_theta_t))
+        / ((local_eta_i * cos_theta_i) + (local_eta_t * cos_theta_t));
     (r_parl * r_parl + r_perp * r_perp) / 2.0
 }
 
 /// Computes the Fresnel reflectance at the boundary between a
 /// conductor and a dielectric medium.
-pub fn fr_conductor(
-    cos_theta_i: &mut Float,
-    eta_i: Spectrum,
-    eta_t: Spectrum,
-    k: Spectrum,
-) -> Spectrum {
-    let not_clamped: Float = *cos_theta_i;
+pub fn fr_conductor(cos_theta_i: Float, eta_i: Spectrum, eta_t: Spectrum, k: Spectrum) -> Spectrum {
+    let not_clamped: Float = cos_theta_i;
     let cos_theta_i: Float = clamp_t(not_clamped, -1.0, 1.0);
     let eta: Spectrum = eta_t / eta_i;
     let eta_k: Spectrum = k / eta_i;
