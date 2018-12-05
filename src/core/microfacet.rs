@@ -27,6 +27,7 @@ pub trait MicrofacetDistribution {
             self.d(wh) * abs_cos_theta(wh)
         }
     }
+    fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f;
     fn get_sample_visible_area(&self) -> bool;
 }
 
@@ -62,7 +63,41 @@ impl TrowbridgeReitzDistribution {
             + 0.0171201 * x * x * x
             + 0.000640711 * x * x * x * x
     }
-    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+}
+
+impl MicrofacetDistribution for TrowbridgeReitzDistribution {
+    fn d(&self, wh: &Vector3f) -> Float {
+        let tan_2_theta: Float = tan_2_theta(wh);
+        if tan_2_theta.is_infinite() {
+            return 0.0 as Float;
+        }
+        let cos_4_theta: Float = cos_2_theta(wh) * cos_2_theta(wh);
+        let e: Float = (cos_2_phi(wh) / (self.alpha_x * self.alpha_x)
+            + sin_2_phi(wh) / (self.alpha_y * self.alpha_y))
+            * tan_2_theta;
+        1.0 as Float
+            / (PI
+                * self.alpha_x
+                * self.alpha_y
+                * cos_4_theta
+                * (1.0 as Float + e)
+                * (1.0 as Float + e))
+    }
+
+    fn lambda(&self, w: &Vector3f) -> Float {
+        let abs_tan_theta: Float = tan_theta(w).abs();
+        if abs_tan_theta.is_infinite() {
+            return 0.0;
+        }
+        // compute _alpha_ for direction _w_
+        let alpha: Float = (cos_2_phi(w) * self.alpha_x * self.alpha_x
+            + sin_2_phi(w) * self.alpha_y * self.alpha_y)
+            .sqrt();
+        let alpha_2_tan_2_theta: Float = (alpha * abs_tan_theta) * (alpha * abs_tan_theta);
+        (-1.0 as Float + (1.0 as Float + alpha_2_tan_2_theta).sqrt()) / 2.0 as Float
+    }
+
+    fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
         let mut wh: Vector3f;
         if !self.sample_visible_area {
             let cos_theta;
@@ -100,38 +135,7 @@ impl TrowbridgeReitzDistribution {
         }
         wh
     }
-}
 
-impl MicrofacetDistribution for TrowbridgeReitzDistribution {
-    fn d(&self, wh: &Vector3f) -> Float {
-        let tan_2_theta: Float = tan_2_theta(wh);
-        if tan_2_theta.is_infinite() {
-            return 0.0 as Float;
-        }
-        let cos_4_theta: Float = cos_2_theta(wh) * cos_2_theta(wh);
-        let e: Float = (cos_2_phi(wh) / (self.alpha_x * self.alpha_x)
-            + sin_2_phi(wh) / (self.alpha_y * self.alpha_y))
-            * tan_2_theta;
-        1.0 as Float
-            / (PI
-                * self.alpha_x
-                * self.alpha_y
-                * cos_4_theta
-                * (1.0 as Float + e)
-                * (1.0 as Float + e))
-    }
-    fn lambda(&self, w: &Vector3f) -> Float {
-        let abs_tan_theta: Float = tan_theta(w).abs();
-        if abs_tan_theta.is_infinite() {
-            return 0.0;
-        }
-        // compute _alpha_ for direction _w_
-        let alpha: Float = (cos_2_phi(w) * self.alpha_x * self.alpha_x
-            + sin_2_phi(w) * self.alpha_y * self.alpha_y)
-            .sqrt();
-        let alpha_2_tan_2_theta: Float = (alpha * abs_tan_theta) * (alpha * abs_tan_theta);
-        (-1.0 as Float + (1.0 as Float + alpha_2_tan_2_theta).sqrt()) / 2.0 as Float
-    }
     fn get_sample_visible_area(&self) -> bool {
         self.sample_visible_area
     }
