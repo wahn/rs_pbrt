@@ -58,10 +58,6 @@ impl GlassMaterial {
                 urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
                 vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
             }
-            let distrib: Option<TrowbridgeReitzDistribution> = match is_specular {
-                true => None,
-                false => Some(TrowbridgeReitzDistribution::new(urough, vrough, true)),
-            };
             if !r.is_black() {
                 let fresnel = Arc::new(FresnelDielectric {
                     eta_i: 1.0 as Float,
@@ -70,6 +66,7 @@ impl GlassMaterial {
                 if is_specular {
                     bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
                 } else {
+                    let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
                     bxdfs.push(Arc::new(MicrofacetReflection::new(r, distrib, fresnel)));
                 }
             }

@@ -60,16 +60,8 @@ impl PlasticMaterial {
             if self.remap_roughness {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
-            let distrib: TrowbridgeReitzDistribution = TrowbridgeReitzDistribution {
-                alpha_x: rough,
-                alpha_y: rough,
-                sample_visible_area: true,
-            };
-            bxdfs.push(Arc::new(MicrofacetReflection::new(
-                ks,
-                Some(distrib),
-                fresnel,
-            )));
+            let distrib = Arc::new(TrowbridgeReitzDistribution::new(rough, rough, true));
+            bxdfs.push(Arc::new(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
         Bsdf::new(si, 1.0, bxdfs)
     }

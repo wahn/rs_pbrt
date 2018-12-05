@@ -159,8 +159,7 @@ impl MetalMaterial {
             eta_t: self.eta.evaluate(si),
             k: self.k.evaluate(si),
         });
-        let distrib: Option<TrowbridgeReitzDistribution> =
-            Some(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
+        let distrib = Arc::new(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
         bxdfs.push(Arc::new(MicrofacetReflection::new(
             Spectrum::new(1.0 as Float),
             distrib,
