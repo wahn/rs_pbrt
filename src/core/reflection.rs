@@ -13,6 +13,7 @@ use std::path::Path;
 use std::sync::Arc;
 // others
 use byteorder::{LittleEndian, ReadBytesExt};
+use num::Zero;
 // pbrt
 use core::geometry::{
     nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3, vec3_normalize,
@@ -816,6 +817,27 @@ impl Bxdf for LambertianReflection {
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct LambertianTransmission {
+    t: Spectrum,
+}
+
+impl LambertianTransmission {
+    pub fn new(t: Spectrum) -> LambertianTransmission {
+        LambertianTransmission { t }
+    }
+}
+
+impl Bxdf for LambertianTransmission {
+    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+        self.t * INV_PI
+    }
+
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfTransmission as u8
     }
 }
 
