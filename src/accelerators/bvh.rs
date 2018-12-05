@@ -176,13 +176,13 @@ impl BVHAccel {
     pub fn create(prims: Vec<Arc<Primitive + Send + Sync>>, ps: &ParamSet) -> Arc<BVHAccel> {
         let split_method_name: String = ps.find_one_string("splitmethod", String::from("sah"));
         let split_method;
-        if split_method_name == String::from("sah") {
+        if split_method_name == "sah" {
             split_method = SplitMethod::SAH;
-        } else if split_method_name == String::from("hlbvh") {
+        } else if split_method_name == "hlbvh" {
             split_method = SplitMethod::HLBVH;
-        } else if split_method_name == String::from("middle") {
+        } else if split_method_name == "middle" {
             split_method = SplitMethod::Middle;
-        } else if split_method_name == String::from("equal") {
+        } else if split_method_name == "equal" {
             split_method = SplitMethod::EqualCounts;
         } else {
             println!(

@@ -479,7 +479,7 @@ impl ParamSet {
     }
     pub fn find_one_filename(&self, name: &str, d: String) -> String {
         let filename: String = self.find_one_string(name, String::new());
-        if filename == String::new() {
+        if filename == "" {
             return d;
         }
         // TODO: filename = AbsolutePath(ResolveFilename(filename));
@@ -648,7 +648,7 @@ impl TextureParams {
         n: &str,
     ) -> Option<Arc<Texture<Spectrum> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n);
-        if name == String::new() {
+        if name == "" {
             name = self.material_params.find_texture(n);
         }
         if name != String::new() {
@@ -688,7 +688,7 @@ impl TextureParams {
         n: &str,
     ) -> Option<Arc<Texture<Float> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n);
-        if name == String::new() {
+        if name == "" {
             let s: Vec<Float> = self.geom_params.find_float(n);
             if s.len() > 1 {
                 println!(

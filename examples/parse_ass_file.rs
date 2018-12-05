@@ -265,10 +265,10 @@ fn main() {
                         match inner_pair.as_rule() {
                             Rule::ident => {
                                 let node_type = inner_pair.clone().into_span().as_str();
-                                if node_type == String::from("options")
-                                    || node_type == String::from("standard_surface")
-                                    || node_type == String::from("spot_light")
-                                    || node_type == String::from("point_light")
+                                if node_type == "options"
+                                    || node_type == "standard_surface"
+                                    || node_type == "spot_light"
+                                    || node_type == "point_light"
                                 {
                                     print!("{} {{", node_type);
                                 }
@@ -278,14 +278,14 @@ fn main() {
                                     if let Some(next) = iter.next() {
                                         if next != String::from("}") {
                                             // for all nodes
-                                            if next == String::from("name") {
+                                            if next == "name" {
                                                 if let Some(name) = iter.next() {
                                                     node_name = name.to_string();
                                                 }
-                                                if node_type == String::from("standard_surface") {
+                                                if node_type == "standard_surface" {
                                                     print!(" {} {} ", next, node_name);
                                                 }
-                                            } else if next == String::from("matrix") {
+                                            } else if next == "matrix" {
                                                 let mut elems: Vec<Float> = Vec::new();
                                                 let expected: u32 = 16;
                                                 for _i in 0..expected {
@@ -325,7 +325,7 @@ fn main() {
                                                     m: cur_transform.m_inv,
                                                     m_inv: cur_transform.m,
                                                 };
-                                                if node_type == String::from("persp_camera")
+                                                if node_type == "persp_camera"
                                                     && node_name == render_camera
                                                 {
                                                     let transform_start_time: Float = 0.0;
@@ -343,44 +343,44 @@ fn main() {
                                                 }
                                             }
                                             // by node type
-                                            if node_type == String::from("options") {
-                                                if next == String::from("xres") {
+                                            if node_type == "options" {
+                                                if next == "xres" {
                                                     if let Some(xres_str) = iter.next() {
                                                         xres = i32::from_str(xres_str).unwrap();
                                                         print!("\n xres {} ", xres);
                                                     }
-                                                } else if next == String::from("yres") {
+                                                } else if next == "yres" {
                                                     if let Some(yres_str) = iter.next() {
                                                         yres = i32::from_str(yres_str).unwrap();
                                                         print!("\n yres {} ", yres);
                                                     }
-                                                } else if next == String::from("camera") {
+                                                } else if next == "camera" {
                                                     if let Some(camera_str) = iter.next() {
                                                         // strip surrounding double quotes
                                                         let v: Vec<&str> = camera_str.split('"').collect();
                                                         render_camera = v[1].to_string();
                                                         print!("\n camera {:?} ", render_camera);
                                                     }
-                                                } else if next == String::from("GI_total_depth") {
+                                                } else if next == "GI_total_depth" {
                                                     if let Some(max_depth_str) = iter.next() {
                                                         max_depth =
                                                             i32::from_str(max_depth_str).unwrap();
                                                         print!("\n GI_total_depth {} ", max_depth);
                                                     }
                                                 }
-                                            } else if node_type == String::from("persp_camera")
+                                            } else if node_type == "persp_camera"
                                                 && node_name == render_camera
                                             {
                                                 camera_name = String::from("perspective");
-                                                if next == String::from("fov") {
+                                                if next == "fov" {
                                                     if let Some(fov_str) = iter.next() {
                                                         fov = f32::from_str(fov_str).unwrap();
                                                         // print!("\n fov {} ", fov);
                                                     }
                                                 }
-                                            } else if node_type == String::from("gaussian_filter") {
+                                            } else if node_type == "gaussian_filter" {
                                                 filter_name = String::from("gaussian");
-                                                if next == String::from("width") {
+                                                if next == "width" {
                                                     if let Some(filter_width_str) = iter.next() {
                                                         filter_width =
                                                             f32::from_str(filter_width_str)
@@ -388,14 +388,14 @@ fn main() {
                                                         // print!("\n filter_width {} ", filter_width);
                                                     }
                                                 }
-                                            } else if node_type == String::from("mesh_light") {
-                                                if next == String::from("intensity") {
+                                            } else if node_type == "mesh_light" {
+                                                if next == "intensity" {
                                                     if let Some(intensity_str) = iter.next() {
                                                         intensity =
                                                             f32::from_str(intensity_str).unwrap();
                                                         // print!("\n intensity {} ", intensity);
                                                     }
-                                                } else if next == String::from("color") {
+                                                } else if next == "color" {
                                                     let mut color_r: Float = 0.0;
                                                     let mut color_g: Float = 0.0;
                                                     let mut color_b: Float = 0.0;
@@ -414,13 +414,13 @@ fn main() {
                                                 //     "\n color {} {} {} ",
                                                 //     color_r, color_g, color_b
                                                 // );
-                                                } else if next == String::from("samples") {
+                                                } else if next == "samples" {
                                                     if let Some(samples_str) = iter.next() {
                                                         samples =
                                                             i32::from_str(samples_str).unwrap();
                                                         // print!("\n samples {} ", samples);
                                                     }
-                                                } else if next == String::from("mesh") {
+                                                } else if next == "mesh" {
                                                     if let Some(mesh_str) = iter.next() {
                                                         // strip surrounding double quotes
                                                         let v: Vec<&str> = mesh_str.split('"').collect();
@@ -428,14 +428,14 @@ fn main() {
                                                         // print!("\n mesh {:?} ", mesh);
                                                     }
                                                 }
-                                            } else if node_type == String::from("point_light") {
-                                                if next == String::from("intensity") {
+                                            } else if node_type == "point_light" {
+                                                if next == "intensity" {
                                                     if let Some(intensity_str) = iter.next() {
                                                         intensity =
                                                             f32::from_str(intensity_str).unwrap();
                                                         print!("\n intensity {} ", intensity);
                                                     }
-                                                } else if next == String::from("color") {
+                                                } else if next == "color" {
                                                     let mut color_r: Float = 0.0;
                                                     let mut color_g: Float = 0.0;
                                                     let mut color_b: Float = 0.0;
@@ -455,14 +455,14 @@ fn main() {
                                                         color_r, color_g, color_b
                                                     );
                                                 }
-                                            } else if node_type == String::from("spot_light") {
-                                                if next == String::from("intensity") {
+                                            } else if node_type == "spot_light" {
+                                                if next == "intensity" {
                                                     if let Some(intensity_str) = iter.next() {
                                                         intensity =
                                                             f32::from_str(intensity_str).unwrap();
                                                         print!("\n intensity {} ", intensity);
                                                     }
-                                                } else if next == String::from("color") {
+                                                } else if next == "color" {
                                                     let mut color_r: Float = 0.0;
                                                     let mut color_g: Float = 0.0;
                                                     let mut color_b: Float = 0.0;
@@ -481,15 +481,15 @@ fn main() {
                                                         "\n color {} {} {} ",
                                                         color_r, color_g, color_b
                                                     );
-                                                } else if next == String::from("cone_angle") {
+                                                } else if next == "cone_angle" {
                                                     if let Some(cone_angle_str) = iter.next() {
                                                         cone_angle =
                                                             f32::from_str(cone_angle_str).unwrap();
                                                         print!("\n cone_angle {} ", cone_angle);
                                                     }
                                                 }
-                                            } else if node_type == String::from("polymesh") {
-                                                if next == String::from("vlist") {
+                                            } else if node_type == "polymesh" {
+                                                if next == "vlist" {
                                                     // parameter_name: vlist
                                                     // <num_elements>
                                                     // <num_motionblur_keys>
@@ -572,7 +572,7 @@ fn main() {
                                                 // for point in p {
                                                 //     println!(" {:?}", point);
                                                 // }
-                                                } else if next == String::from("nsides") {
+                                                } else if next == "nsides" {
                                                     nsides = Vec::new();
                                                     loop {
                                                         let mut is_int: bool = false;
@@ -600,9 +600,7 @@ fn main() {
                                                     let mut followed_by_uint: bool = false;
                                                     // check if next string is 'UINT' (or not)
                                                     if let Some(check_for_uint_str) = iter.peek() {
-                                                        if **check_for_uint_str
-                                                            == String::from("UINT")
-                                                        {
+                                                        if *check_for_uint_str == "UINT" {
                                                             followed_by_uint = true;
                                                         }
                                                     }
@@ -627,7 +625,7 @@ fn main() {
                                                         // print!("\n nsides ... ");
                                                     }
                                                 // print!("\n {:?} ", nsides);
-                                                } else if next == String::from("vidxs") {
+                                                } else if next == "vidxs" {
                                                     // parameter_name: vidxs
                                                     // <num_elements>
                                                     // <num_motionblur_keys>
@@ -677,7 +675,7 @@ fn main() {
                                                 //     num_elements, num_motionblur_keys
                                                 // );
                                                 // print!("\n {:?} ", vi);
-                                                } else if next == String::from("shidxs") {
+                                                } else if next == "shidxs" {
                                                     shidxs = Vec::new();
                                                     loop {
                                                         let mut is_int: bool = false;
@@ -705,9 +703,7 @@ fn main() {
                                                     let mut followed_by_byte: bool = false;
                                                     // check if next string is 'BYTE' (or not)
                                                     if let Some(check_for_uint_str) = iter.peek() {
-                                                        if **check_for_uint_str
-                                                            == String::from("BYTE")
-                                                        {
+                                                        if *check_for_uint_str == "BYTE" {
                                                             followed_by_byte = true;
                                                         }
                                                     }
@@ -732,48 +728,47 @@ fn main() {
                                                         // print!("\n shidxs ... ");
                                                     }
                                                 // print!("\n {:?} ", shidxs);
-                                                } else if next == String::from("shader") {
+                                                } else if next == "shader" {
                                                     shader_names = get_shader_names(&mut iter);
                                                     // print!("\n {:?} ", shader_names);
                                                 }
-                                            } else if node_type == String::from("disk") {
-                                                if next == String::from("radius") {
+                                            } else if node_type == "disk" {
+                                                if next == "radius" {
                                                     if let Some(radius_str) = iter.next() {
                                                         radius = f32::from_str(radius_str).unwrap();
                                                         // print!("\n radius {} ", radius);
                                                     }
-                                                } else if next == String::from("hole") {
+                                                } else if next == "hole" {
                                                     if let Some(hole_str) = iter.next() {
                                                         hole = f32::from_str(hole_str).unwrap();
                                                         // print!("\n hole {} ", hole);
                                                     }
-                                                } else if next == String::from("shader") {
+                                                } else if next == "shader" {
                                                     shader_names = get_shader_names(&mut iter);
                                                     // print!("\n {:?} ", shader_names);
                                                 }
-                                            } else if node_type == String::from("sphere") {
-                                                if next == String::from("radius") {
+                                            } else if node_type == "sphere" {
+                                                if next == "radius" {
                                                     if let Some(radius_str) = iter.next() {
                                                         radius = f32::from_str(radius_str).unwrap();
                                                         // print!("\n radius {} ", radius);
                                                     }
-                                                } else if next == String::from("shader") {
+                                                } else if next == "shader" {
                                                     shader_names = get_shader_names(&mut iter);
                                                     // print!("\n {:?} ", shader_names);
                                                 }
-                                            } else if node_type == String::from("cylinder") {
-                                                if next == String::from("radius") {
+                                            } else if node_type == "cylinder" {
+                                                if next == "radius" {
                                                     if let Some(radius_str) = iter.next() {
                                                         radius = f32::from_str(radius_str).unwrap();
                                                         // print!("\n radius {} ", radius);
                                                     }
-                                                } else if next == String::from("shader") {
+                                                } else if next == "shader" {
                                                     shader_names = get_shader_names(&mut iter);
                                                     // print!("\n {:?} ", shader_names);
                                                 }
-                                            } else if node_type == String::from("standard_surface")
-                                            {
-                                                if next == String::from("base_color") {
+                                            } else if node_type == "standard_surface" {
+                                                if next == "base_color" {
                                                     let mut color_r: Float = 0.0;
                                                     let mut color_g: Float = 0.0;
                                                     let mut color_b: Float = 0.0;
@@ -792,7 +787,7 @@ fn main() {
                                                         "\n base_color {} {} {} ",
                                                         color_r, color_g, color_b
                                                     );
-                                                } else if next == String::from("specular_color") {
+                                                } else if next == "specular_color" {
                                                     let mut color_r: Float = 0.0;
                                                     let mut color_g: Float = 0.0;
                                                     let mut color_b: Float = 0.0;
@@ -811,8 +806,7 @@ fn main() {
                                                         "\n specular_color {} {} {} ",
                                                         color_r, color_g, color_b
                                                     );
-                                                } else if next == String::from("specular_roughness")
-                                                {
+                                                } else if next == "specular_roughness" {
                                                     if let Some(specular_roughness_str) =
                                                         iter.next()
                                                     {
@@ -824,7 +818,7 @@ fn main() {
                                                             specular_roughness
                                                         );
                                                     }
-                                                } else if next == String::from("metalness") {
+                                                } else if next == "metalness" {
                                                     if let Some(metalness_str) = iter.next() {
                                                         metalness =
                                                             f32::from_str(metalness_str).unwrap();
@@ -834,15 +828,15 @@ fn main() {
                                             }
                                         } else {
                                             // by node type
-                                            if node_type == String::from("options") {
+                                            if node_type == "options" {
                                                 println!("}}");
-                                            } else if node_type == String::from("persp_camera")
+                                            } else if node_type == "persp_camera"
                                                 && node_name == render_camera
                                             {
                                                 // println!("}}");
-                                            } else if node_type == String::from("gaussian_filter") {
+                                            } else if node_type == "gaussian_filter" {
                                                 // println!("}}");
-                                            } else if node_type == String::from("mesh_light") {
+                                            } else if node_type == "mesh_light" {
                                                 match named_primitives.get_mut(mesh.as_str()) {
                                                     Some((_shader_names, prims_vec)) => {
                                                         // for i in 0..prims.len() {
@@ -885,7 +879,7 @@ fn main() {
                                                     }
                                                 }
                                             // println!("}}");
-                                            } else if node_type == String::from("point_light") {
+                                            } else if node_type == "point_light" {
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let point_light = Arc::new(PointLight::new(
                                                     &cur_transform,
@@ -894,7 +888,7 @@ fn main() {
                                                 ));
                                                 lights.push(point_light);
                                                 println!("}}");
-                                            } else if node_type == String::from("spot_light") {
+                                            } else if node_type == "spot_light" {
                                                 let mi: MediumInterface = MediumInterface::default();
                                                 let spot_light = Arc::new(SpotLight::new(
                                                     &cur_transform,
@@ -905,7 +899,7 @@ fn main() {
                                                 ));
                                                 lights.push(spot_light);
                                                 println!("}}");
-                                            } else if node_type == String::from("polymesh") {
+                                            } else if node_type == "polymesh" {
                                                 // make sure there are no out of-bounds vertex indices
                                                 for i in 0..vi.len() {
                                                     if vi[i] as usize >= p_ws_len {
@@ -1007,7 +1001,7 @@ fn main() {
                                                     (shader_names.clone(), prims),
                                                 );
                                             // println!("}}");
-                                            } else if node_type == String::from("disk") {
+                                            } else if node_type == "disk" {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let disk = Arc::new(Disk::new(
                                                     obj_to_world,
@@ -1039,7 +1033,7 @@ fn main() {
                                                     (shader_names.clone(), prims),
                                                 );
                                             // println!("}}");
-                                            } else if node_type == String::from("sphere") {
+                                            } else if node_type == "sphere" {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 let sphere = Arc::new(Sphere::new(
                                                     obj_to_world,
@@ -1071,7 +1065,7 @@ fn main() {
                                                     (shader_names.clone(), prims),
                                                 );
                                             // println!("}}");
-                                            } else if node_type == String::from("cylinder") {
+                                            } else if node_type == "cylinder" {
                                                 let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
                                                 // TODO: assumption about z_min and z_max
                                                 let cylinder = Arc::new(Cylinder::new(
@@ -1103,8 +1097,7 @@ fn main() {
                                                     (shader_names.clone(), prims),
                                                 );
                                             // println!("}}");
-                                            } else if node_type == String::from("standard_surface")
-                                            {
+                                            } else if node_type == "standard_surface" {
                                                 if metalness > 0.0 as Float {
                                                     if metalness == 1.0 as Float {
                                                         let kr = Arc::new(ConstantTexture::new(
@@ -1208,18 +1201,18 @@ fn main() {
         println!("number of primitives = {:?}", primitives.len());
         // MakeFilter
         let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
-        if filter_name == String::from("box") {
+        if filter_name == "box" {
             println!("TODO: CreateBoxFilter");
-        } else if filter_name == String::from("gaussian") {
+        } else if filter_name == "gaussian" {
             let mut filter_params: ParamSet = ParamSet::default();
             filter_params.add_float(String::from("xwidth"), filter_width);
             filter_params.add_float(String::from("ywidth"), filter_width);
             some_filter = Some(GaussianFilter::create(&filter_params));
-        } else if filter_name == String::from("mitchell") {
+        } else if filter_name == "mitchell" {
             println!("TODO: CreateMitchellFilter");
-        } else if filter_name == String::from("sinc") {
+        } else if filter_name == "sinc" {
             println!("TODO: CreateSincFilter");
-        } else if filter_name == String::from("triangle") {
+        } else if filter_name == "triangle" {
             println!("TODO: CreateTriangleFilter");
         } else {
             panic!("Filter \"{}\" unknown.", filter_name);
@@ -1247,7 +1240,7 @@ fn main() {
             // MakeCamera
             let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
             let mut medium_interface: MediumInterface = MediumInterface::default();
-            if camera_name == String::from("perspective") {
+            if camera_name == "perspective" {
                 let mut camera_params: ParamSet = ParamSet::default();
                 camera_params.add_float(String::from("fov"), fov);
                 let camera: Arc<Camera + Send + Sync> = PerspectiveCamera::create(
@@ -1257,11 +1250,11 @@ fn main() {
                     medium_interface.outside,
                 );
                 some_camera = Some(camera);
-            } else if camera_name == String::from("orthographic") {
+            } else if camera_name == "orthographic" {
                 println!("TODO: CreateOrthographicCamera");
-            } else if camera_name == String::from("realistic") {
+            } else if camera_name == "realistic" {
                 println!("TODO: CreateRealisticCamera");
-            } else if camera_name == String::from("environment") {
+            } else if camera_name == "environment" {
                 println!("TODO: CreateEnvironmentCamera");
             } else {
                 panic!("Camera \"{}\" unknown.", camera_name);

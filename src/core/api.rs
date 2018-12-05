@@ -311,13 +311,11 @@ fn create_material(
         }
     } else {
         // MakeMaterial
-        if api_state.graphics_state.material == String::from("")
-            || api_state.graphics_state.material == String::from("none")
-        {
+        if api_state.graphics_state.material == "" || api_state.graphics_state.material == "none" {
             return None;
-        } else if api_state.graphics_state.material == String::from("matte") {
+        } else if api_state.graphics_state.material == "matte" {
             return Some(MatteMaterial::create(&mut mp));
-        } else if api_state.graphics_state.material == String::from("plastic") {
+        } else if api_state.graphics_state.material == "plastic" {
             let kd = mp.get_spectrum_texture("Kd", Spectrum::new(0.25 as Float));
             let ks = mp.get_spectrum_texture("Ks", Spectrum::new(0.25 as Float));
             let roughness = mp.get_float_texture("roughness", 0.1 as Float);
@@ -325,9 +323,9 @@ fn create_material(
             let remap_roughness: bool = mp.find_bool("remaproughness", true);
             let plastic = Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
             return Some(plastic);
-        } else if api_state.graphics_state.material == String::from("translucent") {
+        } else if api_state.graphics_state.material == "translucent" {
             println!("TODO: CreateTranslucentMaterial");
-        } else if api_state.graphics_state.material == String::from("glass") {
+        } else if api_state.graphics_state.material == "glass" {
             let kr = mp.get_spectrum_texture("Kr", Spectrum::new(1.0 as Float));
             let kt = mp.get_spectrum_texture("Kt", Spectrum::new(1.0 as Float));
             // let some_eta = mp.get_float_texture_or_null(String::from("eta"));
@@ -354,14 +352,14 @@ fn create_material(
                 remap_roughness: remap_roughness,
             });
             return Some(glass);
-        } else if api_state.graphics_state.material == String::from("mirror") {
+        } else if api_state.graphics_state.material == "mirror" {
             let kr = mp.get_spectrum_texture("Kr", Spectrum::new(0.9 as Float));
             // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
             let mirror = Arc::new(MirrorMaterial { kr: kr });
             return Some(mirror);
-        } else if api_state.graphics_state.material == String::from("hair") {
+        } else if api_state.graphics_state.material == "hair" {
             return Some(HairMaterial::create(&mut mp));
-        } else if api_state.graphics_state.material == String::from("mix") {
+        } else if api_state.graphics_state.material == "mix" {
             let m1: String = mp.find_string("namedmaterial1", String::from(""));
             let m2: String = mp.find_string("namedmaterial2", String::from(""));
             let mat1 = match api_state.graphics_state.named_materials.get(&m1) {
@@ -385,17 +383,17 @@ fn create_material(
                 }
             }
             return None;
-        } else if api_state.graphics_state.material == String::from("metal") {
+        } else if api_state.graphics_state.material == "metal" {
             return Some(MetalMaterial::create(&mut mp));
-        } else if api_state.graphics_state.material == String::from("substrate") {
+        } else if api_state.graphics_state.material == "substrate" {
             return Some(SubstrateMaterial::create(&mut mp));
-        } else if api_state.graphics_state.material == String::from("uber") {
+        } else if api_state.graphics_state.material == "uber" {
             return Some(UberMaterial::create(&mut mp));
-        } else if api_state.graphics_state.material == String::from("subsurface") {
+        } else if api_state.graphics_state.material == "subsurface" {
             println!("TODO: CreateSubsurfaceMaterial");
-        } else if api_state.graphics_state.material == String::from("kdsubsurface") {
+        } else if api_state.graphics_state.material == "kdsubsurface" {
             println!("TODO: CreateKdsubsurfaceMaterial");
-        } else if api_state.graphics_state.material == String::from("fourier") {
+        } else if api_state.graphics_state.material == "fourier" {
             return Some(FourierMaterial::create(&mut mp, bsdf_state));
         } else {
             panic!(
@@ -446,7 +444,7 @@ fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
 
 fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     // MakeLight (api.cpp:591)
-    if api_state.param_set.name == String::from("point") {
+    if api_state.param_set.name == "point" {
         let i: Spectrum = api_state
             .param_set
             .find_one_spectrum("I", Spectrum::new(1.0 as Float));
@@ -463,7 +461,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         }) * api_state.cur_transform.t[0];
         let point_light = Arc::new(PointLight::new(&l2w, medium_interface, &(i * sc)));
         api_state.render_options.lights.push(point_light);
-    } else if api_state.param_set.name == String::from("spot") {
+    } else if api_state.param_set.name == "spot" {
         // CreateSpotLight
         let i: Spectrum = api_state
             .param_set
@@ -518,11 +516,11 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             coneangle - conedelta,
         ));
         api_state.render_options.lights.push(spot_light);
-    } else if api_state.param_set.name == String::from("goniometric") {
+    } else if api_state.param_set.name == "goniometric" {
         println!("TODO: CreateGoniometricLight");
-    } else if api_state.param_set.name == String::from("projection") {
+    } else if api_state.param_set.name == "projection" {
         println!("TODO: CreateProjectionLight");
-    } else if api_state.param_set.name == String::from("distant") {
+    } else if api_state.param_set.name == "distant" {
         // CreateDistantLight
         let l: Spectrum = api_state
             .param_set
@@ -554,9 +552,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             &dir,
         ));
         api_state.render_options.lights.push(distant_light);
-    } else if api_state.param_set.name == String::from("infinite")
-        || api_state.param_set.name == String::from("exinfinite")
-    {
+    } else if api_state.param_set.name == "infinite" || api_state.param_set.name == "exinfinite" {
         let l: Spectrum = api_state
             .param_set
             .find_one_spectrum("L", Spectrum::new(1.0 as Float));
@@ -593,7 +589,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
 
 fn make_medium(api_state: &mut ApiState) {
     let medium_type: String = api_state.param_set.find_one_string("type", String::new());
-    if medium_type == String::from("") {
+    if medium_type == "" {
         panic!("ERROR: No parameter string \"type\" found in MakeNamedMedium");
     }
     // MakeMedium (api.cpp:685)
@@ -614,9 +610,9 @@ fn make_medium(api_state: &mut ApiState) {
     sig_a = api_state.param_set.find_one_spectrum("sigma_a", sig_a) * scale;
     sig_s = api_state.param_set.find_one_spectrum("sigma_s", sig_s) * scale;
     let some_medium: Option<Arc<Medium + Sync + Send>>;
-    if medium_type == String::from("homogeneous") {
+    if medium_type == "homogeneous" {
         some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
-    } else if medium_type == String::from("heterogeneous") {
+    } else if medium_type == "heterogeneous" {
         panic!("TODO: make_medium(\"heterogeneous\")");
     } else {
         panic!("MakeMedium: unknown name {}", medium_type);
@@ -641,7 +637,7 @@ fn make_texture(api_state: &mut ApiState) {
         geom_params: geom_params,
         material_params: material_params,
     };
-    if api_state.param_set.tex_type == String::from("float") {
+    if api_state.param_set.tex_type == "float" {
         match api_state
             .graphics_state
             .spectrum_textures
@@ -654,9 +650,9 @@ fn make_texture(api_state: &mut ApiState) {
         }
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeFloatTexture(texname, curTransform[0], tp);
-        if api_state.param_set.tex_name == String::from("constant") {
+        if api_state.param_set.tex_name == "constant" {
             println!("TODO: CreateConstantFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("scale") {
+        } else if api_state.param_set.tex_name == "scale" {
             let ft = Arc::new(ScaleTexture::<Float>::new(
                 tp.get_float_texture("tex1", 1.0 as Float),
                 tp.get_float_texture("tex2", 1.0 as Float),
@@ -665,15 +661,15 @@ fn make_texture(api_state: &mut ApiState) {
                 .graphics_state
                 .float_textures
                 .insert(api_state.param_set.name.clone(), ft);
-        } else if api_state.param_set.tex_name == String::from("mix") {
+        } else if api_state.param_set.tex_name == "mix" {
             println!("TODO: CreateMixFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("bilerp") {
+        } else if api_state.param_set.tex_name == "bilerp" {
             println!("TODO: CreateBilerpFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("imagemap") {
+        } else if api_state.param_set.tex_name == "imagemap" {
             // CreateImageFloatTexture
             let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
             let mapping: String = tp.find_string("mapping", String::from("uv"));
-            if mapping == String::from("uv") {
+            if mapping == "uv" {
                 let su: Float = tp.find_float("uscale", 1.0);
                 let sv: Float = tp.find_float("vscale", 1.0);
                 let du: Float = tp.find_float("udelta", 0.0);
@@ -684,11 +680,11 @@ fn make_texture(api_state: &mut ApiState) {
                     du: du,
                     dv: dv,
                 }));
-            } else if mapping == String::from("spherical") {
+            } else if mapping == "spherical" {
                 println!("TODO: SphericalMapping2D");
-            } else if mapping == String::from("cylindrical") {
+            } else if mapping == "cylindrical" {
                 println!("TODO: CylindricalMapping2D");
-            } else if mapping == String::from("planar") {
+            } else if mapping == "planar" {
                 map = Some(Box::new(PlanarMapping2D {
                     vs: tp.find_vector3f(
                         "v1",
@@ -717,9 +713,9 @@ fn make_texture(api_state: &mut ApiState) {
             let do_trilinear: bool = tp.find_bool("trilinear", false);
             let wrap: String = tp.find_string("wrap", String::from("repeat"));
             let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
-            if wrap == String::from("black") {
+            if wrap == "black" {
                 wrap_mode = ImageWrap::Black;
-            } else if wrap == String::from("clamp") {
+            } else if wrap == "clamp" {
                 wrap_mode = ImageWrap::Clamp;
             }
             let scale: Float = tp.find_float("scale", 1.0);
@@ -754,21 +750,21 @@ fn make_texture(api_state: &mut ApiState) {
                     .float_textures
                     .insert(api_state.param_set.name.clone(), ft);
             }
-        } else if api_state.param_set.tex_name == String::from("uv") {
+        } else if api_state.param_set.tex_name == "uv" {
             println!("TODO: CreateUVFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("checkerboard") {
+        } else if api_state.param_set.tex_name == "checkerboard" {
             println!("TODO: CreateCheckerboardFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("dots") {
+        } else if api_state.param_set.tex_name == "dots" {
             println!("TODO: CreateDotsFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("fbm") {
+        } else if api_state.param_set.tex_name == "fbm" {
             println!("TODO: CreateFBmFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("wrinkled") {
+        } else if api_state.param_set.tex_name == "wrinkled" {
             println!("TODO: CreateWrinkledFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("marble") {
+        } else if api_state.param_set.tex_name == "marble" {
             println!("TODO: CreateMarbleFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("windy") {
+        } else if api_state.param_set.tex_name == "windy" {
             println!("TODO: CreateWindyFloatTexture");
-        } else if api_state.param_set.tex_name == String::from("ptex") {
+        } else if api_state.param_set.tex_name == "ptex" {
             println!("TODO: CreatePtexFloatTexture");
         } else {
             println!(
@@ -776,8 +772,7 @@ fn make_texture(api_state: &mut ApiState) {
                 api_state.param_set.tex_name
             );
         }
-    } else if api_state.param_set.tex_type == String::from("color")
-        || api_state.param_set.tex_type == String::from("spectrum")
+    } else if api_state.param_set.tex_type == "color" || api_state.param_set.tex_type == "spectrum"
     {
         match api_state
             .graphics_state
@@ -791,9 +786,9 @@ fn make_texture(api_state: &mut ApiState) {
         }
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeSpectrumTexture(texname, curTransform[0], tp);
-        if api_state.param_set.tex_name == String::from("constant") {
+        if api_state.param_set.tex_name == "constant" {
             println!("TODO: CreateConstantSpectrumTexture");
-        } else if api_state.param_set.tex_name == String::from("scale") {
+        } else if api_state.param_set.tex_name == "scale" {
             let tex1: Arc<Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
             let tex2: Arc<Texture<Spectrum> + Send + Sync> =
@@ -803,15 +798,15 @@ fn make_texture(api_state: &mut ApiState) {
                 .graphics_state
                 .spectrum_textures
                 .insert(api_state.param_set.name.clone(), ft);
-        } else if api_state.param_set.tex_name == String::from("mix") {
+        } else if api_state.param_set.tex_name == "mix" {
             println!("TODO: CreateMixSpectrumTexture");
-        } else if api_state.param_set.tex_name == String::from("bilerp") {
+        } else if api_state.param_set.tex_name == "bilerp" {
             println!("TODO: CreateBilerpSpectrumTexture");
-        } else if api_state.param_set.tex_name == String::from("imagemap") {
+        } else if api_state.param_set.tex_name == "imagemap" {
             // CreateImageSpectrumTexture
             let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
             let mapping: String = tp.find_string("mapping", String::from("uv"));
-            if mapping == String::from("uv") {
+            if mapping == "uv" {
                 let su: Float = tp.find_float("uscale", 1.0);
                 let sv: Float = tp.find_float("vscale", 1.0);
                 let du: Float = tp.find_float("udelta", 0.0);
@@ -822,11 +817,11 @@ fn make_texture(api_state: &mut ApiState) {
                     du: du,
                     dv: dv,
                 }));
-            } else if mapping == String::from("spherical") {
+            } else if mapping == "spherical" {
                 println!("TODO: SphericalMapping2D");
-            } else if mapping == String::from("cylindrical") {
+            } else if mapping == "cylindrical" {
                 println!("TODO: CylindricalMapping2D");
-            } else if mapping == String::from("planar") {
+            } else if mapping == "planar" {
                 map = Some(Box::new(PlanarMapping2D {
                     vs: tp.find_vector3f(
                         "v1",
@@ -855,9 +850,9 @@ fn make_texture(api_state: &mut ApiState) {
             let do_trilinear: bool = tp.find_bool("trilinear", false);
             let wrap: String = tp.find_string("wrap", String::from("repeat"));
             let mut wrap_mode: ImageWrap = ImageWrap::Repeat;
-            if wrap == String::from("black") {
+            if wrap == "black" {
                 wrap_mode = ImageWrap::Black;
-            } else if wrap == String::from("clamp") {
+            } else if wrap == "clamp" {
                 wrap_mode = ImageWrap::Clamp;
             }
             let scale: Float = tp.find_float("scale", 1.0);
@@ -892,9 +887,9 @@ fn make_texture(api_state: &mut ApiState) {
                     .spectrum_textures
                     .insert(api_state.param_set.name.clone(), st);
             }
-        } else if api_state.param_set.tex_name == String::from("uv") {
+        } else if api_state.param_set.tex_name == "uv" {
             println!("TODO: CreateUVSpectrumTexture");
-        } else if api_state.param_set.tex_name == String::from("checkerboard") {
+        } else if api_state.param_set.tex_name == "checkerboard" {
             // CreateCheckerboardSpectrumTexture
             let dim: i32 = tp.find_int("dimension", 2);
             if dim != 2 && dim != 3 {
@@ -907,7 +902,7 @@ fn make_texture(api_state: &mut ApiState) {
             if dim == 2 {
                 let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
                 let mapping: String = tp.find_string("mapping", String::from("uv"));
-                if mapping == String::from("uv") {
+                if mapping == "uv" {
                     let su: Float = tp.find_float("uscale", 1.0);
                     let sv: Float = tp.find_float("vscale", 1.0);
                     let du: Float = tp.find_float("udelta", 0.0);
@@ -918,11 +913,11 @@ fn make_texture(api_state: &mut ApiState) {
                         du: du,
                         dv: dv,
                     }));
-                } else if mapping == String::from("spherical") {
+                } else if mapping == "spherical" {
                     println!("TODO: SphericalMapping2D");
-                } else if mapping == String::from("cylindrical") {
+                } else if mapping == "cylindrical" {
                     println!("TODO: CylindricalMapping2D");
-                } else if mapping == String::from("planar") {
+                } else if mapping == "planar" {
                     map = Some(Box::new(PlanarMapping2D {
                         vs: tp.find_vector3f(
                             "v1",
@@ -958,15 +953,15 @@ fn make_texture(api_state: &mut ApiState) {
                 // dim == 3
                 println!("TODO: TextureMapping3D");
             }
-        } else if api_state.param_set.tex_name == String::from("dots") {
+        } else if api_state.param_set.tex_name == "dots" {
             println!("TODO: CreateDotsSpectrumTexture");
-        } else if api_state.param_set.tex_name == String::from("fbm") {
+        } else if api_state.param_set.tex_name == "fbm" {
             println!("TODO: CreateFBmSpectrumTexture");
-        } else if api_state.param_set.tex_name == String::from("wrinkled") {
+        } else if api_state.param_set.tex_name == "wrinkled" {
             println!("TODO: CreateWrinkledSpectrumTexture");
-        } else if api_state.param_set.tex_name == String::from("marble") {
+        } else if api_state.param_set.tex_name == "marble" {
             println!("TODO: CreateMarbleSpectrumTexture");
-        } else if api_state.param_set.tex_name == String::from("windy") {
+        } else if api_state.param_set.tex_name == "windy" {
             println!("TODO: CreateWindySpectrumTexture");
         } else {
             println!(
@@ -1012,7 +1007,7 @@ fn get_shapes_and_materials(
         world_to_obj = Transform::default();
     }
     // MakeShapes (api.cpp:296)
-    if api_state.param_set.name == String::from("sphere") {
+    if api_state.param_set.name == "sphere" {
         // CreateSphereShape
         let radius: Float = api_state.param_set.find_one_float("radius", 1.0 as Float);
         let z_min: Float = api_state.param_set.find_one_float("zmin", -radius);
@@ -1031,7 +1026,7 @@ fn get_shapes_and_materials(
         let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(sphere.clone());
         materials.push(mtl);
-    } else if api_state.param_set.name == String::from("cylinder") {
+    } else if api_state.param_set.name == "cylinder" {
         let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
         let z_min: Float = api_state.param_set.find_one_float("zmin", -radius);
         let z_max: Float = api_state.param_set.find_one_float("zmax", radius);
@@ -1048,7 +1043,7 @@ fn get_shapes_and_materials(
         let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(cylinder.clone());
         materials.push(mtl.clone());
-    } else if api_state.param_set.name == String::from("disk") {
+    } else if api_state.param_set.name == "disk" {
         let height: Float = api_state.param_set.find_one_float("height", 0.0);
         let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
         let inner_radius: Float = api_state.param_set.find_one_float("innerradius", 0.0);
@@ -1066,13 +1061,13 @@ fn get_shapes_and_materials(
         let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(disk.clone());
         materials.push(mtl.clone());
-    } else if api_state.param_set.name == String::from("cone") {
+    } else if api_state.param_set.name == "cone" {
         println!("TODO: CreateConeShape");
-    } else if api_state.param_set.name == String::from("paraboloid") {
+    } else if api_state.param_set.name == "paraboloid" {
         println!("TODO: CreateParaboloidShape");
-    } else if api_state.param_set.name == String::from("hyperboloid") {
+    } else if api_state.param_set.name == "hyperboloid" {
         println!("TODO: CreateHyperboloidShape");
-    } else if api_state.param_set.name == String::from("curve") {
+    } else if api_state.param_set.name == "curve" {
         let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         let curve_shapes: Vec<Arc<Shape + Send + Sync>> = create_curve_shape(
             &obj_to_world,
@@ -1183,7 +1178,7 @@ fn get_shapes_and_materials(
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
         }
-    } else if api_state.param_set.name == String::from("plymesh") {
+    } else if api_state.param_set.name == "plymesh" {
         if let Some(ref search_directory) = api_state.search_directory {
             let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
             let ply_shapes: Vec<Arc<Shape + Send + Sync>> = create_ply_mesh(
@@ -1202,9 +1197,9 @@ fn get_shapes_and_materials(
         } else {
             panic!("No search directory for plymesh.");
         }
-    } else if api_state.param_set.name == String::from("heightfield") {
+    } else if api_state.param_set.name == "heightfield" {
         println!("TODO: CreateHeightfield");
-    } else if api_state.param_set.name == String::from("loopsubdiv") {
+    } else if api_state.param_set.name == "loopsubdiv" {
         // CreateLoopSubdiv
         let n_levels: i32 = api_state
             .param_set
@@ -1242,7 +1237,7 @@ fn get_shapes_and_materials(
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
         }
-    } else if api_state.param_set.name == String::from("nurbs") {
+    } else if api_state.param_set.name == "nurbs" {
         // CreateNURBS
         let nu: i32 = api_state.param_set.find_one_int("nu", -1);
         if nu == -1_i32 {
@@ -1545,19 +1540,19 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
     );
     // MakeFilter
     let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
-    if api_state.render_options.filter_name == String::from("box") {
+    if api_state.render_options.filter_name == "box" {
         some_filter = Some(BoxFilter::create(&api_state.render_options.filter_params));
-    } else if api_state.render_options.filter_name == String::from("gaussian") {
+    } else if api_state.render_options.filter_name == "gaussian" {
         some_filter = Some(GaussianFilter::create(
             &api_state.render_options.filter_params,
         ));
-    } else if api_state.render_options.filter_name == String::from("mitchell") {
+    } else if api_state.render_options.filter_name == "mitchell" {
         some_filter = Some(MitchellNetravali::create(
             &api_state.render_options.filter_params,
         ));
-    } else if api_state.render_options.filter_name == String::from("sinc") {
+    } else if api_state.render_options.filter_name == "sinc" {
         println!("TODO: CreateSincFilter");
-    } else if api_state.render_options.filter_name == String::from("triangle") {
+    } else if api_state.render_options.filter_name == "triangle" {
         some_filter = Some(TriangleFilter::create(
             &api_state.render_options.filter_params,
         ));
@@ -1568,7 +1563,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         );
     }
     // MakeFilm
-    if api_state.render_options.film_name == String::from("image") {
+    if api_state.render_options.film_name == "image" {
         let filename: String = api_state
             .render_options
             .film_params
@@ -1635,7 +1630,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 &api_state.render_options.camera_to_world.t[1],
                 api_state.render_options.transform_end_time,
             );
-            if api_state.render_options.camera_name == String::from("perspective") {
+            if api_state.render_options.camera_name == "perspective" {
                 let camera: Arc<Camera + Send + Sync> = PerspectiveCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
@@ -1643,7 +1638,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     medium_interface.outside,
                 );
                 some_camera = Some(camera);
-            } else if api_state.render_options.camera_name == String::from("orthographic") {
+            } else if api_state.render_options.camera_name == "orthographic" {
                 let camera: Arc<Camera + Send + Sync> = OrthographicCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
@@ -1651,7 +1646,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     medium_interface.outside,
                 );
                 some_camera = Some(camera);
-            } else if api_state.render_options.camera_name == String::from("realistic") {
+            } else if api_state.render_options.camera_name == "realistic" {
                 println!("WORK: CreateRealisticCamera");
                 if let Some(ref search_directory) = api_state.search_directory {
                     let camera: Arc<Camera + Send + Sync> = RealisticCamera::create(
@@ -1674,7 +1669,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     );
                     some_camera = Some(camera);
                 }
-            } else if api_state.render_options.camera_name == String::from("environment") {
+            } else if api_state.render_options.camera_name == "environment" {
                 let camera: Arc<Camera + Send + Sync> = EnvironmentCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
@@ -1691,8 +1686,8 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
             if let Some(camera) = some_camera {
                 // MakeSampler
                 let mut some_sampler: Option<Box<Sampler + Sync + Send>> = None;
-                if api_state.render_options.sampler_name == String::from("lowdiscrepancy")
-                    || api_state.render_options.sampler_name == String::from("02sequence")
+                if api_state.render_options.sampler_name == "lowdiscrepancy"
+                    || api_state.render_options.sampler_name == "02sequence"
                 {
                     let nsamp: i32 = api_state
                         .render_options
@@ -1705,9 +1700,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     // TODO: if (PbrtOptions.quickRender) nsamp = 1;
                     let sampler = Box::new(ZeroTwoSequenceSampler::new(nsamp as i64, sd as i64));
                     some_sampler = Some(sampler);
-                } else if api_state.render_options.sampler_name == String::from("maxmindist") {
+                } else if api_state.render_options.sampler_name == "maxmindist" {
                     println!("TODO: CreateMaxMinDistSampler");
-                } else if api_state.render_options.sampler_name == String::from("halton") {
+                } else if api_state.render_options.sampler_name == "halton" {
                     let nsamp: i32 = api_state
                         .render_options
                         .sampler_params
@@ -1724,7 +1719,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         sample_at_center,
                     ));
                     some_sampler = Some(sampler);
-                } else if api_state.render_options.sampler_name == String::from("sobol") {
+                } else if api_state.render_options.sampler_name == "sobol" {
                     let nsamp: i32 = api_state
                         .render_options
                         .sampler_params
@@ -1732,14 +1727,14 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                     let sampler = Box::new(SobolSampler::new(nsamp as i64, sample_bounds));
                     some_sampler = Some(sampler);
-                } else if api_state.render_options.sampler_name == String::from("random") {
+                } else if api_state.render_options.sampler_name == "random" {
                     let nsamp: i32 = api_state
                         .render_options
                         .sampler_params
                         .find_one_int("pixelsamples", 4);
                     let sampler = Box::new(RandomSampler::new(nsamp as i64));
                     some_sampler = Some(sampler);
-                } else if api_state.render_options.sampler_name == String::from("stratified") {
+                } else if api_state.render_options.sampler_name == "stratified" {
                     println!("TODO: CreateStratifiedSampler");
                 } else {
                     panic!(
@@ -1755,11 +1750,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     > = None;
                     let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
                     let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
-                    if api_state.render_options.integrator_name == String::from("whitted") {
+                    if api_state.render_options.integrator_name == "whitted" {
                         println!("TODO: CreateWhittedIntegrator");
-                    } else if api_state.render_options.integrator_name
-                        == String::from("directlighting")
-                    {
+                    } else if api_state.render_options.integrator_name == "directlighting" {
                         // CreateDirectLightingIntegrator
                         let max_depth: i32 = api_state
                             .render_options
@@ -1770,9 +1763,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             .integrator_params
                             .find_one_string("strategy", String::from("all"));
                         let strategy: LightStrategy;
-                        if st == String::from("one") {
+                        if st == "one" {
                             strategy = LightStrategy::UniformSampleOne;
-                        } else if st == String::from("all") {
+                        } else if st == "all" {
                             strategy = LightStrategy::UniformSampleAll;
                         } else {
                             panic!("Strategy \"{}\" for direct lighting unknown.", st);
@@ -1788,7 +1781,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             pixel_bounds,
                         ));
                         some_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == String::from("path") {
+                    } else if api_state.render_options.integrator_name == "path" {
                         // CreatePathIntegrator
                         let max_depth: i32 = api_state
                             .render_options
@@ -1831,9 +1824,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             light_strategy,
                         ));
                         some_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == String::from("volpath") {
+                    } else if api_state.render_options.integrator_name == "volpath" {
                         println!("TODO: CreateVolPathIntegrator");
-                    } else if api_state.render_options.integrator_name == String::from("bdpt") {
+                    } else if api_state.render_options.integrator_name == "bdpt" {
                         // CreateBDPTIntegrator
                         let mut max_depth: i32 = api_state
                             .render_options
@@ -1864,7 +1857,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             light_strategy,
                         ));
                         some_bdpt_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == String::from("mlt") {
+                    } else if api_state.render_options.integrator_name == "mlt" {
                         // CreateMLTIntegrator
                         let mut max_depth: i32 = api_state
                             .render_options
@@ -1900,9 +1893,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             large_step_probability,
                         ));
                         some_mlt_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name
-                        == String::from("ambientocclusion")
-                    {
+                    } else if api_state.render_options.integrator_name == "ambientocclusion" {
                         // CreateAOIntegrator
                         let pb: Vec<i32> = api_state
                             .render_options
@@ -1938,7 +1929,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         let integrator =
                             Box::new(AOIntegrator::new(cos_sample, n_samples, pixel_bounds));
                         some_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == String::from("sppm") {
+                    } else if api_state.render_options.integrator_name == "sppm" {
                         println!("TODO: CreateSPPMIntegrator");
                     } else {
                         panic!(
@@ -1964,20 +1955,20 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             println!("WARNING: No light sources defined in scene; rendering a black image.",);
                         }
                         // MakeAccelerator
-                        if api_state.render_options.accelerator_name == String::from("bvh") {
+                        if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
                             let split_method_name: String = api_state
                                 .render_options
                                 .accelerator_params
                                 .find_one_string("splitmethod", String::from("sah"));
                             let split_method;
-                            if split_method_name == String::from("sah") {
+                            if split_method_name == "sah" {
                                 split_method = SplitMethod::SAH;
-                            } else if split_method_name == String::from("hlbvh") {
+                            } else if split_method_name == "hlbvh" {
                                 split_method = SplitMethod::HLBVH;
-                            } else if split_method_name == String::from("middle") {
+                            } else if split_method_name == "middle" {
                                 split_method = SplitMethod::Middle;
-                            } else if split_method_name == String::from("equal") {
+                            } else if split_method_name == "equal" {
                                 split_method = SplitMethod::EqualCounts;
                             } else {
                                 println!(
@@ -2010,9 +2001,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 &mut integrator,
                                 num_threads,
                             );
-                        } else if api_state.render_options.accelerator_name
-                            == String::from("kdtree")
-                        {
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
                             // println!("TODO: CreateKdTreeAccelerator");
                             // WARNING: Use BVHAccel for now !!!
                             let accelerator = Arc::new(BVHAccel::new(
@@ -2049,20 +2038,20 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             println!("WARNING: No light sources defined in scene; rendering a black image.",);
                         }
                         // MakeAccelerator
-                        if api_state.render_options.accelerator_name == String::from("bvh") {
+                        if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
                             let split_method_name: String = api_state
                                 .render_options
                                 .accelerator_params
                                 .find_one_string("splitmethod", String::from("sah"));
                             let split_method;
-                            if split_method_name == String::from("sah") {
+                            if split_method_name == "sah" {
                                 split_method = SplitMethod::SAH;
-                            } else if split_method_name == String::from("hlbvh") {
+                            } else if split_method_name == "hlbvh" {
                                 split_method = SplitMethod::HLBVH;
-                            } else if split_method_name == String::from("middle") {
+                            } else if split_method_name == "middle" {
                                 split_method = SplitMethod::Middle;
-                            } else if split_method_name == String::from("equal") {
+                            } else if split_method_name == "equal" {
                                 split_method = SplitMethod::EqualCounts;
                             } else {
                                 println!(
@@ -2095,9 +2084,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 &mut integrator,
                                 num_threads,
                             );
-                        } else if api_state.render_options.accelerator_name
-                            == String::from("kdtree")
-                        {
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
                             // println!("TODO: CreateKdTreeAccelerator");
                             // WARNING: Use BVHAccel for now !!!
                             let accelerator = Arc::new(BVHAccel::new(
@@ -2140,20 +2127,20 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             println!("WARNING: No light sources defined in scene; rendering a black image.",);
                         }
                         // MakeAccelerator
-                        if api_state.render_options.accelerator_name == String::from("bvh") {
+                        if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
                             let split_method_name: String = api_state
                                 .render_options
                                 .accelerator_params
                                 .find_one_string("splitmethod", String::from("sah"));
                             let split_method;
-                            if split_method_name == String::from("sah") {
+                            if split_method_name == "sah" {
                                 split_method = SplitMethod::SAH;
-                            } else if split_method_name == String::from("hlbvh") {
+                            } else if split_method_name == "hlbvh" {
                                 split_method = SplitMethod::HLBVH;
-                            } else if split_method_name == String::from("middle") {
+                            } else if split_method_name == "middle" {
                                 split_method = SplitMethod::Middle;
-                            } else if split_method_name == String::from("equal") {
+                            } else if split_method_name == "equal" {
                                 split_method = SplitMethod::EqualCounts;
                             } else {
                                 println!(
@@ -2180,9 +2167,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
                             render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                        } else if api_state.render_options.accelerator_name
-                            == String::from("kdtree")
-                        {
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
                             // println!("TODO: CreateKdTreeAccelerator");
                             // WARNING: Use BVHAccel for now !!!
                             let accelerator = Arc::new(BVHAccel::new(
@@ -2620,7 +2605,7 @@ pub fn pbrt_make_named_material(
     // print_params(&params);
     api_state.param_set = params;
     let mat_type: String = api_state.param_set.find_one_string("type", String::new());
-    if mat_type == String::new() {
+    if mat_type == "" {
         panic!("No parameter string \"type\" found in MakeNamedMaterial");
     }
     api_state.graphics_state.material = mat_type.clone();
@@ -2681,8 +2666,8 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
     // possibly create area light for shape (see pbrtShape())
     if api_state.graphics_state.area_light != String::new() {
         // MakeAreaLight
-        if api_state.graphics_state.area_light == String::from("area")
-            || api_state.graphics_state.area_light == String::from("diffuse")
+        if api_state.graphics_state.area_light == "area"
+            || api_state.graphics_state.area_light == "diffuse"
         {
             // first create the shape
             let (shapes, materials) = get_shapes_and_materials(&api_state, bsdf_state);
@@ -2819,7 +2804,7 @@ pub fn pbrt_object_begin(api_state: &mut ApiState, params: ParamSet) {
 
 pub fn pbrt_object_end(api_state: &mut ApiState) {
     // println!("ObjectEnd");
-    if api_state.render_options.current_instance == String::from("") {
+    if api_state.render_options.current_instance == "" {
         println!("ERROR: ObjectEnd called outside of instance definition");
     }
     api_state.render_options.current_instance = String::from("");
@@ -2845,20 +2830,20 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
         // TODO: ++nObjectInstancesUsed;
         if instance_vec.len() > 1_usize {
             // create aggregate for instance _Primitive_s
-            if api_state.render_options.accelerator_name == String::from("bvh") {
+            if api_state.render_options.accelerator_name == "bvh" {
                 //  CreateBVHAccelerator
                 let split_method_name: String = api_state
                     .render_options
                     .accelerator_params
                     .find_one_string("splitmethod", String::from("sah"));
                 let split_method;
-                if split_method_name == String::from("sah") {
+                if split_method_name == "sah" {
                     split_method = SplitMethod::SAH;
-                } else if split_method_name == String::from("hlbvh") {
+                } else if split_method_name == "hlbvh" {
                     split_method = SplitMethod::HLBVH;
-                } else if split_method_name == String::from("middle") {
+                } else if split_method_name == "middle" {
                     split_method = SplitMethod::Middle;
-                } else if split_method_name == String::from("equal") {
+                } else if split_method_name == "equal" {
                     split_method = SplitMethod::EqualCounts;
                 } else {
                     println!(
@@ -2878,7 +2863,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
                 ));
                 instance_vec.clear();
                 instance_vec.push(accelerator);
-            } else if api_state.render_options.accelerator_name == String::from("kdtree") {
+            } else if api_state.render_options.accelerator_name == "kdtree" {
                 // println!("TODO: CreateKdTreeAccelerator");
                 // WARNING: Use BVHAccel for now !!!
                 let accelerator: Arc<Primitive + Sync + Send> =

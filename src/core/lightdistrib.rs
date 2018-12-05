@@ -360,11 +360,11 @@ pub fn create_light_sample_distribution(
     name: String,
     scene: &Scene,
 ) -> Option<Arc<LightDistribution + Send + Sync>> {
-    if name == String::from("uniform") || scene.lights.len() == 1 {
+    if name == "uniform" || scene.lights.len() == 1 {
         return Some(Arc::new(UniformLightDistribution::new(scene)));
-    } else if name == String::from("power") {
+    } else if name == "power" {
         return Some(Arc::new(PowerLightDistribution::new(scene)));
-    } else if name == String::from("spatial") {
+    } else if name == "spatial" {
         return Some(Arc::new(SpatialLightDistribution::new(scene, 64)));
     } else {
         println!(
