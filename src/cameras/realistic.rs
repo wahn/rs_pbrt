@@ -7,7 +7,9 @@ use std::sync::Arc;
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::floatfile::read_float_file;
-use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
+use core::geometry::{
+    nrm_abs_dot_vec3, nrm_faceforward_vec3, nrm_normalize, vec3_dot_vec3, vec3_normalize,
+};
 use core::geometry::{
     Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f,
 };
@@ -16,6 +18,7 @@ use core::light::VisibilityTester;
 use core::medium::{Medium, MediumInterface};
 use core::paramset::ParamSet;
 use core::pbrt::lerp;
+use core::pbrt::quadratic;
 use core::pbrt::{Float, Spectrum};
 use core::sampling::concentric_sample_disk;
 use core::transform::{AnimatedTransform, Transform};
@@ -220,8 +223,34 @@ impl RealisticCamera {
         t: &mut Float,
         n: &mut Normal3f,
     ) -> bool {
-        // WORK
-        false
+        // compute _t0_ and _t1_ for ray--element intersection
+        let o: Point3f = ray.o - Vector3f {
+            x: 0.0 as Float,
+            y: 0.0 as Float,
+            z: z_center,
+        };
+        let a: Float = ray.d.x * ray.d.x + ray.d.y * ray.d.y + ray.d.z * ray.d.z;
+        let b: Float = 2.0 as Float * (ray.d.x * o.x + ray.d.y * o.y + ray.d.z * o.z);
+        let c: Float = o.x * o.x + o.y * o.y + o.z * o.z - radius * radius;
+        let mut t0: Float = 0.0 as Float;
+        let mut t1: Float = 0.0 as Float;
+        if !quadratic(a, b, c, &mut t0, &mut t1) {
+            return false;
+        }
+        // select intersection $t$ based on ray direction and element curvature
+        let use_closer_t: bool = (ray.d.z > 0.0 as Float) ^ (radius < 0.0 as Float);
+        if use_closer_t {
+            *t = t0.min(t1);
+        } else {
+            *t = t0.max(t1);
+        }
+        if *t < 0.0 as Float {
+            return false;
+        }
+        // compute surface normal of element at ray intersection point
+        *n = Normal3f::from(Vector3f::from(o + ray.d * *t));
+        *n = nrm_faceforward_vec3(&nrm_normalize(&*n), &-ray.d);
+        true
     }
     pub fn trace_lenses_from_scene(&self, r_camera: &Ray, r_out: &mut Ray) -> bool {
         // WORK
