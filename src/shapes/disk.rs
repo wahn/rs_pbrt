@@ -2,7 +2,7 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared, vec3_normalize};
+use core::geometry::{nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
@@ -242,7 +242,7 @@ impl Shape for Disk {
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
         } else {
-            wi = vec3_normalize(&wi);
+            wi = wi.normalize();
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
             *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);

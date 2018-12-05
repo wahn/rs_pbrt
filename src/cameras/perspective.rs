@@ -5,7 +5,7 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
-use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3, vec3_normalize};
+use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3};
 use core::geometry::{
     Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f,
 };
@@ -187,28 +187,26 @@ impl Camera for PerspectiveCamera {
             z: 0.0,
         };
         let p_camera: Point3f = self.raster_to_camera.transform_point(&p_film);
-        let dir: Vector3f = vec3_normalize(&Vector3f {
+        let dir: Vector3f = Vector3f {
             x: p_camera.x,
             y: p_camera.y,
             z: p_camera.z,
-        });
+        }.normalize();
         let mut diff: RayDifferential = RayDifferential {
             rx_origin: ray.o,
             ry_origin: ray.o,
-            rx_direction: vec3_normalize(
-                &(Vector3f {
-                    x: p_camera.x,
-                    y: p_camera.y,
-                    z: p_camera.z,
-                } + self.dx_camera),
-            ),
-            ry_direction: vec3_normalize(
-                &(Vector3f {
-                    x: p_camera.x,
-                    y: p_camera.y,
-                    z: p_camera.z,
-                } + self.dy_camera),
-            ),
+            rx_direction: Vector3f {
+                x: p_camera.x,
+                y: p_camera.y,
+                z: p_camera.z,
+            }.normalize()
+                + self.dx_camera,
+            ry_direction: Vector3f {
+                x: p_camera.x,
+                y: p_camera.y,
+                z: p_camera.z,
+            }.normalize()
+                + self.dy_camera,
         };
         // *ray = RayDifferential(Point3f(0, 0, 0), dir);
         let mut in_ray: Ray = Ray {
@@ -232,7 +230,7 @@ impl Camera for PerspectiveCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            in_ray.d = vec3_normalize(&(p_focus - in_ray.o));
+            in_ray.d = (p_focus - in_ray.o).normalize();
         }
         // compute offset rays for _PerspectiveCamera_ ray differentials
         if self.lens_radius > 0.0 as Float {
@@ -240,7 +238,7 @@ impl Camera for PerspectiveCamera {
 
             // sample point on lens
             let p_lens: Point2f = concentric_sample_disk(&sample.p_lens) * self.lens_radius;
-            let dx: Vector3f = vec3_normalize(&Vector3f::from(p_camera + self.dx_camera));
+            let dx: Vector3f = Vector3f::from(p_camera + self.dx_camera).normalize();
             let ft: Float = self.focal_distance / dx.z;
             let p_focus: Point3f = Point3f::default() + (dx * ft);
             diff.rx_origin = Point3f {
@@ -248,8 +246,8 @@ impl Camera for PerspectiveCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            diff.rx_direction = vec3_normalize(&(p_focus - diff.rx_origin));
-            let dy: Vector3f = vec3_normalize(&Vector3f::from(p_camera + self.dy_camera));
+            diff.rx_direction = (p_focus - diff.rx_origin).normalize();
+            let dy: Vector3f = Vector3f::from(p_camera + self.dy_camera).normalize();
             let ft: Float = self.focal_distance / dy.z;
             let p_focus: Point3f = Point3f::default() + (dy * ft);
             diff.ry_origin = Point3f {
@@ -257,7 +255,7 @@ impl Camera for PerspectiveCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            diff.ry_direction = vec3_normalize(&(p_focus - diff.ry_origin));
+            diff.ry_direction = (p_focus - diff.ry_origin).normalize();
             // replace differential
             in_ray.differential = Some(diff);
         }

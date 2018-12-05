@@ -16,7 +16,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use num::Zero;
 // pbrt
 use core::geometry::{
-    nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3, vec3_normalize,
+    nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3,
 };
 use core::geometry::{Normal3f, Point2f, Vector3f};
 use core::interaction::SurfaceInteraction;
@@ -215,7 +215,7 @@ pub struct Bsdf {
 
 impl Bsdf {
     pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Arc<Bxdf + Sync + Send>>) -> Self {
-        let ss = vec3_normalize(&si.shading.dpdu);
+        let ss = si.shading.dpdu.normalize();
         Bsdf {
             eta: eta,
             ns: si.shading.n,
@@ -944,7 +944,7 @@ impl Bxdf for MicrofacetReflection {
         if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 {
             return Spectrum::new(0.0);
         }
-        wh = vec3_normalize(&wh);
+        wh = wh.normalize();
         let dot: Float = vec3_dot_vec3(wi, &wh);
         let f: Spectrum = self.fresnel.evaluate(dot);
         self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f
@@ -977,7 +977,7 @@ impl Bxdf for MicrofacetReflection {
         if !vec3_same_hemisphere_vec3(wo, wi) {
             return 0.0 as Float;
         }
-        let wh: Vector3f = vec3_normalize(&(*wo + *wi));
+        let wh: Vector3f = (*wo + *wi).normalize();
         self.distribution.pdf(wo, &wh) / (4.0 * vec3_dot_vec3(wo, &wh))
     }
 
@@ -1150,7 +1150,7 @@ impl Bxdf for FresnelBlend {
         if wh.x == 0.0 && wh.y == 0.0 && wh.z == 0.0 {
             return Spectrum::new(0.0 as Float);
         }
-        wh = vec3_normalize(&wh);
+        wh = wh.normalize();
         if let Some(ref distribution) = self.distribution {
             let schlick_fresnel: Spectrum = self.schlick_fresnel(vec3_dot_vec3(wi, &wh));
             assert!(schlick_fresnel.c[0] >= 0.0, "wi = {:?}; wh = {:?}", wi, wh);
@@ -1199,7 +1199,7 @@ impl Bxdf for FresnelBlend {
         if !vec3_same_hemisphere_vec3(wo, wi) {
             return 0.0 as Float;
         }
-        let wh: Vector3f = vec3_normalize(&(*wo + *wi));
+        let wh: Vector3f = (*wo + *wi).normalize();
         if let Some(ref distribution) = self.distribution {
             let pdf_wh: Float = distribution.pdf(wo, &wh);
             0.5 as Float * (abs_cos_theta(wi) * INV_PI + pdf_wh / (4.0 * vec3_dot_vec3(wo, &wh)))
@@ -1413,7 +1413,7 @@ impl Bxdf for FourierBSDF {
         // (like 4x) longer than normalized, which leads to all sorts
         // of errors, including negative spectral values. Therefore,
         // we normalize again here.
-        *wi = vec3_normalize(&*wi);
+        *wi = wi.normalize();
         // evaluate remaining Fourier expansions for angle $\phi$
         let mut scale: Float = 0.0 as Float;
         if mu_i != 0.0 as Float {

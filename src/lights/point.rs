@@ -3,7 +3,7 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{pnt3_distance_squared, vec3_normalize};
+use core::geometry::{pnt3_distance_squared};
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
@@ -63,7 +63,7 @@ impl Light for PointLight {
         vis: &mut VisibilityTester,
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
-        *wi = vec3_normalize(&(self.p_light - iref.p));
+        *wi = (self.p_light - iref.p).normalize();
         *pdf = 1.0 as Float;
         *vis = VisibilityTester {
             p0: InteractionCommon {

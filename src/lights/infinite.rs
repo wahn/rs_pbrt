@@ -11,7 +11,7 @@ use half::f16;
 #[cfg(feature = "openexr")]
 use openexr::{FrameBufferMut, InputFile, PixelType};
 // pbrt
-use core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system, vec3_normalize};
+use core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
@@ -386,7 +386,7 @@ impl Light for InfiniteAreaLight {
     /// the scene bounds. It's the responsibility of the integrators
     /// to call this method for these rays.
     fn le(&self, ray: &mut Ray) -> Spectrum {
-        let w: Vector3f = vec3_normalize(&self.world_to_light.transform_vector(&ray.d));
+        let w: Vector3f = self.world_to_light.transform_vector(&ray.d).normalize();
         let st: Point2f = Point2f {
             x: spherical_phi(&w) * INV_2_PI,
             y: spherical_theta(&w) * INV_PI,

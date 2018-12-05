@@ -6,7 +6,6 @@ use core::efloat::quadratic_efloat;
 use core::efloat::EFloat;
 use core::geometry::{
     nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared, vec3_cross_vec3, vec3_dot_vec3,
-    vec3_normalize,
 };
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -204,7 +203,7 @@ impl Shape for Cylinder {
         let ec: Float = vec3_dot_vec3(&dpdu, &dpdu);
         let fc: Float = vec3_dot_vec3(&dpdu, &dpdv);
         let gc: Float = vec3_dot_vec3(&dpdv, &dpdv);
-        let nc: Vector3f = vec3_normalize(&vec3_cross_vec3(&dpdu, &dpdv));
+        let nc: Vector3f = vec3_cross_vec3(&dpdu, &dpdv).normalize();
         let el: Float = vec3_dot_vec3(&nc, &d2_p_duu);
         let fl: Float = vec3_dot_vec3(&nc, &d2_p_duv);
         let gl: Float = vec3_dot_vec3(&nc, &d2_p_dvv);
@@ -375,7 +374,7 @@ impl Shape for Cylinder {
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
         } else {
-            wi = vec3_normalize(&wi);
+            wi = wi.normalize();
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
             *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);

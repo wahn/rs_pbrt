@@ -1,7 +1,7 @@
 // std
 use std::f32::consts::PI;
 // pbrt
-use core::geometry::{spherical_direction, vec3_abs_dot_vec3, vec3_normalize};
+use core::geometry::{spherical_direction, vec3_abs_dot_vec3};
 use core::geometry::{Point2f, Vector3f};
 use core::pbrt::Float;
 use core::reflection::{
@@ -208,11 +208,11 @@ fn trowbridge_reitz_sample(
     u2: Float,
 ) -> Vector3f {
     // 1. stretch wi
-    let wi_stretched: Vector3f = vec3_normalize(&Vector3f {
+    let wi_stretched: Vector3f = Vector3f {
         x: alpha_x * wi.x,
         y: alpha_y * wi.y,
         z: wi.z,
-    });
+    }.normalize();
 
     // 2. simulate P22_{wi}(x_slope, y_slope, 1, 1)
     let mut slope_x: Float = 0.0;
@@ -229,9 +229,9 @@ fn trowbridge_reitz_sample(
     slope_y = alpha_y * slope_y;
 
     // 5. compute normal
-    vec3_normalize(&Vector3f {
+    Vector3f {
         x: -slope_x,
         y: -slope_y,
         z: 1.0,
-    })
+    }.normalize()
 }

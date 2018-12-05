@@ -12,7 +12,7 @@ use blockqueue::BlockQueue;
 use core::camera::{Camera, CameraSample};
 use core::geometry::{
     nrm_abs_dot_vec3, pnt2_inside_exclusive, pnt3_offset_ray_origin, vec3_abs_dot_nrm,
-    vec3_dot_nrm, vec3_normalize,
+    vec3_dot_nrm,
 };
 use core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector2i, Vector3f,
@@ -407,7 +407,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         if wi.length_squared() == 0.0 as Float {
             return Spectrum::default();
         }
-        wi = vec3_normalize(&wi);
+        wi = wi.normalize();
         match self.vertex_type {
             VertexType::Surface => {
                 if let Some(ref si) = self.si {
@@ -526,7 +526,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         if w.length_squared() == 0.0 as Float {
             return Spectrum::default();
         }
-        w = vec3_normalize(&w);
+        w = w.normalize();
         if self.is_infinite_light() {
             // return emitted radiance for infinite light sources
             let mut le: Spectrum = Spectrum::default();
@@ -585,14 +585,14 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         if wn.length_squared() == 0.0 as Float {
             return 0.0 as Float;
         }
-        wn = vec3_normalize(&wn);
+        wn = wn.normalize();
         let mut wp: Vector3f = Vector3f::default();
         if let Some(prev) = prev {
             wp = prev.p() - self.p();
             if wp.length_squared() == 0.0 as Float {
                 return 0.0 as Float;
             }
-            wp = vec3_normalize(&wp);
+            wp = wp.normalize();
         } else {
             assert!(
                 self.vertex_type == VertexType::Camera,
@@ -707,7 +707,7 @@ impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
         if w.length_squared() == 0.0 as Float {
             return 0.0 as Float;
         }
-        w = vec3_normalize(&w);
+        w = w.normalize();
         if self.is_infinite_light() {
             // return solid angle density for infinite light sources
             return infinite_light_density(scene, &light_distr, &w);

@@ -4,7 +4,6 @@ use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
-use core::geometry::vec3_normalize;
 use core::geometry::{Bounds2f, Point2f, Point3f, Ray, RayDifferential, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
@@ -192,7 +191,7 @@ impl Camera for OrthographicCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            in_ray.d = vec3_normalize(&(p_focus - in_ray.o));
+            in_ray.d = (p_focus - in_ray.o).normalize();
         }
         // compute offset rays for _OrthographicCamera_ ray differentials
         if self.lens_radius > 0.0 as Float {
@@ -213,7 +212,7 @@ impl Camera for OrthographicCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            diff.rx_direction = vec3_normalize(&(p_focus - diff.rx_origin));
+            diff.rx_direction = (p_focus - diff.rx_origin).normalize();
             let p_focus: Point3f = p_camera
                 + self.dy_camera
                 + (Vector3f {
@@ -226,7 +225,7 @@ impl Camera for OrthographicCamera {
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            diff.ry_direction = vec3_normalize(&(p_focus - diff.ry_origin));
+            diff.ry_direction = (p_focus - diff.ry_origin).normalize();
             // replace differential
             in_ray.differential = Some(diff);
         }

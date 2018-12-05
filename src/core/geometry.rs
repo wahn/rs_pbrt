@@ -527,12 +527,6 @@ pub fn vec3_cross_nrm(v1: &Vector3f, v2: &Normal3f) -> Vector3f {
     }
 }
 
-/// Compute a new vector pointing in the same direction but with unit
-/// length.
-pub fn vec3_normalize(v: &Vector3f) -> Vector3f {
-    *v / v.length()
-}
-
 /// Return the largest coordinate value.
 pub fn vec3_max_component<T>(v: &Vector3<T>) -> T
 where

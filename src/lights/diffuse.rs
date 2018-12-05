@@ -3,7 +3,7 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system, vec3_normalize};
+use core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system};
 use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{AreaLight, Light, LightFlags, VisibilityTester};
@@ -82,7 +82,7 @@ impl Light for DiffuseAreaLight {
             *pdf = 0.0 as Float;
             return Spectrum::default();
         }
-        let new_wi: Vector3f = vec3_normalize(&(p_shape.p - iref.p));
+        let new_wi: Vector3f = (p_shape.p - iref.p).normalize();
         *wi = new_wi;
         vis.p0 = InteractionCommon {
             p: iref.p,

@@ -7,7 +7,6 @@ use core::efloat::EFloat;
 use core::geometry::{
     nrm_abs_dot_vec3, nrm_normalize, pnt3_distance, pnt3_distance_squared, pnt3_offset_ray_origin,
     spherical_direction_vec3, vec3_coordinate_system, vec3_cross_vec3, vec3_dot_vec3,
-    vec3_normalize,
 };
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -228,7 +227,7 @@ impl Shape for Sphere {
         let ec: Float = vec3_dot_vec3(&dpdu, &dpdu);
         let fc: Float = vec3_dot_vec3(&dpdu, &dpdv);
         let gc: Float = vec3_dot_vec3(&dpdv, &dpdv);
-        let nc: Vector3f = vec3_normalize(&vec3_cross_vec3(&dpdu, &dpdv));
+        let nc: Vector3f = vec3_cross_vec3(&dpdu, &dpdv).normalize();
         let el: Float = vec3_dot_vec3(&nc, &d2_p_duu);
         let fl: Float = vec3_dot_vec3(&nc, &d2_p_duv);
         let gl: Float = vec3_dot_vec3(&nc, &d2_p_dvv);
@@ -400,7 +399,7 @@ impl Shape for Sphere {
             } else {
                 // convert from area measure returned by Sample() call
                 // above to solid angle measure.
-                wi = vec3_normalize(&wi);
+                wi = wi.normalize();
                 *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);
             }
             if (*pdf).is_infinite() {
@@ -410,7 +409,7 @@ impl Shape for Sphere {
         }
 
         // compute coordinate system for sphere sampling
-        let wc: Vector3f = vec3_normalize(&(p_center - iref.p));
+        let wc: Vector3f = (p_center - iref.p).normalize();
         let mut wc_x: Vector3f = Vector3f::default();
         let mut wc_y: Vector3f = Vector3f::default();
         vec3_coordinate_system(&wc, &mut wc_x, &mut wc_y);

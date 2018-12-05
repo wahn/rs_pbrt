@@ -5,7 +5,7 @@ use std::sync::Arc;
 use core::geometry::{
     bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, nrm_normalize, pnt3_abs,
     pnt3_distance_squared, pnt3_permute, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3,
-    vec3_max_component, vec3_max_dimension, vec3_normalize, vec3_permute,
+    vec3_max_component, vec3_max_dimension, vec3_permute,
 };
 use core::geometry::{Bounds3f, Normal3, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -291,7 +291,7 @@ impl Shape for Triangle {
         if degenerate_uv || vec3_cross_vec3(&dpdu, &dpdv).length_squared() == 0.0 {
             // handle zero determinant for triangle partial derivative matrix
             vec3_coordinate_system(
-                &vec3_normalize(&vec3_cross_vec3(&(p2 - p0), &(p1 - p0))),
+                &vec3_cross_vec3(&(p2 - p0), &(p1 - p0)).normalize(),
                 &mut dpdu,
                 &mut dpdv,
             );
@@ -333,7 +333,7 @@ impl Shape for Triangle {
         );
         // override surface normal in _isect_ for triangle
         let surface_normal: Normal3f =
-            Normal3f::from(vec3_normalize(&vec3_cross_vec3(&dp02, &dp12)));
+            Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
         si.n = surface_normal;
         si.shading.n = surface_normal;
         if !self.mesh.n.is_empty() || !self.mesh.s.is_empty() {
@@ -362,17 +362,17 @@ impl Shape for Triangle {
                 let s2 = self.mesh.s[self.mesh.vertex_indices[self.id * 3 + 2]];
                 ss = s0 * b0 + s1 * b1 + s2 * b2;
                 if ss.length_squared() > 0.0 {
-                    ss = vec3_normalize(&ss);
+                    ss = ss.normalize();
                 } else {
-                    ss = vec3_normalize(&si.dpdu);
+                    ss = si.dpdu.normalize();
                 }
             } else {
-                ss = vec3_normalize(&si.dpdu);
+                ss = si.dpdu.normalize();
             }
             // compute shading bitangent _ts_ for triangle and adjust _ss_
             let mut ts: Vector3f = vec3_cross_nrm(&ss, &ns);
             if ts.length_squared() > 0.0 {
-                ts = vec3_normalize(&ts);
+                ts = ts.normalize();
                 ss = vec3_cross_nrm(&ts, &ns);
             } else {
                 vec3_coordinate_system(&Vector3f::from(ns), &mut ss, &mut ts);
@@ -611,7 +611,7 @@ impl Shape for Triangle {
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
         } else {
-            wi = vec3_normalize(&wi);
+            wi = wi.normalize();
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
             *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);

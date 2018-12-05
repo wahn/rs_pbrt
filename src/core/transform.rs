@@ -59,7 +59,7 @@ use std::ops::{Add, Mul};
 // pbrt
 use core::geometry::{
     bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, nrm_normalize, vec3_cross_vec3,
-    vec3_dot_vec3, vec3_normalize,
+    vec3_dot_vec3,
 };
 use core::geometry::{Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f};
 use core::interaction::SurfaceInteraction;
@@ -404,7 +404,7 @@ impl Transform {
         }
     }
     pub fn rotate(theta: Float, axis: &Vector3f) -> Transform {
-        let a: Vector3f = vec3_normalize(axis);
+        let a: Vector3f = axis.normalize();
         let sin_theta: Float = radians(theta).sin();
         let cos_theta: Float = radians(theta).cos();
         let mut m = Matrix4x4::default();
@@ -436,8 +436,8 @@ impl Transform {
         camera_to_world.m[2][3] = pos.z;
         camera_to_world.m[3][3] = 1.0;
         // initialize first three columns of viewing matrix
-        let dir: Vector3f = vec3_normalize(&(*look - *pos));
-        if vec3_cross_vec3(&vec3_normalize(up), &dir).length() == 0.0 {
+        let dir: Vector3f = (*look - *pos).normalize();
+        if vec3_cross_vec3(&up.normalize(), &dir).length() == 0.0 {
             println!(
                 "\"up\" vector ({}, {}, {}) and viewing direction ({}, {}, {}) passed to \
                  LookAt are pointing in the same direction.  Using the identity \
@@ -446,7 +446,7 @@ impl Transform {
             );
             Transform::default()
         } else {
-            let left: Vector3f = vec3_normalize(&vec3_cross_vec3(&vec3_normalize(up), &dir));
+            let left: Vector3f = vec3_cross_vec3(&up.normalize(), &dir).normalize();
             let new_up: Vector3f = vec3_cross_vec3(&dir, &left);
             camera_to_world.m[0][0] = left.x;
             camera_to_world.m[1][0] = left.y;
@@ -845,7 +845,7 @@ impl Transform {
         ret.p = self.transform_point_with_abs_error(&si.p, &si.p_error, &mut ret.p_error);
         // transform remaining members of _SurfaceInteraction_
         ret.n = nrm_normalize(&self.transform_normal(&si.n));
-        ret.wo = vec3_normalize(&self.transform_vector(&si.wo));
+        ret.wo = self.transform_vector(&si.wo).normalize();
         ret.time = si.time;
         ret.uv = si.uv;
         ret.shape = None; // TODO? si.shape;

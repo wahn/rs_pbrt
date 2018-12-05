@@ -13,7 +13,7 @@ use std::sync::Arc;
 // pbrt
 use core::geometry::{
     nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm,
-    vec3_dot_vec3, vec3_normalize,
+    vec3_dot_vec3,
 };
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::material::TransportMode;
@@ -268,7 +268,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
         time: Float,
         sh: Option<&'s Shape>,
     ) -> Self {
-        let nv: Vector3f = vec3_normalize(&vec3_cross_vec3(dpdu, dpdv));
+        let nv: Vector3f = vec3_cross_vec3(dpdu, dpdv).normalize();
         // TODO: Adjust normal based on orientation and handedness
         let n: Normal3f = Normal3f {
             x: nv.x,
@@ -287,7 +287,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             p: *p,
             time: time,
             p_error: *p_error,
-            wo: vec3_normalize(wo),
+            wo: wo.normalize(),
             n: n,
             medium_interface: None,
             uv: *uv,

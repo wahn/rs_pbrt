@@ -12,7 +12,7 @@ use cameras::realistic::RealisticCamera;
 use core::camera::Camera;
 use core::film::Film;
 use core::filter::Filter;
-use core::geometry::{vec3_coordinate_system, vec3_cross_vec3, vec3_normalize};
+use core::geometry::{vec3_coordinate_system, vec3_cross_vec3};
 use core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use core::integrator::SamplerIntegrator;
 use core::light::Light;
@@ -495,7 +495,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
                 z: 1.0,
             },
         );
-        let dir: Vector3f = vec3_normalize(&(to - from));
+        let dir: Vector3f = (to - from).normalize();
         let mut du: Vector3f = Vector3f::default();
         let mut dv: Vector3f = Vector3f::default();
         vec3_coordinate_system(&dir, &mut du, &mut dv);
@@ -1372,9 +1372,7 @@ fn get_shapes_and_materials(
                     y: pt.y,
                     z: pt.z,
                 });
-                eval_ns.push(Normal3f::from(vec3_normalize(&vec3_cross_vec3(
-                    &dpdu, &dpdv,
-                ))));
+                eval_ns.push(Normal3f::from(vec3_cross_vec3(&dpdu, &dpdv).normalize()));
             }
         }
         // generate points-polygons mesh

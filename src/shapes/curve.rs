@@ -4,7 +4,7 @@ use std::sync::Arc;
 use core::geometry::{
     bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, nrm_cross_vec3, nrm_dot_nrm, nrm_normalize,
     pnt3_distance, pnt3_distance_squared, pnt3_lerp, vec2_dot, vec3_coordinate_system,
-    vec3_cross_vec3, vec3_normalize,
+    vec3_cross_vec3,
 };
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -301,16 +301,17 @@ impl Curve {
             let dpdv: Vector3f;
             eval_bezier(&self.common.cp_obj, u, Some(&mut dpdu));
             if self.common.curve_type == CurveType::Ribbon {
-                dpdv = vec3_normalize(&nrm_cross_vec3(&n_hit, &dpdu)) * hit_width;
+                dpdv = nrm_cross_vec3(&n_hit, &dpdu).normalize() * hit_width;
             } else {
                 // compute curve $\dpdv$ for flat and cylinder curves
                 let dpdu_plane: Vector3f =
                     Transform::inverse(&*ray_to_object).transform_vector(&dpdu);
-                let mut dpdv_plane: Vector3f = vec3_normalize(&Vector3f {
+                let mut dpdv_plane: Vector3f = Vector3f {
                     x: -dpdu_plane.y,
                     y: dpdu_plane.x,
                     z: 0.0,
-                }) * hit_width;
+                }.normalize()
+                    * hit_width;
                 if self.common.curve_type == CurveType::Cylinder {
                     // rotate _dpdvPlane_ to give cylindrical appearance
                     let theta: Float = lerp(v, -90.0 as Float, 90.0 as Float);
@@ -520,7 +521,7 @@ impl Shape for Curve {
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
         } else {
-            wi = vec3_normalize(&wi);
+            wi = wi.normalize();
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
             *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);

@@ -3,7 +3,7 @@ use std;
 use std::f32::consts::PI;
 use std::sync::RwLock;
 // pbrt
-use core::geometry::{vec3_coordinate_system, vec3_normalize};
+use core::geometry::{vec3_coordinate_system};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon};
 use core::light::{Light, LightFlags, VisibilityTester};
@@ -33,7 +33,7 @@ impl DistantLight {
     pub fn new(light_to_world: &Transform, l: &Spectrum, w_light: &Vector3f) -> Self {
         DistantLight {
             l: *l,
-            w_light: vec3_normalize(&light_to_world.transform_vector(&*w_light)),
+            w_light: light_to_world.transform_vector(&*w_light).normalize(),
             world_center: RwLock::new(Point3f::default()),
             world_radius: RwLock::new(0.0),
             flags: LightFlags::DeltaDirection as u8,

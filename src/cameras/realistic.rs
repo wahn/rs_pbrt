@@ -6,7 +6,7 @@ use std::sync::Arc;
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::floatfile::read_float_file;
-use core::geometry::{nrm_faceforward_vec3, nrm_normalize, vec3_normalize};
+use core::geometry::{nrm_faceforward_vec3, nrm_normalize};
 use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
@@ -241,7 +241,7 @@ impl RealisticCamera {
                 } else {
                     eta_t = 1.0 as Float;
                 }
-                if !refract(&vec3_normalize(&-r_lens.d), &n, eta_i / eta_t, &mut wt) {
+                if !refract(&(-r_lens.d).normalize(), &n, eta_i / eta_t, &mut wt) {
                     return false;
                 }
                 r_lens.d = wt;

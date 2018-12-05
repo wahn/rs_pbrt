@@ -1,5 +1,5 @@
 // pbrt
-use core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_normalize};
+use core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm};
 use core::geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
 use core::integrator::SamplerIntegrator;
 use core::interaction::Interaction;
@@ -72,7 +72,7 @@ impl SamplerIntegrator for AOIntegrator {
             // compute coordinate frame based on true geometry, not
             // shading geometry.
             let n: Normal3f = nrm_faceforward_vec3(&isect.n, &-ray.d);
-            let s: Vector3f = vec3_normalize(&isect.dpdu);
+            let s: Vector3f = isect.dpdu.normalize();
             let t: Vector3f = nrm_cross_vec3(&isect.n, &s);
             let u: Vec<Point2f> = sampler.get_2d_array(self.n_samples);
             for i in 0..self.n_samples as usize {
