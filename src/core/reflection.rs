@@ -433,15 +433,38 @@ pub trait Bxdf {
         self.get_type() & t == self.get_type()
     }
     fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum;
+
+    /// Sample the BxDF for the given outgoing direction, using the given pair of uniform samples.
+    ///
+    /// The default implementation uses importance sampling by using a cosine-weighted
+    /// distribution.
     fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
         u: &Point2f,
         pdf: &mut Float,
-        sampled_type: &mut u8,
-    ) -> Spectrum;
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float;
+        _sampled_type: &mut u8,
+    ) -> Spectrum {
+        *wi = cosine_sample_hemisphere(u);
+        if wo.z < 0.0 {
+            wi.z *= -1.0;
+        }
+        *pdf = self.pdf(wo, &wi);
+        self.f(wo, &wi)
+    }
+
+    /// Evaluate the PDF for the given outgoing and incoming directions.
+    ///
+    /// Note: this method needs to be consistent with ```Bxdf::sample_f()```.
+    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0
+        }
+    }
+
     fn get_type(&self) -> u8;
 }
 
