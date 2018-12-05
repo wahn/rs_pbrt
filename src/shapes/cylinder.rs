@@ -4,9 +4,7 @@ use std::sync::Arc;
 // pbrt
 use core::efloat::quadratic_efloat;
 use core::efloat::EFloat;
-use core::geometry::{
-    nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared, vec3_cross_vec3, vec3_dot_vec3,
-};
+use core::geometry::{nrm_abs_dot_vec3, pnt3_distance_squared, vec3_cross_vec3, vec3_dot_vec3};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
@@ -337,11 +335,13 @@ impl Shape for Cylinder {
             z: z,
         };
         let mut it: InteractionCommon = InteractionCommon::default();
-        it.n = nrm_normalize(&self.object_to_world.transform_normal(&Normal3f {
-            x: p_obj.x,
-            y: p_obj.y,
-            z: 0.0,
-        }));
+        it.n = self
+            .object_to_world
+            .transform_normal(&Normal3f {
+                x: p_obj.x,
+                y: p_obj.y,
+                z: 0.0,
+            }).normalize();
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }

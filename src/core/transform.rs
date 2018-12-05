@@ -58,8 +58,7 @@ use std::f32::consts::PI;
 use std::ops::{Add, Mul};
 // pbrt
 use core::geometry::{
-    bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, nrm_normalize, vec3_cross_vec3,
-    vec3_dot_vec3,
+    bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3,
 };
 use core::geometry::{Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f};
 use core::interaction::SurfaceInteraction;
@@ -844,7 +843,7 @@ impl Transform {
         // transform _p_ and _pError_ in _SurfaceInteraction_
         ret.p = self.transform_point_with_abs_error(&si.p, &si.p_error, &mut ret.p_error);
         // transform remaining members of _SurfaceInteraction_
-        ret.n = nrm_normalize(&self.transform_normal(&si.n));
+        ret.n = self.transform_normal(&si.n).normalize();
         ret.wo = self.transform_vector(&si.wo).normalize();
         ret.time = si.time;
         ret.uv = si.uv;
@@ -853,7 +852,7 @@ impl Transform {
         ret.dpdv = self.transform_vector(&si.dpdv);
         ret.dndu = self.transform_normal(&si.dndu);
         ret.dndv = self.transform_normal(&si.dndv);
-        ret.shading.n = nrm_normalize(&self.transform_normal(&si.shading.n));
+        ret.shading.n = self.transform_normal(&si.shading.n).normalize();
         ret.shading.dpdu = self.transform_vector(&si.shading.dpdu);
         ret.shading.dpdv = self.transform_vector(&si.shading.dpdv);
         ret.shading.dndu = self.transform_normal(&si.shading.dndu);

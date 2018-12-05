@@ -12,8 +12,7 @@ use std;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{
-    nrm_faceforward_nrm, nrm_normalize, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm,
-    vec3_dot_vec3,
+    nrm_faceforward_nrm, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm, vec3_dot_vec3,
 };
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::material::TransportMode;
@@ -339,7 +338,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
         orientation_is_authoritative: bool,
     ) {
         // compute _shading.n_ for _SurfaceInteraction_
-        self.shading.n = nrm_normalize(&Normal3f::from(vec3_cross_vec3(dpdus, dpdvs)));
+        self.shading.n = Normal3f::from(vec3_cross_vec3(dpdus, dpdvs)).normalize();
         if let Some(shape) = self.shape {
             if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
                 self.shading.n = -self.shading.n;

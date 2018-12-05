@@ -2,9 +2,8 @@
 use std::sync::Arc;
 // pbrt
 use core::geometry::{
-    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, nrm_cross_vec3, nrm_dot_nrm, nrm_normalize,
-    pnt3_distance, pnt3_distance_squared, pnt3_lerp, vec2_dot, vec3_coordinate_system,
-    vec3_cross_vec3,
+    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, nrm_cross_vec3, nrm_dot_nrm, pnt3_distance,
+    pnt3_distance_squared, pnt3_lerp, vec2_dot, vec3_coordinate_system, vec3_cross_vec3,
 };
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -43,8 +42,8 @@ impl CurveCommon {
         norm: Option<[Normal3f; 2]>,
     ) -> Self {
         if let Some(norm) = norm {
-            let n0: Normal3f = nrm_normalize(&norm[0]);
-            let n1: Normal3f = nrm_normalize(&norm[1]);
+            let n0: Normal3f = norm[0].normalize();
+            let n1: Normal3f = norm[1].normalize();
             let normal_angle: Float =
                 clamp_t(nrm_dot_nrm(&n0, &n1), 0.0 as Float, 1.0 as Float).acos();
             let inv_sin_normal_angle: Float = 1.0 as Float / normal_angle.sin();

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::floatfile::read_float_file;
-use core::geometry::{nrm_faceforward_vec3, nrm_normalize};
+use core::geometry::nrm_faceforward_vec3;
 use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
@@ -195,7 +195,7 @@ impl RealisticCamera {
         }
         // compute surface normal of element at ray intersection point
         *n = Normal3f::from(Vector3f::from(o + ray.d * *t));
-        *n = nrm_faceforward_vec3(&nrm_normalize(&*n), &-ray.d);
+        *n = nrm_faceforward_vec3(&n.normalize(), &-ray.d);
         true
     }
     pub fn trace_lenses_from_scene(&self, r_camera: &Ray, r_out: Option<&mut Ray>) -> bool {

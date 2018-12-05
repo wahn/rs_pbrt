@@ -3,9 +3,9 @@ use std::mem;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{
-    bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, nrm_normalize, pnt3_abs,
-    pnt3_distance_squared, pnt3_permute, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3,
-    vec3_max_component, vec3_max_dimension, vec3_permute,
+    bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, pnt3_abs, pnt3_distance_squared,
+    pnt3_permute, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3, vec3_max_component,
+    vec3_max_dimension, vec3_permute,
 };
 use core::geometry::{Bounds3f, Normal3, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -332,8 +332,7 @@ impl Shape for Triangle {
             Some(self),
         );
         // override surface normal in _isect_ for triangle
-        let surface_normal: Normal3f =
-            Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
+        let surface_normal: Normal3f = Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
         si.n = surface_normal;
         si.shading.n = surface_normal;
         if !self.mesh.n.is_empty() || !self.mesh.s.is_empty() {
@@ -347,7 +346,7 @@ impl Shape for Triangle {
                 let n2 = self.mesh.n[self.mesh.vertex_indices[self.id * 3 + 2]];
                 ns = Normal3::from(n0) * b0 + Normal3::from(n1) * b1 + Normal3::from(n2) * b2;
                 if ns.length_squared() > 0.0 {
-                    ns = nrm_normalize(&ns);
+                    ns = ns.normalize();
                 } else {
                     ns = si.n;
                 }
@@ -574,7 +573,7 @@ impl Shape for Triangle {
         let mut it: InteractionCommon = InteractionCommon::default();
         it.p = p0 * b[0] + p1 * b[1] + p2 * (1.0 as Float - b[0] - b[1]);
         // compute surface normal for sampled point on triangle
-        it.n = nrm_normalize(&Normal3f::from(vec3_cross_vec3(&(p1 - p0), &(p2 - p0))));
+        it.n = Normal3f::from(vec3_cross_vec3(&(p1 - p0), &(p2 - p0))).normalize();
         // ensure correct orientation of the geometric normal; follow
         // the same approach as was used in Triangle::Intersect().
         if !self.mesh.n.is_empty() {

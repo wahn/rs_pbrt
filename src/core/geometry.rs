@@ -1092,6 +1092,14 @@ pub struct Normal3<T> {
     pub z: T,
 }
 
+impl Normal3<Float> {
+    /// Compute a new normal pointing in the same direction but with unit
+    /// length.
+    pub fn normalize(&self) -> Normal3<Float> {
+        *self / self.length()
+    }
+}
+
 impl<T> Add for Normal3<T>
 where
     T: Copy + Add<T, Output = T>,
@@ -1237,12 +1245,6 @@ pub fn nrm_cross_vec3(n1: &Normal3f, v2: &Vector3f) -> Vector3f {
         y: ((n1z * v2x) - (n1x * v2z)) as Float,
         z: ((n1x * v2y) - (n1y * v2x)) as Float,
     }
-}
-
-/// Compute a new normal pointing in the same direction but with unit
-/// length.
-pub fn nrm_normalize(n: &Normal3f) -> Normal3f {
-    *n / n.length()
 }
 
 /// Product of the Euclidean magnitudes of a normal (and another

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use core::efloat::quadratic_efloat;
 use core::efloat::EFloat;
 use core::geometry::{
-    nrm_abs_dot_vec3, nrm_normalize, pnt3_distance, pnt3_distance_squared, pnt3_offset_ray_origin,
+    nrm_abs_dot_vec3, pnt3_distance, pnt3_distance_squared, pnt3_offset_ray_origin,
     spherical_direction_vec3, vec3_coordinate_system, vec3_cross_vec3, vec3_dot_vec3,
 };
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
@@ -362,11 +362,13 @@ impl Shape for Sphere {
     fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
         let mut p_obj: Point3f = Point3f::default() + uniform_sample_sphere(u) * self.radius;
         let mut it: InteractionCommon = InteractionCommon::default();
-        it.n = nrm_normalize(&self.object_to_world.transform_normal(&Normal3f {
-            x: p_obj.x,
-            y: p_obj.y,
-            z: p_obj.z,
-        }));
+        it.n = self
+            .object_to_world
+            .transform_normal(&Normal3f {
+                x: p_obj.x,
+                y: p_obj.y,
+                z: p_obj.z,
+            }).normalize();
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }

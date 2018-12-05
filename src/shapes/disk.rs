@@ -2,7 +2,7 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{nrm_abs_dot_vec3, nrm_normalize, pnt3_distance_squared};
+use core::geometry::{nrm_abs_dot_vec3, pnt3_distance_squared};
 use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use core::material::Material;
@@ -216,11 +216,13 @@ impl Shape for Disk {
             z: self.height,
         };
         let mut it: InteractionCommon = InteractionCommon::default();
-        it.n = nrm_normalize(&self.object_to_world.transform_normal(&Normal3f {
-            x: 0.0 as Float,
-            y: 0.0 as Float,
-            z: 1.0 as Float,
-        }));
+        it.n = self
+            .object_to_world
+            .transform_normal(&Normal3f {
+                x: 0.0 as Float,
+                y: 0.0 as Float,
+                z: 1.0 as Float,
+            }).normalize();
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }

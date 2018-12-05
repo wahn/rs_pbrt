@@ -4,7 +4,7 @@
 //std
 use std::sync::Arc;
 // pbrt
-use core::geometry::{nrm_normalize, vec3_cross_vec3};
+use core::geometry::vec3_cross_vec3;
 use core::geometry::{Normal3f, Vector2f, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::pbrt::Float;
@@ -58,9 +58,9 @@ pub trait Material {
             x: du,
             y: 0.0 as Float,
         };
-        si_eval.n = nrm_normalize(
-            &(Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv)) + si.dndu * du),
-        );
+        si_eval.n = (Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv))
+            + si.dndu * du)
+            .normalize();
         let u_displace: Float = d.evaluate(&si_eval);
         // shift _si_eval_ _dv_ in the $v$ direction
         let mut dv: Float = 0.5 as Float * (si.dvdx.abs() + si.dvdy.abs());
@@ -72,9 +72,9 @@ pub trait Material {
             x: 0.0 as Float,
             y: dv,
         };
-        si_eval.n = nrm_normalize(
-            &(Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv)) + si.dndv * dv),
-        );
+        si_eval.n = (Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv))
+            + si.dndv * dv)
+            .normalize();
         let v_displace: Float = d.evaluate(&si_eval);
         let displace: Float = d.evaluate(&si);
         // compute bump-mapped differential geometry
