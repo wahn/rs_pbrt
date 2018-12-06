@@ -376,26 +376,23 @@ impl RealisticCamera {
         self.compute_cardinal_points(&r_film, &r_scene, 1, pz, fz);
     }
     pub fn focus_thick_lens(&self, focus_distance: Float) -> Float {
-        // WORK
-        0.0
-    }
-    pub fn focus_binary_search(&self, focus_distance: Float) -> Float {
-        // Float pz[2], fz[2];
         let mut pz: [Float; 2] = [0.0 as Float; 2];
         let mut fz: [Float; 2] = [0.0 as Float; 2];
-        // ComputeThickLensApproximation(pz, fz);
         self.compute_thick_lens_approximation(&mut pz, &mut fz);
         // LOG(INFO) << StringPrintf("Cardinal points: p' = %f f' = %f, p = %f f = %f.\n",
         //                           pz[0], fz[0], pz[1], fz[1]);
         // LOG(INFO) << StringPrintf("Effective focal length %f\n", fz[0] - pz[0]);
-        // // Compute translation of lens, _delta_, to focus at _focusDistance_
-        // Float f = fz[0] - pz[0];
-        // Float z = -focusDistance;
-        // Float c = (pz[1] - z - pz[0]) * (pz[1] - z - 4 * f - pz[0]);
-        // CHECK_GT(c, 0) << "Coefficient must be positive. It looks focusDistance: " << focusDistance << " is too short for a given lenses configuration";
-        // Float delta =
-        //     0.5f * (pz[1] - z + pz[0] - std::sqrt(c));
-        // return elementInterfaces.back().thickness + delta;
+        // compute translation of lens, _delta_, to focus at _focus_distance_
+        let f: Float = fz[0] - pz[0];
+        let z: Float = -focus_distance;
+        let c: Float = (pz[1] - z - pz[0]) * (pz[1] - z - 4.0 as Float * f - pz[0]);
+        assert!(c > 0.0 as Float,
+                "Coefficient must be positive. It looks focus_distance: {} is too short for a given lenses configuration",
+                focus_distance);
+        let delta: Float = 0.5 as Float * (pz[1] - z + pz[0] - c.sqrt());
+        self.element_interfaces.last().unwrap().thickness + delta
+    }
+    pub fn focus_binary_search(&self, focus_distance: Float) -> Float {
         // WORK
         0.0
     }
