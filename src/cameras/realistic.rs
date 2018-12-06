@@ -142,8 +142,7 @@ impl RealisticCamera {
         camera
     }
     pub fn lens_rear_z(&self) -> Float {
-        // WORK
-        0.0
+        self.element_interfaces.last().unwrap().thickness
     }
     pub fn lens_front_z(&self) -> Float {
         let mut z_sum = 0.0;
@@ -158,58 +157,67 @@ impl RealisticCamera {
         0.0
     }
     pub fn trace_lenses_from_film(&self, r_camera: &Ray, r_out: Option<&mut Ray>) -> bool {
-        // Float elementZ = 0;
-        // // Transform _rCamera_ from camera to lens system space
-        // static const Transform CameraToLens = Scale(1, 1, -1);
-        // Ray rLens = CameraToLens(rCamera);
-        // for (int i = elementInterfaces.size() - 1; i >= 0; --i) {
-        //     const LensElementInterface &element = elementInterfaces[i];
-        //     // Update ray from film accounting for interaction with _element_
-        //     elementZ -= element.thickness;
-
-        //     // Compute intersection of ray with lens element
-        //     Float t;
-        //     Normal3f n;
-        //     bool isStop = (element.curvatureRadius == 0);
-        //     if (isStop) {
-        //         // The refracted ray computed in the previous lens element
-        //         // interface may be pointed towards film plane(+z) in some
-        //         // extreme situations; in such cases, 't' becomes negative.
-        //         if (rLens.d.z >= 0.0) return false;
-        //         t = (elementZ - rLens.o.z) / rLens.d.z;
-        //     } else {
-        //         Float radius = element.curvatureRadius;
-        //         Float zCenter = elementZ + element.curvatureRadius;
-        //         if (!IntersectSphericalElement(radius, zCenter, rLens, &t, &n))
-        //             return false;
-        //     }
-        //     CHECK_GE(t, 0);
-
-        //     // Test intersection point against element aperture
-        //     Point3f pHit = rLens(t);
-        //     Float r2 = pHit.x * pHit.x + pHit.y * pHit.y;
-        //     if (r2 > element.apertureRadius * element.apertureRadius) return false;
-        //     rLens.o = pHit;
-
-        //     // Update ray path for element interface interaction
-        //     if (!isStop) {
-        //         Vector3f w;
-        //         Float etaI = element.eta;
-        //         Float etaT = (i > 0 && elementInterfaces[i - 1].eta != 0)
-        //                          ? elementInterfaces[i - 1].eta
-        //                          : 1;
-        //         if (!Refract(Normalize(-rLens.d), n, etaI / etaT, &w)) return false;
-        //         rLens.d = w;
-        //     }
-        // }
-        // // Transform _rLens_ from lens system space back to camera space
-        // if (rOut != nullptr) {
-        //     static const Transform LensToCamera = Scale(1, 1, -1);
-        //     *rOut = LensToCamera(rLens);
-        // }
-        // return true;
-        // WORK
-        false
+        let mut element_z: Float = 0.0 as Float;
+        // transform _rCamera_ from camera to lens system space
+        let camera_to_lens: Transform = Transform::scale(1.0 as Float, 1.0 as Float, -1.0 as Float);
+        let mut r_lens: Ray = camera_to_lens.transform_ray(r_camera);
+        let ei_len = self.element_interfaces.len();
+        for idx in 0..ei_len {
+            let i = ei_len - 1 - idx;
+            let element = self.element_interfaces[i];
+            // update ray from film accounting for interaction with _element_
+            element_z -= element.thickness;
+            // compute intersection of ray with lens element
+            let mut t: Float = 0.0 as Float;
+            let mut n: Normal3f = Normal3f::default();
+            let is_stop: bool = element.curvature_radius == 0.0 as Float;
+            if is_stop {
+                // The refracted ray computed in the previous lens
+                // element interface may be pointed towards film
+                // plane(+z) in some extreme situations; in such
+                // cases, 't' becomes negative.
+                if r_lens.d.z >= 0.0 as Float {
+                    return false;
+                }
+                t = (element_z - r_lens.o.z) / r_lens.d.z;
+            } else {
+                let radius: Float = element.curvature_radius;
+                let z_center: Float = element_z + element.curvature_radius;
+                if !self.intersect_spherical_element(radius, z_center, &r_lens, &mut t, &mut n) {
+                    return false;
+                }
+            }
+            assert!(t >= 0.0 as Float);
+            // test intersection point against element aperture
+            let p_hit: Point3f = r_lens.position(t);
+            let r2: Float = p_hit.x * p_hit.x + p_hit.y * p_hit.y;
+            if r2 > element.aperture_radius * element.aperture_radius {
+                return false;
+            }
+            r_lens.o = p_hit;
+            // update ray path for element interface interaction
+            if !is_stop {
+                let mut w: Vector3f = Vector3f::default();
+                let eta_i: Float = element.eta;
+                let eta_t: Float;
+                if i > 0_usize && self.element_interfaces[i - 1].eta != 0.0 as Float {
+                    eta_t = self.element_interfaces[i - 1].eta;
+                } else {
+                    eta_t = 1.0 as Float;
+                }
+                if !refract(&(-r_lens.d).normalize(), &n, eta_i / eta_t, &mut w) {
+                    return false;
+                }
+                r_lens.d = w;
+            }
+        }
+        // transform _r_lens_ from lens system space back to camera space
+        if let Some(r_out) = r_out {
+            let lens_to_camera: Transform =
+                Transform::scale(1.0 as Float, 1.0 as Float, -1.0 as Float);
+            *r_out = lens_to_camera.transform_ray(&r_lens);
+        }
+        true
     }
     pub fn intersect_spherical_element(
         &self,
@@ -264,7 +272,7 @@ impl RealisticCamera {
             } else {
                 let radius: Float = element.curvature_radius;
                 let z_center: Float = element_z + element.curvature_radius;
-                if self.intersect_spherical_element(radius, z_center, &r_lens, &mut t, &mut n) {
+                if !self.intersect_spherical_element(radius, z_center, &r_lens, &mut t, &mut n) {
                     return false;
                 }
             }
@@ -281,7 +289,7 @@ impl RealisticCamera {
                 let mut wt: Vector3f = Vector3f::default();
                 let eta_i: Float;
                 if i == 0 || self.element_interfaces[i - 1].eta == 0.0 as Float {
-                    eta_i = 0.0 as Float;
+                    eta_i = 1.0 as Float;
                 } else {
                     eta_i = self.element_interfaces[i - 1].eta;
                 }
