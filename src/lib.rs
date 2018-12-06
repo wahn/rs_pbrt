@@ -12,7 +12,7 @@
 //! 1. [render_bdpt][render_bdpt] for bidirectional path tracing
 //! 2. [render_mlt][render_mlt] for Metropolis Light Transport
 //!
-//! [rust]: https://www.rust-lang.org/en-US
+//! [rust]: https://www.rust-lang.org
 //! [book]: http://www.pbrt.org
 //! [repo]: https://github.com/wahn/rs_pbrt
 //! [here]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/fn.render.html
