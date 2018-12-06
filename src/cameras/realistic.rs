@@ -157,7 +157,57 @@ impl RealisticCamera {
         // WORK
         0.0
     }
-    pub fn trace_lenses_from_film(&self, r_camera: &Ray, r_out: &mut Ray) -> bool {
+    pub fn trace_lenses_from_film(&self, r_camera: &Ray, r_out: Option<&mut Ray>) -> bool {
+        // Float elementZ = 0;
+        // // Transform _rCamera_ from camera to lens system space
+        // static const Transform CameraToLens = Scale(1, 1, -1);
+        // Ray rLens = CameraToLens(rCamera);
+        // for (int i = elementInterfaces.size() - 1; i >= 0; --i) {
+        //     const LensElementInterface &element = elementInterfaces[i];
+        //     // Update ray from film accounting for interaction with _element_
+        //     elementZ -= element.thickness;
+
+        //     // Compute intersection of ray with lens element
+        //     Float t;
+        //     Normal3f n;
+        //     bool isStop = (element.curvatureRadius == 0);
+        //     if (isStop) {
+        //         // The refracted ray computed in the previous lens element
+        //         // interface may be pointed towards film plane(+z) in some
+        //         // extreme situations; in such cases, 't' becomes negative.
+        //         if (rLens.d.z >= 0.0) return false;
+        //         t = (elementZ - rLens.o.z) / rLens.d.z;
+        //     } else {
+        //         Float radius = element.curvatureRadius;
+        //         Float zCenter = elementZ + element.curvatureRadius;
+        //         if (!IntersectSphericalElement(radius, zCenter, rLens, &t, &n))
+        //             return false;
+        //     }
+        //     CHECK_GE(t, 0);
+
+        //     // Test intersection point against element aperture
+        //     Point3f pHit = rLens(t);
+        //     Float r2 = pHit.x * pHit.x + pHit.y * pHit.y;
+        //     if (r2 > element.apertureRadius * element.apertureRadius) return false;
+        //     rLens.o = pHit;
+
+        //     // Update ray path for element interface interaction
+        //     if (!isStop) {
+        //         Vector3f w;
+        //         Float etaI = element.eta;
+        //         Float etaT = (i > 0 && elementInterfaces[i - 1].eta != 0)
+        //                          ? elementInterfaces[i - 1].eta
+        //                          : 1;
+        //         if (!Refract(Normalize(-rLens.d), n, etaI / etaT, &w)) return false;
+        //         rLens.d = w;
+        //     }
+        // }
+        // // Transform _rLens_ from lens system space back to camera space
+        // if (rOut != nullptr) {
+        //     static const Transform LensToCamera = Scale(1, 1, -1);
+        //     *rOut = LensToCamera(rLens);
+        // }
+        // return true;
         // WORK
         false
     }
@@ -265,14 +315,24 @@ impl RealisticCamera {
     pub fn draw_ray_path_from_scene(&self, r: &Ray, arrow: bool, to_optical_intercept: bool) {
         // WORK
     }
-    pub fn compute_cardinal_points(&self, r_in: &Ray, r_out: &Ray, p: &mut Float, f: &mut Float) {
-        // WORK
+    pub fn compute_cardinal_points(
+        &self,
+        r_in: &Ray,
+        r_out: &Ray,
+        idx: usize,
+        pz: &mut [Float; 2],
+        fz: &mut [Float; 2],
+    ) {
+        let tf: Float = -r_out.o.x / r_out.d.x;
+        fz[idx] = -r_out.position(tf).z;
+        let tp: Float = (r_in.o.x - r_out.o.x) / r_out.d.x;
+        pz[idx] = -r_out.position(tp).z;
     }
-    pub fn compute_thick_lens_approximation(&self, pz: &mut [Float; 2], f: &mut [Float; 2]) {
+    pub fn compute_thick_lens_approximation(&self, pz: &mut [Float; 2], fz: &mut [Float; 2]) {
         // find height $x$ from optical axis for parallel rays
         let x: Float = 0.001 as Float * self.film.diagonal;
         // compute cardinal points for film side of lens system
-        let r_scene: Ray = Ray {
+        let mut r_scene: Ray = Ray {
             o: Point3f {
                 x: x,
                 y: 0.0 as Float,
@@ -291,15 +351,21 @@ impl RealisticCamera {
         let mut r_film: Ray = Ray::default();
         assert!(self.trace_lenses_from_scene(&r_scene, Some(&mut r_film)),
                 "Unable to trace ray from scene to film for thick lens approximation. Is aperture stop extremely small?");
-        // ComputeCardinalPoints(r_scene, r_film, &pz[0], &fz[0]);
-
-        // // Compute cardinal points for scene side of lens system
-        // r_film = Ray(Point3f(x, 0, LensRearZ() - 1), Vector3f(0, 0, 1));
-        // CHECK(TraceLensesFromFilm(r_film, &r_scene))
-        //     << "Unable to trace ray from film to scene for thick lens "
-        //        "approximation. Is aperture stop extremely small?";
-        // ComputeCardinalPoints(r_film, r_scene, &pz[1], &fz[1]);
-        // WORK
+        self.compute_cardinal_points(&r_scene, &r_film, 0, pz, fz);
+        // compute cardinal points for scene side of lens system
+        r_film.o = Point3f {
+            x: x,
+            y: 0.0 as Float,
+            z: self.lens_rear_z() - 1.0 as Float,
+        };
+        r_film.d = Vector3f {
+            x: 0.0 as Float,
+            y: 0.0 as Float,
+            z: 1.0 as Float,
+        };
+        assert!(self.trace_lenses_from_film(&r_film, Some(&mut r_scene)),
+                "Unable to trace ray from film to scene for thick lens approximation. Is aperture stop extremely small?");
+        self.compute_cardinal_points(&r_film, &r_scene, 1, pz, fz);
     }
     pub fn focus_thick_lens(&self, focus_distance: Float) -> Float {
         // WORK
