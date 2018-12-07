@@ -415,44 +415,57 @@ impl RealisticCamera {
         // WORK
         0.0
     }
-    pub fn focus_distance(&self, film_dist: Float) -> Float {
+    pub fn focus_distance(&self, film_distance: Float) -> Float {
         // find offset ray from film center through lens
         let bounds: Bounds2f =
             self.bound_exit_pupil(0.0 as Float, 0.001 as Float * self.film.diagonal);
-        // const std::array<Float, 3> scaleFactors = {0.1f, 0.01f, 0.001f};
-        // Float lu = 0.0f;
-
-        // Ray ray;
-
-        // // Try some different and decreasing scaling factor to find focus ray
-        // // more quickly when `aperturediameter` is too small.
-        // // (e.g. 2 [mm] for `aperturediameter` with wide.22mm.dat),
-        // bool foundFocusRay = false;
-        // for (Float scale : scaleFactors) {
-        //     lu = scale * bounds.pMax[0];
-        //     if (TraceLensesFromFilm(Ray(Point3f(0, 0, LensRearZ() - filmDistance),
-        //                                 Vector3f(lu, 0, filmDistance)),
-        //                             &ray)) {
-        //         foundFocusRay = true;
-        //         break;
-        //     }
-        // }
-
-        // if (!foundFocusRay) {
-        //     Error(
-        //         "Focus ray at lens pos(%f,0) didn't make it through the lenses "
-        //         "with film distance %f?!??\n",
-        //         lu, filmDistance);
-        //     return Infinity;
-        // }
-
-        // // Compute distance _zFocus_ where ray intersects the principal axis
-        // Float tFocus = -ray.o.x / ray.d.x;
-        // Float zFocus = ray(tFocus).z;
-        // if (zFocus < 0) zFocus = Infinity;
-        // return zFocus;
-        // WORK
-        0.0
+        let scale_factors: [Float; 3] = [0.1 as Float, 0.01 as Float, 0.001 as Float];
+        let mut lu: Float = 0.0;
+        let mut ray: Ray = Ray::default();
+        // Try some different and decreasing scaling factor to find
+        // focus ray more quickly when `aperturediameter` is too
+        // small.  (e.g. 2 [mm] for `aperturediameter` with
+        // wide.22mm.dat),
+        let mut found_focus_ray: bool = false;
+        // for (Float scale : scale_factors) {
+        for scale in scale_factors.into_iter() {
+            lu = scale * bounds.p_max[0];
+            if self.trace_lenses_from_film(
+                &Ray {
+                    o: Point3f {
+                        x: 0.0 as Float,
+                        y: 0.0 as Float,
+                        z: self.lens_rear_z() - film_distance,
+                    },
+                    d: Vector3f {
+                        x: lu,
+                        y: 0.0 as Float,
+                        z: film_distance,
+                    },
+                    t_max: std::f32::INFINITY,
+                    time: 0.0 as Float,
+                    medium: None,
+                    differential: None,
+                },
+                Some(&mut ray),
+            ) {
+                found_focus_ray = true;
+                break;
+            }
+        }
+        if (!found_focus_ray) {
+            println!(
+                "ERROR: Focus ray at lens pos({},0) didn't make it through the lenses with film distance {}?!??",
+                lu, film_distance);
+            return std::f32::INFINITY;
+        }
+        // compute distance _zFocus_ where ray intersects the principal axis
+        let t_focus: Float = -ray.o.x / ray.d.x;
+        let mut z_focus: Float = ray.position(t_focus).z;
+        if z_focus < 0.0 as Float {
+            z_focus = std::f32::INFINITY;
+        }
+        z_focus
     }
     pub fn bound_exit_pupil(&self, p_film_x0: Float, p_film_x1: Float) -> Bounds2f {
         let mut pupil_bounds: Bounds2f = Bounds2f::default();
