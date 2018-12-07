@@ -760,12 +760,49 @@ where
     }
 }
 
+/// Given a bounding box and a point, the **bnd2_union_pnt2()**
+/// function returns a new bounding box that encompasses that point as
+/// well as the original box.
+pub fn bnd2_union_pnt2<T>(b: &Bounds2<T>, p: &Point2<T>) -> Bounds2<T>
+where
+    T: num::Float,
+{
+    let p_min: Point2<T> = Point2::<T> {
+        x: b.p_min.x.min(p.x),
+        y: b.p_min.y.min(p.y),
+    };
+    let p_max: Point2<T> = Point2::<T> {
+        x: b.p_max.x.max(p.x),
+        y: b.p_max.y.max(p.y),
+    };
+    Bounds2 {
+        p_min: p_min,
+        p_max: p_max,
+    }
+}
+
+/// Determine if a given point is inside the bounding box.
+pub fn pnt2_inside_bnd2<T>(pt: &Point2<T>, b: &Bounds2<T>) -> bool
+where
+    T: PartialOrd,
+{
+    pt.x >= b.p_min.x && pt.x <= b.p_max.x && pt.y >= b.p_min.y && pt.y <= b.p_max.y
+}
+
 /// Is a 2D point inside a 2D bound?
 pub fn pnt2_inside_exclusive<T>(pt: &Point2<T>, b: &Bounds2<T>) -> bool
 where
     T: PartialOrd,
 {
     pt.x >= b.p_min.x && pt.x < b.p_max.x && pt.y >= b.p_min.y && pt.y < b.p_max.y
+}
+
+/// Pads the bounding box by a constant factor in both dimensions.
+pub fn bnd2_expand(b: &Bounds2f, delta: Float) -> Bounds2f {
+    Bounds2f {
+        p_min: b.p_min - Vector2f { x: delta, y: delta },
+        p_max: b.p_max + Vector2f { x: delta, y: delta },
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -1674,7 +1711,17 @@ pub fn pnt3_inside_bnd3(p: &Point3f, b: &Bounds3f) -> bool {
         && p.z <= b.p_max.z
 }
 
-/// Pads the bounding box by a constant factor in both dimensions.
+/// Is a 3D point inside a 3D bound?
+pub fn pnt3_inside_exclusive(p: &Point3f, b: &Bounds3f) -> bool {
+    p.x >= b.p_min.x
+        && p.x < b.p_max.x
+        && p.y >= b.p_min.y
+        && p.y < b.p_max.y
+        && p.z >= b.p_min.z
+        && p.z < b.p_max.z
+}
+
+/// Pads the bounding box by a constant factor in all dimensions.
 pub fn bnd3_expand(b: &Bounds3f, delta: Float) -> Bounds3f {
     Bounds3f::new(
         b.p_min - Vector3f {

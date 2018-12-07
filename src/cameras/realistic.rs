@@ -6,13 +6,14 @@ use std::sync::Arc;
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::floatfile::read_float_file;
-use core::geometry::nrm_faceforward_vec3;
+use core::geometry::{bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2};
 use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
+use core::lowdiscrepancy::radical_inverse;
 use core::medium::Medium;
 use core::paramset::ParamSet;
-use core::pbrt::quadratic;
+use core::pbrt::{lerp, quadratic};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::refract;
 use core::transform::{AnimatedTransform, Transform};
@@ -153,8 +154,7 @@ impl RealisticCamera {
         z_sum
     }
     pub fn rear_element_radius(&self) -> Float {
-        // WORK
-        0.0
+        self.element_interfaces.last().unwrap().aperture_radius
     }
     pub fn trace_lenses_from_film(&self, r_camera: &Ray, r_out: Option<&mut Ray>) -> bool {
         let mut element_z: Float = 0.0 as Float;
@@ -416,12 +416,123 @@ impl RealisticCamera {
         0.0
     }
     pub fn focus_distance(&self, film_dist: Float) -> Float {
+        // find offset ray from film center through lens
+        let bounds: Bounds2f =
+            self.bound_exit_pupil(0.0 as Float, 0.001 as Float * self.film.diagonal);
+        // const std::array<Float, 3> scaleFactors = {0.1f, 0.01f, 0.001f};
+        // Float lu = 0.0f;
+
+        // Ray ray;
+
+        // // Try some different and decreasing scaling factor to find focus ray
+        // // more quickly when `aperturediameter` is too small.
+        // // (e.g. 2 [mm] for `aperturediameter` with wide.22mm.dat),
+        // bool foundFocusRay = false;
+        // for (Float scale : scaleFactors) {
+        //     lu = scale * bounds.pMax[0];
+        //     if (TraceLensesFromFilm(Ray(Point3f(0, 0, LensRearZ() - filmDistance),
+        //                                 Vector3f(lu, 0, filmDistance)),
+        //                             &ray)) {
+        //         foundFocusRay = true;
+        //         break;
+        //     }
+        // }
+
+        // if (!foundFocusRay) {
+        //     Error(
+        //         "Focus ray at lens pos(%f,0) didn't make it through the lenses "
+        //         "with film distance %f?!??\n",
+        //         lu, filmDistance);
+        //     return Infinity;
+        // }
+
+        // // Compute distance _zFocus_ where ray intersects the principal axis
+        // Float tFocus = -ray.o.x / ray.d.x;
+        // Float zFocus = ray(tFocus).z;
+        // if (zFocus < 0) zFocus = Infinity;
+        // return zFocus;
         // WORK
         0.0
     }
     pub fn bound_exit_pupil(&self, p_film_x0: Float, p_film_x1: Float) -> Bounds2f {
-        // WORK
-        Bounds2f::default()
+        let mut pupil_bounds: Bounds2f = Bounds2f::default();
+        // sample a collection of points on the rear lens to find exit pupil
+        let n_samples: i32 = 1024 * 1024;
+        let mut n_exiting_rays: i32 = 0;
+        // compute bounding box of projection of rear element on sampling plane
+        let rear_radius: Float = self.rear_element_radius();
+        let proj_rear_bounds: Bounds2f = Bounds2f {
+            p_min: Point2f {
+                x: -1.5 as Float * rear_radius,
+                y: -1.5 as Float * rear_radius,
+            },
+            p_max: Point2f {
+                x: 1.5 as Float * rear_radius,
+                y: 1.5 as Float * rear_radius,
+            },
+        };
+        for i in 0..n_samples {
+            // find location of sample points on $x$ segment and rear lens element
+            let p_film: Point3f = Point3f {
+                x: lerp(
+                    (i as Float + 0.5 as Float) / n_samples as Float,
+                    p_film_x0,
+                    p_film_x1,
+                ),
+                y: 0.0 as Float,
+                z: 0.0 as Float,
+            };
+            let u: [Float; 2] = [
+                radical_inverse(0 as u16, i as u64),
+                radical_inverse(1 as u16, i as u64),
+            ];
+            let p_rear: Point3f = Point3f {
+                x: lerp(u[0], proj_rear_bounds.p_min.x, proj_rear_bounds.p_max.x),
+                y: lerp(u[1], proj_rear_bounds.p_min.y, proj_rear_bounds.p_max.y),
+                z: self.lens_rear_z(),
+            };
+            // expand pupil bounds if ray makes it through the lens system
+            if pnt2_inside_bnd2(
+                &Point2f {
+                    x: p_rear.x,
+                    y: p_rear.y,
+                },
+                &pupil_bounds,
+            ) || self.trace_lenses_from_film(
+                &Ray {
+                    o: p_film,
+                    d: p_rear - p_film,
+                    t_max: std::f32::INFINITY,
+                    time: 0.0 as Float,
+                    medium: None,
+                    differential: None,
+                },
+                None,
+            ) {
+                pupil_bounds = bnd2_union_pnt2(
+                    &pupil_bounds,
+                    &Point2f {
+                        x: p_rear.x,
+                        y: p_rear.y,
+                    },
+                );
+                n_exiting_rays += 1;
+            }
+        }
+        // return entire element bounds if no rays made it through the lens system
+        if n_exiting_rays == 0_i32 {
+            println!(
+                "Unable to find exit pupil in x = [{},{}] on film.",
+                p_film_x0, p_film_x1
+            );
+            return proj_rear_bounds;
+        }
+        // expand bounds to account for sample spacing
+        pupil_bounds = bnd2_expand(
+            &pupil_bounds,
+            2.0 as Float * proj_rear_bounds.diagonal().length() / (n_samples as Float).sqrt(),
+        );
+        pupil_bounds
     }
     pub fn render_exit_pupil(&self, sx: Float, sy: Float, filename: String) {
         // WORK
