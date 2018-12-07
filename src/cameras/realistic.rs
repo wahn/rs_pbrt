@@ -393,6 +393,25 @@ impl RealisticCamera {
         self.element_interfaces.last().unwrap().thickness + delta
     }
     pub fn focus_binary_search(&self, focus_distance: Float) -> Float {
+        // find _film_distance_lower_, _film_distance_upper_ that bound focus distance
+        let mut film_distance_upper: Float = self.focus_thick_lens(focus_distance);
+        let mut film_distance_lower: Float = film_distance_upper;
+        while self.focus_distance(film_distance_lower) > focus_distance {
+            film_distance_lower *= 1.005 as Float;
+        }
+        while self.focus_distance(film_distance_upper) < focus_distance {
+            film_distance_upper /= 1.005 as Float;
+        }
+        // do binary search on film distances to focus
+        // for (int i = 0; i < 20; ++i) {
+        //     Float fmid = 0.5f * (film_distance_lower + film_distance_upper);
+        //     Float midFocus = self.focus_distance(fmid);
+        //     if (midFocus < focus_distance)
+        //         film_distance_lower = fmid;
+        //     else
+        //         film_distance_upper = fmid;
+        // }
+        // return 0.5f * (film_distance_lower + film_distance_upper);
         // WORK
         0.0
     }
