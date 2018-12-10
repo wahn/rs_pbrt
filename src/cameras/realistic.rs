@@ -73,19 +73,44 @@ impl RealisticCamera {
             });
             println!("{:?}", element_interfaces[i / 4]);
         }
-        let camera = RealisticCamera {
+        let mut camera = RealisticCamera {
             camera_to_world: camera_to_world,
             shutter_open: shutter_open,
             shutter_close: shutter_close,
-            film: film,
+            film: film.clone(),
             medium: medium,
             simple_weighting: simple_weighting,
             element_interfaces: element_interfaces,
             exit_pupil_bounds: Vec::new(),
         };
         // compute lens--film distance for given focus distance
-        camera.focus_binary_search(focus_distance);
-        // WORK
+        let fb: Float = camera.focus_binary_search(focus_distance);
+        // LOG(INFO) << StringPrintf("Binary search focus: %f -> %f\n", fb,
+        //                           camera.focus_distance(fb));
+        camera.element_interfaces.last_mut().unwrap().thickness =
+            camera.focus_thick_lens(focus_distance);
+        // LOG(INFO) << StringPrintf("Thick lens focus: %f -> %f\n",
+        //                           camera.element_interfaces.last().unwrap().thickness,
+        //                           camera.focus_distance(elementInterfaces.back().thickness));
+        // compute exit pupil bounds at sampled points on the film
+        let n_samples: usize = 64;
+        camera
+            .exit_pupil_bounds
+            .resize(n_samples, Bounds2f::default());
+        // ParallelFor([&](int i) {
+        //     Float r0 = (Float)i / n_samples * film->diagonal / 2;
+        //     Float r1 = (Float)(i + 1) / n_samples * film->diagonal / 2;
+        //     camera.exit_pupil_bounds[i] = camera.bound_exit_pupil(r0, r1);
+        // }, n_samples);
+        // TODO: run in parallel
+        for i in 0..n_samples {
+            let r0: Float = i as Float / n_samples as Float * film.diagonal / 2.0 as Float;
+            let r1: Float = (i + 1) as Float / n_samples as Float * film.diagonal / 2.0 as Float;
+            camera.exit_pupil_bounds[i] = camera.bound_exit_pupil(r0, r1);
+        }
+        if camera.simple_weighting {
+            println!("WARNING: \"simpleweighting\" option with RealisticCamera no longer necessarily matches regular camera images. Further, pixel values will vary a bit depending on the aperture size. See this discussion for details: https://github.com/mmp/pbrt-v3/issues/162#issuecomment-348625837");
+        }
         camera
     }
     pub fn create(
@@ -316,12 +341,15 @@ impl RealisticCamera {
     }
     pub fn draw_lens_system(&self) {
         // WORK
+        println!("TODO: RealisticCamera::draw_lens_system()");
     }
     pub fn draw_ray_path_from_film(&self, r: &Ray, arrow: bool, to_optical_intercept: bool) {
         // WORK
+        println!("TODO: RealisticCamera::draw_ray_path_from_film()");
     }
     pub fn draw_ray_path_from_scene(&self, r: &Ray, arrow: bool, to_optical_intercept: bool) {
         // WORK
+        println!("TODO: RealisticCamera::draw_ray_path_from_scene()");
     }
     pub fn compute_cardinal_points(
         &self,
@@ -403,17 +431,16 @@ impl RealisticCamera {
             film_distance_upper /= 1.005 as Float;
         }
         // do binary search on film distances to focus
-        // for (int i = 0; i < 20; ++i) {
-        //     Float fmid = 0.5f * (film_distance_lower + film_distance_upper);
-        //     Float midFocus = self.focus_distance(fmid);
-        //     if (midFocus < focus_distance)
-        //         film_distance_lower = fmid;
-        //     else
-        //         film_distance_upper = fmid;
-        // }
-        // return 0.5f * (film_distance_lower + film_distance_upper);
-        // WORK
-        0.0
+        for i in 0..20 {
+            let fmid: Float = 0.5 as Float * (film_distance_lower + film_distance_upper);
+            let mid_focus: Float = self.focus_distance(fmid);
+            if mid_focus < focus_distance {
+                film_distance_lower = fmid;
+            } else {
+                film_distance_upper = fmid;
+            }
+        }
+        0.5 as Float * (film_distance_lower + film_distance_upper)
     }
     pub fn focus_distance(&self, film_distance: Float) -> Float {
         // find offset ray from film center through lens
@@ -427,7 +454,6 @@ impl RealisticCamera {
         // small.  (e.g. 2 [mm] for `aperturediameter` with
         // wide.22mm.dat),
         let mut found_focus_ray: bool = false;
-        // for (Float scale : scale_factors) {
         for scale in scale_factors.into_iter() {
             lu = scale * bounds.p_max[0];
             if self.trace_lenses_from_film(
@@ -453,7 +479,7 @@ impl RealisticCamera {
                 break;
             }
         }
-        if (!found_focus_ray) {
+        if !found_focus_ray {
             println!(
                 "ERROR: Focus ray at lens pos({},0) didn't make it through the lenses with film distance {}?!??",
                 lu, film_distance);
@@ -549,6 +575,7 @@ impl RealisticCamera {
     }
     pub fn render_exit_pupil(&self, sx: Float, sy: Float, filename: String) {
         // WORK
+        println!("TODO: RealisticCamera::render_exit_pupil()");
     }
     pub fn sample_exit_pupil(
         &self,
@@ -557,15 +584,18 @@ impl RealisticCamera {
         sample_bounds_area: &mut Float,
     ) -> Point3f {
         // WORK
+        println!("TODO: RealisticCamera::sample_exit_pupil()");
         Point3f::default()
     }
     pub fn test_exit_pupil_bounds(&self) {
         // WORK
+        println!("TODO: RealisticCamera::test_exit_pupil_bounds()");
     }
 }
 
 impl Camera for RealisticCamera {
     fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
+        println!("TODO: RealisticCamera::generate_ray_differential()");
         // WORK
         0.0
     }
