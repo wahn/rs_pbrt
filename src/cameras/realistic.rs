@@ -192,28 +192,33 @@ impl RealisticCamera {
             &sample.p_lens,
             &mut exit_pupil_bounds_area,
         );
-        // Ray rFilm(p_film, p_rear - p_film, Infinity,
-        //           Lerp(sample.time, shutterOpen, shutterClose));
-        // if (!TraceLensesFromFilm(rFilm, ray)) {
-        //     ++vignettedRays;
-        //     return 0;
-        // }
-
-        // // Finish initialization of _RealisticCamera_ ray
-        // *ray = CameraToWorld(*ray);
-        // ray->d = Normalize(ray->d);
-        // ray->medium = medium;
-
-        // // Return weighting for _RealisticCamera_ ray
-        // Float cosTheta = Normalize(rFilm.d).z;
-        // Float cos4Theta = (cosTheta * cosTheta) * (cosTheta * cosTheta);
-        // if (simpleWeighting)
-        //     return cos4Theta * exit_pupil_bounds_area / exitPupilBounds[0].Area();
-        // else
-        //     return (shutterClose - shutterOpen) *
-        //            (cos4Theta * exit_pupil_bounds_area) / (LensRearZ() * LensRearZ());
-        // WORK
-        0.0 as Float
+        let mut r_film: Ray = Ray::default();
+        r_film.o = p_film;
+        r_film.d = p_rear - p_film;
+        r_film.t_max = std::f32::INFINITY;
+        r_film.time = lerp(sample.time, self.shutter_open, self.shutter_close);
+        if !self.trace_lenses_from_film(&r_film, Some(ray)) {
+            // ++vignettedRays;
+            return 0.0 as Float;
+        }
+        // finish initialization of _RealisticCamera_ ray
+        *ray = self.camera_to_world.transform_ray(&ray);
+        ray.d = ray.d.normalize();
+        if let Some(ref medium_arc) = self.medium {
+            ray.medium = Some(medium_arc.clone());
+        } else {
+            ray.medium = None;
+        }
+        // return weighting for _RealisticCamera_ ray
+        let cos_theta: Float = r_film.d.normalize().z;
+        let cos_2_theta: Float = cos_theta * cos_theta;
+        let cos_4_theta: Float = cos_2_theta * cos_2_theta;
+        if self.simple_weighting {
+            cos_4_theta * exit_pupil_bounds_area / self.exit_pupil_bounds[0].area()
+        } else {
+            (self.shutter_close - self.shutter_open) * (cos_4_theta * exit_pupil_bounds_area)
+                / (self.lens_rear_z() * self.lens_rear_z())
+        }
     }
     pub fn lens_rear_z(&self) -> Float {
         self.element_interfaces.last().unwrap().thickness
