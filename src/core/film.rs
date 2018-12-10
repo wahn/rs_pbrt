@@ -252,6 +252,21 @@ impl Film {
             },
         }
     }
+    pub fn get_physical_extent(&self) -> Bounds2f {
+        let aspect: Float = self.full_resolution.y as Float / self.full_resolution.x as Float;
+        let x: Float = (self.diagonal * self.diagonal / (1.0 as Float + aspect * aspect)).sqrt();
+        let y: Float = aspect * x;
+        Bounds2f {
+            p_min: Point2f {
+                x: -x / 2.0 as Float,
+                y: -y / 2.0 as Float,
+            },
+            p_max: Point2f {
+                x: x / 2.0 as Float,
+                y: y / 2.0 as Float,
+            },
+        }
+    }
     pub fn get_film_tile(&self, sample_bounds: &Bounds2i) -> FilmTile {
         // bound image pixels that samples in _sample_bounds_ contribute to
         let half_pixel: Vector2f = Vector2f { x: 0.5, y: 0.5 };

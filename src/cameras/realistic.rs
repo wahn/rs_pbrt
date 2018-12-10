@@ -7,7 +7,7 @@ use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::floatfile::read_float_file;
 use core::geometry::{bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2};
-use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, Vector3f};
+use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, RayDifferential, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::lowdiscrepancy::radical_inverse;
@@ -16,6 +16,7 @@ use core::paramset::ParamSet;
 use core::pbrt::{lerp, quadratic};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::refract;
+use core::sampling::concentric_sample_disk;
 use core::transform::{AnimatedTransform, Transform};
 
 // see realistic.h
@@ -166,6 +167,53 @@ impl RealisticCamera {
             medium,
         ));
         camera
+    }
+    pub fn generate_ray(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
+        // TODO: ProfilePhase prof(Prof::GenerateCameraRay);
+        // ++totalRays;
+        // find point on film, _p_film_, corresponding to _sample.p_film_
+        let s: Point2f = Point2f {
+            x: sample.p_film.x / self.film.full_resolution.x as Float,
+            y: sample.p_film.y / self.film.full_resolution.y as Float,
+        };
+        let p_film2: Point2f = self.film.get_physical_extent().lerp(&s);
+        let p_film: Point3f = Point3f {
+            x: -p_film2.x,
+            y: p_film2.y,
+            z: 0.0 as Float,
+        };
+        // trace ray from _p_film_ through lens system
+        let mut exit_pupil_bounds_area: Float = 0.0 as Float;
+        let p_rear: Point3f = self.sample_exit_pupil(
+            &Point2f {
+                x: p_film.x,
+                y: p_film.y,
+            },
+            &sample.p_lens,
+            &mut exit_pupil_bounds_area,
+        );
+        // Ray rFilm(p_film, p_rear - p_film, Infinity,
+        //           Lerp(sample.time, shutterOpen, shutterClose));
+        // if (!TraceLensesFromFilm(rFilm, ray)) {
+        //     ++vignettedRays;
+        //     return 0;
+        // }
+
+        // // Finish initialization of _RealisticCamera_ ray
+        // *ray = CameraToWorld(*ray);
+        // ray->d = Normalize(ray->d);
+        // ray->medium = medium;
+
+        // // Return weighting for _RealisticCamera_ ray
+        // Float cosTheta = Normalize(rFilm.d).z;
+        // Float cos4Theta = (cosTheta * cosTheta) * (cosTheta * cosTheta);
+        // if (simpleWeighting)
+        //     return cos4Theta * exit_pupil_bounds_area / exitPupilBounds[0].Area();
+        // else
+        //     return (shutterClose - shutterOpen) *
+        //            (cos4Theta * exit_pupil_bounds_area) / (LensRearZ() * LensRearZ());
+        // WORK
+        0.0 as Float
     }
     pub fn lens_rear_z(&self) -> Float {
         self.element_interfaces.last().unwrap().thickness
@@ -583,9 +631,30 @@ impl RealisticCamera {
         lens_sample: &Point2f,
         sample_bounds_area: &mut Float,
     ) -> Point3f {
-        // WORK
-        println!("TODO: RealisticCamera::sample_exit_pupil()");
-        Point3f::default()
+        // find exit pupil bound for sample distance from film center
+        let r_film: Float = (p_film.x * p_film.x + p_film.y * p_film.y).sqrt();
+        let mut r_index: usize = (r_film / (self.film.diagonal / 2.0 as Float)
+            * self.exit_pupil_bounds.len() as Float)
+            .floor() as usize;
+        r_index = (self.exit_pupil_bounds.len() - 1).min(r_index);
+        let pupil_bounds: Bounds2f = self.exit_pupil_bounds[r_index];
+        *sample_bounds_area = pupil_bounds.area();
+        // generate sample point inside exit pupil bound
+        let p_lens: Point2f = pupil_bounds.lerp(lens_sample);
+        // return sample point rotated by angle of _p_film_ with $+x$ axis
+        let mut sin_theta: Float = 0.0 as Float;
+        if r_film != 0.0 as Float {
+            sin_theta = p_film.y / r_film;
+        }
+        let mut cos_theta: Float = 1.0 as Float;
+        if r_film != 0.0 as Float {
+            cos_theta = p_film.x / r_film;
+        }
+        Point3f {
+            x: cos_theta * p_lens.x - sin_theta * p_lens.y,
+            y: sin_theta * p_lens.x + cos_theta * p_lens.y,
+            z: self.lens_rear_z(),
+        }
     }
     pub fn test_exit_pupil_bounds(&self) {
         // WORK
@@ -595,9 +664,42 @@ impl RealisticCamera {
 
 impl Camera for RealisticCamera {
     fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
-        println!("TODO: RealisticCamera::generate_ray_differential()");
-        // WORK
-        0.0
+        let wt: Float = self.generate_ray(sample, ray);
+        if wt == 0.0 as Float {
+            return 0.0 as Float;
+        }
+        // find camera ray after shifting a fraction of a pixel in the $x$ direction
+        // Float wtx;
+        // for (Float eps : { .05, -.05 }) {
+        //     CameraSample sshift = sample;
+        //     sshift.p_film.x += eps;
+        //     Ray rx;
+        //     wtx = self.generate_ray(sshift, &rx);
+        //     rd->rxOrigin = rd->o + (rx.o - rd->o) / eps;
+        //     rd->rxDirection = rd->d + (rx.d - rd->d) / eps;
+        //     if (wtx != 0)
+        //         break;
+        // }
+        // if (wtx == 0)
+        //     return 0;
+
+        // find camera ray after shifting a fraction of a pixel in the $y$ direction
+        // Float wty;
+        // for (Float eps : { .05, -.05 }) {
+        //     CameraSample sshift = sample;
+        //     sshift.p_film.y += eps;
+        //     Ray ry;
+        //     wty = self.generate_ray(sshift, &ry);
+        //     rd->ryOrigin = rd->o + (ry.o - rd->o) / eps;
+        //     rd->ryDirection = rd->d + (ry.d - rd->d) / eps;
+        //     if (wty != 0)
+        //         break;
+        // }
+        // if (wty == 0)
+        //     return 0;
+
+        // rd->hasDifferentials = true;
+        wt
     }
     fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
         panic!("camera::we() is not implemented!");
