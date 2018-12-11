@@ -7,7 +7,7 @@ use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::floatfile::read_float_file;
 use core::geometry::{bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2};
-use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, RayDifferential, Vector3f};
+use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::lowdiscrepancy::radical_inverse;
@@ -16,7 +16,6 @@ use core::paramset::ParamSet;
 use core::pbrt::{lerp, quadratic};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::refract;
-use core::sampling::concentric_sample_disk;
 use core::transform::{AnimatedTransform, Transform};
 
 // see realistic.h
@@ -85,7 +84,7 @@ impl RealisticCamera {
             exit_pupil_bounds: Vec::new(),
         };
         // compute lens--film distance for given focus distance
-        let fb: Float = camera.focus_binary_search(focus_distance);
+        let _fb: Float = camera.focus_binary_search(focus_distance);
         // LOG(INFO) << StringPrintf("Binary search focus: %f -> %f\n", fb,
         //                           camera.focus_distance(fb));
         camera.element_interfaces.last_mut().unwrap().thickness =
@@ -396,11 +395,11 @@ impl RealisticCamera {
         // WORK
         println!("TODO: RealisticCamera::draw_lens_system()");
     }
-    pub fn draw_ray_path_from_film(&self, r: &Ray, arrow: bool, to_optical_intercept: bool) {
+    pub fn draw_ray_path_from_film(&self, _r: &Ray, _arrow: bool, _to_optical_intercept: bool) {
         // WORK
         println!("TODO: RealisticCamera::draw_ray_path_from_film()");
     }
-    pub fn draw_ray_path_from_scene(&self, r: &Ray, arrow: bool, to_optical_intercept: bool) {
+    pub fn draw_ray_path_from_scene(&self, _r: &Ray, _arrow: bool, _to_optical_intercept: bool) {
         // WORK
         println!("TODO: RealisticCamera::draw_ray_path_from_scene()");
     }
@@ -484,7 +483,7 @@ impl RealisticCamera {
             film_distance_upper /= 1.005 as Float;
         }
         // do binary search on film distances to focus
-        for i in 0..20 {
+        for _i in 0..20 {
             let fmid: Float = 0.5 as Float * (film_distance_lower + film_distance_upper);
             let mid_focus: Float = self.focus_distance(fmid);
             if mid_focus < focus_distance {
@@ -626,7 +625,7 @@ impl RealisticCamera {
         );
         pupil_bounds
     }
-    pub fn render_exit_pupil(&self, sx: Float, sy: Float, filename: String) {
+    pub fn render_exit_pupil(&self, _sx: Float, _sy: Float, _filename: String) {
         // WORK
         println!("TODO: RealisticCamera::render_exit_pupil()");
     }
