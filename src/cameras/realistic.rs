@@ -1,6 +1,10 @@
+extern crate crossbeam;
+extern crate num_cpus;
+
 // std
 use std;
 use std::path::PathBuf;
+use std::sync::mpsc;
 use std::sync::Arc;
 // pbrt
 use core::camera::{Camera, CameraSample};
@@ -28,6 +32,7 @@ pub struct LensElementInterface {
     pub aperture_radius: Float,
 }
 
+#[derive(Clone)]
 pub struct RealisticCamera {
     // inherited from Camera (see camera.h)
     pub camera_to_world: AnimatedTransform,
@@ -71,7 +76,7 @@ impl RealisticCamera {
                 eta: lens_data[i + 2],
                 aperture_radius: diameter * 0.001 as Float / 2.0 as Float,
             });
-            println!("{:?}", element_interfaces[i / 4]);
+            // println!("{:?}", element_interfaces[i / 4]);
         }
         let mut camera = RealisticCamera {
             camera_to_world: camera_to_world,
@@ -94,20 +99,41 @@ impl RealisticCamera {
         //                           camera.focus_distance(elementInterfaces.back().thickness));
         // compute exit pupil bounds at sampled points on the film
         let n_samples: usize = 64;
-        camera
-            .exit_pupil_bounds
-            .resize(n_samples, Bounds2f::default());
-        // ParallelFor([&](int i) {
-        //     Float r0 = (Float)i / n_samples * film->diagonal / 2;
-        //     Float r1 = (Float)(i + 1) / n_samples * film->diagonal / 2;
-        //     camera.exit_pupil_bounds[i] = camera.bound_exit_pupil(r0, r1);
-        // }, n_samples);
-        // TODO: run in parallel
-        for i in 0..n_samples {
-            let r0: Float = i as Float / n_samples as Float * film.diagonal / 2.0 as Float;
-            let r1: Float = (i + 1) as Float / n_samples as Float * film.diagonal / 2.0 as Float;
-            camera.exit_pupil_bounds[i] = camera.bound_exit_pupil(r0, r1);
+        let mut exit_pupil_bounds: Vec<Bounds2f> = Vec::new();
+        exit_pupil_bounds.resize(n_samples, Bounds2f::default());
+        let num_cores: usize = num_cpus::get();
+        let chunk_size: usize = n_samples / num_cores;
+        {
+            let bands: Vec<&mut [Bounds2f]> = exit_pupil_bounds.chunks_mut(chunk_size).collect();
+            let camera = &camera;
+            let film = &film;
+            crossbeam::scope(|scope| {
+                let (band_tx, band_rx) = mpsc::channel();
+                // spawn worker threads
+                for (b, band) in bands.into_iter().enumerate() {
+                    let band_tx = band_tx.clone();
+                    scope.spawn(move |_| {
+                        for (index, bound) in band.into_iter().enumerate() {
+                            let i: usize = (b * chunk_size) + index;
+                            let r0: Float =
+                                i as Float / n_samples as Float * film.diagonal / 2.0 as Float;
+                            let r1: Float = (i + 1) as Float / n_samples as Float * film.diagonal
+                                / 2.0 as Float;
+                            *bound = camera.bound_exit_pupil(r0, r1);
+                        }
+                    });
+                    // send progress through the channel to main thread
+                    band_tx.send(b).expect(&format!("Failed to send progress"));
+                }
+                // spawn thread to report progress
+                scope.spawn(move |_| {
+                    for _ in pbr::PbIter::new(0..num_cores) {
+                        band_rx.recv().unwrap();
+                    }
+                });
+            }).unwrap();
         }
+        camera.exit_pupil_bounds = exit_pupil_bounds;
         if camera.simple_weighting {
             println!("WARNING: \"simpleweighting\" option with RealisticCamera no longer necessarily matches regular camera images. Further, pixel values will vary a bit depending on the aperture size. See this discussion for details: https://github.com/mmp/pbrt-v3/issues/162#issuecomment-348625837");
         }
@@ -153,7 +179,7 @@ impl RealisticCamera {
             println!("ERROR: Excess values in lens specification file {:?}; must be multiple-of-four values, read {}.",
                      lens_file, lens_data.len());
         }
-        println!("lens_data = {:?}", lens_data);
+        // println!("lens_data = {:?}", lens_data);
         let camera = Arc::new(RealisticCamera::new(
             cam2world,
             shutteropen,
@@ -612,10 +638,10 @@ impl RealisticCamera {
         }
         // return entire element bounds if no rays made it through the lens system
         if n_exiting_rays == 0_i32 {
-            println!(
-                "Unable to find exit pupil in x = [{},{}] on film.",
-                p_film_x0, p_film_x1
-            );
+            // println!(
+            //     "Unable to find exit pupil in x = [{},{}] on film.",
+            //     p_film_x0, p_film_x1
+            // );
             return proj_rear_bounds;
         }
         // expand bounds to account for sample spacing

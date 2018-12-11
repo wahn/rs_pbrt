@@ -1648,7 +1648,6 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 );
                 some_camera = Some(camera);
             } else if api_state.render_options.camera_name == "realistic" {
-                println!("WORK: CreateRealisticCamera");
                 if let Some(ref search_directory) = api_state.search_directory {
                     let camera: Arc<Camera + Send + Sync> = RealisticCamera::create(
                         &api_state.render_options.camera_params,

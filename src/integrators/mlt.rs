@@ -5,6 +5,7 @@ extern crate pbr;
 // std
 use std::sync::mpsc;
 use std::sync::Arc;
+use std::thread;
 // pbrt
 use core::camera::Camera;
 use core::film::Film;
@@ -21,7 +22,6 @@ use integrators::bdpt::Vertex;
 use integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_subpath};
 // others
 use rayon::prelude::*;
-use std::thread;
 
 pub const CAMERA_STREAM_INDEX: u8 = 0;
 pub const LIGHT_STREAM_INDEX: u8 = 1;
