@@ -11,7 +11,7 @@ use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::floatfile::read_float_file;
 use core::geometry::{bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2};
-use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, Vector3f};
+use core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, RayDifferential, Vector3f};
 use core::interaction::InteractionCommon;
 use core::light::VisibilityTester;
 use core::lowdiscrepancy::radical_inverse;
@@ -698,37 +698,42 @@ impl Camera for RealisticCamera {
         if wt == 0.0 as Float {
             return 0.0 as Float;
         }
+        let mut rd = RayDifferential::default();
         // find camera ray after shifting a fraction of a pixel in the $x$ direction
-        // Float wtx;
-        // for (Float eps : { .05, -.05 }) {
-        //     CameraSample sshift = sample;
-        //     sshift.p_film.x += eps;
-        //     Ray rx;
-        //     wtx = self.generate_ray(sshift, &rx);
-        //     rd->rxOrigin = rd->o + (rx.o - rd->o) / eps;
-        //     rd->rxDirection = rd->d + (rx.d - rd->d) / eps;
-        //     if (wtx != 0)
-        //         break;
-        // }
-        // if (wtx == 0)
-        //     return 0;
-
+        let mut wtx: Float = 0.0 as Float;
+        let eps_values: [Float; 2] = [0.05 as Float, -0.05 as Float];
+        for eps in eps_values.iter() {
+            let mut sshift: CameraSample = *sample;
+            sshift.p_film.x += eps;
+            let mut rx: Ray = Ray::default();
+            wtx = self.generate_ray(&sshift, &mut rx);
+            rd.rx_origin = ray.o + (rx.o - ray.o) / *eps;
+            rd.rx_direction = ray.d + (rx.d - ray.d) / *eps;
+            if wtx != 0.0 as Float {
+                break;
+            }
+        }
+        if wtx == 0.0 as Float {
+            return 0.0 as Float;
+        }
         // find camera ray after shifting a fraction of a pixel in the $y$ direction
-        // Float wty;
-        // for (Float eps : { .05, -.05 }) {
-        //     CameraSample sshift = sample;
-        //     sshift.p_film.y += eps;
-        //     Ray ry;
-        //     wty = self.generate_ray(sshift, &ry);
-        //     rd->ryOrigin = rd->o + (ry.o - rd->o) / eps;
-        //     rd->ryDirection = rd->d + (ry.d - rd->d) / eps;
-        //     if (wty != 0)
-        //         break;
-        // }
-        // if (wty == 0)
-        //     return 0;
-
-        // rd->hasDifferentials = true;
+        let mut wty: Float = 0.0 as Float;
+        for eps in eps_values.iter() {
+            let mut sshift: CameraSample = *sample;
+            sshift.p_film.y += eps;
+            let mut ry: Ray = Ray::default();
+            wty = self.generate_ray(&sshift, &mut ry);
+            rd.ry_origin = ray.o + (ry.o - ray.o) / *eps;
+            rd.ry_direction = ray.d + (ry.d - ray.d) / *eps;
+            if wty != 0.0 as Float {
+                break;
+            }
+        }
+        if wty == 0.0 as Float {
+            return 0.0 as Float;
+        }
+        // rd.has_differentials = true;
+        ray.differential = Some(rd);
         wt
     }
     fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
