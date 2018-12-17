@@ -10,7 +10,7 @@ default = ["openexr"]
 
 atomic = "0.4"
 byteorder = "1"
-crossbeam = "0.5"
+crossbeam = "0.6"
 getopts="0.2.15"
 half="1"
 hexf = "0.1.0"
