@@ -1,6 +1,7 @@
 //! All the code for the PBRT core.
 
 pub mod api;
+pub mod bssrdf;
 pub mod camera;
 pub mod efloat;
 pub mod film;

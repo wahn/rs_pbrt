@@ -32,7 +32,7 @@ pub struct DisneyMaterial {
     scatter_distance: Arc<Texture<Spectrum> + Send + Sync>,
     flatness: Arc<Texture<Float> + Send + Sync>,
     diff_trans: Arc<Texture<Float> + Send + Sync>,
-    bumpmap: Option<Arc<Texture<Float> + Send + Sync>>,
+    bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
     thin: bool,
 }
 
@@ -53,7 +53,7 @@ impl DisneyMaterial {
         let thin = mp.find_bool("thin", false);
         let flatness = mp.get_float_texture("flatness", 0.0);
         let diff_trans = mp.get_float_texture("difftrans", 1.0);
-        let bumpmap = mp.get_float_texture_or_null("bumpmap");
+        let bump_map = mp.get_float_texture_or_null("bumpmap");
 
         Arc::new(DisneyMaterial {
             color,
@@ -70,7 +70,7 @@ impl DisneyMaterial {
             scatter_distance,
             flatness,
             diff_trans,
-            bumpmap,
+            bump_map,
             thin,
         })
     }
@@ -83,7 +83,7 @@ impl Material for DisneyMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
     ) {
-        if let Some(ref bump) = self.bumpmap {
+        if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
 
