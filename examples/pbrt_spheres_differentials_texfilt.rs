@@ -368,6 +368,7 @@ fn main() {
         u_roughness: u_roughness,
         v_roughness: v_roughness,
         index: index,
+        bump_map: None,
         remap_roughness: true,
     });
     if matches.opt_present("n") || matches.opt_present("m") {

@@ -57,6 +57,7 @@ use materials::mirror::MirrorMaterial;
 use materials::mixmat::MixMaterial;
 use materials::plastic::PlasticMaterial;
 use materials::substrate::SubstrateMaterial;
+use materials::subsurface::SubsurfaceMaterial;
 use materials::uber::UberMaterial;
 use media::homogeneous::HomogeneousMedium;
 use samplers::halton::HaltonSampler;
@@ -327,32 +328,7 @@ fn create_material(
         } else if api_state.graphics_state.material == "translucent" {
             println!("TODO: CreateTranslucentMaterial");
         } else if api_state.graphics_state.material == "glass" {
-            let kr = mp.get_spectrum_texture("Kr", Spectrum::new(1.0 as Float));
-            let kt = mp.get_spectrum_texture("Kt", Spectrum::new(1.0 as Float));
-            // let some_eta = mp.get_float_texture_or_null(String::from("eta"));
-            // if let Some(eta) = some_eta {
-            //     println!("some eta");
-            // } else {
-            let eta = mp.get_float_texture("index", 1.5);
-            // }
-            // std::shared_ptr<Texture<Float>> roughu =
-            //     mp.GetFloatTexture("uroughness", 0.f);
-            let roughu = mp.get_float_texture("uroughness", 0.0 as Float);
-            // std::shared_ptr<Texture<Float>> roughv =
-            //     mp.GetFloatTexture("vroughness", 0.f);
-            let roughv = mp.get_float_texture("vroughness", 0.0 as Float);
-            // std::shared_ptr<Texture<Float>> bumpMap =
-            //     mp.GetFloatTextureOrNull("bumpmap");
-            let remap_roughness: bool = mp.find_bool("remaproughness", true);
-            let glass = Arc::new(GlassMaterial {
-                kr: kr,
-                kt: kt,
-                u_roughness: roughu,
-                v_roughness: roughv,
-                index: eta,
-                remap_roughness: remap_roughness,
-            });
-            return Some(glass);
+            return Some(GlassMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "mirror" {
             let kr = mp.get_spectrum_texture("Kr", Spectrum::new(0.9 as Float));
             // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
@@ -391,7 +367,7 @@ fn create_material(
         } else if api_state.graphics_state.material == "uber" {
             return Some(UberMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "subsurface" {
-            println!("TODO: CreateSubsurfaceMaterial");
+            return Some(SubsurfaceMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "kdsubsurface" {
             println!("TODO: CreateKdsubsurfaceMaterial");
         } else if api_state.graphics_state.material == "fourier" {
@@ -1745,9 +1721,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
                     // if let Some(mut sampler) = some_sampler {
-                    let mut some_integrator: Option<
-                        Box<SamplerIntegrator + Sync + Send>,
-                    > = None;
+                    let mut some_integrator: Option<Box<SamplerIntegrator + Sync + Send>> = None;
                     let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
                     let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
                     if api_state.render_options.integrator_name == "whitted" {
