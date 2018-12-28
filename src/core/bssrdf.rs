@@ -3,8 +3,10 @@ use std;
 use std::f32::consts::PI;
 // pbrt
 use core::interpolation::integrate_catmull_rom;
+use core::medium::phase_hg;
 use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
+use core::reflection::fr_dielectric;
 
 pub struct BSSRDFTable {
     pub n_rho_samples: i32,
@@ -95,26 +97,25 @@ pub fn beam_diffusion_ms(sigma_s: Float, sigma_a: Float, g: Float, eta: Float, r
 
 pub fn beam_diffusion_ss(sigma_s: Float, sigma_a: Float, g: Float, eta: Float, r: Float) -> Float {
     // compute material parameters and minimum $t$ below the critical angle
-    // Float sigma_t = sigma_a + sigma_s, rho = sigma_s / sigma_t;
-    // Float t_crit = r * std::sqrt(eta * eta - 1);
-    // Float ess = 0;
-    // const int n_samples = 100;
-    // for (int i = 0; i < n_samples; ++i) {
-    //     // Evaluate single scattering integrand and add to _ess_
-    //     Float ti = t_crit - std::log(1 - (i + .5f) / n_samples) / sigma_t;
-
-    //     // Determine length $d$ of connecting segment and $\cos\theta_\roman{o}$
-    //     Float d = std::sqrt(r * r + ti * ti);
-    //     Float cos_theta_o = ti / d;
-
-    //     // Add contribution of single scattering at depth $t$
-    //     ess += rho * std::exp(-sigma_t * (d + t_crit)) / (d * d) *
-    //            PhaseHG(cos_theta_o, g) * (1 - FrDielectric(-cos_theta_o, 1, eta)) *
-    //            std::abs(cos_theta_o);
-    // }
-    // return ess / n_samples;
-    // WORK
-    0.0 as Float
+    let sigma_t: Float = sigma_a + sigma_s;
+    let rho: Float = sigma_s / sigma_t;
+    let t_crit: Float = r * (eta * eta - 1.0 as Float).sqrt();
+    let mut ess: Float = 0.0 as Float;
+    let n_samples: i32 = 100;
+    for i in 0..n_samples {
+        // evaluate single scattering integrand and add to _ess_
+        let ti: Float = t_crit
+            - (1.0 as Float - (i as Float + 0.5 as Float) / n_samples as Float).ln() / sigma_t;
+        // determine length $d$ of connecting segment and $\cos\theta_\roman{o}$
+        let d: Float = (r * r + ti * ti).sqrt();
+        let cos_theta_o: Float = ti / d;
+        // add contribution of single scattering at depth $t$
+        ess += rho * (-sigma_t * (d + t_crit)).exp() / (d * d)
+            * phase_hg(cos_theta_o, g)
+            * (1.0 as Float - fr_dielectric(-cos_theta_o, 1.0 as Float, eta))
+            * (cos_theta_o).abs();
+    }
+    ess / n_samples as Float
 }
 
 pub fn compute_beam_diffusion_bssrdf(g: Float, eta: Float, t: &mut BSSRDFTable) {
