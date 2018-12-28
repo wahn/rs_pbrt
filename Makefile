@@ -11,7 +11,7 @@ distclean: clobber
 	-rm -fr openexr-rs-master
 
 doc:
-	cargo doc
+	cargo doc --no-default-features
 
 browse: doc
 	firefox ./target/doc/pbrt/index.html

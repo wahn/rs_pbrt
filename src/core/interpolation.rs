@@ -173,6 +173,18 @@ pub fn sample_catmull_rom_2d(
     x0 + width * t
 }
 
+pub fn integrate_catmull_rom(
+    n: i32,
+    x: &Vec<Float>,
+    values: &Vec<Float>,
+    values_offset: usize,
+    cdf: &mut Vec<Float>,
+    cdf_offset: usize,
+) -> Float {
+    // WORK
+    0.0 as Float
+}
+
 /// Evaluates the weighted sum of cosines.
 pub fn fourier(a: &Vec<Float>, si: usize, m: i32, cos_phi: f64) -> Float {
     let mut value: f64 = 0.0;

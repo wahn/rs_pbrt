@@ -2,6 +2,7 @@
 use std;
 use std::sync::Arc;
 // pbrt
+use core::bssrdf::compute_beam_diffusion_bssrdf;
 use core::bssrdf::BSSRDFTable;
 use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
@@ -22,9 +23,9 @@ pub struct SubsurfaceMaterial {
     pub u_roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.0
     pub v_roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.0
     pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
-    pub eta: Float, // default: 1.33
+    pub eta: Float,            // default: 1.33
     pub remap_roughness: bool, // default: true
-    // pub table: BSSRDFTable,
+    pub table: BSSRDFTable,
 }
 
 impl SubsurfaceMaterial {
@@ -41,7 +42,8 @@ impl SubsurfaceMaterial {
         bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
-        // TODO: ComputeBeamDiffusionBSSRDF(g, eta, &table);
+        let mut table: BSSRDFTable = BSSRDFTable::new(100, 64);
+        compute_beam_diffusion_bssrdf(g, eta, &mut table);
         SubsurfaceMaterial {
             scale: scale,
             kr: kr,
@@ -53,7 +55,7 @@ impl SubsurfaceMaterial {
             bump_map: bump_map,
             eta: eta,
             remap_roughness: remap_roughness,
-            // TODO: table: BSSRDFTable,
+            table: table,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
