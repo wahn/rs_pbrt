@@ -1104,7 +1104,10 @@ fn main() {
                                                             specular_color,
                                                         ));
                                                         let mirror =
-                                                            Arc::new(MirrorMaterial { kr: kr });
+                                                            Arc::new(MirrorMaterial::new(
+                                                                kr,
+                                                                None,
+                                                            ));
                                                         named_materials
                                                             .insert(node_name.clone(), mirror);
                                                     } else {
@@ -1131,6 +1134,7 @@ fn main() {
                                                             roughness,
                                                             None,
                                                             None,
+                                                            None,
                                                             remap_roughness,
                                                         ));
                                                         named_materials
@@ -1144,7 +1148,7 @@ fn main() {
                                                         0.0 as Float,
                                                     ));
                                                     let matte =
-                                                        Arc::new(MatteMaterial::new(kd, sigma));
+                                                        Arc::new(MatteMaterial::new(kd, sigma, None));
                                                     named_materials
                                                         .insert(node_name.clone(), matte);
                                                 }

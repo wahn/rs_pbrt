@@ -123,7 +123,16 @@ impl HairMaterial {
             alpha,
         ))
     }
-    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+}
+
+impl Material for HairMaterial {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let bm: Float = self.beta_m.evaluate(si);
         let bn: Float = self.beta_n.evaluate(si);
@@ -154,19 +163,7 @@ impl HairMaterial {
         }
         let h: Float = -1.0 as Float + 2.0 as Float * si.uv[1];
         bxdfs.push(Arc::new(HairBSDF::new(h, e, sig_a, bm, bn, a)));
-        Bsdf::new(si, 1.0, bxdfs)
-    }
-}
-
-impl Material for HairMaterial {
-    fn compute_scattering_functions(
-        &self,
-        si: &mut SurfaceInteraction,
-        // arena: &mut Arena,
-        _mode: TransportMode,
-        _allow_multiple_lobes: bool,
-    ) {
-        si.bsdf = Some(Arc::new(self.bsdf(si)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }
 

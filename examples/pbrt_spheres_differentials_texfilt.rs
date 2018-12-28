@@ -356,7 +356,7 @@ fn main() {
     let mut render_options: RenderOptions = RenderOptions::new(scene_description);
     // add triangles created above (not meshes)
     let kr = Arc::new(ConstantTexture::new(Spectrum::new(0.9)));
-    let mirror = Arc::new(MirrorMaterial::new(kr));
+    let mirror = Arc::new(MirrorMaterial::new(kr, None));
     let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
     let kt = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
     let u_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
@@ -375,7 +375,7 @@ fn main() {
         // use no texture
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-        let matte = Arc::new(MatteMaterial::new(kd, sigma));
+        let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
         for triangle in render_options.triangles {
             let geo_prim = Arc::new(GeometricPrimitive::new(
                 triangle,
@@ -444,7 +444,7 @@ fn main() {
         });
         let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-        let matte = Arc::new(MatteMaterial::new(checker, sigma));
+        let matte = Arc::new(MatteMaterial::new(checker, sigma, None));
         for triangle in render_options.triangles {
             let geo_prim = Arc::new(GeometricPrimitive::new(
                 triangle,
@@ -504,7 +504,7 @@ fn main() {
             convert_to_spectrum,
         ));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-        let matte = Arc::new(MatteMaterial::new(lines_tex, sigma));
+        let matte = Arc::new(MatteMaterial::new(lines_tex, sigma, None));
         for triangle in render_options.triangles {
             let geo_prim = Arc::new(GeometricPrimitive::new(
                 triangle,

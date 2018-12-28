@@ -110,11 +110,20 @@ impl UberMaterial {
             ))
         }
     }
-    pub fn bsdf(&self, si: &mut SurfaceInteraction, mode: TransportMode) -> Bsdf {
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+}
+
+impl Material for UberMaterial {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
         if let Some(ref bump_map) = self.bump_map {
-            UberMaterial::bump(bump_map, si);
+            Self::bump(bump_map, si);
         }
+        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let e: Float = self.eta.evaluate(si);
         let op: Spectrum = self
             .opacity
@@ -189,21 +198,9 @@ impl UberMaterial {
             )));
         }
         if !t.is_black() {
-            Bsdf::new(si, 1.0, bxdfs)
+            si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
         } else {
-            Bsdf::new(si, e, bxdfs)
+            si.bsdf = Some(Arc::new(Bsdf::new(si, e, bxdfs)));
         }
-    }
-}
-
-impl Material for UberMaterial {
-    fn compute_scattering_functions(
-        &self,
-        si: &mut SurfaceInteraction,
-        // arena: &mut Arena,
-        mode: TransportMode,
-        _allow_multiple_lobes: bool,
-    ) {
-        si.bsdf = Some(Arc::new(self.bsdf(si, mode)));
     }
 }

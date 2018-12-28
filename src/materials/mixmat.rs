@@ -31,12 +31,16 @@ impl MixMaterial {
             scale: scale,
         }
     }
-    pub fn bsdf(
+}
+
+impl Material for MixMaterial {
+    fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-    ) -> Bsdf {
+    ) {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let s1: Spectrum = self
             .scale
@@ -75,18 +79,6 @@ impl MixMaterial {
                 }
             }
         }
-        Bsdf::new(si, 1.0, bxdfs)
-    }
-}
-
-impl Material for MixMaterial {
-    fn compute_scattering_functions(
-        &self,
-        si: &mut SurfaceInteraction,
-        // arena: &mut Arena,
-        mode: TransportMode,
-        allow_multiple_lobes: bool,
-    ) {
-        si.bsdf = Some(Arc::new(self.bsdf(si, mode, allow_multiple_lobes)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }

@@ -90,7 +90,7 @@ pub struct MetalMaterial {
     pub roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.01
     pub u_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
     pub v_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-    // TODO: bump_map
+    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
     pub remap_roughness: bool,
 }
 
@@ -101,6 +101,7 @@ impl MetalMaterial {
         roughness: Arc<Texture<Float> + Sync + Send>,
         u_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
         v_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
+        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         MetalMaterial {
@@ -109,6 +110,7 @@ impl MetalMaterial {
             roughness: roughness,
             u_roughness: u_roughness,
             v_roughness: v_roughness,
+            bump_map: bump_map,
             remap_roughness: remap_roughness,
         }
     }
@@ -125,7 +127,7 @@ impl MetalMaterial {
             mp.get_float_texture_or_null("uroughness");
         let v_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("vroughness");
-        // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
+        let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
         Arc::new(MetalMaterial::new(
             eta,
@@ -133,10 +135,23 @@ impl MetalMaterial {
             roughness,
             u_roughness,
             v_roughness,
+            bump_map,
             remap_roughness,
         ))
     }
-    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+}
+
+impl Material for MetalMaterial {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
+        if let Some(ref bump) = self.bump_map {
+            Self::bump(bump, si);
+        }
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let mut u_rough: Float;
         if let Some(ref u_roughness) = self.u_roughness {
@@ -165,18 +180,6 @@ impl MetalMaterial {
             distrib,
             fr_mf,
         )));
-        Bsdf::new(si, 1.0, bxdfs)
-    }
-}
-
-impl Material for MetalMaterial {
-    fn compute_scattering_functions(
-        &self,
-        si: &mut SurfaceInteraction,
-        // arena: &mut Arena,
-        _mode: TransportMode,
-        _allow_multiple_lobes: bool,
-    ) {
-        si.bsdf = Some(Arc::new(self.bsdf(si)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)))
     }
 }

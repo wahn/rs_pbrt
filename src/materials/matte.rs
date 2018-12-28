@@ -16,26 +16,45 @@ use core::texture::Texture;
 pub struct MatteMaterial {
     pub kd: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.5
     pub sigma: Arc<Texture<Float> + Sync + Send>, // default: 0.0
-                                                  // TODO: bump_map
+    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
 }
 
 impl MatteMaterial {
     pub fn new(
         kd: Arc<Texture<Spectrum> + Send + Sync>,
         sigma: Arc<Texture<Float> + Sync + Send>,
+        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
     ) -> Self {
         MatteMaterial {
             kd: kd,
             sigma: sigma,
+            bump_map: bump_map,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
         let kd: Arc<Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kd", Spectrum::new(0.5));
         let sigma: Arc<Texture<Float> + Sync + Send> = mp.get_float_texture("sigma", 0.0);
-        Arc::new(MatteMaterial { kd, sigma })
+        let bump_map = mp.get_float_texture_or_null("bumpmap");
+        Arc::new(MatteMaterial::new(
+            kd,
+            sigma,
+            bump_map,
+        ))
     }
-    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+}
+
+impl Material for MatteMaterial {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
+        if let Some(ref bump) = self.bump_map {
+            Self::bump(bump, si);
+        }
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let r: Spectrum = self
             .kd
@@ -53,18 +72,6 @@ impl MatteMaterial {
                 bxdfs.push(Arc::new(OrenNayar::new(r, sig)));
             }
         }
-        Bsdf::new(si, 1.0, bxdfs)
-    }
-}
-
-impl Material for MatteMaterial {
-    fn compute_scattering_functions(
-        &self,
-        si: &mut SurfaceInteraction,
-        // arena: &mut Arena,
-        _mode: TransportMode,
-        _allow_multiple_lobes: bool,
-    ) {
-        si.bsdf = Some(Arc::new(self.bsdf(si)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }

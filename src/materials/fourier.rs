@@ -49,15 +49,6 @@ impl FourierMaterial {
             Arc::new(FourierMaterial::new(bsdf_table_arc.clone(), bump_map))
         }
     }
-    pub fn bsdf(&self, si: &mut SurfaceInteraction, mode: TransportMode) -> Bsdf {
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
-        if let Some(ref bump_map) = self.bump_map {
-            FourierMaterial::bump(bump_map, si);
-        }
-        bxdfs.push(Arc::new(FourierBSDF::new(self.bsdf_table.clone(), mode)));
-        // WORK
-        Bsdf::new(si, 1.0, bxdfs)
-    }
 }
 
 impl Material for FourierMaterial {
@@ -68,6 +59,11 @@ impl Material for FourierMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
     ) {
-        si.bsdf = Some(Arc::new(self.bsdf(si, mode)));
+        if let Some(ref bump) = self.bump_map {
+            Self::bump(bump, si);
+        }
+        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        bxdfs.push(Arc::new(FourierBSDF::new(self.bsdf_table.clone(), mode)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }

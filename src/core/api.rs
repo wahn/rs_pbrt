@@ -318,22 +318,13 @@ fn create_material(
         } else if api_state.graphics_state.material == "matte" {
             return Some(MatteMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "plastic" {
-            let kd = mp.get_spectrum_texture("Kd", Spectrum::new(0.25 as Float));
-            let ks = mp.get_spectrum_texture("Ks", Spectrum::new(0.25 as Float));
-            let roughness = mp.get_float_texture("roughness", 0.1 as Float);
-            // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
-            let remap_roughness: bool = mp.find_bool("remaproughness", true);
-            let plastic = Arc::new(PlasticMaterial::new(kd, ks, roughness, remap_roughness));
-            return Some(plastic);
+            return Some(PlasticMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "translucent" {
             println!("TODO: CreateTranslucentMaterial");
         } else if api_state.graphics_state.material == "glass" {
             return Some(GlassMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "mirror" {
-            let kr = mp.get_spectrum_texture("Kr", Spectrum::new(0.9 as Float));
-            // TODO: std::shared_ptr<Texture<Float>> bumpMap = mp.GetFloatTextureOrNull("bumpmap");
-            let mirror = Arc::new(MirrorMaterial { kr: kr });
-            return Some(mirror);
+            return Some(MirrorMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "hair" {
             return Some(HairMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "mix" {
@@ -383,7 +374,7 @@ fn create_material(
     }
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-    Some(Arc::new(MatteMaterial::new(kd, sigma)))
+    Some(Arc::new(MatteMaterial::new(kd, sigma, None)))
 }
 
 fn create_medium_interface(api_state: &ApiState) -> MediumInterface {

@@ -17,7 +17,7 @@ pub struct SubstrateMaterial {
     pub ks: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.5
     pub nu: Arc<Texture<Float> + Sync + Send>,    // default: 0.1
     pub nv: Arc<Texture<Float> + Sync + Send>,    // default: 0.1
-    // TODO: bump_map
+    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
     pub remap_roughness: bool,
 }
 
@@ -27,7 +27,7 @@ impl SubstrateMaterial {
         ks: Arc<Texture<Spectrum> + Send + Sync>,
         nu: Arc<Texture<Float> + Sync + Send>,
         nv: Arc<Texture<Float> + Sync + Send>,
-        // TODO: bump_map
+        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         SubstrateMaterial {
@@ -35,6 +35,7 @@ impl SubstrateMaterial {
             ks: ks,
             nu: nu,
             nv: nv,
+            bump_map: bump_map,
             remap_roughness: remap_roughness,
         }
     }
@@ -45,16 +46,30 @@ impl SubstrateMaterial {
             mp.get_spectrum_texture("Ks", Spectrum::new(0.5));
         let uroughness: Arc<Texture<Float> + Sync + Send> = mp.get_float_texture("uroughness", 0.1);
         let vroughness: Arc<Texture<Float> + Sync + Send> = mp.get_float_texture("vroughness", 0.1);
+        let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
         Arc::new(SubstrateMaterial::new(
             kd,
             ks,
             uroughness,
             vroughness,
+            bump_map,
             remap_roughness,
         ))
     }
-    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+}
+
+impl Material for SubstrateMaterial {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
+        if let Some(ref bump) = self.bump_map {
+            Self::bump(bump, si);
+        }
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let d: Spectrum = self
             .kd
@@ -75,18 +90,6 @@ impl SubstrateMaterial {
                 Some(TrowbridgeReitzDistribution::new(roughu, roughv, true));
             bxdfs.push(Arc::new(FresnelBlend::new(d, s, distrib)));
         }
-        Bsdf::new(si, 1.0, bxdfs)
-    }
-}
-
-impl Material for SubstrateMaterial {
-    fn compute_scattering_functions(
-        &self,
-        si: &mut SurfaceInteraction,
-        // arena: &mut Arena,
-        _mode: TransportMode,
-        _allow_multiple_lobes: bool,
-    ) {
-        si.bsdf = Some(Arc::new(self.bsdf(si)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }

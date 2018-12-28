@@ -5,6 +5,7 @@ use std::sync::Arc;
 use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
 use core::microfacet::TrowbridgeReitzDistribution;
+use core::paramset::TextureParams;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, Bxdf, FresnelDielectric, LambertianReflection, MicrofacetReflection};
 use core::texture::Texture;
@@ -17,7 +18,7 @@ pub struct PlasticMaterial {
     pub kd: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
     pub ks: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
     pub roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.1
-    // TODO: bump_map
+    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
     pub remap_roughness: bool,
 }
 
@@ -26,16 +27,44 @@ impl PlasticMaterial {
         kd: Arc<Texture<Spectrum> + Send + Sync>,
         ks: Arc<Texture<Spectrum> + Send + Sync>,
         roughness: Arc<Texture<Float> + Sync + Send>,
+        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         PlasticMaterial {
             kd: kd,
             ks: ks,
             roughness: roughness,
+            bump_map: bump_map,
             remap_roughness: remap_roughness,
         }
     }
-    pub fn bsdf(&self, si: &SurfaceInteraction) -> Bsdf {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
+        let kd = mp.get_spectrum_texture("Kd", Spectrum::new(0.25 as Float));
+        let ks = mp.get_spectrum_texture("Ks", Spectrum::new(0.25 as Float));
+        let roughness = mp.get_float_texture("roughness", 0.1 as Float);
+        let bump_map = mp.get_float_texture_or_null("bumpmap");
+        let remap_roughness: bool = mp.find_bool("remaproughness", true);
+        Arc::new(PlasticMaterial::new(
+            kd,
+            ks,
+            roughness,
+            bump_map,
+            remap_roughness,
+        ))
+    }
+}
+
+impl Material for PlasticMaterial {
+    fn compute_scattering_functions(
+        &self,
+        si: &mut SurfaceInteraction,
+        // arena: &mut Arena,
+        _mode: TransportMode,
+        _allow_multiple_lobes: bool,
+    ) {
+        if let Some(ref bump) = self.bump_map {
+            Self::bump(bump, si);
+        }
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         // initialize diffuse component of plastic material
         let kd: Spectrum = self
@@ -63,18 +92,6 @@ impl PlasticMaterial {
             let distrib = Arc::new(TrowbridgeReitzDistribution::new(rough, rough, true));
             bxdfs.push(Arc::new(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
-        Bsdf::new(si, 1.0, bxdfs)
-    }
-}
-
-impl Material for PlasticMaterial {
-    fn compute_scattering_functions(
-        &self,
-        si: &mut SurfaceInteraction,
-        // arena: &mut Arena,
-        _mode: TransportMode,
-        _allow_multiple_lobes: bool,
-    ) {
-        si.bsdf = Some(Arc::new(self.bsdf(si)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }

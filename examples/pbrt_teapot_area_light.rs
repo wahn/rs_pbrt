@@ -1932,6 +1932,7 @@ fn main() {
         kd,
         ks.clone(),
         roughness.clone(),
+        None,
         true,
     ));
     let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(0.8, 0.5, 0.1)));
@@ -1939,6 +1940,7 @@ fn main() {
         kd,
         ks.clone(),
         roughness.clone(),
+        None,
         true,
     ));
     let mut triangle_count: usize = 0;
@@ -1965,7 +1967,7 @@ fn main() {
     println!("triangle_count = {}", triangle_count);
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.0)));
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-    let matte = Arc::new(MatteMaterial::new(kd, sigma));
+    let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
     for disk in render_options.disks {
         let geo_prim = Arc::new(GeometricPrimitive::new(
             disk,
