@@ -7,9 +7,13 @@ use core::bssrdf::BSSRDFTable;
 use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
 use core::medium::get_medium_scattering_properties;
+use core::microfacet::TrowbridgeReitzDistribution;
 use core::paramset::TextureParams;
 use core::pbrt::{Float, Spectrum};
-use core::reflection::{Bsdf, Bxdf, LambertianReflection, OrenNayar};
+use core::reflection::{
+    Bsdf, Bxdf, FresnelDielectric, FresnelSpecular, MicrofacetReflection, MicrofacetTransmission,
+    SpecularReflection, SpecularTransmission,
+};
 use core::texture::Texture;
 
 // see subsurface.h
@@ -115,8 +119,8 @@ impl Material for SubsurfaceMaterial {
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
-        _mode: TransportMode,
-        _allow_multiple_lobes: bool,
+        mode: TransportMode,
+        allow_multiple_lobes: bool,
     ) {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
@@ -134,45 +138,58 @@ impl Material for SubsurfaceMaterial {
         let mut urough: Float = self.u_roughness.evaluate(si);
         let mut vrough: Float = self.v_roughness.evaluate(si);
         // initialize _bsdf_ for smooth or rough dielectric
-        // si->bsdf = ARENA_ALLOC(arena, BSDF)(*si, eta);
-
-        // if (R.IsBlack() && T.IsBlack()) return;
-
-        // bool isSpecular = urough == 0 && vrough == 0;
-        // if (isSpecular && allowMultipleLobes) {
-        //     si->bsdf->Add(
-        //         ARENA_ALLOC(arena, FresnelSpecular)(R, T, 1.f, eta, mode));
-        // } else {
-        //     if (remapRoughness) {
-        //         urough = TrowbridgeReitzDistribution::RoughnessToAlpha(urough);
-        //         vrough = TrowbridgeReitzDistribution::RoughnessToAlpha(vrough);
-        //     }
-        //     MicrofacetDistribution *distrib =
-        //         isSpecular ? nullptr
-        //                    : ARENA_ALLOC(arena, TrowbridgeReitzDistribution)(
-        //                          urough, vrough);
-        //     if (!R.IsBlack()) {
-        //         Fresnel *fresnel = ARENA_ALLOC(arena, FresnelDielectric)(1.f, eta);
-        //         if (isSpecular)
-        //             si->bsdf->Add(
-        //                 ARENA_ALLOC(arena, SpecularReflection)(R, fresnel));
-        //         else
-        //             si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetReflection)(
-        //                 R, distrib, fresnel));
-        //     }
-        //     if (!T.IsBlack()) {
-        //         if (isSpecular)
-        //             si->bsdf->Add(ARENA_ALLOC(arena, SpecularTransmission)(
-        //                 T, 1.f, eta, mode));
-        //         else
-        //             si->bsdf->Add(ARENA_ALLOC(arena, MicrofacetTransmission)(
-        //                 T, distrib, 1.f, eta, mode));
-        //     }
-        // }
-        // Spectrum sig_a = scale * sigma_a->Evaluate(*si).Clamp();
-        // Spectrum sig_s = scale * sigma_s->Evaluate(*si).Clamp();
-        // si->bssrdf = ARENA_ALLOC(arena, TabulatedBSSRDF)(*si, this, mode, eta,
+        if r.is_black() && t.is_black() {
+            return;
+        }
+        let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;
+        if is_specular && allow_multiple_lobes {
+            bxdfs.push(Arc::new(FresnelSpecular::new(
+                r,
+                t,
+                1.0 as Float,
+                self.eta,
+                mode,
+            )));
+        } else {
+            if self.remap_roughness {
+                urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
+                vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
+            }
+            if !r.is_black() {
+                let fresnel = Arc::new(FresnelDielectric {
+                    eta_i: 1.0 as Float,
+                    eta_t: self.eta,
+                });
+                if is_specular {
+                    bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
+                } else {
+                    let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
+                    bxdfs.push(Arc::new(MicrofacetReflection::new(r, distrib, fresnel)));
+                }
+            }
+            if !t.is_black() {
+                if is_specular {
+                    bxdfs.push(Arc::new(SpecularTransmission::new(t, 1.0, self.eta, mode)));
+                } else {
+                    let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
+                    bxdfs.push(Arc::new(MicrofacetTransmission::new(
+                        t, distrib, 1.0, self.eta, mode,
+                    )));
+                }
+            }
+        }
+        let sig_a: Spectrum = self.scale
+            * self
+                .sigma_a
+                .evaluate(si)
+                .clamp(0.0 as Float, std::f32::INFINITY as Float);
+        let sig_s: Spectrum = self.scale
+            * self
+                .sigma_s
+                .evaluate(si)
+                .clamp(0.0 as Float, std::f32::INFINITY as Float);
+        // si.bssrdf = ARENA_ALLOC(arena, TabulatedBSSRDF)(*si, this, mode, self.eta,
         //                                                  sig_a, sig_s, table);
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, self.eta, bxdfs)));
     }
 }
