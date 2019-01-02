@@ -3,7 +3,7 @@ use std;
 use std::sync::Arc;
 // pbrt
 use core::bssrdf::compute_beam_diffusion_bssrdf;
-use core::bssrdf::BSSRDFTable;
+use core::bssrdf::BssrdfTable;
 use core::interaction::SurfaceInteraction;
 use core::material::{Material, TransportMode};
 use core::medium::get_medium_scattering_properties;
@@ -29,7 +29,7 @@ pub struct SubsurfaceMaterial {
     pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
     pub eta: Float,            // default: 1.33
     pub remap_roughness: bool, // default: true
-    pub table: BSSRDFTable,
+    pub table: BssrdfTable,
 }
 
 impl SubsurfaceMaterial {
@@ -46,7 +46,7 @@ impl SubsurfaceMaterial {
         bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
-        let mut table: BSSRDFTable = BSSRDFTable::new(100, 64);
+        let mut table: BssrdfTable = BssrdfTable::new(100, 64);
         compute_beam_diffusion_bssrdf(g, eta, &mut table);
         SubsurfaceMaterial {
             scale: scale,
@@ -188,7 +188,7 @@ impl Material for SubsurfaceMaterial {
                 .sigma_s
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        // si.bssrdf = ARENA_ALLOC(arena, TabulatedBSSRDF)(*si, this, mode, self.eta,
+        // si.bssrdf = ARENA_ALLOC(arena, TabulatedBssrdf)(*si, this, mode, self.eta,
         //                                                  sig_a, sig_s, table);
         si.bsdf = Some(Arc::new(Bsdf::new(si, self.eta, bxdfs)));
     }

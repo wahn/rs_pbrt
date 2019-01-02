@@ -1,14 +1,34 @@
 //std
 use std;
 use std::f32::consts::PI;
+use std::sync::Arc;
 // pbrt
+use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
+use core::interaction::SurfaceInteraction;
 use core::interpolation::integrate_catmull_rom;
+use core::material::{Material, TransportMode};
 use core::medium::phase_hg;
 use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::fr_dielectric;
 
-pub struct BSSRDFTable {
+pub struct TabulatedBssrdf {
+    // BSSRDF Protected Data
+    // pub po: SurfaceInteraction,
+    pub eta: Float,
+    // SeparableBSSRDF Private Data
+    pub ns: Normal3f,
+    pub ss: Vector3f,
+    pub ts: Vector3f,
+    pub material: Arc<Material>,
+    pub mode: TransportMode,
+    // TabulatedBSSRDF Private Data
+    pub table: BssrdfTable,
+    pub sigma_t: Spectrum,
+    pub rho: Spectrum,
+}
+
+pub struct BssrdfTable {
     pub n_rho_samples: i32,
     pub n_radius_samples: i32,
     pub rho_samples: Vec<Float>,
@@ -18,9 +38,9 @@ pub struct BSSRDFTable {
     pub profile_cdf: Vec<Float>,
 }
 
-impl BSSRDFTable {
+impl BssrdfTable {
     pub fn new(n_rho_samples: i32, n_radius_samples: i32) -> Self {
-        BSSRDFTable {
+        BssrdfTable {
             n_rho_samples: n_rho_samples,
             n_radius_samples: n_radius_samples,
             rho_samples: Vec::with_capacity(n_rho_samples as usize),
@@ -118,7 +138,7 @@ pub fn beam_diffusion_ss(sigma_s: Float, sigma_a: Float, g: Float, eta: Float, r
     ess / n_samples as Float
 }
 
-pub fn compute_beam_diffusion_bssrdf(g: Float, eta: Float, t: &mut BSSRDFTable) {
+pub fn compute_beam_diffusion_bssrdf(g: Float, eta: Float, t: &mut BssrdfTable) {
     // choose radius values of the diffusion profile discretization
     t.radius_samples[0] = 0.0 as Float;
     t.radius_samples[1] = 2.5e-3 as Float;
