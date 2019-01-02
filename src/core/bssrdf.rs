@@ -56,13 +56,44 @@ impl BssrdfTable {
 }
 
 pub fn fresnel_moment1(eta: Float) -> Float {
-    // WORK
-    0.0 as Float
+    let eta2: Float = eta * eta;
+    let eta3: Float = eta2 * eta;
+    let eta4: Float = eta3 * eta;
+    let eta5: Float = eta4 * eta;
+    if eta < 1.0 as Float {
+        0.45966 as Float - 1.73965 as Float * eta + 3.37668 as Float * eta2 - 3.904945 * eta3
+            + 2.49277 as Float * eta4
+            - 0.68441 as Float * eta5
+    } else {
+        -4.61686 as Float + 11.1136 as Float * eta - 10.4646 as Float * eta2
+            + 5.11455 as Float * eta3
+            - 1.27198 as Float * eta4
+            + 0.12746 as Float * eta5
+    }
 }
 
 pub fn fresnel_moment2(eta: Float) -> Float {
-    // WORK
-    0.0 as Float
+    let eta2: Float = eta * eta;
+    let eta3: Float = eta2 * eta;
+    let eta4: Float = eta3 * eta;
+    let eta5: Float = eta4 * eta;
+    if eta < 1.0 as Float {
+        0.27614 as Float - 0.87350 as Float * eta + 1.12077 as Float * eta2
+            - 0.65095 as Float * eta3
+            + 0.07883 as Float * eta4
+            + 0.04860 as Float * eta5
+    } else {
+        let r_eta = 1.0 as Float / eta;
+        let r_eta2 = r_eta * r_eta;
+        let r_eta3 = r_eta2 * r_eta;
+        -547.033 as Float + 45.3087 as Float * r_eta3 - 218.725 as Float * r_eta2
+            + 458.843 as Float * r_eta
+            + 404.557 as Float * eta
+            - 189.519 as Float * eta2
+            + 54.9327 as Float * eta3
+            - 9.00603 as Float * eta4
+            + 0.63942 as Float * eta5
+    }
 }
 
 pub fn beam_diffusion_ms(sigma_s: Float, sigma_a: Float, g: Float, eta: Float, r: Float) -> Float {
