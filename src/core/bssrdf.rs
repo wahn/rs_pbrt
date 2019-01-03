@@ -11,6 +11,19 @@ use core::medium::phase_hg;
 use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::fr_dielectric;
+use core::scene::Scene;
+
+pub trait Bssrdf {
+    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum;
+    fn sample_s(
+        &self,
+        scene: &Scene,
+        u1: Float,
+        u2: &Point2f,
+        si: &mut SurfaceInteraction,
+        pdf: &mut Float,
+    ) -> Spectrum;
+}
 
 pub struct TabulatedBssrdf {
     // BSSRDF Protected Data
@@ -23,9 +36,43 @@ pub struct TabulatedBssrdf {
     pub material: Arc<Material>,
     pub mode: TransportMode,
     // TabulatedBSSRDF Private Data
-    pub table: BssrdfTable,
+    pub table: Arc<BssrdfTable>,
     pub sigma_t: Spectrum,
     pub rho: Spectrum,
+}
+
+impl TabulatedBssrdf {
+    pub fn new(
+        // TODO: po: SurfaceInteraction,
+        material: Arc<Material>,
+        mode: TransportMode,
+        eta: Float,
+        sigma_a: &Spectrum,
+        sigma_s: &Spectrum,
+        table: Arc<BssrdfTable>,
+    ) -> Self {
+        let sigma_t: Spectrum = *sigma_a + *sigma_s;
+        let mut rho: Spectrum = Spectrum::new(0.0 as Float);
+        for c in 0..3 {
+            if sigma_t[c] != 0.0 as Float {
+                rho.c[c] = sigma_s[c] / sigma_t[c];
+            } else {
+                rho.c[c] = 0.0 as Float;
+            }
+        }
+        TabulatedBssrdf {
+            // TODO: po:
+            eta: eta,
+            ns: Normal3f::default(), // TODO: po.shading.n
+            ss: Vector3f::default(), // TODO: normalize(po.shading.dpdu)
+            ts: Vector3f::default(), // TODO: cross(ns, ss)
+            material: material,
+            mode: mode,
+            table: table.clone(),
+            sigma_t: sigma_t,
+            rho: rho,
+        }
+    }
 }
 
 pub struct BssrdfTable {

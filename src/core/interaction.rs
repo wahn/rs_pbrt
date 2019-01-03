@@ -11,6 +11,7 @@
 use std;
 use std::sync::Arc;
 // pbrt
+use core::bssrdf::Bssrdf;
 use core::geometry::{
     nrm_faceforward_nrm, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm, vec3_dot_vec3,
 };
@@ -251,6 +252,7 @@ pub struct SurfaceInteraction<'p, 's> {
     pub primitive: Option<&'p GeometricPrimitive>,
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
+    pub bssrdf: Option<Arc<Bssrdf>>,
     pub shape: Option<&'s Shape>,
 }
 
@@ -303,6 +305,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             primitive: None,
             shading: shading,
             bsdf: None,
+            bssrdf: None,
             shape: sh,
         }
     }
