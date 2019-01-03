@@ -3,6 +3,7 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
+use core::geometry::nrm_cross_vec3;
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::interpolation::integrate_catmull_rom;
@@ -27,13 +28,13 @@ pub trait Bssrdf {
 
 pub struct TabulatedBssrdf {
     // BSSRDF Protected Data
-    // pub po: SurfaceInteraction,
+    // pub po: &SurfaceInteraction,
     pub eta: Float,
     // SeparableBSSRDF Private Data
     pub ns: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub material: Arc<Material>,
+    // pub material: Arc<Material>,
     pub mode: TransportMode,
     // TabulatedBSSRDF Private Data
     pub table: Arc<BssrdfTable>,
@@ -43,8 +44,8 @@ pub struct TabulatedBssrdf {
 
 impl TabulatedBssrdf {
     pub fn new(
-        // TODO: po: SurfaceInteraction,
-        material: Arc<Material>,
+        po: &SurfaceInteraction,
+        // material: Arc<Material>,
         mode: TransportMode,
         eta: Float,
         sigma_a: &Spectrum,
@@ -60,18 +61,38 @@ impl TabulatedBssrdf {
                 rho.c[c] = 0.0 as Float;
             }
         }
+        let ns: Normal3f = po.shading.n;
+        let ss: Vector3f = po.shading.dpdu.normalize();
         TabulatedBssrdf {
             // TODO: po:
             eta: eta,
-            ns: Normal3f::default(), // TODO: po.shading.n
-            ss: Vector3f::default(), // TODO: normalize(po.shading.dpdu)
-            ts: Vector3f::default(), // TODO: cross(ns, ss)
-            material: material,
+            ns: ns,
+            ss: ss,
+            ts: nrm_cross_vec3(&ns, &ss),
+            // material: material,
             mode: mode,
             table: table.clone(),
             sigma_t: sigma_t,
             rho: rho,
         }
+    }
+}
+
+impl Bssrdf for TabulatedBssrdf {
+    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+    fn sample_s(
+        &self,
+        scene: &Scene,
+        u1: Float,
+        u2: &Point2f,
+        si: &mut SurfaceInteraction,
+        pdf: &mut Float,
+    ) -> Spectrum {
+        // WORK
+        Spectrum::default()
     }
 }
 
