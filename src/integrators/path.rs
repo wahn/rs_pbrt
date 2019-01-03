@@ -7,6 +7,7 @@ use core::geometry::{Bounds2i, Ray, Vector3f};
 use core::integrator::uniform_sample_one_light;
 use core::integrator::SamplerIntegrator;
 use core::interaction::Interaction;
+use core::interaction::SurfaceInteraction;
 use core::lightdistrib::create_light_sample_distribution;
 use core::lightdistrib::LightDistribution;
 use core::material::TransportMode;
@@ -119,13 +120,14 @@ impl SamplerIntegrator for PathIntegrator {
                     if let Some(ref bsdf) = isect.bsdf {
                         if bsdf.num_components(bsdf_flags) > 0 {
                             // TODO: ++total_paths;
-                            let ld: Spectrum = beta * uniform_sample_one_light(
-                                &isect,
-                                scene,
-                                sampler,
-                                false,
-                                Some(Arc::borrow(&distrib)),
-                            );
+                            let ld: Spectrum = beta
+                                * uniform_sample_one_light(
+                                    &isect,
+                                    scene,
+                                    sampler,
+                                    false,
+                                    Some(Arc::borrow(&distrib)),
+                                );
                             // TODO: println!("Sampled direct lighting Ld = {:?}", ld);
                             // TODO: if ld.is_black() {
                             //     ++zero_radiance_paths;
@@ -182,27 +184,54 @@ impl SamplerIntegrator for PathIntegrator {
                         }
                         ray = isect.spawn_ray(&wi);
 
-                        // Account for subsurface scattering, if applicable
-                        // TODO: if (isect.bssrdf && ((sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8)) {
-                        // Importance sample the BSSRDF
-                        //     SurfaceInteraction pi;
-                        //     Spectrum S = isect.bssrdf->Sample_S(
-                        //         scene, sampler.Get1D(), sampler.Get2D(), arena, &pi, &pdf);
-                        //     DCHECK(!std::isinf(beta.y()));
-                        //     if (S.IsBlack() || pdf == 0) break;
-                        //     beta *= S / pdf;
-                        //     // Account for the direct subsurface scattering component
-                        //     L += beta * UniformSampleOneLight(pi, scene, arena, sampler, false,
-                        //                                       lightDistribution->Lookup(pi.p));
-                        //     // Account for the indirect subsurface scattering component
-                        //     Spectrum f = pi.bsdf->Sample_f(pi.wo, &wi, sampler.Get2D(), &pdf,
-                        //                                    BSDF_ALL, &sampled_type);
-                        //     if (f.IsBlack() || pdf == 0) break;
-                        //     beta *= f * AbsDot(wi, pi.shading.n) / pdf;
-                        //     DCHECK(!std::isinf(beta.y()));
-                        //     specularBounce = (sampled_type & BSDF_SPECULAR) != 0;
-                        //     ray = pi.SpawnRay(wi);
-                        // }
+                        // account for subsurface scattering, if applicable
+                        if let Some(ref bssrdf) = isect.bssrdf {
+                            if (sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8 {
+                                // importance sample the BSSRDF
+                                let mut pi: SurfaceInteraction = SurfaceInteraction::default();
+                                let s: Spectrum = bssrdf.sample_s(
+                                    scene,
+                                    sampler.get_1d(),
+                                    &sampler.get_2d(),
+                                    &mut pi,
+                                    &mut pdf,
+                                );
+                                assert!(!(beta.y().is_infinite()));
+                                if s.is_black() || pdf == 0.0 as Float {
+                                    break;
+                                }
+                                beta *= s / pdf;
+                                // account for the direct subsurface scattering component
+                                let distrib: Arc<Distribution1D> = light_distribution.lookup(&pi.p);
+                                l += beta * uniform_sample_one_light(
+                                    &pi,
+                                    scene,
+                                    sampler,
+                                    false,
+                                    Some(Arc::borrow(&distrib)),
+                                );
+                                // account for the indirect subsurface scattering component
+                                let mut wi: Vector3f = Vector3f::default();
+                                let mut pdf: Float = 0.0 as Float;
+                                let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                let mut sampled_type: u8 = u8::max_value(); // != 0
+                                let f: Spectrum = bsdf.sample_f(
+                                    &pi.wo,
+                                    &mut wi,
+                                    &sampler.get_2d(),
+                                    &mut pdf,
+                                    bsdf_flags,
+                                    &mut sampled_type,
+                                );
+                                if f.is_black() || pdf == 0.0 as Float {
+                                    break;
+                                }
+                                beta *= f * vec3_abs_dot_nrm(&wi, &pi.shading.n) / pdf;
+                                assert!(!(beta.y().is_infinite()));
+                                specular_bounce = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+                                ray = pi.spawn_ray(&wi);
+                            }
+                        }
 
                         // Possibly terminate the path with Russian roulette.
                         // Factor out radiance scaling due to refraction in rr_beta.
