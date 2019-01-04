@@ -35,6 +35,11 @@ pub trait SeparableBssrdf {
         si: &mut SurfaceInteraction,
         pdf: &mut Float,
     ) -> Spectrum;
+    fn sample_sr(
+        &self,
+        ch: usize,
+        u: Float,
+    ) -> Float;
 }
 
 pub struct TabulatedBssrdf {
@@ -108,13 +113,14 @@ impl Bssrdf for TabulatedBssrdf {
             // initialize material model at sampled surface interaction
             //     si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
             //     si->bsdf->Add(ARENA_ALLOC(arena, SeparableBSSRDFAdapter)(this));
+            // WORK
             si.wo = Vector3f::from(si.shading.n);
         }
         sp
     }
 }
 
-impl SeparableBssrdf for TabulatedBssrdf{
+impl SeparableBssrdf for TabulatedBssrdf {
     fn sample_sp(
         &self,
         scene: &Scene,
@@ -123,8 +129,98 @@ impl SeparableBssrdf for TabulatedBssrdf{
         si: &mut SurfaceInteraction,
         pdf: &mut Float,
     ) -> Spectrum {
+        // ProfilePhase pp(Prof::BSSRDFEvaluation);
+        let mut u1: Float = u1; // shadowing input parameter
+        // choose projection axis for BSSRDF sampling
+        let vx: Vector3f;
+        let vy: Vector3f;
+        let vz: Vector3f;
+        if u1 < 0.5 as Float {
+            vx = self.ss;
+            vy = self.ts;
+            vz = Vector3f::from(self.ns);
+            u1 *= 2.0 as Float;
+        } else if u1 < 0.75 as Float {
+            // prepare for sampling rays with respect to _self.ss_
+            vx = self.ts;
+            vy = Vector3f::from(self.ns);
+            vz = self.ss;
+            u1 = (u1 - 0.5 as Float) * 4.0 as Float;
+        } else {
+            // prepare for sampling rays with respect to _self.ts_
+            vx = Vector3f::from(self.ns);
+            vy = self.ss;
+            vz = self.ts;
+            u1 = (u1 - 0.75 as Float) * 4.0 as Float;
+        }
+        // choose spectral channel for BSSRDF sampling
+        // int ch = Clamp((int)(u1 * Spectrum::nSamples), 0, Spectrum::nSamples - 1);
+        let ch: usize = 0; // TODO
+        // u1 = u1 * Spectrum::nSamples - ch;
+
+        // sample BSSRDF profile in polar coordinates
+        let r: Float = self.sample_sr(ch, u2.x);
+        // if (r < 0) return Spectrum(0.f);
+        // Float phi = 2 * Pi * u2[1];
+
+        // // Compute BSSRDF profile bounds and intersection height
+        // Float rMax = Sample_Sr(ch, 0.999f);
+        // if (r >= rMax) return Spectrum(0.f);
+        // Float l = 2 * std::sqrt(rMax * rMax - r * r);
+
+        // // Compute BSSRDF sampling ray segment
+        // Interaction base;
+        // base.p =
+        //     po.p + r * (vx * std::cos(phi) + vy * std::sin(phi)) - l * vz * 0.5f;
+        // base.time = po.time;
+        // Point3f pTarget = base.p + l * vz;
+
+        // // Intersect BSSRDF sampling ray against the scene geometry
+
+        // // Declare _IntersectionChain_ and linked list
+        // struct IntersectionChain {
+        //     SurfaceInteraction si;
+        //     IntersectionChain *next = nullptr;
+        // };
+        // IntersectionChain *chain = ARENA_ALLOC(arena, IntersectionChain)();
+
+        // // Accumulate chain of intersections along ray
+        // IntersectionChain *ptr = chain;
+        // int nFound = 0;
+        // while (true) {
+        //     Ray r = base.SpawnRayTo(pTarget);
+        //     if (r.d == Vector3f(0, 0, 0) || !scene.Intersect(r, &ptr->si))
+        //         break;
+
+        //     base = ptr->si;
+        //     // Append admissible intersection to _IntersectionChain_
+        //     if (ptr->si.primitive->GetMaterial() == this->material) {
+        //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
+        //         ptr->next = next;
+        //         ptr = next;
+        //         nFound++;
+        //     }
+        // }
+
+        // // Randomly choose one of several intersections during BSSRDF sampling
+        // if (nFound == 0) return Spectrum(0.0f);
+        // int selected = Clamp((int)(u1 * nFound), 0, nFound - 1);
+        // while (selected-- > 0) chain = chain->next;
+        // *pi = chain->si;
+
+        // // Compute sample PDF and return the spatial BSSRDF term $\Sp$
+        // *pdf = this->Pdf_Sp(*pi) / nFound;
+        // return this->Sp(*pi);
         // WORK
         Spectrum::default()
+    }
+    fn sample_sr(
+        &self,
+        ch: usize,
+        u: Float,
+    ) -> Float {
+        // WORK
+        0.0 as Float
     }
 }
 
