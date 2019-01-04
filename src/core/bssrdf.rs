@@ -5,10 +5,11 @@ use std::sync::Arc;
 // pbrt
 use core::geometry::nrm_cross_vec3;
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::interaction::SurfaceInteraction;
+use core::interaction::{InteractionCommon, SurfaceInteraction};
 use core::interpolation::integrate_catmull_rom;
 use core::material::{Material, TransportMode};
 use core::medium::phase_hg;
+use core::pbrt::clamp_t;
 use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::fr_dielectric;
@@ -35,11 +36,7 @@ pub trait SeparableBssrdf {
         si: &mut SurfaceInteraction,
         pdf: &mut Float,
     ) -> Spectrum;
-    fn sample_sr(
-        &self,
-        ch: usize,
-        u: Float,
-    ) -> Float;
+    fn sample_sr(&self, ch: usize, u: Float) -> Float;
 }
 
 pub struct TabulatedBssrdf {
@@ -131,6 +128,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
     ) -> Spectrum {
         // ProfilePhase pp(Prof::BSSRDFEvaluation);
         let mut u1: Float = u1; // shadowing input parameter
+
         // choose projection axis for BSSRDF sampling
         let vx: Vector3f;
         let vy: Vector3f;
@@ -154,26 +152,27 @@ impl SeparableBssrdf for TabulatedBssrdf {
             u1 = (u1 - 0.75 as Float) * 4.0 as Float;
         }
         // choose spectral channel for BSSRDF sampling
-        // int ch = Clamp((int)(u1 * Spectrum::nSamples), 0, Spectrum::nSamples - 1);
-        let ch: usize = 0; // TODO
-        // u1 = u1 * Spectrum::nSamples - ch;
-
+        let ch: usize = clamp_t((u1 * 3.0 as Float) as usize, 0_usize, 2_usize);
+        u1 = u1 * 3.0 as Float - ch as Float;
         // sample BSSRDF profile in polar coordinates
         let r: Float = self.sample_sr(ch, u2.x);
-        // if (r < 0) return Spectrum(0.f);
-        // Float phi = 2 * Pi * u2[1];
-
-        // // Compute BSSRDF profile bounds and intersection height
-        // Float rMax = Sample_Sr(ch, 0.999f);
-        // if (r >= rMax) return Spectrum(0.f);
-        // Float l = 2 * std::sqrt(rMax * rMax - r * r);
-
-        // // Compute BSSRDF sampling ray segment
-        // Interaction base;
-        // base.p =
-        //     po.p + r * (vx * std::cos(phi) + vy * std::sin(phi)) - l * vz * 0.5f;
+        if r < 0.0 as Float {
+            return Spectrum::default();
+        }
+        let phi: Float = 2.0 as Float * PI * u2.y;
+        // compute BSSRDF profile bounds and intersection height
+        let r_max: Float = self.sample_sr(ch, 0.999 as Float);
+        if r >= r_max {
+            return Spectrum::default();
+        }
+        let l: Float = 2.0 as Float * (r_max * r_max - r * r).sqrt();
+        // compute BSSRDF sampling ray segment
+        let mut base: InteractionCommon = InteractionCommon::default();
+        let p: Point3f = Point3f::default(); // TMP
+        base.p = p + // self.po.p + o
+            (vx * phi.cos() + vy * phi.sin()) * r - vz * (l * 0.5 as Float);
         // base.time = po.time;
-        // Point3f pTarget = base.p + l * vz;
+        // Point3f p_target = base.p + l * vz;
 
         // // Intersect BSSRDF sampling ray against the scene geometry
 
@@ -188,7 +187,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
         // IntersectionChain *ptr = chain;
         // int nFound = 0;
         // while (true) {
-        //     Ray r = base.SpawnRayTo(pTarget);
+        //     Ray r = base.SpawnRayTo(p_target);
         //     if (r.d == Vector3f(0, 0, 0) || !scene.Intersect(r, &ptr->si))
         //         break;
 
@@ -214,11 +213,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
         // WORK
         Spectrum::default()
     }
-    fn sample_sr(
-        &self,
-        ch: usize,
-        u: Float,
-    ) -> Float {
+    fn sample_sr(&self, ch: usize, u: Float) -> Float {
         // WORK
         0.0 as Float
     }
