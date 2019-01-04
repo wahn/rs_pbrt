@@ -26,6 +26,17 @@ pub trait Bssrdf {
     ) -> Spectrum;
 }
 
+pub trait SeparableBssrdf {
+    fn sample_sp(
+        &self,
+        scene: &Scene,
+        u1: Float,
+        u2: &Point2f,
+        si: &mut SurfaceInteraction,
+        pdf: &mut Float,
+    ) -> Spectrum;
+}
+
 pub struct TabulatedBssrdf {
     // BSSRDF Protected Data
     // pub po: &SurfaceInteraction,
@@ -84,6 +95,27 @@ impl Bssrdf for TabulatedBssrdf {
         Spectrum::default()
     }
     fn sample_s(
+        &self,
+        scene: &Scene,
+        u1: Float,
+        u2: &Point2f,
+        si: &mut SurfaceInteraction,
+        pdf: &mut Float,
+    ) -> Spectrum {
+        // ProfilePhase pp(Prof::BSSRDFSampling);
+        let sp: Spectrum = self.sample_sp(scene, u1, u2, si, pdf);
+        if !sp.is_black() {
+            // initialize material model at sampled surface interaction
+            //     si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
+            //     si->bsdf->Add(ARENA_ALLOC(arena, SeparableBSSRDFAdapter)(this));
+            si.wo = Vector3f::from(si.shading.n);
+        }
+        sp
+    }
+}
+
+impl SeparableBssrdf for TabulatedBssrdf{
+    fn sample_sp(
         &self,
         scene: &Scene,
         u1: Float,
