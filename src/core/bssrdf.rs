@@ -6,7 +6,7 @@ use std::sync::Arc;
 use core::geometry::nrm_cross_vec3;
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{InteractionCommon, SurfaceInteraction};
-use core::interpolation::integrate_catmull_rom;
+use core::interpolation::{catmull_rom_weights, integrate_catmull_rom};
 use core::material::{Material, TransportMode};
 use core::medium::phase_hg;
 use core::pbrt::clamp_t;
@@ -28,6 +28,8 @@ pub trait Bssrdf {
 }
 
 pub trait SeparableBssrdf {
+    fn sp(&self) -> Spectrum;
+    fn pdf_sp(&self) -> Float;
     fn sample_sp(
         &self,
         scene: &Scene,
@@ -36,9 +38,9 @@ pub trait SeparableBssrdf {
         si: &mut SurfaceInteraction,
         pdf: &mut Float,
     ) -> Spectrum;
+    fn sr(&self, r: Float) -> Spectrum;
+    fn pdf_sr(&self, ch: usize, r: Float) -> Float;
     fn sample_sr(&self, ch: usize, u: Float) -> Float;
-    fn pdf_sp(&self) -> Float;
-    fn sp(&self) -> Spectrum;
 }
 
 pub struct TabulatedBssrdf {
@@ -123,6 +125,14 @@ impl Bssrdf for TabulatedBssrdf {
 }
 
 impl SeparableBssrdf for TabulatedBssrdf {
+    fn sp(&self) -> Spectrum {
+        // WORK
+        Spectrum::default()
+    }
+    fn pdf_sp(&self) -> Float {
+        // WORK
+        0.0 as Float
+    }
     fn sample_sp(
         &self,
         scene: &Scene,
@@ -223,17 +233,59 @@ impl SeparableBssrdf for TabulatedBssrdf {
         self.sp(// *pi
         )
     }
+    fn sr(&self, r: Float) -> Spectrum {
+        let mut sr: Spectrum = Spectrum::default();
+        for ch in 0..3_usize {
+            // convert $r$ into unitless optical radius $r_{\roman{optical}}$
+            let r_optical: Float = r * self.sigma_t.c[ch];
+            // compute spline weights to interpolate BSSRDF on channel _ch_
+            let mut rho_offset: i32 = 0;
+            let mut radius_offset: i32 = 0;
+            let mut rho_weights: [Float; 4] = [0.0 as Float; 4];
+            let mut radius_weights: [Float; 4] = [0.0 as Float; 4];
+            if !catmull_rom_weights(
+                &self.table.rho_samples,
+                self.rho.c[ch],
+                &mut rho_offset,
+                &mut rho_weights,
+            ) || !catmull_rom_weights(
+                &self.table.radius_samples,
+                r_optical,
+                &mut radius_offset,
+                &mut radius_weights,
+            ) {
+                continue;
+            }
+            // set BSSRDF value _Sr[ch]_ using tensor spline interpolation
+            let mut srf: Float = 0.0;
+            for i in 0..4_usize {
+                for j in 0..4_usize {
+                    let weight: Float = rho_weights[i] * radius_weights[j];
+                    if weight != 0.0 as Float {
+                        srf += weight
+                            * self
+                                .table
+                                .eval_profile(rho_offset + i as i32, radius_offset + j as i32);
+                    }
+                }
+            }
+            // cancel marginal PDF factor from tabulated BSSRDF profile
+            if r_optical != 0.0 as Float {
+                srf /= 2.0 as Float * PI * r_optical;
+            }
+            sr.c[ch] = srf;
+        }
+        // transform BSSRDF value into world space units
+        sr *= self.sigma_t * self.sigma_t;
+        sr.clamp(0.0 as Float, std::f32::INFINITY as Float)
+    }
+    fn pdf_sr(&self, ch: usize, r: Float) -> Float {
+        // WORK
+        0.0 as Float
+    }
     fn sample_sr(&self, ch: usize, u: Float) -> Float {
         // WORK
         0.0 as Float
-    }
-    fn pdf_sp(&self) -> Float {
-        // WORK
-        0.0 as Float
-    }
-    fn sp(&self) -> Spectrum {
-        // WORK
-        Spectrum::default()
     }
 }
 
