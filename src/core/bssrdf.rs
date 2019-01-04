@@ -37,11 +37,14 @@ pub trait SeparableBssrdf {
         pdf: &mut Float,
     ) -> Spectrum;
     fn sample_sr(&self, ch: usize, u: Float) -> Float;
+    fn pdf_sp(&self) -> Float;
+    fn sp(&self) -> Spectrum;
 }
 
 pub struct TabulatedBssrdf {
     // BSSRDF Protected Data
-    // pub po: &SurfaceInteraction,
+    pub p: Point3f,  // pub po: &SurfaceInteraction,
+    pub time: Float, // TMP
     pub eta: Float,
     // SeparableBSSRDF Private Data
     pub ns: Normal3f,
@@ -77,7 +80,9 @@ impl TabulatedBssrdf {
         let ns: Normal3f = po.shading.n;
         let ss: Vector3f = po.shading.dpdu.normalize();
         TabulatedBssrdf {
-            // TODO: po:
+            // TODO: po
+            p: po.p,
+            time: po.time,
             eta: eta,
             ns: ns,
             ss: ss,
@@ -168,24 +173,23 @@ impl SeparableBssrdf for TabulatedBssrdf {
         let l: Float = 2.0 as Float * (r_max * r_max - r * r).sqrt();
         // compute BSSRDF sampling ray segment
         let mut base: InteractionCommon = InteractionCommon::default();
-        let p: Point3f = Point3f::default(); // TMP
-        base.p = p + // self.po.p + o
+        base.p = self.p + // TODO: self.po.p +
             (vx * phi.cos() + vy * phi.sin()) * r - vz * (l * 0.5 as Float);
-        // base.time = po.time;
-        // Point3f p_target = base.p + l * vz;
+        base.time = self.time; // TODO: self.po.time;
+        let p_target: Point3f = base.p + vz * l;
 
-        // // Intersect BSSRDF sampling ray against the scene geometry
+        // intersect BSSRDF sampling ray against the scene geometry
 
-        // // Declare _IntersectionChain_ and linked list
+        // declare _IntersectionChain_ and linked list
         // struct IntersectionChain {
         //     SurfaceInteraction si;
         //     IntersectionChain *next = nullptr;
         // };
         // IntersectionChain *chain = ARENA_ALLOC(arena, IntersectionChain)();
 
-        // // Accumulate chain of intersections along ray
+        // accumulate chain of intersections along ray
         // IntersectionChain *ptr = chain;
-        // int nFound = 0;
+        let n_found: usize = 0;
         // while (true) {
         //     Ray r = base.SpawnRayTo(p_target);
         //     if (r.d == Vector3f(0, 0, 0) || !scene.Intersect(r, &ptr->si))
@@ -197,25 +201,39 @@ impl SeparableBssrdf for TabulatedBssrdf {
         //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
         //         ptr->next = next;
         //         ptr = next;
-        //         nFound++;
+        //         n_found++;
         //     }
         // }
 
-        // // Randomly choose one of several intersections during BSSRDF sampling
-        // if (nFound == 0) return Spectrum(0.0f);
-        // int selected = Clamp((int)(u1 * nFound), 0, nFound - 1);
+        // randomly choose one of several intersections during BSSRDF sampling
+        if n_found == 0_usize {
+            return Spectrum::default();
+        }
+        let selected: usize = clamp_t(
+            (u1 * n_found as Float) as usize,
+            0_usize,
+            (n_found - 1) as usize,
+        );
         // while (selected-- > 0) chain = chain->next;
         // *pi = chain->si;
 
-        // // Compute sample PDF and return the spatial BSSRDF term $\Sp$
-        // *pdf = this->Pdf_Sp(*pi) / nFound;
-        // return this->Sp(*pi);
-        // WORK
-        Spectrum::default()
+        // compute sample PDF and return the spatial BSSRDF term $\sp$
+        *pdf = self.pdf_sp(// *pi
+        ) / n_found as Float;
+        self.sp(// *pi
+        )
     }
     fn sample_sr(&self, ch: usize, u: Float) -> Float {
         // WORK
         0.0 as Float
+    }
+    fn pdf_sp(&self) -> Float {
+        // WORK
+        0.0 as Float
+    }
+    fn sp(&self) -> Spectrum {
+        // WORK
+        Spectrum::default()
     }
 }
 
