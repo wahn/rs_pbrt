@@ -40,6 +40,7 @@ impl Material for MixMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
+        _material: Option<Arc<Material + Send + Sync>>,
     ) {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let s1: Spectrum = self
@@ -61,9 +62,9 @@ impl Material for MixMaterial {
             si.shape,
         );
         self.m1
-            .compute_scattering_functions(si, mode.clone(), allow_multiple_lobes);
+            .compute_scattering_functions(si, mode.clone(), allow_multiple_lobes, None);
         self.m2
-            .compute_scattering_functions(&mut si2, mode.clone(), allow_multiple_lobes);
+            .compute_scattering_functions(&mut si2, mode.clone(), allow_multiple_lobes, None);
         let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
         if let Some(ref bsdf1) = si.bsdf {
             let n1: u8 = bsdf1.num_components(bsdf_flags);

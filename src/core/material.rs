@@ -35,6 +35,7 @@ pub trait Material {
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
+        material: Option<Arc<Material + Send + Sync>>,
     );
     /// Computing the effect of bump mapping at the point being shaded
     /// given a particular displacement texture.

@@ -1207,6 +1207,29 @@ where
     }
 }
 
+impl<T> Index<u8> for Normal3<T> {
+    type Output = T;
+    fn index(&self, index: u8) -> &T {
+        match index {
+            0 => &self.x,
+            1 => &self.y,
+            2 => &self.z,
+            _ => panic!("Check failed: i >= 0 && i <= 2"),
+        }
+    }
+}
+
+impl<T> IndexMut<u8> for Normal3<T> {
+    fn index_mut(&mut self, index: u8) -> &mut T {
+        match index {
+            0 => &mut self.x,
+            1 => &mut self.y,
+            2 => &mut self.z,
+            _ => panic!("Check failed: i >= 0 && i <= 2"),
+        }
+    }
+}
+
 impl<T> Normal3<T> {
     pub fn length_squared(&self) -> T
     where

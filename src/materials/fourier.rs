@@ -58,6 +58,7 @@ impl Material for FourierMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
+        _material: Option<Arc<Material + Send + Sync>>,
     ) {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);

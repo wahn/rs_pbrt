@@ -122,6 +122,7 @@ impl Material for SubsurfaceMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
+        material: Option<Arc<Material + Send + Sync>>,
     ) {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
@@ -191,7 +192,7 @@ impl Material for SubsurfaceMaterial {
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
         si.bssrdf = Some(Arc::new(TabulatedBssrdf::new(
             si,
-            // self,
+            material,
             mode,
             self.eta,
             &sig_a,

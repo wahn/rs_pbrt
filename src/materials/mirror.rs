@@ -44,6 +44,7 @@ impl Material for MirrorMaterial {
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
+        _material: Option<Arc<Material + Send + Sync>>,
     ) {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);

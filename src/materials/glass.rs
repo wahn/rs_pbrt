@@ -88,6 +88,7 @@ impl Material for GlassMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
+        _material: Option<Arc<Material + Send + Sync>>,
     ) {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);

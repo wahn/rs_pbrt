@@ -3,7 +3,9 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{nrm_cross_vec3, pnt3_distance};
+use core::geometry::{
+    nrm_cross_vec3, nrm_dot_nrm, nrm_dot_vec3, pnt3_distance, vec3_dot_nrm, vec3_dot_vec3,
+};
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{InteractionCommon, SurfaceInteraction};
 use core::interpolation::{catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d};
@@ -30,7 +32,7 @@ pub trait Bssrdf {
 
 pub trait SeparableBssrdf {
     fn sp(&self) -> Spectrum;
-    fn pdf_sp(&self) -> Float;
+    fn pdf_sp(&self, pi: &InteractionCommon) -> Float;
     fn sample_sp(
         &self,
         scene: &Scene,
@@ -54,7 +56,7 @@ pub struct TabulatedBssrdf {
     pub ns: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    // pub material: Arc<Material>,
+    pub material: Arc<Material + Send + Sync>,
     pub mode: TransportMode,
     // TabulatedBSSRDF Private Data
     pub table: Arc<BssrdfTable>,
@@ -65,7 +67,7 @@ pub struct TabulatedBssrdf {
 impl TabulatedBssrdf {
     pub fn new(
         po: &SurfaceInteraction,
-        // material: Arc<Material>,
+        material_opt: Option<Arc<Material + Send + Sync>>,
         mode: TransportMode,
         eta: Float,
         sigma_a: &Spectrum,
@@ -83,20 +85,24 @@ impl TabulatedBssrdf {
         }
         let ns: Normal3f = po.shading.n;
         let ss: Vector3f = po.shading.dpdu.normalize();
-        TabulatedBssrdf {
-            // TODO: po
-            po_p: po.p,
-            po_time: po.time,
-            pi_p: Point3f::default(),
-            eta: eta,
-            ns: ns,
-            ss: ss,
-            ts: nrm_cross_vec3(&ns, &ss),
-            // material: material,
-            mode: mode,
-            table: table.clone(),
-            sigma_t: sigma_t,
-            rho: rho,
+        if let Some(material) = material_opt {
+            TabulatedBssrdf {
+                // TODO: po
+                po_p: po.p,
+                po_time: po.time,
+                pi_p: Point3f::default(),
+                eta: eta,
+                ns: ns,
+                ss: ss,
+                ts: nrm_cross_vec3(&ns, &ss),
+                material: material,
+                mode: mode,
+                table: table.clone(),
+                sigma_t: sigma_t,
+                rho: rho,
+            }
+        } else {
+            panic!("TabulatedBssrdf needs Material pointer")
         }
     }
 }
@@ -131,9 +137,38 @@ impl SeparableBssrdf for TabulatedBssrdf {
     fn sp(&self) -> Spectrum {
         self.sr(pnt3_distance(&self.po_p, &self.pi_p))
     }
-    fn pdf_sp(&self) -> Float {
-        // WORK
-        0.0 as Float
+    fn pdf_sp(&self, pi: &InteractionCommon) -> Float {
+        // express $\pti-\pto$ and $\bold{n}_i$ with respect to local coordinates at $\pto$
+        let d: Vector3f = self.po_p - pi.p;
+        let d_local: Vector3f = Vector3f {
+            x: vec3_dot_vec3(&self.ss, &d),
+            y: vec3_dot_vec3(&self.ts, &d),
+            z: nrm_dot_vec3(&self.ns, &d),
+        };
+        let n_local: Normal3f = Normal3f {
+            x: vec3_dot_nrm(&self.ss, &pi.n),
+            y: vec3_dot_nrm(&self.ts, &pi.n),
+            z: nrm_dot_nrm(&self.ns, &pi.n),
+        };
+        // compute BSSRDF profile radius under projection along each axis
+        let r_proj: [Float; 3] = [
+            (d_local.y * d_local.y + d_local.z * d_local.z).sqrt(),
+            (d_local.z * d_local.z + d_local.x * d_local.x).sqrt(),
+            (d_local.x * d_local.x + d_local.y * d_local.y).sqrt(),
+        ];
+        // return combined probability from all BSSRDF sampling strategies
+        let mut pdf: Float = 0.0;
+        let axis_prob: [Float; 3] = [0.25 as Float, 0.25 as Float, 0.5 as Float];
+        let ch_prob: Float = 1.0 as Float / 3.0 as Float;
+        for axis in 0..3_usize {
+            for ch in 0..3_usize {
+                pdf += self.pdf_sr(ch, r_proj[axis])
+                    * n_local[axis as u8].abs()
+                    * ch_prob
+                    * axis_prob[axis];
+            }
+        }
+        pdf
     }
     fn sample_sp(
         &self,
@@ -200,24 +235,32 @@ impl SeparableBssrdf for TabulatedBssrdf {
 
         // accumulate chain of intersections along ray
         // IntersectionChain *ptr = chain;
-        let n_found: usize = 0;
+        let mut chain: Vec<InteractionCommon> = Vec::new();
+        let mut n_found: usize = 0;
         loop {
             let mut r: Ray = base.spawn_ray_to_pnt(&p_target);
             if r.d == Vector3f::default() {
                 break;
             }
             if let Some(si) = scene.intersect(&mut r) {
-                //     base = ptr->si;
+                // base = ptr->si;
+                base.p = si.p;
+                base.time = si.time;
+                base.p_error = si.p_error;
+                base.wo = si.wo;
+                base.n = si.n;
+                base.medium_interface = si.medium_interface;
                 // append admissible intersection to _IntersectionChain_
                 if let Some(geo_prim) = si.primitive {
                     if let Some(material) = geo_prim.get_material() {
                         //     if (ptr->si.primitive->GetMaterial() == this->material) {
-                        //if Arc::ptr_eq(&material, self.material) {
+                        if Arc::ptr_eq(&material, &self.material) {
                             //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
                             //         ptr->next = next;
                             //         ptr = next;
-                            //         n_found++;
-                        //}
+                            chain.push(base.clone());
+                            n_found += 1;
+                        }
                     }
                 }
             } else {
@@ -236,10 +279,9 @@ impl SeparableBssrdf for TabulatedBssrdf {
         );
         // while (selected-- > 0) chain = chain->next;
         // *pi = chain->si;
-
+        let pi: &InteractionCommon = &chain[selected];
         // compute sample PDF and return the spatial BSSRDF term $\sp$
-        *pdf = self.pdf_sp(// *pi
-        ) / n_found as Float;
+        *pdf = self.pdf_sp(pi) / n_found as Float;
         self.sp(// *pi
         )
     }

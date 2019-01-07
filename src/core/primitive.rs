@@ -31,6 +31,7 @@ pub trait Primitive {
                 isect, // arena,
                 mode,
                 allow_multiple_lobes,
+                self.get_material(),
             );
         }
         assert!(

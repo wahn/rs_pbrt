@@ -132,6 +132,7 @@ impl Material for HairMaterial {
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
+        _material: Option<Arc<Material + Send + Sync>>,
     ) {
         let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
         let bm: Float = self.beta_m.evaluate(si);
