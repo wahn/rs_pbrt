@@ -279,7 +279,53 @@ impl SeparableBssrdf for TabulatedBssrdf {
         sr *= self.sigma_t * self.sigma_t;
         sr.clamp(0.0 as Float, std::f32::INFINITY as Float)
     }
-    fn pdf_sr(&self, ch: usize, u: Float) -> Float {
+    fn pdf_sr(&self, ch: usize, r: Float) -> Float {
+        // convert $r$ into unitless optical radius $r_{\roman{optical}}$
+        let r_optical: Float = r * self.sigma_t[ch];
+        // compute spline weights to interpolate BSSRDF density on channel _ch_
+        let mut rho_offset: i32 = 0;
+        let mut radius_offset: i32 = 0;
+        let mut rho_weights: [Float; 4] = [0.0 as Float; 4];
+        let mut radius_weights: [Float; 4] = [0.0 as Float; 4];
+        if !catmull_rom_weights(
+            &self.table.rho_samples,
+            self.rho.c[ch],
+            &mut rho_offset,
+            &mut rho_weights,
+        ) || !catmull_rom_weights(
+            &self.table.radius_samples,
+            r_optical,
+            &mut radius_offset,
+            &mut radius_weights,
+        ) {
+            return 0.0 as Float;
+        }
+        // return BSSRDF profile density for channel _ch_
+        let mut sr: Float = 0.0;
+        let mut rho_eff: Float = 0.0;
+        for i in 0..4_usize {
+            if rho_weights[i] == 0.0 as Float {
+                continue;
+            }
+            rho_eff += self.table.rho_eff[rho_offset as usize + i] * rho_weights[i];
+            for j in 0..4_usize {
+                if radius_weights[j] == 0.0 as Float {
+                    continue;
+                }
+                sr += self
+                    .table
+                    .eval_profile(rho_offset + i as i32, radius_offset + j as i32)
+                    * rho_weights[i]
+                    * radius_weights[j];
+            }
+        }
+        // cancel marginal PDF factor from tabulated BSSRDF profile
+        if r_optical != 0.0 as Float {
+            sr /= 2.0 as Float * PI * r_optical;
+        }
+        (0.0 as Float).max(sr * self.sigma_t[ch] * self.sigma_t[ch] / rho_eff)
+    }
+    fn sample_sr(&self, ch: usize, u: Float) -> Float {
         if self.sigma_t[ch] == 0.0 as Float {
             return -1.0 as Float;
         }
@@ -293,10 +339,6 @@ impl SeparableBssrdf for TabulatedBssrdf {
             None,
             None,
         ) / self.sigma_t[ch]
-    }
-    fn sample_sr(&self, ch: usize, u: Float) -> Float {
-        // WORK
-        0.0 as Float
     }
 }
 
