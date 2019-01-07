@@ -62,6 +62,18 @@ impl InteractionCommon {
             medium: self.get_medium(d),
         }
     }
+    pub fn spawn_ray_to_pnt(&self, p2: &Point3f) -> Ray {
+        let d: Vector3f = *p2 - self.p;
+        let origin: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, &d);
+        Ray {
+            o: origin,
+            d: d,
+            t_max: 1.0 - SHADOW_EPSILON,
+            time: self.time,
+            differential: None,
+            medium: self.get_medium(&d),
+        }
+    }
     pub fn spawn_ray_to(&self, it: &InteractionCommon) -> Ray {
         let origin: Point3f =
             pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, &(it.p - self.p));

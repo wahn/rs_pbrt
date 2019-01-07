@@ -3,7 +3,7 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::nrm_cross_vec3;
+use core::geometry::{nrm_cross_vec3, pnt3_distance};
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{InteractionCommon, SurfaceInteraction};
 use core::interpolation::{catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d};
@@ -12,6 +12,7 @@ use core::medium::phase_hg;
 use core::pbrt::clamp_t;
 use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
+use core::primitive::Primitive;
 use core::reflection::fr_dielectric;
 use core::scene::Scene;
 
@@ -45,8 +46,9 @@ pub trait SeparableBssrdf {
 
 pub struct TabulatedBssrdf {
     // BSSRDF Protected Data
-    pub p: Point3f,  // pub po: &SurfaceInteraction,
-    pub time: Float, // TMP
+    pub po_p: Point3f,  // pub po: &SurfaceInteraction,
+    pub po_time: Float, // TMP
+    pub pi_p: Point3f,  // TMP
     pub eta: Float,
     // SeparableBSSRDF Private Data
     pub ns: Normal3f,
@@ -83,8 +85,9 @@ impl TabulatedBssrdf {
         let ss: Vector3f = po.shading.dpdu.normalize();
         TabulatedBssrdf {
             // TODO: po
-            p: po.p,
-            time: po.time,
+            po_p: po.p,
+            po_time: po.time,
+            pi_p: Point3f::default(),
             eta: eta,
             ns: ns,
             ss: ss,
@@ -126,8 +129,7 @@ impl Bssrdf for TabulatedBssrdf {
 
 impl SeparableBssrdf for TabulatedBssrdf {
     fn sp(&self) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        self.sr(pnt3_distance(&self.po_p, &self.pi_p))
     }
     fn pdf_sp(&self) -> Float {
         // WORK
@@ -183,9 +185,8 @@ impl SeparableBssrdf for TabulatedBssrdf {
         let l: Float = 2.0 as Float * (r_max * r_max - r * r).sqrt();
         // compute BSSRDF sampling ray segment
         let mut base: InteractionCommon = InteractionCommon::default();
-        base.p = self.p + // TODO: self.po.p +
-            (vx * phi.cos() + vy * phi.sin()) * r - vz * (l * 0.5 as Float);
-        base.time = self.time; // TODO: self.po.time;
+        base.p = self.po_p + (vx * phi.cos() + vy * phi.sin()) * r - vz * (l * 0.5 as Float);
+        base.time = self.po_time;
         let p_target: Point3f = base.p + vz * l;
 
         // intersect BSSRDF sampling ray against the scene geometry
@@ -200,20 +201,29 @@ impl SeparableBssrdf for TabulatedBssrdf {
         // accumulate chain of intersections along ray
         // IntersectionChain *ptr = chain;
         let n_found: usize = 0;
-        // while (true) {
-        //     Ray r = base.SpawnRayTo(p_target);
-        //     if (r.d == Vector3f(0, 0, 0) || !scene.Intersect(r, &ptr->si))
-        //         break;
-
-        //     base = ptr->si;
-        //     // Append admissible intersection to _IntersectionChain_
-        //     if (ptr->si.primitive->GetMaterial() == this->material) {
-        //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
-        //         ptr->next = next;
-        //         ptr = next;
-        //         n_found++;
-        //     }
-        // }
+        loop {
+            let mut r: Ray = base.spawn_ray_to_pnt(&p_target);
+            if r.d == Vector3f::default() {
+                break;
+            }
+            if let Some(si) = scene.intersect(&mut r) {
+                //     base = ptr->si;
+                // append admissible intersection to _IntersectionChain_
+                if let Some(geo_prim) = si.primitive {
+                    if let Some(material) = geo_prim.get_material() {
+                        //     if (ptr->si.primitive->GetMaterial() == this->material) {
+                        //if Arc::ptr_eq(&material, self.material) {
+                            //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
+                            //         ptr->next = next;
+                            //         ptr = next;
+                            //         n_found++;
+                        //}
+                    }
+                }
+            } else {
+                break;
+            }
+        }
 
         // randomly choose one of several intersections during BSSRDF sampling
         if n_found == 0_usize {
