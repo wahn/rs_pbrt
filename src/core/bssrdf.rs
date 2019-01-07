@@ -15,11 +15,11 @@ use core::pbrt::clamp_t;
 use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
-use core::reflection::fr_dielectric;
+use core::reflection::{cos_theta, fr_dielectric};
 use core::scene::Scene;
 
 pub trait Bssrdf {
-    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum;
+    fn s(&self, pi: &InteractionCommon, wi: &Vector3f) -> Spectrum;
     fn sample_s(
         &self,
         scene: &Scene,
@@ -31,7 +31,8 @@ pub trait Bssrdf {
 }
 
 pub trait SeparableBssrdf {
-    fn sp(&self) -> Spectrum;
+    fn sw(&self, w: &Vector3f) -> Spectrum;
+    fn sp(&self, pi: &InteractionCommon) -> Spectrum;
     fn pdf_sp(&self, pi: &InteractionCommon) -> Float;
     fn sample_sp(
         &self,
@@ -48,9 +49,9 @@ pub trait SeparableBssrdf {
 
 pub struct TabulatedBssrdf {
     // BSSRDF Protected Data
-    pub po_p: Point3f,  // pub po: &SurfaceInteraction,
-    pub po_time: Float, // TMP
-    pub pi_p: Point3f,  // TMP
+    pub po_p: Point3f,   // pub po: &SurfaceInteraction,
+    pub po_time: Float,  // TMP
+    pub po_wo: Vector3f, // TMP
     pub eta: Float,
     // SeparableBSSRDF Private Data
     pub ns: Normal3f,
@@ -90,7 +91,7 @@ impl TabulatedBssrdf {
                 // TODO: po
                 po_p: po.p,
                 po_time: po.time,
-                pi_p: Point3f::default(),
+                po_wo: po.wo,
                 eta: eta,
                 ns: ns,
                 ss: ss,
@@ -108,9 +109,10 @@ impl TabulatedBssrdf {
 }
 
 impl Bssrdf for TabulatedBssrdf {
-    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum {
-        // WORK
-        Spectrum::default()
+    fn s(&self, pi: &InteractionCommon, wi: &Vector3f) -> Spectrum {
+        // ProfilePhase pp(Prof::BSSRDFEvaluation);
+        let ft: Float = fr_dielectric(cos_theta(&self.po_wo), 1.0 as Float, self.eta);
+        self.sp(pi) * self.sw(wi) * (1.0 as Float - ft)
     }
     fn sample_s(
         &self,
@@ -125,7 +127,7 @@ impl Bssrdf for TabulatedBssrdf {
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
             //     si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
-            //     si->bsdf->Add(ARENA_ALLOC(arena, SeparableBSSRDFAdapter)(this));
+            //     si->bsdf->Add(ARENA_ALLOC(arena, Separable_Bssrdf_Adapter)(this));
             // WORK
             si.wo = Vector3f::from(si.shading.n);
         }
@@ -134,8 +136,12 @@ impl Bssrdf for TabulatedBssrdf {
 }
 
 impl SeparableBssrdf for TabulatedBssrdf {
-    fn sp(&self) -> Spectrum {
-        self.sr(pnt3_distance(&self.po_p, &self.pi_p))
+    fn sw(&self, w: &Vector3f) -> Spectrum {
+        let c: Float = 1.0 as Float - 2.0 as Float * fresnel_moment1(1.0 as Float / self.eta);
+        Spectrum::new((1.0 as Float - fr_dielectric(cos_theta(w), 1.0 as Float, self.eta)) / (c * PI))
+    }
+    fn sp(&self, pi: &InteractionCommon) -> Spectrum {
+        self.sr(pnt3_distance(&self.po_p, &pi.p))
     }
     fn pdf_sp(&self, pi: &InteractionCommon) -> Float {
         // express $\pti-\pto$ and $\bold{n}_i$ with respect to local coordinates at $\pto$
@@ -282,8 +288,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
         let pi: &InteractionCommon = &chain[selected];
         // compute sample PDF and return the spatial BSSRDF term $\sp$
         *pdf = self.pdf_sp(pi) / n_found as Float;
-        self.sp(// *pi
-        )
+        self.sp(pi)
     }
     fn sr(&self, r: Float) -> Spectrum {
         let mut sr: Spectrum = Spectrum::default();
