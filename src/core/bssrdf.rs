@@ -6,7 +6,7 @@ use std::sync::Arc;
 use core::geometry::nrm_cross_vec3;
 use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use core::interaction::{InteractionCommon, SurfaceInteraction};
-use core::interpolation::{catmull_rom_weights, integrate_catmull_rom};
+use core::interpolation::{catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d};
 use core::material::{Material, TransportMode};
 use core::medium::phase_hg;
 use core::pbrt::clamp_t;
@@ -279,9 +279,20 @@ impl SeparableBssrdf for TabulatedBssrdf {
         sr *= self.sigma_t * self.sigma_t;
         sr.clamp(0.0 as Float, std::f32::INFINITY as Float)
     }
-    fn pdf_sr(&self, ch: usize, r: Float) -> Float {
-        // WORK
-        0.0 as Float
+    fn pdf_sr(&self, ch: usize, u: Float) -> Float {
+        if self.sigma_t[ch] == 0.0 as Float {
+            return -1.0 as Float;
+        }
+        sample_catmull_rom_2d(
+            &self.table.rho_samples,
+            &self.table.radius_samples,
+            &self.table.profile,
+            &self.table.profile_cdf,
+            self.rho[ch],
+            u,
+            None,
+            None,
+        ) / self.sigma_t[ch]
     }
     fn sample_sr(&self, ch: usize, u: Float) -> Float {
         // WORK
