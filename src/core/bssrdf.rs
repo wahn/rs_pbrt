@@ -39,7 +39,7 @@ pub trait SeparableBssrdf {
         scene: &Scene,
         u1: Float,
         u2: &Point2f,
-        si: &mut SurfaceInteraction,
+        pi: &mut InteractionCommon,
         pdf: &mut Float,
     ) -> Spectrum;
     fn sr(&self, r: Float) -> Spectrum;
@@ -123,13 +123,19 @@ impl Bssrdf for TabulatedBssrdf {
         pdf: &mut Float,
     ) -> Spectrum {
         // ProfilePhase pp(Prof::BSSRDFSampling);
-        let sp: Spectrum = self.sample_sp(scene, u1, u2, si, pdf);
+        let mut ic: InteractionCommon = InteractionCommon::default();
+        let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut ic, pdf);
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
             //     si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
             //     si->bsdf->Add(ARENA_ALLOC(arena, Separable_Bssrdf_Adapter)(this));
             // WORK
+            si.p = ic.p;
+            si.time = ic.time;
+            si.p_error = ic.p_error;
             si.wo = Vector3f::from(si.shading.n);
+            si.n = ic.n;
+            si.medium_interface = ic.medium_interface;
         }
         sp
     }
@@ -138,7 +144,9 @@ impl Bssrdf for TabulatedBssrdf {
 impl SeparableBssrdf for TabulatedBssrdf {
     fn sw(&self, w: &Vector3f) -> Spectrum {
         let c: Float = 1.0 as Float - 2.0 as Float * fresnel_moment1(1.0 as Float / self.eta);
-        Spectrum::new((1.0 as Float - fr_dielectric(cos_theta(w), 1.0 as Float, self.eta)) / (c * PI))
+        Spectrum::new(
+            (1.0 as Float - fr_dielectric(cos_theta(w), 1.0 as Float, self.eta)) / (c * PI),
+        )
     }
     fn sp(&self, pi: &InteractionCommon) -> Spectrum {
         self.sr(pnt3_distance(&self.po_p, &pi.p))
@@ -181,7 +189,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
         scene: &Scene,
         u1: Float,
         u2: &Point2f,
-        si: &mut SurfaceInteraction,
+        pi: &mut InteractionCommon,
         pdf: &mut Float,
     ) -> Spectrum {
         // ProfilePhase pp(Prof::BSSRDFEvaluation);
@@ -285,7 +293,17 @@ impl SeparableBssrdf for TabulatedBssrdf {
         );
         // while (selected-- > 0) chain = chain->next;
         // *pi = chain->si;
-        let pi: &InteractionCommon = &chain[selected];
+        let select_ic: &InteractionCommon = &chain[selected];
+        pi.p = select_ic.p;
+        pi.time = select_ic.time;
+        pi.p_error = select_ic.p_error;
+        pi.wo = select_ic.wo;
+        pi.n = select_ic.n;
+        if let Some(ref medium_interface) = select_ic.medium_interface {
+            pi.medium_interface = Some(medium_interface.clone());
+        } else {
+            pi.medium_interface = None;
+        }
         // compute sample PDF and return the spatial BSSRDF term $\sp$
         *pdf = self.pdf_sp(pi) / n_found as Float;
         self.sp(pi)
@@ -542,16 +560,19 @@ pub fn beam_diffusion_ss(sigma_s: Float, sigma_a: Float, g: Float, eta: Float, r
 
 pub fn compute_beam_diffusion_bssrdf(g: Float, eta: Float, t: &mut BssrdfTable) {
     // choose radius values of the diffusion profile discretization
-    t.radius_samples[0] = 0.0 as Float;
-    t.radius_samples[1] = 2.5e-3 as Float;
+    t.radius_samples.push(0.0 as Float);
+    t.radius_samples.push(2.5e-3 as Float);
     for i in 2..t.n_radius_samples as usize {
-        t.radius_samples[i] = t.radius_samples[i - 1] * 1.2 as Float;
+        let prev_radius_sample: Float = t.radius_samples[i - 1];
+        t.radius_samples.push(prev_radius_sample * 1.2 as Float);
     }
     // choose albedo values of the diffusion profile discretization
     for i in 0..t.n_rho_samples as usize {
-        t.rho_samples[i] = (1.0 as Float
-            - (-8.0 as Float * i as Float / (t.n_rho_samples as Float - 1.0 as Float)).exp())
-            / (1.0 as Float - (-8.0 as Float).exp());
+        t.rho_samples.push(
+            (1.0 as Float
+                - (-8.0 as Float * i as Float / (t.n_rho_samples as Float - 1.0 as Float)).exp())
+                / (1.0 as Float - (-8.0 as Float).exp()),
+        );
     }
     // ParallelFor([&](int i) {
     for i in 0..t.n_rho_samples as usize {
@@ -562,22 +583,22 @@ pub fn compute_beam_diffusion_bssrdf(g: Float, eta: Float, t: &mut BssrdfTable) 
             //         Float rho = t.rho_samples[i], r = t.radius_samples[j];
             let rho: Float = t.rho_samples[i];
             let r: Float = t.radius_samples[j];
-            t.profile[i * t.n_radius_samples as usize + j] = 2.0 as Float
-                * PI
-                * r
-                * (beam_diffusion_ss(rho, 1.0 as Float - rho, g, eta, r)
-                    + beam_diffusion_ms(rho, 1.0 as Float - rho, g, eta, r));
+            t.profile.push(
+                2.0 as Float
+                    * PI
+                    * r
+                    * (beam_diffusion_ss(rho, 1.0 as Float - rho, g, eta, r)
+                        + beam_diffusion_ms(rho, 1.0 as Float - rho, g, eta, r)),
+            );
         }
         // compute effective albedo $\rho_{\roman{eff}}$ and CDF for
         // importance sampling
-        t.rho_eff[i] = integrate_catmull_rom(
+        t.rho_eff.push(integrate_catmull_rom(
             t.n_radius_samples,
             &t.radius_samples,
             &t.profile,
-            i * t.n_radius_samples as usize,
             &mut t.profile_cdf,
-            i * t.n_radius_samples as usize,
-        );
+        ));
     }
     // }, t.n_rho_samples);
 }

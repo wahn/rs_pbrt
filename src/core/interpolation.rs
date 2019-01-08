@@ -177,13 +177,10 @@ pub fn integrate_catmull_rom(
     n: i32,
     x: &Vec<Float>,
     values: &Vec<Float>,
-    values_offset: usize,
     cdf: &mut Vec<Float>,
-    cdf_offset: usize,
 ) -> Float {
     let mut sum: Float = 0.0;
-    cdf[0] = 0.0 as Float;
-    // for (int i = 0; i < n - 1; ++i) {
+    cdf.push(0.0 as Float);
     for i in 0..(n - 1) as usize {
         // look up $x_i$ and function values of spline segment _i_
         let x0: Float = x[i];
@@ -206,7 +203,7 @@ pub fn integrate_catmull_rom(
         }
         // keep a running sum and build a cumulative distribution function
         sum += ((d0 - d1) * (1.0 as Float / 12.0 as Float) + (f0 + f1) * 0.5 as Float) * width;
-        cdf[i + 1] = sum;
+        cdf.push(sum);
     }
     sum
 }
