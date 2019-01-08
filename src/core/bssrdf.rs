@@ -16,6 +16,7 @@ use core::pbrt::INV_4_PI;
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
 use core::reflection::{cos_theta, fr_dielectric};
+use core::reflection::{Bsdf, Bxdf, BxdfType};
 use core::scene::Scene;
 
 pub trait Bssrdf {
@@ -127,9 +128,10 @@ impl Bssrdf for TabulatedBssrdf {
         let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut ic, pdf);
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
-            //     si->bsdf = ARENA_ALLOC(arena, BSDF)(*si);
-            //     si->bsdf->Add(ARENA_ALLOC(arena, Separable_Bssrdf_Adapter)(this));
-            // WORK
+            let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+            // TODO: si->bsdf->Add(ARENA_ALLOC(arena, SeparableBssrdfAdapter)(this));
+            bxdfs.push(Arc::new(SeparableBssrdfAdapter::new()));
+            si.bsdf = Some(Arc::new(Bsdf::new(&si, 1.0, bxdfs)));
             si.p = ic.p;
             si.time = ic.time;
             si.p_error = ic.p_error;
@@ -441,6 +443,34 @@ impl BssrdfTable {
     }
     pub fn eval_profile(&self, rho_index: i32, radius_index: i32) -> Float {
         self.profile[(rho_index * self.n_radius_samples + radius_index) as usize]
+    }
+}
+
+pub struct SeparableBssrdfAdapter {
+    // TODO: pub bssrdf: SeparableBssrdf;
+}
+
+impl SeparableBssrdfAdapter {
+    pub fn new() -> Self {
+        SeparableBssrdfAdapter {}
+    }
+}
+
+impl Bxdf for SeparableBssrdfAdapter {
+    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+        // let mut f: Spectrum = self.bssrdf.sw(wi);
+
+        // update BSSRDF transmission term to account for adjoint light transport
+
+        // if (self.bssrdf.mode == TransportMode::Radiance) {
+        //     f *= self.bssrdf.eta * self.bssrdf.eta;
+        // }
+        // f
+        // WORK
+        Spectrum::default()
+    }
+    fn get_type(&self) -> u8 {
+        BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
     }
 }
 
