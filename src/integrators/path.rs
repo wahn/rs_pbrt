@@ -189,10 +189,12 @@ impl SamplerIntegrator for PathIntegrator {
                             if (sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8 {
                                 // importance sample the BSSRDF
                                 let mut pi: SurfaceInteraction = SurfaceInteraction::default();
+                                let s2: Point2f = sampler.get_2d();
+                                let s1: Float = sampler.get_1d();
                                 let s: Spectrum = bssrdf.sample_s(
                                     scene,
-                                    sampler.get_1d(),
-                                    &sampler.get_2d(),
+                                    s1,
+                                    &s2,
                                     &mut pi,
                                     &mut pdf,
                                 );
