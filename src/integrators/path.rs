@@ -3,7 +3,7 @@ use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
-use core::geometry::{Bounds2i, Ray, Vector3f};
+use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use core::integrator::uniform_sample_one_light;
 use core::integrator::SamplerIntegrator;
 use core::interaction::Interaction;
@@ -191,13 +191,8 @@ impl SamplerIntegrator for PathIntegrator {
                                 let mut pi: SurfaceInteraction = SurfaceInteraction::default();
                                 let s2: Point2f = sampler.get_2d();
                                 let s1: Float = sampler.get_1d();
-                                let s: Spectrum = bssrdf.sample_s(
-                                    scene,
-                                    s1,
-                                    &s2,
-                                    &mut pi,
-                                    &mut pdf,
-                                );
+                                let s: Spectrum =
+                                    bssrdf.sample_s(scene, s1, &s2, &mut pi, &mut pdf);
                                 assert!(!(beta.y().is_infinite()));
                                 if s.is_black() || pdf == 0.0 as Float {
                                     break;
@@ -205,13 +200,14 @@ impl SamplerIntegrator for PathIntegrator {
                                 beta *= s / pdf;
                                 // account for the direct subsurface scattering component
                                 let distrib: Arc<Distribution1D> = light_distribution.lookup(&pi.p);
-                                l += beta * uniform_sample_one_light(
-                                    &pi,
-                                    scene,
-                                    sampler,
-                                    false,
-                                    Some(Arc::borrow(&distrib)),
-                                );
+                                l += beta
+                                    * uniform_sample_one_light(
+                                        &pi,
+                                        scene,
+                                        sampler,
+                                        false,
+                                        Some(Arc::borrow(&distrib)),
+                                    );
                                 // account for the indirect subsurface scattering component
                                 let mut wi: Vector3f = Vector3f::default();
                                 let mut pdf: Float = 0.0 as Float;
@@ -230,7 +226,8 @@ impl SamplerIntegrator for PathIntegrator {
                                 }
                                 beta *= f * vec3_abs_dot_nrm(&wi, &pi.shading.n) / pdf;
                                 assert!(!(beta.y().is_infinite()));
-                                specular_bounce = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+                                specular_bounce =
+                                    (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
                                 ray = pi.spawn_ray(&wi);
                             }
                         }
