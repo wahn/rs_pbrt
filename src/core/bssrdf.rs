@@ -514,7 +514,7 @@ pub fn beam_diffusion_ms(sigma_s: Float, sigma_a: Float, g: Float, eta: Float, r
     for i in 0..n_samples {
         // sample real point source depth $\depthreal$
         let zr: Float =
-            -(1.0 as Float - (i as Float + 0.5 as Float).ln() / n_samples as Float) / sigmap_t;
+            -(1.0 as Float - (i as Float + 0.5 as Float) / n_samples as Float).ln() / sigmap_t;
         // evaluate dipole integrand $E_{\roman{d}}$ at $\depthreal$ and add to _ed_
         let zv: Float = -zr + 2.0 as Float * ze;
         let dr: Float = (r * r + zr * zr).sqrt();
