@@ -2,12 +2,12 @@
 use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
+use core::bssrdf::Bssrdf;
 use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use core::integrator::uniform_sample_one_light;
 use core::integrator::SamplerIntegrator;
 use core::interaction::Interaction;
-use core::interaction::SurfaceInteraction;
 use core::lightdistrib::create_light_sample_distribution;
 use core::lightdistrib::LightDistribution;
 use core::material::TransportMode;
@@ -190,7 +190,17 @@ impl SamplerIntegrator for PathIntegrator {
                                 // importance sample the BSSRDF
                                 let s2: Point2f = sampler.get_2d();
                                 let s1: Float = sampler.get_1d();
-                                let (s, pi_opt) = bssrdf.sample_s(scene, s1, &s2, &mut pdf);
+                                let (s, pi_opt) = bssrdf.sample_s(
+                                    // the next three (extra) parameters are used for SeparableBssrdfAdapter
+                                    bssrdf.clone(),
+                                    bssrdf.mode,
+                                    bssrdf.eta,
+                                    // done
+                                    scene,
+                                    s1,
+                                    &s2,
+                                    &mut pdf,
+                                );
                                 if s.is_black() || pdf == 0.0 as Float {
                                     break;
                                 }

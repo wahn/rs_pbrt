@@ -24,6 +24,11 @@ pub trait Bssrdf {
     fn s(&self, pi: &InteractionCommon, wi: &Vector3f) -> Spectrum;
     fn sample_s(
         &self,
+        // the next three (extra) parameters are used for SeparableBssrdfAdapter
+        sc: Arc<SeparableBssrdf + Sync + Send>,
+        mode: TransportMode,
+        eta: Float,
+        // done
         scene: &Scene,
         u1: Float,
         u2: &Point2f,
@@ -119,6 +124,11 @@ impl Bssrdf for TabulatedBssrdf {
     }
     fn sample_s(
         &self,
+        // the next three (extra) parameters are used for SeparableBssrdfAdapter
+        sc: Arc<SeparableBssrdf + Sync + Send>,
+        mode: TransportMode,
+        eta: Float,
+        // done
         scene: &Scene,
         u1: Float,
         u2: &Point2f,
@@ -130,9 +140,7 @@ impl Bssrdf for TabulatedBssrdf {
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
             let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
-            bxdfs.push(Arc::new(SeparableBssrdfAdapter::new(
-                // self as &'s (SeparableBssrdf + Send + Sync),
-            )));
+            bxdfs.push(Arc::new(SeparableBssrdfAdapter::new(sc, mode, eta)));
             let mut si: SurfaceInteraction = SurfaceInteraction::default();
             si.bsdf = Some(Arc::new(Bsdf::new(&si, 1.0, bxdfs)));
             si.p = ic.p;
@@ -453,27 +461,33 @@ impl BssrdfTable {
 
 pub struct SeparableBssrdfAdapter {
     // pub bssrdf: &'b (SeparableBssrdf + Send + Sync),
+    pub bssrdf: Arc<SeparableBssrdf + Sync + Send>,
+    mode: TransportMode,
+    eta2: Float,
 }
 
 impl SeparableBssrdfAdapter {
-    pub fn new() -> Self {
-        SeparableBssrdfAdapter { // bssrdf: bssrdf
+    pub fn new(
+        bssrdf: Arc<SeparableBssrdf + Sync + Send>,
+        mode: TransportMode,
+        eta: Float,
+    ) -> Self {
+        SeparableBssrdfAdapter {
+            bssrdf: bssrdf,
+            mode: mode,
+            eta2: eta * eta,
         }
     }
 }
 
 impl Bxdf for SeparableBssrdfAdapter {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
-        // let mut f: Spectrum = self.bssrdf.sw(wi);
-
+    fn f(&self, _wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+        let mut f: Spectrum = self.bssrdf.sw(wi);
         // update BSSRDF transmission term to account for adjoint light transport
-
-        // if (self.bssrdf.mode == TransportMode::Radiance) {
-        //     f *= self.bssrdf.eta * self.bssrdf.eta;
-        // }
-        // f
-        // WORK
-        Spectrum::default()
+        if self.mode == TransportMode::Radiance {
+            f *= Spectrum::new(self.eta2);
+        }
+        f
     }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
