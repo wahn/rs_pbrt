@@ -188,47 +188,50 @@ impl SamplerIntegrator for PathIntegrator {
                         if let Some(ref bssrdf) = isect.bssrdf {
                             if (sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8 {
                                 // importance sample the BSSRDF
-                                let mut pi: SurfaceInteraction = SurfaceInteraction::default();
                                 let s2: Point2f = sampler.get_2d();
                                 let s1: Float = sampler.get_1d();
-                                let s: Spectrum =
-                                    bssrdf.sample_s(scene, s1, &s2, &mut pi, &mut pdf);
-                                assert!(!(beta.y().is_infinite()));
+                                let (s, pi_opt) = bssrdf.sample_s(scene, s1, &s2, &mut pdf);
                                 if s.is_black() || pdf == 0.0 as Float {
                                     break;
                                 }
-                                beta *= s / pdf;
-                                // account for the direct subsurface scattering component
-                                let distrib: Arc<Distribution1D> = light_distribution.lookup(&pi.p);
-                                l += beta
-                                    * uniform_sample_one_light(
-                                        &pi,
-                                        scene,
-                                        sampler,
-                                        false,
-                                        Some(Arc::borrow(&distrib)),
-                                    );
-                                // account for the indirect subsurface scattering component
-                                let mut wi: Vector3f = Vector3f::default();
-                                let mut pdf: Float = 0.0 as Float;
-                                let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                                let mut sampled_type: u8 = u8::max_value(); // != 0
-                                let f: Spectrum = bsdf.sample_f(
-                                    &pi.wo,
-                                    &mut wi,
-                                    &sampler.get_2d(),
-                                    &mut pdf,
-                                    bsdf_flags,
-                                    &mut sampled_type,
-                                );
-                                if f.is_black() || pdf == 0.0 as Float {
-                                    break;
-                                }
-                                beta *= f * vec3_abs_dot_nrm(&wi, &pi.shading.n) / pdf;
                                 assert!(!(beta.y().is_infinite()));
-                                specular_bounce =
-                                    (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
-                                ray = pi.spawn_ray(&wi);
+                                beta *= s / pdf;
+                                if let Some(pi) = pi_opt {
+                                    // account for the direct subsurface scattering component
+                                    let distrib: Arc<Distribution1D> =
+                                        light_distribution.lookup(&pi.p);
+                                    l += beta
+                                        * uniform_sample_one_light(
+                                            &pi,
+                                            scene,
+                                            sampler,
+                                            false,
+                                            Some(Arc::borrow(&distrib)),
+                                        );
+                                    // account for the indirect subsurface scattering component
+                                    let mut wi: Vector3f = Vector3f::default();
+                                    let mut pdf: Float = 0.0 as Float;
+                                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                    let mut sampled_type: u8 = u8::max_value(); // != 0
+                                    let f: Spectrum = bsdf.sample_f(
+                                        &pi.wo,
+                                        &mut wi,
+                                        &sampler.get_2d(),
+                                        &mut pdf,
+                                        bsdf_flags,
+                                        &mut sampled_type,
+                                    );
+                                    if f.is_black() || pdf == 0.0 as Float {
+                                        break;
+                                    }
+                                    beta *= f * vec3_abs_dot_nrm(&wi, &pi.shading.n) / pdf;
+                                    assert!(!(beta.y().is_infinite()));
+                                    specular_bounce =
+                                        (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+                                    ray = pi.spawn_ray(&wi);
+                                } else {
+                                    panic!("bssrdf.sample_s() did return (s, None)");
+                                }
                             }
                         }
 

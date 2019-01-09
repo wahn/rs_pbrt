@@ -1,6 +1,7 @@
 //std
 use std;
 use std::f32::consts::PI;
+// use std::marker::PhantomData;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{
@@ -26,9 +27,8 @@ pub trait Bssrdf {
         scene: &Scene,
         u1: Float,
         u2: &Point2f,
-        si: &mut SurfaceInteraction,
         pdf: &mut Float,
-    ) -> Spectrum;
+    ) -> (Spectrum, Option<SurfaceInteraction>);
 }
 
 pub trait SeparableBssrdf {
@@ -64,6 +64,7 @@ pub struct TabulatedBssrdf {
     pub table: Arc<BssrdfTable>,
     pub sigma_t: Spectrum,
     pub rho: Spectrum,
+    // phantom: PhantomData<&'s (SeparableBssrdf + Send + Sync)>,
 }
 
 impl TabulatedBssrdf {
@@ -102,6 +103,7 @@ impl TabulatedBssrdf {
                 table: table.clone(),
                 sigma_t: sigma_t,
                 rho: rho,
+                // phantom: PhantomData,
             }
         } else {
             panic!("TabulatedBssrdf needs Material pointer")
@@ -120,17 +122,18 @@ impl Bssrdf for TabulatedBssrdf {
         scene: &Scene,
         u1: Float,
         u2: &Point2f,
-        si: &mut SurfaceInteraction,
         pdf: &mut Float,
-    ) -> Spectrum {
+    ) -> (Spectrum, Option<SurfaceInteraction>) {
         // ProfilePhase pp(Prof::BSSRDFSampling);
         let mut ic: InteractionCommon = InteractionCommon::default();
         let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut ic, pdf);
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
             let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
-            // TODO: si->bsdf->Add(ARENA_ALLOC(arena, SeparableBssrdfAdapter)(this));
-            bxdfs.push(Arc::new(SeparableBssrdfAdapter::new()));
+            bxdfs.push(Arc::new(SeparableBssrdfAdapter::new(
+                // self as &'s (SeparableBssrdf + Send + Sync),
+            )));
+            let mut si: SurfaceInteraction = SurfaceInteraction::default();
             si.bsdf = Some(Arc::new(Bsdf::new(&si, 1.0, bxdfs)));
             si.p = ic.p;
             si.time = ic.time;
@@ -138,8 +141,10 @@ impl Bssrdf for TabulatedBssrdf {
             si.wo = Vector3f::from(si.shading.n);
             si.n = ic.n;
             si.medium_interface = ic.medium_interface;
+            (sp, Some(si))
+        } else {
+            (sp, None)
         }
-        sp
     }
 }
 
@@ -447,12 +452,13 @@ impl BssrdfTable {
 }
 
 pub struct SeparableBssrdfAdapter {
-    // TODO: pub bssrdf: SeparableBssrdf;
+    // pub bssrdf: &'b (SeparableBssrdf + Send + Sync),
 }
 
 impl SeparableBssrdfAdapter {
     pub fn new() -> Self {
-        SeparableBssrdfAdapter {}
+        SeparableBssrdfAdapter { // bssrdf: bssrdf
+        }
     }
 }
 
