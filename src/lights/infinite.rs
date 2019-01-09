@@ -85,7 +85,6 @@ impl InfiniteAreaLight {
                     let (width, height) = input_file.header().data_dimensions();
                     resolution.x = width as i32;
                     resolution.y = height as i32;
-                    println!("resolution = {:?}", resolution);
                     // make sure the image properties are the same (see incremental_io.rs in github/openexr-rs)
                     for channel_name in ["R", "G", "B"].iter() {
                         let channel = input_file
@@ -193,7 +192,6 @@ impl InfiniteAreaLight {
                         x: meta.width as i32,
                         y: meta.height as i32,
                     };
-                    println!("resolution = {:?}", resolution);
                     let img_result = hdr.read_image_transform(|p| {
                         let rgb = p.to_hdr();
                         Spectrum::rgb(rgb[0], rgb[1], rgb[2]) * *l

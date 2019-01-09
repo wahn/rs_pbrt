@@ -1,7 +1,6 @@
 //std
 use std;
 use std::f32::consts::PI;
-// use std::marker::PhantomData;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{
@@ -69,7 +68,6 @@ pub struct TabulatedBssrdf {
     pub table: Arc<BssrdfTable>,
     pub sigma_t: Spectrum,
     pub rho: Spectrum,
-    // phantom: PhantomData<&'s (SeparableBssrdf + Send + Sync)>,
 }
 
 impl TabulatedBssrdf {
@@ -95,7 +93,6 @@ impl TabulatedBssrdf {
         let ss: Vector3f = po.shading.dpdu.normalize();
         if let Some(material) = material_opt {
             TabulatedBssrdf {
-                // TODO: po
                 po_p: po.p,
                 po_time: po.time,
                 po_wo: po.wo,
@@ -108,7 +105,6 @@ impl TabulatedBssrdf {
                 table: table.clone(),
                 sigma_t: sigma_t,
                 rho: rho,
-                // phantom: PhantomData,
             }
         } else {
             panic!("TabulatedBssrdf needs Material pointer")
