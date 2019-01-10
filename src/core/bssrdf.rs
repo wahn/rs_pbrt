@@ -20,7 +20,7 @@ use core::reflection::{Bsdf, Bxdf, BxdfType};
 use core::scene::Scene;
 
 pub trait Bssrdf {
-    fn s(&self, pi: &InteractionCommon, wi: &Vector3f) -> Spectrum;
+    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum;
     fn sample_s(
         &self,
         // the next three (extra) parameters are used for SeparableBssrdfAdapter
@@ -37,14 +37,14 @@ pub trait Bssrdf {
 
 pub trait SeparableBssrdf {
     fn sw(&self, w: &Vector3f) -> Spectrum;
-    fn sp(&self, pi: &InteractionCommon) -> Spectrum;
-    fn pdf_sp(&self, pi: &InteractionCommon) -> Float;
+    fn sp(&self, pi: &SurfaceInteraction) -> Spectrum;
+    fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float;
     fn sample_sp(
         &self,
         scene: &Scene,
         u1: Float,
         u2: &Point2f,
-        pi: &mut InteractionCommon,
+        pi: &mut SurfaceInteraction,
         pdf: &mut Float,
     ) -> Spectrum;
     fn sr(&self, r: Float) -> Spectrum;
@@ -113,7 +113,7 @@ impl TabulatedBssrdf {
 }
 
 impl Bssrdf for TabulatedBssrdf {
-    fn s(&self, pi: &InteractionCommon, wi: &Vector3f) -> Spectrum {
+    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum {
         // ProfilePhase pp(Prof::BSSRDFEvaluation);
         let ft: Float = fr_dielectric(cos_theta(&self.po_wo), 1.0 as Float, self.eta);
         self.sp(pi) * self.sw(wi) * (1.0 as Float - ft)
@@ -131,20 +131,14 @@ impl Bssrdf for TabulatedBssrdf {
         pdf: &mut Float,
     ) -> (Spectrum, Option<SurfaceInteraction>) {
         // ProfilePhase pp(Prof::BSSRDFSampling);
-        let mut ic: InteractionCommon = InteractionCommon::default();
-        let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut ic, pdf);
+        let mut si: SurfaceInteraction = SurfaceInteraction::default();
+        let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut si, pdf);
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
             let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
             bxdfs.push(Arc::new(SeparableBssrdfAdapter::new(sc, mode, eta)));
-            let mut si: SurfaceInteraction = SurfaceInteraction::default();
             si.bsdf = Some(Arc::new(Bsdf::new(&si, 1.0, bxdfs)));
-            si.p = ic.p;
-            si.time = ic.time;
-            si.p_error = ic.p_error;
             si.wo = Vector3f::from(si.shading.n);
-            si.n = ic.n;
-            si.medium_interface = ic.medium_interface;
             (sp, Some(si))
         } else {
             (sp, None)
@@ -159,10 +153,10 @@ impl SeparableBssrdf for TabulatedBssrdf {
             (1.0 as Float - fr_dielectric(cos_theta(w), 1.0 as Float, self.eta)) / (c * PI),
         )
     }
-    fn sp(&self, pi: &InteractionCommon) -> Spectrum {
+    fn sp(&self, pi: &SurfaceInteraction) -> Spectrum {
         self.sr(pnt3_distance(&self.po_p, &pi.p))
     }
-    fn pdf_sp(&self, pi: &InteractionCommon) -> Float {
+    fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float {
         // express $\pti-\pto$ and $\bold{n}_i$ with respect to local coordinates at $\pto$
         let d: Vector3f = self.po_p - pi.p;
         let d_local: Vector3f = Vector3f {
@@ -200,7 +194,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
         scene: &Scene,
         u1: Float,
         u2: &Point2f,
-        pi: &mut InteractionCommon,
+        pi: &mut SurfaceInteraction,
         pdf: &mut Float,
     ) -> Spectrum {
         // ProfilePhase pp(Prof::BSSRDFEvaluation);
@@ -260,7 +254,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
 
         // accumulate chain of intersections along ray
         // IntersectionChain *ptr = chain;
-        let mut chain: Vec<InteractionCommon> = Vec::new();
+        let mut chain: Vec<SurfaceInteraction> = Vec::new();
         let mut n_found: usize = 0;
         loop {
             let mut r: Ray = base.spawn_ray_to_pnt(&p_target);
@@ -274,7 +268,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
                 base.p_error = si.p_error;
                 base.wo = si.wo;
                 base.n = si.n;
-                base.medium_interface = si.medium_interface;
+                base.medium_interface = None; // TODO: si.medium_interface;
                 // append admissible intersection to _IntersectionChain_
                 if let Some(geo_prim) = si.primitive {
                     if let Some(material) = geo_prim.get_material() {
@@ -283,7 +277,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
                             //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
                             //         ptr->next = next;
                             //         ptr = next;
-                            chain.push(base.clone());
+                            chain.push(si.clone());
                             n_found += 1;
                         }
                     }
@@ -304,20 +298,20 @@ impl SeparableBssrdf for TabulatedBssrdf {
         );
         // while (selected-- > 0) chain = chain->next;
         // *pi = chain->si;
-        let select_ic: &InteractionCommon = &chain[selected];
-        pi.p = select_ic.p;
-        pi.time = select_ic.time;
-        pi.p_error = select_ic.p_error;
-        pi.wo = select_ic.wo;
-        pi.n = select_ic.n;
-        if let Some(ref medium_interface) = select_ic.medium_interface {
+        let selected_si: &SurfaceInteraction = &chain[selected];
+        pi.p = selected_si.p;
+        pi.time = selected_si.time;
+        pi.p_error = selected_si.p_error;
+        pi.wo = selected_si.wo;
+        pi.n = selected_si.n;
+        if let Some(ref medium_interface) = selected_si.medium_interface {
             pi.medium_interface = Some(medium_interface.clone());
         } else {
             pi.medium_interface = None;
         }
         // compute sample PDF and return the spatial BSSRDF term $\sp$
-        *pdf = self.pdf_sp(pi) / n_found as Float;
-        self.sp(pi)
+        *pdf = self.pdf_sp(selected_si) / n_found as Float;
+        self.sp(selected_si)
     }
     fn sr(&self, r: Float) -> Spectrum {
         let mut sr: Spectrum = Spectrum::default();
