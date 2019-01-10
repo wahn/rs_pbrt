@@ -309,6 +309,29 @@ impl SeparableBssrdf for TabulatedBssrdf {
         } else {
             pi.medium_interface = None;
         }
+        pi.dpdu = selected_si.dpdu;
+        pi.dpdv = selected_si.dpdv;
+        pi.dndu = selected_si.dndu;
+        pi.dndv = selected_si.dndv;
+        pi.dpdx = selected_si.dpdx;
+        pi.dpdy = selected_si.dpdy;
+        pi.dudx = selected_si.dudx;
+        pi.dvdx = selected_si.dvdx;
+        pi.dudy = selected_si.dudy;
+        pi.dvdy = selected_si.dvdy;
+        pi.shading = selected_si.shading;
+        // no primitive!
+        if let Some(ref bsdf) = selected_si.bsdf {
+            pi.bsdf = Some(bsdf.clone());
+        } else {
+            pi.bsdf = None;
+        }
+        if let Some(ref bssrdf) = selected_si.bssrdf {
+            pi.bssrdf = Some(bssrdf.clone());
+        } else {
+            pi.bssrdf = None;
+        }
+        // no shape!
         // compute sample PDF and return the spatial BSSRDF term $\sp$
         *pdf = self.pdf_sp(selected_si) / n_found as Float;
         self.sp(selected_si)
