@@ -642,6 +642,7 @@ pub fn compute_beam_diffusion_bssrdf(g: Float, eta: Float, t: &mut BssrdfTable) 
         t.rho_eff.push(integrate_catmull_rom(
             t.n_radius_samples,
             &t.radius_samples,
+            i * t.n_radius_samples as usize,
             &t.profile,
             &mut t.profile_cdf,
         ));

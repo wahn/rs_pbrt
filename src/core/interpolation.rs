@@ -176,6 +176,7 @@ pub fn sample_catmull_rom_2d(
 pub fn integrate_catmull_rom(
     n: i32,
     x: &Vec<Float>,
+    offset: usize,
     values: &Vec<Float>,
     cdf: &mut Vec<Float>,
 ) -> Float {
@@ -185,8 +186,8 @@ pub fn integrate_catmull_rom(
         // look up $x_i$ and function values of spline segment _i_
         let x0: Float = x[i];
         let x1: Float = x[i + 1];
-        let f0: Float = values[i];
-        let f1: Float = values[i + 1];
+        let f0: Float = values[offset + i];
+        let f1: Float = values[offset + i + 1];
         let width: Float = x1 - x0;
         // approximate derivatives using finite differences
         let d0: Float;
