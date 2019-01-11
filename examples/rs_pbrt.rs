@@ -450,7 +450,7 @@ fn main() {
             Some(x) => {
                 let num_cores = num_cpus::get();
                 println!("pbrt version {} [Detected {} cores]", VERSION, num_cores);
-                println!("Copyright (c)2016-2018 Jan Douglas Bert Walter.");
+                println!("Copyright (c) 2016-2019 Jan Douglas Bert Walter.");
                 println!(
                     "Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob."
                 );
