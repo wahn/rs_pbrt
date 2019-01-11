@@ -715,7 +715,7 @@ impl Bxdf for FresnelSpecular {
                 z: wo.z,
             };
             if *sampled_type != 0_u8 {
-                *sampled_type = self.get_type();
+                *sampled_type = BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
             }
             *pdf = f;
             return self.r * f / abs_cos_theta(&*wi);
@@ -758,7 +758,7 @@ impl Bxdf for FresnelSpecular {
                 ft *= Spectrum::new((eta_i * eta_i) / (eta_t * eta_t));
             }
             if *sampled_type != 0_u8 {
-                *sampled_type = self.get_type();
+                *sampled_type = BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8
             }
             *pdf = 1.0 as Float - f;
             return ft / abs_cos_theta(&*wi);
@@ -1051,17 +1051,19 @@ impl Bxdf for MicrofacetTransmission {
             _ => 1.0,
         };
 
-        (Spectrum::new(1.0) - f) * self.t * Float::abs(
-            self.distribution.d(&wh)
-                * self.distribution.g(wo, wi)
-                * eta
-                * eta
-                * vec3_dot_vec3(wi, &wh).abs()
-                * vec3_dot_vec3(wo, &wh).abs()
-                * factor
-                * factor
-                / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom),
-        )
+        (Spectrum::new(1.0) - f)
+            * self.t
+            * Float::abs(
+                self.distribution.d(&wh)
+                    * self.distribution.g(wo, wi)
+                    * eta
+                    * eta
+                    * vec3_dot_vec3(wi, &wh).abs()
+                    * vec3_dot_vec3(wo, &wh).abs()
+                    * factor
+                    * factor
+                    / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom),
+            )
     }
 
     fn get_type(&self) -> u8 {
@@ -1268,9 +1270,8 @@ impl Bxdf for FourierBSDF {
                     m_max = std::cmp::max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels as usize {
                         for k in 0..m as usize {
-                            ak[c * self.bsdf_table.m_max as usize + k] += weight * self
-                                .bsdf_table
-                                .a[(a_idx + c as i32 * m + k as i32) as usize];
+                            ak[c * self.bsdf_table.m_max as usize + k] += weight
+                                * self.bsdf_table.a[(a_idx + c as i32 * m + k as i32) as usize];
                         }
                     }
                 }
@@ -1370,9 +1371,8 @@ impl Bxdf for FourierBSDF {
                     m_max = std::cmp::max(m_max, m);
                     for c in 0..self.bsdf_table.n_channels as usize {
                         for k in 0..m as usize {
-                            ak[c * self.bsdf_table.m_max as usize + k] += weight * self
-                                .bsdf_table
-                                .a[(a_idx + c as i32 * m + k as i32) as usize];
+                            ak[c * self.bsdf_table.m_max as usize + k] += weight
+                                * self.bsdf_table.a[(a_idx + c as i32 * m + k as i32) as usize];
                         }
                     }
                 }
@@ -1498,8 +1498,8 @@ impl Bxdf for FourierBSDF {
             }
             rho += weights_o[o]
                 * self.bsdf_table.cdf[(offset_o as usize + o) * self.bsdf_table.n_mu as usize
-                                          + self.bsdf_table.n_mu as usize
-                                          - 1 as usize]
+                    + self.bsdf_table.n_mu as usize
+                    - 1 as usize]
                 * (2.0 as Float * PI);
         }
         let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));

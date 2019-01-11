@@ -190,6 +190,7 @@ impl Material for SubsurfaceMaterial {
                 .sigma_s
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
+        si.bsdf = Some(Arc::new(Bsdf::new(si, self.eta, bxdfs)));
         si.bssrdf = Some(Arc::new(TabulatedBssrdf::new(
             si,
             material,
@@ -199,6 +200,5 @@ impl Material for SubsurfaceMaterial {
             &sig_s,
             self.table.clone(),
         )));
-        si.bsdf = Some(Arc::new(Bsdf::new(si, self.eta, bxdfs)));
     }
 }
