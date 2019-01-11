@@ -268,7 +268,8 @@ impl SeparableBssrdf for TabulatedBssrdf {
                 base.p_error = si.p_error;
                 base.wo = si.wo;
                 base.n = si.n;
-                base.medium_interface = None; // TODO: si.medium_interface;
+                // TODO: si.medium_interface;
+                base.medium_interface = None;
                 // append admissible intersection to _IntersectionChain_
                 if let Some(geo_prim) = si.primitive {
                     if let Some(material) = geo_prim.get_material() {
@@ -457,14 +458,21 @@ pub struct BssrdfTable {
 
 impl BssrdfTable {
     pub fn new(n_rho_samples: i32, n_radius_samples: i32) -> Self {
+        // initialize all Vec<Float> vectors to zero
+        let rho_samples: Vec<Float> = vec![0.0 as Float; n_rho_samples as usize];
+        let radius_samples: Vec<Float> = vec![0.0 as Float; n_radius_samples as usize];
+        let profile: Vec<Float> = vec![0.0 as Float; (n_radius_samples * n_rho_samples) as usize];
+        let rho_eff: Vec<Float> = vec![0.0 as Float; n_rho_samples as usize];
+        let profile_cdf: Vec<Float> =
+            vec![0.0 as Float; (n_radius_samples * n_rho_samples) as usize];
         BssrdfTable {
             n_rho_samples: n_rho_samples,
             n_radius_samples: n_radius_samples,
-            rho_samples: Vec::with_capacity(n_rho_samples as usize),
-            radius_samples: Vec::with_capacity(n_radius_samples as usize),
-            profile: Vec::with_capacity((n_radius_samples * n_rho_samples) as usize),
-            rho_eff: Vec::with_capacity(n_rho_samples as usize),
-            profile_cdf: Vec::with_capacity((n_radius_samples * n_rho_samples) as usize),
+            rho_samples: rho_samples,
+            radius_samples: radius_samples,
+            profile: profile,
+            rho_eff: rho_eff,
+            profile_cdf: profile_cdf,
         }
     }
     pub fn eval_profile(&self, rho_index: i32, radius_index: i32) -> Float {
@@ -623,19 +631,17 @@ pub fn beam_diffusion_ss(sigma_s: Float, sigma_a: Float, g: Float, eta: Float, r
 
 pub fn compute_beam_diffusion_bssrdf(g: Float, eta: Float, t: &mut BssrdfTable) {
     // choose radius values of the diffusion profile discretization
-    t.radius_samples.push(0.0 as Float);
-    t.radius_samples.push(2.5e-3 as Float);
+    t.radius_samples[0] = 0.0 as Float;
+    t.radius_samples[1] = 2.5e-3 as Float;
     for i in 2..t.n_radius_samples as usize {
         let prev_radius_sample: Float = t.radius_samples[i - 1];
-        t.radius_samples.push(prev_radius_sample * 1.2 as Float);
+        t.radius_samples[i] = prev_radius_sample * 1.2 as Float;
     }
     // choose albedo values of the diffusion profile discretization
     for i in 0..t.n_rho_samples as usize {
-        t.rho_samples.push(
-            (1.0 as Float
-                - (-8.0 as Float * i as Float / (t.n_rho_samples as Float - 1.0 as Float)).exp())
-                / (1.0 as Float - (-8.0 as Float).exp()),
-        );
+        t.rho_samples[i] = (1.0 as Float
+            - (-8.0 as Float * i as Float / (t.n_rho_samples as Float - 1.0 as Float)).exp())
+            / (1.0 as Float - (-8.0 as Float).exp());
     }
     // ParallelFor([&](int i) {
     for i in 0..t.n_rho_samples as usize {
@@ -646,23 +652,21 @@ pub fn compute_beam_diffusion_bssrdf(g: Float, eta: Float, t: &mut BssrdfTable) 
             //         Float rho = t.rho_samples[i], r = t.radius_samples[j];
             let rho: Float = t.rho_samples[i];
             let r: Float = t.radius_samples[j];
-            t.profile.push(
-                2.0 as Float
-                    * PI
-                    * r
-                    * (beam_diffusion_ss(rho, 1.0 as Float - rho, g, eta, r)
-                        + beam_diffusion_ms(rho, 1.0 as Float - rho, g, eta, r)),
-            );
+            t.profile[i * t.n_radius_samples as usize + j] = 2.0 as Float
+                * PI
+                * r
+                * (beam_diffusion_ss(rho, 1.0 as Float - rho, g, eta, r)
+                    + beam_diffusion_ms(rho, 1.0 as Float - rho, g, eta, r));
         }
         // compute effective albedo $\rho_{\roman{eff}}$ and CDF for
         // importance sampling
-        t.rho_eff.push(integrate_catmull_rom(
+        t.rho_eff[i] = integrate_catmull_rom(
             t.n_radius_samples,
             &t.radius_samples,
             i * t.n_radius_samples as usize,
             &t.profile,
             &mut t.profile_cdf,
-        ));
+        );
     }
     // }, t.n_rho_samples);
 }
