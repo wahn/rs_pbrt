@@ -310,6 +310,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
         } else {
             pi.medium_interface = None;
         }
+        pi.uv = selected_si.uv;
         pi.dpdu = selected_si.dpdu;
         pi.dpdv = selected_si.dpdv;
         pi.dndu = selected_si.dndu;
