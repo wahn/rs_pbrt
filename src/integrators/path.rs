@@ -223,22 +223,26 @@ impl SamplerIntegrator for PathIntegrator {
                                     let mut pdf: Float = 0.0 as Float;
                                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
                                     let mut sampled_type: u8 = u8::max_value(); // != 0
-                                    let f: Spectrum = bsdf.sample_f(
-                                        &pi.wo,
-                                        &mut wi,
-                                        &sampler.get_2d(),
-                                        &mut pdf,
-                                        bsdf_flags,
-                                        &mut sampled_type,
-                                    );
-                                    if f.is_black() || pdf == 0.0 as Float {
-                                        break;
+                                    if let Some(ref bsdf) = pi.bsdf {
+                                        let f: Spectrum = bsdf.sample_f(
+                                            &pi.wo,
+                                            &mut wi,
+                                            &sampler.get_2d(),
+                                            &mut pdf,
+                                            bsdf_flags,
+                                            &mut sampled_type,
+                                        );
+                                        if f.is_black() || pdf == 0.0 as Float {
+                                            break;
+                                        }
+                                        beta *= f * vec3_abs_dot_nrm(&wi, &pi.shading.n) / pdf;
+                                        assert!(!(beta.y().is_infinite()));
+                                        specular_bounce =
+                                            (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+                                        ray = pi.spawn_ray(&wi);
+                                    } else {
+                                        panic!("no pi.bsdf found");
                                     }
-                                    beta *= f * vec3_abs_dot_nrm(&wi, &pi.shading.n) / pdf;
-                                    assert!(!(beta.y().is_infinite()));
-                                    specular_bounce =
-                                        (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
-                                    ray = pi.spawn_ray(&wi);
                                 } else {
                                     panic!("bssrdf.sample_s() did return (s, None)");
                                 }
