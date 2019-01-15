@@ -117,4 +117,4 @@ https://bitbucket.org/abusch/rustracer
 [conference_room_pbrt]: https://www.janwalter.org/Download/Scenes/conference_room_pbrt.tar.gz
 [theater_pbrt]:         https://www.janwalter.org/Download/Scenes/theater_pbrt.tar.gz
 [hair-scattering]:      http://www.pbrt.org/hair.pdf
-[sss_dragon_pbrt]:      https://www.janwalter.org/Download/Scenes/PBRT/sss_dragon_pbrt.tar.gz
+[sss_dragon_pbrt]:      https://www.janwalter.org/Download/Scenes/sss_dragon_pbrt.tar.gz
