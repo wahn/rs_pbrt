@@ -1,3 +1,9 @@
+//! Quaternions were originally invented by Sir William Rowan Hamilton
+//! in 1843 as a generalization of complex numbers. He determined that
+//! just as in two dimensions, where complex numbers could be defined
+//! as a sum of a real and an imaginary part, a generalization could
+//! be made to four dimensions, giving quaternions.
+
 // std
 use std::ops::{Add, Div, Mul, Neg, Sub};
 // pbrt
@@ -154,6 +160,14 @@ impl Neg for Quaternion {
     }
 }
 
+/// Spherical linear interpolation gives constant speed motion along
+/// great circle arcs on the surface of a sphere and consequently has
+/// two desirable properties for interpolating rotations:
+///
+/// 1. The path to get between two rotations is the shortest possible
+/// path in rotation space.
+///
+/// 2. The speed of interpolation is constant across the interpolation range
 pub fn quat_slerp(t: Float, q1: &Quaternion, q2: &Quaternion) -> Quaternion {
     let cos_theta: Float = quat_dot_quat(q1, q2);
     if cos_theta > 0.9995 as Float {

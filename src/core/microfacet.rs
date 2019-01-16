@@ -1,3 +1,8 @@
+//! Reflection models based on microfacets that exhibit perfect
+//! specular reflection and transmission have been effective at
+//! modeling light scattering from a variety of glossy materials,
+//! including metals, plastic, and frosted glass.
+
 // std
 use std::f32::consts::PI;
 // pbrt

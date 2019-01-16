@@ -1,3 +1,5 @@
+//! Matrices used by the SobolSampler.
+
 // see sobolmatrices.h
 
 pub const NUM_SOBOL_DIMENSIONS: u16 = 1024_u16;

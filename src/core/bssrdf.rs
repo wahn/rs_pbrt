@@ -1,3 +1,7 @@
+//! The bidirectional scattering surface reflectance distribution
+//! function (BSSRDF) gives exitant radiance at a point on a surface
+//! given incident differential irradiance at another point.
+
 //std
 use std;
 use std::f32::consts::PI;

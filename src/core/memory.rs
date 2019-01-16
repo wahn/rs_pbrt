@@ -1,3 +1,5 @@
+//! Structs and utility routines related to memory management.
+
 // std
 use std;
 // others

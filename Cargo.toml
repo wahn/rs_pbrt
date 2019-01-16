@@ -1,6 +1,6 @@
 [package]
 name = "pbrt"
-version = "0.4.5"
+version = "0.5.0"
 authors = ["Jan Walter <jan@janwalter.com>"]
 
 [features]

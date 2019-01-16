@@ -1,3 +1,5 @@
+//! Algorithms that deal with low-discrepancy point sets.
+
 // pbrt
 use core::geometry::{Point2f, Point2i};
 use core::pbrt::Float;

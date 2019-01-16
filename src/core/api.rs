@@ -1,3 +1,7 @@
+//! The parser reads a scene description more or less line by line and
+//! stores the read information by calling API functions starting with
+//! *pbrt_*.
+
 // std
 use std;
 use std::collections::HashMap;

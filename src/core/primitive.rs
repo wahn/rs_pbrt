@@ -1,3 +1,6 @@
+//! The abstract **Primitive** base class is the bridge between the
+//! geometry processing and shading subsystems of pbrt.
+
 // std
 use std::sync::Arc;
 // pbrt

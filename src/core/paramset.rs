@@ -1,3 +1,5 @@
+//! Bundle up parameters and their values in a generic way.
+
 // std
 use std::collections::HashMap;
 use std::env;

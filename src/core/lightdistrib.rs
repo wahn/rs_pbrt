@@ -1,3 +1,5 @@
+//! Various probability distributions for sampling light sources.
+
 // std
 use atomic::{Atomic, Ordering};
 use std;
@@ -32,10 +34,6 @@ struct HashEntry {
     distribution: RwLock<Option<Arc<Distribution1D>>>,
 }
 
-pub struct UniformLightDistribution {
-    pub distrib: Arc<Distribution1D>,
-}
-
 /// The simplest possible implementation of LightDistribution: this
 /// returns a uniform distribution over all light sources, ignoring
 /// the provided point. This approach works well for very simple
@@ -43,6 +41,10 @@ pub struct UniformLightDistribution {
 /// handful of light sources. (This was the sampling method originally
 /// used for the PathIntegrator and the VolPathIntegrator in the
 /// printed book, though without the UniformLightDistribution class.)
+pub struct UniformLightDistribution {
+    pub distrib: Arc<Distribution1D>,
+}
+
 impl UniformLightDistribution {
     pub fn new(scene: &Scene) -> Self {
         let prob: Vec<Float> = vec![1.0 as Float; scene.lights.len()];

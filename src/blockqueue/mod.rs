@@ -1,3 +1,8 @@
+//! Provides a queue of block indices that the sampler positions can
+//! be initialized from for the worker threads. The queue itself is
+//! not changed after creation we simply work through it with an
+//! atomic counter to track the index of the next block to work on.
+
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 // see github/tray_rust/src/sampler/block_queue.rs

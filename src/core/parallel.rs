@@ -1,3 +1,6 @@
+//! Using atomic operations on floating-point values. One example is
+//! splatting pixel contributions.
+
 // others
 use atomic::{Atomic, Ordering};
 // pbrt

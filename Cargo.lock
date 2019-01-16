@@ -539,7 +539,7 @@ dependencies = [
 
 [[package]]
 name = "pbrt"
-version = "0.4.5"
+version = "0.5.0"
 dependencies = [
  "atomic 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.2.7 (registry+https://github.com/rust-lang/crates.io-index)",

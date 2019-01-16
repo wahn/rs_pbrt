@@ -1,3 +1,8 @@
+//! To limit the potential number of texels that need to be accessed,
+//! filtering methods use an image pyramid of increasingly lower
+//! resolution prefiltered versions of the original image to
+//! accelerate their operation.
+
 // std
 use std;
 use std::ops::{Add, AddAssign, Div, Mul};
