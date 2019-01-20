@@ -21,9 +21,7 @@ openexr = { version = "0.6", optional = true }
 pbr = "1.0"
 pest = "2.0"
 pest_derive = "2.0"
-ply-rs = "0.1.1"
+ply-rs = "0.1"
 rayon = "1.0"
-# Force a more recent version of skeptic to fix needless recompiles
-skeptic = "0.13.4"
 time = "0.1"
 typed-arena = "1.3.0"
