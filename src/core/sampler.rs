@@ -35,7 +35,9 @@ pub trait Sampler: SamplerClone {
 
 pub trait PixelSampler: Sampler {}
 
-pub trait GlobalSampler: Sampler {}
+pub trait GlobalSampler: Sampler {
+    fn set_sample_number(&mut self, sample_num: i64) -> bool;
+}
 
 pub trait SamplerClone {
     fn box_clone(&self) -> Box<Sampler + Send + Sync>;

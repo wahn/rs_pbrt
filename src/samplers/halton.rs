@@ -294,7 +294,12 @@ impl Sampler for HaltonSampler {
     }
 }
 
-impl GlobalSampler for HaltonSampler {}
+impl GlobalSampler for HaltonSampler {
+    fn set_sample_number(&mut self, sample_num: i64) -> bool {
+        // TODO
+        false
+    }
+}
 
 impl Clone for HaltonSampler {
     fn clone(&self) -> HaltonSampler {

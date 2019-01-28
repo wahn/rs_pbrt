@@ -208,7 +208,12 @@ impl Sampler for SobolSampler {
     }
 }
 
-impl GlobalSampler for SobolSampler {}
+impl GlobalSampler for SobolSampler {
+    fn set_sample_number(&mut self, sample_num: i64) -> bool {
+        // TODO
+        false
+    }
+}
 
 impl Clone for SobolSampler {
     fn clone(&self) -> SobolSampler {
