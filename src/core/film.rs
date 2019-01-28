@@ -225,6 +225,9 @@ impl Film {
             max_sample_luminance: max_sample_luminance,
         }
     }
+    pub fn get_cropped_pixel_bounds(&self) -> Bounds2i {
+        self.cropped_pixel_bounds.clone()
+    }
     pub fn get_sample_bounds(&self) -> Bounds2i {
         let f: Point2f = pnt2_floor(
             &(Point2f {

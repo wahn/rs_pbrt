@@ -72,6 +72,7 @@ pub mod bdpt;
 pub mod directlighting;
 pub mod mlt;
 pub mod path;
+pub mod sppm;
 
 /// **Main function** to **render** a scene mutli-threaded (using all
 /// available cores).
@@ -221,7 +222,8 @@ pub fn render(
                     film.merge_film_tile(&film_tile);
                 }
             });
-        }).unwrap();
+        })
+        .unwrap();
     }
     film.write_image(1.0 as Float);
 }
