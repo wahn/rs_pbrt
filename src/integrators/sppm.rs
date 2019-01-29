@@ -6,7 +6,7 @@ use std;
 use std::sync::Arc;
 // pbrt
 use atomic::{Atomic, Ordering};
-use core::camera::Camera;
+use core::camera::{Camera, CameraSample};
 use core::film::Film;
 use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2i};
 use core::integrator::compute_light_power_distribution;
@@ -119,6 +119,8 @@ pub fn render_sppm(
                         // prepare _tileSampler_ for _pPixel_
                         tile_sampler.start_pixel(&p_pixel);
                         tile_sampler.set_sample_number(iter as i64);
+                        // generate camera ray for pixel for SPPM
+                        let camera_sample: CameraSample = tile_sampler.get_camera_sample(&p_pixel);
                         // WORK
                     }
                 }
