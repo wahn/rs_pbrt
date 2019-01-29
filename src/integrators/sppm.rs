@@ -5,13 +5,13 @@ extern crate num_cpus;
 use std;
 use std::sync::Arc;
 // pbrt
-use atomic::{Atomic, Ordering};
+use atomic::Atomic;
 use core::camera::{Camera, CameraSample};
-use core::film::Film;
-use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Point3f, Ray, Vector2i, Vector3f};
+use core::geometry::vec3_abs_dot_nrm;
+use core::geometry::{Bounds2i, Point2i, Point3f, Ray, Vector2i, Vector3f};
 use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
-use core::interaction::{Interaction, SurfaceInteraction};
-use core::material::{Material, TransportMode};
+use core::interaction::Interaction;
+use core::material::TransportMode;
 use core::parallel::AtomicFloat;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, BxdfType};
@@ -135,7 +135,7 @@ pub fn render_sppm(
                         // generate camera ray for pixel for SPPM
                         let camera_sample: CameraSample = tile_sampler.get_camera_sample(&p_pixel);
                         let mut ray: Ray = Ray::default();
-                        let beta: Spectrum = Spectrum::new(
+                        let mut beta: Spectrum = Spectrum::new(
                             camera.generate_ray_differential(&camera_sample, &mut ray),
                         );
                         if beta.is_black() {
@@ -150,7 +150,7 @@ pub fn render_sppm(
                         let pixel_offset: i32 = p_pixel_o.x
                             + p_pixel_o.y * (pixel_bounds.p_max.x - pixel_bounds.p_min.x);
                         let pixel: &mut SPPMPixel = &mut pixels[pixel_offset as usize];
-                        let specular_bounce: bool = false;
+                        let mut specular_bounce: bool = false;
                         for depth in 0..integrator.max_depth {
                             // TODO: ++totalPhotonSurfaceInteractions;
                             if let Some(mut isect) = scene.intersect(&mut ray) {
@@ -195,7 +195,35 @@ pub fn render_sppm(
                                         pixel.vp.beta = beta;
                                         break;
                                     }
-                                // WORK
+                                    // spawn ray from SPPM camera path vertex
+                                    if depth < integrator.max_depth - 1 {
+                                        let mut wi: Vector3f = Vector3f::default();
+                                        let mut pdf: Float = 0.0;
+                                        let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                        let mut sampled_type: u8 = u8::max_value(); // != 0
+                                        let f: Spectrum = bsdf.sample_f(
+                                            &wo,
+                                            &mut wi,
+                                            &tile_sampler.get_2d(),
+                                            &mut pdf,
+                                            bsdf_flags,
+                                            &mut sampled_type,
+                                        );
+                                        if pdf == 0.0 as Float || f.is_black() {
+                                            break;
+                                        }
+                                        specular_bounce =
+                                            sampled_type & (BxdfType::BsdfSpecular as u8) != 0_u8;
+                                        beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf;
+                                        if beta.y() < 0.25 as Float {
+                                            let continue_prob: Float = (1.0 as Float).min(beta.y());
+                                            if tile_sampler.get_1d() > continue_prob {
+                                                break;
+                                            }
+                                            beta /= continue_prob;
+                                        }
+                                        ray = isect.spawn_ray(&wi);
+                                    }
                                 } else {
                                     ray = isect.spawn_ray(&ray.d);
                                     // --depth;

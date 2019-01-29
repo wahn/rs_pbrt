@@ -3,7 +3,7 @@
 //! only requires changing the **Spectrum** implementation.
 
 // std
-use std::ops::{Add, AddAssign, Div, Index, IndexMut, Mul, MulAssign, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
 // others
 use num::Zero;
 // pbrt
@@ -1749,6 +1749,16 @@ impl Div<Float> for RGBSpectrum {
         };
         assert!(!ret.has_nans());
         ret
+    }
+}
+
+impl DivAssign<Float> for RGBSpectrum {
+    fn div_assign(&mut self, rhs: Float) {
+        assert_ne!(rhs, 0.0 as Float);
+        assert!(!rhs.is_nan());
+        self.c[0] /= rhs;
+        self.c[1] /= rhs;
+        self.c[2] /= rhs;
     }
 }
 
