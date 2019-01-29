@@ -1930,7 +1930,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             camera.clone(),
                             n_iterations,
                             photons_per_iter,
-                            max_depth,
+                            max_depth as u32,
                             radius,
                             write_freq,
                         ));

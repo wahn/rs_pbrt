@@ -255,6 +255,15 @@ where
     }
 }
 
+impl<T> From<Vector2<T>> for Point2<T> {
+    fn from(v: Vector2<T>) -> Self {
+        Point2::<T> {
+            x: v.x,
+            y: v.y,
+        }
+    }
+}
+
 /// Product of the Euclidean magnitudes of the two vectors and the
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are

@@ -8,8 +8,10 @@ use std::sync::Arc;
 use atomic::{Atomic, Ordering};
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
-use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2i};
-use core::integrator::compute_light_power_distribution;
+use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Ray, Vector2i, Vector3f};
+use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
+use core::interaction::{Interaction, SurfaceInteraction};
+use core::material::{Material, TransportMode};
 use core::parallel::AtomicFloat;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::{GlobalSampler, Sampler};
@@ -20,6 +22,7 @@ use samplers::halton::HaltonSampler;
 pub struct SPPMIntegrator {
     pub initial_search_radius: Float,
     pub n_iterations: i32,
+    pub max_depth: u32,
 }
 
 impl SPPMIntegrator {
@@ -27,13 +30,14 @@ impl SPPMIntegrator {
         camera: Arc<Camera + Send + Sync>,
         n_iterations: i32,
         photons_per_iteration: i32,
-        max_depth: i32,
+        max_depth: u32,
         initial_search_radius: Float,
         write_frequency: i32,
     ) -> Self {
         SPPMIntegrator {
             initial_search_radius: initial_search_radius,
             n_iterations: n_iterations,
+            max_depth: max_depth,
         }
     }
 }
@@ -82,9 +86,9 @@ pub fn render_sppm(
     let inv_sqrt_spp: Float = 1.0 as Float / (integrator.n_iterations as Float).sqrt();
     // TODO: let pixel_memory_bytes: usize = n_pixels as usize * std::mem::size_of::<SPPMPixel>();
 
-    // compute _lightDistr_ for sampling lights proportional to power
+    // compute _light_distr_ for sampling lights proportional to power
     let light_distr_opt: Option<Arc<Distribution1D>> = compute_light_power_distribution(scene);
-    // perform _nIterations_ of SPPM integration
+    // perform _n_iterations_ of SPPM integration
     let sampler: HaltonSampler =
         HaltonSampler::new(integrator.n_iterations as i64, pixel_bounds, false);
     // compute number of tiles to use for SPPM camera pass
@@ -116,12 +120,69 @@ pub fn render_sppm(
                     let tile_bounds: Bounds2i =
                         Bounds2i::new(Point2i { x: x0, y: y0 }, Point2i { x: x1, y: y1 });
                     for p_pixel in &tile_bounds {
-                        // prepare _tileSampler_ for _pPixel_
+                        // prepare _tileSampler_ for _p_pixel_
                         tile_sampler.start_pixel(&p_pixel);
                         tile_sampler.set_sample_number(iter as i64);
                         // generate camera ray for pixel for SPPM
                         let camera_sample: CameraSample = tile_sampler.get_camera_sample(&p_pixel);
-                        // WORK
+                        let mut ray: Ray = Ray::default();
+                        let beta: Spectrum = Spectrum::new(
+                            camera.generate_ray_differential(&camera_sample, &mut ray),
+                        );
+                        if beta.is_black() {
+                            continue;
+                        }
+                        ray.scale_differentials(inv_sqrt_spp);
+
+                        // follow camera ray path until a visible point is created
+
+                        // get _SPPMPixel_ for _p_pixel_
+                        let p_pixel_o: Point2i = Point2i::from(p_pixel - pixel_bounds.p_min);
+                        let pixel_offset: i32 = p_pixel_o.x
+                            + p_pixel_o.y * (pixel_bounds.p_max.x - pixel_bounds.p_min.x);
+                        let pixel: &mut SPPMPixel = &mut pixels[pixel_offset as usize];
+                        let specular_bounce: bool = false;
+                        for depth in 0..integrator.max_depth {
+                            // TODO: ++totalPhotonSurfaceInteractions;
+                            if let Some(mut isect) = scene.intersect(&mut ray) {
+                                // process SPPM camera ray intersection
+
+                                // compute BSDF at SPPM camera ray intersection
+                                let mode: TransportMode = TransportMode::Radiance;
+                                isect.compute_scattering_functions(
+                                    &mut ray, // arena,
+                                    true, mode,
+                                );
+                                if let Some(ref bsdf) = isect.bsdf {
+                                    // accumulate direct illumination
+                                    // at SPPM camera ray intersection
+                                    let wo: Vector3f = -ray.d;
+                                    if depth == 0 || specular_bounce {
+                                        pixel.ld += beta * isect.le(&wo);
+                                    }
+                                // pixel.ld += beta
+                                //     * uniform_sample_one_light(
+                                //         &isect,
+                                //         scene,
+                                //         &mut tile_sampler,
+                                //         false,
+                                //         None,
+                                //     );
+                                // WORK
+                                } else {
+                                    ray = isect.spawn_ray(&ray.d);
+                                    // --depth;
+                                    continue;
+                                }
+                            } else {
+                                // accumulate light contributions for
+                                // ray with no intersection
+                                for light in &scene.lights {
+                                    pixel.ld += beta * light.le(&mut ray);
+                                }
+                                break;
+                            }
+                        }
                     }
                 }
             }
