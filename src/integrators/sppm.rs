@@ -8,12 +8,13 @@ use std::sync::Arc;
 use atomic::{Atomic, Ordering};
 use core::camera::{Camera, CameraSample};
 use core::film::Film;
-use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Ray, Vector2i, Vector3f};
+use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Point3f, Ray, Vector2i, Vector3f};
 use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
 use core::interaction::{Interaction, SurfaceInteraction};
 use core::material::{Material, TransportMode};
 use core::parallel::AtomicFloat;
 use core::pbrt::{Float, Spectrum};
+use core::reflection::{Bsdf, BxdfType};
 use core::sampler::{GlobalSampler, Sampler, SamplerClone};
 use core::sampling::Distribution1D;
 use core::scene::Scene;
@@ -42,10 +43,15 @@ impl SPPMIntegrator {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct VisiblePoint {}
+#[derive(Default)]
+pub struct VisiblePoint {
+    pub p: Point3f,
+    pub wo: Vector3f,
+    pub bsdf: Option<Arc<Bsdf>>,
+    pub beta: Spectrum,
+}
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct SPPMPixel {
     pub radius: Float,
     pub ld: Spectrum,
@@ -171,6 +177,24 @@ pub fn render_sppm(
                                             false,
                                             None,
                                         );
+                                    // possibly create visible point and end camera path
+                                    let mut bsdf_flags: u8 = BxdfType::BsdfDiffuse as u8
+                                        | BxdfType::BsdfReflection as u8
+                                        | BxdfType::BsdfTransmission as u8;
+                                    let is_diffuse: bool = bsdf.num_components(bsdf_flags) > 0;
+                                    bsdf_flags = BxdfType::BsdfGlossy as u8
+                                        | BxdfType::BsdfReflection as u8
+                                        | BxdfType::BsdfTransmission as u8;
+                                    let is_glossy: bool = bsdf.num_components(bsdf_flags) > 0;
+                                    if is_diffuse
+                                        || (is_glossy && depth == integrator.max_depth - 1)
+                                    {
+                                        pixel.vp.p = isect.p;
+                                        pixel.vp.wo = wo;
+                                        pixel.vp.bsdf = Some(bsdf.clone());
+                                        pixel.vp.beta = beta;
+                                        break;
+                                    }
                                 // WORK
                                 } else {
                                     ray = isect.spawn_ray(&ray.d);
