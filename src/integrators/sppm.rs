@@ -14,7 +14,7 @@ use core::interaction::{Interaction, SurfaceInteraction};
 use core::material::{Material, TransportMode};
 use core::parallel::AtomicFloat;
 use core::pbrt::{Float, Spectrum};
-use core::sampler::{GlobalSampler, Sampler};
+use core::sampler::{GlobalSampler, Sampler, SamplerClone};
 use core::sampling::Distribution1D;
 use core::scene::Scene;
 use samplers::halton::HaltonSampler;
@@ -89,8 +89,11 @@ pub fn render_sppm(
     // compute _light_distr_ for sampling lights proportional to power
     let light_distr_opt: Option<Arc<Distribution1D>> = compute_light_power_distribution(scene);
     // perform _n_iterations_ of SPPM integration
-    let sampler: HaltonSampler =
-        HaltonSampler::new(integrator.n_iterations as i64, pixel_bounds, false);
+    let sampler: Box<HaltonSampler> = Box::new(HaltonSampler::new(
+        integrator.n_iterations as i64,
+        pixel_bounds,
+        false,
+    ));
     // compute number of tiles to use for SPPM camera pass
     let pixel_extent: Vector2i = pixel_bounds.diagonal();
     let tile_size: i32 = 16;
@@ -160,14 +163,14 @@ pub fn render_sppm(
                                     if depth == 0 || specular_bounce {
                                         pixel.ld += beta * isect.le(&wo);
                                     }
-                                // pixel.ld += beta
-                                //     * uniform_sample_one_light(
-                                //         &isect,
-                                //         scene,
-                                //         &mut tile_sampler,
-                                //         false,
-                                //         None,
-                                //     );
+                                    pixel.ld += beta
+                                        * uniform_sample_one_light(
+                                            &isect,
+                                            scene,
+                                            &mut tile_sampler.box_clone(),
+                                            false,
+                                            None,
+                                        );
                                 // WORK
                                 } else {
                                     ray = isect.spawn_ray(&ray.d);
