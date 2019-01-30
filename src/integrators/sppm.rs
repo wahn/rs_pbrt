@@ -7,8 +7,8 @@ use std::sync::Arc;
 // pbrt
 use atomic::Atomic;
 use core::camera::{Camera, CameraSample};
-use core::geometry::vec3_abs_dot_nrm;
-use core::geometry::{Bounds2i, Point2i, Point3f, Ray, Vector2i, Vector3f};
+use core::geometry::{bnd3_expand, bnd3_union_bnd3, vec3_abs_dot_nrm};
+use core::geometry::{Bounds2i, Bounds3f, Point2i, Point3f, Ray, Vector2i, Vector3f};
 use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
 use core::interaction::Interaction;
 use core::material::TransportMode;
@@ -60,6 +60,12 @@ pub struct SPPMPixel {
     pub m: Atomic<i32>,
     pub n: Float,
     pub tau: Spectrum,
+}
+
+#[derive(Default)]
+pub struct SPPMPixelListNode {
+    pub pixel: Arc<SPPMPixel>,
+    pub next: Arc<SPPMPixelListNode>,
 }
 
 /// **Main function** to **render** a scene multi-threaded (using all
@@ -243,6 +249,32 @@ pub fn render_sppm(
             }
         }
         // create grid of all SPPM visible points
+        let mut grid_res: [i32; 3] = [0; 3];
+        let mut grid_bounds: Bounds3f = Bounds3f::default();
+        // allocate grid for SPPM visible points
+        let hash_size: usize = n_pixels as usize;
+        let mut grid: Vec<SPPMPixelListNode> = Vec::with_capacity(hash_size);
+        {
+            // TODO: ProfilePhase _(Prof::SPPMGridConstruction);
+
+            // compute grid bounds for SPPM visible points
+            let mut max_radius: Float = 0.0 as Float;
+            for i in 0..n_pixels as usize {
+                let pixel: &mut SPPMPixel = &mut pixels[i];
+                if pixel.vp.beta.is_black() {
+                    continue;
+                }
+                let vp_bound: Bounds3f = bnd3_expand(
+                    &Bounds3f {
+                        p_min: pixel.vp.p,
+                        p_max: pixel.vp.p,
+                    },
+                    pixel.radius,
+                );
+                grid_bounds = bnd3_union_bnd3(&grid_bounds, &vp_bound);
+                max_radius = max_radius.max(pixel.radius);
+            }
+        }
         // WORK
     }
 }
