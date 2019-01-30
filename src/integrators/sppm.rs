@@ -8,11 +8,12 @@ use std::sync::Arc;
 use atomic::Atomic;
 use core::camera::{Camera, CameraSample};
 use core::geometry::{bnd3_expand, bnd3_union_bnd3, vec3_abs_dot_nrm, vec3_max_component};
-use core::geometry::{Bounds2i, Bounds3f, Point2i, Point3f, Ray, Vector2i, Vector3f};
+use core::geometry::{Bounds2i, Bounds3f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f};
 use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
 use core::interaction::Interaction;
 use core::material::TransportMode;
 use core::parallel::AtomicFloat;
+use core::pbrt::clamp_t;
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, BxdfType};
 use core::sampler::{GlobalSampler, Sampler, SamplerClone};
@@ -68,6 +69,21 @@ pub struct SPPMPixelListNode {
     pub next: Arc<SPPMPixelListNode>,
 }
 
+fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[i32; 3], pi: &mut Point3i) -> bool {
+    let mut in_bounds: bool = true;
+    let pg: Vector3f = bounds.offset(p);
+    for i in 0..3 as u8 {
+        (*pi)[i] = (grid_res[i as usize] as Float * pg[i]) as i32;
+        in_bounds &= (*pi)[i] >= 0 && (*pi)[i] < grid_res[i as usize];
+        (*pi)[i] = clamp_t((*pi)[i], 0, grid_res[i as usize] - 1);
+    }
+    in_bounds
+}
+
+fn hash(p: &Point3i, hash_size: usize) -> usize {
+    (((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791)) % hash_size as i32) as usize
+}
+
 /// **Main function** to **render** a scene multi-threaded (using all
 /// available cores) with **Stochastic Progressive Photon Mapping**
 /// (SPPM).
@@ -118,7 +134,7 @@ pub fn render_sppm(
         // generate SPPM visible points
         {
             // TODO: ProfilePhase _(Prof::SPPMCameraPass);
-            // TODO: ParallelFor2D([&](Point2i tile) {
+            // TODO: ParallelFor2D([&](Point2i tile) { ... }, nTiles);
             for y in 0..n_tiles.y {
                 for x in 0..n_tiles.x {
                     let tile: Point2i = Point2i { x: x, y: y };
@@ -286,6 +302,63 @@ pub fn render_sppm(
             for i in 0..3 as usize {
                 grid_res[i] =
                     ((base_grid_res as Float * diag[i as u8] / max_diag).floor() as i32).max(1);
+            }
+            // add visible points to SPPM grid
+            // TODO: ParallelFor([&](int pixelIndex) { ... }, nPixels, 4096);
+            for pixel_index in 0..n_pixels as usize {
+                let pixel: &mut SPPMPixel = &mut pixels[pixel_index];
+                if !pixel.vp.beta.is_black() {
+                    // add pixel's visible point to applicable grid cells
+                    let radius: Float = pixel.radius;
+                    let mut p_min: Point3i = Point3i::default();
+                    let mut p_max: Point3i = Point3i::default();
+                    to_grid(
+                        &(pixel.vp.p
+                            - Vector3f {
+                                x: radius,
+                                y: radius,
+                                z: radius,
+                            }),
+                        &grid_bounds,
+                        &grid_res,
+                        &mut p_min,
+                    );
+                    to_grid(
+                        &(pixel.vp.p
+                            + Vector3f {
+                                x: radius,
+                                y: radius,
+                                z: radius,
+                            }),
+                        &grid_bounds,
+                        &grid_res,
+                        &mut p_max,
+                    );
+                    for z in p_min.z..p_max.z {
+                        for y in p_min.y..p_max.y {
+                            for x in p_min.x..p_max.x {
+                                // add visible point to grid cell $(x, y, z)$
+                                let h: usize = hash(&Point3i { x: x, y: y, z: z }, hash_size);
+                                // ...
+                                // node.pixel = pixel;
+                                // atomically add _node_ to the start of _grid[h]_'s linked list
+                                // node.next = grid[h];
+                                // let new = node;
+                                // let mut old = grid[h].load(Ordering::Relaxed);
+                                // loop {
+                                //     match grid[h].compare_exchange_weak(old, new, Ordering::SeqCst, Ordering::Relaxed) {
+                                //         Ok(_) => break,
+                                //         Err(x) => old = x,
+                                //     }
+                                // }
+                                // WORK
+                            }
+                        }
+                    }
+                    // ReportValue(grid_cells_per_visible_point,
+                    //             (1 + pMax.x - pMin.x) * (1 + pMax.y - pMin.y) *
+                    //                 (1 + pMax.z - pMin.z));
+                }
             }
         }
         // WORK
