@@ -7,7 +7,7 @@ use std::sync::Arc;
 // pbrt
 use atomic::Atomic;
 use core::camera::{Camera, CameraSample};
-use core::geometry::{bnd3_expand, bnd3_union_bnd3, vec3_abs_dot_nrm};
+use core::geometry::{bnd3_expand, bnd3_union_bnd3, vec3_abs_dot_nrm, vec3_max_component};
 use core::geometry::{Bounds2i, Bounds3f, Point2i, Point3f, Ray, Vector2i, Vector3f};
 use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
 use core::interaction::Interaction;
@@ -273,6 +273,19 @@ pub fn render_sppm(
                 );
                 grid_bounds = bnd3_union_bnd3(&grid_bounds, &vp_bound);
                 max_radius = max_radius.max(pixel.radius);
+            }
+            // compute resolution of SPPM grid in each dimension
+            let diag: Vector3f = grid_bounds.diagonal();
+            let max_diag: Float = vec3_max_component(&diag);
+            let base_grid_res: i32 = (max_diag / max_radius).floor() as i32;
+            println!(
+                "base_grid_res: {} ({}/{})",
+                base_grid_res, max_diag, max_radius
+            );
+            assert!(base_grid_res > 0_i32);
+            for i in 0..3 as usize {
+                grid_res[i] =
+                    ((base_grid_res as Float * diag[i as u8] / max_diag).floor() as i32).max(1);
             }
         }
         // WORK
