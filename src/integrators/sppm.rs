@@ -269,7 +269,10 @@ pub fn render_sppm(
         let mut grid_bounds: Bounds3f = Bounds3f::default();
         // allocate grid for SPPM visible points
         let hash_size: usize = n_pixels as usize;
-        let mut grid: Vec<SPPMPixelListNode> = Vec::with_capacity(hash_size);
+        let mut grid: Vec<Arc<SPPMPixelListNode>> = Vec::with_capacity(hash_size);
+        for i in 0..hash_size {
+            grid.push(Arc::new(SPPMPixelListNode::default()));
+        }
         {
             // TODO: ProfilePhase _(Prof::SPPMGridConstruction);
 
@@ -339,10 +342,10 @@ pub fn render_sppm(
                             for x in p_min.x..p_max.x {
                                 // add visible point to grid cell $(x, y, z)$
                                 let h: usize = hash(&Point3i { x: x, y: y, z: z }, hash_size);
-                                // ...
+                                let mut node: Arc<SPPMPixelListNode> = Arc::new(SPPMPixelListNode::default());
                                 // node.pixel = pixel;
                                 // atomically add _node_ to the start of _grid[h]_'s linked list
-                                // node.next = grid[h];
+                                // node.next = grid[h].clone();
                                 // let new = node;
                                 // let mut old = grid[h].load(Ordering::Relaxed);
                                 // loop {
