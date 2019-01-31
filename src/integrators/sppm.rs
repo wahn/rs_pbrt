@@ -106,10 +106,11 @@ pub fn render_sppm(
     let film = camera.get_film();
     let pixel_bounds: Bounds2i = film.cropped_pixel_bounds;
     let n_pixels: i32 = pixel_bounds.area();
-    let mut pixels: Vec<SPPMPixel> = Vec::with_capacity(n_pixels as usize);
+    let mut pixels: Vec<Arc<SPPMPixel>> = Vec::with_capacity(n_pixels as usize);
     for i in 0..n_pixels as usize {
-        pixels.push(SPPMPixel::default());
-        pixels[i].radius = integrator.initial_search_radius;
+        let mut pixel = SPPMPixel::default();
+        pixel.radius = integrator.initial_search_radius;
+        pixels.push(Arc::new(pixel));
     }
     let inv_sqrt_spp: Float = 1.0 as Float / (integrator.n_iterations as Float).sqrt();
     // TODO: let pixel_memory_bytes: usize = n_pixels as usize * std::mem::size_of::<SPPMPixel>();
@@ -171,93 +172,97 @@ pub fn render_sppm(
                         let p_pixel_o: Point2i = Point2i::from(p_pixel - pixel_bounds.p_min);
                         let pixel_offset: i32 = p_pixel_o.x
                             + p_pixel_o.y * (pixel_bounds.p_max.x - pixel_bounds.p_min.x);
-                        let pixel: &mut SPPMPixel = &mut pixels[pixel_offset as usize];
-                        let mut specular_bounce: bool = false;
-                        for depth in 0..integrator.max_depth {
-                            // TODO: ++totalPhotonSurfaceInteractions;
-                            if let Some(mut isect) = scene.intersect(&mut ray) {
-                                // process SPPM camera ray intersection
+                        if let Some(pixel) = Arc::get_mut(&mut pixels[pixel_offset as usize]) {
+                            let mut specular_bounce: bool = false;
+                            for depth in 0..integrator.max_depth {
+                                // TODO: ++totalPhotonSurfaceInteractions;
+                                if let Some(mut isect) = scene.intersect(&mut ray) {
+                                    // process SPPM camera ray intersection
 
-                                // compute BSDF at SPPM camera ray intersection
-                                let mode: TransportMode = TransportMode::Radiance;
-                                isect.compute_scattering_functions(
-                                    &mut ray, // arena,
-                                    true, mode,
-                                );
-                                if let Some(ref bsdf) = isect.bsdf {
-                                    // accumulate direct illumination
-                                    // at SPPM camera ray intersection
-                                    let wo: Vector3f = -ray.d;
-                                    if depth == 0 || specular_bounce {
-                                        pixel.ld += beta * isect.le(&wo);
-                                    }
-                                    pixel.ld += beta
-                                        * uniform_sample_one_light(
-                                            &isect,
-                                            scene,
-                                            &mut tile_sampler.box_clone(),
-                                            false,
-                                            None,
-                                        );
-                                    // possibly create visible point and end camera path
-                                    let mut bsdf_flags: u8 = BxdfType::BsdfDiffuse as u8
-                                        | BxdfType::BsdfReflection as u8
-                                        | BxdfType::BsdfTransmission as u8;
-                                    let is_diffuse: bool = bsdf.num_components(bsdf_flags) > 0;
-                                    bsdf_flags = BxdfType::BsdfGlossy as u8
-                                        | BxdfType::BsdfReflection as u8
-                                        | BxdfType::BsdfTransmission as u8;
-                                    let is_glossy: bool = bsdf.num_components(bsdf_flags) > 0;
-                                    if is_diffuse
-                                        || (is_glossy && depth == integrator.max_depth - 1)
-                                    {
-                                        pixel.vp.p = isect.p;
-                                        pixel.vp.wo = wo;
-                                        pixel.vp.bsdf = Some(bsdf.clone());
-                                        pixel.vp.beta = beta;
-                                        break;
-                                    }
-                                    // spawn ray from SPPM camera path vertex
-                                    if depth < integrator.max_depth - 1 {
-                                        let mut wi: Vector3f = Vector3f::default();
-                                        let mut pdf: Float = 0.0;
-                                        let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                                        let mut sampled_type: u8 = u8::max_value(); // != 0
-                                        let f: Spectrum = bsdf.sample_f(
-                                            &wo,
-                                            &mut wi,
-                                            &tile_sampler.get_2d(),
-                                            &mut pdf,
-                                            bsdf_flags,
-                                            &mut sampled_type,
-                                        );
-                                        if pdf == 0.0 as Float || f.is_black() {
+                                    // compute BSDF at SPPM camera ray intersection
+                                    let mode: TransportMode = TransportMode::Radiance;
+                                    isect.compute_scattering_functions(
+                                        &mut ray, // arena,
+                                        true, mode,
+                                    );
+                                    if let Some(ref bsdf) = isect.bsdf {
+                                        // accumulate direct illumination
+                                        // at SPPM camera ray intersection
+                                        let wo: Vector3f = -ray.d;
+                                        if depth == 0 || specular_bounce {
+                                            pixel.ld += beta * isect.le(&wo);
+                                        }
+                                        pixel.ld += beta
+                                            * uniform_sample_one_light(
+                                                &isect,
+                                                scene,
+                                                &mut tile_sampler.box_clone(),
+                                                false,
+                                                None,
+                                            );
+                                        // possibly create visible point and end camera path
+                                        let mut bsdf_flags: u8 = BxdfType::BsdfDiffuse as u8
+                                            | BxdfType::BsdfReflection as u8
+                                            | BxdfType::BsdfTransmission as u8;
+                                        let is_diffuse: bool = bsdf.num_components(bsdf_flags) > 0;
+                                        bsdf_flags = BxdfType::BsdfGlossy as u8
+                                            | BxdfType::BsdfReflection as u8
+                                            | BxdfType::BsdfTransmission as u8;
+                                        let is_glossy: bool = bsdf.num_components(bsdf_flags) > 0;
+                                        if is_diffuse
+                                            || (is_glossy && depth == integrator.max_depth - 1)
+                                        {
+                                            pixel.vp.p = isect.p;
+                                            pixel.vp.wo = wo;
+                                            pixel.vp.bsdf = Some(bsdf.clone());
+                                            pixel.vp.beta = beta;
                                             break;
                                         }
-                                        specular_bounce =
-                                            sampled_type & (BxdfType::BsdfSpecular as u8) != 0_u8;
-                                        beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf;
-                                        if beta.y() < 0.25 as Float {
-                                            let continue_prob: Float = (1.0 as Float).min(beta.y());
-                                            if tile_sampler.get_1d() > continue_prob {
+                                        // spawn ray from SPPM camera path vertex
+                                        if depth < integrator.max_depth - 1 {
+                                            let mut wi: Vector3f = Vector3f::default();
+                                            let mut pdf: Float = 0.0;
+                                            let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                            let mut sampled_type: u8 = u8::max_value(); // != 0
+                                            let f: Spectrum = bsdf.sample_f(
+                                                &wo,
+                                                &mut wi,
+                                                &tile_sampler.get_2d(),
+                                                &mut pdf,
+                                                bsdf_flags,
+                                                &mut sampled_type,
+                                            );
+                                            if pdf == 0.0 as Float || f.is_black() {
                                                 break;
                                             }
-                                            beta /= continue_prob;
+                                            specular_bounce = sampled_type
+                                                & (BxdfType::BsdfSpecular as u8)
+                                                != 0_u8;
+                                            beta *=
+                                                f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf;
+                                            if beta.y() < 0.25 as Float {
+                                                let continue_prob: Float =
+                                                    (1.0 as Float).min(beta.y());
+                                                if tile_sampler.get_1d() > continue_prob {
+                                                    break;
+                                                }
+                                                beta /= continue_prob;
+                                            }
+                                            ray = isect.spawn_ray(&wi);
                                         }
-                                        ray = isect.spawn_ray(&wi);
+                                    } else {
+                                        ray = isect.spawn_ray(&ray.d);
+                                        // --depth;
+                                        continue;
                                     }
                                 } else {
-                                    ray = isect.spawn_ray(&ray.d);
-                                    // --depth;
-                                    continue;
+                                    // accumulate light contributions for
+                                    // ray with no intersection
+                                    for light in &scene.lights {
+                                        pixel.ld += beta * light.le(&mut ray);
+                                    }
+                                    break;
                                 }
-                            } else {
-                                // accumulate light contributions for
-                                // ray with no intersection
-                                for light in &scene.lights {
-                                    pixel.ld += beta * light.le(&mut ray);
-                                }
-                                break;
                             }
                         }
                     }
@@ -279,19 +284,20 @@ pub fn render_sppm(
             // compute grid bounds for SPPM visible points
             let mut max_radius: Float = 0.0 as Float;
             for i in 0..n_pixels as usize {
-                let pixel: &mut SPPMPixel = &mut pixels[i];
-                if pixel.vp.beta.is_black() {
-                    continue;
+                if let Some(pixel) = Arc::get_mut(&mut pixels[i]) {
+                    if pixel.vp.beta.is_black() {
+                        continue;
+                    }
+                    let vp_bound: Bounds3f = bnd3_expand(
+                        &Bounds3f {
+                            p_min: pixel.vp.p,
+                            p_max: pixel.vp.p,
+                        },
+                        pixel.radius,
+                    );
+                    grid_bounds = bnd3_union_bnd3(&grid_bounds, &vp_bound);
+                    max_radius = max_radius.max(pixel.radius);
                 }
-                let vp_bound: Bounds3f = bnd3_expand(
-                    &Bounds3f {
-                        p_min: pixel.vp.p,
-                        p_max: pixel.vp.p,
-                    },
-                    pixel.radius,
-                );
-                grid_bounds = bnd3_union_bnd3(&grid_bounds, &vp_bound);
-                max_radius = max_radius.max(pixel.radius);
             }
             // compute resolution of SPPM grid in each dimension
             let diag: Vector3f = grid_bounds.diagonal();
@@ -309,7 +315,7 @@ pub fn render_sppm(
             // add visible points to SPPM grid
             // TODO: ParallelFor([&](int pixelIndex) { ... }, nPixels, 4096);
             for pixel_index in 0..n_pixels as usize {
-                let pixel: &mut SPPMPixel = &mut pixels[pixel_index];
+                let pixel: &Arc<SPPMPixel> = &pixels[pixel_index];
                 if !pixel.vp.beta.is_black() {
                     // add pixel's visible point to applicable grid cells
                     let radius: Float = pixel.radius;
@@ -342,19 +348,23 @@ pub fn render_sppm(
                             for x in p_min.x..p_max.x {
                                 // add visible point to grid cell $(x, y, z)$
                                 let h: usize = hash(&Point3i { x: x, y: y, z: z }, hash_size);
-                                let mut node: Arc<SPPMPixelListNode> = Arc::new(SPPMPixelListNode::default());
-                                // node.pixel = pixel;
-                                // atomically add _node_ to the start of _grid[h]_'s linked list
-                                // node.next = grid[h].clone();
-                                // let new = node;
-                                // let mut old = grid[h].load(Ordering::Relaxed);
-                                // loop {
-                                //     match grid[h].compare_exchange_weak(old, new, Ordering::SeqCst, Ordering::Relaxed) {
-                                //         Ok(_) => break,
-                                //         Err(x) => old = x,
-                                //     }
-                                // }
-                                // WORK
+                                let mut node_arc: Arc<SPPMPixelListNode> =
+                                    Arc::new(SPPMPixelListNode::default());
+                                let pixel_clone: Arc<SPPMPixel> = pixel.clone();
+                                if let Some(node) = Arc::get_mut(&mut node_arc) {
+                                    node.pixel = pixel_clone;
+                                    // atomically add _node_ to the start of _grid[h]_'s linked list
+                                    // node.next = grid[h].clone();
+                                    // let new = node;
+                                    // let mut old = grid[h].load(Ordering::Relaxed);
+                                    // loop {
+                                    //     match grid[h].compare_exchange_weak(old, new, Ordering::SeqCst, Ordering::Relaxed) {
+                                    //         Ok(_) => break,
+                                    //         Err(x) => old = x,
+                                    //     }
+                                    // }
+                                    // WORK
+                                }
                             }
                         }
                     }
@@ -364,6 +374,9 @@ pub fn render_sppm(
                 }
             }
         }
+        // trace photons and accumulate contributions
+        // update pixel values from this pass's photons
+        // periodically store SPPM image in film and write image
         // WORK
     }
 }
