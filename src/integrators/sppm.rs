@@ -1,6 +1,7 @@
 extern crate atom;
 extern crate crossbeam;
 extern crate num_cpus;
+extern crate pbr;
 
 // std
 use std;
@@ -69,7 +70,7 @@ pub struct SPPMPixel {
 
 pub struct SPPMPixelListNode {
     pub pixel: Arc<SPPMPixel>,
-    pub next: AtomSetOnce<Box<SPPMPixelListNode>>,
+    pub next: AtomSetOnce<Arc<SPPMPixelListNode>>,
 }
 
 impl Default for SPPMPixelListNode {
@@ -148,7 +149,8 @@ pub fn render_sppm(
         {
             // TODO: ProfilePhase _(Prof::SPPMCameraPass);
             // TODO: ParallelFor2D([&](Point2i tile) { ... }, nTiles);
-            for y in 0..n_tiles.y {
+            println!("Generate SPPM visible points ...");
+            for y in pbr::PbIter::new(0..n_tiles.y) {
                 for x in 0..n_tiles.x {
                     let tile: Point2i = Point2i { x: x, y: y };
                     // TODO: MemoryArena &arena = perThreadArenas[ThreadIndex];
@@ -286,7 +288,7 @@ pub fn render_sppm(
         let mut grid_bounds: Bounds3f = Bounds3f::default();
         // allocate grid for SPPM visible points
         let hash_size: usize = n_pixels as usize;
-        let mut grid: Vec<AtomSetOnce<Box<SPPMPixelListNode>>> = Vec::with_capacity(hash_size);
+        let mut grid: Vec<AtomSetOnce<Arc<SPPMPixelListNode>>> = Vec::with_capacity(hash_size);
         for _i in 0..hash_size {
             grid.push(AtomSetOnce::empty());
         }
@@ -295,7 +297,8 @@ pub fn render_sppm(
 
             // compute grid bounds for SPPM visible points
             let mut max_radius: Float = 0.0 as Float;
-            for i in 0..n_pixels as usize {
+            println!("Compute grid bounds for SPPM visible points ...");
+            for i in pbr::PbIter::new(0..n_pixels as usize) {
                 if let Some(pixel) = Arc::get_mut(&mut pixels[i]) {
                     if pixel.vp.beta.is_black() {
                         continue;
@@ -326,7 +329,8 @@ pub fn render_sppm(
             }
             // add visible points to SPPM grid
             // TODO: ParallelFor([&](int pixelIndex) { ... }, nPixels, 4096);
-            for pixel_index in 0..n_pixels as usize {
+            println!("add visible points to SPPM grid ...");
+            for pixel_index in pbr::PbIter::new(0..n_pixels as usize) {
                 let pixel: &Arc<SPPMPixel> = &pixels[pixel_index];
                 if !pixel.vp.beta.is_black() {
                     // add pixel's visible point to applicable grid cells
@@ -365,18 +369,9 @@ pub fn render_sppm(
                                 let pixel_clone: Arc<SPPMPixel> = pixel.clone();
                                 if let Some(node) = Arc::get_mut(&mut node_arc) {
                                     node.pixel = pixel_clone;
-                                    // atomically add _node_ to the start of _grid[h]_'s linked list
-                                    // node.next = grid[h].clone();
-                                    // let new = node;
-                                    // let mut old = grid[h].load(Ordering::Relaxed);
-                                    // loop {
-                                    //     match grid[h].compare_exchange_weak(old, new, Ordering::SeqCst, Ordering::Relaxed) {
-                                    //         Ok(_) => break,
-                                    //         Err(x) => old = x,
-                                    //     }
-                                    // }
-                                    // WORK
                                 }
+                                // atomically add _node_ to the start of _grid[h]_'s linked list
+                                grid[h].set_if_none(node_arc);
                             }
                         }
                     }
