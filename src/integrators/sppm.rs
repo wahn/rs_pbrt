@@ -1,11 +1,15 @@
+extern crate atom;
 extern crate crossbeam;
 extern crate num_cpus;
 
 // std
 use std;
-use std::sync::Arc;
-// pbrt
+use std::sync::atomic::Ordering;
+use std::sync::{Arc, Barrier};
+// others
+use atom::*;
 use atomic::Atomic;
+// pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{bnd3_expand, bnd3_union_bnd3, vec3_abs_dot_nrm, vec3_max_component};
 use core::geometry::{Bounds2i, Bounds3f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f};
@@ -63,10 +67,18 @@ pub struct SPPMPixel {
     pub tau: Spectrum,
 }
 
-#[derive(Default)]
 pub struct SPPMPixelListNode {
     pub pixel: Arc<SPPMPixel>,
-    pub next: Arc<SPPMPixelListNode>,
+    pub next: AtomSetOnce<Box<SPPMPixelListNode>>,
+}
+
+impl Default for SPPMPixelListNode {
+    fn default() -> SPPMPixelListNode {
+        SPPMPixelListNode {
+            pixel: Arc::default(),
+            next: AtomSetOnce::empty(),
+        }
+    }
 }
 
 fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[i32; 3], pi: &mut Point3i) -> bool {
@@ -274,9 +286,9 @@ pub fn render_sppm(
         let mut grid_bounds: Bounds3f = Bounds3f::default();
         // allocate grid for SPPM visible points
         let hash_size: usize = n_pixels as usize;
-        let mut grid: Vec<Arc<SPPMPixelListNode>> = Vec::with_capacity(hash_size);
-        for i in 0..hash_size {
-            grid.push(Arc::new(SPPMPixelListNode::default()));
+        let mut grid: Vec<AtomSetOnce<Box<SPPMPixelListNode>>> = Vec::with_capacity(hash_size);
+        for _i in 0..hash_size {
+            grid.push(AtomSetOnce::empty());
         }
         {
             // TODO: ProfilePhase _(Prof::SPPMGridConstruction);
