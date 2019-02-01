@@ -243,9 +243,10 @@ impl InfiniteAreaLight {
                         };
                     }
                 }
+            } else {
+                println!("WARNING: InfiniteAreaLight::new() ... no OpenEXR support !!!");
             }
         }
-        println!("WARNING: InfiniteAreaLight::new() ... no OpenEXR support !!!");
         InfiniteAreaLight::default(n_samples, l)
     }
     fn default(n_samples: i32, l: &Spectrum) -> Self {
