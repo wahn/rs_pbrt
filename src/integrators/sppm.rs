@@ -13,13 +13,15 @@ use atomic::Atomic;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{bnd3_expand, bnd3_union_bnd3, vec3_abs_dot_nrm, vec3_max_component};
-use core::geometry::{Bounds2i, Bounds3f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f};
+use core::geometry::{
+    Bounds2i, Bounds3f, Point2f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f,
+};
 use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
 use core::interaction::Interaction;
 use core::lowdiscrepancy::radical_inverse;
 use core::material::TransportMode;
 use core::parallel::AtomicFloat;
-use core::pbrt::clamp_t;
+use core::pbrt::{clamp_t, lerp};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, BxdfType};
 use core::sampler::{GlobalSampler, Sampler, SamplerClone};
@@ -406,21 +408,26 @@ pub fn render_sppm(
                         light_distr.sample_discrete(light_sample, light_pdf.as_mut());
                     let ref light = scene.lights[light_num];
                     // compute sample values for photon ray leaving light source
-                    // Point2f uLight0(radical_inverse(halton_dim, halton_index),
-                    //                 radical_inverse(halton_dim + 1, halton_index));
-                    // Point2f uLight1(radical_inverse(halton_dim + 2, halton_index),
-                    //                 radical_inverse(halton_dim + 3, halton_index));
-                    // Float uLightTime =
-                    //     Lerp(radical_inverse(halton_dim + 4, halton_index),
-                    //          camera->shutterOpen, camera->shutterClose);
-                    // halton_dim += 5;
-
-                    // // Generate _photonRay_ from light source and initialize _beta_
+                    let u_light_0: Point2f = Point2f {
+                        x: radical_inverse(halton_dim as u16, halton_index),
+                        y: radical_inverse((halton_dim + 1) as u16, halton_index),
+                    };
+                    let u_light_1: Point2f = Point2f {
+                        x: radical_inverse((halton_dim + 2) as u16, halton_index),
+                        y: radical_inverse((halton_dim + 3) as u16, halton_index),
+                    };
+                    let u_light_time: Float = lerp(
+                        radical_inverse((halton_dim + 4) as u16, halton_index),
+                        camera.get_shutter_open(),
+                        camera.get_shutter_close(),
+                    );
+                    halton_dim += 5;
+                    // generate _photonRay_ from light source and initialize _beta_
                     // RayDifferential photonRay;
                     // Normal3f nLight;
                     // Float pdfPos, pdfDir;
                     // Spectrum Le =
-                    //     light->Sample_Le(uLight0, uLight1, uLightTime, &photonRay,
+                    //     light->Sample_Le(u_light_0, u_light_1, u_light_time, &photonRay,
                     //                      &nLight, &pdfPos, &pdfDir);
                     // if (pdfPos == 0 || pdfDir == 0 || Le.IsBlack()) return;
                     // Spectrum beta = (AbsDot(nLight, photonRay.d) * Le) /

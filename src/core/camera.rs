@@ -26,6 +26,8 @@ pub trait Camera {
         p_raster: &mut Point2f,
         vis: &mut VisibilityTester,
     ) -> Spectrum;
+    fn get_shutter_open(&self) -> Float;
+    fn get_shutter_close(&self) -> Float;
     fn get_film(&self) -> Arc<Film>;
 }
 

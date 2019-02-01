@@ -426,6 +426,12 @@ impl Camera for PerspectiveCamera {
         *pdf = (dist * dist) / (nrm_abs_dot_vec3(&lens_intr.n, wi) * lens_area);
         self.we(&lens_intr.spawn_ray(&-*wi), Some(p_raster))
     }
+    fn get_shutter_open(&self) -> Float {
+        self.shutter_open
+    }
+    fn get_shutter_close(&self) -> Float {
+        self.shutter_close
+    }
     fn get_film(&self) -> Arc<Film> {
         self.film.clone()
     }

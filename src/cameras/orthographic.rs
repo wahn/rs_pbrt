@@ -260,6 +260,12 @@ impl Camera for OrthographicCamera {
         panic!("camera::sample_wi() is not implemented!");
         // Spectrum::default()
     }
+    fn get_shutter_open(&self) -> Float {
+        self.shutter_open
+    }
+    fn get_shutter_close(&self) -> Float {
+        self.shutter_close
+    }
     fn get_film(&self) -> Arc<Film> {
         self.film.clone()
     }
