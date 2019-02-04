@@ -445,7 +445,7 @@ pub fn render_sppm(
                         if pdf_pos == 0.0 as Float || pdf_dir == 0.0 as Float || le.is_black() {
                             return;
                         }
-                        let beta: Spectrum = (le * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
+                        let mut beta: Spectrum = (le * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
                             / (light_pdf * pdf_pos * pdf_dir);
                         if beta.is_black() {
                             return;
@@ -485,7 +485,10 @@ pub fn render_sppm(
                                                     for i in 0..3 {
                                                         pixel.phi[i].add(phi[i]);
                                                     }
-                                                    pixel.m.fetch_add(1_i32, atomic::Ordering::Relaxed);
+                                                    pixel.m.fetch_add(
+                                                        1_i32,
+                                                        atomic::Ordering::Relaxed,
+                                                    );
                                                 }
                                                 if let Some(next_node) = node.next.get() {
                                                     node = next_node;
@@ -496,39 +499,56 @@ pub fn render_sppm(
                                         }
                                     }
                                 }
-                            // sample new photon ray direction
+                                // sample new photon ray direction
 
-                            // compute BSDF at photon intersection point
-                            // isect.ComputeScatteringFunctions(photon_ray, arena, true,
-                            //                                  TransportMode::Importance);
-                            // if (!isect.bsdf) {
-                            //     --depth;
-                            //     photon_ray = isect.SpawnRay(photon_ray.d);
-                            //     continue;
-                            // }
-                            // const BSDF &photonBSDF = *isect.bsdf;
-
-                            // // Sample BSDF _fr_ and direction _wi_ for reflected photon
-                            // Vector3f wi, wo = -photon_ray.d;
-                            // Float pdf;
-                            // BxDFType flags;
-
-                            // // Generate _bsdfSample_ for outgoing photon sample
-                            // Point2f bsdfSample(
-                            //     radical_inverse(halton_dim, halton_index),
-                            //     radical_inverse(halton_dim + 1, halton_index));
-                            // halton_dim += 2;
-                            // Spectrum fr = photonBSDF.Sample_f(wo, &wi, bsdfSample, &pdf,
-                            //                                   BSDF_ALL, &flags);
-                            // if (fr.IsBlack() || pdf == 0.f) break;
-                            // Spectrum bnew =
-                            //     beta * fr * AbsDot(wi, isect.shading.n) / pdf;
-
-                            // // Possibly terminate photon path with Russian roulette
-                            // Float q = std::max((Float)0, 1 - bnew.y() / beta.y());
-                            // if (radical_inverse(halton_dim++, halton_index) < q) break;
-                            // beta = bnew / (1 - q);
-                            // photon_ray = (RayDifferential)isect.SpawnRay(wi);
+                                // compute BSDF at photon intersection point
+                                let mode: TransportMode = TransportMode::Importance;
+                                isect.compute_scattering_functions(
+                                    &mut photon_ray, // arena,
+                                    true,
+                                    mode,
+                                );
+                                if let Some(ref photon_bsdf) = isect.bsdf {
+                                    // sample BSDF _fr_ and direction _wi_ for reflected photon
+                                    let mut wi: Vector3f = Vector3f::default();
+                                    let wo: Vector3f = -photon_ray.d;
+                                    let mut pdf: Float = 0.0;
+                                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                    let mut sampled_type: u8 = u8::max_value();
+                                    // generate _bsdf_sample_ for outgoing photon sample
+                                    let bsdf_sample: Point2f = Point2f {
+                                        x: radical_inverse(halton_dim as u16, halton_index),
+                                        y: radical_inverse((halton_dim + 1) as u16, halton_index),
+                                    };
+                                    halton_dim += 2;
+                                    let fr: Spectrum = photon_bsdf.sample_f(
+                                        &wo,
+                                        &mut wi,
+                                        &bsdf_sample,
+                                        &mut pdf,
+                                        bsdf_flags,
+                                        &mut sampled_type,
+                                    );
+                                    if fr.is_black() || pdf == 0.0 as Float {
+                                        break;
+                                    }
+                                    let bnew: Spectrum =
+                                        beta * fr * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf;
+                                    // possibly terminate photon path with Russian roulette
+                                    let q: Float =
+                                        (0.0 as Float).max(1.0 as Float - bnew.y() / beta.y());
+                                    if radical_inverse(halton_dim as u16, halton_index) < q {
+                                        break;
+                                    } else {
+                                        halton_dim += 1;
+                                    }
+                                    beta = bnew / (1.0 as Float - q);
+                                    photon_ray = isect.spawn_ray(&wi);
+                                } else {
+                                    photon_ray = isect.spawn_ray(&photon_ray.d);
+                                    // --depth;
+                                    continue;
+                                }
                             } else {
                                 break;
                             }
