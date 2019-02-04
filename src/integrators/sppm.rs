@@ -13,7 +13,8 @@ use atomic::Atomic;
 // pbrt
 use core::camera::{Camera, CameraSample};
 use core::geometry::{
-    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, vec3_abs_dot_nrm, vec3_max_component,
+    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, pnt3_distance_squared, vec3_abs_dot_nrm,
+    vec3_max_component,
 };
 use core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f,
@@ -450,72 +451,88 @@ pub fn render_sppm(
                             return;
                         }
                         // follow photon path through scene and record intersections
-                        // SurfaceInteraction isect;
-                        // for (int depth = 0; depth < maxDepth; ++depth) {
-                        //     if (!scene.Intersect(photon_ray, &isect)) break;
-                        //     ++totalPhotonSurfaceInteractions;
-                        //     if (depth > 0) {
-                        //         // Add photon contribution to nearby visible points
-                        //         Point3i photonGridIndex;
-                        //         if (ToGrid(isect.p, gridBounds, gridRes,
-                        //                    &photonGridIndex)) {
-                        //             int h = hash(photonGridIndex, hashSize);
-                        //             // Add photon contribution to visible points in
-                        //             // _grid[h]_
-                        //             for (SPPMPixelListNode *node =
-                        //                      grid[h].load(std::memory_order_relaxed);
-                        //                  node != nullptr; node = node->next) {
-                        //                 ++visiblePointsChecked;
-                        //                 SPPMPixel &pixel = *node->pixel;
-                        //                 Float radius = pixel.radius;
-                        //                 if (DistanceSquared(pixel.vp.p, isect.p) >
-                        //                     radius * radius)
-                        //                     continue;
-                        //                 // Update _pixel_ $\Phi$ and $M$ for nearby
-                        //                 // photon
-                        //                 Vector3f wi = -photon_ray.d;
-                        //                 Spectrum Phi =
-                        //                     beta * pixel.vp.bsdf->f(pixel.vp.wo, wi);
-                        //                 for (int i = 0; i < Spectrum::nSamples; ++i)
-                        //                     pixel.Phi[i].Add(Phi[i]);
-                        //                 ++pixel.M;
-                        //             }
-                        //         }
-                        //     }
-                        //     // Sample new photon ray direction
+                        for depth in 0..integrator.max_depth {
+                            if let Some(mut isect) = scene.intersect(&mut photon_ray) {
+                                // TODO: ++totalPhotonSurfaceInteractions;
+                                if depth > 0 {
+                                    // add photon contribution to nearby visible points
+                                    let mut photon_grid_index: Point3i = Point3i::default();
+                                    if to_grid(
+                                        &isect.p,
+                                        &grid_bounds,
+                                        &grid_res,
+                                        &mut photon_grid_index,
+                                    ) {
+                                        let h: usize = hash(&photon_grid_index, hash_size);
+                                        // add photon contribution to visible points in _grid[h]_
+                                        if let Some(root) = grid[h].get() {
+                                            let mut node: &SPPMPixelListNode = root;
+                                            loop {
+                                                // TODO: ++visiblePointsChecked;
+                                                let pixel = node.pixel.clone();
+                                                let radius: Float = pixel.radius;
+                                                if pnt3_distance_squared(&pixel.vp.p, &isect.p)
+                                                    > radius * radius
+                                                {
+                                                    continue;
+                                                }
+                                                // update _pixel_ $\phi$ and $m$ for nearby photon
+                                                let wi: Vector3f = -photon_ray.d;
+                                                if let Some(ref bsdf) = pixel.vp.bsdf {
+                                                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                                    let phi: Spectrum = beta
+                                                        * bsdf.f(&pixel.vp.wo, &wi, bsdf_flags);
+                                                    for i in 0..3 {
+                                                        pixel.phi[i].add(phi[i]);
+                                                    }
+                                                    pixel.m.fetch_add(1_i32, atomic::Ordering::Relaxed);
+                                                }
+                                                if let Some(next_node) = node.next.get() {
+                                                    node = next_node;
+                                                } else {
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            // sample new photon ray direction
 
-                        //     // Compute BSDF at photon intersection point
-                        //     isect.ComputeScatteringFunctions(photon_ray, arena, true,
-                        //                                      TransportMode::Importance);
-                        //     if (!isect.bsdf) {
-                        //         --depth;
-                        //         photon_ray = isect.SpawnRay(photon_ray.d);
-                        //         continue;
-                        //     }
-                        //     const BSDF &photonBSDF = *isect.bsdf;
+                            // compute BSDF at photon intersection point
+                            // isect.ComputeScatteringFunctions(photon_ray, arena, true,
+                            //                                  TransportMode::Importance);
+                            // if (!isect.bsdf) {
+                            //     --depth;
+                            //     photon_ray = isect.SpawnRay(photon_ray.d);
+                            //     continue;
+                            // }
+                            // const BSDF &photonBSDF = *isect.bsdf;
 
-                        //     // Sample BSDF _fr_ and direction _wi_ for reflected photon
-                        //     Vector3f wi, wo = -photon_ray.d;
-                        //     Float pdf;
-                        //     BxDFType flags;
+                            // // Sample BSDF _fr_ and direction _wi_ for reflected photon
+                            // Vector3f wi, wo = -photon_ray.d;
+                            // Float pdf;
+                            // BxDFType flags;
 
-                        //     // Generate _bsdfSample_ for outgoing photon sample
-                        //     Point2f bsdfSample(
-                        //         radical_inverse(halton_dim, halton_index),
-                        //         radical_inverse(halton_dim + 1, halton_index));
-                        //     halton_dim += 2;
-                        //     Spectrum fr = photonBSDF.Sample_f(wo, &wi, bsdfSample, &pdf,
-                        //                                       BSDF_ALL, &flags);
-                        //     if (fr.IsBlack() || pdf == 0.f) break;
-                        //     Spectrum bnew =
-                        //         beta * fr * AbsDot(wi, isect.shading.n) / pdf;
+                            // // Generate _bsdfSample_ for outgoing photon sample
+                            // Point2f bsdfSample(
+                            //     radical_inverse(halton_dim, halton_index),
+                            //     radical_inverse(halton_dim + 1, halton_index));
+                            // halton_dim += 2;
+                            // Spectrum fr = photonBSDF.Sample_f(wo, &wi, bsdfSample, &pdf,
+                            //                                   BSDF_ALL, &flags);
+                            // if (fr.IsBlack() || pdf == 0.f) break;
+                            // Spectrum bnew =
+                            //     beta * fr * AbsDot(wi, isect.shading.n) / pdf;
 
-                        //     // Possibly terminate photon path with Russian roulette
-                        //     Float q = std::max((Float)0, 1 - bnew.y() / beta.y());
-                        //     if (radical_inverse(halton_dim++, halton_index) < q) break;
-                        //     beta = bnew / (1 - q);
-                        //     photon_ray = (RayDifferential)isect.SpawnRay(wi);
-                        // }
+                            // // Possibly terminate photon path with Russian roulette
+                            // Float q = std::max((Float)0, 1 - bnew.y() / beta.y());
+                            // if (radical_inverse(halton_dim++, halton_index) < q) break;
+                            // beta = bnew / (1 - q);
+                            // photon_ray = (RayDifferential)isect.SpawnRay(wi);
+                            } else {
+                                break;
+                            }
+                        }
                         // arena.Reset();
                     }
                 }
