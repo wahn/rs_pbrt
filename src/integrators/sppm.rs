@@ -12,9 +12,11 @@ use atom::*;
 use atomic::Atomic;
 // pbrt
 use core::camera::{Camera, CameraSample};
-use core::geometry::{bnd3_expand, bnd3_union_bnd3, vec3_abs_dot_nrm, vec3_max_component};
 use core::geometry::{
-    Bounds2i, Bounds3f, Point2f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f,
+    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, vec3_abs_dot_nrm, vec3_max_component,
+};
+use core::geometry::{
+    Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f,
 };
 use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
 use core::interaction::Interaction;
@@ -401,107 +403,121 @@ pub fn render_sppm(
                         iter as u64 * integrator.photons_per_iteration as u64 + photon_index as u64;
                     let mut halton_dim: i32 = 0;
                     // choose light to shoot photon from
-                    let mut light_pdf: Option<Float> = Some(0.0 as Float);
+                    let mut light_pdf_opt: Option<Float> = Some(0.0 as Float);
                     let light_sample: Float = radical_inverse(halton_dim as u16, halton_index);
                     halton_dim += 1;
                     let light_num: usize =
-                        light_distr.sample_discrete(light_sample, light_pdf.as_mut());
-                    let ref light = scene.lights[light_num];
-                    // compute sample values for photon ray leaving light source
-                    let u_light_0: Point2f = Point2f {
-                        x: radical_inverse(halton_dim as u16, halton_index),
-                        y: radical_inverse((halton_dim + 1) as u16, halton_index),
-                    };
-                    let u_light_1: Point2f = Point2f {
-                        x: radical_inverse((halton_dim + 2) as u16, halton_index),
-                        y: radical_inverse((halton_dim + 3) as u16, halton_index),
-                    };
-                    let u_light_time: Float = lerp(
-                        radical_inverse((halton_dim + 4) as u16, halton_index),
-                        camera.get_shutter_open(),
-                        camera.get_shutter_close(),
-                    );
-                    halton_dim += 5;
-                    // generate _photonRay_ from light source and initialize _beta_
-                    // RayDifferential photonRay;
-                    // Normal3f nLight;
-                    // Float pdfPos, pdfDir;
-                    // Spectrum Le =
-                    //     light->Sample_Le(u_light_0, u_light_1, u_light_time, &photonRay,
-                    //                      &nLight, &pdfPos, &pdfDir);
-                    // if (pdfPos == 0 || pdfDir == 0 || Le.IsBlack()) return;
-                    // Spectrum beta = (AbsDot(nLight, photonRay.d) * Le) /
-                    //                 (light_pdf * pdfPos * pdfDir);
-                    // if (beta.IsBlack()) return;
+                        light_distr.sample_discrete(light_sample, light_pdf_opt.as_mut());
+                    if let Some(light_pdf) = light_pdf_opt {
+                        let ref light = scene.lights[light_num];
+                        // compute sample values for photon ray leaving light source
+                        let u_light_0: Point2f = Point2f {
+                            x: radical_inverse(halton_dim as u16, halton_index),
+                            y: radical_inverse((halton_dim + 1) as u16, halton_index),
+                        };
+                        let u_light_1: Point2f = Point2f {
+                            x: radical_inverse((halton_dim + 2) as u16, halton_index),
+                            y: radical_inverse((halton_dim + 3) as u16, halton_index),
+                        };
+                        let u_light_time: Float = lerp(
+                            radical_inverse((halton_dim + 4) as u16, halton_index),
+                            camera.get_shutter_open(),
+                            camera.get_shutter_close(),
+                        );
+                        halton_dim += 5;
+                        // generate _photon_ray_ from light source and initialize _beta_
+                        // RayDifferential photon_ray;
+                        let mut photon_ray: Ray = Ray::default();
+                        let mut n_light: Normal3f = Normal3f::default();
+                        // Float pdf_pos, pdf_dir;
+                        let mut pdf_pos: Float = 0.0;
+                        let mut pdf_dir: Float = 0.0;
+                        let le: Spectrum = light.sample_le(
+                            &u_light_0,
+                            &u_light_1,
+                            u_light_time,
+                            &mut photon_ray,
+                            &mut n_light,
+                            &mut pdf_pos,
+                            &mut pdf_dir,
+                        );
+                        if pdf_pos == 0.0 as Float || pdf_dir == 0.0 as Float || le.is_black() {
+                            return;
+                        }
+                        let beta: Spectrum = (le * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
+                            / (light_pdf * pdf_pos * pdf_dir);
+                        if beta.is_black() {
+                            return;
+                        }
+                        // follow photon path through scene and record intersections
+                        // SurfaceInteraction isect;
+                        // for (int depth = 0; depth < maxDepth; ++depth) {
+                        //     if (!scene.Intersect(photon_ray, &isect)) break;
+                        //     ++totalPhotonSurfaceInteractions;
+                        //     if (depth > 0) {
+                        //         // Add photon contribution to nearby visible points
+                        //         Point3i photonGridIndex;
+                        //         if (ToGrid(isect.p, gridBounds, gridRes,
+                        //                    &photonGridIndex)) {
+                        //             int h = hash(photonGridIndex, hashSize);
+                        //             // Add photon contribution to visible points in
+                        //             // _grid[h]_
+                        //             for (SPPMPixelListNode *node =
+                        //                      grid[h].load(std::memory_order_relaxed);
+                        //                  node != nullptr; node = node->next) {
+                        //                 ++visiblePointsChecked;
+                        //                 SPPMPixel &pixel = *node->pixel;
+                        //                 Float radius = pixel.radius;
+                        //                 if (DistanceSquared(pixel.vp.p, isect.p) >
+                        //                     radius * radius)
+                        //                     continue;
+                        //                 // Update _pixel_ $\Phi$ and $M$ for nearby
+                        //                 // photon
+                        //                 Vector3f wi = -photon_ray.d;
+                        //                 Spectrum Phi =
+                        //                     beta * pixel.vp.bsdf->f(pixel.vp.wo, wi);
+                        //                 for (int i = 0; i < Spectrum::nSamples; ++i)
+                        //                     pixel.Phi[i].Add(Phi[i]);
+                        //                 ++pixel.M;
+                        //             }
+                        //         }
+                        //     }
+                        //     // Sample new photon ray direction
 
-                    // // Follow photon path through scene and record intersections
-                    // SurfaceInteraction isect;
-                    // for (int depth = 0; depth < maxDepth; ++depth) {
-                    //     if (!scene.Intersect(photonRay, &isect)) break;
-                    //     ++totalPhotonSurfaceInteractions;
-                    //     if (depth > 0) {
-                    //         // Add photon contribution to nearby visible points
-                    //         Point3i photonGridIndex;
-                    //         if (ToGrid(isect.p, gridBounds, gridRes,
-                    //                    &photonGridIndex)) {
-                    //             int h = hash(photonGridIndex, hashSize);
-                    //             // Add photon contribution to visible points in
-                    //             // _grid[h]_
-                    //             for (SPPMPixelListNode *node =
-                    //                      grid[h].load(std::memory_order_relaxed);
-                    //                  node != nullptr; node = node->next) {
-                    //                 ++visiblePointsChecked;
-                    //                 SPPMPixel &pixel = *node->pixel;
-                    //                 Float radius = pixel.radius;
-                    //                 if (DistanceSquared(pixel.vp.p, isect.p) >
-                    //                     radius * radius)
-                    //                     continue;
-                    //                 // Update _pixel_ $\Phi$ and $M$ for nearby
-                    //                 // photon
-                    //                 Vector3f wi = -photonRay.d;
-                    //                 Spectrum Phi =
-                    //                     beta * pixel.vp.bsdf->f(pixel.vp.wo, wi);
-                    //                 for (int i = 0; i < Spectrum::nSamples; ++i)
-                    //                     pixel.Phi[i].Add(Phi[i]);
-                    //                 ++pixel.M;
-                    //             }
-                    //         }
-                    //     }
-                    //     // Sample new photon ray direction
+                        //     // Compute BSDF at photon intersection point
+                        //     isect.ComputeScatteringFunctions(photon_ray, arena, true,
+                        //                                      TransportMode::Importance);
+                        //     if (!isect.bsdf) {
+                        //         --depth;
+                        //         photon_ray = isect.SpawnRay(photon_ray.d);
+                        //         continue;
+                        //     }
+                        //     const BSDF &photonBSDF = *isect.bsdf;
 
-                    //     // Compute BSDF at photon intersection point
-                    //     isect.ComputeScatteringFunctions(photonRay, arena, true,
-                    //                                      TransportMode::Importance);
-                    //     if (!isect.bsdf) {
-                    //         --depth;
-                    //         photonRay = isect.SpawnRay(photonRay.d);
-                    //         continue;
-                    //     }
-                    //     const BSDF &photonBSDF = *isect.bsdf;
+                        //     // Sample BSDF _fr_ and direction _wi_ for reflected photon
+                        //     Vector3f wi, wo = -photon_ray.d;
+                        //     Float pdf;
+                        //     BxDFType flags;
 
-                    //     // Sample BSDF _fr_ and direction _wi_ for reflected photon
-                    //     Vector3f wi, wo = -photonRay.d;
-                    //     Float pdf;
-                    //     BxDFType flags;
+                        //     // Generate _bsdfSample_ for outgoing photon sample
+                        //     Point2f bsdfSample(
+                        //         radical_inverse(halton_dim, halton_index),
+                        //         radical_inverse(halton_dim + 1, halton_index));
+                        //     halton_dim += 2;
+                        //     Spectrum fr = photonBSDF.Sample_f(wo, &wi, bsdfSample, &pdf,
+                        //                                       BSDF_ALL, &flags);
+                        //     if (fr.IsBlack() || pdf == 0.f) break;
+                        //     Spectrum bnew =
+                        //         beta * fr * AbsDot(wi, isect.shading.n) / pdf;
 
-                    //     // Generate _bsdfSample_ for outgoing photon sample
-                    //     Point2f bsdfSample(
-                    //         radical_inverse(halton_dim, halton_index),
-                    //         radical_inverse(halton_dim + 1, halton_index));
-                    //     halton_dim += 2;
-                    //     Spectrum fr = photonBSDF.Sample_f(wo, &wi, bsdfSample, &pdf,
-                    //                                       BSDF_ALL, &flags);
-                    //     if (fr.IsBlack() || pdf == 0.f) break;
-                    //     Spectrum bnew =
-                    //         beta * fr * AbsDot(wi, isect.shading.n) / pdf;
-
-                    //     // Possibly terminate photon path with Russian roulette
-                    //     Float q = std::max((Float)0, 1 - bnew.y() / beta.y());
-                    //     if (radical_inverse(halton_dim++, halton_index) < q) break;
-                    //     beta = bnew / (1 - q);
-                    //     photonRay = (RayDifferential)isect.SpawnRay(wi);
-                    // }
-                    // arena.Reset();
+                        //     // Possibly terminate photon path with Russian roulette
+                        //     Float q = std::max((Float)0, 1 - bnew.y() / beta.y());
+                        //     if (radical_inverse(halton_dim++, halton_index) < q) break;
+                        //     beta = bnew / (1 - q);
+                        //     photon_ray = (RayDifferential)isect.SpawnRay(wi);
+                        // }
+                        // arena.Reset();
+                    }
                 }
             }
             // update pixel values from this pass's photons
