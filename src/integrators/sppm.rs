@@ -6,6 +6,7 @@ extern crate pbr;
 // std
 use std;
 use std::borrow::Borrow;
+use std::f32::consts::PI;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Barrier};
 // others
@@ -13,6 +14,7 @@ use atom::*;
 use atomic::Atomic;
 // pbrt
 use core::camera::{Camera, CameraSample};
+use core::film::Film;
 use core::geometry::{
     bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, pnt3_distance_squared, vec3_abs_dot_nrm,
     vec3_max_component,
@@ -38,6 +40,7 @@ pub struct SPPMIntegrator {
     pub n_iterations: i32,
     pub max_depth: u32,
     pub photons_per_iteration: i32,
+    pub write_frequency: i32,
 }
 
 impl SPPMIntegrator {
@@ -54,6 +57,7 @@ impl SPPMIntegrator {
             n_iterations: n_iterations,
             max_depth: max_depth,
             photons_per_iteration: photons_per_iteration,
+            write_frequency: write_frequency,
         }
     }
 }
@@ -125,7 +129,7 @@ pub fn render_sppm(
     // TODO: ProfilePhase p(Prof::IntegratorRender);
 
     // initialize _pixel_bounds_ and _pixels_ array for SPPM
-    let film = camera.get_film();
+    let film: Arc<Film> = camera.get_film();
     let pixel_bounds: Bounds2i = film.cropped_pixel_bounds;
     let n_pixels: i32 = pixel_bounds.area();
     let mut pixels: Vec<Arc<SPPMPixel>> = Vec::with_capacity(n_pixels as usize);
@@ -609,6 +613,60 @@ pub fn render_sppm(
                 }
             }
             // periodically store SPPM image in film and write image
+            if iter + 1 == integrator.n_iterations || ((iter + 1) % integrator.write_frequency) == 0
+            {
+                let x0: i32 = pixel_bounds.p_min.x;
+                let x1: i32 = pixel_bounds.p_max.x;
+                let np: u64 = (iter + 1) as u64 * integrator.photons_per_iteration as u64;
+                // std::unique_ptr<Spectrum[]> image(new Spectrum[pixel_bounds.area()]);
+                let mut offset: usize = 0;
+                for y in (pixel_bounds.p_min.y as usize)..(pixel_bounds.p_max.y as usize) {
+                    for x in (x0 as usize)..(x1 as usize) {
+                        // compute radiance _L_ for SPPM pixel _pixel_
+                        let pixel: &Arc<SPPMPixel> = &pixels[(y - pixel_bounds.p_min.y as usize)
+                            * (x1 as usize - x0 as usize)
+                            + (x - x0 as usize)];
+                        let mut l: Spectrum = pixel.ld / (iter + 1) as Float;
+                        l += pixel.tau / (np as Float * PI * pixel.radius * pixel.radius);
+                        // image[offset++] = L;
+                    }
+                }
+                // camera->film->SetImage(image.get());
+                film.write_image(1.0 as Float);
+                // write SPPM radius image, if requested
+                // if (getenv("SPPM_RADIUS")) {
+                //     std::unique_ptr<Float[]> rimg(
+                //         new Float[3 * pixel_bounds.area()]);
+                //     Float minrad = 1e30f, maxrad = 0;
+                //     for (int y = pixel_bounds.p_min.y; y < pixel_bounds.p_max.y; ++y) {
+                //         for (int x = x0; x < x1; ++x) {
+                //             const SPPMPixel &p =
+                //                 pixels[(y - pixel_bounds.p_min.y) * (x1 - x0) +
+                //                        (x - x0)];
+                //             minrad = std::min(minrad, p.radius);
+                //             maxrad = std::max(maxrad, p.radius);
+                //         }
+                //     }
+                //     fprintf(stderr,
+                //             "iterations: %d (%.2f s) radius range: %f - %f\n",
+                //             iter + 1, progress.ElapsedMS() / 1000., minrad, maxrad);
+                //     int offset = 0;
+                //     for (int y = pixel_bounds.p_min.y; y < pixel_bounds.p_max.y; ++y) {
+                //         for (int x = x0; x < x1; ++x) {
+                //             const SPPMPixel &p =
+                //                 pixels[(y - pixel_bounds.p_min.y) * (x1 - x0) +
+                //                        (x - x0)];
+                //             Float v = 1.f - (p.radius - minrad) / (maxrad - minrad);
+                //             rimg[offset++] = v;
+                //             rimg[offset++] = v;
+                //             rimg[offset++] = v;
+                //         }
+                //     }
+                //     Point2i res(pixel_bounds.p_max.x - pixel_bounds.p_min.x,
+                //                 pixel_bounds.p_max.y - pixel_bounds.p_min.y);
+                //     WriteImage("sppm_radius.png", rimg.get(), pixel_bounds, res);
+                // }
+            }
             // WORK
         }
     }

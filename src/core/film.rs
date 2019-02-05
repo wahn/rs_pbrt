@@ -334,6 +334,22 @@ impl Film {
             // pixels_write[offset as usize] = *merge_pixel;
         }
     }
+    pub fn set_image(&self, img: &[Spectrum]) {
+        let n_pixels: i32 = self.cropped_pixel_bounds.area();
+        let mut pixels_write = self.pixels.write().unwrap();
+        for i in 0..n_pixels as usize {
+            let mut merge_pixel = &mut pixels_write[i];
+            let mut xyz: [Float; 3] = [0.0; 3];
+            img[i].to_xyz(&mut xyz);
+            for i in 0..3 {
+                merge_pixel.xyz[i] += xyz[i];
+            }
+            merge_pixel.filter_weight_sum = 1.0 as Float;
+            merge_pixel.splat_xyz[0] = AtomicFloat::new(0.0 as Float);
+            merge_pixel.splat_xyz[1] = AtomicFloat::new(0.0 as Float);
+            merge_pixel.splat_xyz[2] = AtomicFloat::new(0.0 as Float);
+        }
+    }
     pub fn add_splat(&self, p: &Point2f, v: &Spectrum) {
         let mut v: Spectrum = *v;
         // TODO: ProfilePhase pp(Prof::SplatFilm);
