@@ -5,6 +5,7 @@ extern crate pbr;
 
 // std
 use std;
+use std::borrow::Borrow;
 use std::sync::atomic::Ordering;
 use std::sync::{Arc, Barrier};
 // others
@@ -558,6 +559,55 @@ pub fn render_sppm(
                 }
             }
             // update pixel values from this pass's photons
+            {
+                // TODO: ProfilePhase _(Prof::SPPMStatsUpdate);
+                println!("Update pixel values from this pass's photons ...");
+                // TODO: ParallelFor([&](int i) { ... }, nPixels, 4096);
+                for i in pbr::PbIter::new(0..n_pixels as usize) {
+                    // copy immutable data ...
+                    let p_n: Float;
+                    let p_tau: Spectrum;
+                    let p_radius: Float;
+                    let mut p_phi: [Float; 3] = [0.0 as Float; 3];
+                    let p_vp_beta: Spectrum;
+                    {
+                        let p: &Arc<SPPMPixel> = &pixels[i];
+                        p_n = p.n;
+                        p_tau = p.tau;
+                        p_radius = p.radius;
+                        for j in 0..3 {
+                            p_phi[j] = Float::from(&p.phi[j]);
+                        }
+                        p_vp_beta = p.vp.beta;
+                    }
+                    // ... before borrowing mutably
+                    let p: &mut Arc<SPPMPixel> = &mut pixels[i];
+                    let p_m = p.m.load(atomic::Ordering::Relaxed);
+                    if let Some(p_mut) = Arc::<SPPMPixel>::get_mut(p) {
+                        if p_m > 0_i32 {
+                            // update pixel photon count, search radius, and $\tau$ from photons
+                            let gamma: Float = 2.0 as Float / 3.0 as Float;
+                            let n_new: Float = p_n + gamma * p_m as Float;
+                            let r_new: Float = p_radius * (n_new / (p_n + p_m as Float)).sqrt();
+                            let mut phi: Spectrum = Spectrum::default();
+                            for j in 0..3 {
+                                phi[j] = p_phi[j];
+                            }
+                            p_mut.tau =
+                                (p_tau + p_vp_beta * phi) * (r_new * r_new) / (p_radius * p_radius);
+                            p_mut.n = n_new;
+                            p_mut.radius = r_new;
+                            p_mut.m.store(0, atomic::Ordering::Relaxed);
+                            for j in 0..3 {
+                                p_mut.phi[j] = AtomicFloat::new(0.0 as Float);
+                            }
+                        }
+                        // reset _VisiblePoint_ in pixel
+                        p_mut.vp.beta = Spectrum::default();
+                        p_mut.vp.bsdf = None;
+                    }
+                }
+            }
             // periodically store SPPM image in film and write image
             // WORK
         }
