@@ -5,10 +5,8 @@ extern crate pbr;
 
 // std
 use std;
-use std::borrow::Borrow;
 use std::f32::consts::PI;
-use std::sync::atomic::Ordering;
-use std::sync::{Arc, Barrier};
+use std::sync::Arc;
 // others
 use atom::*;
 use atomic::Atomic;
@@ -31,7 +29,6 @@ use core::pbrt::{clamp_t, lerp};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, BxdfType};
 use core::sampler::{GlobalSampler, Sampler, SamplerClone};
-use core::sampling::Distribution1D;
 use core::scene::Scene;
 use samplers::halton::HaltonSampler;
 
@@ -45,7 +42,6 @@ pub struct SPPMIntegrator {
 
 impl SPPMIntegrator {
     pub fn new(
-        camera: Arc<Camera + Send + Sync>,
         n_iterations: i32,
         photons_per_iteration: i32,
         max_depth: u32,
@@ -116,16 +112,17 @@ fn hash(p: &Point3i, hash_size: usize) -> usize {
 pub fn render_sppm(
     scene: &Scene,
     camera: &Arc<Camera + Send + Sync>,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    _sampler: &mut Box<Sampler + Send + Sync>,
     integrator: &mut Box<SPPMIntegrator>,
-    num_threads: u8,
+    _num_threads: u8,
 ) {
-    let num_cores: usize;
-    if num_threads == 0_u8 {
-        num_cores = num_cpus::get();
-    } else {
-        num_cores = num_threads as usize;
-    }
+    // TODO: multi-threading
+    // let num_cores: usize;
+    // if num_threads == 0_u8 {
+    //     num_cores = num_cpus::get();
+    // } else {
+    //     num_cores = num_threads as usize;
+    // }
     // TODO: ProfilePhase p(Prof::IntegratorRender);
 
     // initialize _pixel_bounds_ and _pixels_ array for SPPM
@@ -133,7 +130,7 @@ pub fn render_sppm(
     let pixel_bounds: Bounds2i = film.cropped_pixel_bounds;
     let n_pixels: i32 = pixel_bounds.area();
     let mut pixels: Vec<Arc<SPPMPixel>> = Vec::with_capacity(n_pixels as usize);
-    for i in 0..n_pixels as usize {
+    for _i in 0..n_pixels as usize {
         let mut pixel = SPPMPixel::default();
         pixel.radius = integrator.initial_search_radius;
         pixels.push(Arc::new(pixel));
@@ -169,7 +166,7 @@ pub fn render_sppm(
                         // TODO: MemoryArena &arena = perThreadArenas[ThreadIndex];
 
                         // follow camera paths for _tile_ in image for SPPM
-                        let tile_index: i32 = tile.y * n_tiles.x + tile.x;
+                        // TODO: let tile_index: i32 = tile.y * n_tiles.x + tile.x;
                         // TODO: let mut tile_sampler = sampler.clone();
                         // compute _tileBounds_ for SPPM tile
                         let x0: i32 = pixel_bounds.p_min.x + tile.x * tile_size;
@@ -618,8 +615,7 @@ pub fn render_sppm(
                 let x0: i32 = pixel_bounds.p_min.x;
                 let x1: i32 = pixel_bounds.p_max.x;
                 let np: u64 = (iter + 1) as u64 * integrator.photons_per_iteration as u64;
-                // std::unique_ptr<Spectrum[]> image(new Spectrum[pixel_bounds.area()]);
-                let mut offset: usize = 0;
+                let mut image: Vec<Spectrum> = Vec::with_capacity(pixel_bounds.area() as usize);
                 for y in (pixel_bounds.p_min.y as usize)..(pixel_bounds.p_max.y as usize) {
                     for x in (x0 as usize)..(x1 as usize) {
                         // compute radiance _L_ for SPPM pixel _pixel_
@@ -628,12 +624,12 @@ pub fn render_sppm(
                             + (x - x0 as usize)];
                         let mut l: Spectrum = pixel.ld / (iter + 1) as Float;
                         l += pixel.tau / (np as Float * PI * pixel.radius * pixel.radius);
-                        // image[offset++] = L;
+                        image.push(l);
                     }
                 }
-                // camera->film->SetImage(image.get());
+                film.set_image(&image[..]);
                 film.write_image(1.0 as Float);
-                // write SPPM radius image, if requested
+                // TODO: write SPPM radius image, if requested
                 // if (getenv("SPPM_RADIUS")) {
                 //     std::unique_ptr<Float[]> rimg(
                 //         new Float[3 * pixel_bounds.area()]);
@@ -667,7 +663,7 @@ pub fn render_sppm(
                 //     WriteImage("sppm_radius.png", rimg.get(), pixel_bounds, res);
                 // }
             }
-            // WORK
         }
+        // TODO: progress.Done();
     }
 }
