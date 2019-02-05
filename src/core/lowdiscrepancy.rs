@@ -488,7 +488,3057 @@ pub fn radical_inverse(base_index: u16, a: u64) -> Float {
         6 => {
             return radical_inverse_specialized(17_u16, a);
         }
-        // WORK
+        7 => {
+            return radical_inverse_specialized(19_u16, a);
+        }
+        8 => {
+            return radical_inverse_specialized(23_u16, a);
+        }
+        9 => {
+            return radical_inverse_specialized(29_u16, a);
+        }
+        10 => {
+            return radical_inverse_specialized(31_u16, a);
+        }
+        11 => {
+            return radical_inverse_specialized(37_u16, a);
+        }
+        12 => {
+            return radical_inverse_specialized(41_u16, a);
+        }
+        13 => {
+            return radical_inverse_specialized(43_u16, a);
+        }
+        14 => {
+            return radical_inverse_specialized(47_u16, a);
+        }
+        15 => {
+            return radical_inverse_specialized(53_u16, a);
+        }
+        16 => {
+            return radical_inverse_specialized(59_u16, a);
+        }
+        17 => {
+            return radical_inverse_specialized(61_u16, a);
+        }
+        18 => {
+            return radical_inverse_specialized(67_u16, a);
+        }
+        19 => {
+            return radical_inverse_specialized(71_u16, a);
+        }
+        20 => {
+            return radical_inverse_specialized(73_u16, a);
+        }
+        21 => {
+            return radical_inverse_specialized(79_u16, a);
+        }
+        22 => {
+            return radical_inverse_specialized(83_u16, a);
+        }
+        23 => {
+            return radical_inverse_specialized(89_u16, a);
+        }
+        24 => {
+            return radical_inverse_specialized(97_u16, a);
+        }
+        25 => {
+            return radical_inverse_specialized(101_u16, a);
+        }
+        26 => {
+            return radical_inverse_specialized(103_u16, a);
+        }
+        27 => {
+            return radical_inverse_specialized(107_u16, a);
+        }
+        28 => {
+            return radical_inverse_specialized(109_u16, a);
+        }
+        29 => {
+            return radical_inverse_specialized(113_u16, a);
+        }
+        30 => {
+            return radical_inverse_specialized(127_u16, a);
+        }
+        31 => {
+            return radical_inverse_specialized(131_u16, a);
+        }
+        32 => {
+            return radical_inverse_specialized(137_u16, a);
+        }
+        33 => {
+            return radical_inverse_specialized(139_u16, a);
+        }
+        34 => {
+            return radical_inverse_specialized(149_u16, a);
+        }
+        35 => {
+            return radical_inverse_specialized(151_u16, a);
+        }
+        36 => {
+            return radical_inverse_specialized(157_u16, a);
+        }
+        37 => {
+            return radical_inverse_specialized(163_u16, a);
+        }
+        38 => {
+            return radical_inverse_specialized(167_u16, a);
+        }
+        39 => {
+            return radical_inverse_specialized(173_u16, a);
+        }
+        40 => {
+            return radical_inverse_specialized(179_u16, a);
+        }
+        41 => {
+            return radical_inverse_specialized(181_u16, a);
+        }
+        42 => {
+            return radical_inverse_specialized(191_u16, a);
+        }
+        43 => {
+            return radical_inverse_specialized(193_u16, a);
+        }
+        44 => {
+            return radical_inverse_specialized(197_u16, a);
+        }
+        45 => {
+            return radical_inverse_specialized(199_u16, a);
+        }
+        46 => {
+            return radical_inverse_specialized(211_u16, a);
+        }
+        47 => {
+            return radical_inverse_specialized(223_u16, a);
+        }
+        48 => {
+            return radical_inverse_specialized(227_u16, a);
+        }
+        49 => {
+            return radical_inverse_specialized(229_u16, a);
+        }
+        50 => {
+            return radical_inverse_specialized(233_u16, a);
+        }
+        51 => {
+            return radical_inverse_specialized(239_u16, a);
+        }
+        52 => {
+            return radical_inverse_specialized(241_u16, a);
+        }
+        53 => {
+            return radical_inverse_specialized(251_u16, a);
+        }
+        54 => {
+            return radical_inverse_specialized(257_u16, a);
+        }
+        55 => {
+            return radical_inverse_specialized(263_u16, a);
+        }
+        56 => {
+            return radical_inverse_specialized(269_u16, a);
+        }
+        57 => {
+            return radical_inverse_specialized(271_u16, a);
+        }
+        58 => {
+            return radical_inverse_specialized(277_u16, a);
+        }
+        59 => {
+            return radical_inverse_specialized(281_u16, a);
+        }
+        60 => {
+            return radical_inverse_specialized(283_u16, a);
+        }
+        61 => {
+            return radical_inverse_specialized(293_u16, a);
+        }
+        62 => {
+            return radical_inverse_specialized(307_u16, a);
+        }
+        63 => {
+            return radical_inverse_specialized(311_u16, a);
+        }
+        64 => {
+            return radical_inverse_specialized(313_u16, a);
+        }
+        65 => {
+            return radical_inverse_specialized(317_u16, a);
+        }
+        66 => {
+            return radical_inverse_specialized(331_u16, a);
+        }
+        67 => {
+            return radical_inverse_specialized(337_u16, a);
+        }
+        68 => {
+            return radical_inverse_specialized(347_u16, a);
+        }
+        69 => {
+            return radical_inverse_specialized(349_u16, a);
+        }
+        70 => {
+            return radical_inverse_specialized(353_u16, a);
+        }
+        71 => {
+            return radical_inverse_specialized(359_u16, a);
+        }
+        72 => {
+            return radical_inverse_specialized(367_u16, a);
+        }
+        73 => {
+            return radical_inverse_specialized(373_u16, a);
+        }
+        74 => {
+            return radical_inverse_specialized(379_u16, a);
+        }
+        75 => {
+            return radical_inverse_specialized(383_u16, a);
+        }
+        76 => {
+            return radical_inverse_specialized(389_u16, a);
+        }
+        77 => {
+            return radical_inverse_specialized(397_u16, a);
+        }
+        78 => {
+            return radical_inverse_specialized(401_u16, a);
+        }
+        79 => {
+            return radical_inverse_specialized(409_u16, a);
+        }
+        80 => {
+            return radical_inverse_specialized(419_u16, a);
+        }
+        81 => {
+            return radical_inverse_specialized(421_u16, a);
+        }
+        82 => {
+            return radical_inverse_specialized(431_u16, a);
+        }
+        83 => {
+            return radical_inverse_specialized(433_u16, a);
+        }
+        84 => {
+            return radical_inverse_specialized(439_u16, a);
+        }
+        85 => {
+            return radical_inverse_specialized(443_u16, a);
+        }
+        86 => {
+            return radical_inverse_specialized(449_u16, a);
+        }
+        87 => {
+            return radical_inverse_specialized(457_u16, a);
+        }
+        88 => {
+            return radical_inverse_specialized(461_u16, a);
+        }
+        89 => {
+            return radical_inverse_specialized(463_u16, a);
+        }
+        90 => {
+            return radical_inverse_specialized(467_u16, a);
+        }
+        91 => {
+            return radical_inverse_specialized(479_u16, a);
+        }
+        92 => {
+            return radical_inverse_specialized(487_u16, a);
+        }
+        93 => {
+            return radical_inverse_specialized(491_u16, a);
+        }
+        94 => {
+            return radical_inverse_specialized(499_u16, a);
+        }
+        95 => {
+            return radical_inverse_specialized(503_u16, a);
+        }
+        96 => {
+            return radical_inverse_specialized(509_u16, a);
+        }
+        97 => {
+            return radical_inverse_specialized(521_u16, a);
+        }
+        98 => {
+            return radical_inverse_specialized(523_u16, a);
+        }
+        99 => {
+            return radical_inverse_specialized(541_u16, a);
+        }
+        100 => {
+            return radical_inverse_specialized(547_u16, a);
+        }
+        101 => {
+            return radical_inverse_specialized(557_u16, a);
+        }
+        102 => {
+            return radical_inverse_specialized(563_u16, a);
+        }
+        103 => {
+            return radical_inverse_specialized(569_u16, a);
+        }
+        104 => {
+            return radical_inverse_specialized(571_u16, a);
+        }
+        105 => {
+            return radical_inverse_specialized(577_u16, a);
+        }
+        106 => {
+            return radical_inverse_specialized(587_u16, a);
+        }
+        107 => {
+            return radical_inverse_specialized(593_u16, a);
+        }
+        108 => {
+            return radical_inverse_specialized(599_u16, a);
+        }
+        109 => {
+            return radical_inverse_specialized(601_u16, a);
+        }
+        110 => {
+            return radical_inverse_specialized(607_u16, a);
+        }
+        111 => {
+            return radical_inverse_specialized(613_u16, a);
+        }
+        112 => {
+            return radical_inverse_specialized(617_u16, a);
+        }
+        113 => {
+            return radical_inverse_specialized(619_u16, a);
+        }
+        114 => {
+            return radical_inverse_specialized(631_u16, a);
+        }
+        115 => {
+            return radical_inverse_specialized(641_u16, a);
+        }
+        116 => {
+            return radical_inverse_specialized(643_u16, a);
+        }
+        117 => {
+            return radical_inverse_specialized(647_u16, a);
+        }
+        118 => {
+            return radical_inverse_specialized(653_u16, a);
+        }
+        119 => {
+            return radical_inverse_specialized(659_u16, a);
+        }
+        120 => {
+            return radical_inverse_specialized(661_u16, a);
+        }
+        121 => {
+            return radical_inverse_specialized(673_u16, a);
+        }
+        122 => {
+            return radical_inverse_specialized(677_u16, a);
+        }
+        123 => {
+            return radical_inverse_specialized(683_u16, a);
+        }
+        124 => {
+            return radical_inverse_specialized(691_u16, a);
+        }
+        125 => {
+            return radical_inverse_specialized(701_u16, a);
+        }
+        126 => {
+            return radical_inverse_specialized(709_u16, a);
+        }
+        127 => {
+            return radical_inverse_specialized(719_u16, a);
+        }
+        128 => {
+            return radical_inverse_specialized(727_u16, a);
+        }
+        129 => {
+            return radical_inverse_specialized(733_u16, a);
+        }
+        130 => {
+            return radical_inverse_specialized(739_u16, a);
+        }
+        131 => {
+            return radical_inverse_specialized(743_u16, a);
+        }
+        132 => {
+            return radical_inverse_specialized(751_u16, a);
+        }
+        133 => {
+            return radical_inverse_specialized(757_u16, a);
+        }
+        134 => {
+            return radical_inverse_specialized(761_u16, a);
+        }
+        135 => {
+            return radical_inverse_specialized(769_u16, a);
+        }
+        136 => {
+            return radical_inverse_specialized(773_u16, a);
+        }
+        137 => {
+            return radical_inverse_specialized(787_u16, a);
+        }
+        138 => {
+            return radical_inverse_specialized(797_u16, a);
+        }
+        139 => {
+            return radical_inverse_specialized(809_u16, a);
+        }
+        140 => {
+            return radical_inverse_specialized(811_u16, a);
+        }
+        141 => {
+            return radical_inverse_specialized(821_u16, a);
+        }
+        142 => {
+            return radical_inverse_specialized(823_u16, a);
+        }
+        143 => {
+            return radical_inverse_specialized(827_u16, a);
+        }
+        144 => {
+            return radical_inverse_specialized(829_u16, a);
+        }
+        145 => {
+            return radical_inverse_specialized(839_u16, a);
+        }
+        146 => {
+            return radical_inverse_specialized(853_u16, a);
+        }
+        147 => {
+            return radical_inverse_specialized(857_u16, a);
+        }
+        148 => {
+            return radical_inverse_specialized(859_u16, a);
+        }
+        149 => {
+            return radical_inverse_specialized(863_u16, a);
+        }
+        150 => {
+            return radical_inverse_specialized(877_u16, a);
+        }
+        151 => {
+            return radical_inverse_specialized(881_u16, a);
+        }
+        152 => {
+            return radical_inverse_specialized(883_u16, a);
+        }
+        153 => {
+            return radical_inverse_specialized(887_u16, a);
+        }
+        154 => {
+            return radical_inverse_specialized(907_u16, a);
+        }
+        155 => {
+            return radical_inverse_specialized(911_u16, a);
+        }
+        156 => {
+            return radical_inverse_specialized(919_u16, a);
+        }
+        157 => {
+            return radical_inverse_specialized(929_u16, a);
+        }
+        158 => {
+            return radical_inverse_specialized(937_u16, a);
+        }
+        159 => {
+            return radical_inverse_specialized(941_u16, a);
+        }
+        160 => {
+            return radical_inverse_specialized(947_u16, a);
+        }
+        161 => {
+            return radical_inverse_specialized(953_u16, a);
+        }
+        162 => {
+            return radical_inverse_specialized(967_u16, a);
+        }
+        163 => {
+            return radical_inverse_specialized(971_u16, a);
+        }
+        164 => {
+            return radical_inverse_specialized(977_u16, a);
+        }
+        165 => {
+            return radical_inverse_specialized(983_u16, a);
+        }
+        166 => {
+            return radical_inverse_specialized(991_u16, a);
+        }
+        167 => {
+            return radical_inverse_specialized(997_u16, a);
+        }
+        168 => {
+            return radical_inverse_specialized(1009_u16, a);
+        }
+        169 => {
+            return radical_inverse_specialized(1013_u16, a);
+        }
+        170 => {
+            return radical_inverse_specialized(1019_u16, a);
+        }
+        171 => {
+            return radical_inverse_specialized(1021_u16, a);
+        }
+        172 => {
+            return radical_inverse_specialized(1031_u16, a);
+        }
+        173 => {
+            return radical_inverse_specialized(1033_u16, a);
+        }
+        174 => {
+            return radical_inverse_specialized(1039_u16, a);
+        }
+        175 => {
+            return radical_inverse_specialized(1049_u16, a);
+        }
+        176 => {
+            return radical_inverse_specialized(1051_u16, a);
+        }
+        177 => {
+            return radical_inverse_specialized(1061_u16, a);
+        }
+        178 => {
+            return radical_inverse_specialized(1063_u16, a);
+        }
+        179 => {
+            return radical_inverse_specialized(1069_u16, a);
+        }
+        180 => {
+            return radical_inverse_specialized(1087_u16, a);
+        }
+        181 => {
+            return radical_inverse_specialized(1091_u16, a);
+        }
+        182 => {
+            return radical_inverse_specialized(1093_u16, a);
+        }
+        183 => {
+            return radical_inverse_specialized(1097_u16, a);
+        }
+        184 => {
+            return radical_inverse_specialized(1103_u16, a);
+        }
+        185 => {
+            return radical_inverse_specialized(1109_u16, a);
+        }
+        186 => {
+            return radical_inverse_specialized(1117_u16, a);
+        }
+        187 => {
+            return radical_inverse_specialized(1123_u16, a);
+        }
+        188 => {
+            return radical_inverse_specialized(1129_u16, a);
+        }
+        189 => {
+            return radical_inverse_specialized(1151_u16, a);
+        }
+        190 => {
+            return radical_inverse_specialized(1153_u16, a);
+        }
+        191 => {
+            return radical_inverse_specialized(1163_u16, a);
+        }
+        192 => {
+            return radical_inverse_specialized(1171_u16, a);
+        }
+        193 => {
+            return radical_inverse_specialized(1181_u16, a);
+        }
+        194 => {
+            return radical_inverse_specialized(1187_u16, a);
+        }
+        195 => {
+            return radical_inverse_specialized(1193_u16, a);
+        }
+        196 => {
+            return radical_inverse_specialized(1201_u16, a);
+        }
+        197 => {
+            return radical_inverse_specialized(1213_u16, a);
+        }
+        198 => {
+            return radical_inverse_specialized(1217_u16, a);
+        }
+        199 => {
+            return radical_inverse_specialized(1223_u16, a);
+        }
+        200 => {
+            return radical_inverse_specialized(1229_u16, a);
+        }
+        201 => {
+            return radical_inverse_specialized(1231_u16, a);
+        }
+        202 => {
+            return radical_inverse_specialized(1237_u16, a);
+        }
+        203 => {
+            return radical_inverse_specialized(1249_u16, a);
+        }
+        204 => {
+            return radical_inverse_specialized(1259_u16, a);
+        }
+        205 => {
+            return radical_inverse_specialized(1277_u16, a);
+        }
+        206 => {
+            return radical_inverse_specialized(1279_u16, a);
+        }
+        207 => {
+            return radical_inverse_specialized(1283_u16, a);
+        }
+        208 => {
+            return radical_inverse_specialized(1289_u16, a);
+        }
+        209 => {
+            return radical_inverse_specialized(1291_u16, a);
+        }
+        210 => {
+            return radical_inverse_specialized(1297_u16, a);
+        }
+        211 => {
+            return radical_inverse_specialized(1301_u16, a);
+        }
+        212 => {
+            return radical_inverse_specialized(1303_u16, a);
+        }
+        213 => {
+            return radical_inverse_specialized(1307_u16, a);
+        }
+        214 => {
+            return radical_inverse_specialized(1319_u16, a);
+        }
+        215 => {
+            return radical_inverse_specialized(1321_u16, a);
+        }
+        216 => {
+            return radical_inverse_specialized(1327_u16, a);
+        }
+        217 => {
+            return radical_inverse_specialized(1361_u16, a);
+        }
+        218 => {
+            return radical_inverse_specialized(1367_u16, a);
+        }
+        219 => {
+            return radical_inverse_specialized(1373_u16, a);
+        }
+        220 => {
+            return radical_inverse_specialized(1381_u16, a);
+        }
+        221 => {
+            return radical_inverse_specialized(1399_u16, a);
+        }
+        222 => {
+            return radical_inverse_specialized(1409_u16, a);
+        }
+        223 => {
+            return radical_inverse_specialized(1423_u16, a);
+        }
+        224 => {
+            return radical_inverse_specialized(1427_u16, a);
+        }
+        225 => {
+            return radical_inverse_specialized(1429_u16, a);
+        }
+        226 => {
+            return radical_inverse_specialized(1433_u16, a);
+        }
+        227 => {
+            return radical_inverse_specialized(1439_u16, a);
+        }
+        228 => {
+            return radical_inverse_specialized(1447_u16, a);
+        }
+        229 => {
+            return radical_inverse_specialized(1451_u16, a);
+        }
+        230 => {
+            return radical_inverse_specialized(1453_u16, a);
+        }
+        231 => {
+            return radical_inverse_specialized(1459_u16, a);
+        }
+        232 => {
+            return radical_inverse_specialized(1471_u16, a);
+        }
+        233 => {
+            return radical_inverse_specialized(1481_u16, a);
+        }
+        234 => {
+            return radical_inverse_specialized(1483_u16, a);
+        }
+        235 => {
+            return radical_inverse_specialized(1487_u16, a);
+        }
+        236 => {
+            return radical_inverse_specialized(1489_u16, a);
+        }
+        237 => {
+            return radical_inverse_specialized(1493_u16, a);
+        }
+        238 => {
+            return radical_inverse_specialized(1499_u16, a);
+        }
+        239 => {
+            return radical_inverse_specialized(1511_u16, a);
+        }
+        240 => {
+            return radical_inverse_specialized(1523_u16, a);
+        }
+        241 => {
+            return radical_inverse_specialized(1531_u16, a);
+        }
+        242 => {
+            return radical_inverse_specialized(1543_u16, a);
+        }
+        243 => {
+            return radical_inverse_specialized(1549_u16, a);
+        }
+        244 => {
+            return radical_inverse_specialized(1553_u16, a);
+        }
+        245 => {
+            return radical_inverse_specialized(1559_u16, a);
+        }
+        246 => {
+            return radical_inverse_specialized(1567_u16, a);
+        }
+        247 => {
+            return radical_inverse_specialized(1571_u16, a);
+        }
+        248 => {
+            return radical_inverse_specialized(1579_u16, a);
+        }
+        249 => {
+            return radical_inverse_specialized(1583_u16, a);
+        }
+        250 => {
+            return radical_inverse_specialized(1597_u16, a);
+        }
+        251 => {
+            return radical_inverse_specialized(1601_u16, a);
+        }
+        252 => {
+            return radical_inverse_specialized(1607_u16, a);
+        }
+        253 => {
+            return radical_inverse_specialized(1609_u16, a);
+        }
+        254 => {
+            return radical_inverse_specialized(1613_u16, a);
+        }
+        255 => {
+            return radical_inverse_specialized(1619_u16, a);
+        }
+        256 => {
+            return radical_inverse_specialized(1621_u16, a);
+        }
+        257 => {
+            return radical_inverse_specialized(1627_u16, a);
+        }
+        258 => {
+            return radical_inverse_specialized(1637_u16, a);
+        }
+        259 => {
+            return radical_inverse_specialized(1657_u16, a);
+        }
+        260 => {
+            return radical_inverse_specialized(1663_u16, a);
+        }
+        261 => {
+            return radical_inverse_specialized(1667_u16, a);
+        }
+        262 => {
+            return radical_inverse_specialized(1669_u16, a);
+        }
+        263 => {
+            return radical_inverse_specialized(1693_u16, a);
+        }
+        264 => {
+            return radical_inverse_specialized(1697_u16, a);
+        }
+        265 => {
+            return radical_inverse_specialized(1699_u16, a);
+        }
+        266 => {
+            return radical_inverse_specialized(1709_u16, a);
+        }
+        267 => {
+            return radical_inverse_specialized(1721_u16, a);
+        }
+        268 => {
+            return radical_inverse_specialized(1723_u16, a);
+        }
+        269 => {
+            return radical_inverse_specialized(1733_u16, a);
+        }
+        270 => {
+            return radical_inverse_specialized(1741_u16, a);
+        }
+        271 => {
+            return radical_inverse_specialized(1747_u16, a);
+        }
+        272 => {
+            return radical_inverse_specialized(1753_u16, a);
+        }
+        273 => {
+            return radical_inverse_specialized(1759_u16, a);
+        }
+        274 => {
+            return radical_inverse_specialized(1777_u16, a);
+        }
+        275 => {
+            return radical_inverse_specialized(1783_u16, a);
+        }
+        276 => {
+            return radical_inverse_specialized(1787_u16, a);
+        }
+        277 => {
+            return radical_inverse_specialized(1789_u16, a);
+        }
+        278 => {
+            return radical_inverse_specialized(1801_u16, a);
+        }
+        279 => {
+            return radical_inverse_specialized(1811_u16, a);
+        }
+        280 => {
+            return radical_inverse_specialized(1823_u16, a);
+        }
+        281 => {
+            return radical_inverse_specialized(1831_u16, a);
+        }
+        282 => {
+            return radical_inverse_specialized(1847_u16, a);
+        }
+        283 => {
+            return radical_inverse_specialized(1861_u16, a);
+        }
+        284 => {
+            return radical_inverse_specialized(1867_u16, a);
+        }
+        285 => {
+            return radical_inverse_specialized(1871_u16, a);
+        }
+        286 => {
+            return radical_inverse_specialized(1873_u16, a);
+        }
+        287 => {
+            return radical_inverse_specialized(1877_u16, a);
+        }
+        288 => {
+            return radical_inverse_specialized(1879_u16, a);
+        }
+        289 => {
+            return radical_inverse_specialized(1889_u16, a);
+        }
+        290 => {
+            return radical_inverse_specialized(1901_u16, a);
+        }
+        291 => {
+            return radical_inverse_specialized(1907_u16, a);
+        }
+        292 => {
+            return radical_inverse_specialized(1913_u16, a);
+        }
+        293 => {
+            return radical_inverse_specialized(1931_u16, a);
+        }
+        294 => {
+            return radical_inverse_specialized(1933_u16, a);
+        }
+        295 => {
+            return radical_inverse_specialized(1949_u16, a);
+        }
+        296 => {
+            return radical_inverse_specialized(1951_u16, a);
+        }
+        297 => {
+            return radical_inverse_specialized(1973_u16, a);
+        }
+        298 => {
+            return radical_inverse_specialized(1979_u16, a);
+        }
+        299 => {
+            return radical_inverse_specialized(1987_u16, a);
+        }
+        300 => {
+            return radical_inverse_specialized(1993_u16, a);
+        }
+        301 => {
+            return radical_inverse_specialized(1997_u16, a);
+        }
+        302 => {
+            return radical_inverse_specialized(1999_u16, a);
+        }
+        303 => {
+            return radical_inverse_specialized(2003_u16, a);
+        }
+        304 => {
+            return radical_inverse_specialized(2011_u16, a);
+        }
+        305 => {
+            return radical_inverse_specialized(2017_u16, a);
+        }
+        306 => {
+            return radical_inverse_specialized(2027_u16, a);
+        }
+        307 => {
+            return radical_inverse_specialized(2029_u16, a);
+        }
+        308 => {
+            return radical_inverse_specialized(2039_u16, a);
+        }
+        309 => {
+            return radical_inverse_specialized(2053_u16, a);
+        }
+        310 => {
+            return radical_inverse_specialized(2063_u16, a);
+        }
+        311 => {
+            return radical_inverse_specialized(2069_u16, a);
+        }
+        312 => {
+            return radical_inverse_specialized(2081_u16, a);
+        }
+        313 => {
+            return radical_inverse_specialized(2083_u16, a);
+        }
+        314 => {
+            return radical_inverse_specialized(2087_u16, a);
+        }
+        315 => {
+            return radical_inverse_specialized(2089_u16, a);
+        }
+        316 => {
+            return radical_inverse_specialized(2099_u16, a);
+        }
+        317 => {
+            return radical_inverse_specialized(2111_u16, a);
+        }
+        318 => {
+            return radical_inverse_specialized(2113_u16, a);
+        }
+        319 => {
+            return radical_inverse_specialized(2129_u16, a);
+        }
+        320 => {
+            return radical_inverse_specialized(2131_u16, a);
+        }
+        321 => {
+            return radical_inverse_specialized(2137_u16, a);
+        }
+        322 => {
+            return radical_inverse_specialized(2141_u16, a);
+        }
+        323 => {
+            return radical_inverse_specialized(2143_u16, a);
+        }
+        324 => {
+            return radical_inverse_specialized(2153_u16, a);
+        }
+        325 => {
+            return radical_inverse_specialized(2161_u16, a);
+        }
+        326 => {
+            return radical_inverse_specialized(2179_u16, a);
+        }
+        327 => {
+            return radical_inverse_specialized(2203_u16, a);
+        }
+        328 => {
+            return radical_inverse_specialized(2207_u16, a);
+        }
+        329 => {
+            return radical_inverse_specialized(2213_u16, a);
+        }
+        330 => {
+            return radical_inverse_specialized(2221_u16, a);
+        }
+        331 => {
+            return radical_inverse_specialized(2237_u16, a);
+        }
+        332 => {
+            return radical_inverse_specialized(2239_u16, a);
+        }
+        333 => {
+            return radical_inverse_specialized(2243_u16, a);
+        }
+        334 => {
+            return radical_inverse_specialized(2251_u16, a);
+        }
+        335 => {
+            return radical_inverse_specialized(2267_u16, a);
+        }
+        336 => {
+            return radical_inverse_specialized(2269_u16, a);
+        }
+        337 => {
+            return radical_inverse_specialized(2273_u16, a);
+        }
+        338 => {
+            return radical_inverse_specialized(2281_u16, a);
+        }
+        339 => {
+            return radical_inverse_specialized(2287_u16, a);
+        }
+        340 => {
+            return radical_inverse_specialized(2293_u16, a);
+        }
+        341 => {
+            return radical_inverse_specialized(2297_u16, a);
+        }
+        342 => {
+            return radical_inverse_specialized(2309_u16, a);
+        }
+        343 => {
+            return radical_inverse_specialized(2311_u16, a);
+        }
+        344 => {
+            return radical_inverse_specialized(2333_u16, a);
+        }
+        345 => {
+            return radical_inverse_specialized(2339_u16, a);
+        }
+        346 => {
+            return radical_inverse_specialized(2341_u16, a);
+        }
+        347 => {
+            return radical_inverse_specialized(2347_u16, a);
+        }
+        348 => {
+            return radical_inverse_specialized(2351_u16, a);
+        }
+        349 => {
+            return radical_inverse_specialized(2357_u16, a);
+        }
+        350 => {
+            return radical_inverse_specialized(2371_u16, a);
+        }
+        351 => {
+            return radical_inverse_specialized(2377_u16, a);
+        }
+        352 => {
+            return radical_inverse_specialized(2381_u16, a);
+        }
+        353 => {
+            return radical_inverse_specialized(2383_u16, a);
+        }
+        354 => {
+            return radical_inverse_specialized(2389_u16, a);
+        }
+        355 => {
+            return radical_inverse_specialized(2393_u16, a);
+        }
+        356 => {
+            return radical_inverse_specialized(2399_u16, a);
+        }
+        357 => {
+            return radical_inverse_specialized(2411_u16, a);
+        }
+        358 => {
+            return radical_inverse_specialized(2417_u16, a);
+        }
+        359 => {
+            return radical_inverse_specialized(2423_u16, a);
+        }
+        360 => {
+            return radical_inverse_specialized(2437_u16, a);
+        }
+        361 => {
+            return radical_inverse_specialized(2441_u16, a);
+        }
+        362 => {
+            return radical_inverse_specialized(2447_u16, a);
+        }
+        363 => {
+            return radical_inverse_specialized(2459_u16, a);
+        }
+        364 => {
+            return radical_inverse_specialized(2467_u16, a);
+        }
+        365 => {
+            return radical_inverse_specialized(2473_u16, a);
+        }
+        366 => {
+            return radical_inverse_specialized(2477_u16, a);
+        }
+        367 => {
+            return radical_inverse_specialized(2503_u16, a);
+        }
+        368 => {
+            return radical_inverse_specialized(2521_u16, a);
+        }
+        369 => {
+            return radical_inverse_specialized(2531_u16, a);
+        }
+        370 => {
+            return radical_inverse_specialized(2539_u16, a);
+        }
+        371 => {
+            return radical_inverse_specialized(2543_u16, a);
+        }
+        372 => {
+            return radical_inverse_specialized(2549_u16, a);
+        }
+        373 => {
+            return radical_inverse_specialized(2551_u16, a);
+        }
+        374 => {
+            return radical_inverse_specialized(2557_u16, a);
+        }
+        375 => {
+            return radical_inverse_specialized(2579_u16, a);
+        }
+        376 => {
+            return radical_inverse_specialized(2591_u16, a);
+        }
+        377 => {
+            return radical_inverse_specialized(2593_u16, a);
+        }
+        378 => {
+            return radical_inverse_specialized(2609_u16, a);
+        }
+        379 => {
+            return radical_inverse_specialized(2617_u16, a);
+        }
+        380 => {
+            return radical_inverse_specialized(2621_u16, a);
+        }
+        381 => {
+            return radical_inverse_specialized(2633_u16, a);
+        }
+        382 => {
+            return radical_inverse_specialized(2647_u16, a);
+        }
+        383 => {
+            return radical_inverse_specialized(2657_u16, a);
+        }
+        384 => {
+            return radical_inverse_specialized(2659_u16, a);
+        }
+        385 => {
+            return radical_inverse_specialized(2663_u16, a);
+        }
+        386 => {
+            return radical_inverse_specialized(2671_u16, a);
+        }
+        387 => {
+            return radical_inverse_specialized(2677_u16, a);
+        }
+        388 => {
+            return radical_inverse_specialized(2683_u16, a);
+        }
+        389 => {
+            return radical_inverse_specialized(2687_u16, a);
+        }
+        390 => {
+            return radical_inverse_specialized(2689_u16, a);
+        }
+        391 => {
+            return radical_inverse_specialized(2693_u16, a);
+        }
+        392 => {
+            return radical_inverse_specialized(2699_u16, a);
+        }
+        393 => {
+            return radical_inverse_specialized(2707_u16, a);
+        }
+        394 => {
+            return radical_inverse_specialized(2711_u16, a);
+        }
+        395 => {
+            return radical_inverse_specialized(2713_u16, a);
+        }
+        396 => {
+            return radical_inverse_specialized(2719_u16, a);
+        }
+        397 => {
+            return radical_inverse_specialized(2729_u16, a);
+        }
+        398 => {
+            return radical_inverse_specialized(2731_u16, a);
+        }
+        399 => {
+            return radical_inverse_specialized(2741_u16, a);
+        }
+        400 => {
+            return radical_inverse_specialized(2749_u16, a);
+        }
+        401 => {
+            return radical_inverse_specialized(2753_u16, a);
+        }
+        402 => {
+            return radical_inverse_specialized(2767_u16, a);
+        }
+        403 => {
+            return radical_inverse_specialized(2777_u16, a);
+        }
+        404 => {
+            return radical_inverse_specialized(2789_u16, a);
+        }
+        405 => {
+            return radical_inverse_specialized(2791_u16, a);
+        }
+        406 => {
+            return radical_inverse_specialized(2797_u16, a);
+        }
+        407 => {
+            return radical_inverse_specialized(2801_u16, a);
+        }
+        408 => {
+            return radical_inverse_specialized(2803_u16, a);
+        }
+        409 => {
+            return radical_inverse_specialized(2819_u16, a);
+        }
+        410 => {
+            return radical_inverse_specialized(2833_u16, a);
+        }
+        411 => {
+            return radical_inverse_specialized(2837_u16, a);
+        }
+        412 => {
+            return radical_inverse_specialized(2843_u16, a);
+        }
+        413 => {
+            return radical_inverse_specialized(2851_u16, a);
+        }
+        414 => {
+            return radical_inverse_specialized(2857_u16, a);
+        }
+        415 => {
+            return radical_inverse_specialized(2861_u16, a);
+        }
+        416 => {
+            return radical_inverse_specialized(2879_u16, a);
+        }
+        417 => {
+            return radical_inverse_specialized(2887_u16, a);
+        }
+        418 => {
+            return radical_inverse_specialized(2897_u16, a);
+        }
+        419 => {
+            return radical_inverse_specialized(2903_u16, a);
+        }
+        420 => {
+            return radical_inverse_specialized(2909_u16, a);
+        }
+        421 => {
+            return radical_inverse_specialized(2917_u16, a);
+        }
+        422 => {
+            return radical_inverse_specialized(2927_u16, a);
+        }
+        423 => {
+            return radical_inverse_specialized(2939_u16, a);
+        }
+        424 => {
+            return radical_inverse_specialized(2953_u16, a);
+        }
+        425 => {
+            return radical_inverse_specialized(2957_u16, a);
+        }
+        426 => {
+            return radical_inverse_specialized(2963_u16, a);
+        }
+        427 => {
+            return radical_inverse_specialized(2969_u16, a);
+        }
+        428 => {
+            return radical_inverse_specialized(2971_u16, a);
+        }
+        429 => {
+            return radical_inverse_specialized(2999_u16, a);
+        }
+        430 => {
+            return radical_inverse_specialized(3001_u16, a);
+        }
+        431 => {
+            return radical_inverse_specialized(3011_u16, a);
+        }
+        432 => {
+            return radical_inverse_specialized(3019_u16, a);
+        }
+        433 => {
+            return radical_inverse_specialized(3023_u16, a);
+        }
+        434 => {
+            return radical_inverse_specialized(3037_u16, a);
+        }
+        435 => {
+            return radical_inverse_specialized(3041_u16, a);
+        }
+        436 => {
+            return radical_inverse_specialized(3049_u16, a);
+        }
+        437 => {
+            return radical_inverse_specialized(3061_u16, a);
+        }
+        438 => {
+            return radical_inverse_specialized(3067_u16, a);
+        }
+        439 => {
+            return radical_inverse_specialized(3079_u16, a);
+        }
+        440 => {
+            return radical_inverse_specialized(3083_u16, a);
+        }
+        441 => {
+            return radical_inverse_specialized(3089_u16, a);
+        }
+        442 => {
+            return radical_inverse_specialized(3109_u16, a);
+        }
+        443 => {
+            return radical_inverse_specialized(3119_u16, a);
+        }
+        444 => {
+            return radical_inverse_specialized(3121_u16, a);
+        }
+        445 => {
+            return radical_inverse_specialized(3137_u16, a);
+        }
+        446 => {
+            return radical_inverse_specialized(3163_u16, a);
+        }
+        447 => {
+            return radical_inverse_specialized(3167_u16, a);
+        }
+        448 => {
+            return radical_inverse_specialized(3169_u16, a);
+        }
+        449 => {
+            return radical_inverse_specialized(3181_u16, a);
+        }
+        450 => {
+            return radical_inverse_specialized(3187_u16, a);
+        }
+        451 => {
+            return radical_inverse_specialized(3191_u16, a);
+        }
+        452 => {
+            return radical_inverse_specialized(3203_u16, a);
+        }
+        453 => {
+            return radical_inverse_specialized(3209_u16, a);
+        }
+        454 => {
+            return radical_inverse_specialized(3217_u16, a);
+        }
+        455 => {
+            return radical_inverse_specialized(3221_u16, a);
+        }
+        456 => {
+            return radical_inverse_specialized(3229_u16, a);
+        }
+        457 => {
+            return radical_inverse_specialized(3251_u16, a);
+        }
+        458 => {
+            return radical_inverse_specialized(3253_u16, a);
+        }
+        459 => {
+            return radical_inverse_specialized(3257_u16, a);
+        }
+        460 => {
+            return radical_inverse_specialized(3259_u16, a);
+        }
+        461 => {
+            return radical_inverse_specialized(3271_u16, a);
+        }
+        462 => {
+            return radical_inverse_specialized(3299_u16, a);
+        }
+        463 => {
+            return radical_inverse_specialized(3301_u16, a);
+        }
+        464 => {
+            return radical_inverse_specialized(3307_u16, a);
+        }
+        465 => {
+            return radical_inverse_specialized(3313_u16, a);
+        }
+        466 => {
+            return radical_inverse_specialized(3319_u16, a);
+        }
+        467 => {
+            return radical_inverse_specialized(3323_u16, a);
+        }
+        468 => {
+            return radical_inverse_specialized(3329_u16, a);
+        }
+        469 => {
+            return radical_inverse_specialized(3331_u16, a);
+        }
+        470 => {
+            return radical_inverse_specialized(3343_u16, a);
+        }
+        471 => {
+            return radical_inverse_specialized(3347_u16, a);
+        }
+        472 => {
+            return radical_inverse_specialized(3359_u16, a);
+        }
+        473 => {
+            return radical_inverse_specialized(3361_u16, a);
+        }
+        474 => {
+            return radical_inverse_specialized(3371_u16, a);
+        }
+        475 => {
+            return radical_inverse_specialized(3373_u16, a);
+        }
+        476 => {
+            return radical_inverse_specialized(3389_u16, a);
+        }
+        477 => {
+            return radical_inverse_specialized(3391_u16, a);
+        }
+        478 => {
+            return radical_inverse_specialized(3407_u16, a);
+        }
+        479 => {
+            return radical_inverse_specialized(3413_u16, a);
+        }
+        480 => {
+            return radical_inverse_specialized(3433_u16, a);
+        }
+        481 => {
+            return radical_inverse_specialized(3449_u16, a);
+        }
+        482 => {
+            return radical_inverse_specialized(3457_u16, a);
+        }
+        483 => {
+            return radical_inverse_specialized(3461_u16, a);
+        }
+        484 => {
+            return radical_inverse_specialized(3463_u16, a);
+        }
+        485 => {
+            return radical_inverse_specialized(3467_u16, a);
+        }
+        486 => {
+            return radical_inverse_specialized(3469_u16, a);
+        }
+        487 => {
+            return radical_inverse_specialized(3491_u16, a);
+        }
+        488 => {
+            return radical_inverse_specialized(3499_u16, a);
+        }
+        489 => {
+            return radical_inverse_specialized(3511_u16, a);
+        }
+        490 => {
+            return radical_inverse_specialized(3517_u16, a);
+        }
+        491 => {
+            return radical_inverse_specialized(3527_u16, a);
+        }
+        492 => {
+            return radical_inverse_specialized(3529_u16, a);
+        }
+        493 => {
+            return radical_inverse_specialized(3533_u16, a);
+        }
+        494 => {
+            return radical_inverse_specialized(3539_u16, a);
+        }
+        495 => {
+            return radical_inverse_specialized(3541_u16, a);
+        }
+        496 => {
+            return radical_inverse_specialized(3547_u16, a);
+        }
+        497 => {
+            return radical_inverse_specialized(3557_u16, a);
+        }
+        498 => {
+            return radical_inverse_specialized(3559_u16, a);
+        }
+        499 => {
+            return radical_inverse_specialized(3571_u16, a);
+        }
+        500 => {
+            return radical_inverse_specialized(3581_u16, a);
+        }
+        501 => {
+            return radical_inverse_specialized(3583_u16, a);
+        }
+        502 => {
+            return radical_inverse_specialized(3593_u16, a);
+        }
+        503 => {
+            return radical_inverse_specialized(3607_u16, a);
+        }
+        504 => {
+            return radical_inverse_specialized(3613_u16, a);
+        }
+        505 => {
+            return radical_inverse_specialized(3617_u16, a);
+        }
+        506 => {
+            return radical_inverse_specialized(3623_u16, a);
+        }
+        507 => {
+            return radical_inverse_specialized(3631_u16, a);
+        }
+        508 => {
+            return radical_inverse_specialized(3637_u16, a);
+        }
+        509 => {
+            return radical_inverse_specialized(3643_u16, a);
+        }
+        510 => {
+            return radical_inverse_specialized(3659_u16, a);
+        }
+        511 => {
+            return radical_inverse_specialized(3671_u16, a);
+        }
+        512 => {
+            return radical_inverse_specialized(3673_u16, a);
+        }
+        513 => {
+            return radical_inverse_specialized(3677_u16, a);
+        }
+        514 => {
+            return radical_inverse_specialized(3691_u16, a);
+        }
+        515 => {
+            return radical_inverse_specialized(3697_u16, a);
+        }
+        516 => {
+            return radical_inverse_specialized(3701_u16, a);
+        }
+        517 => {
+            return radical_inverse_specialized(3709_u16, a);
+        }
+        518 => {
+            return radical_inverse_specialized(3719_u16, a);
+        }
+        519 => {
+            return radical_inverse_specialized(3727_u16, a);
+        }
+        520 => {
+            return radical_inverse_specialized(3733_u16, a);
+        }
+        521 => {
+            return radical_inverse_specialized(3739_u16, a);
+        }
+        522 => {
+            return radical_inverse_specialized(3761_u16, a);
+        }
+        523 => {
+            return radical_inverse_specialized(3767_u16, a);
+        }
+        524 => {
+            return radical_inverse_specialized(3769_u16, a);
+        }
+        525 => {
+            return radical_inverse_specialized(3779_u16, a);
+        }
+        526 => {
+            return radical_inverse_specialized(3793_u16, a);
+        }
+        527 => {
+            return radical_inverse_specialized(3797_u16, a);
+        }
+        528 => {
+            return radical_inverse_specialized(3803_u16, a);
+        }
+        529 => {
+            return radical_inverse_specialized(3821_u16, a);
+        }
+        530 => {
+            return radical_inverse_specialized(3823_u16, a);
+        }
+        531 => {
+            return radical_inverse_specialized(3833_u16, a);
+        }
+        532 => {
+            return radical_inverse_specialized(3847_u16, a);
+        }
+        533 => {
+            return radical_inverse_specialized(3851_u16, a);
+        }
+        534 => {
+            return radical_inverse_specialized(3853_u16, a);
+        }
+        535 => {
+            return radical_inverse_specialized(3863_u16, a);
+        }
+        536 => {
+            return radical_inverse_specialized(3877_u16, a);
+        }
+        537 => {
+            return radical_inverse_specialized(3881_u16, a);
+        }
+        538 => {
+            return radical_inverse_specialized(3889_u16, a);
+        }
+        539 => {
+            return radical_inverse_specialized(3907_u16, a);
+        }
+        540 => {
+            return radical_inverse_specialized(3911_u16, a);
+        }
+        541 => {
+            return radical_inverse_specialized(3917_u16, a);
+        }
+        542 => {
+            return radical_inverse_specialized(3919_u16, a);
+        }
+        543 => {
+            return radical_inverse_specialized(3923_u16, a);
+        }
+        544 => {
+            return radical_inverse_specialized(3929_u16, a);
+        }
+        545 => {
+            return radical_inverse_specialized(3931_u16, a);
+        }
+        546 => {
+            return radical_inverse_specialized(3943_u16, a);
+        }
+        547 => {
+            return radical_inverse_specialized(3947_u16, a);
+        }
+        548 => {
+            return radical_inverse_specialized(3967_u16, a);
+        }
+        549 => {
+            return radical_inverse_specialized(3989_u16, a);
+        }
+        550 => {
+            return radical_inverse_specialized(4001_u16, a);
+        }
+        551 => {
+            return radical_inverse_specialized(4003_u16, a);
+        }
+        552 => {
+            return radical_inverse_specialized(4007_u16, a);
+        }
+        553 => {
+            return radical_inverse_specialized(4013_u16, a);
+        }
+        554 => {
+            return radical_inverse_specialized(4019_u16, a);
+        }
+        555 => {
+            return radical_inverse_specialized(4021_u16, a);
+        }
+        556 => {
+            return radical_inverse_specialized(4027_u16, a);
+        }
+        557 => {
+            return radical_inverse_specialized(4049_u16, a);
+        }
+        558 => {
+            return radical_inverse_specialized(4051_u16, a);
+        }
+        559 => {
+            return radical_inverse_specialized(4057_u16, a);
+        }
+        560 => {
+            return radical_inverse_specialized(4073_u16, a);
+        }
+        561 => {
+            return radical_inverse_specialized(4079_u16, a);
+        }
+        562 => {
+            return radical_inverse_specialized(4091_u16, a);
+        }
+        563 => {
+            return radical_inverse_specialized(4093_u16, a);
+        }
+        564 => {
+            return radical_inverse_specialized(4099_u16, a);
+        }
+        565 => {
+            return radical_inverse_specialized(4111_u16, a);
+        }
+        566 => {
+            return radical_inverse_specialized(4127_u16, a);
+        }
+        567 => {
+            return radical_inverse_specialized(4129_u16, a);
+        }
+        568 => {
+            return radical_inverse_specialized(4133_u16, a);
+        }
+        569 => {
+            return radical_inverse_specialized(4139_u16, a);
+        }
+        570 => {
+            return radical_inverse_specialized(4153_u16, a);
+        }
+        571 => {
+            return radical_inverse_specialized(4157_u16, a);
+        }
+        572 => {
+            return radical_inverse_specialized(4159_u16, a);
+        }
+        573 => {
+            return radical_inverse_specialized(4177_u16, a);
+        }
+        574 => {
+            return radical_inverse_specialized(4201_u16, a);
+        }
+        575 => {
+            return radical_inverse_specialized(4211_u16, a);
+        }
+        576 => {
+            return radical_inverse_specialized(4217_u16, a);
+        }
+        577 => {
+            return radical_inverse_specialized(4219_u16, a);
+        }
+        578 => {
+            return radical_inverse_specialized(4229_u16, a);
+        }
+        579 => {
+            return radical_inverse_specialized(4231_u16, a);
+        }
+        580 => {
+            return radical_inverse_specialized(4241_u16, a);
+        }
+        581 => {
+            return radical_inverse_specialized(4243_u16, a);
+        }
+        582 => {
+            return radical_inverse_specialized(4253_u16, a);
+        }
+        583 => {
+            return radical_inverse_specialized(4259_u16, a);
+        }
+        584 => {
+            return radical_inverse_specialized(4261_u16, a);
+        }
+        585 => {
+            return radical_inverse_specialized(4271_u16, a);
+        }
+        586 => {
+            return radical_inverse_specialized(4273_u16, a);
+        }
+        587 => {
+            return radical_inverse_specialized(4283_u16, a);
+        }
+        588 => {
+            return radical_inverse_specialized(4289_u16, a);
+        }
+        589 => {
+            return radical_inverse_specialized(4297_u16, a);
+        }
+        590 => {
+            return radical_inverse_specialized(4327_u16, a);
+        }
+        591 => {
+            return radical_inverse_specialized(4337_u16, a);
+        }
+        592 => {
+            return radical_inverse_specialized(4339_u16, a);
+        }
+        593 => {
+            return radical_inverse_specialized(4349_u16, a);
+        }
+        594 => {
+            return radical_inverse_specialized(4357_u16, a);
+        }
+        595 => {
+            return radical_inverse_specialized(4363_u16, a);
+        }
+        596 => {
+            return radical_inverse_specialized(4373_u16, a);
+        }
+        597 => {
+            return radical_inverse_specialized(4391_u16, a);
+        }
+        598 => {
+            return radical_inverse_specialized(4397_u16, a);
+        }
+        599 => {
+            return radical_inverse_specialized(4409_u16, a);
+        }
+        600 => {
+            return radical_inverse_specialized(4421_u16, a);
+        }
+        601 => {
+            return radical_inverse_specialized(4423_u16, a);
+        }
+        602 => {
+            return radical_inverse_specialized(4441_u16, a);
+        }
+        603 => {
+            return radical_inverse_specialized(4447_u16, a);
+        }
+        604 => {
+            return radical_inverse_specialized(4451_u16, a);
+        }
+        605 => {
+            return radical_inverse_specialized(4457_u16, a);
+        }
+        606 => {
+            return radical_inverse_specialized(4463_u16, a);
+        }
+        607 => {
+            return radical_inverse_specialized(4481_u16, a);
+        }
+        608 => {
+            return radical_inverse_specialized(4483_u16, a);
+        }
+        609 => {
+            return radical_inverse_specialized(4493_u16, a);
+        }
+        610 => {
+            return radical_inverse_specialized(4507_u16, a);
+        }
+        611 => {
+            return radical_inverse_specialized(4513_u16, a);
+        }
+        612 => {
+            return radical_inverse_specialized(4517_u16, a);
+        }
+        613 => {
+            return radical_inverse_specialized(4519_u16, a);
+        }
+        614 => {
+            return radical_inverse_specialized(4523_u16, a);
+        }
+        615 => {
+            return radical_inverse_specialized(4547_u16, a);
+        }
+        616 => {
+            return radical_inverse_specialized(4549_u16, a);
+        }
+        617 => {
+            return radical_inverse_specialized(4561_u16, a);
+        }
+        618 => {
+            return radical_inverse_specialized(4567_u16, a);
+        }
+        619 => {
+            return radical_inverse_specialized(4583_u16, a);
+        }
+        620 => {
+            return radical_inverse_specialized(4591_u16, a);
+        }
+        621 => {
+            return radical_inverse_specialized(4597_u16, a);
+        }
+        622 => {
+            return radical_inverse_specialized(4603_u16, a);
+        }
+        623 => {
+            return radical_inverse_specialized(4621_u16, a);
+        }
+        624 => {
+            return radical_inverse_specialized(4637_u16, a);
+        }
+        625 => {
+            return radical_inverse_specialized(4639_u16, a);
+        }
+        626 => {
+            return radical_inverse_specialized(4643_u16, a);
+        }
+        627 => {
+            return radical_inverse_specialized(4649_u16, a);
+        }
+        628 => {
+            return radical_inverse_specialized(4651_u16, a);
+        }
+        629 => {
+            return radical_inverse_specialized(4657_u16, a);
+        }
+        630 => {
+            return radical_inverse_specialized(4663_u16, a);
+        }
+        631 => {
+            return radical_inverse_specialized(4673_u16, a);
+        }
+        632 => {
+            return radical_inverse_specialized(4679_u16, a);
+        }
+        633 => {
+            return radical_inverse_specialized(4691_u16, a);
+        }
+        634 => {
+            return radical_inverse_specialized(4703_u16, a);
+        }
+        635 => {
+            return radical_inverse_specialized(4721_u16, a);
+        }
+        636 => {
+            return radical_inverse_specialized(4723_u16, a);
+        }
+        637 => {
+            return radical_inverse_specialized(4729_u16, a);
+        }
+        638 => {
+            return radical_inverse_specialized(4733_u16, a);
+        }
+        639 => {
+            return radical_inverse_specialized(4751_u16, a);
+        }
+        640 => {
+            return radical_inverse_specialized(4759_u16, a);
+        }
+        641 => {
+            return radical_inverse_specialized(4783_u16, a);
+        }
+        642 => {
+            return radical_inverse_specialized(4787_u16, a);
+        }
+        643 => {
+            return radical_inverse_specialized(4789_u16, a);
+        }
+        644 => {
+            return radical_inverse_specialized(4793_u16, a);
+        }
+        645 => {
+            return radical_inverse_specialized(4799_u16, a);
+        }
+        646 => {
+            return radical_inverse_specialized(4801_u16, a);
+        }
+        647 => {
+            return radical_inverse_specialized(4813_u16, a);
+        }
+        648 => {
+            return radical_inverse_specialized(4817_u16, a);
+        }
+        649 => {
+            return radical_inverse_specialized(4831_u16, a);
+        }
+        650 => {
+            return radical_inverse_specialized(4861_u16, a);
+        }
+        651 => {
+            return radical_inverse_specialized(4871_u16, a);
+        }
+        652 => {
+            return radical_inverse_specialized(4877_u16, a);
+        }
+        653 => {
+            return radical_inverse_specialized(4889_u16, a);
+        }
+        654 => {
+            return radical_inverse_specialized(4903_u16, a);
+        }
+        655 => {
+            return radical_inverse_specialized(4909_u16, a);
+        }
+        656 => {
+            return radical_inverse_specialized(4919_u16, a);
+        }
+        657 => {
+            return radical_inverse_specialized(4931_u16, a);
+        }
+        658 => {
+            return radical_inverse_specialized(4933_u16, a);
+        }
+        659 => {
+            return radical_inverse_specialized(4937_u16, a);
+        }
+        660 => {
+            return radical_inverse_specialized(4943_u16, a);
+        }
+        661 => {
+            return radical_inverse_specialized(4951_u16, a);
+        }
+        662 => {
+            return radical_inverse_specialized(4957_u16, a);
+        }
+        663 => {
+            return radical_inverse_specialized(4967_u16, a);
+        }
+        664 => {
+            return radical_inverse_specialized(4969_u16, a);
+        }
+        665 => {
+            return radical_inverse_specialized(4973_u16, a);
+        }
+        666 => {
+            return radical_inverse_specialized(4987_u16, a);
+        }
+        667 => {
+            return radical_inverse_specialized(4993_u16, a);
+        }
+        668 => {
+            return radical_inverse_specialized(4999_u16, a);
+        }
+        669 => {
+            return radical_inverse_specialized(5003_u16, a);
+        }
+        670 => {
+            return radical_inverse_specialized(5009_u16, a);
+        }
+        671 => {
+            return radical_inverse_specialized(5011_u16, a);
+        }
+        672 => {
+            return radical_inverse_specialized(5021_u16, a);
+        }
+        673 => {
+            return radical_inverse_specialized(5023_u16, a);
+        }
+        674 => {
+            return radical_inverse_specialized(5039_u16, a);
+        }
+        675 => {
+            return radical_inverse_specialized(5051_u16, a);
+        }
+        676 => {
+            return radical_inverse_specialized(5059_u16, a);
+        }
+        677 => {
+            return radical_inverse_specialized(5077_u16, a);
+        }
+        678 => {
+            return radical_inverse_specialized(5081_u16, a);
+        }
+        679 => {
+            return radical_inverse_specialized(5087_u16, a);
+        }
+        680 => {
+            return radical_inverse_specialized(5099_u16, a);
+        }
+        681 => {
+            return radical_inverse_specialized(5101_u16, a);
+        }
+        682 => {
+            return radical_inverse_specialized(5107_u16, a);
+        }
+        683 => {
+            return radical_inverse_specialized(5113_u16, a);
+        }
+        684 => {
+            return radical_inverse_specialized(5119_u16, a);
+        }
+        685 => {
+            return radical_inverse_specialized(5147_u16, a);
+        }
+        686 => {
+            return radical_inverse_specialized(5153_u16, a);
+        }
+        687 => {
+            return radical_inverse_specialized(5167_u16, a);
+        }
+        688 => {
+            return radical_inverse_specialized(5171_u16, a);
+        }
+        689 => {
+            return radical_inverse_specialized(5179_u16, a);
+        }
+        690 => {
+            return radical_inverse_specialized(5189_u16, a);
+        }
+        691 => {
+            return radical_inverse_specialized(5197_u16, a);
+        }
+        692 => {
+            return radical_inverse_specialized(5209_u16, a);
+        }
+        693 => {
+            return radical_inverse_specialized(5227_u16, a);
+        }
+        694 => {
+            return radical_inverse_specialized(5231_u16, a);
+        }
+        695 => {
+            return radical_inverse_specialized(5233_u16, a);
+        }
+        696 => {
+            return radical_inverse_specialized(5237_u16, a);
+        }
+        697 => {
+            return radical_inverse_specialized(5261_u16, a);
+        }
+        698 => {
+            return radical_inverse_specialized(5273_u16, a);
+        }
+        699 => {
+            return radical_inverse_specialized(5279_u16, a);
+        }
+        700 => {
+            return radical_inverse_specialized(5281_u16, a);
+        }
+        701 => {
+            return radical_inverse_specialized(5297_u16, a);
+        }
+        702 => {
+            return radical_inverse_specialized(5303_u16, a);
+        }
+        703 => {
+            return radical_inverse_specialized(5309_u16, a);
+        }
+        704 => {
+            return radical_inverse_specialized(5323_u16, a);
+        }
+        705 => {
+            return radical_inverse_specialized(5333_u16, a);
+        }
+        706 => {
+            return radical_inverse_specialized(5347_u16, a);
+        }
+        707 => {
+            return radical_inverse_specialized(5351_u16, a);
+        }
+        708 => {
+            return radical_inverse_specialized(5381_u16, a);
+        }
+        709 => {
+            return radical_inverse_specialized(5387_u16, a);
+        }
+        710 => {
+            return radical_inverse_specialized(5393_u16, a);
+        }
+        711 => {
+            return radical_inverse_specialized(5399_u16, a);
+        }
+        712 => {
+            return radical_inverse_specialized(5407_u16, a);
+        }
+        713 => {
+            return radical_inverse_specialized(5413_u16, a);
+        }
+        714 => {
+            return radical_inverse_specialized(5417_u16, a);
+        }
+        715 => {
+            return radical_inverse_specialized(5419_u16, a);
+        }
+        716 => {
+            return radical_inverse_specialized(5431_u16, a);
+        }
+        717 => {
+            return radical_inverse_specialized(5437_u16, a);
+        }
+        718 => {
+            return radical_inverse_specialized(5441_u16, a);
+        }
+        719 => {
+            return radical_inverse_specialized(5443_u16, a);
+        }
+        720 => {
+            return radical_inverse_specialized(5449_u16, a);
+        }
+        721 => {
+            return radical_inverse_specialized(5471_u16, a);
+        }
+        722 => {
+            return radical_inverse_specialized(5477_u16, a);
+        }
+        723 => {
+            return radical_inverse_specialized(5479_u16, a);
+        }
+        724 => {
+            return radical_inverse_specialized(5483_u16, a);
+        }
+        725 => {
+            return radical_inverse_specialized(5501_u16, a);
+        }
+        726 => {
+            return radical_inverse_specialized(5503_u16, a);
+        }
+        727 => {
+            return radical_inverse_specialized(5507_u16, a);
+        }
+        728 => {
+            return radical_inverse_specialized(5519_u16, a);
+        }
+        729 => {
+            return radical_inverse_specialized(5521_u16, a);
+        }
+        730 => {
+            return radical_inverse_specialized(5527_u16, a);
+        }
+        731 => {
+            return radical_inverse_specialized(5531_u16, a);
+        }
+        732 => {
+            return radical_inverse_specialized(5557_u16, a);
+        }
+        733 => {
+            return radical_inverse_specialized(5563_u16, a);
+        }
+        734 => {
+            return radical_inverse_specialized(5569_u16, a);
+        }
+        735 => {
+            return radical_inverse_specialized(5573_u16, a);
+        }
+        736 => {
+            return radical_inverse_specialized(5581_u16, a);
+        }
+        737 => {
+            return radical_inverse_specialized(5591_u16, a);
+        }
+        738 => {
+            return radical_inverse_specialized(5623_u16, a);
+        }
+        739 => {
+            return radical_inverse_specialized(5639_u16, a);
+        }
+        740 => {
+            return radical_inverse_specialized(5641_u16, a);
+        }
+        741 => {
+            return radical_inverse_specialized(5647_u16, a);
+        }
+        742 => {
+            return radical_inverse_specialized(5651_u16, a);
+        }
+        743 => {
+            return radical_inverse_specialized(5653_u16, a);
+        }
+        744 => {
+            return radical_inverse_specialized(5657_u16, a);
+        }
+        745 => {
+            return radical_inverse_specialized(5659_u16, a);
+        }
+        746 => {
+            return radical_inverse_specialized(5669_u16, a);
+        }
+        747 => {
+            return radical_inverse_specialized(5683_u16, a);
+        }
+        748 => {
+            return radical_inverse_specialized(5689_u16, a);
+        }
+        749 => {
+            return radical_inverse_specialized(5693_u16, a);
+        }
+        750 => {
+            return radical_inverse_specialized(5701_u16, a);
+        }
+        751 => {
+            return radical_inverse_specialized(5711_u16, a);
+        }
+        752 => {
+            return radical_inverse_specialized(5717_u16, a);
+        }
+        753 => {
+            return radical_inverse_specialized(5737_u16, a);
+        }
+        754 => {
+            return radical_inverse_specialized(5741_u16, a);
+        }
+        755 => {
+            return radical_inverse_specialized(5743_u16, a);
+        }
+        756 => {
+            return radical_inverse_specialized(5749_u16, a);
+        }
+        757 => {
+            return radical_inverse_specialized(5779_u16, a);
+        }
+        758 => {
+            return radical_inverse_specialized(5783_u16, a);
+        }
+        759 => {
+            return radical_inverse_specialized(5791_u16, a);
+        }
+        760 => {
+            return radical_inverse_specialized(5801_u16, a);
+        }
+        761 => {
+            return radical_inverse_specialized(5807_u16, a);
+        }
+        762 => {
+            return radical_inverse_specialized(5813_u16, a);
+        }
+        763 => {
+            return radical_inverse_specialized(5821_u16, a);
+        }
+        764 => {
+            return radical_inverse_specialized(5827_u16, a);
+        }
+        765 => {
+            return radical_inverse_specialized(5839_u16, a);
+        }
+        766 => {
+            return radical_inverse_specialized(5843_u16, a);
+        }
+        767 => {
+            return radical_inverse_specialized(5849_u16, a);
+        }
+        768 => {
+            return radical_inverse_specialized(5851_u16, a);
+        }
+        769 => {
+            return radical_inverse_specialized(5857_u16, a);
+        }
+        770 => {
+            return radical_inverse_specialized(5861_u16, a);
+        }
+        771 => {
+            return radical_inverse_specialized(5867_u16, a);
+        }
+        772 => {
+            return radical_inverse_specialized(5869_u16, a);
+        }
+        773 => {
+            return radical_inverse_specialized(5879_u16, a);
+        }
+        774 => {
+            return radical_inverse_specialized(5881_u16, a);
+        }
+        775 => {
+            return radical_inverse_specialized(5897_u16, a);
+        }
+        776 => {
+            return radical_inverse_specialized(5903_u16, a);
+        }
+        777 => {
+            return radical_inverse_specialized(5923_u16, a);
+        }
+        778 => {
+            return radical_inverse_specialized(5927_u16, a);
+        }
+        779 => {
+            return radical_inverse_specialized(5939_u16, a);
+        }
+        780 => {
+            return radical_inverse_specialized(5953_u16, a);
+        }
+        781 => {
+            return radical_inverse_specialized(5981_u16, a);
+        }
+        782 => {
+            return radical_inverse_specialized(5987_u16, a);
+        }
+        783 => {
+            return radical_inverse_specialized(6007_u16, a);
+        }
+        784 => {
+            return radical_inverse_specialized(6011_u16, a);
+        }
+        785 => {
+            return radical_inverse_specialized(6029_u16, a);
+        }
+        786 => {
+            return radical_inverse_specialized(6037_u16, a);
+        }
+        787 => {
+            return radical_inverse_specialized(6043_u16, a);
+        }
+        788 => {
+            return radical_inverse_specialized(6047_u16, a);
+        }
+        789 => {
+            return radical_inverse_specialized(6053_u16, a);
+        }
+        790 => {
+            return radical_inverse_specialized(6067_u16, a);
+        }
+        791 => {
+            return radical_inverse_specialized(6073_u16, a);
+        }
+        792 => {
+            return radical_inverse_specialized(6079_u16, a);
+        }
+        793 => {
+            return radical_inverse_specialized(6089_u16, a);
+        }
+        794 => {
+            return radical_inverse_specialized(6091_u16, a);
+        }
+        795 => {
+            return radical_inverse_specialized(6101_u16, a);
+        }
+        796 => {
+            return radical_inverse_specialized(6113_u16, a);
+        }
+        797 => {
+            return radical_inverse_specialized(6121_u16, a);
+        }
+        798 => {
+            return radical_inverse_specialized(6131_u16, a);
+        }
+        799 => {
+            return radical_inverse_specialized(6133_u16, a);
+        }
+        800 => {
+            return radical_inverse_specialized(6143_u16, a);
+        }
+        801 => {
+            return radical_inverse_specialized(6151_u16, a);
+        }
+        802 => {
+            return radical_inverse_specialized(6163_u16, a);
+        }
+        803 => {
+            return radical_inverse_specialized(6173_u16, a);
+        }
+        804 => {
+            return radical_inverse_specialized(6197_u16, a);
+        }
+        805 => {
+            return radical_inverse_specialized(6199_u16, a);
+        }
+        806 => {
+            return radical_inverse_specialized(6203_u16, a);
+        }
+        807 => {
+            return radical_inverse_specialized(6211_u16, a);
+        }
+        808 => {
+            return radical_inverse_specialized(6217_u16, a);
+        }
+        809 => {
+            return radical_inverse_specialized(6221_u16, a);
+        }
+        810 => {
+            return radical_inverse_specialized(6229_u16, a);
+        }
+        811 => {
+            return radical_inverse_specialized(6247_u16, a);
+        }
+        812 => {
+            return radical_inverse_specialized(6257_u16, a);
+        }
+        813 => {
+            return radical_inverse_specialized(6263_u16, a);
+        }
+        814 => {
+            return radical_inverse_specialized(6269_u16, a);
+        }
+        815 => {
+            return radical_inverse_specialized(6271_u16, a);
+        }
+        816 => {
+            return radical_inverse_specialized(6277_u16, a);
+        }
+        817 => {
+            return radical_inverse_specialized(6287_u16, a);
+        }
+        818 => {
+            return radical_inverse_specialized(6299_u16, a);
+        }
+        819 => {
+            return radical_inverse_specialized(6301_u16, a);
+        }
+        820 => {
+            return radical_inverse_specialized(6311_u16, a);
+        }
+        821 => {
+            return radical_inverse_specialized(6317_u16, a);
+        }
+        822 => {
+            return radical_inverse_specialized(6323_u16, a);
+        }
+        823 => {
+            return radical_inverse_specialized(6329_u16, a);
+        }
+        824 => {
+            return radical_inverse_specialized(6337_u16, a);
+        }
+        825 => {
+            return radical_inverse_specialized(6343_u16, a);
+        }
+        826 => {
+            return radical_inverse_specialized(6353_u16, a);
+        }
+        827 => {
+            return radical_inverse_specialized(6359_u16, a);
+        }
+        828 => {
+            return radical_inverse_specialized(6361_u16, a);
+        }
+        829 => {
+            return radical_inverse_specialized(6367_u16, a);
+        }
+        830 => {
+            return radical_inverse_specialized(6373_u16, a);
+        }
+        831 => {
+            return radical_inverse_specialized(6379_u16, a);
+        }
+        832 => {
+            return radical_inverse_specialized(6389_u16, a);
+        }
+        833 => {
+            return radical_inverse_specialized(6397_u16, a);
+        }
+        834 => {
+            return radical_inverse_specialized(6421_u16, a);
+        }
+        835 => {
+            return radical_inverse_specialized(6427_u16, a);
+        }
+        836 => {
+            return radical_inverse_specialized(6449_u16, a);
+        }
+        837 => {
+            return radical_inverse_specialized(6451_u16, a);
+        }
+        838 => {
+            return radical_inverse_specialized(6469_u16, a);
+        }
+        839 => {
+            return radical_inverse_specialized(6473_u16, a);
+        }
+        840 => {
+            return radical_inverse_specialized(6481_u16, a);
+        }
+        841 => {
+            return radical_inverse_specialized(6491_u16, a);
+        }
+        842 => {
+            return radical_inverse_specialized(6521_u16, a);
+        }
+        843 => {
+            return radical_inverse_specialized(6529_u16, a);
+        }
+        844 => {
+            return radical_inverse_specialized(6547_u16, a);
+        }
+        845 => {
+            return radical_inverse_specialized(6551_u16, a);
+        }
+        846 => {
+            return radical_inverse_specialized(6553_u16, a);
+        }
+        847 => {
+            return radical_inverse_specialized(6563_u16, a);
+        }
+        848 => {
+            return radical_inverse_specialized(6569_u16, a);
+        }
+        849 => {
+            return radical_inverse_specialized(6571_u16, a);
+        }
+        850 => {
+            return radical_inverse_specialized(6577_u16, a);
+        }
+        851 => {
+            return radical_inverse_specialized(6581_u16, a);
+        }
+        852 => {
+            return radical_inverse_specialized(6599_u16, a);
+        }
+        853 => {
+            return radical_inverse_specialized(6607_u16, a);
+        }
+        854 => {
+            return radical_inverse_specialized(6619_u16, a);
+        }
+        855 => {
+            return radical_inverse_specialized(6637_u16, a);
+        }
+        856 => {
+            return radical_inverse_specialized(6653_u16, a);
+        }
+        857 => {
+            return radical_inverse_specialized(6659_u16, a);
+        }
+        858 => {
+            return radical_inverse_specialized(6661_u16, a);
+        }
+        859 => {
+            return radical_inverse_specialized(6673_u16, a);
+        }
+        860 => {
+            return radical_inverse_specialized(6679_u16, a);
+        }
+        861 => {
+            return radical_inverse_specialized(6689_u16, a);
+        }
+        862 => {
+            return radical_inverse_specialized(6691_u16, a);
+        }
+        863 => {
+            return radical_inverse_specialized(6701_u16, a);
+        }
+        864 => {
+            return radical_inverse_specialized(6703_u16, a);
+        }
+        865 => {
+            return radical_inverse_specialized(6709_u16, a);
+        }
+        866 => {
+            return radical_inverse_specialized(6719_u16, a);
+        }
+        867 => {
+            return radical_inverse_specialized(6733_u16, a);
+        }
+        868 => {
+            return radical_inverse_specialized(6737_u16, a);
+        }
+        869 => {
+            return radical_inverse_specialized(6761_u16, a);
+        }
+        870 => {
+            return radical_inverse_specialized(6763_u16, a);
+        }
+        871 => {
+            return radical_inverse_specialized(6779_u16, a);
+        }
+        872 => {
+            return radical_inverse_specialized(6781_u16, a);
+        }
+        873 => {
+            return radical_inverse_specialized(6791_u16, a);
+        }
+        874 => {
+            return radical_inverse_specialized(6793_u16, a);
+        }
+        875 => {
+            return radical_inverse_specialized(6803_u16, a);
+        }
+        876 => {
+            return radical_inverse_specialized(6823_u16, a);
+        }
+        877 => {
+            return radical_inverse_specialized(6827_u16, a);
+        }
+        878 => {
+            return radical_inverse_specialized(6829_u16, a);
+        }
+        879 => {
+            return radical_inverse_specialized(6833_u16, a);
+        }
+        880 => {
+            return radical_inverse_specialized(6841_u16, a);
+        }
+        881 => {
+            return radical_inverse_specialized(6857_u16, a);
+        }
+        882 => {
+            return radical_inverse_specialized(6863_u16, a);
+        }
+        883 => {
+            return radical_inverse_specialized(6869_u16, a);
+        }
+        884 => {
+            return radical_inverse_specialized(6871_u16, a);
+        }
+        885 => {
+            return radical_inverse_specialized(6883_u16, a);
+        }
+        886 => {
+            return radical_inverse_specialized(6899_u16, a);
+        }
+        887 => {
+            return radical_inverse_specialized(6907_u16, a);
+        }
+        888 => {
+            return radical_inverse_specialized(6911_u16, a);
+        }
+        889 => {
+            return radical_inverse_specialized(6917_u16, a);
+        }
+        890 => {
+            return radical_inverse_specialized(6947_u16, a);
+        }
+        891 => {
+            return radical_inverse_specialized(6949_u16, a);
+        }
+        892 => {
+            return radical_inverse_specialized(6959_u16, a);
+        }
+        893 => {
+            return radical_inverse_specialized(6961_u16, a);
+        }
+        894 => {
+            return radical_inverse_specialized(6967_u16, a);
+        }
+        895 => {
+            return radical_inverse_specialized(6971_u16, a);
+        }
+        896 => {
+            return radical_inverse_specialized(6977_u16, a);
+        }
+        897 => {
+            return radical_inverse_specialized(6983_u16, a);
+        }
+        898 => {
+            return radical_inverse_specialized(6991_u16, a);
+        }
+        899 => {
+            return radical_inverse_specialized(6997_u16, a);
+        }
+        900 => {
+            return radical_inverse_specialized(7001_u16, a);
+        }
+        901 => {
+            return radical_inverse_specialized(7013_u16, a);
+        }
+        902 => {
+            return radical_inverse_specialized(7019_u16, a);
+        }
+        903 => {
+            return radical_inverse_specialized(7027_u16, a);
+        }
+        904 => {
+            return radical_inverse_specialized(7039_u16, a);
+        }
+        905 => {
+            return radical_inverse_specialized(7043_u16, a);
+        }
+        906 => {
+            return radical_inverse_specialized(7057_u16, a);
+        }
+        907 => {
+            return radical_inverse_specialized(7069_u16, a);
+        }
+        908 => {
+            return radical_inverse_specialized(7079_u16, a);
+        }
+        909 => {
+            return radical_inverse_specialized(7103_u16, a);
+        }
+        910 => {
+            return radical_inverse_specialized(7109_u16, a);
+        }
+        911 => {
+            return radical_inverse_specialized(7121_u16, a);
+        }
+        912 => {
+            return radical_inverse_specialized(7127_u16, a);
+        }
+        913 => {
+            return radical_inverse_specialized(7129_u16, a);
+        }
+        914 => {
+            return radical_inverse_specialized(7151_u16, a);
+        }
+        915 => {
+            return radical_inverse_specialized(7159_u16, a);
+        }
+        916 => {
+            return radical_inverse_specialized(7177_u16, a);
+        }
+        917 => {
+            return radical_inverse_specialized(7187_u16, a);
+        }
+        918 => {
+            return radical_inverse_specialized(7193_u16, a);
+        }
+        919 => {
+            return radical_inverse_specialized(7207_u16, a);
+        }
+        920 => {
+            return radical_inverse_specialized(7211_u16, a);
+        }
+        921 => {
+            return radical_inverse_specialized(7213_u16, a);
+        }
+        922 => {
+            return radical_inverse_specialized(7219_u16, a);
+        }
+        923 => {
+            return radical_inverse_specialized(7229_u16, a);
+        }
+        924 => {
+            return radical_inverse_specialized(7237_u16, a);
+        }
+        925 => {
+            return radical_inverse_specialized(7243_u16, a);
+        }
+        926 => {
+            return radical_inverse_specialized(7247_u16, a);
+        }
+        927 => {
+            return radical_inverse_specialized(7253_u16, a);
+        }
+        928 => {
+            return radical_inverse_specialized(7283_u16, a);
+        }
+        929 => {
+            return radical_inverse_specialized(7297_u16, a);
+        }
+        930 => {
+            return radical_inverse_specialized(7307_u16, a);
+        }
+        931 => {
+            return radical_inverse_specialized(7309_u16, a);
+        }
+        932 => {
+            return radical_inverse_specialized(7321_u16, a);
+        }
+        933 => {
+            return radical_inverse_specialized(7331_u16, a);
+        }
+        934 => {
+            return radical_inverse_specialized(7333_u16, a);
+        }
+        935 => {
+            return radical_inverse_specialized(7349_u16, a);
+        }
+        936 => {
+            return radical_inverse_specialized(7351_u16, a);
+        }
+        937 => {
+            return radical_inverse_specialized(7369_u16, a);
+        }
+        938 => {
+            return radical_inverse_specialized(7393_u16, a);
+        }
+        939 => {
+            return radical_inverse_specialized(7411_u16, a);
+        }
+        940 => {
+            return radical_inverse_specialized(7417_u16, a);
+        }
+        941 => {
+            return radical_inverse_specialized(7433_u16, a);
+        }
+        942 => {
+            return radical_inverse_specialized(7451_u16, a);
+        }
+        943 => {
+            return radical_inverse_specialized(7457_u16, a);
+        }
+        944 => {
+            return radical_inverse_specialized(7459_u16, a);
+        }
+        945 => {
+            return radical_inverse_specialized(7477_u16, a);
+        }
+        946 => {
+            return radical_inverse_specialized(7481_u16, a);
+        }
+        947 => {
+            return radical_inverse_specialized(7487_u16, a);
+        }
+        948 => {
+            return radical_inverse_specialized(7489_u16, a);
+        }
+        949 => {
+            return radical_inverse_specialized(7499_u16, a);
+        }
+        950 => {
+            return radical_inverse_specialized(7507_u16, a);
+        }
+        951 => {
+            return radical_inverse_specialized(7517_u16, a);
+        }
+        952 => {
+            return radical_inverse_specialized(7523_u16, a);
+        }
+        953 => {
+            return radical_inverse_specialized(7529_u16, a);
+        }
+        954 => {
+            return radical_inverse_specialized(7537_u16, a);
+        }
+        955 => {
+            return radical_inverse_specialized(7541_u16, a);
+        }
+        956 => {
+            return radical_inverse_specialized(7547_u16, a);
+        }
+        957 => {
+            return radical_inverse_specialized(7549_u16, a);
+        }
+        958 => {
+            return radical_inverse_specialized(7559_u16, a);
+        }
+        959 => {
+            return radical_inverse_specialized(7561_u16, a);
+        }
+        960 => {
+            return radical_inverse_specialized(7573_u16, a);
+        }
+        961 => {
+            return radical_inverse_specialized(7577_u16, a);
+        }
+        962 => {
+            return radical_inverse_specialized(7583_u16, a);
+        }
+        963 => {
+            return radical_inverse_specialized(7589_u16, a);
+        }
+        964 => {
+            return radical_inverse_specialized(7591_u16, a);
+        }
+        965 => {
+            return radical_inverse_specialized(7603_u16, a);
+        }
+        966 => {
+            return radical_inverse_specialized(7607_u16, a);
+        }
+        967 => {
+            return radical_inverse_specialized(7621_u16, a);
+        }
+        968 => {
+            return radical_inverse_specialized(7639_u16, a);
+        }
+        969 => {
+            return radical_inverse_specialized(7643_u16, a);
+        }
+        970 => {
+            return radical_inverse_specialized(7649_u16, a);
+        }
+        971 => {
+            return radical_inverse_specialized(7669_u16, a);
+        }
+        972 => {
+            return radical_inverse_specialized(7673_u16, a);
+        }
+        973 => {
+            return radical_inverse_specialized(7681_u16, a);
+        }
+        974 => {
+            return radical_inverse_specialized(7687_u16, a);
+        }
+        975 => {
+            return radical_inverse_specialized(7691_u16, a);
+        }
+        976 => {
+            return radical_inverse_specialized(7699_u16, a);
+        }
+        977 => {
+            return radical_inverse_specialized(7703_u16, a);
+        }
+        978 => {
+            return radical_inverse_specialized(7717_u16, a);
+        }
+        979 => {
+            return radical_inverse_specialized(7723_u16, a);
+        }
+        980 => {
+            return radical_inverse_specialized(7727_u16, a);
+        }
+        981 => {
+            return radical_inverse_specialized(7741_u16, a);
+        }
+        982 => {
+            return radical_inverse_specialized(7753_u16, a);
+        }
+        983 => {
+            return radical_inverse_specialized(7757_u16, a);
+        }
+        984 => {
+            return radical_inverse_specialized(7759_u16, a);
+        }
+        985 => {
+            return radical_inverse_specialized(7789_u16, a);
+        }
+        986 => {
+            return radical_inverse_specialized(7793_u16, a);
+        }
+        987 => {
+            return radical_inverse_specialized(7817_u16, a);
+        }
+        988 => {
+            return radical_inverse_specialized(7823_u16, a);
+        }
+        989 => {
+            return radical_inverse_specialized(7829_u16, a);
+        }
+        990 => {
+            return radical_inverse_specialized(7841_u16, a);
+        }
+        991 => {
+            return radical_inverse_specialized(7853_u16, a);
+        }
+        992 => {
+            return radical_inverse_specialized(7867_u16, a);
+        }
+        993 => {
+            return radical_inverse_specialized(7873_u16, a);
+        }
+        994 => {
+            return radical_inverse_specialized(7877_u16, a);
+        }
+        995 => {
+            return radical_inverse_specialized(7879_u16, a);
+        }
+        996 => {
+            return radical_inverse_specialized(7883_u16, a);
+        }
+        997 => {
+            return radical_inverse_specialized(7901_u16, a);
+        }
+        998 => {
+            return radical_inverse_specialized(7907_u16, a);
+        }
+        999 => {
+            return radical_inverse_specialized(7919_u16, a);
+        }
+        1000 => {
+            return radical_inverse_specialized(7927_u16, a);
+        }
+        1001 => {
+            return radical_inverse_specialized(7933_u16, a);
+        }
+        1002 => {
+            return radical_inverse_specialized(7937_u16, a);
+        }
+        1003 => {
+            return radical_inverse_specialized(7949_u16, a);
+        }
+        1004 => {
+            return radical_inverse_specialized(7951_u16, a);
+        }
+        1005 => {
+            return radical_inverse_specialized(7963_u16, a);
+        }
+        1006 => {
+            return radical_inverse_specialized(7993_u16, a);
+        }
+        1007 => {
+            return radical_inverse_specialized(8009_u16, a);
+        }
+        1008 => {
+            return radical_inverse_specialized(8011_u16, a);
+        }
+        1009 => {
+            return radical_inverse_specialized(8017_u16, a);
+        }
+        1010 => {
+            return radical_inverse_specialized(8039_u16, a);
+        }
+        1011 => {
+            return radical_inverse_specialized(8053_u16, a);
+        }
+        1012 => {
+            return radical_inverse_specialized(8059_u16, a);
+        }
+        1013 => {
+            return radical_inverse_specialized(8069_u16, a);
+        }
+        1014 => {
+            return radical_inverse_specialized(8081_u16, a);
+        }
+        1015 => {
+            return radical_inverse_specialized(8087_u16, a);
+        }
+        1016 => {
+            return radical_inverse_specialized(8089_u16, a);
+        }
+        1017 => {
+            return radical_inverse_specialized(8093_u16, a);
+        }
+        1018 => {
+            return radical_inverse_specialized(8101_u16, a);
+        }
+        1019 => {
+            return radical_inverse_specialized(8111_u16, a);
+        }
+        1020 => {
+            return radical_inverse_specialized(8117_u16, a);
+        }
+        1021 => {
+            return radical_inverse_specialized(8123_u16, a);
+        }
+        1022 => {
+            return radical_inverse_specialized(8147_u16, a);
+        }
+        1023 => {
+            return radical_inverse_specialized(8161_u16, a);
+        }
         _ => {
             panic!("TODO: radical_inverse({:?}, {:?})", base_index, a);
         }
