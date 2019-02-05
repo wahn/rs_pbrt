@@ -1927,6 +1927,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             .find_one_float("radius", 1.0 as Float);
                         // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
                         let mut integrator = Box::new(SPPMIntegrator::new(
+                            camera.clone(),
                             n_iterations,
                             photons_per_iter,
                             max_depth as u32,

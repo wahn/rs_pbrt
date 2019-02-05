@@ -42,17 +42,23 @@ pub struct SPPMIntegrator {
 
 impl SPPMIntegrator {
     pub fn new(
+        camera: Arc<Camera + Send + Sync>,
         n_iterations: i32,
         photons_per_iteration: i32,
         max_depth: u32,
         initial_search_radius: Float,
         write_frequency: i32,
     ) -> Self {
+        let mut photons_per_iter: i32 = photons_per_iteration;
+        if !(photons_per_iter > 0_i32) {
+            let film: Arc<Film> = camera.get_film();
+            photons_per_iter = film.cropped_pixel_bounds.area();
+        }
         SPPMIntegrator {
             initial_search_radius: initial_search_radius,
             n_iterations: n_iterations,
             max_depth: max_depth,
-            photons_per_iteration: photons_per_iteration,
+            photons_per_iteration: photons_per_iter,
             write_frequency: write_frequency,
         }
     }
