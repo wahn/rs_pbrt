@@ -52,10 +52,12 @@ examples: release
 	./target/release/examples/geometry_spherical_direction_vec3
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
+	./target/release/examples/integrators_sspm_hash.rs
 	./target/release/examples/lights_diffuse_area_light_new
 	./target/release/examples/lights_distant_light_new
 	./target/release/examples/lights_infinite_area_light_new
 	./target/release/examples/lights_point_light_new
+	./target/release/examples/parse_ass_file.rs
 	./target/release/examples/pbrt_spheres_differentials_texfilt
 	./target/release/examples/pbrt_teapot_area_light
 	./target/release/examples/pest_test

@@ -108,8 +108,8 @@ fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[i32; 3], pi: &mut Point3i
     in_bounds
 }
 
-fn hash(p: &Point3i, hash_size: usize) -> usize {
-    (((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791)) % hash_size as i32) as usize
+fn hash(p: &Point3i, hash_size: i32) -> usize {
+    (((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791)) as u32 % hash_size as u32) as usize
 }
 
 /// **Main function** to **render** a scene multi-threaded (using all
@@ -382,7 +382,7 @@ pub fn render_sppm(
                             for y in p_min.y..p_max.y {
                                 for x in p_min.x..p_max.x {
                                     // add visible point to grid cell $(x, y, z)$
-                                    let h: usize = hash(&Point3i { x: x, y: y, z: z }, hash_size);
+                                    let h: usize = hash(&Point3i { x: x, y: y, z: z }, hash_size as i32);
                                     let mut node_arc: Arc<SPPMPixelListNode> =
                                         Arc::new(SPPMPixelListNode::default());
                                     let pixel_clone: Arc<SPPMPixel> = pixel.clone();
@@ -471,8 +471,9 @@ pub fn render_sppm(
                                         &grid_res,
                                         &mut photon_grid_index,
                                     ) {
-                                        let h: usize = hash(&photon_grid_index, hash_size);
+                                        let h: usize = hash(&photon_grid_index, hash_size as i32);
                                         // add photon contribution to visible points in _grid[h]_
+                                        assert!(h < hash_size, "hash({:?}, {:?})", photon_grid_index, hash_size);
                                         if let Some(root) = grid[h].get() {
                                             let mut node: &SPPMPixelListNode = root;
                                             loop {
