@@ -12,6 +12,16 @@ use core::pbrt::Float;
 use core::rng::Rng;
 use core::sampler::{GlobalSampler, Sampler};
 
+/// Generate random digit permutations for Halton sampler
+lazy_static! {
+    #[derive(Debug)]
+    static ref RADICAL_INVERSE_PERMUTATIONS: Vec<u16> = {
+        let mut rng: Rng = Rng::new();
+        let radical_inverse_permutations: Vec<u16> = compute_radical_inverse_permutations(&mut rng);
+        radical_inverse_permutations
+    };
+}
+
 // see halton.h
 
 pub const K_MAX_RESOLUTION: i32 = 128_i32;
@@ -39,7 +49,6 @@ fn extended_gcd(a: u64, b: u64, x: &mut i64, y: &mut i64) {
 
 pub struct HaltonSampler {
     pub samples_per_pixel: i64,
-    pub radical_inverse_permutations: Vec<u16>,
     pub base_scales: Point2i,
     pub base_exponents: Point2i,
     pub sample_stride: u64,
@@ -69,11 +78,6 @@ impl HaltonSampler {
         sample_bounds: Bounds2i,
         sample_at_pixel_center: bool,
     ) -> Self {
-        // generate random digit permutations for Halton sampler
-        // if (radical_Inverse_Permutations.empty()) {
-        let mut rng: Rng = Rng::new();
-        let radical_inverse_permutations: Vec<u16> = compute_radical_inverse_permutations(&mut rng);
-        // }
         // find radical inverse base scales and exponents that cover sampling area
         let res: Vector2i = sample_bounds.p_max - sample_bounds.p_min;
         let mut base_scales: Point2i = Point2i::default();
@@ -103,7 +107,6 @@ impl HaltonSampler {
         ];
         HaltonSampler {
             samples_per_pixel: samples_per_pixel,
-            radical_inverse_permutations: radical_inverse_permutations.iter().cloned().collect(),
             base_scales: base_scales,
             base_exponents: base_exponents,
             sample_stride: sample_stride,
@@ -176,7 +179,7 @@ impl HaltonSampler {
                 PRIME_TABLE_SIZE
             );
         }
-        &self.radical_inverse_permutations[PRIME_SUMS[dim as usize] as usize..]
+        &RADICAL_INVERSE_PERMUTATIONS[PRIME_SUMS[dim as usize] as usize..]
     }
 }
 
@@ -310,11 +313,6 @@ impl Clone for HaltonSampler {
         let offset_for_current_pixel: u64 = *self.offset_for_current_pixel.read().unwrap();
         HaltonSampler {
             samples_per_pixel: self.samples_per_pixel,
-            radical_inverse_permutations: self
-                .radical_inverse_permutations
-                .iter()
-                .cloned()
-                .collect(),
             base_scales: self.base_scales,
             base_exponents: self.base_exponents,
             sample_stride: self.sample_stride,

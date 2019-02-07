@@ -16,6 +16,7 @@ getopts="0.2.15"
 half="1"
 hexf = "0.1.0"
 image="*"
+lazy_static = "1.2.0"
 num="*"
 num_cpus = "1.2"
 openexr = { version = "0.6", optional = true }

@@ -27,6 +27,8 @@ extern crate byteorder;
 #[cfg(feature = "openexr")]
 extern crate half;
 extern crate image;
+#[macro_use]
+extern crate lazy_static;
 extern crate num;
 #[cfg(feature = "openexr")]
 extern crate openexr;
