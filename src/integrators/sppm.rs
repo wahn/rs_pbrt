@@ -109,7 +109,10 @@ fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[i32; 3], pi: &mut Point3i
 }
 
 fn hash(p: &Point3i, hash_size: i32) -> usize {
-    (((p.x * 73856093) ^ (p.y * 19349663) ^ (p.z * 83492791)) as u32 % hash_size as u32) as usize
+    let (x, _overflow) = p.x.overflowing_mul(73856093);
+    let (y, _overflow) = p.y.overflowing_mul(19349663);
+    let (z, _overflow) = p.z.overflowing_mul(83492791);
+    ((x ^ y ^ z) as u32 % hash_size as u32) as usize
 }
 
 /// **Main function** to **render** a scene multi-threaded (using all
@@ -147,7 +150,7 @@ pub fn render_sppm(
     // compute _light_distr_ for sampling lights proportional to power
     if let Some(light_distr) = compute_light_power_distribution(scene) {
         // perform _n_iterations_ of SPPM integration
-        let mut tile_sampler: Box<HaltonSampler> = Box::new(HaltonSampler::new(
+        let mut sampler: Box<HaltonSampler> = Box::new(HaltonSampler::new(
             integrator.n_iterations as i64,
             pixel_bounds,
             false,
@@ -173,7 +176,7 @@ pub fn render_sppm(
 
                         // follow camera paths for _tile_ in image for SPPM
                         // TODO: let tile_index: i32 = tile.y * n_tiles.x + tile.x;
-                        // TODO: let mut tile_sampler = sampler.clone();
+                        let mut tile_sampler = sampler.clone();
                         // compute _tileBounds_ for SPPM tile
                         let x0: i32 = pixel_bounds.p_min.x + tile.x * tile_size;
                         let x1: i32 = std::cmp::min(x0 + tile_size, pixel_bounds.p_max.x);
@@ -317,7 +320,7 @@ pub fn render_sppm(
                 // compute grid bounds for SPPM visible points
                 let mut max_radius: Float = 0.0 as Float;
                 println!("Compute grid bounds for SPPM visible points ...");
-                for i in pbr::PbIter::new(0..n_pixels as usize) {
+                for i in 0..n_pixels as usize {
                     if let Some(pixel) = Arc::get_mut(&mut pixels[i]) {
                         if pixel.vp.beta.is_black() {
                             continue;
@@ -337,10 +340,6 @@ pub fn render_sppm(
                 let diag: Vector3f = grid_bounds.diagonal();
                 let max_diag: Float = vec3_max_component(&diag);
                 let base_grid_res: i32 = (max_diag / max_radius).floor() as i32;
-                println!(
-                    "base_grid_res: {} ({}/{})",
-                    base_grid_res, max_diag, max_radius
-                );
                 assert!(base_grid_res > 0_i32);
                 for i in 0..3 as usize {
                     grid_res[i] =
@@ -349,7 +348,7 @@ pub fn render_sppm(
                 // add visible points to SPPM grid
                 // TODO: ParallelFor([&](int pixelIndex) { ... }, nPixels, 4096);
                 println!("Add visible points to SPPM grid ...");
-                for pixel_index in pbr::PbIter::new(0..n_pixels as usize) {
+                for pixel_index in 0..n_pixels as usize {
                     let pixel: &Arc<SPPMPixel> = &pixels[pixel_index];
                     if !pixel.vp.beta.is_black() {
                         // add pixel's visible point to applicable grid cells
@@ -406,7 +405,7 @@ pub fn render_sppm(
                 // TODO: ProfilePhase _(Prof::SPPMPhotonPass);
                 // TODO: ParallelFor([&](int photon_index) { ... }, photonsPerIteration, 8192);
                 println!("Trace photons and accumulate contributions ...");
-                for photon_index in pbr::PbIter::new(0..integrator.photons_per_iteration as usize) {
+                for photon_index in 0..integrator.photons_per_iteration as usize {
                     // MemoryArena &arena = photonShootArenas[ThreadIndex];
                     // follow photon path for _photon_index_
                     let halton_index: u64 =
@@ -582,7 +581,7 @@ pub fn render_sppm(
                 // TODO: ProfilePhase _(Prof::SPPMStatsUpdate);
                 println!("Update pixel values from this pass's photons ...");
                 // TODO: ParallelFor([&](int i) { ... }, nPixels, 4096);
-                for i in pbr::PbIter::new(0..n_pixels as usize) {
+                for i in 0..n_pixels as usize {
                     // copy immutable data ...
                     let p_n: Float;
                     let p_tau: Spectrum;

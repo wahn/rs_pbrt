@@ -299,6 +299,9 @@ impl Sampler for HaltonSampler {
 
 impl GlobalSampler for HaltonSampler {
     fn set_sample_number(&mut self, sample_num: i64) -> bool {
+        // GlobalSampler::SetSampleNumber(...)
+        self.dimension = 0_i64;
+        self.interval_sample_index = self.get_index_for_sample(sample_num as u64);
         // reset array offsets for next pixel sample
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;
