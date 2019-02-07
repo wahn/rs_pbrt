@@ -210,8 +210,11 @@ impl Sampler for SobolSampler {
 
 impl GlobalSampler for SobolSampler {
     fn set_sample_number(&mut self, sample_num: i64) -> bool {
-        // TODO
-        false
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0;
+        self.array_2d_offset = 0;
+        self.current_pixel_sample_index = sample_num;
+        self.current_pixel_sample_index < self.samples_per_pixel
     }
 }
 

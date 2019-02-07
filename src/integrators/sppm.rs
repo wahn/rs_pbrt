@@ -382,7 +382,8 @@ pub fn render_sppm(
                             for y in p_min.y..p_max.y {
                                 for x in p_min.x..p_max.x {
                                     // add visible point to grid cell $(x, y, z)$
-                                    let h: usize = hash(&Point3i { x: x, y: y, z: z }, hash_size as i32);
+                                    let h: usize =
+                                        hash(&Point3i { x: x, y: y, z: z }, hash_size as i32);
                                     let mut node_arc: Arc<SPPMPixelListNode> =
                                         Arc::new(SPPMPixelListNode::default());
                                     let pixel_clone: Arc<SPPMPixel> = pixel.clone();
@@ -451,11 +452,16 @@ pub fn render_sppm(
                             &mut pdf_dir,
                         );
                         if pdf_pos == 0.0 as Float || pdf_dir == 0.0 as Float || le.is_black() {
+                            println!(
+                                "light[{}]: pdf_pos = {}, pdf_dir = {}, le = {:?}",
+                                light_num, pdf_pos, pdf_dir, le
+                            );
                             return;
                         }
                         let mut beta: Spectrum = (le * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
                             / (light_pdf * pdf_pos * pdf_dir);
                         if beta.is_black() {
+                            println!("light[{}]: beta = {:?}", light_num, beta);
                             return;
                         }
                         // follow photon path through scene and record intersections
@@ -473,7 +479,12 @@ pub fn render_sppm(
                                     ) {
                                         let h: usize = hash(&photon_grid_index, hash_size as i32);
                                         // add photon contribution to visible points in _grid[h]_
-                                        assert!(h < hash_size, "hash({:?}, {:?})", photon_grid_index, hash_size);
+                                        assert!(
+                                            h < hash_size,
+                                            "hash({:?}, {:?})",
+                                            photon_grid_index,
+                                            hash_size
+                                        );
                                         if let Some(root) = grid[h].get() {
                                             let mut node: &SPPMPixelListNode = root;
                                             loop {
