@@ -377,9 +377,9 @@ pub fn render_sppm(
                             &grid_res,
                             &mut p_max,
                         );
-                        for z in p_min.z..p_max.z {
-                            for y in p_min.y..p_max.y {
-                                for x in p_min.x..p_max.x {
+                        for z in p_min.z..(p_max.z + 1) {
+                            for y in p_min.y..(p_max.y + 1) {
+                                for x in p_min.x..(p_max.x + 1) {
                                     // add visible point to grid cell $(x, y, z)$
                                     let h: usize =
                                         hash(&Point3i { x: x, y: y, z: z }, hash_size as i32);
@@ -405,7 +405,7 @@ pub fn render_sppm(
                 // TODO: ProfilePhase _(Prof::SPPMPhotonPass);
                 // TODO: ParallelFor([&](int photon_index) { ... }, photonsPerIteration, 8192);
                 println!("Trace photons and accumulate contributions ...");
-                for photon_index in 0..integrator.photons_per_iteration as usize {
+                for photon_index in pbr::PbIter::new(0..integrator.photons_per_iteration as usize) {
                     // MemoryArena &arena = photonShootArenas[ThreadIndex];
                     // follow photon path for _photon_index_
                     let halton_index: u64 =
