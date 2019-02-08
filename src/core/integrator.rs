@@ -65,7 +65,6 @@ pub fn uniform_sample_all_lights(
                 light.clone(),
                 &u_light,
                 scene,
-                sampler, // arena,
                 handle_media,
                 false,
             );
@@ -79,7 +78,6 @@ pub fn uniform_sample_all_lights(
                     light.clone(),
                     &u_light_array[k as usize],
                     scene,
-                    sampler, // arena,
                     handle_media,
                     false,
                 );
@@ -92,10 +90,10 @@ pub fn uniform_sample_all_lights(
 
 /// Estimate direct lighting for only one randomly chosen light and
 /// multiply the result by the number of lights to compensate.
-pub fn uniform_sample_one_light(
+pub fn uniform_sample_one_light<S: Sampler + Send + Sync + ?Sized>(
     it: &SurfaceInteraction,
     scene: &Scene,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Box<S>,
     handle_media: bool,
     light_distrib: Option<&Distribution1D>,
 ) -> Spectrum {
@@ -132,7 +130,6 @@ pub fn uniform_sample_one_light(
         light.clone(),
         &u_light,
         scene,
-        sampler,
         handle_media,
         false,
     ) / pdf
@@ -145,7 +142,6 @@ pub fn estimate_direct(
     light: Arc<Light + Send + Sync>,
     u_light: &Point2f,
     scene: &Scene,
-    _sampler: &mut Box<Sampler + Send + Sync>,
     // TODO: arena
     handle_media: bool,
     specular: bool,

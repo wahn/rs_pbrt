@@ -28,7 +28,7 @@ use core::parallel::AtomicFloat;
 use core::pbrt::{clamp_t, lerp};
 use core::pbrt::{Float, Spectrum};
 use core::reflection::{Bsdf, BxdfType};
-use core::sampler::{GlobalSampler, Sampler, SamplerClone};
+use core::sampler::{GlobalSampler, Sampler};
 use core::scene::Scene;
 use samplers::halton::HaltonSampler;
 
@@ -230,7 +230,7 @@ pub fn render_sppm(
                                                 * uniform_sample_one_light(
                                                     &isect,
                                                     scene,
-                                                    &mut tile_sampler.box_clone(),
+                                                    &mut tile_sampler,
                                                     false,
                                                     None,
                                                 );
