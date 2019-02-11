@@ -85,14 +85,14 @@ pub struct SPPMPixel {
 
 pub struct SPPMPixelListNode {
     pub pixel: Arc<SPPMPixel>,
-    pub next: AtomSetOnce<Arc<SPPMPixelListNode>>,
+    pub next: Atom<Arc<SPPMPixelListNode>>,
 }
 
 impl Default for SPPMPixelListNode {
     fn default() -> SPPMPixelListNode {
         SPPMPixelListNode {
             pixel: Arc::default(),
-            next: AtomSetOnce::empty(),
+            next: Atom::empty(),
         }
     }
 }
@@ -310,9 +310,9 @@ pub fn render_sppm(
             let mut grid_bounds: Bounds3f = Bounds3f::default();
             // allocate grid for SPPM visible points
             let hash_size: usize = n_pixels as usize;
-            let mut grid: Vec<AtomSetOnce<Arc<SPPMPixelListNode>>> = Vec::with_capacity(hash_size);
+            let mut grid: Vec<Atom<Arc<SPPMPixelListNode>>> = Vec::with_capacity(hash_size);
             for _i in 0..hash_size {
-                grid.push(AtomSetOnce::empty());
+                grid.push(Atom::empty());
             }
             {
                 // TODO: ProfilePhase _(Prof::SPPMGridConstruction);
@@ -388,6 +388,9 @@ pub fn render_sppm(
                                     let pixel_clone: Arc<SPPMPixel> = pixel.clone();
                                     if let Some(node) = Arc::get_mut(&mut node_arc) {
                                         node.pixel = pixel_clone;
+                                        if !grid[h].is_none() {
+                                            node.next.set_if_none(grid[h].take().unwrap());
+                                        }
                                     }
                                     // atomically add _node_ to the start of _grid[h]_'s linked list
                                     grid[h].set_if_none(node_arc);
@@ -484,43 +487,43 @@ pub fn render_sppm(
                                             photon_grid_index,
                                             hash_size
                                         );
-                                        if let Some(root) = grid[h].get() {
-                                            let mut node: &SPPMPixelListNode = root;
-                                            loop {
-                                                // TODO: ++visiblePointsChecked;
-                                                let pixel = node.pixel.clone();
-                                                let radius: Float = pixel.radius;
-                                                if pnt3_distance_squared(&pixel.vp.p, &isect.p)
-                                                    > radius * radius
-                                                {
-                                                    if let Some(next_node) = node.next.get() {
-                                                        node = next_node;
-                                                    } else {
-                                                        break;
-                                                    }
-                                                    continue;
-                                                }
-                                                // update _pixel_ $\phi$ and $m$ for nearby photon
-                                                let wi: Vector3f = -photon_ray.d;
-                                                if let Some(ref bsdf) = pixel.vp.bsdf {
-                                                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                                                    let phi: Spectrum = beta
-                                                        * bsdf.f(&pixel.vp.wo, &wi, bsdf_flags);
-                                                    for i in 0..3 {
-                                                        pixel.phi[i].add(phi[i]);
-                                                    }
-                                                    pixel.m.fetch_add(
-                                                        1_i32,
-                                                        atomic::Ordering::Relaxed,
-                                                    );
-                                                }
-                                                if let Some(next_node) = node.next.get() {
-                                                    node = next_node;
-                                                } else {
-                                                    break;
-                                                }
-                                            }
-                                        }
+                                        // if let Some(root) = grid[h].get() {
+                                        //     let mut node: &SPPMPixelListNode = root;
+                                        //     loop {
+                                        //         // TODO: ++visiblePointsChecked;
+                                        //         let pixel = node.pixel.clone();
+                                        //         let radius: Float = pixel.radius;
+                                        //         if pnt3_distance_squared(&pixel.vp.p, &isect.p)
+                                        //             > radius * radius
+                                        //         {
+                                        //             if let Some(next_node) = node.next.get() {
+                                        //                 node = next_node;
+                                        //             } else {
+                                        //                 break;
+                                        //             }
+                                        //             continue;
+                                        //         }
+                                        //         // update _pixel_ $\phi$ and $m$ for nearby photon
+                                        //         let wi: Vector3f = -photon_ray.d;
+                                        //         if let Some(ref bsdf) = pixel.vp.bsdf {
+                                        //             let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                        //             let phi: Spectrum = beta
+                                        //                 * bsdf.f(&pixel.vp.wo, &wi, bsdf_flags);
+                                        //             for i in 0..3 {
+                                        //                 pixel.phi[i].add(phi[i]);
+                                        //             }
+                                        //             pixel.m.fetch_add(
+                                        //                 1_i32,
+                                        //                 atomic::Ordering::Relaxed,
+                                        //             );
+                                        //         }
+                                        //         if let Some(next_node) = node.next.get() {
+                                        //             node = next_node;
+                                        //         } else {
+                                        //             break;
+                                        //         }
+                                        //     }
+                                        // }
                                     }
                                 }
                                 // sample new photon ray direction
