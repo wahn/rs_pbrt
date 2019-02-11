@@ -408,7 +408,7 @@ pub fn render_sppm(
                 // TODO: ProfilePhase _(Prof::SPPMPhotonPass);
                 // TODO: ParallelFor([&](int photon_index) { ... }, photonsPerIteration, 8192);
                 println!("Trace photons and accumulate contributions ...");
-                for photon_index in pbr::PbIter::new(0..integrator.photons_per_iteration as usize) {
+                for photon_index in 0..integrator.photons_per_iteration as usize {
                     // MemoryArena &arena = photonShootArenas[ThreadIndex];
                     // follow photon path for _photon_index_
                     let halton_index: u64 =
@@ -487,43 +487,43 @@ pub fn render_sppm(
                                             photon_grid_index,
                                             hash_size
                                         );
-                                        // if let Some(root) = grid[h].get() {
-                                        //     let mut node: &SPPMPixelListNode = root;
-                                        //     loop {
-                                        //         // TODO: ++visiblePointsChecked;
-                                        //         let pixel = node.pixel.clone();
-                                        //         let radius: Float = pixel.radius;
-                                        //         if pnt3_distance_squared(&pixel.vp.p, &isect.p)
-                                        //             > radius * radius
-                                        //         {
-                                        //             if let Some(next_node) = node.next.get() {
-                                        //                 node = next_node;
-                                        //             } else {
-                                        //                 break;
-                                        //             }
-                                        //             continue;
-                                        //         }
-                                        //         // update _pixel_ $\phi$ and $m$ for nearby photon
-                                        //         let wi: Vector3f = -photon_ray.d;
-                                        //         if let Some(ref bsdf) = pixel.vp.bsdf {
-                                        //             let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                                        //             let phi: Spectrum = beta
-                                        //                 * bsdf.f(&pixel.vp.wo, &wi, bsdf_flags);
-                                        //             for i in 0..3 {
-                                        //                 pixel.phi[i].add(phi[i]);
-                                        //             }
-                                        //             pixel.m.fetch_add(
-                                        //                 1_i32,
-                                        //                 atomic::Ordering::Relaxed,
-                                        //             );
-                                        //         }
-                                        //         if let Some(next_node) = node.next.get() {
-                                        //             node = next_node;
-                                        //         } else {
-                                        //             break;
-                                        //         }
-                                        //     }
-                                        // }
+                                        if !grid[h].is_none() {
+                                            let mut node = grid[h].take().unwrap();
+                                            loop {
+                                                // TODO: ++visiblePointsChecked;
+                                                let pixel = node.pixel.clone();
+                                                let radius: Float = pixel.radius;
+                                                if pnt3_distance_squared(&pixel.vp.p, &isect.p)
+                                                    > radius * radius
+                                                {
+                                                    if !node.next.is_none() {
+                                                        node = node.next.take().unwrap();
+                                                    } else {
+                                                        break;
+                                                    }
+                                                    continue;
+                                                }
+                                                // update _pixel_ $\phi$ and $m$ for nearby photon
+                                                let wi: Vector3f = -photon_ray.d;
+                                                if let Some(ref bsdf) = pixel.vp.bsdf {
+                                                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                                    let phi: Spectrum = beta
+                                                        * bsdf.f(&pixel.vp.wo, &wi, bsdf_flags);
+                                                    for i in 0..3 {
+                                                        pixel.phi[i].add(phi[i]);
+                                                    }
+                                                    pixel.m.fetch_add(
+                                                        1_i32,
+                                                        atomic::Ordering::Relaxed,
+                                                    );
+                                                }
+                                                if !node.next.is_none() {
+                                                    node = node.next.take().unwrap();
+                                                } else {
+                                                    break;
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                                 // sample new photon ray direction
