@@ -1490,10 +1490,11 @@ pub fn blackbody(lambda: &[Float], n: usize, t: Float, le: &mut Vec<Float>) {
     let h: Float = 6.62606957e-34 as Float;
     let kb: Float = 1.3806488e-23 as Float;
     for i in 0..n {
-        let l: Float = lambda[i] * 1.0e-9 as Float;
+        let lambda_i: Float = lambda[i];
+        let l: Float = (lambda_i as f64 * 1.0e-9 as f64) as Float;
         let lambda5: Float = (l * l) * (l * l) * l;
-        let lei: Float = (2.0 as Float * h * c * c)
-            / (lambda5 * (((h * c) / (l * kb * t)).exp() - 1.0 as Float));
+        let e: Float = ((h * c) / (l * kb * t)).exp();
+        let lei: Float = (2.0 as Float * h * c * c) / (lambda5 * (e - 1.0 as Float));
         assert!(!lei.is_nan());
         le.push(lei);
     }

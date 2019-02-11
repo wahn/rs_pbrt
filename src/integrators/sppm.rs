@@ -493,6 +493,11 @@ pub fn render_sppm(
                                                 if pnt3_distance_squared(&pixel.vp.p, &isect.p)
                                                     > radius * radius
                                                 {
+                                                    if let Some(next_node) = node.next.get() {
+                                                        node = next_node;
+                                                    } else {
+                                                        break;
+                                                    }
                                                     continue;
                                                 }
                                                 // update _pixel_ $\phi$ and $m$ for nearby photon
