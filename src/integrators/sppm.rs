@@ -88,6 +88,15 @@ pub struct SPPMPixelListNode<'p> {
     pub next: Atom<Arc<SPPMPixelListNode<'p>>>,
 }
 
+impl<'p> SPPMPixelListNode<'p> {
+    pub fn new(pixel: &'p SPPMPixel) -> Self {
+        SPPMPixelListNode {
+            pixel: pixel,
+            next: Atom::empty(),
+        }
+    }
+}
+
 fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[i32; 3], pi: &mut Point3i) -> bool {
     let mut in_bounds: bool = true;
     let pg: Vector3f = bounds.offset(p);
@@ -370,16 +379,15 @@ pub fn render_sppm(
                                     // add visible point to grid cell $(x, y, z)$
                                     let h: usize =
                                         hash(&Point3i { x: x, y: y, z: z }, hash_size as i32);
-                                    // let mut node_arc: Arc<SPPMPixelListNode> =
-                                    //     Arc::new(SPPMPixelListNode::default());
-                                    // if let Some(node) = Arc::get_mut(&mut node_arc) {
-                                    //     node.pixel = pixel;
-                                    //     if !grid[h].is_none() {
-                                    //         node.next.set_if_none(grid[h].take().unwrap());
-                                    //     }
-                                    // }
-                                    // // atomically add _node_ to the start of _grid[h]_'s linked list
-                                    // grid[h].set_if_none(node_arc);
+                                    let mut node_arc = Arc::new(SPPMPixelListNode::new(pixel));
+                                    if let Some(node) = Arc::get_mut(&mut node_arc) {
+                                        // node.pixel = pixel;
+                                        if !grid[h].is_none() {
+                                            node.next.set_if_none(grid[h].take().unwrap());
+                                        }
+                                    }
+                                    // atomically add _node_ to the start of _grid[h]_'s linked list
+                                    grid[h].set_if_none(node_arc);
                                 }
                             }
                         }
