@@ -207,99 +207,97 @@ pub fn render_sppm(
                             let pixel_offset: i32 = p_pixel_o.x
                                 + p_pixel_o.y * (pixel_bounds.p_max.x - pixel_bounds.p_min.x);
                             let mut pixel = &mut pixels[pixel_offset as usize];
-                                let mut specular_bounce: bool = false;
-                                for depth in 0..integrator.max_depth {
-                                    // TODO: ++totalPhotonSurfaceInteractions;
-                                    if let Some(mut isect) = scene.intersect(&mut ray) {
-                                        // process SPPM camera ray intersection
+                            let mut specular_bounce: bool = false;
+                            for depth in 0..integrator.max_depth {
+                                // TODO: ++totalPhotonSurfaceInteractions;
+                                if let Some(mut isect) = scene.intersect(&mut ray) {
+                                    // process SPPM camera ray intersection
 
-                                        // compute BSDF at SPPM camera ray intersection
-                                        let mode: TransportMode = TransportMode::Radiance;
-                                        isect.compute_scattering_functions(
-                                            &mut ray, // arena,
-                                            true, mode,
-                                        );
-                                        if let Some(ref bsdf) = isect.bsdf {
-                                            // accumulate direct illumination
-                                            // at SPPM camera ray intersection
-                                            let wo: Vector3f = -ray.d;
-                                            if depth == 0 || specular_bounce {
-                                                pixel.ld += beta * isect.le(&wo);
-                                            }
-                                            pixel.ld += beta
-                                                * uniform_sample_one_light(
-                                                    &isect,
-                                                    scene,
-                                                    &mut tile_sampler,
-                                                    false,
-                                                    None,
-                                                );
-                                            // possibly create visible point and end camera path
-                                            let mut bsdf_flags: u8 = BxdfType::BsdfDiffuse as u8
-                                                | BxdfType::BsdfReflection as u8
-                                                | BxdfType::BsdfTransmission as u8;
-                                            let is_diffuse: bool =
-                                                bsdf.num_components(bsdf_flags) > 0;
-                                            bsdf_flags = BxdfType::BsdfGlossy as u8
-                                                | BxdfType::BsdfReflection as u8
-                                                | BxdfType::BsdfTransmission as u8;
-                                            let is_glossy: bool =
-                                                bsdf.num_components(bsdf_flags) > 0;
-                                            if is_diffuse
-                                                || (is_glossy && depth == integrator.max_depth - 1)
-                                            {
-                                                pixel.vp.p = isect.p;
-                                                pixel.vp.wo = wo;
-                                                pixel.vp.bsdf = Some(bsdf.clone());
-                                                pixel.vp.beta = beta;
+                                    // compute BSDF at SPPM camera ray intersection
+                                    let mode: TransportMode = TransportMode::Radiance;
+                                    isect.compute_scattering_functions(
+                                        &mut ray, // arena,
+                                        true, mode,
+                                    );
+                                    if let Some(ref bsdf) = isect.bsdf {
+                                        // accumulate direct illumination
+                                        // at SPPM camera ray intersection
+                                        let wo: Vector3f = -ray.d;
+                                        if depth == 0 || specular_bounce {
+                                            pixel.ld += beta * isect.le(&wo);
+                                        }
+                                        pixel.ld += beta
+                                            * uniform_sample_one_light(
+                                                &isect,
+                                                scene,
+                                                &mut tile_sampler,
+                                                false,
+                                                None,
+                                            );
+                                        // possibly create visible point and end camera path
+                                        let mut bsdf_flags: u8 = BxdfType::BsdfDiffuse as u8
+                                            | BxdfType::BsdfReflection as u8
+                                            | BxdfType::BsdfTransmission as u8;
+                                        let is_diffuse: bool = bsdf.num_components(bsdf_flags) > 0;
+                                        bsdf_flags = BxdfType::BsdfGlossy as u8
+                                            | BxdfType::BsdfReflection as u8
+                                            | BxdfType::BsdfTransmission as u8;
+                                        let is_glossy: bool = bsdf.num_components(bsdf_flags) > 0;
+                                        if is_diffuse
+                                            || (is_glossy && depth == integrator.max_depth - 1)
+                                        {
+                                            pixel.vp.p = isect.p;
+                                            pixel.vp.wo = wo;
+                                            pixel.vp.bsdf = Some(bsdf.clone());
+                                            pixel.vp.beta = beta;
+                                            break;
+                                        }
+                                        // spawn ray from SPPM camera path vertex
+                                        if depth < integrator.max_depth - 1 {
+                                            let mut wi: Vector3f = Vector3f::default();
+                                            let mut pdf: Float = 0.0;
+                                            let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                            let mut sampled_type: u8 = u8::max_value(); // != 0
+                                            let f: Spectrum = bsdf.sample_f(
+                                                &wo,
+                                                &mut wi,
+                                                &tile_sampler.get_2d(),
+                                                &mut pdf,
+                                                bsdf_flags,
+                                                &mut sampled_type,
+                                            );
+                                            if pdf == 0.0 as Float || f.is_black() {
                                                 break;
                                             }
-                                            // spawn ray from SPPM camera path vertex
-                                            if depth < integrator.max_depth - 1 {
-                                                let mut wi: Vector3f = Vector3f::default();
-                                                let mut pdf: Float = 0.0;
-                                                let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                                                let mut sampled_type: u8 = u8::max_value(); // != 0
-                                                let f: Spectrum = bsdf.sample_f(
-                                                    &wo,
-                                                    &mut wi,
-                                                    &tile_sampler.get_2d(),
-                                                    &mut pdf,
-                                                    bsdf_flags,
-                                                    &mut sampled_type,
-                                                );
-                                                if pdf == 0.0 as Float || f.is_black() {
+                                            specular_bounce = sampled_type
+                                                & (BxdfType::BsdfSpecular as u8)
+                                                != 0_u8;
+                                            beta *=
+                                                f * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf;
+                                            if beta.y() < 0.25 as Float {
+                                                let continue_prob: Float =
+                                                    (1.0 as Float).min(beta.y());
+                                                if tile_sampler.get_1d() > continue_prob {
                                                     break;
                                                 }
-                                                specular_bounce = sampled_type
-                                                    & (BxdfType::BsdfSpecular as u8)
-                                                    != 0_u8;
-                                                beta *= f * vec3_abs_dot_nrm(&wi, &isect.shading.n)
-                                                    / pdf;
-                                                if beta.y() < 0.25 as Float {
-                                                    let continue_prob: Float =
-                                                        (1.0 as Float).min(beta.y());
-                                                    if tile_sampler.get_1d() > continue_prob {
-                                                        break;
-                                                    }
-                                                    beta /= continue_prob;
-                                                }
-                                                ray = isect.spawn_ray(&wi);
+                                                beta /= continue_prob;
                                             }
-                                        } else {
-                                            ray = isect.spawn_ray(&ray.d);
-                                            // --depth;
-                                            continue;
+                                            ray = isect.spawn_ray(&wi);
                                         }
                                     } else {
-                                        // accumulate light contributions for
-                                        // ray with no intersection
-                                        for light in &scene.lights {
-                                            pixel.ld += beta * light.le(&mut ray);
-                                        }
-                                        break;
+                                        ray = isect.spawn_ray(&ray.d);
+                                        // --depth;
+                                        continue;
                                     }
+                                } else {
+                                    // accumulate light contributions for
+                                    // ray with no intersection
+                                    for light in &scene.lights {
+                                        pixel.ld += beta * light.le(&mut ray);
+                                    }
+                                    break;
                                 }
+                            }
                         }
                     }
                 }
@@ -321,18 +319,18 @@ pub fn render_sppm(
                 println!("Compute grid bounds for SPPM visible points ...");
                 for i in 0..n_pixels as usize {
                     let mut pixel = &mut pixels[i];
-                        if pixel.vp.beta.is_black() {
-                            continue;
-                        }
-                        let vp_bound: Bounds3f = bnd3_expand(
-                            &Bounds3f {
-                                p_min: pixel.vp.p,
-                                p_max: pixel.vp.p,
-                            },
-                            pixel.radius,
-                        );
-                        grid_bounds = bnd3_union_bnd3(&grid_bounds, &vp_bound);
-                        max_radius = max_radius.max(pixel.radius);
+                    if pixel.vp.beta.is_black() {
+                        continue;
+                    }
+                    let vp_bound: Bounds3f = bnd3_expand(
+                        &Bounds3f {
+                            p_min: pixel.vp.p,
+                            p_max: pixel.vp.p,
+                        },
+                        pixel.radius,
+                    );
+                    grid_bounds = bnd3_union_bnd3(&grid_bounds, &vp_bound);
+                    max_radius = max_radius.max(pixel.radius);
                 }
                 // compute resolution of SPPM grid in each dimension
                 let diag: Vector3f = grid_bounds.diagonal();
@@ -607,27 +605,26 @@ pub fn render_sppm(
                     // ... before borrowing mutably
                     let mut p = &mut pixels[i];
                     let p_m = p.m.load(atomic::Ordering::Relaxed);
-                        if p_m > 0_i32 {
-                            // update pixel photon count, search radius, and $\tau$ from photons
-                            let gamma: Float = 2.0 as Float / 3.0 as Float;
-                            let n_new: Float = p_n + gamma * p_m as Float;
-                            let r_new: Float = p_radius * (n_new / (p_n + p_m as Float)).sqrt();
-                            let mut phi: Spectrum = Spectrum::default();
-                            for j in 0..3 {
-                                phi[j] = p_phi[j];
-                            }
-                            p.tau =
-                                (p_tau + p_vp_beta * phi) * (r_new * r_new) / (p_radius * p_radius);
-                            p.n = n_new;
-                            p.radius = r_new;
-                            p.m.store(0, atomic::Ordering::Relaxed);
-                            for j in 0..3 {
-                                p.phi[j] = AtomicFloat::new(0.0 as Float);
-                            }
+                    if p_m > 0_i32 {
+                        // update pixel photon count, search radius, and $\tau$ from photons
+                        let gamma: Float = 2.0 as Float / 3.0 as Float;
+                        let n_new: Float = p_n + gamma * p_m as Float;
+                        let r_new: Float = p_radius * (n_new / (p_n + p_m as Float)).sqrt();
+                        let mut phi: Spectrum = Spectrum::default();
+                        for j in 0..3 {
+                            phi[j] = p_phi[j];
                         }
-                        // reset _VisiblePoint_ in pixel
-                        p.vp.beta = Spectrum::default();
-                        p.vp.bsdf = None;
+                        p.tau = (p_tau + p_vp_beta * phi) * (r_new * r_new) / (p_radius * p_radius);
+                        p.n = n_new;
+                        p.radius = r_new;
+                        p.m.store(0, atomic::Ordering::Relaxed);
+                        for j in 0..3 {
+                            p.phi[j] = AtomicFloat::new(0.0 as Float);
+                        }
+                    }
+                    // reset _VisiblePoint_ in pixel
+                    p.vp.beta = Spectrum::default();
+                    p.vp.bsdf = None;
                 }
             }
             // periodically store SPPM image in film and write image
