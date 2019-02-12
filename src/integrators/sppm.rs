@@ -83,18 +83,9 @@ pub struct SPPMPixel {
     pub tau: Spectrum,
 }
 
-pub struct SPPMPixelListNode {
-    pub pixel: Arc<SPPMPixel>,
-    pub next: Atom<Arc<SPPMPixelListNode>>,
-}
-
-impl Default for SPPMPixelListNode {
-    fn default() -> SPPMPixelListNode {
-        SPPMPixelListNode {
-            pixel: Arc::default(),
-            next: Atom::empty(),
-        }
-    }
+pub struct SPPMPixelListNode<'p> {
+    pub pixel: &'p SPPMPixel,
+    pub next: Atom<Arc<SPPMPixelListNode<'p>>>,
 }
 
 fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[i32; 3], pi: &mut Point3i) -> bool {
@@ -373,26 +364,25 @@ pub fn render_sppm(
                             &grid_res,
                             &mut p_max,
                         );
-                        // for z in p_min.z..(p_max.z + 1) {
-                        //     for y in p_min.y..(p_max.y + 1) {
-                        //         for x in p_min.x..(p_max.x + 1) {
-                        //             // add visible point to grid cell $(x, y, z)$
-                        //             let h: usize =
-                        //                 hash(&Point3i { x: x, y: y, z: z }, hash_size as i32);
-                        //             let mut node_arc: Arc<SPPMPixelListNode> =
-                        //                 Arc::new(SPPMPixelListNode::default());
-                        //             let pixel_clone: Arc<SPPMPixel> = pixel.clone();
-                        //             if let Some(node) = Arc::get_mut(&mut node_arc) {
-                        //                 node.pixel = pixel_clone;
-                        //                 if !grid[h].is_none() {
-                        //                     node.next.set_if_none(grid[h].take().unwrap());
-                        //                 }
-                        //             }
-                        //             // atomically add _node_ to the start of _grid[h]_'s linked list
-                        //             grid[h].set_if_none(node_arc);
-                        //         }
-                        //     }
-                        // }
+                        for z in p_min.z..(p_max.z + 1) {
+                            for y in p_min.y..(p_max.y + 1) {
+                                for x in p_min.x..(p_max.x + 1) {
+                                    // add visible point to grid cell $(x, y, z)$
+                                    let h: usize =
+                                        hash(&Point3i { x: x, y: y, z: z }, hash_size as i32);
+                                    // let mut node_arc: Arc<SPPMPixelListNode> =
+                                    //     Arc::new(SPPMPixelListNode::default());
+                                    // if let Some(node) = Arc::get_mut(&mut node_arc) {
+                                    //     node.pixel = pixel;
+                                    //     if !grid[h].is_none() {
+                                    //         node.next.set_if_none(grid[h].take().unwrap());
+                                    //     }
+                                    // }
+                                    // // atomically add _node_ to the start of _grid[h]_'s linked list
+                                    // grid[h].set_if_none(node_arc);
+                                }
+                            }
+                        }
                         // ReportValue(grid_cells_per_visible_point,
                         //             (1 + pMax.x - pMin.x) * (1 + pMax.y - pMin.y) *
                         //                 (1 + pMax.z - pMin.z));
