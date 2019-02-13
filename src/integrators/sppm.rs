@@ -85,14 +85,14 @@ pub struct SPPMPixel {
 
 pub struct SPPMPixelListNode<'p> {
     pub pixel: &'p SPPMPixel,
-    pub next: Atom<Arc<SPPMPixelListNode<'p>>>,
+    pub next: AtomSetOnce<Arc<SPPMPixelListNode<'p>>>,
 }
 
 impl<'p> SPPMPixelListNode<'p> {
     pub fn new(pixel: &'p SPPMPixel) -> Self {
         SPPMPixelListNode {
             pixel: pixel,
-            next: Atom::empty(),
+            next: AtomSetOnce::empty(),
         }
     }
 }
@@ -482,7 +482,8 @@ pub fn render_sppm(
                                             hash_size
                                         );
                                         if !grid[h].is_none() {
-                                            let mut node = grid[h].take().unwrap();
+                                            let node_arc = grid[h].take().unwrap();
+                                            let mut node: &SPPMPixelListNode<'_> = &node_arc.clone();
                                             loop {
                                                 // TODO: ++visiblePointsChecked;
                                                 let pixel = node.pixel.clone();
@@ -491,7 +492,7 @@ pub fn render_sppm(
                                                     > radius * radius
                                                 {
                                                     if !node.next.is_none() {
-                                                        node = node.next.take().unwrap();
+                                                        node = node.next.get().unwrap();
                                                     } else {
                                                         break;
                                                     }
@@ -512,11 +513,13 @@ pub fn render_sppm(
                                                     );
                                                 }
                                                 if !node.next.is_none() {
-                                                    node = node.next.take().unwrap();
+                                                    node = node.next.get().unwrap();
                                                 } else {
                                                     break;
                                                 }
                                             }
+                                            // restore taken Arc pointer
+                                            grid[h].set_if_none(node_arc);
                                         }
                                     }
                                 }
