@@ -163,7 +163,7 @@ pub fn render_sppm(
             y: (pixel_extent.y + tile_size - 1) / tile_size,
         };
         // TODO: ProgressReporter progress(2 * nIterations, "Rendering");
-        for iter in 0..integrator.n_iterations {
+        for iteration in 0..integrator.n_iterations {
             // generate SPPM visible points
             {
                 // TODO: ProfilePhase _(Prof::SPPMCameraPass);
@@ -187,7 +187,7 @@ pub fn render_sppm(
                         for p_pixel in &tile_bounds {
                             // prepare _tileSampler_ for _p_pixel_
                             tile_sampler.start_pixel(&p_pixel);
-                            tile_sampler.set_sample_number(iter as i64);
+                            tile_sampler.set_sample_number(iteration as i64);
                             // generate camera ray for pixel for SPPM
                             let camera_sample: CameraSample =
                                 tile_sampler.get_camera_sample(&p_pixel);
@@ -318,7 +318,7 @@ pub fn render_sppm(
                 let mut max_radius: Float = 0.0 as Float;
                 println!("Compute grid bounds for SPPM visible points ...");
                 for i in 0..n_pixels as usize {
-                    let mut pixel = &mut pixels[i];
+                    let pixel = &pixels[i];
                     if pixel.vp.beta.is_black() {
                         continue;
                     }
@@ -345,7 +345,7 @@ pub fn render_sppm(
                 // TODO: ParallelFor([&](int pixelIndex) { ... }, nPixels, 4096);
                 println!("Add visible points to SPPM grid ...");
                 for pixel_index in 0..n_pixels as usize {
-                    let mut pixel = &mut pixels[pixel_index];
+                    let pixel = &pixels[pixel_index];
                     if !pixel.vp.beta.is_black() {
                         // add pixel's visible point to applicable grid cells
                         let radius: Float = pixel.radius;
@@ -406,7 +406,7 @@ pub fn render_sppm(
                     // MemoryArena &arena = photonShootArenas[ThreadIndex];
                     // follow photon path for _photon_index_
                     let halton_index: u64 =
-                        iter as u64 * integrator.photons_per_iteration as u64 + photon_index as u64;
+                        iteration as u64 * integrator.photons_per_iteration as u64 + photon_index as u64;
                     let mut halton_dim: i32 = 0;
                     // choose light to shoot photon from
                     let mut light_pdf_opt: Option<Float> = Some(0.0 as Float);
@@ -452,13 +452,15 @@ pub fn render_sppm(
                                 "light[{}]: pdf_pos = {}, pdf_dir = {}, le = {:?}",
                                 light_num, pdf_pos, pdf_dir, le
                             );
-                            return;
+                            // C++: return; (from ParallelFor(...{}, photonsPerIteration, 8192);)
+                            break;
                         }
                         let mut beta: Spectrum = (le * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
                             / (light_pdf * pdf_pos * pdf_dir);
                         if beta.is_black() {
                             println!("light[{}]: beta = {:?}", light_num, beta);
-                            return;
+                            // C++:  return; (from ParallelFor(...{}, photonsPerIteration, 8192);)
+                            break;
                         }
                         // follow photon path through scene and record intersections
                         for depth in 0..integrator.max_depth {
@@ -486,7 +488,7 @@ pub fn render_sppm(
                                             let mut node: &SPPMPixelListNode<'_> = &node_arc.clone();
                                             loop {
                                                 // TODO: ++visiblePointsChecked;
-                                                let pixel = node.pixel.clone();
+                                                let pixel = node.pixel;
                                                 let radius: Float = pixel.radius;
                                                 if pnt3_distance_squared(&pixel.vp.p, &isect.p)
                                                     > radius * radius
@@ -587,35 +589,18 @@ pub fn render_sppm(
                 println!("Update pixel values from this pass's photons ...");
                 // TODO: ParallelFor([&](int i) { ... }, nPixels, 4096);
                 for i in 0..n_pixels as usize {
-                    // copy immutable data ...
-                    let p_n: Float;
-                    let p_tau: Spectrum;
-                    let p_radius: Float;
-                    let mut p_phi: [Float; 3] = [0.0 as Float; 3];
-                    let p_vp_beta: Spectrum;
-                    {
-                        let p = &pixels[i];
-                        p_n = p.n;
-                        p_tau = p.tau;
-                        p_radius = p.radius;
-                        for j in 0..3 {
-                            p_phi[j] = Float::from(&p.phi[j]);
-                        }
-                        p_vp_beta = p.vp.beta;
-                    }
-                    // ... before borrowing mutably
                     let mut p = &mut pixels[i];
                     let p_m = p.m.load(atomic::Ordering::Relaxed);
                     if p_m > 0_i32 {
                         // update pixel photon count, search radius, and $\tau$ from photons
                         let gamma: Float = 2.0 as Float / 3.0 as Float;
-                        let n_new: Float = p_n + gamma * p_m as Float;
-                        let r_new: Float = p_radius * (n_new / (p_n + p_m as Float)).sqrt();
+                        let n_new: Float = p.n + gamma * p_m as Float;
+                        let r_new: Float = p.radius * (n_new / (p.n + p_m as Float)).sqrt();
                         let mut phi: Spectrum = Spectrum::default();
                         for j in 0..3 {
-                            phi[j] = p_phi[j];
+                            phi[j] = Float::from(&p.phi[j]);;
                         }
-                        p.tau = (p_tau + p_vp_beta * phi) * (r_new * r_new) / (p_radius * p_radius);
+                        p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new) / (p.radius * p.radius);
                         p.n = n_new;
                         p.radius = r_new;
                         p.m.store(0, atomic::Ordering::Relaxed);
@@ -629,11 +614,11 @@ pub fn render_sppm(
                 }
             }
             // periodically store SPPM image in film and write image
-            if iter + 1 == integrator.n_iterations || ((iter + 1) % integrator.write_frequency) == 0
+            if iteration + 1 == integrator.n_iterations || ((iteration + 1) % integrator.write_frequency) == 0
             {
                 let x0: i32 = pixel_bounds.p_min.x;
                 let x1: i32 = pixel_bounds.p_max.x;
-                let np: u64 = (iter + 1) as u64 * integrator.photons_per_iteration as u64;
+                let np: u64 = (iteration + 1) as u64 * integrator.photons_per_iteration as u64;
                 let mut image: Vec<Spectrum> = Vec::with_capacity(pixel_bounds.area() as usize);
                 for y in (pixel_bounds.p_min.y as usize)..(pixel_bounds.p_max.y as usize) {
                     for x in (x0 as usize)..(x1 as usize) {
@@ -641,7 +626,7 @@ pub fn render_sppm(
                         let pixel = &pixels[(y - pixel_bounds.p_min.y as usize)
                             * (x1 as usize - x0 as usize)
                             + (x - x0 as usize)];
-                        let mut l: Spectrum = pixel.ld / (iter + 1) as Float;
+                        let mut l: Spectrum = pixel.ld / (iteration + 1) as Float;
                         l += pixel.tau / (np as Float * PI * pixel.radius * pixel.radius);
                         image.push(l);
                     }

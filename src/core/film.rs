@@ -342,7 +342,7 @@ impl Film {
             let mut xyz: [Float; 3] = [0.0; 3];
             img[i].to_xyz(&mut xyz);
             for i in 0..3 {
-                merge_pixel.xyz[i] += xyz[i];
+                merge_pixel.xyz[i] = xyz[i];
             }
             merge_pixel.filter_weight_sum = 1.0 as Float;
             merge_pixel.splat_xyz[0] = AtomicFloat::new(0.0 as Float);
