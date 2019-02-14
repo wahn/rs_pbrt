@@ -165,11 +165,11 @@ pub fn render_sppm(
             y: (pixel_extent.y + tile_size - 1) / tile_size,
         };
         // TODO: ProgressReporter progress(2 * nIterations, "Rendering");
-        for iteration in 0..integrator.n_iterations {
+        for iteration in pbr::PbIter::new(0..integrator.n_iterations) {
             // generate SPPM visible points
             {
                 // TODO: ProfilePhase _(Prof::SPPMCameraPass);
-                println!("Generate SPPM visible points ...");
+                // println!("Generate SPPM visible points ...");
                 {
                     let block_queue = BlockQueue::new(
                         (
@@ -194,7 +194,8 @@ pub fn render_sppm(
                                         x: x as i32,
                                         y: y as i32,
                                     };
-                                    let mut tile_bq: Vec<(i32, Spectrum, VisiblePoint)> = Vec::new();
+                                    let mut tile_bq: Vec<(i32, Spectrum, VisiblePoint)> =
+                                        Vec::new();
                                     // TODO: MemoryArena &arena = perThreadArenas[ThreadIndex];
 
                                     // follow camera paths for _tile_ in image for SPPM
@@ -353,7 +354,7 @@ pub fn render_sppm(
                         }
                         // spawn thread to collect
                         scope.spawn(move |_| {
-                            for _ in pbr::PbIter::new(0..bq.len()) {
+                            for _ in 0..bq.len() {
                                 let tile = pixel_rx.recv().unwrap();
                                 for (pixel_offset, ld, vp) in tile {
                                     let mut pixel = &mut pixels[pixel_offset as usize];
@@ -383,7 +384,7 @@ pub fn render_sppm(
 
                 // compute grid bounds for SPPM visible points
                 let mut max_radius: Float = 0.0 as Float;
-                println!("Compute grid bounds for SPPM visible points ...");
+                // println!("Compute grid bounds for SPPM visible points ...");
                 for i in 0..n_pixels as usize {
                     let pixel = &pixels[i];
                     if pixel.vp.beta.is_black() {
@@ -410,7 +411,7 @@ pub fn render_sppm(
                 }
                 // add visible points to SPPM grid
                 // TODO: ParallelFor([&](int pixelIndex) { ... }, nPixels, 4096);
-                println!("Add visible points to SPPM grid ...");
+                // println!("Add visible points to SPPM grid ...");
                 for pixel_index in 0..n_pixels as usize {
                     let pixel = &pixels[pixel_index];
                     if !pixel.vp.beta.is_black() {
@@ -468,7 +469,7 @@ pub fn render_sppm(
             {
                 // TODO: ProfilePhase _(Prof::SPPMPhotonPass);
                 // TODO: ParallelFor([&](int photon_index) { ... }, photonsPerIteration, 8192);
-                println!("Trace photons and accumulate contributions ...");
+                // println!("Trace photons and accumulate contributions ...");
                 for photon_index in 0..integrator.photons_per_iteration as usize {
                     // MemoryArena &arena = photonShootArenas[ThreadIndex];
                     // follow photon path for _photon_index_
@@ -516,17 +517,17 @@ pub fn render_sppm(
                             &mut pdf_dir,
                         );
                         if pdf_pos == 0.0 as Float || pdf_dir == 0.0 as Float || le.is_black() {
-                            println!(
-                                "light[{}]: pdf_pos = {}, pdf_dir = {}, le = {:?}",
-                                light_num, pdf_pos, pdf_dir, le
-                            );
+                            // println!(
+                            //     "light[{}]: pdf_pos = {}, pdf_dir = {}, le = {:?}",
+                            //     light_num, pdf_pos, pdf_dir, le
+                            // );
                             // C++: return; (from ParallelFor(...{}, photonsPerIteration, 8192);)
                             break;
                         }
                         let mut beta: Spectrum = (le * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
                             / (light_pdf * pdf_pos * pdf_dir);
                         if beta.is_black() {
-                            println!("light[{}]: beta = {:?}", light_num, beta);
+                            // println!("light[{}]: beta = {:?}", light_num, beta);
                             // C++:  return; (from ParallelFor(...{}, photonsPerIteration, 8192);)
                             break;
                         }
@@ -655,31 +656,54 @@ pub fn render_sppm(
             // update pixel values from this pass's photons
             {
                 // TODO: ProfilePhase _(Prof::SPPMStatsUpdate);
-                println!("Update pixel values from this pass's photons ...");
-                // TODO: ParallelFor([&](int i) { ... }, nPixels, 4096);
-                for i in 0..n_pixels as usize {
-                    let mut p = &mut pixels[i];
-                    let p_m = p.m.load(atomic::Ordering::Relaxed);
-                    if p_m > 0_i32 {
-                        // update pixel photon count, search radius, and $\tau$ from photons
-                        let gamma: Float = 2.0 as Float / 3.0 as Float;
-                        let n_new: Float = p.n + gamma * p_m as Float;
-                        let r_new: Float = p.radius * (n_new / (p.n + p_m as Float)).sqrt();
-                        let mut phi: Spectrum = Spectrum::default();
-                        for j in 0..3 {
-                            phi[j] = Float::from(&p.phi[j]);;
+                // println!("Update pixel values from this pass's photons ...");
+                let chunk_size: usize = (n_pixels / num_cores as i32) as usize;
+                {
+                    let bands: Vec<&mut [SPPMPixel]> = pixels.chunks_mut(chunk_size).collect();
+                    crossbeam::scope(|scope| {
+                        let (band_tx, band_rx) = mpsc::channel();
+                        // spawn worker threads
+                        for (b, band) in bands.into_iter().enumerate() {
+                            let band_tx = band_tx.clone();
+                            scope.spawn(move |_| {
+                                for p in band.into_iter() {
+                                    // let mut p = &mut pixels[i];
+                                    let p_m = p.m.load(atomic::Ordering::Relaxed);
+                                    if p_m > 0_i32 {
+                                        // update pixel photon count, search radius, and $\tau$ from photons
+                                        let gamma: Float = 2.0 as Float / 3.0 as Float;
+                                        let n_new: Float = p.n + gamma * p_m as Float;
+                                        let r_new: Float =
+                                            p.radius * (n_new / (p.n + p_m as Float)).sqrt();
+                                        let mut phi: Spectrum = Spectrum::default();
+                                        for j in 0..3 {
+                                            phi[j] = Float::from(&p.phi[j]);;
+                                        }
+                                        p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new)
+                                            / (p.radius * p.radius);
+                                        p.n = n_new;
+                                        p.radius = r_new;
+                                        p.m.store(0, atomic::Ordering::Relaxed);
+                                        for j in 0..3 {
+                                            p.phi[j] = AtomicFloat::new(0.0 as Float);
+                                        }
+                                    }
+                                    // reset _VisiblePoint_ in pixel
+                                    p.vp.beta = Spectrum::default();
+                                    p.vp.bsdf = None;
+                                }
+                            });
+                            // send progress through the channel to main thread
+                            band_tx.send(b).expect(&format!("Failed to send progress"));
                         }
-                        p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new) / (p.radius * p.radius);
-                        p.n = n_new;
-                        p.radius = r_new;
-                        p.m.store(0, atomic::Ordering::Relaxed);
-                        for j in 0..3 {
-                            p.phi[j] = AtomicFloat::new(0.0 as Float);
-                        }
-                    }
-                    // reset _VisiblePoint_ in pixel
-                    p.vp.beta = Spectrum::default();
-                    p.vp.bsdf = None;
+                        // spawn thread to report progress
+                        scope.spawn(move |_| {
+                            for _ in 0..num_cores {
+                                band_rx.recv().unwrap();
+                            }
+                        });
+                    })
+                    .unwrap();
                 }
             }
             // periodically store SPPM image in film and write image
