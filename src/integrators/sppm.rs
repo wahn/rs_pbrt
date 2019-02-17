@@ -410,7 +410,6 @@ pub fn render_sppm(
                         ((base_grid_res as Float * diag[i as u8] / max_diag).floor() as i32).max(1);
                 }
                 // add visible points to SPPM grid
-                // TODO: ParallelFor([&](int pixelIndex) { ... }, nPixels, 4096);
                 // println!("Add visible points to SPPM grid ...");
                 let chunk_size: usize = (n_pixels / num_cores as i32) as usize;
                 {
@@ -491,189 +490,259 @@ pub fn render_sppm(
             // trace photons and accumulate contributions
             {
                 // TODO: ProfilePhase _(Prof::SPPMPhotonPass);
-                // TODO: ParallelFor([&](int photon_index) { ... }, photonsPerIteration, 8192);
                 // println!("Trace photons and accumulate contributions ...");
-                for photon_index in 0..integrator.photons_per_iteration as usize {
-                    // MemoryArena &arena = photonShootArenas[ThreadIndex];
-                    // follow photon path for _photon_index_
-                    let halton_index: u64 = iteration as u64
-                        * integrator.photons_per_iteration as u64
-                        + photon_index as u64;
-                    let mut halton_dim: i32 = 0;
-                    // choose light to shoot photon from
-                    let mut light_pdf_opt: Option<Float> = Some(0.0 as Float);
-                    let light_sample: Float = radical_inverse(halton_dim as u16, halton_index);
-                    halton_dim += 1;
-                    let light_num: usize =
-                        light_distr.sample_discrete(light_sample, light_pdf_opt.as_mut());
-                    if let Some(light_pdf) = light_pdf_opt {
-                        let ref light = scene.lights[light_num];
-                        // compute sample values for photon ray leaving light source
-                        let u_light_0: Point2f = Point2f {
-                            x: radical_inverse(halton_dim as u16, halton_index),
-                            y: radical_inverse((halton_dim + 1) as u16, halton_index),
-                        };
-                        let u_light_1: Point2f = Point2f {
-                            x: radical_inverse((halton_dim + 2) as u16, halton_index),
-                            y: radical_inverse((halton_dim + 3) as u16, halton_index),
-                        };
-                        let u_light_time: Float = lerp(
-                            radical_inverse((halton_dim + 4) as u16, halton_index),
-                            camera.get_shutter_open(),
-                            camera.get_shutter_close(),
-                        );
-                        halton_dim += 5;
-                        // generate _photon_ray_ from light source and initialize _beta_
-                        // RayDifferential photon_ray;
-                        let mut photon_ray: Ray = Ray::default();
-                        let mut n_light: Normal3f = Normal3f::default();
-                        // Float pdf_pos, pdf_dir;
-                        let mut pdf_pos: Float = 0.0;
-                        let mut pdf_dir: Float = 0.0;
-                        let le: Spectrum = light.sample_le(
-                            &u_light_0,
-                            &u_light_1,
-                            u_light_time,
-                            &mut photon_ray,
-                            &mut n_light,
-                            &mut pdf_pos,
-                            &mut pdf_dir,
-                        );
-                        if pdf_pos == 0.0 as Float || pdf_dir == 0.0 as Float || le.is_black() {
-                            // println!(
-                            //     "light[{}]: pdf_pos = {}, pdf_dir = {}, le = {:?}",
-                            //     light_num, pdf_pos, pdf_dir, le
-                            // );
-                            // C++: return; (from ParallelFor(...{}, photonsPerIteration, 8192);)
-                            break;
-                        }
-                        let mut beta: Spectrum = (le * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
-                            / (light_pdf * pdf_pos * pdf_dir);
-                        if beta.is_black() {
-                            // println!("light[{}]: beta = {:?}", light_num, beta);
-                            // C++:  return; (from ParallelFor(...{}, photonsPerIteration, 8192);)
-                            break;
-                        }
-                        // follow photon path through scene and record intersections
-                        for depth in 0..integrator.max_depth {
-                            if let Some(mut isect) = scene.intersect(&mut photon_ray) {
-                                // TODO: ++totalPhotonSurfaceInteractions;
-                                if depth > 0 {
-                                    // add photon contribution to nearby visible points
-                                    let mut photon_grid_index: Point3i = Point3i::default();
-                                    if to_grid(
-                                        &isect.p,
-                                        &grid_bounds,
-                                        &grid_res,
-                                        &mut photon_grid_index,
-                                    ) {
-                                        let h: usize = hash(&photon_grid_index, hash_size as i32);
-                                        // add photon contribution to visible points in _grid[h]_
-                                        assert!(
-                                            h < hash_size,
-                                            "hash({:?}, {:?})",
-                                            photon_grid_index,
-                                            hash_size
+                let chunk_size: usize =
+                    (integrator.photons_per_iteration / num_cores as i32) as usize;
+                {
+                    let mut photons_vec: Vec<i32> = (0..integrator.photons_per_iteration).collect();
+                    let mut bands: Vec<&[i32]> = photons_vec.chunks(chunk_size).collect();
+                    let grid = &grid;
+                    let integrator = &integrator;
+                    let light_distr = &light_distr;
+                    crossbeam::scope(|scope| {
+                        let (band_tx, band_rx) = mpsc::channel();
+                        // spawn worker threads
+                        for (b, band) in bands.into_iter().enumerate() {
+                            let band_tx = band_tx.clone();
+                            scope.spawn(move |_| {
+                                for photon_index in band.into_iter() {
+                                    // for photon_index in 0..integrator.photons_per_iteration as usize {
+                                    // MemoryArena &arena = photonShootArenas[ThreadIndex];
+                                    // follow photon path for _photon_index_
+                                    let halton_index: u64 = iteration as u64
+                                        * integrator.photons_per_iteration as u64
+                                        + *photon_index as u64;
+                                    let mut halton_dim: i32 = 0;
+                                    // choose light to shoot photon from
+                                    let mut light_pdf_opt: Option<Float> = Some(0.0 as Float);
+                                    let light_sample: Float =
+                                        radical_inverse(halton_dim as u16, halton_index);
+                                    halton_dim += 1;
+                                    let light_num: usize = light_distr
+                                        .sample_discrete(light_sample, light_pdf_opt.as_mut());
+                                    if let Some(light_pdf) = light_pdf_opt {
+                                        let ref light = scene.lights[light_num];
+                                        // compute sample values for photon ray leaving light source
+                                        let u_light_0: Point2f = Point2f {
+                                            x: radical_inverse(halton_dim as u16, halton_index),
+                                            y: radical_inverse(
+                                                (halton_dim + 1) as u16,
+                                                halton_index,
+                                            ),
+                                        };
+                                        let u_light_1: Point2f = Point2f {
+                                            x: radical_inverse(
+                                                (halton_dim + 2) as u16,
+                                                halton_index,
+                                            ),
+                                            y: radical_inverse(
+                                                (halton_dim + 3) as u16,
+                                                halton_index,
+                                            ),
+                                        };
+                                        let u_light_time: Float = lerp(
+                                            radical_inverse((halton_dim + 4) as u16, halton_index),
+                                            camera.get_shutter_open(),
+                                            camera.get_shutter_close(),
                                         );
-                                        if !grid[h].is_none() {
-                                            let node_arc = grid[h].take().unwrap();
-                                            let mut node: &SPPMPixelListNode<'_> =
-                                                &node_arc.clone();
-                                            loop {
-                                                // TODO: ++visiblePointsChecked;
-                                                let pixel = node.pixel;
-                                                let radius: Float = pixel.radius;
-                                                if pnt3_distance_squared(&pixel.vp.p, &isect.p)
-                                                    > radius * radius
-                                                {
-                                                    if !node.next.is_none() {
-                                                        node = node.next.get().unwrap();
-                                                    } else {
+                                        halton_dim += 5;
+                                        // generate _photon_ray_ from light source and initialize _beta_
+                                        // RayDifferential photon_ray;
+                                        let mut photon_ray: Ray = Ray::default();
+                                        let mut n_light: Normal3f = Normal3f::default();
+                                        // Float pdf_pos, pdf_dir;
+                                        let mut pdf_pos: Float = 0.0;
+                                        let mut pdf_dir: Float = 0.0;
+                                        let le: Spectrum = light.sample_le(
+                                            &u_light_0,
+                                            &u_light_1,
+                                            u_light_time,
+                                            &mut photon_ray,
+                                            &mut n_light,
+                                            &mut pdf_pos,
+                                            &mut pdf_dir,
+                                        );
+                                        if pdf_pos == 0.0 as Float
+                                            || pdf_dir == 0.0 as Float
+                                            || le.is_black()
+                                        {
+                                            // println!(
+                                            //     "light[{}]: pdf_pos = {}, pdf_dir = {}, le = {:?}",
+                                            //     light_num, pdf_pos, pdf_dir, le
+                                            // );
+                                            // C++: return; (from ParallelFor(...{}, photonsPerIteration, 8192);)
+                                            break;
+                                        }
+                                        let mut beta: Spectrum = (le
+                                            * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
+                                            / (light_pdf * pdf_pos * pdf_dir);
+                                        if beta.is_black() {
+                                            // println!("light[{}]: beta = {:?}", light_num, beta);
+                                            // C++:  return; (from ParallelFor(...{}, photonsPerIteration, 8192);)
+                                            break;
+                                        }
+                                        // follow photon path through scene and record intersections
+                                        for depth in 0..integrator.max_depth {
+                                            if let Some(mut isect) =
+                                                scene.intersect(&mut photon_ray)
+                                            {
+                                                // TODO: ++totalPhotonSurfaceInteractions;
+                                                if depth > 0 {
+                                                    // add photon contribution to nearby visible points
+                                                    let mut photon_grid_index: Point3i =
+                                                        Point3i::default();
+                                                    if to_grid(
+                                                        &isect.p,
+                                                        &grid_bounds,
+                                                        &grid_res,
+                                                        &mut photon_grid_index,
+                                                    ) {
+                                                        let h: usize = hash(
+                                                            &photon_grid_index,
+                                                            hash_size as i32,
+                                                        );
+                                                        // add photon contribution to visible points in _grid[h]_
+                                                        assert!(
+                                                            h < hash_size,
+                                                            "hash({:?}, {:?})",
+                                                            photon_grid_index,
+                                                            hash_size
+                                                        );
+                                                        if !grid[h].is_none() {
+                                                            let node_arc = grid[h].take().unwrap();
+                                                            let mut node: &SPPMPixelListNode<'_> =
+                                                                &node_arc.clone();
+                                                            loop {
+                                                                // TODO: ++visiblePointsChecked;
+                                                                let pixel = node.pixel;
+                                                                let radius: Float = pixel.radius;
+                                                                if pnt3_distance_squared(
+                                                                    &pixel.vp.p,
+                                                                    &isect.p,
+                                                                ) > radius * radius
+                                                                {
+                                                                    if !node.next.is_none() {
+                                                                        node = node
+                                                                            .next
+                                                                            .get()
+                                                                            .unwrap();
+                                                                    } else {
+                                                                        break;
+                                                                    }
+                                                                    continue;
+                                                                }
+                                                                // update _pixel_ $\phi$ and $m$ for nearby photon
+                                                                let wi: Vector3f = -photon_ray.d;
+                                                                if let Some(ref bsdf) =
+                                                                    pixel.vp.bsdf
+                                                                {
+                                                                    let bsdf_flags: u8 =
+                                                                        BxdfType::BsdfAll as u8;
+                                                                    let phi: Spectrum = beta
+                                                                        * bsdf.f(
+                                                                            &pixel.vp.wo,
+                                                                            &wi,
+                                                                            bsdf_flags,
+                                                                        );
+                                                                    for i in 0..3 {
+                                                                        pixel.phi[i].add(phi[i]);
+                                                                    }
+                                                                    pixel.m.fetch_add(
+                                                                        1_i32,
+                                                                        atomic::Ordering::Relaxed,
+                                                                    );
+                                                                }
+                                                                if !node.next.is_none() {
+                                                                    node = node.next.get().unwrap();
+                                                                } else {
+                                                                    break;
+                                                                }
+                                                            }
+                                                            // restore taken Arc pointer
+                                                            grid[h].set_if_none(node_arc);
+                                                        }
+                                                    }
+                                                }
+                                                // sample new photon ray direction
+
+                                                // compute BSDF at photon intersection point
+                                                let mode: TransportMode = TransportMode::Importance;
+                                                isect.compute_scattering_functions(
+                                                    &mut photon_ray, // arena,
+                                                    true,
+                                                    mode,
+                                                );
+                                                if let Some(ref photon_bsdf) = isect.bsdf {
+                                                    // sample BSDF _fr_ and direction _wi_ for reflected photon
+                                                    let mut wi: Vector3f = Vector3f::default();
+                                                    let wo: Vector3f = -photon_ray.d;
+                                                    let mut pdf: Float = 0.0;
+                                                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                                    let mut sampled_type: u8 = u8::max_value();
+                                                    // generate _bsdf_sample_ for outgoing photon sample
+                                                    let bsdf_sample: Point2f = Point2f {
+                                                        x: radical_inverse(
+                                                            halton_dim as u16,
+                                                            halton_index,
+                                                        ),
+                                                        y: radical_inverse(
+                                                            (halton_dim + 1) as u16,
+                                                            halton_index,
+                                                        ),
+                                                    };
+                                                    halton_dim += 2;
+                                                    let fr: Spectrum = photon_bsdf.sample_f(
+                                                        &wo,
+                                                        &mut wi,
+                                                        &bsdf_sample,
+                                                        &mut pdf,
+                                                        bsdf_flags,
+                                                        &mut sampled_type,
+                                                    );
+                                                    if fr.is_black() || pdf == 0.0 as Float {
                                                         break;
                                                     }
+                                                    let bnew: Spectrum = beta
+                                                        * fr
+                                                        * vec3_abs_dot_nrm(&wi, &isect.shading.n)
+                                                        / pdf;
+                                                    // possibly terminate photon path with Russian roulette
+                                                    let q: Float = (0.0 as Float)
+                                                        .max(1.0 as Float - bnew.y() / beta.y());
+                                                    if radical_inverse(
+                                                        halton_dim as u16,
+                                                        halton_index,
+                                                    ) < q
+                                                    {
+                                                        break;
+                                                    } else {
+                                                        halton_dim += 1;
+                                                    }
+                                                    beta = bnew / (1.0 as Float - q);
+                                                    photon_ray = isect.spawn_ray(&wi);
+                                                } else {
+                                                    photon_ray = isect.spawn_ray(&photon_ray.d);
+                                                    // --depth;
                                                     continue;
                                                 }
-                                                // update _pixel_ $\phi$ and $m$ for nearby photon
-                                                let wi: Vector3f = -photon_ray.d;
-                                                if let Some(ref bsdf) = pixel.vp.bsdf {
-                                                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                                                    let phi: Spectrum = beta
-                                                        * bsdf.f(&pixel.vp.wo, &wi, bsdf_flags);
-                                                    for i in 0..3 {
-                                                        pixel.phi[i].add(phi[i]);
-                                                    }
-                                                    pixel.m.fetch_add(
-                                                        1_i32,
-                                                        atomic::Ordering::Relaxed,
-                                                    );
-                                                }
-                                                if !node.next.is_none() {
-                                                    node = node.next.get().unwrap();
-                                                } else {
-                                                    break;
-                                                }
+                                            } else {
+                                                break;
                                             }
-                                            // restore taken Arc pointer
-                                            grid[h].set_if_none(node_arc);
                                         }
                                     }
                                 }
-                                // sample new photon ray direction
-
-                                // compute BSDF at photon intersection point
-                                let mode: TransportMode = TransportMode::Importance;
-                                isect.compute_scattering_functions(
-                                    &mut photon_ray, // arena,
-                                    true,
-                                    mode,
-                                );
-                                if let Some(ref photon_bsdf) = isect.bsdf {
-                                    // sample BSDF _fr_ and direction _wi_ for reflected photon
-                                    let mut wi: Vector3f = Vector3f::default();
-                                    let wo: Vector3f = -photon_ray.d;
-                                    let mut pdf: Float = 0.0;
-                                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                                    let mut sampled_type: u8 = u8::max_value();
-                                    // generate _bsdf_sample_ for outgoing photon sample
-                                    let bsdf_sample: Point2f = Point2f {
-                                        x: radical_inverse(halton_dim as u16, halton_index),
-                                        y: radical_inverse((halton_dim + 1) as u16, halton_index),
-                                    };
-                                    halton_dim += 2;
-                                    let fr: Spectrum = photon_bsdf.sample_f(
-                                        &wo,
-                                        &mut wi,
-                                        &bsdf_sample,
-                                        &mut pdf,
-                                        bsdf_flags,
-                                        &mut sampled_type,
-                                    );
-                                    if fr.is_black() || pdf == 0.0 as Float {
-                                        break;
-                                    }
-                                    let bnew: Spectrum =
-                                        beta * fr * vec3_abs_dot_nrm(&wi, &isect.shading.n) / pdf;
-                                    // possibly terminate photon path with Russian roulette
-                                    let q: Float =
-                                        (0.0 as Float).max(1.0 as Float - bnew.y() / beta.y());
-                                    if radical_inverse(halton_dim as u16, halton_index) < q {
-                                        break;
-                                    } else {
-                                        halton_dim += 1;
-                                    }
-                                    beta = bnew / (1.0 as Float - q);
-                                    photon_ray = isect.spawn_ray(&wi);
-                                } else {
-                                    photon_ray = isect.spawn_ray(&photon_ray.d);
-                                    // --depth;
-                                    continue;
-                                }
-                            } else {
-                                break;
-                            }
+                            });
+                            // send progress through the channel to main thread
+                            band_tx.send(b).expect(&format!("Failed to send progress"));
                         }
-                        // arena.Reset();
-                    }
+                        // spawn thread to report progress
+                        scope.spawn(move |_| {
+                            for _ in 0..num_cores {
+                                band_rx.recv().unwrap();
+                            }
+                        });
+                    })
+                    .unwrap();
                 }
             }
             // update pixel values from this pass's photons
