@@ -376,8 +376,11 @@ pub fn render_sppm(
             // allocate grid for SPPM visible points
             let hash_size: usize = n_pixels as usize;
             let mut grid: Vec<Atom<Arc<SPPMPixelListNode>>> = Vec::with_capacity(hash_size);
+            let mut grid_once: Vec<AtomSetOnce<Arc<SPPMPixelListNode>>> =
+                Vec::with_capacity(hash_size);
             for _i in 0..hash_size {
                 grid.push(Atom::empty());
+                grid_once.push(AtomSetOnce::empty());
             }
             {
                 // TODO: ProfilePhase _(Prof::SPPMGridConstruction);
@@ -488,6 +491,14 @@ pub fn render_sppm(
                 }
             }
             // trace photons and accumulate contributions
+            for h in 0..hash_size {
+                // take
+                let opt = grid[h].take();
+                if let Some(p) = opt {
+                    grid_once[h].set_if_none(p);
+                }
+            }
+            std::mem::drop(grid);
             {
                 // TODO: ProfilePhase _(Prof::SPPMPhotonPass);
                 // println!("Trace photons and accumulate contributions ...");
@@ -496,7 +507,7 @@ pub fn render_sppm(
                 {
                     let mut photons_vec: Vec<i32> = (0..integrator.photons_per_iteration).collect();
                     let mut bands: Vec<&[i32]> = photons_vec.chunks(chunk_size).collect();
-                    let grid = &grid;
+                    let grid_once = &grid_once;
                     let integrator = &integrator;
                     let light_distr = &light_distr;
                     crossbeam::scope(|scope| {
@@ -608,58 +619,61 @@ pub fn render_sppm(
                                                             photon_grid_index,
                                                             hash_size
                                                         );
-                                                        if !grid[h].is_none() {
-                                                            let node_arc = grid[h].take().unwrap();
-                                                            let mut node: &SPPMPixelListNode<'_> =
-                                                                &node_arc.clone();
+                                                        if !grid_once[h].is_none() {
+                                                            let mut opt = grid_once[h].get();
                                                             loop {
-                                                                // TODO: ++visiblePointsChecked;
-                                                                let pixel = node.pixel;
-                                                                let radius: Float = pixel.radius;
-                                                                if pnt3_distance_squared(
-                                                                    &pixel.vp.p,
-                                                                    &isect.p,
-                                                                ) > radius * radius
-                                                                {
-                                                                    if !node.next.is_none() {
-                                                                        node = node
-                                                                            .next
-                                                                            .get()
-                                                                            .unwrap();
+                                                                // deal with linked list
+                                                                if let Some(node) = opt {
+                                                                    let pixel = node.pixel;
+                                                                    let radius: Float =
+                                                                        pixel.radius;
+                                                                    if pnt3_distance_squared(
+                                                                        &pixel.vp.p,
+                                                                        &isect.p,
+                                                                    ) > radius * radius
+                                                                    {
+                                                                        // update opt
+                                                                        opt = node.next.get();
                                                                     } else {
-                                                                        break;
+                                                                        // update
+                                                                        // _pixel_
+                                                                        // $\phi$
+                                                                        // and
+                                                                        // $m$
+                                                                        // for
+                                                                        // nearby
+                                                                        // photon
+                                                                        let wi: Vector3f =
+                                                                            -photon_ray.d;
+                                                                        if let Some(ref bsdf) =
+                                                                            pixel.vp.bsdf
+                                                                        {
+                                                                            let bsdf_flags: u8 =
+                                                                                BxdfType::BsdfAll
+                                                                                    as u8;
+                                                                            let phi: Spectrum = beta
+                                                                                * bsdf.f(
+                                                                                    &pixel.vp.wo,
+                                                                                    &wi,
+                                                                                    bsdf_flags,
+                                                                                );
+                                                                            for i in 0..3 {
+                                                                                pixel.phi[i]
+                                                                                    .add(phi[i]);
+                                                                            }
+                                                                            pixel.m.fetch_add(
+                                                                                1_i32,
+                                                                                atomic::Ordering::Relaxed,
+                                                                            );
+                                                                        }
+                                                                        // update opt
+                                                                        opt = node.next.get();
                                                                     }
-                                                                    continue;
-                                                                }
-                                                                // update _pixel_ $\phi$ and $m$ for nearby photon
-                                                                let wi: Vector3f = -photon_ray.d;
-                                                                if let Some(ref bsdf) =
-                                                                    pixel.vp.bsdf
-                                                                {
-                                                                    let bsdf_flags: u8 =
-                                                                        BxdfType::BsdfAll as u8;
-                                                                    let phi: Spectrum = beta
-                                                                        * bsdf.f(
-                                                                            &pixel.vp.wo,
-                                                                            &wi,
-                                                                            bsdf_flags,
-                                                                        );
-                                                                    for i in 0..3 {
-                                                                        pixel.phi[i].add(phi[i]);
-                                                                    }
-                                                                    pixel.m.fetch_add(
-                                                                        1_i32,
-                                                                        atomic::Ordering::Relaxed,
-                                                                    );
-                                                                }
-                                                                if !node.next.is_none() {
-                                                                    node = node.next.get().unwrap();
                                                                 } else {
+                                                                    // done
                                                                     break;
                                                                 }
                                                             }
-                                                            // restore taken Arc pointer
-                                                            grid[h].set_if_none(node_arc);
                                                         }
                                                     }
                                                 }
