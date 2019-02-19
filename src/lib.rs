@@ -7,10 +7,11 @@
 //! The main render loop for integrators implementing the
 //! `SamplerIntegrator` trait can be found [here].
 //!
-//! There are two more render loops:
+//! There are three more render loops:
 //!
 //! 1. [render_bdpt][render_bdpt] for bidirectional path tracing
 //! 2. [render_mlt][render_mlt] for Metropolis Light Transport
+//! 2. [render_sppm][render_sppm] for Stochastic Progressive Photon Mapping
 //!
 //! [rust]: https://www.rust-lang.org
 //! [book]: http://www.pbrt.org
@@ -18,6 +19,7 @@
 //! [here]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/fn.render.html
 //! [render_bdpt]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/bdpt/fn.render_bdpt.html
 //! [render_mlt]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/mlt/fn.render_mlt.html
+//! [render_sppm]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/sppm/fn.render_sppm.html
 
 #[macro_use]
 extern crate hexf;

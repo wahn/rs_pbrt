@@ -38,7 +38,7 @@
 //! starting at the camera and ending at light sources in the scene.
 //!
 //! ![Path Tracing](/doc/img/cornell_box_pbrt_rust_path.png)
-
+//!
 //! ## Bidirectional Path Tracing (BDPT)
 //!
 //! Bidirectional path tracing is a generalization of the standard
@@ -49,6 +49,14 @@
 //!
 //! ![Bidirectional Path
 //! Tracing](/doc/img/art_gallery_pbrt_rust_bdpt.png)
+//!
+//! ## Stochastic Progressive Photon Mapping (SPPM)
+//!
+//! A photon mapping integrator that uses particles to estimate
+//! illumination by interpolating lighting contributions from
+//! particles close to but not quite at the point being shaded.
+//!
+//! ![Stochastic Progressive Photon Mapping](/doc/img/caustic_glass_pbrt_rust_sppm.png)
 
 extern crate crossbeam;
 extern crate num_cpus;

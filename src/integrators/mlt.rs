@@ -264,6 +264,7 @@ impl Clone for MLTSampler {
     }
 }
 
+/// Metropolis Light Transport
 pub struct MLTIntegrator {
     pub camera: Arc<Camera + Sync + Send>,
     pub max_depth: u32,

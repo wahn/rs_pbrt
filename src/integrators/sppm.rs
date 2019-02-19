@@ -34,6 +34,7 @@ use core::sampler::{GlobalSampler, Sampler};
 use core::scene::Scene;
 use samplers::halton::HaltonSampler;
 
+/// Stochastic Progressive Photon Mapping
 pub struct SPPMIntegrator {
     pub initial_search_radius: Float,
     pub n_iterations: i32,
@@ -120,6 +121,8 @@ fn hash(p: &Point3i, hash_size: i32) -> usize {
 /// **Main function** to **render** a scene multi-threaded (using all
 /// available cores) with **Stochastic Progressive Photon Mapping**
 /// (SPPM).
+///
+/// ![bdpt](/doc/img/uml_pbrt_rust_render_sppm.png)
 pub fn render_sppm(
     scene: &Scene,
     camera: &Arc<Camera + Send + Sync>,
