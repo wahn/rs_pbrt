@@ -750,6 +750,10 @@ impl TextureParams {
         self.geom_params
             .find_one_vector3f(name, self.material_params.find_one_vector3f(name, d))
     }
+    pub fn find_spectrum(&mut self, name: &str, d: Spectrum) -> Spectrum {
+        self.geom_params
+            .find_one_spectrum(name, self.material_params.find_one_spectrum(name, d))
+    }
 }
 
 /// Replaces a macro on the C++ side.

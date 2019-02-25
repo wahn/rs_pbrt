@@ -763,17 +763,23 @@ fn make_texture(api_state: &mut ApiState) {
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeSpectrumTexture(texname, curTransform[0], tp);
         if api_state.param_set.tex_name == "constant" {
-            println!("TODO: CreateConstantSpectrumTexture");
+            let ct = Arc::new(ConstantTexture::new(
+                tp.find_spectrum("value", Spectrum::new(1.0)),
+            ));
+            api_state
+                .graphics_state
+                .spectrum_textures
+                .insert(api_state.param_set.name.clone(), ct);
         } else if api_state.param_set.tex_name == "scale" {
             let tex1: Arc<Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
             let tex2: Arc<Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
-            let ft = Arc::new(ScaleTexture::<Spectrum>::new(tex1, tex2));
+            let st = Arc::new(ScaleTexture::<Spectrum>::new(tex1, tex2));
             api_state
                 .graphics_state
                 .spectrum_textures
-                .insert(api_state.param_set.name.clone(), ft);
+                .insert(api_state.param_set.name.clone(), st);
         } else if api_state.param_set.tex_name == "mix" {
             println!("TODO: CreateMixSpectrumTexture");
         } else if api_state.param_set.tex_name == "bilerp" {
@@ -1899,7 +1905,6 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             Box::new(AOIntegrator::new(cos_sample, n_samples, pixel_bounds));
                         some_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == "sppm" {
-                        println!("WORK: CreateSPPMIntegrator");
                         // CreateSPPMIntegrator
                         let mut n_iterations: i32 = api_state
                             .render_options
