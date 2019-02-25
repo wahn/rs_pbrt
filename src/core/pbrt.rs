@@ -163,6 +163,11 @@ pub fn degrees(rad: Float) -> Float {
     (180.0 / PI) * rad
 }
 
+pub fn log_2(x: Float) -> Float {
+    let inv_log2: Float = 1.442695040888963387004650940071;
+    x.ln() * inv_log2
+}
+
 /// Compute an integer base-2 logarithm function.
 pub fn log_2_int_u32(v: u32) -> i32 {
     // C++: return 31 - __builtin_clz(v);

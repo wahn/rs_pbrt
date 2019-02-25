@@ -944,7 +944,12 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == "marble" {
             println!("TODO: CreateMarbleSpectrumTexture");
         } else if api_state.param_set.tex_name == "windy" {
-            println!("TODO: CreateWindySpectrumTexture");
+            println!("WORK: CreateWindySpectrumTexture");
+        // let wt = Arc::new(WindyTexture::new());
+        // api_state
+        //     .graphics_state
+        //     .spectrum_textures
+        //     .insert(api_state.param_set.name.clone(), wt);
         } else {
             println!(
                 "Spectrum texture \"{}\" unknown.",
