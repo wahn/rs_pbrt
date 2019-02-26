@@ -864,8 +864,10 @@ impl Transform {
         ret.dpdx = self.transform_vector(&si.dpdx);
         ret.dpdy = self.transform_vector(&si.dpdy);
         ret.bsdf = si.bsdf.clone();
+        ret.bssrdf = si.bssrdf.clone();
         ret.primitive = None; // TODO? si.primitive;
         ret.shading.n = nrm_faceforward_nrm(&ret.shading.n, &ret.n);
+        // TODO: ret.faceIndex = si.faceIndex;
         ret
     }
 }

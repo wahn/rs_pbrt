@@ -12,6 +12,7 @@ use core::geometry::{Point2f, Point3f, Vector2f, Vector3f};
 use core::interaction::SurfaceInteraction;
 use core::pbrt::Float;
 use core::pbrt::{clamp_t, lerp, log_2};
+use core::transform::Transform;
 
 // see texture.h
 
@@ -110,6 +111,31 @@ impl TextureMapping2D for PlanarMapping2D {
     }
 }
 
+#[derive(Debug, Default, Copy, Clone)]
+pub struct IdentityMapping3D {
+    pub world_to_texture: Transform,
+}
+
+impl IdentityMapping3D {
+    pub fn new(world_to_texture: Transform) -> Self {
+        IdentityMapping3D {
+            world_to_texture: world_to_texture,
+        }
+    }
+    pub fn get_world_to_texture(&self) -> Transform {
+        self.world_to_texture
+    }
+}
+
+impl TextureMapping3D for IdentityMapping3D {
+    fn map(&self, si: &SurfaceInteraction, dpdx: &mut Vector3f, dpdy: &mut Vector3f) -> Point3f {
+        let world_to_texture = self.get_world_to_texture();
+        *dpdx = world_to_texture.transform_vector(&si.dpdx);
+        *dpdy = world_to_texture.transform_vector(&si.dpdy);
+        world_to_texture.transform_point(&si.p)
+    }
+}
+
 pub trait Texture<T> {
     fn evaluate(&self, si: &SurfaceInteraction) -> T;
 }
@@ -182,13 +208,13 @@ pub fn grad(x: usize, y: usize, z: usize, dx: Float, dy: Float, dz: Float) -> Fl
     if h & 1_u8 > 0_u8 {
         ret_u = -u;
     } else {
-        ret_u = -u;
+        ret_u = u;
     }
     let ret_v: Float;
     if h & 2_u8 > 0_u8 {
         ret_v = -v;
     } else {
-        ret_v = -v;
+        ret_v = v;
     }
     ret_u + ret_v
 }

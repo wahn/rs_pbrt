@@ -32,7 +32,9 @@ use core::reflection::FourierBSDFTable;
 use core::sampler::Sampler;
 use core::scene::Scene;
 use core::shape::Shape;
-use core::texture::{PlanarMapping2D, Texture, TextureMapping2D, UVMapping2D};
+use core::texture::{
+    IdentityMapping3D, PlanarMapping2D, Texture, TextureMapping2D, TextureMapping3D, UVMapping2D,
+};
 use core::transform::{AnimatedTransform, Matrix4x4, Transform};
 use filters::boxfilter::BoxFilter;
 use filters::gaussian::GaussianFilter;
@@ -84,6 +86,7 @@ use textures::constant::ConstantTexture;
 use textures::imagemap::ImageTexture;
 use textures::imagemap::{convert_to_float, convert_to_spectrum};
 use textures::scale::ScaleTexture;
+use textures::windy::WindyTexture;
 
 // see api.cpp
 
@@ -616,10 +619,10 @@ fn make_texture(api_state: &mut ApiState) {
     if api_state.param_set.tex_type == "float" {
         match api_state
             .graphics_state
-            .spectrum_textures
+            .float_textures
             .get(api_state.param_set.name.as_str())
         {
-            Some(_spectrum_texture) => {
+            Some(_float_texture) => {
                 println!("Texture \"{}\" being redefined", api_state.param_set.name);
             }
             None => {}
@@ -739,7 +742,18 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == "marble" {
             println!("TODO: CreateMarbleFloatTexture");
         } else if api_state.param_set.tex_name == "windy" {
-            println!("TODO: CreateWindyFloatTexture");
+            println!("WORK: CreateWindyFloatTexture");
+            let tex_2_world: Transform = Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            };
+            let map: Box<TextureMapping3D + Send + Sync> =
+                Box::new(IdentityMapping3D::new(tex_2_world));
+            let wt = Arc::new(WindyTexture::new(map));
+            api_state
+                .graphics_state
+                .float_textures
+                .insert(api_state.param_set.name.clone(), wt);
         } else if api_state.param_set.tex_name == "ptex" {
             println!("TODO: CreatePtexFloatTexture");
         } else {
@@ -944,12 +958,7 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == "marble" {
             println!("TODO: CreateMarbleSpectrumTexture");
         } else if api_state.param_set.tex_name == "windy" {
-            println!("WORK: CreateWindySpectrumTexture");
-        // let wt = Arc::new(WindyTexture::new());
-        // api_state
-        //     .graphics_state
-        //     .spectrum_textures
-        //     .insert(api_state.param_set.name.clone(), wt);
+            println!("TODO: CreateWindySpectrumTexture");
         } else {
             println!(
                 "Spectrum texture \"{}\" unknown.",
