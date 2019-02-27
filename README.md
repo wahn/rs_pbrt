@@ -46,6 +46,19 @@ The scene can be found within the repository
 
 [sss_dragon_pbrt.tar.gz][sss_dragon_pbrt]
 
+## Stochastic Progressive Photon Mapping (SPPM)
+
+![SPPM Caustic
+Glass](https://www.janwalter.org/assets/caustic_glass_pbrt_rust_sppm.png)
+
+[caustic_glass.tar.gz][caustic_glass_pbrt]
+
+## Ecosystem (Cover image for the first edition of the PBRT book)
+
+![Ecosystem](https://www.janwalter.org/assets/ecosys.png)
+
+[pbrt_ecosys.tar.gz][ecosys_pbrt]
+
 ## Hair
 
 The [hair scattering][hair-scattering] model in action:
@@ -118,3 +131,5 @@ https://bitbucket.org/abusch/rustracer
 [theater_pbrt]:         https://www.janwalter.org/Download/Scenes/theater_pbrt.tar.gz
 [hair-scattering]:      http://www.pbrt.org/hair.pdf
 [sss_dragon_pbrt]:      https://www.janwalter.org/Download/Scenes/sss_dragon_pbrt.tar.gz
+[caustic_glass_pbrt]:   https://www.janwalter.org/Download/Scenes/caustic_glass.tar.gz
+[ecosys_pbrt]:          https://www.janwalter.org/Download/Scenes/pbrt_ecosys.tar.gz

@@ -742,7 +742,6 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == "marble" {
             println!("TODO: CreateMarbleFloatTexture");
         } else if api_state.param_set.tex_name == "windy" {
-            println!("WORK: CreateWindyFloatTexture");
             let tex_2_world: Transform = Transform {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
