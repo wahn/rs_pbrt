@@ -182,7 +182,9 @@
 // std
 use std;
 use std::f32::consts::PI;
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
+use std::ops::{
+    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
+};
 use std::sync::Arc;
 // others
 use num;
@@ -210,6 +212,12 @@ pub struct Vector2<T> {
 }
 
 impl<T> Vector2<T> {
+    pub fn has_nans(&self) -> bool
+    where
+        T: num::Float,
+    {
+        self.x.is_nan() || self.y.is_nan()
+    }
     pub fn length_squared(&self) -> T
     where
         T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
@@ -245,6 +253,52 @@ impl<T> IndexMut<u8> for Vector2<T> {
     }
 }
 
+impl<T> AddAssign<Vector2<T>> for Vector2<T>
+where
+    T: AddAssign,
+{
+    fn add_assign(&mut self, rhs: Vector2<T>) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
+impl<T> Add for Vector2<T>
+where
+    T: Copy + Add<T, Output = T>,
+{
+    type Output = Vector2<T>;
+    fn add(self, rhs: Vector2<T>) -> Vector2<T> {
+        Vector2::<T> {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+        }
+    }
+}
+
+impl<T> SubAssign<Vector2<T>> for Vector2<T>
+where
+    T: SubAssign,
+{
+    fn sub_assign(&mut self, rhs: Vector2<T>) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+    }
+}
+
+impl<T> Sub for Vector2<T>
+where
+    T: Copy + Sub<T, Output = T>,
+{
+    type Output = Vector2<T>;
+    fn sub(self, rhs: Vector2<T>) -> Vector2<T> {
+        Vector2::<T> {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
 impl<T> MulAssign<T> for Vector2<T>
 where
     T: Copy + MulAssign,
@@ -257,10 +311,7 @@ where
 
 impl<T> From<Vector2<T>> for Point2<T> {
     fn from(v: Vector2<T>) -> Self {
-        Point2::<T> {
-            x: v.x,
-            y: v.y,
-        }
+        Point2::<T> { x: v.x, y: v.y }
     }
 }
 
@@ -283,6 +334,12 @@ pub struct Vector3<T> {
 }
 
 impl<T> Vector3<T> {
+    pub fn has_nans(&self) -> bool
+    where
+        T: num::Float,
+    {
+        self.x.is_nan() || self.y.is_nan() || self.z.is_nan()
+    }
     pub fn abs(&self) -> Vector3<T>
     where
         T: num::Float,
@@ -337,6 +394,17 @@ where
             y: self.y + rhs.y,
             z: self.z + rhs.z,
         }
+    }
+}
+
+impl<T> SubAssign<Vector3<T>> for Vector3<T>
+where
+    T: SubAssign,
+{
+    fn sub_assign(&mut self, rhs: Vector3<T>) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+        self.z -= rhs.z;
     }
 }
 
@@ -605,6 +673,15 @@ pub struct Point2<T> {
     pub y: T,
 }
 
+impl<T> Point2<T> {
+    pub fn has_nans(&self) -> bool
+    where
+        T: num::Float,
+    {
+        self.x.is_nan() || self.y.is_nan()
+    }
+}
+
 impl<T> PartialEq for Point2<T>
 where
     T: std::cmp::PartialOrd,
@@ -627,7 +704,6 @@ where
 {
     type Output = Point2<T>;
     fn add(self, rhs: Point2<T>) -> Point2<T> {
-        // TODO: DCHECK(!v.HasNaNs());
         Point2::<T> {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
@@ -641,7 +717,6 @@ where
 {
     type Output = Point2<T>;
     fn add(self, rhs: Vector2<T>) -> Point2<T> {
-        // TODO: DCHECK(!v.HasNaNs());
         Point2::<T> {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
@@ -821,6 +896,15 @@ pub struct Point3<T> {
     pub z: T,
 }
 
+impl<T> Point3<T> {
+    pub fn has_nans(&self) -> bool
+    where
+        T: num::Float,
+    {
+        self.x.is_nan() || self.y.is_nan() || self.z.is_nan()
+    }
+}
+
 impl<T> AddAssign<Point3<T>> for Point3<T>
 where
     T: AddAssign,
@@ -838,7 +922,6 @@ where
 {
     type Output = Point3<T>;
     fn add(self, rhs: Point3<T>) -> Point3<T> {
-        // TODO: DCHECK(!v.HasNaNs());
         Point3::<T> {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
@@ -853,7 +936,6 @@ where
 {
     type Output = Point3<T>;
     fn add(self, rhs: Vector3<T>) -> Point3<T> {
-        // TODO: DCHECK(!v.HasNaNs());
         Point3::<T> {
             x: self.x + rhs.x,
             y: self.y + rhs.y,
@@ -1291,7 +1373,6 @@ impl Div<Float> for Normal3<f32> {
 
 impl<T> From<Vector3<T>> for Normal3<T> {
     fn from(v: Vector3<T>) -> Self {
-        // TODO: DCHECK(!v.HasNaNs());
         Normal3::<T> {
             x: v.x,
             y: v.y,
@@ -1324,7 +1405,6 @@ pub fn nrm_dot_nrm<T>(n1: &Normal3<T>, n2: &Normal3<T>) -> T
 where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
-    // TODO: DCHECK(!n1.HasNaNs() && !n2.HasNaNs());
     n1.x * n2.x + n1.y * n2.y + n1.z * n2.z
 }
 
@@ -1335,7 +1415,6 @@ pub fn nrm_dot_vec3<T>(n1: &Normal3<T>, v2: &Vector3<T>) -> T
 where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
-    // TODO: DCHECK(!n1.HasNaNs() && !v2.HasNaNs());
     n1.x * v2.x + n1.y * v2.y + n1.z * v2.z
 }
 
@@ -1756,16 +1835,18 @@ pub fn pnt3_inside_exclusive(p: &Point3f, b: &Bounds3f) -> bool {
 /// Pads the bounding box by a constant factor in all dimensions.
 pub fn bnd3_expand(b: &Bounds3f, delta: Float) -> Bounds3f {
     Bounds3f::new(
-        b.p_min - Vector3f {
-            x: delta,
-            y: delta,
-            z: delta,
-        },
-        b.p_max + Vector3f {
-            x: delta,
-            y: delta,
-            z: delta,
-        },
+        b.p_min
+            - Vector3f {
+                x: delta,
+                y: delta,
+                z: delta,
+            },
+        b.p_max
+            + Vector3f {
+                x: delta,
+                y: delta,
+                z: delta,
+            },
     )
 }
 

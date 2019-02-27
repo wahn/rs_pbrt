@@ -147,16 +147,16 @@ pub fn smooth_step(min: Float, max: Float, value: Float) -> Float {
 
 pub fn noise_flt(x: Float, y: Float, z: Float) -> Float {
     // compute noise cell coordinates and offsets
-    let mut ix: usize = x.floor() as usize;
-    let mut iy: usize = y.floor() as usize;
-    let mut iz: usize = z.floor() as usize;
+    let mut ix: i32 = x.floor() as i32;
+    let mut iy: i32 = y.floor() as i32;
+    let mut iz: i32 = z.floor() as i32;
     let dx: Float = x - ix as Float;
     let dy: Float = y - iy as Float;
     let dz: Float = z - iz as Float;
     // compute gradient weights
-    ix &= NOISE_PERM_SIZE - 1;
-    iy &= NOISE_PERM_SIZE - 1;
-    iz &= NOISE_PERM_SIZE - 1;
+    ix &= NOISE_PERM_SIZE as i32 - 1;
+    iy &= NOISE_PERM_SIZE as i32 - 1;
+    iz &= NOISE_PERM_SIZE as i32 - 1;
     let w000: Float = grad(ix, iy, iz, dx, dy, dz);
     let w100: Float = grad(ix + 1, iy, iz, dx - 1.0 as Float, dy, dz);
     let w010: Float = grad(ix, iy + 1, iz, dx, dy - 1.0 as Float, dz);
@@ -182,15 +182,17 @@ pub fn noise_flt(x: Float, y: Float, z: Float) -> Float {
     let x11: Float = lerp(wx, w011, w111);
     let y0: Float = lerp(wy, x00, x10);
     let y1: Float = lerp(wy, x01, x11);
-    lerp(wz, y0, y1)
+    let ret: Float = lerp(wz, y0, y1);
+    ret
 }
 
 pub fn noise_pnt3(p: &Point3f) -> Float {
     noise_flt(p.x, p.y, p.z)
 }
 
-pub fn grad(x: usize, y: usize, z: usize, dx: Float, dy: Float, dz: Float) -> Float {
-    let mut h: u8 = NOISE_PERM[NOISE_PERM[NOISE_PERM[x] as usize + y] as usize + z];
+pub fn grad(x: i32, y: i32, z: i32, dx: Float, dy: Float, dz: Float) -> Float {
+    let mut h: u8 =
+        NOISE_PERM[NOISE_PERM[NOISE_PERM[x as usize] as usize + y as usize] as usize + z as usize];
     h &= 15_u8;
     let u: Float;
     if h < 8_u8 || h == 12_u8 || h == 13_u8 {

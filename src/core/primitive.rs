@@ -37,9 +37,6 @@ pub trait Primitive {
                 self.get_material(),
             );
         }
-        if isect.shading.n.x.is_nan() {
-            println!("DEBUG ME");
-        }
         assert!(
             nrm_dot_nrm(&isect.n, &isect.shading.n) > 0.0,
             "n: {:?} dot shading.n: {:?}",
