@@ -65,22 +65,15 @@ impl FourierBSDFTable {
                 let io_result = file.read_i32_into::<LittleEndian>(&mut buffer);
                 if io_result.is_ok() {
                     let flags: i32 = buffer[0];
-                    println!("WORK: flags = {:?}", flags);
                     self.n_mu = buffer[1];
-                    println!("WORK: n_mu = {:?}", self.n_mu);
                     let n_coeffs: i32 = buffer[2];
-                    println!("WORK: n_coeffs = {:?}", n_coeffs);
                     self.m_max = buffer[3];
-                    println!("WORK: m_max = {:?}", self.m_max);
                     self.n_channels = buffer[4];
-                    println!("WORK: n_channels = {:?}", self.n_channels);
                     let n_bases: i32 = buffer[5];
-                    println!("WORK: n_bases = {:?}", n_bases);
                     let mut buffer: [f32; 1] = [0_f32; 1]; // 1 32-bit float
                     let io_result = file.read_f32_into::<LittleEndian>(&mut buffer);
                     if io_result.is_ok() {
                         self.eta = buffer[0];
-                        println!("WORK: eta = {:?}", self.eta);
                         let mut buffer: [i32; 4] = [0; 4]; // 4 32-bit (signed) integers are unused
                         let io_result = file.read_i32_into::<LittleEndian>(&mut buffer);
                         if io_result.is_ok() {
@@ -103,7 +96,6 @@ impl FourierBSDFTable {
                                 let f: f32 = file.read_f32::<LittleEndian>().unwrap();
                                 self.mu.push(f as Float);
                             }
-                            println!("WORK: {} f32 values read for mu", self.mu.len());
                             // self.cdf
                             self.cdf
                                 .reserve_exact(self.n_mu as usize * self.n_mu as usize);
@@ -111,7 +103,6 @@ impl FourierBSDFTable {
                                 let f: f32 = file.read_f32::<LittleEndian>().unwrap();
                                 self.cdf.push(f as Float);
                             }
-                            println!("WORK: {} f32 values read for cdf", self.cdf.len());
                             // self.a0
                             self.a0
                                 .reserve_exact(self.n_mu as usize * self.n_mu as usize);
@@ -123,10 +114,6 @@ impl FourierBSDFTable {
                                 let i: i32 = file.read_i32::<LittleEndian>().unwrap();
                                 offset_and_length.push(i);
                             }
-                            println!(
-                                "WORK: {} f32 values read for offset_and_length",
-                                offset_and_length.len()
-                            );
                             // self.a_offset
                             self.a_offset
                                 .reserve_exact(self.n_mu as usize * self.n_mu as usize);
@@ -139,7 +126,6 @@ impl FourierBSDFTable {
                                 let f: f32 = file.read_f32::<LittleEndian>().unwrap();
                                 self.a.push(f as Float);
                             }
-                            println!("WORK: {} f32 values read for a", self.a.len());
                             // fill self.a_offset, self.m, and self.a0 vectors
                             for i in 0..(self.n_mu as usize * self.n_mu as usize) {
                                 let offset: i32 = offset_and_length[(2 * i) as usize];
