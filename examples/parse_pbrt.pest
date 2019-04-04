@@ -1,0 +1,3 @@
+comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+todo_line = { (!NEWLINE ~ ANY)* ~ NEWLINE }
+pbrt = { SOI ~ (comment_line | todo_line)* ~ EOI }
