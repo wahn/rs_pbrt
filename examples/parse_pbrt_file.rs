@@ -43,7 +43,6 @@ fn print_version(program: &str) {
 // CoordinateSystem
 // CoordSysTransform
 // Camera
-// Film
 // Integrator
 // Include
 // Identity
@@ -150,6 +149,7 @@ fn main() {
                         }
                         Rule::statement => {
                             for rule_pair in inner_pair.into_inner() {
+                                println!("statement: {:?}", rule_pair.as_rule());
                                 match rule_pair.as_rule() {
                                     Rule::world_begin => {
                                         // WorldBegin
@@ -157,6 +157,18 @@ fn main() {
                                     }
                                     Rule::world_end => {
                                         // WorldEnd
+                                    }
+                                    // WORK
+                                    _ => println!("TODO: {:?}", rule_pair.as_rule()),
+                                }
+                            }
+                        }
+                        Rule::named_statement => {
+                            for rule_pair in inner_pair.into_inner() {
+                                println!("named_statement: {:?}", rule_pair.as_rule());
+                                match rule_pair.as_rule() {
+                                    Rule::film => {
+                                        // Film
                                     }
                                     // WORK
                                     _ => println!("TODO: {:?}", rule_pair.as_rule()),

@@ -1,8 +1,12 @@
 comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+// statements
 statement = { world_begin |
               world_end }
+named_statement = { film }
+// rules in alphabetical order
+film = { "Film" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 world_begin = { "WorldBegin" ~ NEWLINE }
 world_end = { "WorldEnd" ~ NEWLINE }
 // catch any lines left to do
 todo_line = { (!NEWLINE ~ ANY)* ~ NEWLINE }
-pbrt = { SOI ~ (comment_line | statement | todo_line)* ~ EOI }
+pbrt = { SOI ~ (comment_line | statement | named_statement | todo_line)* ~ EOI }
