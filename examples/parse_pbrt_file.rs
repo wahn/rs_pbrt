@@ -17,7 +17,7 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
-use pbrt::core::api::pbrt_init;
+use pbrt::core::api::{pbrt_cleanup, pbrt_init, pbrt_world_begin};
 // std
 use std::env;
 use std::fs::File;
@@ -69,8 +69,6 @@ fn print_version(program: &str) {
 // Translate
 // TransformTimes
 // Texture
-// WorldBegin
-// WorldEnd
 
 fn main() {
     // handle command line options
@@ -146,9 +144,26 @@ fn main() {
                 let mut todo_count: u64 = 0;
                 for inner_pair in pairs.into_inner() {
                     match inner_pair.as_rule() {
+                        // comment lines (starting with '#')
                         Rule::comment_line => {
                             comment_count += 1;
                         }
+                        Rule::statement => {
+                            for rule_pair in inner_pair.into_inner() {
+                                match rule_pair.as_rule() {
+                                    Rule::world_begin => {
+                                        // WorldBegin
+                                        pbrt_world_begin(&mut api_state);
+                                    }
+                                    Rule::world_end => {
+                                        // WorldEnd
+                                    }
+                                    // WORK
+                                    _ => println!("TODO: {:?}", rule_pair.as_rule()),
+                                }
+                            }
+                        }
+                        // WORK
                         Rule::todo_line => {
                             todo_count += 1;
                         }
@@ -158,7 +173,11 @@ fn main() {
                 }
                 println!("Number of comment line(s):   {}", comment_count);
                 println!("Number of line(s) left TODO: {}", todo_count);
-                // WORK
+                if todo_count == 0 {
+                    // usually triggered by WorldEnd
+                    pbrt_cleanup(&mut api_state);
+                    // TODO: rename pbrt_cleanup() to pbrt_world_end()?
+                }
             }
             None => panic!("No input file name."),
         }

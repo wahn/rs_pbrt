@@ -1,3 +1,8 @@
 comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+statement = { world_begin |
+              world_end }
+world_begin = { "WorldBegin" ~ NEWLINE }
+world_end = { "WorldEnd" ~ NEWLINE }
+// catch any lines left to do
 todo_line = { (!NEWLINE ~ ANY)* ~ NEWLINE }
-pbrt = { SOI ~ (comment_line | todo_line)* ~ EOI }
+pbrt = { SOI ~ (comment_line | statement | todo_line)* ~ EOI }
