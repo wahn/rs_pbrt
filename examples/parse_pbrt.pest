@@ -7,6 +7,15 @@ named_statement = { film }
 film = { "Film" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 world_begin = { "WorldBegin" ~ NEWLINE }
 world_end = { "WorldEnd" ~ NEWLINE }
+// count empty lines later
+empty_line = { NEWLINE }
 // catch any lines left to do
 todo_line = { (!NEWLINE ~ ANY)* ~ NEWLINE }
-pbrt = { SOI ~ (comment_line | statement | named_statement | todo_line)* ~ EOI }
+pbrt = { SOI ~
+         (comment_line |
+          statement |
+          named_statement |
+          empty_line |
+          todo_line
+         )* ~
+         EOI }

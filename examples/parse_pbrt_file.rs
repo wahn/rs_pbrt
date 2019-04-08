@@ -140,6 +140,7 @@ fn main() {
                     .next()
                     .unwrap();
                 let mut comment_count: u64 = 0;
+                let mut empty_count: u64 = 0;
                 let mut todo_count: u64 = 0;
                 for inner_pair in pairs.into_inner() {
                     match inner_pair.as_rule() {
@@ -176,6 +177,9 @@ fn main() {
                             }
                         }
                         // WORK
+                        Rule::empty_line => {
+                            empty_count += 1;
+                        }
                         Rule::todo_line => {
                             todo_count += 1;
                         }
@@ -185,6 +189,7 @@ fn main() {
                 }
                 println!("Number of comment line(s):   {}", comment_count);
                 println!("Number of line(s) left TODO: {}", todo_count);
+                println!("Number of empty line(s):     {}", empty_count);
                 if todo_count == 0 {
                     // usually triggered by WorldEnd
                     pbrt_cleanup(&mut api_state);
