@@ -139,9 +139,12 @@ fn main() {
                     .expect("unsuccessful parse")
                     .next()
                     .unwrap();
+                let mut identifier: &str = "";
                 let mut comment_count: u64 = 0;
                 let mut empty_count: u64 = 0;
                 let mut todo_count: u64 = 0;
+                let mut parse_again: String = String::default();
+                // first parse file line by line
                 for inner_pair in pairs.into_inner() {
                     match inner_pair.as_rule() {
                         // comment lines (starting with '#')
@@ -152,11 +155,19 @@ fn main() {
                             for statement_pair in inner_pair.into_inner() {
                                 match statement_pair.as_rule() {
                                     Rule::identifier => {
-                                        print!("{}", statement_pair.as_str());
+                                        if identifier != "" {
+                                            println!("{} {}", identifier, parse_again);
+                                        }
+                                        identifier = statement_pair.as_str();
+                                        parse_again = String::default();
                                     }
                                     Rule::remaining_line => {
-                                        println!(" {}", statement_pair.as_str());
-                                        // WORK
+                                        if parse_again != "" {
+                                            parse_again =
+                                                parse_again + " " + statement_pair.as_str();
+                                        } else {
+                                            parse_again += statement_pair.as_str();
+                                        }
                                     }
                                     _ => println!("TODO: {:?}", statement_pair.as_rule()),
                                 }
@@ -170,8 +181,11 @@ fn main() {
                             for params_pair in inner_pair.into_inner() {
                                 match params_pair.as_rule() {
                                     Rule::remaining_params => {
-                                        println!("  {}", params_pair.as_str());
-                                        // WORK
+                                        if parse_again != "" {
+                                            parse_again = parse_again + " " + params_pair.as_str();
+                                        } else {
+                                            parse_again += params_pair.as_str();
+                                        }
                                     }
                                     _ => println!("TODO: {:?}", params_pair.as_rule()),
                                 }
