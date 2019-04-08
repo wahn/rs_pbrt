@@ -105,6 +105,7 @@ empty_line = { NEWLINE }
 // catch any lines left to do
 remaining_params = { (!(NEWLINE | "#") ~ ANY)* }
 todo_line = { remaining_params ~ (trailing_comment)? ~ NEWLINE }
+// main .pbrt file
 pbrt = { SOI ~
          (comment_line |
           statement_line |
@@ -112,3 +113,11 @@ pbrt = { SOI ~
           todo_line
          )* ~
          EOI }
+// single lines with all parameters
+type_name = { "\"" ~ ASCII_ALPHA_LOWER+ ~ "\"" }
+file_name = { "\"" ~ filename ~ "\"" }
+filename = { ("/" | "./" ~ ("../")? | "../" ~ ("../")?)? ~ // optional (can be a full or relative path)
+             (ASCII_ALPHA_LOWER | "_") ~
+             (ASCII_ALPHA_LOWER | "_" | "-" | "." | "/" | '0'..'9')* }
+type_params = { (type_name | file_name) ~ remaining_params }
+name_and_or_params = { type_params | remaining_line }

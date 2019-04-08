@@ -69,6 +69,31 @@ fn print_version(program: &str) {
 // TransformTimes
 // Texture
 
+fn parse_line(identifier: &str, str_buf: String) {
+    if str_buf == "" {
+        // no additional arguments
+        println!("{} {}", identifier, str_buf);
+    } else {
+        let pairs = PbrtParser::parse(Rule::name_and_or_params, &str_buf)
+            .expect("unsuccessful parse")
+            .next()
+            .unwrap();
+        for inner_pair in pairs.into_inner() {
+            match inner_pair.as_rule() {
+                Rule::type_params => {
+                    // identifier "type" parameter-list
+                    println!("> {} {}", identifier, inner_pair.as_str());
+                }
+                Rule::remaining_line => {
+                    // predetermined number of arguments of predetermined type
+                    println!("< {} {}", identifier, inner_pair.as_str());
+                }
+                _ => unreachable!(),
+            }
+        }
+    }
+}
+
 fn main() {
     // handle command line options
     let args: Vec<String> = env::args().collect();
@@ -156,7 +181,7 @@ fn main() {
                                 match statement_pair.as_rule() {
                                     Rule::identifier => {
                                         if identifier != "" {
-                                            println!("{} {}", identifier, parse_again);
+                                            parse_line(identifier, parse_again.clone());
                                         }
                                         identifier = statement_pair.as_str();
                                         parse_again = String::default();
@@ -197,7 +222,7 @@ fn main() {
                                 }
                             }
                         }
-                        Rule::EOI => (),
+                        Rule::EOI => parse_line(identifier, parse_again.clone()),
                         _ => unreachable!(),
                     }
                 }
