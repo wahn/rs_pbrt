@@ -54,10 +54,6 @@ identifier = { "AttributeBegin" |
 //               statement_with_opt_args |
 //               statement_left_todo }
 // rules in alphabetical order
-// AttributeBegin
-// attribute_begin = { "AttributeBegin" ~ NEWLINE }
-// AttributeEnd
-// attribute_end = { "AttributeEnd" ~ NEWLINE }
 // ActiveTransform
 // AreaLightSource
 // Accelerator
@@ -70,7 +66,6 @@ identifier = { "AttributeBegin" |
 // Include
 // Identity
 // LightSource
-// LookAt
 // MakeNamedMaterial
 // MakeNamedMedium
 // Material
@@ -81,7 +76,6 @@ identifier = { "AttributeBegin" |
 // ObjectInstance
 // PixelFilter
 // ReverseOrientation
-// Rotate
 // Shape
 // Sampler
 // sampler = { "Sampler" ~ ANY* ~ !(comment_line | identifier) }
@@ -89,11 +83,8 @@ identifier = { "AttributeBegin" |
 // TransformBegin
 // TransformEnd
 // Transform
-// Translate
 // TransformTimes
 // Texture
-// world_begin = { "WorldBegin" ~ NEWLINE }
-// world_end = { "WorldEnd" ~ NEWLINE }
 // comments
 comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 trailing_comment = { "#" ~ (!NEWLINE ~ ANY)* }
@@ -120,4 +111,50 @@ filename = { ("/" | "./" ~ ("../")? | "../" ~ ("../")?)? ~ // optional (can be a
              (ASCII_ALPHA_LOWER | "_") ~
              (ASCII_ALPHA_LOWER | "_" | "-" | "." | "/" | '0'..'9')* }
 type_params = { (type_name | file_name) ~ remaining_params }
-name_and_or_params = { type_params | remaining_line }
+name_and_or_params = { // identifier "type" parameter-list
+                       type_params |
+                       // predetermined number of arguments of predetermined type
+                       look_at |
+                       rotate |
+                       translate |
+                       // catch others
+                       remaining_line }
+// LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
+look_at = { // "LookAt" ~
+            // followed by 9 numbers:
+
+            // eye_x eye_y eye_z
+            number ~ number ~ number ~
+            // look_x look_y look_z
+            number ~ number ~ number ~
+            // up_x up_y up_z
+            number ~ number ~ number
+}
+// Rotate angle x y z
+rotate = { // "Rotate" ~
+           // followed by 4 numbers:
+           number ~ number ~ number ~ number
+}
+// Translate x y z
+translate = { // "Translate" ~
+           // followed by 3 numbers:
+           number ~ number ~ number
+}
+// helpers
+// NUMBER -+?(0-9+|((0-9+\.0-9*)|(\.0-9+)))(eE-+?0-9+)?
+number = @{
+    ("-" | "+")? ~ // optional sign, followed by
+    (
+        (
+            ("." ~ '0'..'9'+) // dot and digits
+                | // or
+            ('0'..'9'+ ~ "." ~ '0'..'9'*) // digits, dot, and (optional digits)
+        )
+            | // or
+        '0'..'9'+ // just digits
+    ) ~ ( // followed by (optional)
+        ("e" | "E") ~ // 'e' or 'E', followed by
+        ("-" | "+")? ~ // optional sign, followed by
+        '0'..'9'+ // digits
+    )?
+}

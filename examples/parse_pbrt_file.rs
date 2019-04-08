@@ -17,13 +17,19 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
-use pbrt::core::api::{pbrt_cleanup, pbrt_init, pbrt_world_begin};
+use pbrt::core::api::ApiState;
+use pbrt::core::api::{
+    pbrt_attribute_begin, pbrt_attribute_end, pbrt_cleanup, pbrt_init, pbrt_look_at, pbrt_rotate,
+    pbrt_translate, pbrt_world_begin,
+};
+use pbrt::core::pbrt::Float;
 // std
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
@@ -34,8 +40,6 @@ fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
 }
 
-// AttributeBegin
-// AttributeEnd
 // ActiveTransform
 // AreaLightSource
 // Accelerator
@@ -47,7 +51,6 @@ fn print_version(program: &str) {
 // Include
 // Identity
 // LightSource
-// LookAt
 // MakeNamedMaterial
 // MakeNamedMedium
 // Material
@@ -69,10 +72,32 @@ fn print_version(program: &str) {
 // TransformTimes
 // Texture
 
-fn parse_line(identifier: &str, str_buf: String) {
+fn parse_line(api_state: &mut ApiState, identifier: &str, str_buf: String) {
     if str_buf == "" {
         // no additional arguments
-        println!("{} {}", identifier, str_buf);
+        match identifier {
+            "AttributeBegin" => {
+                // AttributeBegin
+                println!("{} {}", identifier, str_buf);
+                pbrt_attribute_begin(api_state);
+            }
+            "AttributeEnd" => {
+                // AttributeEnd
+                println!("{} {}", identifier, str_buf);
+                pbrt_attribute_end(api_state);
+            }
+            "WorldBegin" => {
+                // WorldBegin
+                println!("{} {}", identifier, str_buf);
+                pbrt_world_begin(api_state);
+            }
+            "WorldEnd" => {
+                // WorldEnd
+                println!("{} {}", identifier, str_buf);
+                // TODO: pbrt_cleanup(api_state);
+            }
+            _ => println!("{} {}", identifier, str_buf),
+        }
     } else {
         let pairs = PbrtParser::parse(Rule::name_and_or_params, &str_buf)
             .expect("unsuccessful parse")
@@ -84,11 +109,50 @@ fn parse_line(identifier: &str, str_buf: String) {
                     // identifier "type" parameter-list
                     println!("> {} {}", identifier, inner_pair.as_str());
                 }
+                Rule::look_at => {
+                    // LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
+                    let mut v: Vec<Float> = Vec::new();
+                    for rule_pair in inner_pair.into_inner() {
+                        let number: Float =
+                            f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                        v.push(number);
+                    }
+                    println!(
+                        "LookAt {} {} {} {} {} {} {} {} {}",
+                        v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8],
+                    );
+                    pbrt_look_at(
+                        api_state, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8],
+                    );
+                }
+                Rule::rotate => {
+                    // Rotate angle x y z
+                    let mut v: Vec<Float> = Vec::new();
+                    for rule_pair in inner_pair.into_inner() {
+                        let number: Float =
+                            f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                        v.push(number);
+                    }
+                    println!("Rotate {} {} {} {}", v[0], v[1], v[2], v[3]);
+                    pbrt_rotate(api_state, v[0], v[1], v[2], v[3]);
+                }
+                Rule::translate => {
+                    // Translate x y z
+                    let mut v: Vec<Float> = Vec::new();
+                    for rule_pair in inner_pair.into_inner() {
+                        let number: Float =
+                            f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                        v.push(number);
+                    }
+                    println!("Translate {} {} {}", v[0], v[1], v[2]);
+                    pbrt_translate(api_state, v[0], v[1], v[2]);
+                }
                 Rule::remaining_line => {
                     // predetermined number of arguments of predetermined type
                     println!("< {} {}", identifier, inner_pair.as_str());
                 }
-                _ => unreachable!(),
+                // _ => unreachable!(),
+                _ => println!("TODO: {:?}", inner_pair.as_rule()),
             }
         }
     }
@@ -145,7 +209,7 @@ fn main() {
                 println!("FILE = {}", x);
                 let f = File::open(x.clone()).unwrap();
                 let ip: &Path = Path::new(x.as_str());
-                let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
+                let (mut api_state, mut _bsdf_state) = pbrt_init(number_of_threads);
                 if ip.is_relative() {
                     let cp: PathBuf = env::current_dir().unwrap();
                     let pb: PathBuf = cp.join(ip);
@@ -181,7 +245,11 @@ fn main() {
                                 match statement_pair.as_rule() {
                                     Rule::identifier => {
                                         if identifier != "" {
-                                            parse_line(identifier, parse_again.clone());
+                                            parse_line(
+                                                &mut api_state,
+                                                identifier,
+                                                parse_again.clone(),
+                                            );
                                         }
                                         identifier = statement_pair.as_str();
                                         parse_again = String::default();
@@ -222,18 +290,13 @@ fn main() {
                                 }
                             }
                         }
-                        Rule::EOI => parse_line(identifier, parse_again.clone()),
+                        Rule::EOI => parse_line(&mut api_state, identifier, parse_again.clone()),
                         _ => unreachable!(),
                     }
                 }
                 println!("Number of comment line(s):   {}", comment_count);
-                println!("Number of line(s) left TODO: {}", todo_count);
+                println!("Number of parameter line(s): {}", todo_count);
                 println!("Number of empty line(s):     {}", empty_count);
-                if todo_count == 0 {
-                    // usually triggered by WorldEnd
-                    pbrt_cleanup(&mut api_state);
-                    // TODO: rename pbrt_cleanup() to pbrt_world_end()?
-                }
             }
             None => panic!("No input file name."),
         }
