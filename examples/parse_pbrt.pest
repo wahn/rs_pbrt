@@ -1,3 +1,4 @@
+WHITESPACE = _{ " " }
 // identifiers
 identifier = { "AttributeBegin" |
                "AttributeEnd" |
@@ -96,11 +97,13 @@ identifier = { "AttributeBegin" |
 // comments
 comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 // statements
-statement_line = { identifier ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+remaining_line = { (!NEWLINE ~ ANY)* }
+statement_line = { identifier ~ remaining_line ~ NEWLINE }
 // count empty lines later
 empty_line = { NEWLINE }
 // catch any lines left to do
-todo_line = { (!NEWLINE ~ ANY)* ~ NEWLINE }
+remaining_params = { (!NEWLINE ~ ANY)* }
+todo_line = { remaining_params ~ NEWLINE }
 pbrt = { SOI ~
          (comment_line |
           statement_line |

@@ -152,19 +152,30 @@ fn main() {
                             for statement_pair in inner_pair.into_inner() {
                                 match statement_pair.as_rule() {
                                     Rule::identifier => {
-                                        println!("identifier: {:?}", statement_pair);
+                                        print!("{}", statement_pair.as_str());
                                     }
-                                    // WORK
+                                    Rule::remaining_line => {
+                                        println!(" {}", statement_pair.as_str());
+                                        // WORK
+                                    }
                                     _ => println!("TODO: {:?}", statement_pair.as_rule()),
                                 }
                             }
                         }
-                        // WORK
                         Rule::empty_line => {
                             empty_count += 1;
                         }
                         Rule::todo_line => {
                             todo_count += 1;
+                            for params_pair in inner_pair.into_inner() {
+                                match params_pair.as_rule() {
+                                    Rule::remaining_params => {
+                                        println!("  {}", params_pair.as_str());
+                                        // WORK
+                                    }
+                                    _ => println!("TODO: {:?}", params_pair.as_rule()),
+                                }
+                            }
                         }
                         Rule::EOI => (),
                         _ => unreachable!(),
