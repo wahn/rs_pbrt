@@ -1,20 +1,109 @@
+// identifiers
+identifier = { "AttributeBegin" |
+               "AttributeEnd" |
+               "ActiveTransform" |
+               "AreaLightSource" |
+               "Accelerator" |
+               "ConcatTransform" |
+               "CoordinateSystem" |
+               "CoordSysTransform" |
+               "Camera" |
+               "Film" |
+               "Integrator" |
+               "Include" |
+               "Identity" |
+               "LightSource" |
+               "LookAt" |
+               "MakeNamedMaterial" |
+               "MakeNamedMedium" |
+               "Material" |
+               "MediumInterface" |
+               "NamedMaterial" |
+               "ObjectBegin" |
+               "ObjectEnd" |
+               "ObjectInstance" |
+               "PixelFilter" |
+               "ReverseOrientation" |
+               "Rotate" |
+               "Shape" |
+               "Sampler" |
+               "Scale" |
+               "TransformBegin" |
+               "TransformEnd" |
+               "Transform" |
+               "Translate" |
+               "TransformTimes" |
+               "Texture" |
+               "WorldBegin" |
+               "WorldEnd" }
+// statements without arguments
+// statement_no_args = { attribute_begin |
+//                       attribute_end |
+//                       world_begin |
+//                       world_end }
+// statements with fixed number of arguments
+// statements with variable number of arguments
+// statement_with_opt_args = { film |
+//                             sampler }
+// this should be empty in the end
+// statement_left_todo = { identifier ~ ANY* ~ !identifier }
+// statements
+// statement = { statement_no_args |
+// // TODO:      statement_fixed_num_args |
+//               statement_with_opt_args |
+//               statement_left_todo }
+// rules in alphabetical order
+// AttributeBegin
+// attribute_begin = { "AttributeBegin" ~ NEWLINE }
+// AttributeEnd
+// attribute_end = { "AttributeEnd" ~ NEWLINE }
+// ActiveTransform
+// AreaLightSource
+// Accelerator
+// ConcatTransform
+// CoordinateSystem
+// CoordSysTransform
+// Camera
+// film = { "Film" ~ PUSH("\"") ~ (!("\"") ~ ANY)+ ~ POP ~ ANY* ~ NEWLINE }
+// Integrator
+// Include
+// Identity
+// LightSource
+// LookAt
+// MakeNamedMaterial
+// MakeNamedMedium
+// Material
+// MediumInterface
+// NamedMaterial
+// ObjectBegin
+// ObjectEnd
+// ObjectInstance
+// PixelFilter
+// ReverseOrientation
+// Rotate
+// Shape
+// Sampler
+// sampler = { "Sampler" ~ ANY* ~ !(comment_line | identifier) }
+// Scale
+// TransformBegin
+// TransformEnd
+// Transform
+// Translate
+// TransformTimes
+// Texture
+// world_begin = { "WorldBegin" ~ NEWLINE }
+// world_end = { "WorldEnd" ~ NEWLINE }
+// comments
 comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 // statements
-statement = { world_begin |
-              world_end }
-named_statement = { film }
-// rules in alphabetical order
-film = { "Film" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
-world_begin = { "WorldBegin" ~ NEWLINE }
-world_end = { "WorldEnd" ~ NEWLINE }
+statement_line = { identifier ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 // count empty lines later
 empty_line = { NEWLINE }
 // catch any lines left to do
 todo_line = { (!NEWLINE ~ ANY)* ~ NEWLINE }
 pbrt = { SOI ~
          (comment_line |
-          statement |
-          named_statement |
+          statement_line |
           empty_line |
           todo_line
          )* ~

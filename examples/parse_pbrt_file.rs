@@ -148,31 +148,14 @@ fn main() {
                         Rule::comment_line => {
                             comment_count += 1;
                         }
-                        Rule::statement => {
-                            for rule_pair in inner_pair.into_inner() {
-                                println!("statement: {:?}", rule_pair.as_rule());
-                                match rule_pair.as_rule() {
-                                    Rule::world_begin => {
-                                        // WorldBegin
-                                        pbrt_world_begin(&mut api_state);
-                                    }
-                                    Rule::world_end => {
-                                        // WorldEnd
+                        Rule::statement_line => {
+                            for statement_pair in inner_pair.into_inner() {
+                                match statement_pair.as_rule() {
+                                    Rule::identifier => {
+                                        println!("identifier: {:?}", statement_pair);
                                     }
                                     // WORK
-                                    _ => println!("TODO: {:?}", rule_pair.as_rule()),
-                                }
-                            }
-                        }
-                        Rule::named_statement => {
-                            for rule_pair in inner_pair.into_inner() {
-                                println!("named_statement: {:?}", rule_pair.as_rule());
-                                match rule_pair.as_rule() {
-                                    Rule::film => {
-                                        // Film
-                                    }
-                                    // WORK
-                                    _ => println!("TODO: {:?}", rule_pair.as_rule()),
+                                    _ => println!("TODO: {:?}", statement_pair.as_rule()),
                                 }
                             }
                         }
