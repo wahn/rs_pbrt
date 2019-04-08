@@ -169,6 +169,9 @@ fn main() {
                                             parse_again += statement_pair.as_str();
                                         }
                                     }
+                                    Rule::trailing_comment => {
+                                        // ignore
+                                    }
                                     _ => println!("TODO: {:?}", statement_pair.as_rule()),
                                 }
                             }
@@ -186,6 +189,9 @@ fn main() {
                                         } else {
                                             parse_again += params_pair.as_str();
                                         }
+                                    }
+                                    Rule::trailing_comment => {
+                                        // ignore
                                     }
                                     _ => println!("TODO: {:?}", params_pair.as_rule()),
                                 }

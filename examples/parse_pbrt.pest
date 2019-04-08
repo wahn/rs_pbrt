@@ -96,14 +96,15 @@ identifier = { "AttributeBegin" |
 // world_end = { "WorldEnd" ~ NEWLINE }
 // comments
 comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+trailing_comment = { "#" ~ (!NEWLINE ~ ANY)* }
 // statements
-remaining_line = { (!NEWLINE ~ ANY)* }
-statement_line = { identifier ~ remaining_line ~ NEWLINE }
+remaining_line = { (!(NEWLINE | "#") ~ ANY)* }
+statement_line = { identifier ~ remaining_line ~ (trailing_comment)? ~ NEWLINE }
 // count empty lines later
 empty_line = { NEWLINE }
 // catch any lines left to do
-remaining_params = { (!NEWLINE ~ ANY)* }
-todo_line = { remaining_params ~ NEWLINE }
+remaining_params = { (!(NEWLINE | "#") ~ ANY)* }
+todo_line = { remaining_params ~ (trailing_comment)? ~ NEWLINE }
 pbrt = { SOI ~
          (comment_line |
           statement_line |
