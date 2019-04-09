@@ -17,11 +17,12 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
-use pbrt::core::api::ApiState;
 use pbrt::core::api::{
-    pbrt_attribute_begin, pbrt_attribute_end, pbrt_cleanup, pbrt_film, pbrt_init, pbrt_look_at,
-    pbrt_rotate, pbrt_translate, pbrt_world_begin,
+    pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup, pbrt_film, pbrt_init,
+    pbrt_integrator, pbrt_light_source, pbrt_look_at, pbrt_material, pbrt_rotate, pbrt_sampler,
+    pbrt_shape, pbrt_translate, pbrt_world_begin,
 };
+use pbrt::core::api::{ApiState, BsdfState};
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::{Float, Spectrum};
@@ -48,14 +49,10 @@ fn print_version(program: &str) {
 // ConcatTransform
 // CoordinateSystem
 // CoordSysTransform
-// Camera
-// Integrator
 // Include
 // Identity
-// LightSource
 // MakeNamedMaterial
 // MakeNamedMedium
-// Material
 // MediumInterface
 // NamedMaterial
 // ObjectBegin
@@ -64,8 +61,6 @@ fn print_version(program: &str) {
 // PixelFilter
 // ReverseOrientation
 // Rotate
-// Shape
-// Sampler
 // Scale
 // TransformBegin
 // TransformEnd
@@ -444,29 +439,34 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
     params
 }
 
-fn parse_line(api_state: &mut ApiState, identifier: &str, str_buf: String) {
+fn parse_line(
+    api_state: &mut ApiState,
+    bsdf_state: &mut BsdfState,
+    identifier: &str,
+    str_buf: String,
+) {
     if str_buf == "" {
         // no additional arguments
         match identifier {
             "AttributeBegin" => {
                 // AttributeBegin
-                println!("{} {}", identifier, str_buf);
+                // println!("{} {}", identifier, str_buf);
                 pbrt_attribute_begin(api_state);
             }
             "AttributeEnd" => {
                 // AttributeEnd
-                println!("{} {}", identifier, str_buf);
+                // println!("{} {}", identifier, str_buf);
                 pbrt_attribute_end(api_state);
             }
             "WorldBegin" => {
                 // WorldBegin
-                println!("{} {}", identifier, str_buf);
+                // println!("{} {}", identifier, str_buf);
                 pbrt_world_begin(api_state);
             }
             "WorldEnd" => {
                 // WorldEnd
-                println!("{} {}", identifier, str_buf);
-                // TODO: pbrt_cleanup(api_state);
+                // println!("{} {}", identifier, str_buf);
+                pbrt_cleanup(api_state);
             }
             _ => println!("{} {}", identifier, str_buf),
         }
@@ -482,9 +482,33 @@ fn parse_line(api_state: &mut ApiState, identifier: &str, str_buf: String) {
                     let for_printing = inner_pair.as_str();
                     let params = extract_params(String::from(identifier), inner_pair);
                     match identifier {
+                        "Camera" => {
+                            // Camera
+                            pbrt_camera(api_state, params);
+                        }
                         "Film" => {
                             // Film
                             pbrt_film(api_state, params);
+                        }
+                        "Integrator" => {
+                            // Integrator
+                            pbrt_integrator(api_state, params);
+                        }
+                        "LightSource" => {
+                            // LightSource
+                            pbrt_light_source(api_state, params);
+                        }
+                        "Material" => {
+                            // Material
+                            pbrt_material(api_state, params);
+                        }
+                        "Sampler" => {
+                            // Sampler
+                            pbrt_sampler(api_state, params);
+                        }
+                        "Shape" => {
+                            // Shape
+                            pbrt_shape(api_state, bsdf_state, params);
                         }
                         _ => println!("> {} {}", identifier, for_printing),
                     }
@@ -497,10 +521,10 @@ fn parse_line(api_state: &mut ApiState, identifier: &str, str_buf: String) {
                             f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
                         v.push(number);
                     }
-                    println!(
-                        "LookAt {} {} {} {} {} {} {} {} {}",
-                        v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8],
-                    );
+                    // println!(
+                    //     "LookAt {} {} {} {} {} {} {} {} {}",
+                    //     v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8],
+                    // );
                     pbrt_look_at(
                         api_state, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8],
                     );
@@ -513,7 +537,7 @@ fn parse_line(api_state: &mut ApiState, identifier: &str, str_buf: String) {
                             f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
                         v.push(number);
                     }
-                    println!("Rotate {} {} {} {}", v[0], v[1], v[2], v[3]);
+                    // println!("Rotate {} {} {} {}", v[0], v[1], v[2], v[3]);
                     pbrt_rotate(api_state, v[0], v[1], v[2], v[3]);
                 }
                 Rule::translate => {
@@ -524,7 +548,7 @@ fn parse_line(api_state: &mut ApiState, identifier: &str, str_buf: String) {
                             f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
                         v.push(number);
                     }
-                    println!("Translate {} {} {}", v[0], v[1], v[2]);
+                    // println!("Translate {} {} {}", v[0], v[1], v[2]);
                     pbrt_translate(api_state, v[0], v[1], v[2]);
                 }
                 Rule::remaining_line => {
@@ -586,10 +610,10 @@ fn main() {
                 println!(
                     "Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob."
                 );
-                println!("FILE = {}", x);
+                // println!("FILE = {}", x);
                 let f = File::open(x.clone()).unwrap();
                 let ip: &Path = Path::new(x.as_str());
-                let (mut api_state, mut _bsdf_state) = pbrt_init(number_of_threads);
+                let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
                 if ip.is_relative() {
                     let cp: PathBuf = env::current_dir().unwrap();
                     let pb: PathBuf = cp.join(ip);
@@ -599,11 +623,11 @@ fn main() {
                 }
                 let mut reader = BufReader::new(f);
                 let mut str_buf: String = String::default();
-                let num_bytes = reader.read_to_string(&mut str_buf);
-                if num_bytes.is_ok() {
-                    let n_bytes = num_bytes.unwrap();
-                    println!("{} bytes read", n_bytes);
-                }
+                let _num_bytes = reader.read_to_string(&mut str_buf);
+                // if num_bytes.is_ok() {
+                //     let n_bytes = num_bytes.unwrap();
+                //     println!("{} bytes read", n_bytes);
+                // }
                 let pairs = PbrtParser::parse(Rule::pbrt, &str_buf)
                     .expect("unsuccessful parse")
                     .next()
@@ -627,6 +651,7 @@ fn main() {
                                         if identifier != "" {
                                             parse_line(
                                                 &mut api_state,
+                                                &mut bsdf_state,
                                                 identifier,
                                                 parse_again.clone(),
                                             );
@@ -670,7 +695,12 @@ fn main() {
                                 }
                             }
                         }
-                        Rule::EOI => parse_line(&mut api_state, identifier, parse_again.clone()),
+                        Rule::EOI => parse_line(
+                            &mut api_state,
+                            &mut bsdf_state,
+                            identifier,
+                            parse_again.clone(),
+                        ),
                         _ => unreachable!(),
                     }
                 }

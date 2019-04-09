@@ -1,4 +1,4 @@
-WHITESPACE = _{ " " }
+WHITESPACE = _{ (" " | "\t") }
 // identifiers
 identifier = { "AttributeBegin" |
                "AttributeEnd" |
