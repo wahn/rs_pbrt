@@ -61,7 +61,6 @@ identifier = { "AttributeBegin" |
 // CoordinateSystem
 // CoordSysTransform
 // Camera
-// film = { "Film" ~ PUSH("\"") ~ (!("\"") ~ ANY)+ ~ POP ~ ANY* ~ NEWLINE }
 // Integrator
 // Include
 // Identity
@@ -105,12 +104,14 @@ pbrt = { SOI ~
          )* ~
          EOI }
 // single lines with all parameters
-type_name = { "\"" ~ ASCII_ALPHA_LOWER+ ~ "\"" }
+string = { ("\"" ~ ASCII_ALPHA+ ~ "\"") | ("\"" ~ filename ~ "\"") }
+type_name = { "\"" ~ typename ~ "\"" }
+typename = { ASCII_ALPHA_LOWER+ }
 file_name = { "\"" ~ filename ~ "\"" }
 filename = { ("/" | "./" ~ ("../")? | "../" ~ ("../")?)? ~ // optional (can be a full or relative path)
              (ASCII_ALPHA_LOWER | "_") ~
              (ASCII_ALPHA_LOWER | "_" | "-" | "." | "/" | '0'..'9')* }
-type_params = { (type_name | file_name) ~ remaining_params }
+type_params = { (type_name | file_name) ~ parameter* }
 name_and_or_params = { // identifier "type" parameter-list
                        type_params |
                        // predetermined number of arguments of predetermined type
@@ -141,6 +142,8 @@ translate = { // "Translate" ~
            number ~ number ~ number
 }
 // helpers
+lbrack = { "[" }
+rbrack = { "]" }
 // NUMBER -+?(0-9+|((0-9+\.0-9*)|(\.0-9+)))(eE-+?0-9+)?
 number = @{
     ("-" | "+")? ~ // optional sign, followed by
@@ -158,3 +161,46 @@ number = @{
         '0'..'9'+ // digits
     )?
 }
+integer = @{
+    ("-" | "+")? ~ // optional sign, followed by
+        (
+            '1'..'9' ~ // at least one non-zero digit, followed by
+            '0'..'9'* // just digits
+        )
+            | // or
+        '0'..'9' // single digit
+}
+parameter = { bool_param |
+              blackbody_param |
+              float_param |
+              integer_param |
+              point2_param |
+              point_param |
+              normal_param |
+              rgb_param |
+              spectrum_param |
+              string_param |
+              texture_param |
+              vector_param }
+ident = { ASCII_ALPHA+ }
+bool_param = { ("\"bool" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack) |
+               ("\"bool" ~ ident ~ "\"" ~ string) }
+blackbody_param = { ("\"blackbody" ~ ident ~ "\"" ~ lbrack ~ number ~ number+ ~ rbrack) }
+float_param = { ("\"float" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack) |
+                ("\"float" ~ ident ~ "\"" ~ number) }
+string_param = { "\"string" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack |
+                 "\"string" ~ ident ~ "\"" ~ string }
+integer_param = { ("\"integer" ~ ident ~ "\"" ~ lbrack ~ integer+ ~ rbrack) |
+                  ("\"integer" ~ ident ~ "\"" ~ integer) }
+point2_param = { "\"point2" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
+point_param = { "\"point" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
+vector_param = { "\"vector" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack }
+normal_param = { "\"normal" ~ ident ~ "\"" ~ lbrack ~ number+ ~ rbrack }
+rgb_param = { ("\"rgb" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack) |
+              ("\"color" ~ ident ~ "\"" ~ lbrack ~ number ~ number ~ number ~ rbrack) }
+// TODO: "spectrum Kd" [ 300 .3  400 .6   410 .65  415 .8  500 .2  600 .1 ]
+// or
+// "spectrum Kd" "filename"
+spectrum_param = { "\"spectrum" ~ ident ~ "\"" ~ string }
+texture_param = { "\"texture" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack |
+                  "\"texture" ~ ident ~ "\"" ~ string }

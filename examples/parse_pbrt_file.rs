@@ -19,10 +19,12 @@ use getopts::Options;
 // pbrt
 use pbrt::core::api::ApiState;
 use pbrt::core::api::{
-    pbrt_attribute_begin, pbrt_attribute_end, pbrt_cleanup, pbrt_init, pbrt_look_at, pbrt_rotate,
-    pbrt_translate, pbrt_world_begin,
+    pbrt_attribute_begin, pbrt_attribute_end, pbrt_cleanup, pbrt_film, pbrt_init, pbrt_look_at,
+    pbrt_rotate, pbrt_translate, pbrt_world_begin,
 };
-use pbrt::core::pbrt::Float;
+use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
+use pbrt::core::paramset::ParamSet;
+use pbrt::core::pbrt::{Float, Spectrum};
 // std
 use std::env;
 use std::fs::File;
@@ -72,6 +74,376 @@ fn print_version(program: &str) {
 // TransformTimes
 // Texture
 
+fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, bool) {
+    // single string with or without brackets
+    let ident = pairs.next();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    let string2: String;
+    if lbrack.as_str() == "[" {
+        // check for brackets
+        let string = pairs.next();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    } else {
+        // no brackets
+        let string = option.clone();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    }
+    // return boolean (instead of string)
+    let b: bool;
+    if string2 == "true" {
+        b = true;
+    } else if string2 == "false" {
+        b = false
+    } else {
+        println!(
+            "WARNING: parameter {:?} not well defined, defaulting to false",
+            string
+        );
+        b = false
+    }
+    (string, b)
+}
+
+fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<Float>) {
+    let mut floats: Vec<Float> = Vec::new();
+    // single float or several floats using brackets
+    let ident = pairs.next();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    if lbrack.as_str() == "[" {
+        // check for brackets
+        let mut number = pairs.next();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            if pair.as_str() == "]" {
+                // closing bracket found
+                break;
+            } else {
+                let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
+                floats.push(float);
+            }
+            number = pairs.next();
+        }
+    } else {
+        // no brackets
+        let mut number = option.clone();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
+            floats.push(float);
+            number = pairs.next();
+        }
+    }
+    (string, floats)
+}
+
+fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Vec<i32>) {
+    let mut integers: Vec<i32> = Vec::new();
+    // single integer or several integers using brackets
+    let ident = pairs.next();
+    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    if lbrack.as_str() == "[" {
+        // check for brackets
+        let mut number = pairs.next();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            if pair.as_str() == "]" {
+                // closing bracket found
+                break;
+            } else {
+                let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
+                integers.push(integer);
+            }
+            number = pairs.next();
+        }
+    } else {
+        // no brackets
+        let mut number = option.clone();
+        while number.is_some() {
+            let pair = number.unwrap().clone();
+            let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
+            integers.push(integer);
+            number = pairs.next();
+        }
+    }
+    (string, integers)
+}
+
+fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, String) {
+    // single string with or without brackets
+    let ident = pairs.next();
+    let string1: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    let string2: String;
+    if lbrack.as_str() == "[" {
+        // check for brackets
+        let string = pairs.next();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    } else {
+        // no brackets
+        let string = option.clone();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    }
+    (string1, string2)
+}
+
+fn pbrt_texture_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, String) {
+    // single string with or without brackets
+    let ident = pairs.next();
+    let string1: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let option = pairs.next();
+    let lbrack = option.clone().unwrap();
+    let string2: String;
+    if lbrack.as_str() == "[" {
+        // check for brackets
+        let string = pairs.next();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    } else {
+        // no brackets
+        let string = option.clone();
+        let pair = string.unwrap().clone();
+        let ident = pair.into_inner().next();
+        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    }
+    (string1, string2)
+}
+
+fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> ParamSet {
+    let mut params: ParamSet = ParamSet::default();
+    params.key_word = key_word;
+    let mut counter: u8 = 0_u8;
+    for pair in pairs.into_inner() {
+        // let span = pair.clone().into_span();
+        // println!("Rule:    {:?}", pair.as_rule());
+        // println!("Span:    {:?}", span);
+        // println!("Text:    {}", span.as_str());
+        match pair.as_rule() {
+            Rule::string => {
+                match counter {
+                    0 => {
+                        // name
+                        let mut string_pairs = pair.into_inner();
+                        let ident = string_pairs.next();
+                        params.name =
+                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                    }
+                    1 => {
+                        // tex_type
+                        let mut string_pairs = pair.into_inner();
+                        let ident = string_pairs.next();
+                        params.tex_type =
+                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                    }
+                    2 => {
+                        // tex_name
+                        let mut string_pairs = pair.into_inner();
+                        let ident = string_pairs.next();
+                        params.tex_name =
+                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                    }
+                    _ => unreachable!(),
+                };
+                counter += 1_u8;
+            }
+            Rule::type_name => {
+                // name
+                let mut string_pairs = pair.into_inner();
+                let ident = string_pairs.next();
+                params.name =
+                    String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+            }
+            Rule::file_name => {
+                // name
+                let mut string_pairs = pair.into_inner();
+                let ident = string_pairs.next();
+                params.name =
+                    String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+            }
+            Rule::parameter => {
+                for parameter_pair in pair.into_inner() {
+                    match parameter_pair.as_rule() {
+                        Rule::bool_param => {
+                            let tuple: (String, bool) =
+                                pbrt_bool_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let b: bool = tuple.1;
+                            params.add_bool(string, b);
+                        }
+                        Rule::blackbody_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            params.add_blackbody_spectrum(string, floats);
+                        }
+                        Rule::float_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 1 {
+                                params.add_float(string, floats[0]);
+                            } else {
+                                params.add_floats(string, floats);
+                            }
+                        }
+                        Rule::integer_param => {
+                            let tuple: (String, Vec<i32>) =
+                                pbrt_integer_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let integers: Vec<i32> = tuple.1;
+                            if integers.len() == 1 {
+                                params.add_int(string, integers[0]);
+                            } else {
+                                params.add_ints(string, integers);
+                            }
+                        }
+                        Rule::point_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 3 {
+                                params.add_point3f(
+                                    string,
+                                    Point3f {
+                                        x: floats[0],
+                                        y: floats[1],
+                                        z: floats[2],
+                                    },
+                                );
+                            } else {
+                                params.add_point3fs(string, floats);
+                            }
+                        }
+                        Rule::point2_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 2 {
+                                params.add_point2f(
+                                    string,
+                                    Point2f {
+                                        x: floats[0],
+                                        y: floats[1],
+                                    },
+                                );
+                            } else {
+                                params.add_point2fs(string, floats);
+                            }
+                        }
+                        Rule::normal_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 3 {
+                                params.add_normal3f(
+                                    string,
+                                    Normal3f {
+                                        x: floats[0],
+                                        y: floats[1],
+                                        z: floats[2],
+                                    },
+                                );
+                            } else {
+                                params.add_normal3fs(string, floats);
+                            }
+                        }
+                        Rule::rgb_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            params.add_rgb_spectrum(
+                                string,
+                                Spectrum {
+                                    c: [floats[0], floats[1], floats[2]],
+                                },
+                            );
+                        }
+                        Rule::spectrum_param => {
+                            // TODO: "spectrum Kd" [ 300 .3  400 .6   410 .65  415 .8  500 .2  600 .1 ]
+                            // let tuple: (String, Vec<Float>) =
+                            //     pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            // let string: String = tuple.0;
+                            // let floats: Vec<Float> = tuple.1;
+                            // params.add_rgb_spectrum(
+                            //     string,
+                            //     Spectrum {
+                            //         c: [floats[0], floats[1], floats[2]],
+                            //     },
+                            // );
+                            // or
+                            // "spectrum Kd" "filename"
+                            let tuple: (String, String) =
+                                pbrt_string_parameter(&mut parameter_pair.into_inner());
+                            let string1: String = tuple.0;
+                            let string2: String = tuple.1;
+                            let mut strings: Vec<String> = Vec::with_capacity(1_usize);
+                            strings.push(string2);
+                            params.add_sampled_spectrum_files(string1, strings);
+                        }
+                        Rule::string_param => {
+                            let tuple: (String, String) =
+                                pbrt_string_parameter(&mut parameter_pair.into_inner());
+                            let string1: String = tuple.0;
+                            let string2: String = tuple.1;
+                            params.add_string(string1, string2);
+                        }
+                        Rule::texture_param => {
+                            let tuple: (String, String) =
+                                pbrt_texture_parameter(&mut parameter_pair.into_inner());
+                            let string1: String = tuple.0;
+                            let string2: String = tuple.1;
+                            params.add_texture(string1, string2);
+                        }
+                        Rule::vector_param => {
+                            let tuple: (String, Vec<Float>) =
+                                pbrt_float_parameter(&mut parameter_pair.into_inner());
+                            let string: String = tuple.0;
+                            let floats: Vec<Float> = tuple.1;
+                            if floats.len() == 3 {
+                                params.add_vector3f(
+                                    string,
+                                    Vector3f {
+                                        x: floats[0],
+                                        y: floats[1],
+                                        z: floats[2],
+                                    },
+                                );
+                            } else {
+                                params.add_vector3fs(string, floats);
+                            }
+                        }
+                        // TODO: more rules
+                        _ => println!("TODO: {:?}", parameter_pair.as_rule()),
+                    }
+                }
+            }
+            _ => println!("TODO: {:?}", pair.as_rule()),
+        }
+    }
+    params
+}
+
 fn parse_line(api_state: &mut ApiState, identifier: &str, str_buf: String) {
     if str_buf == "" {
         // no additional arguments
@@ -107,7 +479,15 @@ fn parse_line(api_state: &mut ApiState, identifier: &str, str_buf: String) {
             match inner_pair.as_rule() {
                 Rule::type_params => {
                     // identifier "type" parameter-list
-                    println!("> {} {}", identifier, inner_pair.as_str());
+                    let for_printing = inner_pair.as_str();
+                    let params = extract_params(String::from(identifier), inner_pair);
+                    match identifier {
+                        "Film" => {
+                            // Film
+                            pbrt_film(api_state, params);
+                        }
+                        _ => println!("> {} {}", identifier, for_printing),
+                    }
                 }
                 Rule::look_at => {
                     // LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
