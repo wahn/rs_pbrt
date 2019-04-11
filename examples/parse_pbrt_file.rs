@@ -20,10 +20,10 @@ use getopts::Options;
 use pbrt::core::api::{
     pbrt_active_transform_all, pbrt_active_transform_end_time, pbrt_active_transform_start_time,
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
-    pbrt_film, pbrt_init, pbrt_integrator, pbrt_light_source, pbrt_look_at,
-    pbrt_make_named_material, pbrt_material, pbrt_named_material, pbrt_pixel_filter, pbrt_rotate,
-    pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_translate,
-    pbrt_world_begin,
+    pbrt_concat_transform, pbrt_coord_sys_transform, pbrt_film, pbrt_init, pbrt_integrator,
+    pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_material, pbrt_named_material,
+    pbrt_pixel_filter, pbrt_rotate, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture,
+    pbrt_transform, pbrt_translate, pbrt_world_begin,
 };
 use pbrt::core::api::{ApiState, BsdfState};
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
@@ -48,9 +48,7 @@ fn print_version(program: &str) {
 }
 
 // Accelerator
-// ConcatTransform
 // CoordinateSystem
-// CoordSysTransform
 // Include
 // Identity
 // MakeNamedMedium
@@ -491,6 +489,10 @@ fn parse_line(
                             // Camera
                             pbrt_camera(api_state, params);
                         }
+                        "CoordSysTransform" => {
+                            // CoordSysTransform
+                            pbrt_coord_sys_transform(api_state, params);
+                        }
                         "Film" => {
                             // Film
                             pbrt_film(api_state, params);
@@ -531,7 +533,7 @@ fn parse_line(
                             // Texture
                             pbrt_texture(api_state, params);
                         }
-                        _ => println!("> {} {}", identifier, for_printing),
+                        _ => println!("> {}", for_printing),
                     }
                 }
                 Rule::active_transform => {
@@ -550,6 +552,41 @@ fn parse_line(
                             _ => unreachable!(),
                         }
                     }
+                }
+                Rule::concat_transform => {
+                    // ConcatTransform m00 .. m33
+                    let mut m: Vec<Float> = Vec::new();
+                    for rule_pair in inner_pair.into_inner() {
+                        // ignore brackets
+                        let not_opening: bool = rule_pair.as_str() != String::from("[");
+                        let not_closing: bool = rule_pair.as_str() != String::from("]");
+                        if not_opening && not_closing {
+                            let number: Float =
+                                f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                            m.push(number);
+                        }
+                    }
+                    let m00: Float = m[0];
+                    let m01: Float = m[1];
+                    let m02: Float = m[2];
+                    let m03: Float = m[3];
+                    let m10: Float = m[4];
+                    let m11: Float = m[5];
+                    let m12: Float = m[6];
+                    let m13: Float = m[7];
+                    let m20: Float = m[8];
+                    let m21: Float = m[9];
+                    let m22: Float = m[10];
+                    let m23: Float = m[11];
+                    let m30: Float = m[12];
+                    let m31: Float = m[13];
+                    let m32: Float = m[14];
+                    let m33: Float = m[15];
+                    let tr: Transform = Transform::new(
+                        m00, m10, m20, m30, m01, m11, m21, m31, m02, m12, m22, m32, m03, m13, m23,
+                        m33,
+                    );
+                    pbrt_concat_transform(api_state, &tr);
                 }
                 Rule::look_at => {
                     // LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z

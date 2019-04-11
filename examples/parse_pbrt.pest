@@ -39,9 +39,7 @@ identifier = { "AttributeBegin" |
                "WorldEnd" }
 // rules in alphabetical order
 // Accelerator
-// ConcatTransform
 // CoordinateSystem
-// CoordSysTransform
 // Include
 // Identity
 // MakeNamedMedium
@@ -87,6 +85,7 @@ name_and_or_params = { // identifier "type" parameter-list
                        type_params |
                        // predetermined number of arguments of predetermined type
                        active_transform |
+                       concat_transform |
                        look_at |
                        rotate |
                        scale |
@@ -104,6 +103,20 @@ active_transform = { ("ActiveTransform" ~
                       start_time) |
                      ("ActiveTransform" ~
                       end_time)
+}
+// ConcatTransform m00 .. m33
+concat_transform = { ("ConcatTransform" ~ lbrack ~
+                      // followed by 16 numbers:
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~ rbrack) |
+                     ("ConcatTransform" ~
+                      // followed by 16 numbers:
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number ~
+                      number ~ number ~ number ~ number)
 }
 // LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
 look_at = { "LookAt" ~
