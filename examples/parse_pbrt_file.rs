@@ -18,14 +18,16 @@ use pest::Parser;
 use getopts::Options;
 // pbrt
 use pbrt::core::api::{
-    pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup, pbrt_film, pbrt_init,
-    pbrt_integrator, pbrt_light_source, pbrt_look_at, pbrt_material, pbrt_rotate, pbrt_sampler,
-    pbrt_shape, pbrt_translate, pbrt_world_begin,
+    pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
+    pbrt_film, pbrt_init, pbrt_integrator, pbrt_light_source, pbrt_look_at,
+    pbrt_make_named_material, pbrt_material, pbrt_named_material, pbrt_rotate, pbrt_sampler,
+    pbrt_scale, pbrt_shape, pbrt_transform, pbrt_translate, pbrt_world_begin,
 };
 use pbrt::core::api::{ApiState, BsdfState};
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::{Float, Spectrum};
+use pbrt::core::transform::Transform;
 // std
 use std::env;
 use std::fs::File;
@@ -44,28 +46,21 @@ fn print_version(program: &str) {
 }
 
 // ActiveTransform
-// AreaLightSource
 // Accelerator
 // ConcatTransform
 // CoordinateSystem
 // CoordSysTransform
 // Include
 // Identity
-// MakeNamedMaterial
 // MakeNamedMedium
 // MediumInterface
-// NamedMaterial
 // ObjectBegin
 // ObjectEnd
 // ObjectInstance
 // PixelFilter
 // ReverseOrientation
-// Rotate
-// Scale
 // TransformBegin
 // TransformEnd
-// Transform
-// Translate
 // TransformTimes
 // Texture
 
@@ -476,12 +471,18 @@ fn parse_line(
             .next()
             .unwrap();
         for inner_pair in pairs.into_inner() {
+            // println!("DEBUG: {:?}", inner_pair.as_rule());
             match inner_pair.as_rule() {
                 Rule::type_params => {
                     // identifier "type" parameter-list
                     let for_printing = inner_pair.as_str();
+                    // println!("DEBUG: {} {}", identifier, for_printing);
                     let params = extract_params(String::from(identifier), inner_pair);
                     match identifier {
+                        "AreaLightSource" => {
+                            // AreaLightSource
+                            pbrt_area_light_source(api_state, params);
+                        }
                         "Camera" => {
                             // Camera
                             pbrt_camera(api_state, params);
@@ -498,9 +499,17 @@ fn parse_line(
                             // LightSource
                             pbrt_light_source(api_state, params);
                         }
+                        "MakeNamedMaterial" => {
+                            // MakeNamedMaterial
+                            pbrt_make_named_material(api_state, bsdf_state, params);
+                        }
                         "Material" => {
                             // Material
                             pbrt_material(api_state, params);
+                        }
+                        "NamedMaterial" => {
+                            // NamedMaterial
+                            pbrt_named_material(api_state, params);
                         }
                         "Sampler" => {
                             // Sampler
@@ -539,6 +548,51 @@ fn parse_line(
                     }
                     // println!("Rotate {} {} {} {}", v[0], v[1], v[2], v[3]);
                     pbrt_rotate(api_state, v[0], v[1], v[2], v[3]);
+                }
+                Rule::scale => {
+                    // Scale x y z
+                    let mut v: Vec<Float> = Vec::new();
+                    for rule_pair in inner_pair.into_inner() {
+                        let number: Float =
+                            f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                        v.push(number);
+                    }
+                    pbrt_scale(api_state, v[0], v[1], v[2]);
+                }
+                Rule::transform => {
+                    // Transform m00 .. m33
+                    let mut m: Vec<Float> = Vec::new();
+                    for rule_pair in inner_pair.into_inner() {
+                        // ignore brackets
+                        let not_opening: bool = rule_pair.as_str() != String::from("[");
+                        let not_closing: bool = rule_pair.as_str() != String::from("]");
+                        if not_opening && not_closing {
+                            let number: Float =
+                                f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                            m.push(number);
+                        }
+                    }
+                    let m00: Float = m[0];
+                    let m01: Float = m[1];
+                    let m02: Float = m[2];
+                    let m03: Float = m[3];
+                    let m10: Float = m[4];
+                    let m11: Float = m[5];
+                    let m12: Float = m[6];
+                    let m13: Float = m[7];
+                    let m20: Float = m[8];
+                    let m21: Float = m[9];
+                    let m22: Float = m[10];
+                    let m23: Float = m[11];
+                    let m30: Float = m[12];
+                    let m31: Float = m[13];
+                    let m32: Float = m[14];
+                    let m33: Float = m[15];
+                    let tr: Transform = Transform::new(
+                        m00, m10, m20, m30, m01, m11, m21, m31, m02, m12, m22, m32, m03, m13, m23,
+                        m33,
+                    );
+                    pbrt_transform(api_state, &tr);
                 }
                 Rule::translate => {
                     // Translate x y z

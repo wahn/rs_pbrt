@@ -37,51 +37,23 @@ identifier = { "AttributeBegin" |
                "Texture" |
                "WorldBegin" |
                "WorldEnd" }
-// statements without arguments
-// statement_no_args = { attribute_begin |
-//                       attribute_end |
-//                       world_begin |
-//                       world_end }
-// statements with fixed number of arguments
-// statements with variable number of arguments
-// statement_with_opt_args = { film |
-//                             sampler }
-// this should be empty in the end
-// statement_left_todo = { identifier ~ ANY* ~ !identifier }
-// statements
-// statement = { statement_no_args |
-// // TODO:      statement_fixed_num_args |
-//               statement_with_opt_args |
-//               statement_left_todo }
 // rules in alphabetical order
 // ActiveTransform
-// AreaLightSource
 // Accelerator
 // ConcatTransform
 // CoordinateSystem
 // CoordSysTransform
-// Camera
-// Integrator
 // Include
 // Identity
-// LightSource
-// MakeNamedMaterial
 // MakeNamedMedium
-// Material
 // MediumInterface
-// NamedMaterial
 // ObjectBegin
 // ObjectEnd
 // ObjectInstance
 // PixelFilter
 // ReverseOrientation
-// Shape
-// Sampler
-// sampler = { "Sampler" ~ ANY* ~ !(comment_line | identifier) }
-// Scale
 // TransformBegin
 // TransformEnd
-// Transform
 // TransformTimes
 // Texture
 // comments
@@ -104,9 +76,10 @@ pbrt = { SOI ~
          )* ~
          EOI }
 // single lines with all parameters
-string = { ("\"" ~ ASCII_ALPHA+ ~ "\"") | ("\"" ~ filename ~ "\"") }
-type_name = { "\"" ~ typename ~ "\"" }
-typename = { ASCII_ALPHA_LOWER+ }
+string = { ("\"" ~ ident ~ "\"") | ("\"" ~ filename ~ "\"") }
+type_name = { "\"" ~ ident ~ "\"" }
+ident = { (ASCII_ALPHA | "_" | "|" | ASCII_DIGIT) ~
+          (ASCII_ALPHA | " " | "_" | "|" | "-" | ":" | ASCII_DIGIT)* }
 file_name = { "\"" ~ filename ~ "\"" }
 filename = { ("/" | "./" ~ ("../")? | "../" ~ ("../")?)? ~ // optional (can be a full or relative path)
              (ASCII_ALPHA_LOWER | "_") ~
@@ -117,6 +90,8 @@ name_and_or_params = { // identifier "type" parameter-list
                        // predetermined number of arguments of predetermined type
                        look_at |
                        rotate |
+                       scale |
+                       transform |
                        translate |
                        // catch others
                        remaining_line }
@@ -135,6 +110,26 @@ look_at = { // "LookAt" ~
 rotate = { // "Rotate" ~
            // followed by 4 numbers:
            number ~ number ~ number ~ number
+}
+// Scale x y z
+scale = { // "Scale" ~
+          // followed by 3 numbers:
+          number ~ number ~ number
+}
+// Transform m00 .. m33
+transform = { (// "Transform" ~
+               lbrack ~
+               // followed by 16 numbers:
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~ rbrack) |
+              (// "Transform" ~
+               // followed by 16 numbers:
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number ~
+               number ~ number ~ number ~ number)
 }
 // Translate x y z
 translate = { // "Translate" ~
@@ -182,7 +177,6 @@ parameter = { bool_param |
               string_param |
               texture_param |
               vector_param }
-ident = { ASCII_ALPHA+ }
 bool_param = { ("\"bool" ~ ident ~ "\"" ~ lbrack ~ string ~ rbrack) |
                ("\"bool" ~ ident ~ "\"" ~ string) }
 blackbody_param = { ("\"blackbody" ~ ident ~ "\"" ~ lbrack ~ number ~ number+ ~ rbrack) }
