@@ -71,6 +71,7 @@ pbrt = { SOI ~
          )* ~
          EOI }
 // single lines with all parameters
+empty_string = { "\"" ~ "\"" }
 string = { ("\"" ~ ident ~ "\"") | ("\"" ~ filename ~ "\"") }
 type_name = { "\"" ~ ident ~ "\"" }
 ident = { (ASCII_ALPHA | "_" | "|" | ASCII_DIGIT) ~
@@ -80,13 +81,15 @@ filename = { ("/" | "./" ~ ("../")? | "../" ~ ("../")?)? ~ // optional (can be a
              (ASCII_ALPHA_LOWER | "_") ~
              (ASCII_ALPHA_LOWER | "_" | "-" | "." | "/" | '0'..'9')* }
 type_params = { "Texture" ~ string ~ string ~ string ~ parameter* |
-                identifier ~ (type_name | file_name) ~ parameter* }
+                "Material" ~ (empty_string | string) ~ parameter* |
+                !("MediumInterface") ~ identifier ~ (type_name | file_name) ~ parameter* }
 name_and_or_params = { // identifier "type" parameter-list
                        type_params |
                        // predetermined number of arguments of predetermined type
                        active_transform |
                        concat_transform |
                        look_at |
+                       medium_interface |
                        rotate |
                        scale |
                        transform |
@@ -129,6 +132,8 @@ look_at = { "LookAt" ~
             // up_x up_y up_z
             number ~ number ~ number
 }
+// MediumInterface "" "vol"
+medium_interface = { "MediumInterface" ~ (empty_string | string) ~ (empty_string | string) }
 // Rotate angle x y z
 rotate = { "Rotate" ~
            // followed by 4 numbers:

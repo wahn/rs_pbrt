@@ -21,9 +21,10 @@ use pbrt::core::api::{
     pbrt_active_transform_all, pbrt_active_transform_end_time, pbrt_active_transform_start_time,
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
     pbrt_concat_transform, pbrt_coord_sys_transform, pbrt_film, pbrt_init, pbrt_integrator,
-    pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_material, pbrt_named_material,
-    pbrt_pixel_filter, pbrt_rotate, pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture,
-    pbrt_transform, pbrt_translate, pbrt_world_begin,
+    pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_make_named_medium,
+    pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_pixel_filter, pbrt_rotate,
+    pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_translate,
+    pbrt_world_begin,
 };
 use pbrt::core::api::{ApiState, BsdfState};
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
@@ -51,8 +52,6 @@ fn print_version(program: &str) {
 // CoordinateSystem
 // Include
 // Identity
-// MakeNamedMedium
-// MediumInterface
 // ObjectBegin
 // ObjectEnd
 // ObjectInstance
@@ -224,6 +223,7 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
             Rule::identifier => {
                 // ignore (was added above)
             }
+            Rule::empty_string => {}
             Rule::string => {
                 match counter {
                     0 => {
@@ -509,6 +509,10 @@ fn parse_line(
                             // MakeNamedMaterial
                             pbrt_make_named_material(api_state, bsdf_state, params);
                         }
+                        "MakeNamedMedium" => {
+                            // MakeNamedMedium
+                            pbrt_make_named_medium(api_state, params);
+                        }
                         "Material" => {
                             // Material
                             pbrt_material(api_state, params);
@@ -603,6 +607,31 @@ fn parse_line(
                     pbrt_look_at(
                         api_state, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8],
                     );
+                }
+                Rule::medium_interface => {
+                    // MediumInterface
+                    let mut strings: Vec<String> = Vec::new();
+                    for rule_pair in inner_pair.into_inner() {
+                        match rule_pair.as_rule() {
+                            Rule::empty_string => {
+                                strings.push(String::from(""));
+                            }
+                            Rule::string => {
+                                let ident = rule_pair.into_inner().next();
+                                let string: String =
+                                    String::from_str(ident.unwrap().clone().into_span().as_str())
+                                        .unwrap();
+                                strings.push(string);
+                            }
+                            _ => unreachable!(),
+                        }
+                    }
+                    assert!(
+                        strings.len() == 2_usize,
+                        "ERROR: expected two strings, found {:?}",
+                        strings.len()
+                    );
+                    pbrt_medium_interface(api_state, &strings[0], &strings[1]);
                 }
                 Rule::rotate => {
                     // Rotate angle x y z
