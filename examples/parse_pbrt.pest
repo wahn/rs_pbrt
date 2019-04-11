@@ -38,7 +38,6 @@ identifier = { "AttributeBegin" |
                "WorldBegin" |
                "WorldEnd" }
 // rules in alphabetical order
-// ActiveTransform
 // Accelerator
 // ConcatTransform
 // CoordinateSystem
@@ -50,12 +49,10 @@ identifier = { "AttributeBegin" |
 // ObjectBegin
 // ObjectEnd
 // ObjectInstance
-// PixelFilter
 // ReverseOrientation
 // TransformBegin
 // TransformEnd
 // TransformTimes
-// Texture
 // comments
 comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
 trailing_comment = { "#" ~ (!NEWLINE ~ ANY)* }
@@ -84,10 +81,12 @@ file_name = { "\"" ~ filename ~ "\"" }
 filename = { ("/" | "./" ~ ("../")? | "../" ~ ("../")?)? ~ // optional (can be a full or relative path)
              (ASCII_ALPHA_LOWER | "_") ~
              (ASCII_ALPHA_LOWER | "_" | "-" | "." | "/" | '0'..'9')* }
-type_params = { (type_name | file_name) ~ parameter* }
+type_params = { "Texture" ~ string ~ string ~ string ~ parameter* |
+                identifier ~ (type_name | file_name) ~ parameter* }
 name_and_or_params = { // identifier "type" parameter-list
                        type_params |
                        // predetermined number of arguments of predetermined type
+                       active_transform |
                        look_at |
                        rotate |
                        scale |
@@ -95,8 +94,19 @@ name_and_or_params = { // identifier "type" parameter-list
                        translate |
                        // catch others
                        remaining_line }
+// ActiveTransform [ StartTime | EndTime | All ]
+all = { "All" }
+start_time = { "StartTime" }
+end_time = { "EndTime" }
+active_transform = { ("ActiveTransform" ~
+                      all) |
+                     ("ActiveTransform" ~
+                      start_time) |
+                     ("ActiveTransform" ~
+                      end_time)
+}
 // LookAt eye_x eye_y eye_z look_x look_y look_z up_x up_y up_z
-look_at = { // "LookAt" ~
+look_at = { "LookAt" ~
             // followed by 9 numbers:
 
             // eye_x eye_y eye_z
@@ -107,24 +117,24 @@ look_at = { // "LookAt" ~
             number ~ number ~ number
 }
 // Rotate angle x y z
-rotate = { // "Rotate" ~
+rotate = { "Rotate" ~
            // followed by 4 numbers:
            number ~ number ~ number ~ number
 }
 // Scale x y z
-scale = { // "Scale" ~
+scale = { "Scale" ~
           // followed by 3 numbers:
           number ~ number ~ number
 }
 // Transform m00 .. m33
-transform = { (// "Transform" ~
+transform = { ("Transform" ~
                lbrack ~
                // followed by 16 numbers:
                number ~ number ~ number ~ number ~
                number ~ number ~ number ~ number ~
                number ~ number ~ number ~ number ~
                number ~ number ~ number ~ number ~ rbrack) |
-              (// "Transform" ~
+              ("Transform" ~
                // followed by 16 numbers:
                number ~ number ~ number ~ number ~
                number ~ number ~ number ~ number ~
@@ -132,7 +142,7 @@ transform = { (// "Transform" ~
                number ~ number ~ number ~ number)
 }
 // Translate x y z
-translate = { // "Translate" ~
+translate = { "Translate" ~
            // followed by 3 numbers:
            number ~ number ~ number
 }

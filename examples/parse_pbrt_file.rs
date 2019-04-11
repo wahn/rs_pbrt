@@ -18,10 +18,12 @@ use pest::Parser;
 use getopts::Options;
 // pbrt
 use pbrt::core::api::{
+    pbrt_active_transform_all, pbrt_active_transform_end_time, pbrt_active_transform_start_time,
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
     pbrt_film, pbrt_init, pbrt_integrator, pbrt_light_source, pbrt_look_at,
-    pbrt_make_named_material, pbrt_material, pbrt_named_material, pbrt_rotate, pbrt_sampler,
-    pbrt_scale, pbrt_shape, pbrt_transform, pbrt_translate, pbrt_world_begin,
+    pbrt_make_named_material, pbrt_material, pbrt_named_material, pbrt_pixel_filter, pbrt_rotate,
+    pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_translate,
+    pbrt_world_begin,
 };
 use pbrt::core::api::{ApiState, BsdfState};
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
@@ -45,7 +47,6 @@ fn print_version(program: &str) {
     println!("{} {}", program, VERSION);
 }
 
-// ActiveTransform
 // Accelerator
 // ConcatTransform
 // CoordinateSystem
@@ -57,12 +58,10 @@ fn print_version(program: &str) {
 // ObjectBegin
 // ObjectEnd
 // ObjectInstance
-// PixelFilter
 // ReverseOrientation
 // TransformBegin
 // TransformEnd
 // TransformTimes
-// Texture
 
 fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, bool) {
     // single string with or without brackets
@@ -224,6 +223,9 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
         // println!("Span:    {:?}", span);
         // println!("Text:    {}", span.as_str());
         match pair.as_rule() {
+            Rule::identifier => {
+                // ignore (was added above)
+            }
             Rule::string => {
                 match counter {
                     0 => {
@@ -466,7 +468,9 @@ fn parse_line(
             _ => println!("{} {}", identifier, str_buf),
         }
     } else {
-        let pairs = PbrtParser::parse(Rule::name_and_or_params, &str_buf)
+        let statement = String::from(identifier) + " " + &str_buf;
+        // println!("DEBUG: {:?}", &statement);
+        let pairs = PbrtParser::parse(Rule::name_and_or_params, &statement)
             .expect("unsuccessful parse")
             .next()
             .unwrap();
@@ -511,6 +515,10 @@ fn parse_line(
                             // NamedMaterial
                             pbrt_named_material(api_state, params);
                         }
+                        "PixelFilter" => {
+                            // PixelFilter
+                            pbrt_pixel_filter(api_state, params);
+                        }
                         "Sampler" => {
                             // Sampler
                             pbrt_sampler(api_state, params);
@@ -519,7 +527,28 @@ fn parse_line(
                             // Shape
                             pbrt_shape(api_state, bsdf_state, params);
                         }
+                        "Texture" => {
+                            // Texture
+                            pbrt_texture(api_state, params);
+                        }
                         _ => println!("> {} {}", identifier, for_printing),
+                    }
+                }
+                Rule::active_transform => {
+                    // ActiveTransform
+                    for rule_pair in inner_pair.into_inner() {
+                        match rule_pair.as_rule() {
+                            Rule::all => {
+                                pbrt_active_transform_all(api_state);
+                            }
+                            Rule::start_time => {
+                                pbrt_active_transform_start_time(api_state);
+                            }
+                            Rule::end_time => {
+                                pbrt_active_transform_end_time(api_state);
+                            }
+                            _ => unreachable!(),
+                        }
                     }
                 }
                 Rule::look_at => {
@@ -557,6 +586,7 @@ fn parse_line(
                             f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
                         v.push(number);
                     }
+                    // println!("Scale {} {} {}", v[0], v[1], v[2]);
                     pbrt_scale(api_state, v[0], v[1], v[2]);
                 }
                 Rule::transform => {
@@ -607,7 +637,7 @@ fn parse_line(
                 }
                 Rule::remaining_line => {
                     // predetermined number of arguments of predetermined type
-                    println!("< {} {}", identifier, inner_pair.as_str());
+                    println!("< {}", inner_pair.as_str());
                 }
                 // _ => unreachable!(),
                 _ => println!("TODO: {:?}", inner_pair.as_rule()),
