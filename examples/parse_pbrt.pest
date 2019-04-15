@@ -42,12 +42,6 @@ identifier = { "AttributeBegin" |
 // CoordinateSystem
 // Include
 // Identity
-// MakeNamedMedium
-// MediumInterface
-// ObjectBegin
-// ObjectEnd
-// ObjectInstance
-// ReverseOrientation
 // TransformBegin
 // TransformEnd
 // TransformTimes

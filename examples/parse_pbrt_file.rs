@@ -22,9 +22,9 @@ use pbrt::core::api::{
     pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
     pbrt_concat_transform, pbrt_coord_sys_transform, pbrt_film, pbrt_init, pbrt_integrator,
     pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_make_named_medium,
-    pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_pixel_filter, pbrt_rotate,
-    pbrt_sampler, pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_translate,
-    pbrt_world_begin,
+    pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_object_begin, pbrt_object_end,
+    pbrt_object_instance, pbrt_pixel_filter, pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler,
+    pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_translate, pbrt_world_begin,
 };
 use pbrt::core::api::{ApiState, BsdfState};
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
@@ -52,10 +52,6 @@ fn print_version(program: &str) {
 // CoordinateSystem
 // Include
 // Identity
-// ObjectBegin
-// ObjectEnd
-// ObjectInstance
-// ReverseOrientation
 // TransformBegin
 // TransformEnd
 // TransformTimes
@@ -63,7 +59,7 @@ fn print_version(program: &str) {
 fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, bool) {
     // single string with or without brackets
     let ident = pairs.next();
-    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string: String = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
@@ -72,13 +68,13 @@ fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, boo
         let string = pairs.next();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     } else {
         // no brackets
         let string = option.clone();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     }
     // return boolean (instead of string)
     let b: bool;
@@ -100,7 +96,7 @@ fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Ve
     let mut floats: Vec<Float> = Vec::new();
     // single float or several floats using brackets
     let ident = pairs.next();
-    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string: String = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     if lbrack.as_str() == "[" {
@@ -112,7 +108,7 @@ fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Ve
                 // closing bracket found
                 break;
             } else {
-                let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
+                let float: Float = f32::from_str(pair.as_span().as_str()).unwrap();
                 floats.push(float);
             }
             number = pairs.next();
@@ -122,7 +118,7 @@ fn pbrt_float_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, Ve
         let mut number = option.clone();
         while number.is_some() {
             let pair = number.unwrap().clone();
-            let float: Float = f32::from_str(pair.into_span().as_str()).unwrap();
+            let float: Float = f32::from_str(pair.as_span().as_str()).unwrap();
             floats.push(float);
             number = pairs.next();
         }
@@ -134,7 +130,7 @@ fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
     let mut integers: Vec<i32> = Vec::new();
     // single integer or several integers using brackets
     let ident = pairs.next();
-    let string: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string: String = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     if lbrack.as_str() == "[" {
@@ -146,7 +142,7 @@ fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
                 // closing bracket found
                 break;
             } else {
-                let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
+                let integer: i32 = i32::from_str(pair.as_span().as_str()).unwrap();
                 integers.push(integer);
             }
             number = pairs.next();
@@ -156,7 +152,7 @@ fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
         let mut number = option.clone();
         while number.is_some() {
             let pair = number.unwrap().clone();
-            let integer: i32 = i32::from_str(pair.into_span().as_str()).unwrap();
+            let integer: i32 = i32::from_str(pair.as_span().as_str()).unwrap();
             integers.push(integer);
             number = pairs.next();
         }
@@ -167,7 +163,7 @@ fn pbrt_integer_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
 fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, String) {
     // single string with or without brackets
     let ident = pairs.next();
-    let string1: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string1: String = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
@@ -176,13 +172,13 @@ fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, S
         let string = pairs.next();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     } else {
         // no brackets
         let string = option.clone();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     }
     (string1, string2)
 }
@@ -190,7 +186,7 @@ fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, S
 fn pbrt_texture_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, String) {
     // single string with or without brackets
     let ident = pairs.next();
-    let string1: String = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+    let string1: String = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
     let string2: String;
@@ -199,13 +195,13 @@ fn pbrt_texture_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
         let string = pairs.next();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     } else {
         // no brackets
         let string = option.clone();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     }
     (string1, string2)
 }
@@ -215,7 +211,7 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
     params.key_word = key_word;
     let mut counter: u8 = 0_u8;
     for pair in pairs.into_inner() {
-        // let span = pair.clone().into_span();
+        // let span = pair.clone().as_span();
         // println!("Rule:    {:?}", pair.as_rule());
         // println!("Span:    {:?}", span);
         // println!("Text:    {}", span.as_str());
@@ -231,21 +227,21 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                         let mut string_pairs = pair.into_inner();
                         let ident = string_pairs.next();
                         params.name =
-                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                            String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
                     }
                     1 => {
                         // tex_type
                         let mut string_pairs = pair.into_inner();
                         let ident = string_pairs.next();
                         params.tex_type =
-                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                            String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
                     }
                     2 => {
                         // tex_name
                         let mut string_pairs = pair.into_inner();
                         let ident = string_pairs.next();
                         params.tex_name =
-                            String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                            String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
                     }
                     _ => unreachable!(),
                 };
@@ -255,15 +251,13 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
                 // name
                 let mut string_pairs = pair.into_inner();
                 let ident = string_pairs.next();
-                params.name =
-                    String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                params.name = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
             }
             Rule::file_name => {
                 // name
                 let mut string_pairs = pair.into_inner();
                 let ident = string_pairs.next();
-                params.name =
-                    String::from_str(ident.unwrap().clone().into_span().as_str()).unwrap();
+                params.name = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
             }
             Rule::parameter => {
                 for parameter_pair in pair.into_inner() {
@@ -453,6 +447,16 @@ fn parse_line(
                 // println!("{} {}", identifier, str_buf);
                 pbrt_attribute_end(api_state);
             }
+            "ObjectEnd" => {
+                // ObjectEnd
+                // println!("{} {}", identifier, str_buf);
+                pbrt_object_end(api_state);
+            }
+            "ReverseOrientation" => {
+                // ReverseOrientation
+                // println!("{} {}", identifier, str_buf);
+                pbrt_reverse_orientation(api_state);
+            }
             "WorldBegin" => {
                 // WorldBegin
                 // println!("{} {}", identifier, str_buf);
@@ -463,7 +467,7 @@ fn parse_line(
                 // println!("{} {}", identifier, str_buf);
                 pbrt_cleanup(api_state);
             }
-            _ => println!("{} {}", identifier, str_buf),
+            _ => println!("{} {:?}", identifier, str_buf),
         }
     } else {
         let statement = String::from(identifier) + " " + &str_buf;
@@ -521,6 +525,14 @@ fn parse_line(
                             // NamedMaterial
                             pbrt_named_material(api_state, params);
                         }
+                        "ObjectBegin" => {
+                            // ObjectBegin
+                            pbrt_object_begin(api_state, params);
+                        }
+                        "ObjectInstance" => {
+                            // ObjectInstance
+                            pbrt_object_instance(api_state, params);
+                        }
                         "PixelFilter" => {
                             // PixelFilter
                             pbrt_pixel_filter(api_state, params);
@@ -566,7 +578,7 @@ fn parse_line(
                         let not_closing: bool = rule_pair.as_str() != String::from("]");
                         if not_opening && not_closing {
                             let number: Float =
-                                f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                                f32::from_str(rule_pair.clone().as_span().as_str()).unwrap();
                             m.push(number);
                         }
                     }
@@ -597,7 +609,7 @@ fn parse_line(
                     let mut v: Vec<Float> = Vec::new();
                     for rule_pair in inner_pair.into_inner() {
                         let number: Float =
-                            f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                            f32::from_str(rule_pair.clone().as_span().as_str()).unwrap();
                         v.push(number);
                     }
                     // println!(
@@ -619,7 +631,7 @@ fn parse_line(
                             Rule::string => {
                                 let ident = rule_pair.into_inner().next();
                                 let string: String =
-                                    String::from_str(ident.unwrap().clone().into_span().as_str())
+                                    String::from_str(ident.unwrap().clone().as_span().as_str())
                                         .unwrap();
                                 strings.push(string);
                             }
@@ -638,7 +650,7 @@ fn parse_line(
                     let mut v: Vec<Float> = Vec::new();
                     for rule_pair in inner_pair.into_inner() {
                         let number: Float =
-                            f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                            f32::from_str(rule_pair.clone().as_span().as_str()).unwrap();
                         v.push(number);
                     }
                     // println!("Rotate {} {} {} {}", v[0], v[1], v[2], v[3]);
@@ -649,7 +661,7 @@ fn parse_line(
                     let mut v: Vec<Float> = Vec::new();
                     for rule_pair in inner_pair.into_inner() {
                         let number: Float =
-                            f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                            f32::from_str(rule_pair.clone().as_span().as_str()).unwrap();
                         v.push(number);
                     }
                     // println!("Scale {} {} {}", v[0], v[1], v[2]);
@@ -664,7 +676,7 @@ fn parse_line(
                         let not_closing: bool = rule_pair.as_str() != String::from("]");
                         if not_opening && not_closing {
                             let number: Float =
-                                f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                                f32::from_str(rule_pair.clone().as_span().as_str()).unwrap();
                             m.push(number);
                         }
                     }
@@ -695,7 +707,7 @@ fn parse_line(
                     let mut v: Vec<Float> = Vec::new();
                     for rule_pair in inner_pair.into_inner() {
                         let number: Float =
-                            f32::from_str(rule_pair.clone().into_span().as_str()).unwrap();
+                            f32::from_str(rule_pair.clone().as_span().as_str()).unwrap();
                         v.push(number);
                     }
                     // println!("Translate {} {} {}", v[0], v[1], v[2]);
