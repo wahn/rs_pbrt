@@ -732,6 +732,105 @@ fn parse_line(
     }
 }
 
+fn parse_file(filename: String, number_of_threads: u8) {
+    // println!("FILE = {}", x);
+    let f = File::open(filename.clone()).unwrap();
+    let ip: &Path = Path::new(filename.as_str());
+    let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
+    if ip.is_relative() {
+        let cp: PathBuf = env::current_dir().unwrap();
+        let pb: PathBuf = cp.join(ip);
+        let search_directory: &Path = pb.as_path().parent().unwrap();
+        // println!("search_directory is {}", search_directory.display());
+        api_state.search_directory = Some(Box::new(PathBuf::from(search_directory)));
+    }
+    let mut reader = BufReader::new(f);
+    let mut str_buf: String = String::default();
+    let _num_bytes = reader.read_to_string(&mut str_buf);
+    // if num_bytes.is_ok() {
+    //     let n_bytes = num_bytes.unwrap();
+    //     println!("{} bytes read", n_bytes);
+    // }
+    let pairs = PbrtParser::parse(Rule::pbrt, &str_buf)
+        .expect("unsuccessful parse")
+        .next()
+        .unwrap();
+    let mut identifier: &str = "";
+    let mut comment_count: u64 = 0;
+    let mut empty_count: u64 = 0;
+    let mut todo_count: u64 = 0;
+    let mut parse_again: String = String::default();
+    // first parse file line by line
+    for inner_pair in pairs.into_inner() {
+        match inner_pair.as_rule() {
+            // comment lines (starting with '#')
+            Rule::comment_line => {
+                comment_count += 1;
+            }
+            Rule::statement_line => {
+                for statement_pair in inner_pair.into_inner() {
+                    match statement_pair.as_rule() {
+                        Rule::identifier => {
+                            if identifier != "" {
+                                parse_line(
+                                    &mut api_state,
+                                    &mut bsdf_state,
+                                    identifier,
+                                    parse_again.clone(),
+                                );
+                            }
+                            identifier = statement_pair.as_str();
+                            parse_again = String::default();
+                        }
+                        Rule::remaining_line => {
+                            if parse_again != "" {
+                                parse_again = parse_again + " " + statement_pair.as_str();
+                            } else {
+                                parse_again += statement_pair.as_str();
+                            }
+                        }
+                        Rule::trailing_comment => {
+                            // ignore
+                        }
+                        _ => println!("TODO: {:?}", statement_pair.as_rule()),
+                    }
+                }
+            }
+            Rule::empty_line => {
+                empty_count += 1;
+            }
+            Rule::todo_line => {
+                todo_count += 1;
+                for params_pair in inner_pair.into_inner() {
+                    match params_pair.as_rule() {
+                        Rule::remaining_params => {
+                            if parse_again != "" {
+                                parse_again = parse_again + " " + params_pair.as_str();
+                            } else {
+                                parse_again += params_pair.as_str();
+                            }
+                        }
+                        Rule::trailing_comment => {
+                            // ignore
+                        }
+                        _ => println!("TODO: {:?}", params_pair.as_rule()),
+                    }
+                }
+            }
+            Rule::EOI => parse_line(
+                &mut api_state,
+                &mut bsdf_state,
+                identifier,
+                parse_again.clone(),
+            ),
+            _ => unreachable!(),
+        }
+    }
+    println!("Number of comment line(s):   {}", comment_count);
+    println!("Number of parameter line(s): {}", todo_count);
+    println!("Number of empty line(s):     {}", empty_count);
+}
+
 fn main() {
     // handle command line options
     let args: Vec<String> = env::args().collect();
@@ -780,103 +879,7 @@ fn main() {
                 println!(
                     "Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob."
                 );
-                // println!("FILE = {}", x);
-                let f = File::open(x.clone()).unwrap();
-                let ip: &Path = Path::new(x.as_str());
-                let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
-                if ip.is_relative() {
-                    let cp: PathBuf = env::current_dir().unwrap();
-                    let pb: PathBuf = cp.join(ip);
-                    let search_directory: &Path = pb.as_path().parent().unwrap();
-                    // println!("search_directory is {}", search_directory.display());
-                    api_state.search_directory = Some(Box::new(PathBuf::from(search_directory)));
-                }
-                let mut reader = BufReader::new(f);
-                let mut str_buf: String = String::default();
-                let _num_bytes = reader.read_to_string(&mut str_buf);
-                // if num_bytes.is_ok() {
-                //     let n_bytes = num_bytes.unwrap();
-                //     println!("{} bytes read", n_bytes);
-                // }
-                let pairs = PbrtParser::parse(Rule::pbrt, &str_buf)
-                    .expect("unsuccessful parse")
-                    .next()
-                    .unwrap();
-                let mut identifier: &str = "";
-                let mut comment_count: u64 = 0;
-                let mut empty_count: u64 = 0;
-                let mut todo_count: u64 = 0;
-                let mut parse_again: String = String::default();
-                // first parse file line by line
-                for inner_pair in pairs.into_inner() {
-                    match inner_pair.as_rule() {
-                        // comment lines (starting with '#')
-                        Rule::comment_line => {
-                            comment_count += 1;
-                        }
-                        Rule::statement_line => {
-                            for statement_pair in inner_pair.into_inner() {
-                                match statement_pair.as_rule() {
-                                    Rule::identifier => {
-                                        if identifier != "" {
-                                            parse_line(
-                                                &mut api_state,
-                                                &mut bsdf_state,
-                                                identifier,
-                                                parse_again.clone(),
-                                            );
-                                        }
-                                        identifier = statement_pair.as_str();
-                                        parse_again = String::default();
-                                    }
-                                    Rule::remaining_line => {
-                                        if parse_again != "" {
-                                            parse_again =
-                                                parse_again + " " + statement_pair.as_str();
-                                        } else {
-                                            parse_again += statement_pair.as_str();
-                                        }
-                                    }
-                                    Rule::trailing_comment => {
-                                        // ignore
-                                    }
-                                    _ => println!("TODO: {:?}", statement_pair.as_rule()),
-                                }
-                            }
-                        }
-                        Rule::empty_line => {
-                            empty_count += 1;
-                        }
-                        Rule::todo_line => {
-                            todo_count += 1;
-                            for params_pair in inner_pair.into_inner() {
-                                match params_pair.as_rule() {
-                                    Rule::remaining_params => {
-                                        if parse_again != "" {
-                                            parse_again = parse_again + " " + params_pair.as_str();
-                                        } else {
-                                            parse_again += params_pair.as_str();
-                                        }
-                                    }
-                                    Rule::trailing_comment => {
-                                        // ignore
-                                    }
-                                    _ => println!("TODO: {:?}", params_pair.as_rule()),
-                                }
-                            }
-                        }
-                        Rule::EOI => parse_line(
-                            &mut api_state,
-                            &mut bsdf_state,
-                            identifier,
-                            parse_again.clone(),
-                        ),
-                        _ => unreachable!(),
-                    }
-                }
-                println!("Number of comment line(s):   {}", comment_count);
-                println!("Number of parameter line(s): {}", todo_count);
-                println!("Number of empty line(s):     {}", empty_count);
+                parse_file(x, number_of_threads);
             }
             None => panic!("No input file name."),
         }

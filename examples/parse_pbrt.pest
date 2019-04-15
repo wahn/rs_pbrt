@@ -42,8 +42,6 @@ identifier = { "AttributeBegin" |
 // CoordinateSystem
 // Include
 // Identity
-// TransformBegin
-// TransformEnd
 // TransformTimes
 // comments
 comment_line = { "#" ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
