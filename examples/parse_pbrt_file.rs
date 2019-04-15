@@ -261,6 +261,7 @@ fn extract_params(key_word: String, pairs: pest::iterators::Pair<Rule>) -> Param
             }
             Rule::parameter => {
                 for parameter_pair in pair.into_inner() {
+                    // println!("DEBUG: {:?}", parameter_pair.as_rule());
                     match parameter_pair.as_rule() {
                         Rule::bool_param => {
                             let tuple: (String, bool) =
@@ -482,7 +483,7 @@ fn parse_line(
                 Rule::type_params => {
                     // identifier "type" parameter-list
                     let for_printing = inner_pair.as_str();
-                    // println!("DEBUG: {} {}", identifier, for_printing);
+                    // println!("DEBUG: {}", for_printing);
                     let params = extract_params(String::from(identifier), inner_pair);
                     match identifier {
                         "AreaLightSource" => {

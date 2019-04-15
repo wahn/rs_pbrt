@@ -72,8 +72,8 @@ ident = { (ASCII_ALPHA | "_" | "|" | ASCII_DIGIT) ~
           (ASCII_ALPHA | " " | "_" | "|" | "-" | ":" | ASCII_DIGIT)* }
 file_name = { "\"" ~ filename ~ "\"" }
 filename = { ("/" | "./" ~ ("../")? | "../" ~ ("../")?)? ~ // optional (can be a full or relative path)
-             (ASCII_ALPHA_LOWER | "_") ~
-             (ASCII_ALPHA_LOWER | "_" | "-" | "." | "/" | '0'..'9')* }
+             (ASCII_ALPHA | "_") ~
+             (ASCII_ALPHA | "_" | "-" | "." | "/" | '0'..'9')* }
 type_params = { "Texture" ~ string ~ string ~ string ~ parameter* |
                 "Material" ~ (empty_string | string) ~ parameter* |
                 !("MediumInterface") ~ identifier ~ (type_name | file_name) ~ parameter* }
