@@ -24,7 +24,8 @@ use pbrt::core::api::{
     pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_make_named_medium,
     pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_object_begin, pbrt_object_end,
     pbrt_object_instance, pbrt_pixel_filter, pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler,
-    pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_translate, pbrt_world_begin,
+    pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end,
+    pbrt_translate, pbrt_world_begin,
 };
 use pbrt::core::api::{ApiState, BsdfState};
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
@@ -52,8 +53,6 @@ fn print_version(program: &str) {
 // CoordinateSystem
 // Include
 // Identity
-// TransformBegin
-// TransformEnd
 // TransformTimes
 
 fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, bool) {
@@ -457,6 +456,14 @@ fn parse_line(
                 // ReverseOrientation
                 // println!("{} {}", identifier, str_buf);
                 pbrt_reverse_orientation(api_state);
+            }
+            "TransformBegin" => {
+                // TransformBegin
+                pbrt_transform_begin(api_state);
+            }
+            "TransformEnd" => {
+                // TransformEnd
+                pbrt_transform_end(api_state);
             }
             "WorldBegin" => {
                 // WorldBegin
