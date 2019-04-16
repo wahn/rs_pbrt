@@ -509,6 +509,19 @@ fn parse_line(
                             // Film
                             pbrt_film(api_state, params);
                         }
+                        "Include" => {
+                            // Include
+                            let mut include_file: String = params.name.clone();
+                            // println!("DEBUG: {:?}", params.name);
+                            if let Some(ref search_directory) = api_state.search_directory {
+                                let mut path_buf: PathBuf = PathBuf::from("/");
+                                path_buf.push(search_directory.as_ref());
+                                path_buf.push(params.name);
+                                include_file = String::from(path_buf.to_str().unwrap());
+                                // println!("DEBUG: {:?}", include_file);
+                            }
+                            parse_file(include_file, api_state, bsdf_state);
+                        }
                         "Integrator" => {
                             // Integrator
                             pbrt_integrator(api_state, params);
@@ -732,11 +745,10 @@ fn parse_line(
     }
 }
 
-fn parse_file(filename: String, number_of_threads: u8) {
+fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfState) {
     // println!("FILE = {}", x);
     let f = File::open(filename.clone()).unwrap();
     let ip: &Path = Path::new(filename.as_str());
-    let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
     if ip.is_relative() {
         let cp: PathBuf = env::current_dir().unwrap();
         let pb: PathBuf = cp.join(ip);
@@ -773,8 +785,8 @@ fn parse_file(filename: String, number_of_threads: u8) {
                         Rule::identifier => {
                             if identifier != "" {
                                 parse_line(
-                                    &mut api_state,
-                                    &mut bsdf_state,
+                                    api_state,
+                                    bsdf_state,
                                     identifier,
                                     parse_again.clone(),
                                 );
@@ -818,8 +830,8 @@ fn parse_file(filename: String, number_of_threads: u8) {
                 }
             }
             Rule::EOI => parse_line(
-                &mut api_state,
-                &mut bsdf_state,
+                api_state,
+                bsdf_state,
                 identifier,
                 parse_again.clone(),
             ),
@@ -879,7 +891,8 @@ fn main() {
                 println!(
                     "Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob."
                 );
-                parse_file(x, number_of_threads);
+                let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
+                parse_file(x, &mut api_state, &mut bsdf_state);
             }
             None => panic!("No input file name."),
         }

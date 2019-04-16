@@ -40,7 +40,6 @@ identifier = { "AttributeBegin" |
 // rules in alphabetical order
 // Accelerator
 // CoordinateSystem
-// Include
 // Identity
 // TransformTimes
 // comments
