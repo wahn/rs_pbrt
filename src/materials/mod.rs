@@ -35,4 +35,5 @@ pub mod mixmat;
 pub mod plastic;
 pub mod substrate;
 pub mod subsurface;
+pub mod translucent;
 pub mod uber;

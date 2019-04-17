@@ -66,6 +66,7 @@ use materials::mixmat::MixMaterial;
 use materials::plastic::PlasticMaterial;
 use materials::substrate::SubstrateMaterial;
 use materials::subsurface::SubsurfaceMaterial;
+use materials::translucent::TranslucentMaterial;
 use materials::uber::UberMaterial;
 use media::homogeneous::HomogeneousMedium;
 use samplers::halton::HaltonSampler;
@@ -329,7 +330,7 @@ fn create_material(
         } else if api_state.graphics_state.material == "plastic" {
             return Some(PlasticMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "translucent" {
-            println!("TODO: CreateTranslucentMaterial");
+            return Some(TranslucentMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "glass" {
             return Some(GlassMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "mirror" {
