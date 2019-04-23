@@ -2603,41 +2603,7 @@ pub fn pbrt_attribute_end(api_state: &mut ApiState) {
     if !(api_state.pushed_graphics_states.len() >= 1_usize) {
         panic!("Unmatched pbrtAttributeEnd() encountered.")
     }
-    let pgs: GraphicsState = api_state.pushed_graphics_states.pop().unwrap();
-    // current_inside_medium
-    api_state.graphics_state.current_inside_medium =
-        String::from(pgs.current_inside_medium.as_ref());
-    // current_outside_medium
-    api_state.graphics_state.current_outside_medium =
-        String::from(pgs.current_outside_medium.as_ref());
-    // material_params
-    api_state.graphics_state.material_params.reset(
-        String::new(),
-        String::from(""),
-        String::from(""),
-        String::new(),
-    );
-    api_state
-        .graphics_state
-        .material_params
-        .copy_from(&pgs.material_params);
-    // material
-    api_state.graphics_state.material = String::from(pgs.material.as_ref());
-    // area_light_params
-    api_state.graphics_state.area_light_params.reset(
-        String::new(),
-        String::from(""),
-        String::from(""),
-        String::new(),
-    );
-    api_state
-        .graphics_state
-        .area_light_params
-        .copy_from(&pgs.area_light_params);
-    // area_light
-    api_state.graphics_state.area_light = String::from(pgs.area_light.as_ref());
-    // reverse_orientation
-    api_state.graphics_state.reverse_orientation = pgs.reverse_orientation;
+    api_state.graphics_state = api_state.pushed_graphics_states.pop().unwrap();
     let popped_transform_set: TransformSet = api_state.pushed_transforms.pop().unwrap();
     api_state.cur_transform.t[0] = popped_transform_set.t[0];
     api_state.cur_transform.t[1] = popped_transform_set.t[1];
