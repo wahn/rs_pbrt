@@ -16,7 +16,8 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use num::Zero;
 // pbrt
 use core::geometry::{
-    nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_dot_nrm, vec3_dot_vec3,
+    nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_abs_dot_vec3, vec3_dot_nrm,
+    vec3_dot_vec3,
 };
 use core::geometry::{Normal3f, Point2f, Vector3f};
 use core::interaction::SurfaceInteraction;
@@ -360,9 +361,12 @@ impl Bsdf {
                 f = Spectrum::default();
                 for i in 0..n_bxdfs {
                     if self.bxdfs[i].matches_flags(bsdf_flags)
-                        && ((reflect && ((bxdf.get_type() & BxdfType::BsdfReflection as u8) != 0_u8))
+                        && ((reflect
+                            && ((self.bxdfs[i].get_type() & BxdfType::BsdfReflection as u8)
+                                != 0_u8))
                             || (!reflect
-                                && ((bxdf.get_type() & BxdfType::BsdfTransmission as u8) != 0_u8)))
+                                && ((self.bxdfs[i].get_type() & BxdfType::BsdfTransmission as u8)
+                                    != 0_u8)))
                     {
                         f += self.bxdfs[i].f(&wo, &wi);
                     }
@@ -821,7 +825,28 @@ impl Bxdf for LambertianTransmission {
     fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         self.t * INV_PI
     }
-
+    fn sample_f(
+        &self,
+        wo: &Vector3f,
+        wi: &mut Vector3f,
+        u: &Point2f,
+        pdf: &mut Float,
+        _sampled_type: &mut u8,
+    ) -> Spectrum {
+        *wi = cosine_sample_hemisphere(u);
+        if wo.z > 0.0 as Float {
+            wi.z *= -1.0 as Float;
+        }
+        *pdf = self.pdf(wo, &*wi);
+        self.f(wo, &*wi)
+    }
+    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        if !vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0 as Float
+        }
+    }
     fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfTransmission as u8
     }
@@ -1024,7 +1049,7 @@ impl Bxdf for MicrofacetTransmission {
             self.eta_a / self.eta_b
         };
 
-        let mut wh = (*wo + *wi * eta).normalize();
+        let mut wh: Vector3f = (*wo + *wi * eta).normalize();
         if wh.z < 0.0 {
             wh = -wh;
         }
@@ -1044,8 +1069,8 @@ impl Bxdf for MicrofacetTransmission {
                     * self.distribution.g(wo, wi)
                     * eta
                     * eta
-                    * vec3_dot_vec3(wi, &wh).abs()
-                    * vec3_dot_vec3(wo, &wh).abs()
+                    * vec3_abs_dot_vec3(wi, &wh)
+                    * vec3_abs_dot_vec3(wo, &wh)
                     * factor
                     * factor
                     / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom),
@@ -1070,7 +1095,7 @@ impl Bxdf for MicrofacetTransmission {
             return Spectrum::zero();
         }
 
-        let wh = self.distribution.sample_wh(wo, u);
+        let wh: Vector3f = self.distribution.sample_wh(wo, u);
         let eta = if cos_theta(wo) > 0.0 {
             self.eta_a / self.eta_b
         } else {
@@ -1095,7 +1120,7 @@ impl Bxdf for MicrofacetTransmission {
         } else {
             self.eta_a / self.eta_b
         };
-        let wh = (*wo + *wi * eta).normalize();
+        let wh: Vector3f = (*wo + *wi * eta).normalize();
 
         let sqrt_denom = vec3_dot_vec3(wo, &wh) + eta * vec3_dot_vec3(wi, &wh);
         let dwh_dwi = ((eta * eta * vec3_dot_vec3(wi, &wh)) / (sqrt_denom * sqrt_denom)).abs();

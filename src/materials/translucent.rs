@@ -85,6 +85,7 @@ impl Material for TranslucentMaterial {
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if r.is_black() && t.is_black() {
+            si.bsdf = Some(Arc::new(Bsdf::new(si, eta, bxdfs)));
             return;
         }
         let kd: Spectrum = self
