@@ -599,8 +599,8 @@ impl ParamSet {
 
 #[derive(Default)]
 pub struct TextureParams {
-    pub float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
-    pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
+    pub float_textures: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>>,
+    pub spectrum_textures: Arc<HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>>,
     pub geom_params: ParamSet,
     pub material_params: ParamSet,
 }
@@ -609,8 +609,8 @@ impl TextureParams {
     pub fn new(
         geom_params: ParamSet,
         material_params: ParamSet,
-        f_tex: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
-        s_tex: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
+        f_tex: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>>,
+        s_tex: Arc<HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>>,
     ) -> Self {
         TextureParams {
             float_textures: f_tex,

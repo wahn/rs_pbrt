@@ -249,11 +249,11 @@ impl Default for RenderOptions {
 pub struct GraphicsState {
     pub current_inside_medium: String,
     pub current_outside_medium: String,
-    pub float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
-    pub spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>,
+    pub float_textures: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>>,
+    pub spectrum_textures: Arc<HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>>,
     pub material_params: ParamSet,
     pub material: String,
-    pub named_materials: HashMap<String, Option<Arc<Material + Send + Sync>>>,
+    pub named_materials: Arc<HashMap<String, Option<Arc<Material + Send + Sync>>>>,
     pub current_material: String,
     pub area_light_params: ParamSet,
     pub area_light: String,
@@ -262,9 +262,10 @@ pub struct GraphicsState {
 
 impl GraphicsState {
     pub fn new() -> Self {
-        let float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>> = HashMap::new();
-        let spectrum_textures: HashMap<String, Arc<Texture<Spectrum> + Send + Sync>> =
-            HashMap::new();
+        let float_textures: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>> =
+            Arc::new(HashMap::new());
+        let spectrum_textures: Arc<HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>> =
+            Arc::new(HashMap::new());
         let mut tp: TextureParams = TextureParams::new(
             ParamSet::default(),
             ParamSet::default(),
@@ -272,9 +273,9 @@ impl GraphicsState {
             spectrum_textures.clone(),
         );
         let mtl: Arc<Material + Send + Sync> = MatteMaterial::create(&mut tp);
-        let mut named_materials: HashMap<String, Option<Arc<Material + Send + Sync>>> =
-            HashMap::new();
-        named_materials.insert(String::from("matte"), Some(mtl));
+        let mut named_materials: Arc<HashMap<String, Option<Arc<Material + Send + Sync>>>> =
+            Arc::new(HashMap::new());
+        Arc::make_mut(&mut named_materials).insert(String::from("matte"), Some(mtl));
         let current_material: String = String::from("matte");
         GraphicsState {
             current_inside_medium: String::from(""),
@@ -637,9 +638,7 @@ fn make_texture(api_state: &mut ApiState) {
                 tp.get_float_texture("tex1", 1.0 as Float),
                 tp.get_float_texture("tex2", 1.0 as Float),
             ));
-            api_state
-                .graphics_state
-                .float_textures
+            Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "mix" {
             println!("TODO: CreateMixFloatTexture");
@@ -725,9 +724,7 @@ fn make_texture(api_state: &mut ApiState) {
                     gamma,
                     convert_to_float,
                 ));
-                api_state
-                    .graphics_state
-                    .float_textures
+                Arc::make_mut(&mut api_state.graphics_state.float_textures)
                     .insert(api_state.param_set.name.clone(), ft);
             }
         } else if api_state.param_set.tex_name == "uv" {
@@ -750,9 +747,7 @@ fn make_texture(api_state: &mut ApiState) {
             let map: Box<TextureMapping3D + Send + Sync> =
                 Box::new(IdentityMapping3D::new(tex_2_world));
             let wt = Arc::new(WindyTexture::new(map));
-            api_state
-                .graphics_state
-                .float_textures
+            Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), wt);
         } else if api_state.param_set.tex_name == "ptex" {
             println!("TODO: CreatePtexFloatTexture");
@@ -780,9 +775,7 @@ fn make_texture(api_state: &mut ApiState) {
             let ct = Arc::new(ConstantTexture::new(
                 tp.find_spectrum("value", Spectrum::new(1.0)),
             ));
-            api_state
-                .graphics_state
-                .spectrum_textures
+            Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), ct);
         } else if api_state.param_set.tex_name == "scale" {
             let tex1: Arc<Texture<Spectrum> + Send + Sync> =
@@ -790,9 +783,7 @@ fn make_texture(api_state: &mut ApiState) {
             let tex2: Arc<Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
             let st = Arc::new(ScaleTexture::<Spectrum>::new(tex1, tex2));
-            api_state
-                .graphics_state
-                .spectrum_textures
+            Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), st);
         } else if api_state.param_set.tex_name == "mix" {
             println!("TODO: CreateMixSpectrumTexture");
@@ -878,9 +869,7 @@ fn make_texture(api_state: &mut ApiState) {
                     gamma,
                     convert_to_spectrum,
                 ));
-                api_state
-                    .graphics_state
-                    .spectrum_textures
+                Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                     .insert(api_state.param_set.name.clone(), st);
             }
         } else if api_state.param_set.tex_name == "uv" {
@@ -940,9 +929,7 @@ fn make_texture(api_state: &mut ApiState) {
                 // TODO: aamode
                 if let Some(mapping) = map {
                     let st = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
-                    api_state
-                        .graphics_state
-                        .spectrum_textures
+                    Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                         .insert(api_state.param_set.name.clone(), st);
                 }
             } else {
@@ -2737,9 +2724,7 @@ pub fn pbrt_make_named_material(
         }
         None => {}
     }
-    api_state
-        .graphics_state
-        .named_materials
+    Arc::make_mut(&mut api_state.graphics_state.named_materials)
         .insert(api_state.param_set.name.clone(), mtl);
 }
 

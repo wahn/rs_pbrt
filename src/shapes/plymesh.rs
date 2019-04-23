@@ -25,7 +25,7 @@ pub fn create_ply_mesh(
     w2o: &Transform,
     reverse_orientation: bool,
     params: &ParamSet,
-    _float_textures: HashMap<String, Arc<Texture<Float> + Send + Sync>>,
+    _float_textures: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>>,
     search_directory: Option<&Box<PathBuf>>,
 ) -> Vec<Arc<Shape + Send + Sync>> {
     let mut filename: String = params.find_one_string("filename", String::new());

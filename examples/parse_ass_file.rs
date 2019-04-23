@@ -257,14 +257,14 @@ fn main() {
                 // let tokens: Vec<_> = pairs.flatten().tokens().collect();
                 // println!("{} pairs", tokens.len());
                 for pair in pairs {
-                    let span = pair.clone().into_span();
+                    let span = pair.clone().as_span();
                     // println!("Rule:    {:?}", pair.as_rule());
                     // println!("Span:    {:?}", span);
                     // println!("Text:    {}", span.as_str());
                     for inner_pair in pair.into_inner() {
                         match inner_pair.as_rule() {
                             Rule::ident => {
-                                let node_type = inner_pair.clone().into_span().as_str();
+                                let node_type = inner_pair.clone().as_span().as_str();
                                 if node_type == "options"
                                     || node_type == "standard_surface"
                                     || node_type == "spot_light"
@@ -290,7 +290,8 @@ fn main() {
                                                 let expected: u32 = 16;
                                                 for _i in 0..expected {
                                                     if let Some(elem_str) = iter.next() {
-                                                        let elem: f32 = f32::from_str(elem_str).unwrap();
+                                                        let elem: f32 =
+                                                            f32::from_str(elem_str).unwrap();
                                                         elems.push(elem as Float);
                                                     }
                                                 }
@@ -330,9 +331,11 @@ fn main() {
                                                 {
                                                     let transform_start_time: Float = 0.0;
                                                     let transform_end_time: Float = 1.0;
-                                                    let scale: Transform = Transform::scale(1.0 as Float,
-                                                                                            1.0 as Float,
-                                                                                            -1.0 as Float);
+                                                    let scale: Transform = Transform::scale(
+                                                        1.0 as Float,
+                                                        1.0 as Float,
+                                                        -1.0 as Float,
+                                                    );
                                                     cur_transform = cur_transform * scale;
                                                     animated_cam_to_world = AnimatedTransform::new(
                                                         &cur_transform,
@@ -357,7 +360,8 @@ fn main() {
                                                 } else if next == "camera" {
                                                     if let Some(camera_str) = iter.next() {
                                                         // strip surrounding double quotes
-                                                        let v: Vec<&str> = camera_str.split('"').collect();
+                                                        let v: Vec<&str> =
+                                                            camera_str.split('"').collect();
                                                         render_camera = v[1].to_string();
                                                         print!("\n camera {:?} ", render_camera);
                                                     }
@@ -423,7 +427,8 @@ fn main() {
                                                 } else if next == "mesh" {
                                                     if let Some(mesh_str) = iter.next() {
                                                         // strip surrounding double quotes
-                                                        let v: Vec<&str> = mesh_str.split('"').collect();
+                                                        let v: Vec<&str> =
+                                                            mesh_str.split('"').collect();
                                                         mesh = v[1].to_string();
                                                         // print!("\n mesh {:?} ", mesh);
                                                     }
@@ -510,7 +515,8 @@ fn main() {
                                                         {
                                                             num_motionblur_keys = u32::from_str(
                                                                 num_motionblur_keys_str,
-                                                            ).unwrap();
+                                                            )
+                                                            .unwrap();
                                                             if let Some(data_type_str) = iter.next()
                                                             {
                                                                 if data_type_str != data_type {
@@ -519,13 +525,17 @@ fn main() {
                                                                         data_type
                                                                     );
                                                                 } else {
-                                                                    let expected: u32 = num_elements * num_motionblur_keys * 3;
+                                                                    let expected: u32 = num_elements
+                                                                        * num_motionblur_keys
+                                                                        * 3;
                                                                     for _i in 0..expected {
                                                                         if let Some(elem_str) =
                                                                             iter.next()
                                                                         {
                                                                             let elem: f32 =
-                                                                                f32::from_str(elem_str)
+                                                                                f32::from_str(
+                                                                                    elem_str,
+                                                                                )
                                                                                 .unwrap();
                                                                             elems.push(
                                                                                 elem as Float,
@@ -592,7 +602,9 @@ fn main() {
                                                         // if we can convert use next()
                                                         if is_int {
                                                             if let Some(nside_str) = iter.next() {
-                                                                let nside: u32 = u32::from_str(nside_str).unwrap();
+                                                                let nside: u32 =
+                                                                    u32::from_str(nside_str)
+                                                                        .unwrap();
                                                                 nsides.push(nside);
                                                             }
                                                         }
@@ -613,11 +625,14 @@ fn main() {
                                                         //     "\n nsides {} {} UINT ... ",
                                                         //     num_elements, num_motionblur_keys
                                                         // );
-                                                        let expected: u32 = num_elements * num_motionblur_keys;
+                                                        let expected: u32 =
+                                                            num_elements * num_motionblur_keys;
                                                         nsides = Vec::new();
                                                         for _i in 0..expected {
                                                             if let Some(nside_str) = iter.next() {
-                                                                let nside: u32 = u32::from_str(nside_str).unwrap();
+                                                                let nside: u32 =
+                                                                    u32::from_str(nside_str)
+                                                                        .unwrap();
                                                                 nsides.push(nside);
                                                             }
                                                         }
@@ -646,7 +661,8 @@ fn main() {
                                                         {
                                                             num_motionblur_keys = u32::from_str(
                                                                 num_motionblur_keys_str,
-                                                            ).unwrap();
+                                                            )
+                                                            .unwrap();
                                                             if let Some(data_type_str) = iter.next()
                                                             {
                                                                 if data_type_str != data_type {
@@ -655,13 +671,16 @@ fn main() {
                                                                         data_type
                                                                     );
                                                                 } else {
-                                                                    let expected: u32 = num_elements * num_motionblur_keys;
+                                                                    let expected: u32 = num_elements
+                                                                        * num_motionblur_keys;
                                                                     for _i in 0..expected {
                                                                         if let Some(elem_str) =
                                                                             iter.next()
                                                                         {
                                                                             let elem: u32 =
-                                                                                u32::from_str(elem_str)
+                                                                                u32::from_str(
+                                                                                    elem_str,
+                                                                                )
                                                                                 .unwrap();
                                                                             vi.push(elem);
                                                                         }
@@ -695,7 +714,9 @@ fn main() {
                                                         // if we can convert use next()
                                                         if is_int {
                                                             if let Some(shidx_str) = iter.next() {
-                                                                let shidx: u32 = u32::from_str(shidx_str).unwrap();
+                                                                let shidx: u32 =
+                                                                    u32::from_str(shidx_str)
+                                                                        .unwrap();
                                                                 shidxs.push(shidx);
                                                             }
                                                         }
@@ -716,11 +737,14 @@ fn main() {
                                                         //     "\n shidxs {} {} BYTE ... ",
                                                         //     num_elements, num_motionblur_keys
                                                         // );
-                                                        let expected: u32 = num_elements * num_motionblur_keys;
+                                                        let expected: u32 =
+                                                            num_elements * num_motionblur_keys;
                                                         shidxs = Vec::new();
                                                         for _i in 0..expected {
                                                             if let Some(shidx_str) = iter.next() {
-                                                                let shidx: u32 = u32::from_str(shidx_str).unwrap();
+                                                                let shidx: u32 =
+                                                                    u32::from_str(shidx_str)
+                                                                        .unwrap();
                                                                 shidxs.push(shidx);
                                                             }
                                                         }
@@ -848,7 +872,8 @@ fn main() {
                                                             let geo_prim_opt = Arc::get_mut(prim);
                                                             let mi: MediumInterface =
                                                                 MediumInterface::default();
-                                                            let l_emit: Spectrum = color * intensity;
+                                                            let l_emit: Spectrum =
+                                                                color * intensity;
                                                             let two_sided: bool = false;
                                                             let area_light: Arc<DiffuseAreaLight> =
                                                                 Arc::new(DiffuseAreaLight::new(
@@ -880,7 +905,8 @@ fn main() {
                                                 }
                                             // println!("}}");
                                             } else if node_type == "point_light" {
-                                                let mi: MediumInterface = MediumInterface::default();
+                                                let mi: MediumInterface =
+                                                    MediumInterface::default();
                                                 let point_light = Arc::new(PointLight::new(
                                                     &cur_transform,
                                                     &mi,
@@ -889,7 +915,8 @@ fn main() {
                                                 lights.push(point_light);
                                                 println!("}}");
                                             } else if node_type == "spot_light" {
-                                                let mi: MediumInterface = MediumInterface::default();
+                                                let mi: MediumInterface =
+                                                    MediumInterface::default();
                                                 let spot_light = Arc::new(SpotLight::new(
                                                     &cur_transform,
                                                     &mi,
@@ -949,7 +976,8 @@ fn main() {
                                                 let n_triangles: usize = vi_tri.len() / 3;
                                                 assert!(shidxs_tri.len() == n_triangles);
                                                 // TriangleMesh
-                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> =
+                                                    Vec::new();
                                                 let s_ws: Vec<Vector3f> = Vec::new();
                                                 let n_ws: Vec<Normal3f> = Vec::new();
                                                 let uvs: Vec<Point2f> = Vec::new();
@@ -981,8 +1009,10 @@ fn main() {
                                                     ));
                                                     shapes.push(triangle.clone());
                                                 }
-                                                let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
+                                                let mi: MediumInterface =
+                                                    MediumInterface::default();
+                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> =
+                                                    Vec::new();
                                                 assert!(shidxs_tri.len() == shapes.len());
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
@@ -1002,7 +1032,8 @@ fn main() {
                                                 );
                                             // println!("}}");
                                             } else if node_type == "disk" {
-                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> =
+                                                    Vec::new();
                                                 let disk = Arc::new(Disk::new(
                                                     obj_to_world,
                                                     world_to_obj,
@@ -1014,8 +1045,10 @@ fn main() {
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(disk.clone());
-                                                let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
+                                                let mi: MediumInterface =
+                                                    MediumInterface::default();
+                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> =
+                                                    Vec::new();
                                                 let shidx: u32 = 0;
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
@@ -1034,7 +1067,8 @@ fn main() {
                                                 );
                                             // println!("}}");
                                             } else if node_type == "sphere" {
-                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> =
+                                                    Vec::new();
                                                 let sphere = Arc::new(Sphere::new(
                                                     obj_to_world,
                                                     world_to_obj,
@@ -1046,8 +1080,10 @@ fn main() {
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(sphere.clone());
-                                                let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
+                                                let mi: MediumInterface =
+                                                    MediumInterface::default();
+                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> =
+                                                    Vec::new();
                                                 let shidx: u32 = 0;
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
@@ -1066,7 +1102,8 @@ fn main() {
                                                 );
                                             // println!("}}");
                                             } else if node_type == "cylinder" {
-                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> =
+                                                    Vec::new();
                                                 // TODO: assumption about z_min and z_max
                                                 let cylinder = Arc::new(Cylinder::new(
                                                     obj_to_world,
@@ -1078,8 +1115,10 @@ fn main() {
                                                     360.0 as Float, // phi_max
                                                 ));
                                                 shapes.push(cylinder.clone());
-                                                let mi: MediumInterface = MediumInterface::default();
-                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> = Vec::new();
+                                                let mi: MediumInterface =
+                                                    MediumInterface::default();
+                                                let mut prims: Vec<(u32, Arc<GeometricPrimitive>)> =
+                                                    Vec::new();
                                                 let shidx: u32 = 0;
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
@@ -1104,25 +1143,32 @@ fn main() {
                                                             specular_color,
                                                         ));
                                                         let mirror =
-                                                            Arc::new(MirrorMaterial::new(
-                                                                kr,
-                                                                None,
-                                                            ));
+                                                            Arc::new(MirrorMaterial::new(kr, None));
                                                         named_materials
                                                             .insert(node_name.clone(), mirror);
                                                     } else {
                                                         let copper_n: Spectrum =
-                                                            Spectrum::from_sampled(&COPPER_WAVELENGTHS,
-                                                                                   &COPPER_N,
-                                                                                   COPPER_SAMPLES as i32);
-                                                        let eta: Arc<Texture<Spectrum> + Send + Sync> =
-                                                            Arc::new(ConstantTexture::new(copper_n));
+                                                            Spectrum::from_sampled(
+                                                                &COPPER_WAVELENGTHS,
+                                                                &COPPER_N,
+                                                                COPPER_SAMPLES as i32,
+                                                            );
+                                                        let eta: Arc<
+                                                            Texture<Spectrum> + Send + Sync,
+                                                        > = Arc::new(ConstantTexture::new(
+                                                            copper_n,
+                                                        ));
                                                         let copper_k: Spectrum =
-                                                            Spectrum::from_sampled(&COPPER_WAVELENGTHS,
-                                                                                   &COPPER_K,
-                                                                                   COPPER_SAMPLES as i32);
-                                                        let k: Arc<Texture<Spectrum> + Send + Sync> =
-                                                            Arc::new(ConstantTexture::new(copper_k));
+                                                            Spectrum::from_sampled(
+                                                                &COPPER_WAVELENGTHS,
+                                                                &COPPER_K,
+                                                                COPPER_SAMPLES as i32,
+                                                            );
+                                                        let k: Arc<
+                                                            Texture<Spectrum> + Send + Sync,
+                                                        > = Arc::new(ConstantTexture::new(
+                                                            copper_k,
+                                                        ));
                                                         let roughness =
                                                             Arc::new(ConstantTexture::new(
                                                                 specular_roughness as Float,
@@ -1147,8 +1193,9 @@ fn main() {
                                                     let sigma = Arc::new(ConstantTexture::new(
                                                         0.0 as Float,
                                                     ));
-                                                    let matte =
-                                                        Arc::new(MatteMaterial::new(kd, sigma, None));
+                                                    let matte = Arc::new(MatteMaterial::new(
+                                                        kd, sigma, None,
+                                                    ));
                                                     named_materials
                                                         .insert(node_name.clone(), matte);
                                                 }
@@ -1272,9 +1319,7 @@ fn main() {
                 some_sampler = Some(sampler);
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
-                    let mut some_integrator: Option<
-                        Box<SamplerIntegrator + Sync + Send>,
-                    >;
+                    let mut some_integrator: Option<Box<SamplerIntegrator + Sync + Send>>;
                     // CreateAOIntegrator
                     // let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                     // let cos_sample: bool = true;
