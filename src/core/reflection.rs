@@ -905,7 +905,7 @@ impl Bxdf for OrenNayar {
         _sampled_type: &mut u8,
     ) -> Spectrum {
         *wi = cosine_sample_hemisphere(u);
-        if wo.z > 0.0 as Float {
+        if wo.z < 0.0 as Float {
             wi.z *= -1.0 as Float;
         }
         *pdf = self.pdf(wo, &*wi);
