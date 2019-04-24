@@ -8,7 +8,7 @@ extern crate pest_derive;
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 #[derive(Parser)]
-#[grammar = "../examples/parse_pbrt.pest"]
+#[grammar = "../examples/pbrt.pest"]
 struct PbrtParser;
 
 // parser
@@ -51,7 +51,6 @@ fn print_version(program: &str) {
 
 // Accelerator
 // CoordinateSystem
-// Include
 // Identity
 // TransformTimes
 
@@ -512,7 +511,6 @@ fn parse_line(
                         "Include" => {
                             // Include
                             let mut include_file: String = params.name.clone();
-                            // println!("DEBUG: {:?}", params.name);
                             if let Some(ref search_directory) = api_state.search_directory {
                                 let mut path_buf: PathBuf = PathBuf::from("/");
                                 path_buf.push(search_directory.as_ref());
@@ -520,6 +518,7 @@ fn parse_line(
                                 include_file = String::from(path_buf.to_str().unwrap());
                                 // println!("DEBUG: {:?}", include_file);
                             }
+                            println!("Include {:?}", include_file);
                             parse_file(include_file, api_state, bsdf_state);
                         }
                         "Integrator" => {
@@ -768,16 +767,16 @@ fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfS
         .next()
         .unwrap();
     let mut identifier: &str = "";
-    let mut comment_count: u64 = 0;
-    let mut empty_count: u64 = 0;
-    let mut todo_count: u64 = 0;
+    // let mut comment_count: u64 = 0;
+    // let mut empty_count: u64 = 0;
+    // let mut todo_count: u64 = 0;
     let mut parse_again: String = String::default();
     // first parse file line by line
     for inner_pair in pairs.into_inner() {
         match inner_pair.as_rule() {
             // comment lines (starting with '#')
             Rule::comment_line => {
-                comment_count += 1;
+                // comment_count += 1;
             }
             Rule::statement_line => {
                 for statement_pair in inner_pair.into_inner() {
@@ -809,10 +808,10 @@ fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfS
                 }
             }
             Rule::empty_line => {
-                empty_count += 1;
+                // empty_count += 1;
             }
             Rule::todo_line => {
-                todo_count += 1;
+                // todo_count += 1;
                 for params_pair in inner_pair.into_inner() {
                     match params_pair.as_rule() {
                         Rule::remaining_params => {
@@ -838,9 +837,9 @@ fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfS
             _ => unreachable!(),
         }
     }
-    println!("Number of comment line(s):   {}", comment_count);
-    println!("Number of parameter line(s): {}", todo_count);
-    println!("Number of empty line(s):     {}", empty_count);
+    // println!("Number of comment line(s):   {}", comment_count);
+    // println!("Number of parameter line(s): {}", todo_count);
+    // println!("Number of empty line(s):     {}", empty_count);
 }
 
 fn main() {
