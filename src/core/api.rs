@@ -399,7 +399,7 @@ fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
             Some(inside_medium_arc) => m.inside = Some(inside_medium_arc.clone()),
             None => {
                 panic!(
-                    "ERROR: Named medium \"{:?}\" undefined.",
+                    "ERROR: Named medium \"{}\" undefined.",
                     api_state.graphics_state.current_inside_medium
                 );
             }
@@ -414,7 +414,7 @@ fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
             Some(outside_medium_arc) => m.outside = Some(outside_medium_arc.clone()),
             None => {
                 panic!(
-                    "ERROR: Named medium \"{:?}\" undefined.",
+                    "ERROR: Named medium \"{}\" undefined.",
                     api_state.graphics_state.current_outside_medium
                 );
             }
@@ -594,7 +594,46 @@ fn make_medium(api_state: &mut ApiState) {
     if medium_type == "homogeneous" {
         some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
     } else if medium_type == "heterogeneous" {
-        panic!("TODO: make_medium(\"heterogeneous\")");
+        println!("WORK: make_medium(\"heterogeneous\")");
+        let data: Vec<Float> = api_state.param_set.find_float("density");
+        if data.is_empty() {
+            println!("ERROR: No \"density\" values provided for heterogeneous medium?");
+            some_medium = None;
+        } else {
+            let nx: i32 = api_state.param_set.find_one_int("nx", 1_i32);
+            let ny: i32 = api_state.param_set.find_one_int("ny", 1_i32);
+            let nz: i32 = api_state.param_set.find_one_int("nz", 1_i32);
+            let p0: Point3f = api_state.param_set.find_one_point3f(
+                "p0",
+                Point3f {
+                    x: 0.0 as Float,
+                    y: 0.0 as Float,
+                    z: 0.0 as Float,
+                },
+            );
+            let p1: Point3f = api_state.param_set.find_one_point3f(
+                "p1",
+                Point3f {
+                    x: 1.0 as Float,
+                    y: 1.0 as Float,
+                    z: 1.0 as Float,
+                },
+            );
+            if data.len() != (nx * ny * nz) as usize {
+                println!(
+                    "ERROR: GridDensityMedium has {} density values; expected nx*ny*nz = {}",
+                    data.len(),
+                    nx * ny * nz
+                );
+                some_medium = None;
+            } else {
+                let data_2_medium: Transform = Transform::translate(&Vector3f::from(p0))
+                    * Transform::scale(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
+                // m = new GridDensityMedium(sig_a, sig_s, g, nx, ny, nz,
+                //                           medium2world * data2Medium, data);
+                some_medium = None; // TMP
+            }
+        }
     } else {
         panic!("MakeMedium: unknown name {}", medium_type);
     }
