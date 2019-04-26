@@ -68,6 +68,7 @@ use materials::substrate::SubstrateMaterial;
 use materials::subsurface::SubsurfaceMaterial;
 use materials::translucent::TranslucentMaterial;
 use materials::uber::UberMaterial;
+use media::grid::GridDensityMedium;
 use media::homogeneous::HomogeneousMedium;
 use samplers::halton::HaltonSampler;
 use samplers::random::RandomSampler;
@@ -629,9 +630,17 @@ fn make_medium(api_state: &mut ApiState) {
             } else {
                 let data_2_medium: Transform = Transform::translate(&Vector3f::from(p0))
                     * Transform::scale(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
-                // m = new GridDensityMedium(sig_a, sig_s, g, nx, ny, nz,
-                //                           medium2world * data2Medium, data);
-                some_medium = None; // TMP
+                let medium_2_world = api_state.cur_transform.t[0];
+                some_medium = Some(Arc::new(GridDensityMedium::new(
+                    &sig_a,
+                    &sig_s,
+                    g,
+                    nx,
+                    ny,
+                    nz,
+                    &(medium_2_world * data_2_medium),
+                    data,
+                )));
             }
         }
     } else {
