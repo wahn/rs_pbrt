@@ -9,4 +9,5 @@
 //!
 //! ![A Volumetric Caustic](/doc/img/volume_caustic_pbrt_rust_mlt.png)
 
+pub mod grid;
 pub mod homogeneous;
