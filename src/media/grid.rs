@@ -1,5 +1,5 @@
 // pbrt
-use core::geometry::Ray;
+use core::geometry::{Bounds3f, Point3f, Ray};
 use core::interaction::MediumInteraction;
 use core::medium::Medium;
 use core::pbrt::{Float, Spectrum};
@@ -56,8 +56,47 @@ impl Medium for GridDensityMedium {
         // TODO
         Spectrum::default()
     }
-    fn sample(&self, ray: &Ray, sampler: &mut Sampler) -> (Spectrum, Option<MediumInteraction>) {
-        // TODO
-        (Spectrum::default(), None)
+    fn sample(
+        &self,
+        r_world: &Ray,
+        sampler: &mut Sampler,
+    ) -> (Spectrum, Option<MediumInteraction>) {
+        // TODO: ProfilePhase _(Prof::MediumSample);
+        let mut in_ray: Ray = Ray::default();
+        in_ray.o = r_world.o;
+        in_ray.d = r_world.d.normalize();
+        in_ray.t_max = r_world.t_max * r_world.d.length();
+        let ray: Ray = self.world_to_medium.transform_ray(&in_ray);
+        // compute $[\tmin, \tmax]$ interval of _ray_'s overlap with medium bounds
+        let b: Bounds3f = Bounds3f::new(
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Point3f {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+        );
+        // Float tMin, tMax;
+        // if (!b.IntersectP(ray, &tMin, &tMax)) return Spectrum(1.f);
+        // TODO: we need a new intersection routine (and a name for it)
+        // b.intersect_p(&ray, );
+        // // Run delta-tracking iterations to sample a medium interaction
+        // Float t = tMin;
+        // while (true) {
+        //     t -= std::log(1 - sampler.Get1D()) * invMaxDensity / sigma_t;
+        //     if (t >= tMax) break;
+        //     if (Density(ray(t)) * invMaxDensity > sampler.Get1D()) {
+        //         // Populate _mi_ with medium interaction information and return
+        //         PhaseFunction *phase = ARENA_ALLOC(arena, HenyeyGreenstein)(g);
+        //         *mi = MediumInteraction(rWorld(t), -rWorld.d, rWorld.time, this,
+        //                                 phase);
+        //         return sigma_s / sigma_t;
+        //     }
+        // }
+        (Spectrum::new(1.0 as Float), None)
     }
 }
