@@ -1860,7 +1860,17 @@ pub fn pnt3_inside_bnd3(p: &Point3f, b: &Bounds3f) -> bool {
 }
 
 /// Is a 3D point inside a 3D bound?
-pub fn pnt3_inside_exclusive(p: &Point3f, b: &Bounds3f) -> bool {
+pub fn pnt3i_inside_exclusive(p: &Point3i, b: &Bounds3i) -> bool {
+    p.x >= b.p_min.x
+        && p.x < b.p_max.x
+        && p.y >= b.p_min.y
+        && p.y < b.p_max.y
+        && p.z >= b.p_min.z
+        && p.z < b.p_max.z
+}
+
+/// Is a 3D point inside a 3D bound?
+pub fn pnt3f_inside_exclusive(p: &Point3f, b: &Bounds3f) -> bool {
     p.x >= b.p_min.x
         && p.x < b.p_max.x
         && p.y >= b.p_min.y
