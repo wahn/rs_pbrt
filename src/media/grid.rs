@@ -49,6 +49,10 @@ impl GridDensityMedium {
             inv_max_density: 1.0 as Float / max_density,
         }
     }
+    pub fn density(&self, p: &Point3f) -> Float {
+        // TODO
+        0.0 as Float
+    }
 }
 
 impl Medium for GridDensityMedium {
@@ -80,23 +84,26 @@ impl Medium for GridDensityMedium {
                 z: 1.0,
             },
         );
-        // Float tMin, tMax;
-        // if (!b.IntersectP(ray, &tMin, &tMax)) return Spectrum(1.f);
-        // TODO: we need a new intersection routine (and a name for it)
-        // b.intersect_p(&ray, );
-        // // Run delta-tracking iterations to sample a medium interaction
-        // Float t = tMin;
-        // while (true) {
-        //     t -= std::log(1 - sampler.Get1D()) * invMaxDensity / sigma_t;
-        //     if (t >= tMax) break;
-        //     if (Density(ray(t)) * invMaxDensity > sampler.Get1D()) {
-        //         // Populate _mi_ with medium interaction information and return
-        //         PhaseFunction *phase = ARENA_ALLOC(arena, HenyeyGreenstein)(g);
-        //         *mi = MediumInteraction(rWorld(t), -rWorld.d, rWorld.time, this,
-        //                                 phase);
-        //         return sigma_s / sigma_t;
-        //     }
-        // }
+        let mut t_min: Float = 0.0;
+        let mut t_max: Float = 0.0;
+        if !b.intersect_b(&ray, &mut Some(t_min), &mut Some(t_max)) {
+            return (Spectrum::new(1.0 as Float), None);
+        }
+        // run delta-tracking iterations to sample a medium interaction
+        let mut t: Float = t_min;
+        loop {
+            t -= (1.0 as Float - sampler.get_1d()).ln() * self.inv_max_density / self.sigma_t;
+            if t >= t_max {
+                break;
+            }
+            if self.density(&ray.position(t)) * self.inv_max_density > sampler.get_1d() {
+                // populate _mi_ with medium interaction information and return
+                //     PhaseFunction *phase = ARENA_ALLOC(arena, HenyeyGreenstein)(g);
+                //     *mi = MediumInteraction(rWorld(t), -rWorld.d, rWorld.time, this,
+                //                             phase);
+                //     return sigma_s / sigma_t;
+            }
+        }
         (Spectrum::new(1.0 as Float), None)
     }
 }

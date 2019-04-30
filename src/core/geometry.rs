@@ -1710,6 +1710,43 @@ impl Bounds3<Float> {
             z: lerp(t.z, self.p_min.z as Float, self.p_max.z as Float),
         }
     }
+    pub fn intersect_b(
+        &self,
+        ray: &Ray,
+        hitt0: &mut Option<Float>,
+        hitt1: &mut Option<Float>,
+    ) -> bool {
+        let mut t0: Float = 0.0;
+        let mut t1: Float = ray.t_max;
+        for i in 0..3 {
+            // update interval for _i_th bounding box slab
+            let inv_ray_dir: Float = 1.0 as Float / ray.d[i];
+            let mut t_near: Float = (self.p_min[i] - ray.o[i]) * inv_ray_dir;
+            let mut t_far: Float = (self.p_max[i] - ray.o[i]) * inv_ray_dir;
+            // update parametric interval from slab intersection $t$ values
+            if t_near > t_far {
+                std::mem::swap(&mut t_near, &mut t_far);
+            }
+            // update _t_far_ to ensure robust ray--bounds intersection
+            t_far *= 1.0 as Float + 2.0 as Float * gamma(3_i32);
+            if t_near > t0 {
+                t0 = t_near;
+            }
+            if t_far < t1 {
+                t1 = t_far;
+            }
+            if t0 > t1 {
+                return false;
+            }
+        }
+        if hitt0.is_some() {
+            *hitt0 = Some(t0);
+        }
+        if hitt1.is_some() {
+            *hitt1 = Some(t1);
+        }
+        true
+    }
     pub fn intersect_p(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: [u8; 3]) -> bool {
         // check for ray intersection against $x$ and $y$ slabs
         let mut t_min: Float = (self[dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
