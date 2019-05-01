@@ -33,8 +33,6 @@ pub struct PathIntegrator {
 impl PathIntegrator {
     pub fn new(
         max_depth: u32,
-        // _perspective_camera: &PerspectiveCamera,
-        // _sampler: &mut Box<Sampler + Send + Sync>,
         pixel_bounds: Bounds2i,
         rr_threshold: Float,
         light_sample_strategy: String,

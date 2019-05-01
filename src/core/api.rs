@@ -50,6 +50,7 @@ use integrators::path::PathIntegrator;
 use integrators::render;
 use integrators::sppm::render_sppm;
 use integrators::sppm::SPPMIntegrator;
+use integrators::volpath::VolPathIntegrator;
 use lights::diffuse::DiffuseAreaLight;
 use lights::distant::DistantLight;
 use lights::infinite::InfiniteAreaLight;
@@ -1838,8 +1839,6 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             .render_options
                             .integrator_params
                             .find_one_float("rrthreshold", 1.0 as Float);
-                        // std::string lightStrategy =
-                        //     params.FindOneString("lightsamplestrategy", "spatial");
                         let light_strategy: String = api_state
                             .render_options
                             .integrator_params
@@ -1852,7 +1851,47 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         ));
                         some_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == "volpath" {
-                        println!("TODO: CreateVolPathIntegrator");
+                        println!("WORK: CreateVolPathIntegrator");
+                        // CreateVolPathIntegrator
+                        let max_depth: i32 = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_int("maxdepth", 5);
+                        let pb: Vec<i32> = api_state
+                            .render_options
+                            .integrator_params
+                            .find_int("pixelbounds");
+                        let np: usize = pb.len();
+                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                        if np > 0 as usize {
+                            if np != 4 as usize {
+                                panic!(
+                                    "Expected four values for \"pixelbounds\" parameter. Got {}.",
+                                    np
+                                );
+                            } else {
+                                println!("TODO: pixelBounds = Intersect(...)");
+                                // pixelBounds = Intersect(pixelBounds,
+                                //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
+                                // if (pixelBounds.Area() == 0)
+                                //     Error("Degenerate \"pixelbounds\" specified.");
+                            }
+                        }
+                        let rr_threshold: Float = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_float("rrthreshold", 1.0 as Float);
+                        let light_strategy: String = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_string("lightsamplestrategy", String::from("spatial"));
+                        let integrator = Box::new(VolPathIntegrator::new(
+                            max_depth as u32,
+                            pixel_bounds,
+                            rr_threshold,
+                            light_strategy,
+                        ));
+                        some_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == "bdpt" {
                         // CreateBDPTIntegrator
                         let mut max_depth: i32 = api_state
