@@ -81,6 +81,7 @@ pub mod directlighting;
 pub mod mlt;
 pub mod path;
 pub mod sppm;
+pub mod volpath;
 
 /// **Main function** to **render** a scene mutli-threaded (using all
 /// available cores).

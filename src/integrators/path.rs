@@ -27,7 +27,6 @@ pub struct PathIntegrator {
     max_depth: u32,
     rr_threshold: Float,           // 1.0
     light_sample_strategy: String, // "spatial"
-    // TODO: std::unique_ptr<LightDistribution> lightDistribution;
     light_distribution: Option<Arc<LightDistribution + Send + Sync>>,
 }
 
