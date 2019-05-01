@@ -2,12 +2,14 @@
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
+use core::integrator::uniform_sample_one_light;
 use core::integrator::SamplerIntegrator;
 use core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
 use core::lightdistrib::create_light_sample_distribution;
 use core::lightdistrib::LightDistribution;
 use core::pbrt::{Float, Spectrum};
 use core::sampler::Sampler;
+use core::sampling::Distribution1D;
 use core::scene::Scene;
 
 // see volpath.h
@@ -77,12 +79,12 @@ impl SamplerIntegrator for VolPathIntegrator {
         // medium and thus have their beta value increased.
         let mut eta_scale: Float = 1.0;
         loop {
+            let mut mi_opt: Option<MediumInteraction> = None;
             // intersect _ray_ with scene and store intersection in _isect_
             let found_intersection: bool;
             if let Some(mut isect) = scene.intersect(&mut ray) {
                 found_intersection = true;
                 // sample the participating medium, if present
-                let mut mi_opt: Option<MediumInteraction> = None;
                 if let Some(ref medium) = ray.medium {
                     let (spectrum, option) = medium.sample(&ray, sampler.as_mut());
                     beta *= spectrum;
@@ -95,6 +97,38 @@ impl SamplerIntegrator for VolPathIntegrator {
                 }
             } else {
                 found_intersection = false;
+            }
+            // handle an interaction with a medium or a surface
+            if let Some(mi) = mi_opt {
+                let mi_p = mi.p;
+                // if mi.is_valid() {...}
+                if let Some(phase) = mi.clone().phase {
+                    // terminate path if ray escaped or _maxDepth_ was reached
+                    if bounces >= self.max_depth {
+                        break;
+                    }
+                    // TODO: ++volumeInteractions;
+                    // handle scattering at point in medium for volumetric path tracer
+                    if let Some(ref light_distribution) = self.light_distribution {
+                        let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
+                        // TODO: uniform_sample_one_light(it: &Interaction)
+                        // l += beta
+                        //     * uniform_sample_one_light(
+                        //         &mi,
+                        //         scene,
+                        //         sampler,
+                        //         true,
+                        //         Some(Arc::borrow(&distrib)),
+                        //     );
+                        let mut wi: Vector3f = Vector3f::default();
+                        phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
+                        ray = mi.spawn_ray(&wi);
+                        specular_bounce = false;
+                    }
+                }
+            } else {
+                // TODO: ++surfaceInteractions;
+                // WORK
             }
         }
         // WORK
