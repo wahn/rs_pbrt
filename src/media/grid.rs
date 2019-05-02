@@ -1,5 +1,4 @@
 // std
-use std::f32;
 use std::sync::Arc;
 // pbrt
 use core::geometry::pnt3i_inside_exclusive;
@@ -154,9 +153,57 @@ impl GridDensityMedium {
 }
 
 impl Medium for GridDensityMedium {
-    fn tr(&self, ray: &Ray, _sampler: &mut Sampler) -> Spectrum {
-        // TODO
-        Spectrum::default()
+    fn tr(&self, r_world: &Ray, sampler: &mut Sampler) -> Spectrum {
+        // TODO: ProfilePhase _(Prof::MediumTr);
+        // TODO: ++nTrCalls;
+        let mut in_ray: Ray = Ray::default();
+        in_ray.o = r_world.o;
+        in_ray.d = r_world.d.normalize();
+        in_ray.t_max = r_world.t_max * r_world.d.length();
+        let ray: Ray = self.world_to_medium.transform_ray(&in_ray);
+        // compute $[\tmin, \tmax]$ interval of _ray_'s overlap with medium bounds
+        let b: Bounds3f = Bounds3f::new(
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+            Point3f {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+        );
+        let t_min: Float = 0.0;
+        let t_max: Float = 0.0;
+        // if (!b.IntersectP(ray, &tMin, &tMax)) return Spectrum(1.f);
+        if !b.intersect_b(&ray, &mut Some(t_min), &mut Some(t_max)) {
+            return Spectrum::new(1.0 as Float);
+        }
+        // perform ratio tracking to estimate the transmittance value
+        let mut tr: Float = 1.0;
+        let mut t: Float = t_min;
+        loop {
+            // TODO: ++nTrSteps;
+            t -= (1.0 as Float - sampler.get_1d()).ln() * self.inv_max_density / self.sigma_t;
+            if t >= t_max {
+                break;
+            }
+            let density: Float = self.density(&ray.position(t));
+            tr *= 1.0 as Float - (0.0 as Float).max(density * self.inv_max_density);
+            // added after book publication: when transmittance gets
+            // low, start applying Russian roulette to terminate
+            // sampling.
+            let rr_threshold: Float = 0.1;
+            if tr < rr_threshold {
+                let q: Float = (0.05 as Float).max(1.0 as Float - tr);
+                if sampler.get_1d() < q {
+                    return Spectrum::default();
+                }
+                tr /= 1.0 as Float - q;
+            }
+        }
+        Spectrum::new(tr)
     }
     fn sample(
         &self,
@@ -182,8 +229,8 @@ impl Medium for GridDensityMedium {
                 z: 1.0,
             },
         );
-        let mut t_min: Float = 0.0;
-        let mut t_max: Float = 0.0;
+        let t_min: Float = 0.0;
+        let t_max: Float = 0.0;
         if !b.intersect_b(&ray, &mut Some(t_min), &mut Some(t_max)) {
             return (Spectrum::new(1.0 as Float), None);
         }
@@ -195,17 +242,25 @@ impl Medium for GridDensityMedium {
                 break;
             }
             if self.density(&ray.position(t)) * self.inv_max_density > sampler.get_1d() {
-                let mut mi_opt: Option<MediumInteraction> = None;
+                let mi_opt: Option<MediumInteraction>;
                 // populate _mi_ with medium interaction information and return
-                // let mi: MediumInteraction = MediumInteraction::new(
-                //     &r_world.position(t),
-                //     &(-r_world.d),
-                //     r_world.time,
-                //     Some(Arc::new(GridDensityMedium::new(
-                //     ))),
-                //     Some(Arc::new(HenyeyGreenstein { g: self.g })),
-                // );
-                // mi_opt = Some(mi);
+                let mi: MediumInteraction = MediumInteraction::new(
+                    &r_world.position(t),
+                    &(-r_world.d),
+                    r_world.time,
+                    Some(Arc::new(GridDensityMedium::new(
+                        &self.sigma_a,
+                        &self.sigma_s,
+                        self.g,
+                        self.nx,
+                        self.ny,
+                        self.nz,
+                        &self.world_to_medium,
+                        self.density.iter().cloned().collect(),
+                    ))),
+                    Some(Arc::new(HenyeyGreenstein { g: self.g })),
+                );
+                mi_opt = Some(mi);
                 return (self.sigma_s / self.sigma_t, mi_opt);
             }
         }
