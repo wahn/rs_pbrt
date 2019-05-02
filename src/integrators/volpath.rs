@@ -2,13 +2,17 @@
 use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
+use core::bssrdf::Bssrdf;
+use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use core::integrator::uniform_sample_one_light;
 use core::integrator::SamplerIntegrator;
-use core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
+use core::interaction::{Interaction, MediumInteraction};
 use core::lightdistrib::create_light_sample_distribution;
 use core::lightdistrib::LightDistribution;
+use core::material::TransportMode;
 use core::pbrt::{Float, Spectrum};
+use core::reflection::BxdfType;
 use core::sampler::Sampler;
 use core::sampling::Distribution1D;
 use core::scene::Scene;
@@ -82,9 +86,7 @@ impl SamplerIntegrator for VolPathIntegrator {
         loop {
             let mut mi_opt: Option<MediumInteraction> = None;
             // intersect _ray_ with scene and store intersection in _isect_
-            let found_intersection: bool;
             if let Some(mut isect) = scene.intersect(&mut ray) {
-                found_intersection = true;
                 // sample the participating medium, if present
                 if let Some(ref medium) = ray.medium {
                     let (spectrum, option) = medium.sample(&ray, sampler.as_mut());
@@ -96,40 +98,208 @@ impl SamplerIntegrator for VolPathIntegrator {
                 if beta.is_black() {
                     break;
                 }
-            } else {
-                found_intersection = false;
-            }
-            // handle an interaction with a medium or a surface
-            if let Some(mi) = mi_opt {
-                let mi_p = mi.p;
-                // if mi.is_valid() {...}
-                if let Some(phase) = mi.clone().phase {
-                    // terminate path if ray escaped or _maxDepth_ was reached
-                    if bounces >= self.max_depth {
-                        break;
+                // handle an interaction with a medium or a surface
+                if let Some(mi) = mi_opt {
+                    let mi_p = mi.p;
+                    // if mi.is_valid() {...}
+                    if let Some(phase) = mi.clone().phase {
+                        // terminate path if ray escaped or _maxDepth_ was reached
+                        if bounces >= self.max_depth {
+                            break;
+                        }
+                        // TODO: ++volumeInteractions;
+                        // handle scattering at point in medium for volumetric path tracer
+                        if let Some(ref light_distribution) = self.light_distribution {
+                            let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
+                            l += beta
+                                * uniform_sample_one_light(
+                                    &mi as &Interaction,
+                                    scene,
+                                    sampler,
+                                    true,
+                                    Some(Arc::borrow(&distrib)),
+                                );
+                            let mut wi: Vector3f = Vector3f::default();
+                            phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
+                            ray = mi.spawn_ray(&wi);
+                            specular_bounce = false;
+                        }
+                    } else {
+                        // TODO: ++surfaceInteractions;
+                        // possibly add emitted light at intersection
+                        if bounces == 0 || specular_bounce {
+                            // add emitted light at path vertex
+                            l += beta * isect.le(&-ray.d);
+                        }
+                        // terminate path if _maxDepth_ was reached
+                        if bounces >= self.max_depth {
+                            break;
+                        }
+                        // compute scattering functions and skip over medium boundaries
+                        let mode: TransportMode = TransportMode::Radiance;
+                        isect.compute_scattering_functions(&mut ray, true, mode);
+                        if let Some(ref _bsdf) = isect.bsdf {
+                            // we are fine (for below)
+                        } else {
+                            ray = isect.spawn_ray(&ray.d);
+                            // bounces--;
+                            continue;
+                        }
+                        if let Some(ref light_distribution) = self.light_distribution {
+                            let light_distrib: Arc<Distribution1D> =
+                                light_distribution.lookup(&isect.p);
+                            // Sample illumination from lights to find
+                            // attenuated path contribution.
+                            l += beta
+                                * uniform_sample_one_light(
+                                    &isect,
+                                    scene,
+                                    sampler,
+                                    true,
+                                    Some(Arc::borrow(&light_distrib)),
+                                );
+                            if let Some(ref bsdf) = isect.bsdf {
+                                // Sample BSDF to get new path direction
+                                let wo: Vector3f = -ray.d;
+                                let mut wi: Vector3f = Vector3f::default();
+                                let mut pdf: Float = 0.0 as Float;
+                                let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                let mut sampled_type: u8 = u8::max_value(); // != 0
+                                let f: Spectrum = bsdf.sample_f(
+                                    &wo,
+                                    &mut wi,
+                                    &sampler.get_2d(),
+                                    &mut pdf,
+                                    bsdf_flags,
+                                    &mut sampled_type,
+                                );
+                                if f.is_black() || pdf == 0.0 as Float {
+                                    break;
+                                }
+                                beta *= (f * vec3_abs_dot_nrm(&wi, &isect.shading.n)) / pdf;
+                                assert!(
+                                    !(beta.y().is_infinite()),
+                                    "[{:#?}, {:?}] = ({:#?} * dot({:#?}, {:#?})) / {:?}",
+                                    sampler.get_current_pixel(),
+                                    sampler.get_current_sample_number(),
+                                    f,
+                                    wi,
+                                    isect.shading.n,
+                                    pdf
+                                );
+                                specular_bounce =
+                                    (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+                                if ((sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8)
+                                    && ((sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8)
+                                {
+                                    let eta: Float = bsdf.eta;
+                                    // Update the term that tracks radiance
+                                    // scaling for refraction depending on
+                                    // whether the ray is entering or leaving
+                                    // the medium.
+                                    if vec3_dot_nrm(&wo, &isect.n) > 0.0 as Float {
+                                        eta_scale *= eta * eta;
+                                    } else {
+                                        eta_scale *= 1.0 as Float / (eta * eta);
+                                    }
+                                }
+                                ray = isect.spawn_ray(&wi);
+                                // account for attenuated subsurface
+                                // scattering, if applicable
+                                if let Some(ref bssrdf) = isect.bssrdf {
+                                    if (sampled_type & BxdfType::BsdfTransmission as u8) != 0_u8 {
+                                        // importance sample the BSSRDF
+                                        let s2: Point2f = sampler.get_2d();
+                                        let s1: Float = sampler.get_1d();
+                                        let (s, pi_opt) = bssrdf.sample_s(
+                                            // the next three (extra) parameters are used for SeparableBssrdfAdapter
+                                            bssrdf.clone(),
+                                            bssrdf.mode,
+                                            bssrdf.eta,
+                                            // done
+                                            scene,
+                                            s1,
+                                            &s2,
+                                            &mut pdf,
+                                        );
+                                        if s.is_black() || pdf == 0.0 as Float {
+                                            break;
+                                        }
+                                        assert!(!(beta.y().is_infinite()));
+                                        beta *= s / pdf;
+                                        if let Some(pi) = pi_opt {
+                                            // account for the direct subsurface scattering component
+                                            let distrib: Arc<Distribution1D> =
+                                                light_distribution.lookup(&pi.p);
+                                            l += beta
+                                                * uniform_sample_one_light(
+                                                    &pi,
+                                                    scene,
+                                                    sampler,
+                                                    true,
+                                                    Some(Arc::borrow(&distrib)),
+                                                );
+                                            // account for the indirect subsurface scattering component
+                                            let mut wi: Vector3f = Vector3f::default();
+                                            let mut pdf: Float = 0.0 as Float;
+                                            let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                                            let mut sampled_type: u8 = u8::max_value(); // != 0
+                                            if let Some(ref bsdf) = pi.bsdf {
+                                                let f: Spectrum = bsdf.sample_f(
+                                                    &pi.wo,
+                                                    &mut wi,
+                                                    &sampler.get_2d(),
+                                                    &mut pdf,
+                                                    bsdf_flags,
+                                                    &mut sampled_type,
+                                                );
+                                                if f.is_black() || pdf == 0.0 as Float {
+                                                    break;
+                                                }
+                                                beta *=
+                                                    f * vec3_abs_dot_nrm(&wi, &pi.shading.n) / pdf;
+                                                assert!(!(beta.y().is_infinite()));
+                                                specular_bounce = (sampled_type
+                                                    & BxdfType::BsdfSpecular as u8)
+                                                    != 0_u8;
+                                                ray = pi.spawn_ray(&wi);
+                                            } else {
+                                                panic!("no pi.bsdf found");
+                                            }
+                                        } else {
+                                            panic!("bssrdf.sample_s() did return (s, None)");
+                                        }
+                                    }
+                                }
+                            } else {
+                                println!("TODO: if let Some(ref bsdf) = isect.bsdf failed");
+                            }
+                        }
                     }
-                    // TODO: ++volumeInteractions;
-                    // handle scattering at point in medium for volumetric path tracer
-                    if let Some(ref light_distribution) = self.light_distribution {
-                        let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
-                        l += beta
-                            * uniform_sample_one_light(
-                                &mi as &Interaction,
-                                scene,
-                                sampler,
-                                true,
-                                Some(Arc::borrow(&distrib)),
-                            );
-                        let mut wi: Vector3f = Vector3f::default();
-                        phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
-                        ray = mi.spawn_ray(&wi);
-                        specular_bounce = false;
+                    // Possibly terminate the path with Russian roulette.
+                    // Factor out radiance scaling due to refraction in rr_beta.
+                    let rr_beta: Spectrum = beta * eta_scale;
+                    if rr_beta.max_component_value() < self.rr_threshold && bounces > 3 {
+                        let q: Float =
+                            (0.05 as Float).max(1.0 as Float - rr_beta.max_component_value());
+                        if sampler.get_1d() < q {
+                            break;
+                        }
+                        beta = beta / (1.0 as Float - q);
+                        assert!(!(beta.y().is_infinite()));
                     }
                 }
             } else {
-                // TODO: ++surfaceInteractions;
-                // WORK
+                // add emitted light from the environment
+                if bounces == 0 || specular_bounce {
+                    for light in &scene.infinite_lights {
+                        l += beta * light.le(&mut ray);
+                    }
+                }
+                // terminate path if ray escaped
+                break;
             }
+            bounces += 1_u32;
         }
         // WORK
         Spectrum::default()
