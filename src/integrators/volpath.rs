@@ -1,4 +1,5 @@
 // std
+use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
 use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
@@ -111,15 +112,14 @@ impl SamplerIntegrator for VolPathIntegrator {
                     // handle scattering at point in medium for volumetric path tracer
                     if let Some(ref light_distribution) = self.light_distribution {
                         let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
-                        // TODO: uniform_sample_one_light(it: &Interaction)
-                        // l += beta
-                        //     * uniform_sample_one_light(
-                        //         &mi,
-                        //         scene,
-                        //         sampler,
-                        //         true,
-                        //         Some(Arc::borrow(&distrib)),
-                        //     );
+                        l += beta
+                            * uniform_sample_one_light(
+                                &mi as &Interaction,
+                                scene,
+                                sampler,
+                                true,
+                                Some(Arc::borrow(&distrib)),
+                            );
                         let mut wi: Vector3f = Vector3f::default();
                         phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
                         ray = mi.spawn_ray(&wi);

@@ -11,8 +11,7 @@ use std::sync::Arc;
 use blockqueue::BlockQueue;
 use core::camera::{Camera, CameraSample};
 use core::geometry::{
-    nrm_abs_dot_vec3, pnt2_inside_exclusive, pnt3_offset_ray_origin, vec3_abs_dot_nrm,
-    vec3_dot_nrm,
+    nrm_abs_dot_vec3, pnt2_inside_exclusive, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_dot_nrm,
 };
 use core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector2i, Vector3f,
@@ -25,6 +24,7 @@ use core::material::TransportMode;
 use core::medium::{Medium, MediumInterface, PhaseFunction};
 use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
+use core::reflection::Bsdf;
 use core::reflection::BxdfType;
 use core::sampler::Sampler;
 use core::sampling::Distribution1D;
@@ -176,6 +176,12 @@ impl<'a> Interaction for EndpointInteraction<'a> {
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
         // WORK
+        None
+    }
+    fn get_bsdf(&self) -> Option<Arc<Bsdf>> {
+        None
+    }
+    fn get_shading_n(&self) -> Option<Normal3f> {
         None
     }
 }
@@ -2273,7 +2279,8 @@ pub fn render_bdpt(
                                         create_light_sample_distribution(
                                             integrator.get_light_sample_strategy(),
                                             scene,
-                                        ) {
+                                        )
+                                    {
                                         // generate a single sample using BDPT
                                         let p_film: Point2f = Point2f {
                                             x: p_pixel.x as Float,
@@ -2281,7 +2288,7 @@ pub fn render_bdpt(
                                         } + tile_sampler.get_2d();
                                         // trace the camera subpath
                                         let mut camera_vertices: Vec<Vertex> =
-                                        Vec::with_capacity((integrator.max_depth + 2) as usize);
+                                            Vec::with_capacity((integrator.max_depth + 2) as usize);
                                         let mut n_camera;
                                         let mut p;
                                         let mut time;
@@ -2300,10 +2307,9 @@ pub fn render_bdpt(
                                             time = time_new;
                                         }
                                         let light_distr: Arc<Distribution1D> =
-                                                light_distribution.lookup(&p);
+                                            light_distribution.lookup(&p);
                                         let mut light_vertices: Vec<Vertex> =
-                                                Vec::with_capacity((integrator.max_depth + 1)
-                                                                   as usize);
+                                            Vec::with_capacity((integrator.max_depth + 1) as usize);
                                         let mut n_light;
                                         {
                                             n_light = generate_light_subpath(
@@ -2397,7 +2403,8 @@ pub fn render_bdpt(
                         film.merge_film_tile(&film_tile);
                     }
                 });
-            }).unwrap();
+            })
+            .unwrap();
         }
         film.write_image(1.0 as Float / samples_per_pixel as Float);
         // TODO: Write buffers for debug visualization

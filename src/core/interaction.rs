@@ -37,6 +37,8 @@ pub trait Interaction {
     fn get_wo(&self) -> Vector3f;
     fn get_n(&self) -> Normal3f;
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>>;
+    fn get_bsdf(&self) -> Option<Arc<Bsdf>>;
+    fn get_shading_n(&self) -> Option<Normal3f>;
 }
 
 #[derive(Default, Clone)]
@@ -237,6 +239,12 @@ impl Interaction for MediumInteraction {
         } else {
             None
         }
+    }
+    fn get_bsdf(&self) -> Option<Arc<Bsdf>> {
+        None
+    }
+    fn get_shading_n(&self) -> Option<Normal3f> {
+        None
     }
 }
 
@@ -525,5 +533,15 @@ impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
         } else {
             None
         }
+    }
+    fn get_bsdf(&self) -> Option<Arc<Bsdf>> {
+        if let Some(ref bsdf) = self.bsdf {
+            Some(bsdf.clone())
+        } else {
+            None
+        }
+    }
+    fn get_shading_n(&self) -> Option<Normal3f> {
+        Some(self.shading.n.clone())
     }
 }

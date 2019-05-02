@@ -91,7 +91,7 @@ pub fn uniform_sample_all_lights(
 /// Estimate direct lighting for only one randomly chosen light and
 /// multiply the result by the number of lights to compensate.
 pub fn uniform_sample_one_light<S: Sampler + Send + Sync + ?Sized>(
-    it: &SurfaceInteraction,
+    it: &Interaction,
     scene: &Scene,
     sampler: &mut Box<S>,
     handle_media: bool,
@@ -137,7 +137,7 @@ pub fn uniform_sample_one_light<S: Sampler + Send + Sync + ?Sized>(
 
 /// Computes a direct lighting estimate for a single light source sample.
 pub fn estimate_direct(
-    it: &SurfaceInteraction,
+    it: &Interaction,
     u_scattering: &Point2f,
     light: Arc<Light + Send + Sync>,
     u_light: &Point2f,
@@ -179,11 +179,13 @@ pub fn estimate_direct(
         let mut f: Spectrum = Spectrum::new(0.0);
         if it.is_surface_interaction() {
             // evaluate BSDF for light sampling strategy
-            if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.f(&it.get_wo(), &wi, bsdf_flags)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &it.shading.n));
-                scattering_pdf = bsdf.pdf(&it.get_wo(), &wi, bsdf_flags);
-                // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
+            if let Some(ref bsdf) = it.get_bsdf() {
+                if let Some(shading_n) = it.get_shading_n() {
+                    f = bsdf.f(&it.get_wo(), &wi, bsdf_flags)
+                        * Spectrum::new(vec3_abs_dot_nrm(&wi, &shading_n));
+                    scattering_pdf = bsdf.pdf(&it.get_wo(), &wi, bsdf_flags);
+                    // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
+                }
             }
         } else {
             // evaluate phase function for light sampling strategy
@@ -221,19 +223,21 @@ pub fn estimate_direct(
         if it.is_surface_interaction() {
             // sample scattered direction for surface interactions
             let mut sampled_type: u8 = 0_u8;
-            if let Some(ref bsdf) = it.bsdf {
-                f = bsdf.sample_f(
-                    &it.get_wo(),
-                    &mut wi,
-                    u_scattering,
-                    &mut scattering_pdf,
-                    bsdf_flags,
-                    &mut sampled_type,
-                );
-                f *= Spectrum::new(vec3_abs_dot_nrm(&wi, &it.shading.n));
-                sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+            if let Some(ref bsdf) = it.get_bsdf() {
+                if let Some(shading_n) = it.get_shading_n() {
+                    f = bsdf.sample_f(
+                        &it.get_wo(),
+                        &mut wi,
+                        u_scattering,
+                        &mut scattering_pdf,
+                        bsdf_flags,
+                        &mut sampled_type,
+                    );
+                    f *= Spectrum::new(vec3_abs_dot_nrm(&wi, &shading_n));
+                    sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
+                }
             } else {
-                println!("TODO: if let Some(ref bsdf) = it.bsdf failed");
+                println!("TODO: if let Some(ref bsdf) = it.get_bsdf() failed");
             }
         } else {
             // TODO
