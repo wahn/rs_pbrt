@@ -518,8 +518,9 @@ fn parse_line(
                                 include_file = String::from(path_buf.to_str().unwrap());
                                 // println!("DEBUG: {:?}", include_file);
                             }
+                            let todo: Vec<&str> = for_printing.splitn(3, '"').collect();
                             println!("Include {:?}", include_file);
-                            parse_file(include_file, api_state, bsdf_state);
+                            parse_file(include_file, api_state, bsdf_state, todo[2]);
                         }
                         "Integrator" => {
                             // Integrator
@@ -744,7 +745,7 @@ fn parse_line(
     }
 }
 
-fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfState) {
+fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfState, append: &str) {
     // println!("FILE = {}", x);
     let f = File::open(filename.clone()).unwrap();
     let ip: &Path = Path::new(filename.as_str());
@@ -762,6 +763,10 @@ fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfS
     //     let n_bytes = num_bytes.unwrap();
     //     println!("{} bytes read", n_bytes);
     // }
+    if append != "" {
+        str_buf += append;
+        str_buf += "\n";
+    }
     let pairs = PbrtParser::parse(Rule::pbrt, &str_buf)
         .expect("unsuccessful parse")
         .next()
@@ -783,12 +788,7 @@ fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfS
                     match statement_pair.as_rule() {
                         Rule::identifier => {
                             if identifier != "" {
-                                parse_line(
-                                    api_state,
-                                    bsdf_state,
-                                    identifier,
-                                    parse_again.clone(),
-                                );
+                                parse_line(api_state, bsdf_state, identifier, parse_again.clone());
                             }
                             identifier = statement_pair.as_str();
                             parse_again = String::default();
@@ -828,12 +828,7 @@ fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfS
                     }
                 }
             }
-            Rule::EOI => parse_line(
-                api_state,
-                bsdf_state,
-                identifier,
-                parse_again.clone(),
-            ),
+            Rule::EOI => parse_line(api_state, bsdf_state, identifier, parse_again.clone()),
             _ => unreachable!(),
         }
     }
@@ -891,7 +886,7 @@ fn main() {
                     "Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob."
                 );
                 let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
-                parse_file(x, &mut api_state, &mut bsdf_state);
+                parse_file(x, &mut api_state, &mut bsdf_state, "");
             }
             None => panic!("No input file name."),
         }
