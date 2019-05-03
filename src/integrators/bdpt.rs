@@ -184,6 +184,9 @@ impl<'a> Interaction for EndpointInteraction<'a> {
     fn get_shading_n(&self) -> Option<Normal3f> {
         None
     }
+    fn get_phase(&self) -> Option<Arc<PhaseFunction>> {
+        None
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

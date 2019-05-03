@@ -189,8 +189,10 @@ pub fn estimate_direct(
             }
         } else {
             // evaluate phase function for light sampling strategy
-            // TODO
-            println!("TODO: evaluate phase function for light sampling strategy");
+            if let Some(ref phase) = it.get_phase() {
+                let p: Float = phase.p(&it.get_wo(), &wi);
+                f = Spectrum::new(p);
+            }
         }
         if !f.is_black() {
             // compute effect of visibility for light source sample
@@ -240,8 +242,12 @@ pub fn estimate_direct(
                 println!("TODO: if let Some(ref bsdf) = it.get_bsdf() failed");
             }
         } else {
-            // TODO
-            println!("TODO: estimate_direct 1");
+            // sample scattered direction for medium interactions
+            if let Some(ref phase) = it.get_phase() {
+                let p: Float = phase.sample_p(&it.get_wo(), &mut wi, u_scattering);
+                f = Spectrum::new(p);
+                scattering_pdf = p;
+            }
         }
         // TODO: println!("  BSDF / phase sampling f: {:?}, scatteringPdf: {:?}",
         //          f, scattering_pdf);

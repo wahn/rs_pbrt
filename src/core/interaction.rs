@@ -39,6 +39,7 @@ pub trait Interaction {
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>>;
     fn get_bsdf(&self) -> Option<Arc<Bsdf>>;
     fn get_shading_n(&self) -> Option<Normal3f>;
+    fn get_phase(&self) -> Option<Arc<PhaseFunction>>;
 }
 
 #[derive(Default, Clone)]
@@ -245,6 +246,13 @@ impl Interaction for MediumInteraction {
     }
     fn get_shading_n(&self) -> Option<Normal3f> {
         None
+    }
+    fn get_phase(&self) -> Option<Arc<PhaseFunction>> {
+        if let Some(ref phase) = self.phase {
+            Some(phase.clone())
+        } else {
+            None
+        }
     }
 }
 
@@ -543,5 +551,8 @@ impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
     }
     fn get_shading_n(&self) -> Option<Normal3f> {
         Some(self.shading.n.clone())
+    }
+    fn get_phase(&self) -> Option<Arc<PhaseFunction>> {
+        None
     }
 }
