@@ -33,7 +33,7 @@ impl GridDensityMedium {
         nx: i32,
         ny: i32,
         nz: i32,
-        world_to_medium: &Transform,
+        medium_to_world: &Transform,
         d: Vec<Float>,
     ) -> Self {
         let mut max_density: Float = 0.0;
@@ -47,7 +47,7 @@ impl GridDensityMedium {
             nx: nx,
             ny: ny,
             nz: nz,
-            world_to_medium: *world_to_medium,
+            world_to_medium: Transform::inverse(medium_to_world),
             density: d,
             sigma_t: (*sigma_s + *sigma_a)[0],
             inv_max_density: 1.0 as Float / max_density,
@@ -174,10 +174,10 @@ impl Medium for GridDensityMedium {
                 z: 1.0,
             },
         );
-        let t_min: Float = 0.0;
-        let t_max: Float = 0.0;
+        let mut t_min: Float = 0.0;
+        let mut t_max: Float = 0.0;
         // if (!b.IntersectP(ray, &tMin, &tMax)) return Spectrum(1.f);
-        if !b.intersect_b(&ray, &mut Some(t_min), &mut Some(t_max)) {
+        if !b.intersect_b(&ray, &mut t_min, &mut t_max) {
             return Spectrum::new(1.0 as Float);
         }
         // perform ratio tracking to estimate the transmittance value
@@ -229,9 +229,9 @@ impl Medium for GridDensityMedium {
                 z: 1.0,
             },
         );
-        let t_min: Float = 0.0;
-        let t_max: Float = 0.0;
-        if !b.intersect_b(&ray, &mut Some(t_min), &mut Some(t_max)) {
+        let mut t_min: Float = 0.0;
+        let mut t_max: Float = 0.0;
+        if !b.intersect_b(&ray, &mut t_min, &mut t_max) {
             return (Spectrum::new(1.0 as Float), None);
         }
         // run delta-tracking iterations to sample a medium interaction
@@ -256,7 +256,7 @@ impl Medium for GridDensityMedium {
                         self.ny,
                         self.nz,
                         &self.world_to_medium,
-                        self.density.iter().cloned().collect(),
+                        self.density.clone(),
                     ))),
                     Some(Arc::new(HenyeyGreenstein { g: self.g })),
                 );

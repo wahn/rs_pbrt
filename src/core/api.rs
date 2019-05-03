@@ -2550,7 +2550,7 @@ pub fn pbrt_transform_times(api_state: &mut ApiState, start: Float, end: Float) 
 
 pub fn pbrt_pixel_filter(api_state: &mut ApiState, params: ParamSet) {
     // println!("PixelFilter \"{}\"", params.name);
-    print_params(&params);
+    // print_params(&params);
     api_state.render_options.filter_name = params.name.clone();
     api_state.param_set = params;
     api_state
@@ -2618,7 +2618,7 @@ pub fn pbrt_camera(api_state: &mut ApiState, params: ParamSet) {
 
 pub fn pbrt_make_named_medium(api_state: &mut ApiState, params: ParamSet) {
     // println!("MakeNamedMedium \"{}\"", params.name);
-    print_params(&api_state.param_set);
+    // print_params(&api_state.param_set);
     api_state.param_set = params;
     make_medium(api_state);
 }

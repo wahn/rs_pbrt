@@ -1713,8 +1713,8 @@ impl Bounds3<Float> {
     pub fn intersect_b(
         &self,
         ray: &Ray,
-        hitt0: &mut Option<Float>,
-        hitt1: &mut Option<Float>,
+        hitt0: &mut Float,
+        hitt1: &mut Float,
     ) -> bool {
         let mut t0: Float = 0.0;
         let mut t1: Float = ray.t_max;
@@ -1739,12 +1739,8 @@ impl Bounds3<Float> {
                 return false;
             }
         }
-        if hitt0.is_some() {
-            *hitt0 = Some(t0);
-        }
-        if hitt1.is_some() {
-            *hitt1 = Some(t1);
-        }
+        *hitt0 = t0;
+        *hitt1 = t1;
         true
     }
     pub fn intersect_p(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: [u8; 3]) -> bool {
