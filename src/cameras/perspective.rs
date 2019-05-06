@@ -191,22 +191,23 @@ impl Camera for PerspectiveCamera {
             x: p_camera.x,
             y: p_camera.y,
             z: p_camera.z,
-        }.normalize();
+        }
+        .normalize();
         let mut diff: RayDifferential = RayDifferential {
             rx_origin: ray.o,
             ry_origin: ray.o,
-            rx_direction: Vector3f {
+            rx_direction: (Vector3f {
                 x: p_camera.x,
                 y: p_camera.y,
                 z: p_camera.z,
-            }.normalize()
-                + self.dx_camera,
-            ry_direction: Vector3f {
+            } + self.dx_camera)
+                .normalize(),
+            ry_direction: (Vector3f {
                 x: p_camera.x,
                 y: p_camera.y,
                 z: p_camera.z,
-            }.normalize()
-                + self.dy_camera,
+            } + self.dy_camera)
+                .normalize(),
         };
         // *ray = RayDifferential(Point3f(0, 0, 0), dir);
         let mut in_ray: Ray = Ray {
