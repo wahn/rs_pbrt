@@ -458,10 +458,9 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
                     }
 
                     // initialize _a_, _bx_, and _by_ matrices for offset computation
-                    let a: [[Float; 2]; 2] = [
-                        [self.dpdu[dim[0]], self.dpdv[dim[0]]],
-                        [self.dpdu[dim[1]], self.dpdv[dim[1]]],
-                    ];
+                    let a0: [Float; 2] = [self.dpdu[dim[0]], self.dpdv[dim[0]]];
+                    let a1: [Float; 2] = [self.dpdu[dim[1]], self.dpdv[dim[1]]];
+                    let a: [[Float; 2]; 2] = [a0, a1];
                     let bx: [Float; 2] = [px[dim[0]] - self.p[dim[0]], px[dim[1]] - self.p[dim[1]]];
                     let by: [Float; 2] = [py[dim[0]] - self.p[dim[0]], py[dim[1]] - self.p[dim[1]]];
                     if !solve_linear_system_2x2(a, bx, &mut self.dudx, &mut self.dvdx) {
