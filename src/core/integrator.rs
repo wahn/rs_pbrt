@@ -65,6 +65,7 @@ pub fn uniform_sample_all_lights(
                 light.clone(),
                 &u_light,
                 scene,
+                sampler,
                 handle_media,
                 false,
             );
@@ -78,6 +79,7 @@ pub fn uniform_sample_all_lights(
                     light.clone(),
                     &u_light_array[k as usize],
                     scene,
+                    sampler,
                     handle_media,
                     false,
                 );
@@ -90,10 +92,10 @@ pub fn uniform_sample_all_lights(
 
 /// Estimate direct lighting for only one randomly chosen light and
 /// multiply the result by the number of lights to compensate.
-pub fn uniform_sample_one_light<S: Sampler + Send + Sync + ?Sized>(
+pub fn uniform_sample_one_light(
     it: &Interaction,
     scene: &Scene,
-    sampler: &mut Box<S>,
+    sampler: &mut Box<Sampler + Send + Sync>,
     handle_media: bool,
     light_distrib: Option<&Distribution1D>,
 ) -> Spectrum {
@@ -130,6 +132,7 @@ pub fn uniform_sample_one_light<S: Sampler + Send + Sync + ?Sized>(
         light.clone(),
         &u_light,
         scene,
+        sampler,
         handle_media,
         false,
     ) / pdf
@@ -142,6 +145,7 @@ pub fn estimate_direct(
     light: Arc<Light + Send + Sync>,
     u_light: &Point2f,
     scene: &Scene,
+    sampler: &mut Box<Sampler + Send + Sync>,
     // TODO: arena
     handle_media: bool,
     specular: bool,
@@ -197,7 +201,8 @@ pub fn estimate_direct(
         if !f.is_black() {
             // compute effect of visibility for light source sample
             if handle_media {
-                // TODO: li *= tr(scene, sampler);
+                // TODO: we need a sampler here!
+                // li *= visibility.tr(scene, sampler);
                 // TODO: VLOG(2) << "  after Tr, Li: " << Li;
             } else {
                 if !visibility.unoccluded(scene) {
