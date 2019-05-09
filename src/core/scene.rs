@@ -8,9 +8,11 @@ use std::sync::Arc;
 // pbrt
 use accelerators::bvh::BVHAccel;
 use core::geometry::{Bounds3f, Ray, Vector3f};
-use core::interaction::SurfaceInteraction;
+use core::interaction::{Interaction, SurfaceInteraction};
 use core::light::{Light, LightFlags};
+use core::pbrt::{Float, Spectrum};
 use core::primitive::Primitive;
+use core::sampler::Sampler;
 
 // see scene.h
 
@@ -74,5 +76,34 @@ impl Scene {
             }
         );
         self.aggregate.intersect_p(ray)
+    }
+    pub fn intersect_tr(
+        &self,
+        ray: &mut Ray,
+        sampler: &mut Box<Sampler + Send + Sync>,
+    ) -> Option<(SurfaceInteraction, Spectrum)> {
+        let mut tr: Spectrum = Spectrum::new(1.0 as Float);
+        loop {
+            // bool hit_surface = Intersect(ray, isect);
+            if let Some(isect) = self.intersect(ray) {
+                // accumulate beam transmittance for ray segment
+                if let Some(ref medium_arc) = ray.medium {
+                    tr *= medium_arc.tr(&ray, sampler);
+                }
+                // initialize next ray segment or terminate transmittance computation
+                if let Some(primitive) = isect.primitive {
+                    if let Some(material) = primitive.get_material() {
+                        return Some((isect, tr));
+                    }
+                }
+                *ray = isect.spawn_ray(&ray.d);
+            } else {
+                // accumulate beam transmittance for ray segment
+                if let Some(ref medium_arc) = ray.medium {
+                    tr *= medium_arc.tr(&ray, sampler);
+                }
+                return None;
+            }
+        }
     }
 }

@@ -201,9 +201,8 @@ pub fn estimate_direct(
         if !f.is_black() {
             // compute effect of visibility for light source sample
             if handle_media {
-                // TODO: we need a sampler here!
                 li *= visibility.tr(scene, sampler);
-                // TODO: VLOG(2) << "  after Tr, Li: " << Li;
+            // TODO: VLOG(2) << "  after Tr, Li: " << Li;
             } else {
                 if !visibility.unoccluded(scene) {
                     // TODO: println!("  shadow ray blocked");
@@ -268,12 +267,24 @@ pub fn estimate_direct(
             }
             // find intersection and compute transmittance
             let mut ray: Ray = it.spawn_ray(&wi);
-            let tr: Spectrum = Spectrum::new(1.0 as Float);
+            let mut tr: Spectrum = Spectrum::new(1.0 as Float);
             let mut found_surface_interaction: bool = false;
             // add light contribution from material sampling
             let mut li: Spectrum = Spectrum::default();
             if handle_media {
-                // TODO: scene.IntersectTr(ray, sampler, &lightIsect, &Tr)
+                if let Some((light_isect, tr_spectrum)) = scene.intersect_tr(&mut ray, sampler) {
+                    tr = tr_spectrum; // copy return value
+                    found_surface_interaction = true;
+                    if let Some(primitive) = light_isect.primitive {
+                        if let Some(area_light) = primitive.get_area_light() {
+                            let pa = &*area_light as *const _ as *const usize;
+                            let pl = &*light as *const _ as *const usize;
+                            if pa == pl {
+                                li = light_isect.le(&-wi);
+                            }
+                        }
+                    }
+                }
             } else {
                 if let Some(light_isect) = scene.intersect(&mut ray) {
                     found_surface_interaction = true;
