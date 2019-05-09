@@ -153,7 +153,7 @@ impl GridDensityMedium {
 }
 
 impl Medium for GridDensityMedium {
-    fn tr(&self, r_world: &Ray, sampler: &mut Sampler) -> Spectrum {
+    fn tr(&self, r_world: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
         // TODO: ProfilePhase _(Prof::MediumTr);
         // TODO: ++nTrCalls;
         let mut in_ray: Ray = Ray::default();
@@ -208,7 +208,7 @@ impl Medium for GridDensityMedium {
     fn sample(
         &self,
         r_world: &Ray,
-        sampler: &mut Sampler,
+        sampler: &mut Box<Sampler + Send + Sync>,
     ) -> (Spectrum, Option<MediumInteraction>) {
         // TODO: ProfilePhase _(Prof::MediumSample);
         let mut in_ray: Ray = Ray::default();

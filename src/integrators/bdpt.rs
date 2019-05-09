@@ -860,7 +860,7 @@ pub fn correct_shading_normal(
 
 pub fn generate_camera_subpath<'a>(
     scene: &'a Scene,
-    sampler: &mut Sampler,
+    sampler: &mut Box<Sampler + Send + Sync>,
     max_depth: u32,
     camera: &'a Arc<Camera + Send + Sync>,
     p_film: &Point2f,
@@ -905,7 +905,7 @@ pub fn generate_camera_subpath<'a>(
 
 pub fn generate_light_subpath<'a>(
     scene: &'a Scene,
-    sampler: &mut Sampler,
+    sampler: &mut Box<Sampler + Send + Sync>,
     max_depth: u32,
     time: Float,
     light_distr: &Arc<Distribution1D>,
@@ -982,7 +982,7 @@ pub fn generate_light_subpath<'a>(
 pub fn random_walk<'a>(
     scene: &'a Scene,
     ray: &Ray,
-    sampler: &mut Sampler,
+    sampler: &mut Box<Sampler + Send + Sync>,
     beta: &mut Spectrum,
     pdf: Float,
     max_depth: u32,
@@ -1158,7 +1158,12 @@ pub fn random_walk<'a>(
     bounces
 }
 
-pub fn g<'a>(scene: &'a Scene, sampler: &mut Sampler, v0: &Vertex, v1: &Vertex) -> Spectrum {
+pub fn g<'a>(
+    scene: &'a Scene,
+    sampler: &mut Box<Sampler + Send + Sync>,
+    v0: &Vertex,
+    v1: &Vertex,
+) -> Spectrum {
     // Vector3f d = v0.p() - v1.p();
     let mut d: Vector3f = v0.p() - v1.p();
     let mut g: Float = 1.0 / d.length_squared();
@@ -1899,7 +1904,7 @@ pub fn connect_bdpt<'a>(
     t: usize,
     light_distr: &Arc<Distribution1D>,
     camera: &'a Arc<Camera + Send + Sync>,
-    sampler: &mut Sampler,
+    sampler: &mut Box<Sampler + Send + Sync>,
     p_raster: &mut Point2f,
     mis_weight_opt: Option<&mut Float>,
 ) -> Spectrum {
@@ -2299,7 +2304,7 @@ pub fn render_bdpt(
                                             let (n_camera_new, p_new, time_new) =
                                                 generate_camera_subpath(
                                                     scene,
-                                                    &mut *tile_sampler,
+                                                    &mut tile_sampler.box_clone(),
                                                     integrator.max_depth + 2,
                                                     *camera,
                                                     &p_film,
@@ -2317,7 +2322,7 @@ pub fn render_bdpt(
                                         {
                                             n_light = generate_light_subpath(
                                                 scene,
-                                                &mut *tile_sampler,
+                                                &mut tile_sampler.box_clone(),
                                                 integrator.max_depth + 1,
                                                 time,
                                                 &light_distr,
@@ -2354,7 +2359,7 @@ pub fn render_bdpt(
                                                     t,
                                                     &light_distr,
                                                     camera,
-                                                    &mut *tile_sampler,
+                                                    &mut tile_sampler.box_clone(),
                                                     &mut p_film_new,
                                                     mis_weight.as_mut(),
                                                 );

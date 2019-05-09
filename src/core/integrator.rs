@@ -202,7 +202,7 @@ pub fn estimate_direct(
             // compute effect of visibility for light source sample
             if handle_media {
                 // TODO: we need a sampler here!
-                // li *= visibility.tr(scene, sampler);
+                li *= visibility.tr(scene, sampler);
                 // TODO: VLOG(2) << "  after Tr, Li: " << Li;
             } else {
                 if !visibility.unoccluded(scene) {

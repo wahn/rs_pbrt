@@ -89,7 +89,7 @@ impl SamplerIntegrator for VolPathIntegrator {
             if let Some(mut isect) = scene.intersect(&mut ray) {
                 // sample the participating medium, if present
                 if let Some(ref medium) = ray.medium {
-                    let (spectrum, option) = medium.sample(&ray, sampler.as_mut());
+                    let (spectrum, option) = medium.sample(&ray, sampler);
                     beta *= spectrum;
                     if let Some(mi) = option {
                         mi_opt = Some(mi);

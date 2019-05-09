@@ -15,7 +15,7 @@ use core::pbrt::erf_inv;
 use core::pbrt::SQRT_2;
 use core::pbrt::{Float, Spectrum};
 use core::rng::Rng;
-use core::sampler::Sampler;
+use core::sampler::{Sampler, SamplerClone};
 use core::sampling::Distribution1D;
 use core::scene::Scene;
 use integrators::bdpt::Vertex;
@@ -337,7 +337,7 @@ impl MLTIntegrator {
         {
             let (n_camera_new, _p_new, time_new) = generate_camera_subpath(
                 scene,
-                mlt_sampler as &mut Sampler,
+                &mut mlt_sampler.box_clone(),
                 t,
                 &self.camera,
                 p_raster,
@@ -356,7 +356,7 @@ impl MLTIntegrator {
         {
             n_light = generate_light_subpath(
                 scene,
-                mlt_sampler as &mut Sampler,
+                &mut mlt_sampler.box_clone(),
                 s,
                 time,
                 &light_distr,
@@ -378,7 +378,7 @@ impl MLTIntegrator {
             &light_distr,
             // light_to_index,
             &self.camera,
-            mlt_sampler as &mut Sampler,
+            &mut mlt_sampler.box_clone(),
             p_raster,
             None,
         ) * (n_strategies as Float)
@@ -447,7 +447,8 @@ pub fn render_mlt(
                             band_rx.recv().unwrap();
                         }
                     });
-                }).unwrap();
+                })
+                .unwrap();
             }
         }
         println!("Rendering ...");

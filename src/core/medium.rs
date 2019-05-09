@@ -269,8 +269,12 @@ pub trait PhaseFunction {
 }
 
 pub trait Medium {
-    fn tr(&self, ray: &Ray, sampler: &mut Sampler) -> Spectrum;
-    fn sample(&self, ray: &Ray, sampler: &mut Sampler) -> (Spectrum, Option<MediumInteraction>);
+    fn tr(&self, ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum;
+    fn sample(
+        &self,
+        ray: &Ray,
+        sampler: &mut Box<Sampler + Send + Sync>,
+    ) -> (Spectrum, Option<MediumInteraction>);
 }
 
 pub struct HenyeyGreenstein {
