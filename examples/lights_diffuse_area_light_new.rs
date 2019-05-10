@@ -34,7 +34,6 @@ fn main() {
         light_to_world,
         inverse,
         false,
-        false,
         height,
         radius,
         inner_radius,

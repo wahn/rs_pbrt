@@ -63,7 +63,7 @@ impl Cylinder {
             object_to_world: object_to_world,
             world_to_object: world_to_object,
             reverse_orientation: reverse_orientation,
-            transform_swaps_handedness: false,
+            transform_swaps_handedness: object_to_world.swaps_handedness(),
             // Cylinder
             radius: radius,
             z_min: z_min.min(z_max),

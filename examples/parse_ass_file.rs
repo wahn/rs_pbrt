@@ -1037,7 +1037,6 @@ fn main() {
                                                     obj_to_world,
                                                     world_to_obj,
                                                     false,
-                                                    false,
                                                     0.0 as Float, // height
                                                     radius,
                                                     hole,
@@ -1071,7 +1070,6 @@ fn main() {
                                                 let sphere = Arc::new(Sphere::new(
                                                     obj_to_world,
                                                     world_to_obj,
-                                                    false,
                                                     false,
                                                     radius,
                                                     -radius,        // z_min

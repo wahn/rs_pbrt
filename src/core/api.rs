@@ -1048,7 +1048,6 @@ fn get_shapes_and_materials(
             obj_to_world,
             world_to_obj,
             false,
-            false,
             radius,
             z_min,
             z_max,
@@ -1082,7 +1081,6 @@ fn get_shapes_and_materials(
         let disk = Arc::new(Disk::new(
             obj_to_world,
             world_to_obj,
-            false,
             false,
             height,
             radius,

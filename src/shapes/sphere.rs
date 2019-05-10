@@ -61,7 +61,6 @@ impl Sphere {
         object_to_world: Transform,
         world_to_object: Transform,
         reverse_orientation: bool,
-        transform_swaps_handedness: bool,
         radius: Float,
         z_min: Float,
         z_max: Float,
@@ -72,7 +71,7 @@ impl Sphere {
             object_to_world: object_to_world,
             world_to_object: world_to_object,
             reverse_orientation: reverse_orientation,
-            transform_swaps_handedness: transform_swaps_handedness,
+            transform_swaps_handedness: object_to_world.swaps_handedness(),
             // Sphere
             radius: radius,
             z_min: clamp_t(z_min.min(z_max), -radius, radius),

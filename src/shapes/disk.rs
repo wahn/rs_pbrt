@@ -52,7 +52,6 @@ impl Disk {
         object_to_world: Transform,
         world_to_object: Transform,
         reverse_orientation: bool,
-        transform_swaps_handedness: bool,
         height: Float,
         radius: Float,
         inner_radius: Float,
@@ -63,7 +62,7 @@ impl Disk {
             object_to_world: object_to_world,
             world_to_object: world_to_object,
             reverse_orientation: reverse_orientation,
-            transform_swaps_handedness: transform_swaps_handedness,
+            transform_swaps_handedness: false,
             // Disk
             height: height,
             radius: radius,

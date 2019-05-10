@@ -101,7 +101,6 @@ impl SceneDescriptionBuilder {
             object_to_world,
             world_to_object,
             false,
-            false,
             height,
             radius,
             inner_radius,
