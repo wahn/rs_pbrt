@@ -1188,7 +1188,6 @@ fn get_shapes_and_materials(
             obj_to_world,
             world_to_obj,
             api_state.graphics_state.reverse_orientation,
-            false,        // transform_swaps_handedness
             vi.len() / 3, // n_triangles
             vertex_indices,
             n_vertices,
@@ -1433,7 +1432,6 @@ fn get_shapes_and_materials(
             obj_to_world,
             world_to_obj,
             api_state.graphics_state.reverse_orientation,
-            false,  // transform_swaps_handedness
             n_tris, // n_triangles
             vertices,
             n_vertices,

@@ -329,6 +329,13 @@ impl Transform {
             && self.m.m[3][2] == 0.0 as Float
             && self.m.m[3][3] == 1.0 as Float
     }
+    pub fn swaps_handedness(&self) -> bool {
+        let det: Float = self.m.m[0][0]
+            * (self.m.m[1][1] * self.m.m[2][2] - self.m.m[1][2] * self.m.m[2][1])
+            - self.m.m[0][1] * (self.m.m[1][0] * self.m.m[2][2] - self.m.m[1][2] * self.m.m[2][0])
+            + self.m.m[0][2] * (self.m.m[1][0] * self.m.m[2][1] - self.m.m[1][1] * self.m.m[2][0]);
+        det < 0.0 as Float
+    }
     pub fn translate(delta: &Vector3f) -> Transform {
         Transform {
             m: Matrix4x4::new(
@@ -2117,10 +2124,12 @@ impl AnimatedTransform {
         }
 
         // compute interpolated matrix as product of interpolated components
-        *t = Transform::translate(&trans) * rotate.to_transform() * Transform {
-            m: scale,
-            m_inv: Matrix4x4::inverse(&scale),
-        };
+        *t = Transform::translate(&trans)
+            * rotate.to_transform()
+            * Transform {
+                m: scale,
+                m_inv: Matrix4x4::inverse(&scale),
+            };
     }
     pub fn transform_ray(&self, r: &Ray) -> Ray {
         if !self.actually_animated || r.time <= self.start_time {

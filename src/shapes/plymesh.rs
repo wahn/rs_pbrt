@@ -196,7 +196,6 @@ pub fn create_ply_mesh(
         *o2w,
         *w2o,
         reverse_orientation,
-        false,                       // transform_swaps_handedness
         tm_vertex_indices.len() / 3, // n_triangles
         tm_vertex_indices,
         n_vertices,

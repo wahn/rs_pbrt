@@ -37,12 +37,13 @@ pub struct Sphere {
 
 impl Default for Sphere {
     fn default() -> Self {
+        let object_to_world: Transform = Transform::default();
         Sphere {
             // Shape
-            object_to_world: Transform::default(),
+            object_to_world: object_to_world,
             world_to_object: Transform::default(),
             reverse_orientation: false,
-            transform_swaps_handedness: false,
+            transform_swaps_handedness: object_to_world.swaps_handedness(),
             // Sphere
             radius: 1.0,
             z_min: -1.0,

@@ -30,12 +30,13 @@ pub struct Disk {
 
 impl Default for Disk {
     fn default() -> Self {
+        let object_to_world: Transform = Transform::default();
         Disk {
             // Shape
-            object_to_world: Transform::default(),
+            object_to_world: object_to_world,
             world_to_object: Transform::default(),
             reverse_orientation: false,
-            transform_swaps_handedness: false,
+            transform_swaps_handedness: object_to_world.swaps_handedness(),
             // Disk
             height: 0.0,
             radius: 1.0,

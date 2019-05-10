@@ -49,7 +49,6 @@ fn main() {
         translate,
         inverse,
         false,
-        false,
         n_triangles,
         vertex_indices,
         n_vertices,

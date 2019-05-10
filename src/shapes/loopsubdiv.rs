@@ -646,7 +646,6 @@ pub fn loop_subdivide(
         *object_to_world,
         *world_to_object,
         reverse_orientation,
-        false, // transform_swaps_handedness
         ntris,
         vertex_indices,
         tot_verts,

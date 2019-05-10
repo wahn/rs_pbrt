@@ -54,7 +54,6 @@ fn main() {
         object_to_world,
         world_to_object,
         false,
-        false,
         n_triangles,
         vertex_indices,
         n_vertices,

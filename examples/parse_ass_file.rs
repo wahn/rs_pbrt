@@ -990,7 +990,6 @@ fn main() {
                                                     obj_to_world,
                                                     world_to_obj,
                                                     false, // reverse_orientation,
-                                                    false, // transform_swaps_handedness
                                                     n_triangles,
                                                     vertex_indices,
                                                     p_ws_len,

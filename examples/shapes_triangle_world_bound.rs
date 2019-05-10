@@ -50,10 +50,10 @@ fn main() {
     }
     let s: Vec<Vector3f> = Vec::new();
     let n: Vec<Normal3f> = Vec::new();
-    let triangle_mesh = Arc::new(TriangleMesh::new(
+    let triangle_mesh = Arc::new(
+        TriangleMesh::new(
         object_to_world,
         world_to_object,
-        false,
         false,
         n_triangles,
         vertex_indices,

@@ -92,7 +92,7 @@ impl Scene {
                 }
                 // initialize next ray segment or terminate transmittance computation
                 if let Some(primitive) = isect.primitive {
-                    if let Some(material) = primitive.get_material() {
+                    if let Some(_material) = primitive.get_material() {
                         return Some((isect, tr));
                     }
                 }

@@ -47,7 +47,6 @@ impl TriangleMesh {
         object_to_world: Transform,
         world_to_object: Transform,
         reverse_orientation: bool,
-        transform_swaps_handedness: bool,
         n_triangles: usize,
         vertex_indices: Vec<usize>,
         n_vertices: usize,
@@ -61,7 +60,7 @@ impl TriangleMesh {
             object_to_world: object_to_world,
             world_to_object: world_to_object,
             reverse_orientation: reverse_orientation,
-            transform_swaps_handedness: transform_swaps_handedness,
+            transform_swaps_handedness: object_to_world.swaps_handedness(),
             // TriangleMesh
             n_triangles: n_triangles,
             vertex_indices: vertex_indices,
