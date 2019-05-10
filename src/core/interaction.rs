@@ -298,20 +298,26 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
         sh: Option<&'s Shape>,
     ) -> Self {
         let nv: Vector3f = vec3_cross_vec3(dpdu, dpdv).normalize();
-        // TODO: Adjust normal based on orientation and handedness
-        let n: Normal3f = Normal3f {
+        let mut n: Normal3f = Normal3f {
             x: nv.x,
             y: nv.y,
             z: nv.z,
         };
         // initialize shading geometry from true geometry
-        let shading: Shading = Shading {
+        let mut shading: Shading = Shading {
             n: n,
             dpdu: Vector3f::from(*dpdu),
             dpdv: Vector3f::from(*dpdv),
             dndu: *dndu,
             dndv: *dndv,
         };
+        if let Some(shape) = sh {
+            // adjust normal based on orientation and handedness
+            if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
+                n *= -1.0 as Float;
+                shading.n *=  -1.0 as Float;
+            }
+        }
         SurfaceInteraction {
             p: *p,
             time: time,

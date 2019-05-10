@@ -250,13 +250,23 @@ impl Shape for Sphere {
             x: p_hit.x,
             y: p_hit.y,
             z: p_hit.z,
-        }.abs()
+        }
+        .abs()
             * gamma(5_i32);
         // initialize _SurfaceInteraction_ from parametric information
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
+            &p_hit,
+            &p_error,
+            &uv_hit,
+            &wo,
+            &dpdu,
+            &dpdv,
+            &dndu,
+            &dndv,
+            ray.time,
+            Some(self),
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(_shape) = si.shape {
@@ -368,7 +378,8 @@ impl Shape for Sphere {
                 x: p_obj.x,
                 y: p_obj.y,
                 z: p_obj.z,
-            }).normalize();
+            })
+            .normalize();
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }

@@ -225,13 +225,23 @@ impl Shape for Cylinder {
             x: p_hit.x,
             y: p_hit.y,
             z: 0.0,
-        }.abs()
+        }
+        .abs()
             * gamma(3_i32);
         // initialize _SurfaceInteraction_ from parametric information
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
+            &p_hit,
+            &p_error,
+            &uv_hit,
+            &wo,
+            &dpdu,
+            &dpdv,
+            &dndu,
+            &dndv,
+            ray.time,
+            Some(self),
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(_shape) = si.shape {
@@ -342,7 +352,8 @@ impl Shape for Cylinder {
                 x: p_obj.x,
                 y: p_obj.y,
                 z: 0.0,
-            }).normalize();
+            })
+            .normalize();
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }
@@ -354,7 +365,8 @@ impl Shape for Cylinder {
             x: p_obj.x,
             y: p_obj.y,
             z: 0.0,
-        }.abs()
+        }
+        .abs()
             * gamma(3_i32);
         it.p = self.object_to_world.transform_point_with_abs_error(
             &p_obj,

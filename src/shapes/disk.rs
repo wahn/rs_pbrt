@@ -151,17 +151,20 @@ impl Shape for Disk {
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
+            &p_hit,
+            &p_error,
+            &uv_hit,
+            &wo,
+            &dpdu,
+            &dpdv,
+            &dndu,
+            &dndv,
+            ray.time,
+            Some(self),
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
-        if let Some(shape) = si.shape {
+        if let Some(_shape) = si.shape {
             isect.shape = si.shape;
-            // adjust normal based on orientation and handedness
-            if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
-                // C++ code does this in SurfaceInteraction::SurfaceInteraction(...)
-                isect.n *= -1.0 as Float;
-                isect.shading.n *=  -1.0 as Float;
-            }
         }
         if let Some(_primitive) = si.primitive {
             isect.primitive = si.primitive;
@@ -228,7 +231,8 @@ impl Shape for Disk {
                 x: 0.0 as Float,
                 y: 0.0 as Float,
                 z: 1.0 as Float,
-            }).normalize();
+            })
+            .normalize();
         if self.reverse_orientation {
             it.n *= -1.0 as Float;
         }

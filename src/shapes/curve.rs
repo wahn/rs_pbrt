@@ -329,7 +329,7 @@ impl Curve {
                 &Normal3f::default(),
                 &Normal3f::default(),
                 ray.time,
-                None,
+                Some(self),
             );
             let mut isect: SurfaceInteraction =
                 self.object_to_world.transform_surface_interaction(&si);
