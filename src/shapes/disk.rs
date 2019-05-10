@@ -154,8 +154,14 @@ impl Shape for Disk {
             &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
-        if let Some(_shape) = si.shape {
+        if let Some(shape) = si.shape {
             isect.shape = si.shape;
+            // adjust normal based on orientation and handedness
+            if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
+                // C++ code does this in SurfaceInteraction::SurfaceInteraction(...)
+                isect.n *= -1.0 as Float;
+                isect.shading.n *=  -1.0 as Float;
+            }
         }
         if let Some(_primitive) = si.primitive {
             isect.primitive = si.primitive;
