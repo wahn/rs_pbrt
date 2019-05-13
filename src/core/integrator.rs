@@ -196,6 +196,7 @@ pub fn estimate_direct(
             if let Some(ref phase) = it.get_phase() {
                 let p: Float = phase.p(&it.get_wo(), &wi);
                 f = Spectrum::new(p);
+                scattering_pdf = p;
             }
         }
         if !f.is_black() {
