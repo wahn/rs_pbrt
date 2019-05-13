@@ -81,7 +81,7 @@ impl Scene {
         &self,
         ray: &mut Ray,
         sampler: &mut Box<Sampler + Send + Sync>,
-    ) -> Option<(SurfaceInteraction, Spectrum)> {
+    ) -> (Option<SurfaceInteraction>, Spectrum) {
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {
             // bool hit_surface = Intersect(ray, isect);
@@ -93,7 +93,7 @@ impl Scene {
                 // initialize next ray segment or terminate transmittance computation
                 if let Some(primitive) = isect.primitive {
                     if let Some(_material) = primitive.get_material() {
-                        return Some((isect, tr));
+                        return (Some(isect), tr);
                     }
                 }
                 *ray = isect.spawn_ray(&ray.d);
@@ -102,7 +102,7 @@ impl Scene {
                 if let Some(ref medium_arc) = ray.medium {
                     tr *= medium_arc.tr(&ray, sampler);
                 }
-                return None;
+                return (None, tr);
             }
         }
     }
