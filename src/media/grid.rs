@@ -160,7 +160,6 @@ impl Medium for GridDensityMedium {
         in_ray.o = r_world.o;
         in_ray.d = r_world.d.normalize();
         in_ray.t_max = r_world.t_max * r_world.d.length();
-        println!("DEBUG: {:?}", self.world_to_medium);
         let ray: Ray = self.world_to_medium.transform_ray(&in_ray);
         // compute $[\tmin, \tmax]$ interval of _ray_'s overlap with medium bounds
         let b: Bounds3f = Bounds3f::new(
@@ -249,16 +248,18 @@ impl Medium for GridDensityMedium {
                     &r_world.position(t),
                     &(-r_world.d),
                     r_world.time,
-                    Some(Arc::new(GridDensityMedium::new(
-                        &self.sigma_a,
-                        &self.sigma_s,
-                        self.g,
-                        self.nx,
-                        self.ny,
-                        self.nz,
-                        &self.world_to_medium,
-                        self.density.clone(),
-                    ))),
+                    Some(Arc::new(GridDensityMedium {
+                        sigma_a: self.sigma_a,
+                        sigma_s: self.sigma_s,
+                        g: self.g,
+                        nx: self.nx,
+                        ny: self.ny,
+                        nz: self.nz,
+                        world_to_medium: self.world_to_medium,
+                        density: self.density.clone(),
+                        sigma_t: self.sigma_t,
+                        inv_max_density: self.inv_max_density,
+                    })),
                     Some(Arc::new(HenyeyGreenstein { g: self.g })),
                 );
                 mi_opt = Some(mi);
