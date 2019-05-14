@@ -504,7 +504,7 @@ dependencies = [
 
 [[package]]
 name = "pbrt"
-version = "0.5.2"
+version = "0.5.3"
 dependencies = [
  "atom 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "atomic 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
