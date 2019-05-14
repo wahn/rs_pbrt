@@ -596,7 +596,7 @@ fn make_medium(api_state: &mut ApiState) {
     if medium_type == "homogeneous" {
         some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
     } else if medium_type == "heterogeneous" {
-        let data: Vec<Float> = api_state.param_set.find_float("density");
+        let data: Arc<Vec<Float>> = Arc::new(api_state.param_set.find_float("density"));
         if data.is_empty() {
             println!("ERROR: No \"density\" values provided for heterogeneous medium?");
             some_medium = None;

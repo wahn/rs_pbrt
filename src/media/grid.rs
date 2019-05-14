@@ -20,7 +20,7 @@ pub struct GridDensityMedium {
     pub ny: i32,
     pub nz: i32,
     pub world_to_medium: Transform,
-    pub density: Vec<Float>,
+    pub density: Arc<Vec<Float>>,
     pub sigma_t: Float,
     pub inv_max_density: Float,
 }
@@ -34,7 +34,7 @@ impl GridDensityMedium {
         ny: i32,
         nz: i32,
         medium_to_world: &Transform,
-        d: Vec<Float>,
+        d: Arc<Vec<Float>>,
     ) -> Self {
         let mut max_density: Float = 0.0;
         for i in 0..(nx * ny * nz) as usize {
@@ -48,7 +48,7 @@ impl GridDensityMedium {
             ny: ny,
             nz: nz,
             world_to_medium: Transform::inverse(medium_to_world),
-            density: d,
+            density: d.clone(),
             sigma_t: (*sigma_s + *sigma_a)[0],
             inv_max_density: 1.0 as Float / max_density,
         }

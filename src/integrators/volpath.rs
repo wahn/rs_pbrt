@@ -100,13 +100,13 @@ impl SamplerIntegrator for VolPathIntegrator {
                 }
                 // handle an interaction with a medium or a surface
                 if let Some(mi) = mi_opt {
+                    // terminate path if ray escaped or _maxDepth_ was reached
+                    if bounces >= self.max_depth {
+                        break;
+                    }
                     let mi_p = mi.p;
                     // if mi.is_valid() {...}
                     if let Some(phase) = mi.clone().phase {
-                        // terminate path if ray escaped or _maxDepth_ was reached
-                        if bounces >= self.max_depth {
-                            break;
-                        }
                         // TODO: ++volumeInteractions;
                         // handle scattering at point in medium for volumetric path tracer
                         if let Some(ref light_distribution) = self.light_distribution {
