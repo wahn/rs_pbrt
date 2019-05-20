@@ -20,6 +20,7 @@
 
 pub mod checkerboard;
 pub mod constant;
+pub mod fbm;
 pub mod imagemap;
 pub mod scale;
 pub mod windy;

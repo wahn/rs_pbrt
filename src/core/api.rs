@@ -86,6 +86,7 @@ use shapes::sphere::Sphere;
 use shapes::triangle::{Triangle, TriangleMesh};
 use textures::checkerboard::Checkerboard2DTexture;
 use textures::constant::ConstantTexture;
+use textures::fbm::FBmTexture;
 use textures::imagemap::ImageTexture;
 use textures::imagemap::{convert_to_float, convert_to_spectrum};
 use textures::scale::ScaleTexture;
@@ -782,7 +783,17 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == "dots" {
             println!("TODO: CreateDotsFloatTexture");
         } else if api_state.param_set.tex_name == "fbm" {
-            println!("TODO: CreateFBmFloatTexture");
+            let tex_2_world: Transform = Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            };
+            let map: Box<TextureMapping3D + Send + Sync> =
+                Box::new(IdentityMapping3D::new(tex_2_world));
+            let octaves: i32 = tp.find_int("octaves", 8_i32);
+            let roughness: Float = tp.find_float("roughness", 0.5 as Float);
+            let ft = Arc::new(FBmTexture::new(map, octaves, roughness));
+            Arc::make_mut(&mut api_state.graphics_state.float_textures)
+                .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "wrinkled" {
             println!("TODO: CreateWrinkledFloatTexture");
         } else if api_state.param_set.tex_name == "marble" {
@@ -794,9 +805,9 @@ fn make_texture(api_state: &mut ApiState) {
             };
             let map: Box<TextureMapping3D + Send + Sync> =
                 Box::new(IdentityMapping3D::new(tex_2_world));
-            let wt = Arc::new(WindyTexture::new(map));
+            let ft = Arc::new(WindyTexture::new(map));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
-                .insert(api_state.param_set.name.clone(), wt);
+                .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "ptex" {
             println!("TODO: CreatePtexFloatTexture");
         } else {
