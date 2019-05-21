@@ -38,7 +38,7 @@ pub trait Primitive {
             );
         }
         assert!(
-            nrm_dot_nrm(&isect.n, &isect.shading.n) > 0.0,
+            nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0,
             "n: {:?} dot shading.n: {:?}",
             isect.n,
             isect.shading.n
