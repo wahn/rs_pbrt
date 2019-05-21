@@ -424,7 +424,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             let tx: Float =
                 -(vec3_dot_vec3(&Vector3f::from(self.n), &Vector3f::from(diff.rx_origin)) - d)
                     / vec3_dot_vec3(&Vector3f::from(self.n), &diff.rx_direction);
-            if tx.is_nan() {
+            if tx.is_infinite() || tx.is_nan() {
                 self.dudx = 0.0 as Float;
                 self.dvdx = 0.0 as Float;
                 self.dudy = 0.0 as Float;
@@ -436,7 +436,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
                 let ty: Float =
                     -(vec3_dot_vec3(&Vector3f::from(self.n), &Vector3f::from(diff.ry_origin)) - d)
                         / vec3_dot_vec3(&Vector3f::from(self.n), &diff.ry_direction);
-                if ty.is_nan() {
+                if ty.is_infinite() || ty.is_nan() {
                     self.dudx = 0.0 as Float;
                     self.dvdx = 0.0 as Float;
                     self.dudy = 0.0 as Float;
