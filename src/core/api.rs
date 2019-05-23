@@ -2666,11 +2666,11 @@ pub fn pbrt_attribute_begin(api_state: &mut ApiState) {
         float_textures: api_state.graphics_state.float_textures.clone(),
         spectrum_textures: api_state.graphics_state.spectrum_textures.clone(),
         material_params: material_param_set,
-        material: String::from(api_state.graphics_state.material.as_ref()),
+        material: api_state.graphics_state.material.clone(),
         named_materials: api_state.graphics_state.named_materials.clone(),
-        current_material: String::from(api_state.graphics_state.current_material.as_ref()),
+        current_material: api_state.graphics_state.current_material.clone(),
         area_light_params: area_light_param_set,
-        area_light: String::from(api_state.graphics_state.area_light.as_ref()),
+        area_light: api_state.graphics_state.area_light.clone(),
         reverse_orientation: api_state.graphics_state.reverse_orientation,
     });
     api_state.pushed_transforms.push(TransformSet {
