@@ -132,6 +132,10 @@ impl BVHAccel {
             nodes: Vec::new(),
         });
         let num_prims = bvh.primitives.len();
+        if num_prims == 0_usize {
+            let unwrapped = Arc::try_unwrap(bvh);
+            return unwrapped.ok().unwrap();
+        }
         let mut primitive_info = vec![BVHPrimitiveInfo::default(); num_prims];
         for i in 0..num_prims {
             let world_bound = bvh.primitives[i].world_bound();

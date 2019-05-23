@@ -137,9 +137,7 @@ pub fn create_ply_mesh(
                         match name2.as_ref() {
                             "vertex_indices" => {
                                 if let ply::Property::ListInt(li) = list2 {
-                                    let mut vertex_indices: Vec<
-                                        usize,
-                                    > = Vec::new();
+                                    let mut vertex_indices: Vec<usize> = Vec::new();
                                     for i in li.into_iter() {
                                         vertex_indices.push(i as usize);
                                     }
@@ -149,7 +147,31 @@ pub fn create_ply_mesh(
                                             // handle quads (split it into 2 triangles)
                                             let v1 = vertex_indices[0];
                                             let v3 = vertex_indices[2];
-                                            let v4 = vertex_indices[3];
+                                            let v4 = vertex_indices.pop().unwrap();
+                                            vertex_indices.push(v1);
+                                            vertex_indices.push(v3);
+                                            vertex_indices.push(v4);
+                                        } else {
+                                            panic!("plymesh: Ignoring face with {} vertices (only triangles and quads are supported!)",
+                                                   vertex_indices.len());
+                                        }
+                                    }
+                                    // now we can add the indices to the triangle mesh vertex indices
+                                    for vi in vertex_indices {
+                                        tm_vertex_indices.push(vi);
+                                    }
+                                } else if let ply::Property::ListUInt(li) = list2 {
+                                    let mut vertex_indices: Vec<usize> = Vec::new();
+                                    for i in li.into_iter() {
+                                        vertex_indices.push(i as usize);
+                                    }
+                                    // println!("vertex_indices = {:?}", vertex_indices);
+                                    if vertex_indices.len() != 3 {
+                                        if vertex_indices.len() == 4 {
+                                            // handle quads (split it into 2 triangles)
+                                            let v1 = vertex_indices[0];
+                                            let v3 = vertex_indices[2];
+                                            let v4 = vertex_indices.pop().unwrap();
                                             vertex_indices.push(v1);
                                             vertex_indices.push(v3);
                                             vertex_indices.push(v4);
