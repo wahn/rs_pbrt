@@ -169,6 +169,7 @@ fn main() -> std::io::Result<()> {
     let mut names: Vec<String> = Vec::new();
     let mut names_len: usize = 0;
     let mut types: Vec<String> = Vec::new();
+    let mut dna_2_type_id: Vec<u16> = Vec::new();
     let mut types_len: usize = 0;
     let mut tlen: Vec<u16> = Vec::new();
     {
@@ -207,11 +208,6 @@ fn main() -> std::io::Result<()> {
                 let mut buffer = [0; 4];
                 f.read(&mut buffer)?;
                 counter += 4;
-                let mut sdna_nr: u32 = 0;
-                sdna_nr += (buffer[0] as u32) << 0;
-                sdna_nr += (buffer[1] as u32) << 8;
-                sdna_nr += (buffer[2] as u32) << 16;
-                sdna_nr += (buffer[3] as u32) << 24;
                 // for now ignore the nr entry
                 let mut buffer = [0; 4];
                 f.read(&mut buffer)?;
@@ -349,7 +345,7 @@ fn main() -> std::io::Result<()> {
                                     nr_structs += (buffer[1] as u32) << 8;
                                     nr_structs += (buffer[2] as u32) << 16;
                                     nr_structs += (buffer[3] as u32) << 24;
-                                    for s in 0..nr_structs as usize {
+                                    for _s in 0..nr_structs as usize {
                                         // read two short values
                                         let mut buffer = [0; 2];
                                         f.read(&mut buffer)?;
@@ -364,6 +360,7 @@ fn main() -> std::io::Result<()> {
                                         let mut short2: u16 = 0;
                                         short2 += (buffer[0] as u16) << 0;
                                         short2 += (buffer[1] as u16) << 8;
+                                        dna_2_type_id.push(type_idx);
                                         let tuple_counter: usize = short2 as usize;
                                         for _t in 0..tuple_counter {
                                             // read two short values
@@ -371,15 +368,9 @@ fn main() -> std::io::Result<()> {
                                             f.read(&mut buffer)?;
                                             counter += 2;
                                             remaining_bytes -= 2;
-                                            let mut type_idx: u16 = 0;
-                                            type_idx += (buffer[0] as u16) << 0;
-                                            type_idx += (buffer[1] as u16) << 8;
                                             f.read(&mut buffer)?;
                                             counter += 2;
                                             remaining_bytes -= 2;
-                                            let mut name_idx: u16 = 0;
-                                            name_idx += (buffer[0] as u16) << 0;
-                                            name_idx += (buffer[1] as u16) << 8;
                                         }
                                     }
                                 } else {
@@ -435,7 +426,6 @@ fn main() -> std::io::Result<()> {
                 len += (buffer[1] as u32) << 8;
                 len += (buffer[2] as u32) << 16;
                 len += (buffer[3] as u32) << 24;
-                // println!("{} ({})", code, len);
                 // for now ignore the old entry
                 let mut buffer = [0; 8];
                 f.read(&mut buffer)?;
@@ -449,7 +439,6 @@ fn main() -> std::io::Result<()> {
                 sdna_nr += (buffer[1] as u32) << 8;
                 sdna_nr += (buffer[2] as u32) << 16;
                 sdna_nr += (buffer[3] as u32) << 24;
-                // println!("  SDNAnr = {}", sdna_nr);
                 // for now ignore the nr entry
                 let mut buffer = [0; 4];
                 f.read(&mut buffer)?;
@@ -458,10 +447,30 @@ fn main() -> std::io::Result<()> {
                 if code == String::from("ENDB") {
                     break;
                 }
-                // read len bytes
-                let mut buffer = vec![0; len as usize];
-                f.read(&mut buffer)?;
-                counter += len as usize;
+                if code == String::from("DNA1") {
+                    // read len bytes
+                    let mut buffer = vec![0; len as usize];
+                    f.read(&mut buffer)?;
+                    counter += len as usize;
+                } else {
+                    let type_id: usize = dna_2_type_id[sdna_nr as usize] as usize;
+                    if code == String::from("OB") {
+                        println!("{} ({})", code, len);
+                        println!("  SDNAnr = {}", sdna_nr);
+                    }
+                    if code != String::from("DATA")
+                        && code != String::from("REND")
+                        && code != String::from("TEST")
+                    {
+                        if len != tlen[type_id] as u32 {
+                            println!("{} ({} != {})", code, len, tlen[type_id]);
+                        }
+                    }
+                    // read len bytes
+                    let mut buffer = vec![0; len as usize];
+                    f.read(&mut buffer)?;
+                    counter += len as usize;
+                }
             }
             println!("{} bytes read", counter);
         }
