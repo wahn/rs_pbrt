@@ -1,9 +1,15 @@
 extern crate num_cpus;
+extern crate pbrt;
 extern crate structopt;
 
+// std
 use std::fs::File;
 use std::io::Read;
+use std::sync::Arc;
 use structopt::StructOpt;
+// pbrt
+use pbrt::core::light::Light;
+use pbrt::core::primitive::Primitive;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -77,7 +83,10 @@ fn main() -> std::io::Result<()> {
     let args = Cli::from_args();
     let mut f = File::open(&args.path)?;
     let num_threads: u8 = num_cpus::get() as u8;
-    println!("parse_blend_file version {} [Detected {} cores]", VERSION, num_threads);
+    println!(
+        "parse_blend_file version {} [Detected {} cores]",
+        VERSION, num_threads
+    );
     // read exactly 12 bytes
     let mut counter: usize = 0;
     let mut buffer = [0; 12];
@@ -89,6 +98,17 @@ fn main() -> std::io::Result<()> {
         println!("First 12 bytes:");
         println!("{:?}", buffer);
     } else {
+        let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
+        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+        // WORK
+        println!("number of lights = {:?}", lights.len());
+        println!("number of primitives = {:?}", primitives.len());
+        // let accelerator = Arc::new(BVHAccel::new(
+        //     primitives.clone(),
+        //     max_prims_in_node as usize,
+        //     split_method,
+        // ));
+        // let scene: Scene = Scene::new(accelerator.clone(), lights.clone());
         // in the end we want to call render()
         // render(
         //     &scene,
