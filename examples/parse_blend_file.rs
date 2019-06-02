@@ -91,86 +91,149 @@ fn make_id(code: &[u8]) -> String {
 
 fn main() -> std::io::Result<()> {
     let args = Cli::from_args();
-    let mut f = File::open(&args.path)?;
     let num_threads: u8 = num_cpus::get() as u8;
     println!(
         "parse_blend_file version {} [Detected {} cores]",
         VERSION, num_threads
     );
-    // read exactly 12 bytes
-    let mut counter: usize = 0;
-    let mut buffer = [0; 12];
-    f.read(&mut buffer)?;
-    counter += 12;
-    let mut blender_version: u32 = 0;
-    if !decode_blender_header(&buffer, &mut blender_version) {
-        println!("ERROR: Not a .blend file");
-        println!("First 12 bytes:");
-        println!("{:?}", buffer);
-    } else {
-        let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
-        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
-        loop {
-            // code
-            let mut buffer = [0; 4];
-            f.read(&mut buffer)?;
-            counter += 4;
-            let code = make_id(&buffer);
-            // len
-            let mut buffer = [0; 4];
-            f.read(&mut buffer)?;
-            counter += 4;
-            let mut len: u32 = 0;
-            len += (buffer[0] as u32) << 0;
-            len += (buffer[1] as u32) << 8;
-            len += (buffer[2] as u32) << 16;
-            len += (buffer[3] as u32) << 24;
-            println!("{} ({})", code, len);
-            // for now ignore the old entry
-            let mut buffer = [0; 8];
-            f.read(&mut buffer)?;
-            counter += 8;
-            // get SDNAnr
-            let mut buffer = [0; 4];
-            f.read(&mut buffer)?;
-            counter += 4;
-            let mut sdna_nr: u32 = 0;
-            sdna_nr += (buffer[0] as u32) << 0;
-            sdna_nr += (buffer[1] as u32) << 8;
-            sdna_nr += (buffer[2] as u32) << 16;
-            sdna_nr += (buffer[3] as u32) << 24;
-            println!("  SDNAnr = {}", sdna_nr);
-            // for now ignore the nr entry
-            let mut buffer = [0; 4];
-            f.read(&mut buffer)?;
-            counter += 4;
-            // are we done?
-            if code == String::from("ENDB") {
-                break;
+    let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
+    let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+    // first get the DNA
+    {
+        let mut f = File::open(&args.path)?;
+        // read exactly 12 bytes
+        let mut counter: usize = 0;
+        let mut buffer = [0; 12];
+        f.read(&mut buffer)?;
+        counter += 12;
+        let mut blender_version: u32 = 0;
+        if !decode_blender_header(&buffer, &mut blender_version) {
+            println!("ERROR: Not a .blend file");
+            println!("First 12 bytes:");
+            println!("{:?}", buffer);
+        } else {
+            loop {
+                // code
+                let mut buffer = [0; 4];
+                f.read(&mut buffer)?;
+                counter += 4;
+                let code = make_id(&buffer);
+                // len
+                let mut buffer = [0; 4];
+                f.read(&mut buffer)?;
+                counter += 4;
+                let mut len: u32 = 0;
+                len += (buffer[0] as u32) << 0;
+                len += (buffer[1] as u32) << 8;
+                len += (buffer[2] as u32) << 16;
+                len += (buffer[3] as u32) << 24;
+                // println!("{} ({})", code, len);
+                // for now ignore the old entry
+                let mut buffer = [0; 8];
+                f.read(&mut buffer)?;
+                counter += 8;
+                // get SDNAnr
+                let mut buffer = [0; 4];
+                f.read(&mut buffer)?;
+                counter += 4;
+                let mut sdna_nr: u32 = 0;
+                sdna_nr += (buffer[0] as u32) << 0;
+                sdna_nr += (buffer[1] as u32) << 8;
+                sdna_nr += (buffer[2] as u32) << 16;
+                sdna_nr += (buffer[3] as u32) << 24;
+                // println!("  SDNAnr = {}", sdna_nr);
+                // for now ignore the nr entry
+                let mut buffer = [0; 4];
+                f.read(&mut buffer)?;
+                counter += 4;
+                // are we done?
+                if code == String::from("ENDB") {
+                    break;
+                }
+                // read len bytes
+                let mut buffer = vec![0; len as usize];
+                f.read(&mut buffer)?;
+                counter += len as usize;
             }
-            // read len bytes
-            let mut buffer = vec![0; len as usize];
-            f.read(&mut buffer)?;
-            counter += len as usize;
+            println!("{} bytes read", counter);
         }
-        // WORK
-        println!("number of lights = {:?}", lights.len());
-        println!("number of primitives = {:?}", primitives.len());
-        // let accelerator = Arc::new(BVHAccel::new(
-        //     primitives.clone(),
-        //     max_prims_in_node as usize,
-        //     split_method,
-        // ));
-        // let scene: Scene = Scene::new(accelerator.clone(), lights.clone());
-        // in the end we want to call render()
-        // render(
-        //     &scene,
-        //     &camera.clone(),
-        //     &mut sampler,
-        //     &mut integrator,
-        //     num_threads,
-        // );
-        println!("{} bytes read", counter);
     }
+    // then use the DNA
+    {
+        let mut f = File::open(&args.path)?;
+        // read exactly 12 bytes
+        let mut counter: usize = 0;
+        let mut buffer = [0; 12];
+        f.read(&mut buffer)?;
+        counter += 12;
+        let mut blender_version: u32 = 0;
+        if !decode_blender_header(&buffer, &mut blender_version) {
+            println!("ERROR: Not a .blend file");
+            println!("First 12 bytes:");
+            println!("{:?}", buffer);
+        } else {
+            loop {
+                // code
+                let mut buffer = [0; 4];
+                f.read(&mut buffer)?;
+                counter += 4;
+                let code = make_id(&buffer);
+                // len
+                let mut buffer = [0; 4];
+                f.read(&mut buffer)?;
+                counter += 4;
+                let mut len: u32 = 0;
+                len += (buffer[0] as u32) << 0;
+                len += (buffer[1] as u32) << 8;
+                len += (buffer[2] as u32) << 16;
+                len += (buffer[3] as u32) << 24;
+                // println!("{} ({})", code, len);
+                // for now ignore the old entry
+                let mut buffer = [0; 8];
+                f.read(&mut buffer)?;
+                counter += 8;
+                // get SDNAnr
+                let mut buffer = [0; 4];
+                f.read(&mut buffer)?;
+                counter += 4;
+                let mut sdna_nr: u32 = 0;
+                sdna_nr += (buffer[0] as u32) << 0;
+                sdna_nr += (buffer[1] as u32) << 8;
+                sdna_nr += (buffer[2] as u32) << 16;
+                sdna_nr += (buffer[3] as u32) << 24;
+                // println!("  SDNAnr = {}", sdna_nr);
+                // for now ignore the nr entry
+                let mut buffer = [0; 4];
+                f.read(&mut buffer)?;
+                counter += 4;
+                // are we done?
+                if code == String::from("ENDB") {
+                    break;
+                }
+                // read len bytes
+                let mut buffer = vec![0; len as usize];
+                f.read(&mut buffer)?;
+                counter += len as usize;
+            }
+            println!("{} bytes read", counter);
+        }
+    }
+    // WORK
+    println!("number of lights = {:?}", lights.len());
+    println!("number of primitives = {:?}", primitives.len());
+    // let accelerator = Arc::new(BVHAccel::new(
+    //     primitives.clone(),
+    //     max_prims_in_node as usize,
+    //     split_method,
+    // ));
+    // let scene: Scene = Scene::new(accelerator.clone(), lights.clone());
+    // in the end we want to call render()
+    // render(
+    //     &scene,
+    //     &camera.clone(),
+    //     &mut sampler,
+    //     &mut integrator,
+    //     num_threads,
+    // );
     Ok(())
 }
