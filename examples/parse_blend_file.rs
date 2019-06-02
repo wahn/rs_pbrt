@@ -1,8 +1,11 @@
+extern crate num_cpus;
 extern crate structopt;
 
 use std::fs::File;
 use std::io::Read;
 use structopt::StructOpt;
+
+pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 /// Parse a Blender scene file and render it.
 #[derive(StructOpt)]
@@ -73,6 +76,8 @@ fn decode_blender_header(header: &[u8], version: &mut u32) -> bool {
 fn main() -> std::io::Result<()> {
     let args = Cli::from_args();
     let mut f = File::open(&args.path)?;
+    let num_threads: u8 = num_cpus::get() as u8;
+    println!("parse_blend_file version {} [Detected {} cores]", VERSION, num_threads);
     // read exactly 12 bytes
     let mut counter: usize = 0;
     let mut buffer = [0; 12];
@@ -84,6 +89,14 @@ fn main() -> std::io::Result<()> {
         println!("First 12 bytes:");
         println!("{:?}", buffer);
     } else {
+        // in the end we want to call render()
+        // render(
+        //     &scene,
+        //     &camera.clone(),
+        //     &mut sampler,
+        //     &mut integrator,
+        //     num_threads,
+        // );
         println!("{} bytes read", counter);
     }
     Ok(())
