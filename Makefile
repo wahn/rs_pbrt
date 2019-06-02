@@ -58,6 +58,7 @@ examples: release
 	./target/release/examples/lights_infinite_area_light_new
 	./target/release/examples/lights_point_light_new
 	./target/release/examples/parse_ass_file.rs
+	./target/release/examples/parse_blend_file.rs
 	./target/release/examples/pbrt_spheres_differentials_texfilt
 	./target/release/examples/pbrt_teapot_area_light
 	./target/release/examples/pest_test
