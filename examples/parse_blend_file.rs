@@ -73,10 +73,20 @@ fn decode_blender_header(header: &[u8], version: &mut u32) -> bool {
     print!("\n");
     // get the version number
     let last3c = vec![header[9], header[10], header[11]];
-    let version_str = String::from_utf8(last3c).unwrap(); // last 3 chars
-                                                          // convert to u32 and return
+    let version_str = String::from_utf8(last3c).unwrap();
+    // convert to u32 and return
     *version = version_str.parse::<u32>().unwrap();
     true
+}
+
+fn make_id(code: &[u8]) -> String {
+    let mut id = String::with_capacity(4);
+    for i in 0..4 {
+        if (code[i] as char).is_ascii_alphanumeric() {
+            id.push(code[i] as char);
+        }
+    }
+    id
 }
 
 fn main() -> std::io::Result<()> {
@@ -100,6 +110,49 @@ fn main() -> std::io::Result<()> {
     } else {
         let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+        loop {
+            // code
+            let mut buffer = [0; 4];
+            f.read(&mut buffer)?;
+            counter += 4;
+            let code = make_id(&buffer);
+            // len
+            let mut buffer = [0; 4];
+            f.read(&mut buffer)?;
+            counter += 4;
+            let mut len: u32 = 0;
+            len += (buffer[0] as u32) << 0;
+            len += (buffer[1] as u32) << 8;
+            len += (buffer[2] as u32) << 16;
+            len += (buffer[3] as u32) << 24;
+            println!("{} ({})", code, len);
+            // for now ignore the old entry
+            let mut buffer = [0; 8];
+            f.read(&mut buffer)?;
+            counter += 8;
+            // get SDNAnr
+            let mut buffer = [0; 4];
+            f.read(&mut buffer)?;
+            counter += 4;
+            let mut sdna_nr: u32 = 0;
+            sdna_nr += (buffer[0] as u32) << 0;
+            sdna_nr += (buffer[1] as u32) << 8;
+            sdna_nr += (buffer[2] as u32) << 16;
+            sdna_nr += (buffer[3] as u32) << 24;
+            println!("  SDNAnr = {}", sdna_nr);
+            // for now ignore the nr entry
+            let mut buffer = [0; 4];
+            f.read(&mut buffer)?;
+            counter += 4;
+            // are we done?
+            if code == String::from("ENDB") {
+                break;
+            }
+            // read len bytes
+            let mut buffer = vec![0; len as usize];
+            f.read(&mut buffer)?;
+            counter += len as usize;
+        }
         // WORK
         println!("number of lights = {:?}", lights.len());
         println!("number of primitives = {:?}", primitives.len());
