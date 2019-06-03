@@ -9,7 +9,9 @@ use std::mem;
 use std::sync::Arc;
 use structopt::StructOpt;
 // pbrt
+use pbrt::core::geometry::{Normal3f, Point3f};
 use pbrt::core::light::Light;
+use pbrt::core::pbrt::Float;
 use pbrt::core::primitive::Primitive;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -744,8 +746,11 @@ fn main() -> std::io::Result<()> {
                                 println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
                                 let factor: f32 = 1.0 / 32767.0;
-                                for p in 0..data_len {
-                                    println!("  {}:", p + 1);
+                                let mut p: Vec<Point3f> = Vec::with_capacity(data_len as usize);
+                                let mut n: Vec<Normal3f> = Vec::with_capacity(data_len as usize);
+                                let mut coords: [f32; 3] = [0.0_f32; 3];
+                                for v in 0..data_len {
+                                    // println!("  {}:", v + 1);
                                     // co
                                     for i in 0..3 {
                                         let mut co_buf: [u8; 4] = [0_u8; 4];
@@ -753,24 +758,41 @@ fn main() -> std::io::Result<()> {
                                             co_buf[b] = buffer[skip_bytes + b];
                                         }
                                         let co: f32 = unsafe { mem::transmute(co_buf) };
-                                        println!("    co[{}] = {}", i, co);
+                                        // println!("    co[{}] = {}", i, co);
+                                        coords[i] = co;
                                         skip_bytes += 4;
                                     }
+                                    p.push(Point3f {
+                                        x: coords[0] as Float,
+                                        y: coords[1] as Float,
+                                        z: coords[2] as Float,
+                                    });
                                     // no
                                     for i in 0..3 {
                                         let mut no: i16 = 0;
                                         no += (buffer[skip_bytes] as i16) << 0;
                                         no += (buffer[skip_bytes + 1] as i16) << 8;
                                         let nof: f32 = no as f32 * factor;
-                                        println!("    no[{}] = {}", i, nof);
+                                        // println!("    no[{}] = {}", i, nof);
+                                        coords[i] = nof;
                                         skip_bytes += 2;
                                     }
+                                    n.push(Normal3f {
+                                        x: coords[0] as Float,
+                                        y: coords[1] as Float,
+                                        z: coords[2] as Float,
+                                    });
                                     // flag
                                     // println!("    flag = {}", buffer[skip_bytes]);
                                     skip_bytes += 1;
                                     // bweight
                                     // println!("    bweight = {}", buffer[skip_bytes]);
                                     skip_bytes += 1;
+                                }
+                                for v in 0..data_len as usize {
+                                    println!("  {}:", v + 1);
+                                    println!("    co: {:?}", p[v]);
+                                    println!("    no: {:?}", n[v]);
                                 }
                             }
                         }
