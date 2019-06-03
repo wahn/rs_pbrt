@@ -412,6 +412,7 @@ fn main() -> std::io::Result<()> {
             println!("First 12 bytes:");
             println!("{:?}", buffer);
         } else {
+            let mut data_following_mesh: bool = false;
             loop {
                 // code
                 let mut buffer = [0; 4];
@@ -440,10 +441,15 @@ fn main() -> std::io::Result<()> {
                 sdna_nr += (buffer[1] as u32) << 8;
                 sdna_nr += (buffer[2] as u32) << 16;
                 sdna_nr += (buffer[3] as u32) << 24;
-                // for now ignore the nr entry
+                // get data len
                 let mut buffer = [0; 4];
                 f.read(&mut buffer)?;
                 counter += 4;
+                let mut data_len: u32 = 0;
+                data_len += (buffer[0] as u32) << 0;
+                data_len += (buffer[1] as u32) << 8;
+                data_len += (buffer[2] as u32) << 16;
+                data_len += (buffer[3] as u32) << 24;
                 // are we done?
                 if code == String::from("ENDB") {
                     break;
@@ -458,8 +464,8 @@ fn main() -> std::io::Result<()> {
                     let mut buffer = vec![0; len as usize];
                     f.read(&mut buffer)?;
                     counter += len as usize;
-                    // OB
                     if code == String::from("OB") {
+                        // OB
                         println!("{} ({})", code, len);
                         println!("  SDNAnr = {}", sdna_nr);
                         // Object (len=1440) { ... }
@@ -613,9 +619,9 @@ fn main() -> std::io::Result<()> {
                                 skip_bytes += 4;
                             }
                         }
-                    }
-                    // ME
-                    if code == String::from("ME") {
+                        data_following_mesh = false;
+                    } else if code == String::from("ME") {
+                        // ME
                         println!("{} ({})", code, len);
                         println!("  SDNAnr = {}", sdna_nr);
                         // Mesh (len=1416) { ... }
@@ -691,7 +697,52 @@ fn main() -> std::io::Result<()> {
                         //         println!("  {:?} = types[{}] needs {} bytes", types[n], n, tlen[n]);
                         //     }
                         // }
-                    }
+                        data_following_mesh = true;
+                    } else if code == String::from("DATA") {
+                        // DATA
+                        if data_following_mesh {
+                            let type_id: usize = dna_2_type_id[sdna_nr as usize] as usize;
+                            if types[type_id] == "MPoly" {
+                                println!("{}[{}] ({})", code, data_len, len);
+                                println!("  SDNAnr = {}", sdna_nr);
+                                println!("  {} ({})", types[type_id], tlen[type_id]);
+                                let mut skip_bytes: usize = 0;
+                                for p in 0..data_len {
+                                    println!("  {}:", p + 1);
+                                    // loopstart
+                                    let mut loopstart: u32 = 0;
+                                    loopstart += (buffer[skip_bytes] as u32) << 0;
+                                    loopstart += (buffer[skip_bytes + 1] as u32) << 0;
+                                    loopstart += (buffer[skip_bytes + 2] as u32) << 0;
+                                    loopstart += (buffer[skip_bytes + 3] as u32) << 0;
+                                    println!("    loopstart = {}", loopstart);
+                                    skip_bytes += 4;
+                                    // totloop
+                                    let mut totloop: u32 = 0;
+                                    totloop += (buffer[skip_bytes] as u32) << 0;
+                                    totloop += (buffer[skip_bytes + 1] as u32) << 0;
+                                    totloop += (buffer[skip_bytes + 2] as u32) << 0;
+                                    totloop += (buffer[skip_bytes + 3] as u32) << 0;
+                                    println!("    totloop = {}", totloop);
+                                    skip_bytes += 4;
+                                    // mat_nr
+                                    let mut mat_nr: u16 = 0;
+                                    mat_nr += (buffer[skip_bytes] as u16) << 0;
+                                    mat_nr += (buffer[skip_bytes + 1] as u16) << 0;
+                                    println!("    mat_nr = {}", mat_nr);
+                                    skip_bytes += 2;
+                                    // flag
+                                    // println!("    flag = {}", buffer[skip_bytes]);
+                                    skip_bytes += 1;
+                                    // pad
+                                    // println!("    pad = {}", buffer[skip_bytes]);
+                                    skip_bytes += 1;
+                                }
+                            }
+                        }
+                    } else {
+                        data_following_mesh = false;
+                    }                        
                     if code != String::from("DATA")
                         && code != String::from("REND")
                         && code != String::from("TEST")
