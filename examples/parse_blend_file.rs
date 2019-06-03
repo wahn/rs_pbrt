@@ -486,7 +486,7 @@ fn main() -> std::io::Result<()> {
                         // type
                         let mut ob_type: u16 = 0;
                         ob_type += (buffer[skip_bytes] as u16) << 0;
-                        ob_type += (buffer[skip_bytes + 1] as u16) << 0;
+                        ob_type += (buffer[skip_bytes + 1] as u16) << 8;
                         skip_bytes += 2;
                         match ob_type {
                             0 => println!("  ob_type = {}", "OB_EMPTY"),
@@ -646,49 +646,49 @@ fn main() -> std::io::Result<()> {
                         // totvert
                         let mut totvert: u32 = 0;
                         totvert += (buffer[skip_bytes] as u32) << 0;
-                        totvert += (buffer[skip_bytes + 1] as u32) << 0;
-                        totvert += (buffer[skip_bytes + 2] as u32) << 0;
-                        totvert += (buffer[skip_bytes + 3] as u32) << 0;
+                        totvert += (buffer[skip_bytes + 1] as u32) << 8;
+                        totvert += (buffer[skip_bytes + 2] as u32) << 16;
+                        totvert += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("  totvert = {}", totvert);
                         skip_bytes += 4;
                         // totedge
                         let mut totedge: u32 = 0;
                         totedge += (buffer[skip_bytes] as u32) << 0;
-                        totedge += (buffer[skip_bytes + 1] as u32) << 0;
-                        totedge += (buffer[skip_bytes + 2] as u32) << 0;
-                        totedge += (buffer[skip_bytes + 3] as u32) << 0;
+                        totedge += (buffer[skip_bytes + 1] as u32) << 8;
+                        totedge += (buffer[skip_bytes + 2] as u32) << 16;
+                        totedge += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("  totedge = {}", totedge);
                         skip_bytes += 4;
                         // totface
                         let mut totface: u32 = 0;
                         totface += (buffer[skip_bytes] as u32) << 0;
-                        totface += (buffer[skip_bytes + 1] as u32) << 0;
-                        totface += (buffer[skip_bytes + 2] as u32) << 0;
-                        totface += (buffer[skip_bytes + 3] as u32) << 0;
+                        totface += (buffer[skip_bytes + 1] as u32) << 8;
+                        totface += (buffer[skip_bytes + 2] as u32) << 16;
+                        totface += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("  totface = {}", totface);
                         skip_bytes += 4;
                         // totselect
                         let mut totselect: u32 = 0;
                         totselect += (buffer[skip_bytes] as u32) << 0;
-                        totselect += (buffer[skip_bytes + 1] as u32) << 0;
-                        totselect += (buffer[skip_bytes + 2] as u32) << 0;
-                        totselect += (buffer[skip_bytes + 3] as u32) << 0;
+                        totselect += (buffer[skip_bytes + 1] as u32) << 8;
+                        totselect += (buffer[skip_bytes + 2] as u32) << 16;
+                        totselect += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("  totselect = {}", totselect);
                         skip_bytes += 4;
                         // totpoly
                         let mut totpoly: u32 = 0;
                         totpoly += (buffer[skip_bytes] as u32) << 0;
-                        totpoly += (buffer[skip_bytes + 1] as u32) << 0;
-                        totpoly += (buffer[skip_bytes + 2] as u32) << 0;
-                        totpoly += (buffer[skip_bytes + 3] as u32) << 0;
+                        totpoly += (buffer[skip_bytes + 1] as u32) << 8;
+                        totpoly += (buffer[skip_bytes + 2] as u32) << 16;
+                        totpoly += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("  totpoly = {}", totpoly);
                         skip_bytes += 4;
                         // totloop
                         let mut totloop: u32 = 0;
                         totloop += (buffer[skip_bytes] as u32) << 0;
-                        totloop += (buffer[skip_bytes + 1] as u32) << 0;
-                        totloop += (buffer[skip_bytes + 2] as u32) << 0;
-                        totloop += (buffer[skip_bytes + 3] as u32) << 0;
+                        totloop += (buffer[skip_bytes + 1] as u32) << 8;
+                        totloop += (buffer[skip_bytes + 2] as u32) << 16;
+                        totloop += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("  totloop = {}", totloop);
                         skip_bytes += 4;
                         // check tlen
@@ -712,23 +712,23 @@ fn main() -> std::io::Result<()> {
                                     // loopstart
                                     let mut loopstart: u32 = 0;
                                     loopstart += (buffer[skip_bytes] as u32) << 0;
-                                    loopstart += (buffer[skip_bytes + 1] as u32) << 0;
-                                    loopstart += (buffer[skip_bytes + 2] as u32) << 0;
-                                    loopstart += (buffer[skip_bytes + 3] as u32) << 0;
+                                    loopstart += (buffer[skip_bytes + 1] as u32) << 8;
+                                    loopstart += (buffer[skip_bytes + 2] as u32) << 16;
+                                    loopstart += (buffer[skip_bytes + 3] as u32) << 24;
                                     println!("    loopstart = {}", loopstart);
                                     skip_bytes += 4;
                                     // totloop
                                     let mut totloop: u32 = 0;
                                     totloop += (buffer[skip_bytes] as u32) << 0;
-                                    totloop += (buffer[skip_bytes + 1] as u32) << 0;
-                                    totloop += (buffer[skip_bytes + 2] as u32) << 0;
-                                    totloop += (buffer[skip_bytes + 3] as u32) << 0;
+                                    totloop += (buffer[skip_bytes + 1] as u32) << 8;
+                                    totloop += (buffer[skip_bytes + 2] as u32) << 16;
+                                    totloop += (buffer[skip_bytes + 3] as u32) << 24;
                                     println!("    totloop = {}", totloop);
                                     skip_bytes += 4;
                                     // mat_nr
                                     let mut mat_nr: u16 = 0;
                                     mat_nr += (buffer[skip_bytes] as u16) << 0;
-                                    mat_nr += (buffer[skip_bytes + 1] as u16) << 0;
+                                    mat_nr += (buffer[skip_bytes + 1] as u16) << 8;
                                     println!("    mat_nr = {}", mat_nr);
                                     skip_bytes += 2;
                                     // flag
@@ -743,6 +743,7 @@ fn main() -> std::io::Result<()> {
                                 println!("  SDNAnr = {}", sdna_nr);
                                 println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
+                                let factor: f32 = 1.0 / 32767.0;
                                 for p in 0..data_len {
                                     println!("  {}:", p + 1);
                                     // co
@@ -757,10 +758,11 @@ fn main() -> std::io::Result<()> {
                                     }
                                     // no
                                     for i in 0..3 {
-                                        let mut no: u16 = 0;
-                                        no += (buffer[skip_bytes] as u16) << 0;
-                                        no += (buffer[skip_bytes + 1] as u16) << 0;
-                                        println!("    no[{}] = {}", i, no);
+                                        let mut no: i16 = 0;
+                                        no += (buffer[skip_bytes] as i16) << 0;
+                                        no += (buffer[skip_bytes + 1] as i16) << 8;
+                                        let nof: f32 = no as f32 * factor;
+                                        println!("    no[{}] = {}", i, nof);
                                         skip_bytes += 2;
                                     }
                                     // flag
