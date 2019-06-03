@@ -458,6 +458,7 @@ fn main() -> std::io::Result<()> {
                     let mut buffer = vec![0; len as usize];
                     f.read(&mut buffer)?;
                     counter += len as usize;
+                    // OB
                     if code == String::from("OB") {
                         println!("{} ({})", code, len);
                         println!("  SDNAnr = {}", sdna_nr);
@@ -465,7 +466,7 @@ fn main() -> std::io::Result<()> {
                         let mut skip_bytes: usize = 0;
                         // id
                         let mut id_name = String::with_capacity(4);
-                        for i in 32..(32+66) {
+                        for i in 32..(32 + 66) {
                             if (buffer[i] as char).is_ascii_alphanumeric() {
                                 id_name.push(buffer[i] as char);
                             }
@@ -612,12 +613,84 @@ fn main() -> std::io::Result<()> {
                                 skip_bytes += 4;
                             }
                         }
-                        // check tlen
-                        for n in 0..types.len() {
-                            if types[n] == "ID" {
-                                println!("  {:?} = types[{}] needs {} bytes", types[n], n, tlen[n]);
+                    }
+                    // ME
+                    if code == String::from("ME") {
+                        println!("{} ({})", code, len);
+                        println!("  SDNAnr = {}", sdna_nr);
+                        // Mesh (len=1416) { ... }
+                        let mut skip_bytes: usize = 0;
+                        // id
+                        let mut id_name = String::with_capacity(4);
+                        for i in 32..(32 + 66) {
+                            if (buffer[i] as char).is_ascii_alphanumeric() {
+                                id_name.push(buffer[i] as char);
                             }
                         }
+                        println!("  id_name = {}", id_name);
+                        skip_bytes += 120;
+                        // adt
+                        skip_bytes += 8;
+                        // bb, ipo, key, mat, mselect, mpoly, mtpoly, mloop, mloopuv, mloopcol
+                        skip_bytes += 8 * 10;
+                        // mface, mtface, tface, mvert, medge, dvert, mcol, texcomesh, edit_btmesh
+                        skip_bytes += 8 * 9;
+                        // CustomData * 5
+                        skip_bytes += 208 * 5;
+                        // totvert
+                        let mut totvert: u32 = 0;
+                        totvert += (buffer[skip_bytes] as u32) << 0;
+                        totvert += (buffer[skip_bytes + 1] as u32) << 0;
+                        totvert += (buffer[skip_bytes + 2] as u32) << 0;
+                        totvert += (buffer[skip_bytes + 3] as u32) << 0;
+                        println!("  totvert = {}", totvert);
+                        skip_bytes += 4;
+                        // totedge
+                        let mut totedge: u32 = 0;
+                        totedge += (buffer[skip_bytes] as u32) << 0;
+                        totedge += (buffer[skip_bytes + 1] as u32) << 0;
+                        totedge += (buffer[skip_bytes + 2] as u32) << 0;
+                        totedge += (buffer[skip_bytes + 3] as u32) << 0;
+                        println!("  totedge = {}", totedge);
+                        skip_bytes += 4;
+                        // totface
+                        let mut totface: u32 = 0;
+                        totface += (buffer[skip_bytes] as u32) << 0;
+                        totface += (buffer[skip_bytes + 1] as u32) << 0;
+                        totface += (buffer[skip_bytes + 2] as u32) << 0;
+                        totface += (buffer[skip_bytes + 3] as u32) << 0;
+                        println!("  totface = {}", totface);
+                        skip_bytes += 4;
+                        // totselect
+                        let mut totselect: u32 = 0;
+                        totselect += (buffer[skip_bytes] as u32) << 0;
+                        totselect += (buffer[skip_bytes + 1] as u32) << 0;
+                        totselect += (buffer[skip_bytes + 2] as u32) << 0;
+                        totselect += (buffer[skip_bytes + 3] as u32) << 0;
+                        println!("  totselect = {}", totselect);
+                        skip_bytes += 4;
+                        // totpoly
+                        let mut totpoly: u32 = 0;
+                        totpoly += (buffer[skip_bytes] as u32) << 0;
+                        totpoly += (buffer[skip_bytes + 1] as u32) << 0;
+                        totpoly += (buffer[skip_bytes + 2] as u32) << 0;
+                        totpoly += (buffer[skip_bytes + 3] as u32) << 0;
+                        println!("  totpoly = {}", totpoly);
+                        skip_bytes += 4;
+                        // totloop
+                        let mut totloop: u32 = 0;
+                        totloop += (buffer[skip_bytes] as u32) << 0;
+                        totloop += (buffer[skip_bytes + 1] as u32) << 0;
+                        totloop += (buffer[skip_bytes + 2] as u32) << 0;
+                        totloop += (buffer[skip_bytes + 3] as u32) << 0;
+                        println!("  totloop = {}", totloop);
+                        skip_bytes += 4;
+                        // check tlen
+                        // for n in 0..types.len() {
+                        //     if types[n] == "CustomData" {
+                        //         println!("  {:?} = types[{}] needs {} bytes", types[n], n, tlen[n]);
+                        //     }
+                        // }
                     }
                     if code != String::from("DATA")
                         && code != String::from("REND")
