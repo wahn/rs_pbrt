@@ -5,6 +5,7 @@ extern crate structopt;
 // std
 use std::fs::File;
 use std::io::Read;
+use std::mem;
 use std::sync::Arc;
 use structopt::StructOpt;
 // pbrt
@@ -453,23 +454,180 @@ fn main() -> std::io::Result<()> {
                     f.read(&mut buffer)?;
                     counter += len as usize;
                 } else {
-                    let type_id: usize = dna_2_type_id[sdna_nr as usize] as usize;
+                    // read len bytes
+                    let mut buffer = vec![0; len as usize];
+                    f.read(&mut buffer)?;
+                    counter += len as usize;
                     if code == String::from("OB") {
                         println!("{} ({})", code, len);
                         println!("  SDNAnr = {}", sdna_nr);
+                        // Object (len=1440) { ... }
+                        let mut skip_bytes: usize = 0;
+                        // id
+                        let mut id_name = String::with_capacity(4);
+                        for i in 32..(32+66) {
+                            if (buffer[i] as char).is_ascii_alphanumeric() {
+                                id_name.push(buffer[i] as char);
+                            }
+                        }
+                        println!("  id_name = {}", id_name);
+                        skip_bytes += 120;
+                        // adt
+                        skip_bytes += 8;
+                        // sculpt
+                        skip_bytes += 8;
+                        // type
+                        let mut ob_type: u16 = 0;
+                        ob_type += (buffer[skip_bytes] as u16) << 0;
+                        ob_type += (buffer[skip_bytes + 1] as u16) << 0;
+                        skip_bytes += 2;
+                        match ob_type {
+                            0 => println!("  ob_type = {}", "OB_EMPTY"),
+                            1 => println!("  ob_type = {}", "OB_MESH"),
+                            11 => println!("  ob_type = {}", "OB_CAMERA"),
+                            _ => println!("  ob_type = {}", ob_type),
+                        }
+                        // partype
+                        skip_bytes += 2;
+                        // par1, par2, par3
+                        skip_bytes += 4 * 3;
+                        // parsubstr[64]
+                        skip_bytes += 64;
+                        // parent, track, proxy, proxy_group, proxy_from
+                        skip_bytes += 8 * 5;
+                        // ipo, bb, action, poselib, pose, data, gpd
+                        skip_bytes += 8 * 7;
+                        // bAnimVizSettings
+                        skip_bytes += 48;
+                        // mpath
+                        skip_bytes += 8;
+                        // ListBase * 4
+                        skip_bytes += 16 * 4;
+                        // mode, restore_mode
+                        skip_bytes += 4 * 2;
+                        // mat, matbits
+                        skip_bytes += 8 * 2;
+                        // totcol, actcol
+                        skip_bytes += 4 * 2;
+                        // loc
+                        skip_bytes += 4 * 3;
+                        // dloc
+                        skip_bytes += 4 * 3;
+                        // orig
+                        skip_bytes += 4 * 3;
+                        // size
+                        skip_bytes += 4 * 3;
+                        // dsize
+                        skip_bytes += 4 * 3;
+                        // dscale
+                        skip_bytes += 4 * 3;
+                        // rot
+                        for _i in 0..3 {
+                            let mut rot_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                rot_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let _rot: f32 = unsafe { mem::transmute(rot_buf) };
+                            // println!("  rot[{}] = {}", i, rot);
+                            skip_bytes += 4;
+                        }
+                        //skip_bytes += 4 * 3;
+                        // drot
+                        skip_bytes += 4 * 3;
+                        // quat
+                        skip_bytes += 4 * 4;
+                        // dquat
+                        skip_bytes += 4 * 4;
+                        // rotAxis
+                        skip_bytes += 4 * 3;
+                        // drotAxis
+                        skip_bytes += 4 * 3;
+                        // rotAngle
+                        let mut rot_angle_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            rot_angle_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let _rot_angle: f32 = unsafe { mem::transmute(rot_angle_buf) };
+                        // println!("  rot_angle = {}", rot_angle);
+                        skip_bytes += 4;
+                        // drotAngle
+                        skip_bytes += 4;
+                        // obmat
+                        for _i in 0..4 {
+                            for _j in 0..4 {
+                                let mut obmat_buf: [u8; 4] = [0_u8; 4];
+                                for i in 0..4 as usize {
+                                    obmat_buf[i] = buffer[skip_bytes + i];
+                                }
+                                let _obmat: f32 = unsafe { mem::transmute(obmat_buf) };
+                                // println!("  obmat[{}][{}] = {}", i, j, obmat);
+                                skip_bytes += 4;
+                            }
+                        }
+                        // parentinv
+                        for _i in 0..4 {
+                            for _j in 0..4 {
+                                let mut parentinv_buf: [u8; 4] = [0_u8; 4];
+                                for i in 0..4 as usize {
+                                    parentinv_buf[i] = buffer[skip_bytes + i];
+                                }
+                                let _parentinv: f32 = unsafe { mem::transmute(parentinv_buf) };
+                                // println!("  parentinv[{}][{}] = {}", i, j, parentinv);
+                                skip_bytes += 4;
+                            }
+                        }
+                        // constinv
+                        for _i in 0..4 {
+                            for _j in 0..4 {
+                                let mut constinv_buf: [u8; 4] = [0_u8; 4];
+                                for i in 0..4 as usize {
+                                    constinv_buf[i] = buffer[skip_bytes + i];
+                                }
+                                let _constinv: f32 = unsafe { mem::transmute(constinv_buf) };
+                                // println!("  constinv[{}][{}] = {}", i, j, constinv);
+                                skip_bytes += 4;
+                            }
+                        }
+                        // imat
+                        for _i in 0..4 {
+                            for _j in 0..4 {
+                                let mut imat_buf: [u8; 4] = [0_u8; 4];
+                                for i in 0..4 as usize {
+                                    imat_buf[i] = buffer[skip_bytes + i];
+                                }
+                                let _imat: f32 = unsafe { mem::transmute(imat_buf) };
+                                // println!("  imat[{}][{}] = {}", i, j, imat);
+                                skip_bytes += 4;
+                            }
+                        }
+                        // imat_ren
+                        for _i in 0..4 {
+                            for _j in 0..4 {
+                                let mut imat_ren_buf: [u8; 4] = [0_u8; 4];
+                                for i in 0..4 as usize {
+                                    imat_ren_buf[i] = buffer[skip_bytes + i];
+                                }
+                                let _imat_ren: f32 = unsafe { mem::transmute(imat_ren_buf) };
+                                // println!("  imat_ren[{}][{}] = {}", i, j, imat_ren);
+                                skip_bytes += 4;
+                            }
+                        }
+                        // check tlen
+                        for n in 0..types.len() {
+                            if types[n] == "ID" {
+                                println!("  {:?} = types[{}] needs {} bytes", types[n], n, tlen[n]);
+                            }
+                        }
                     }
                     if code != String::from("DATA")
                         && code != String::from("REND")
                         && code != String::from("TEST")
                     {
+                        let type_id: usize = dna_2_type_id[sdna_nr as usize] as usize;
                         if len != tlen[type_id] as u32 {
                             println!("{} ({} != {})", code, len, tlen[type_id]);
                         }
                     }
-                    // read len bytes
-                    let mut buffer = vec![0; len as usize];
-                    f.read(&mut buffer)?;
-                    counter += len as usize;
                 }
             }
             println!("{} bytes read", counter);
