@@ -415,6 +415,12 @@ fn main() -> std::io::Result<()> {
             println!("{:?}", buffer);
         } else {
             let mut data_following_mesh: bool = false;
+            // PBRT
+            let mut p: Vec<Point3f> = Vec::new();
+            let mut n: Vec<Normal3f> = Vec::new();
+            let mut vertex_indices: Vec<usize> = Vec::new();
+            // Blender
+            let mut loop_indices: Vec<u32> = Vec::new();
             loop {
                 // code
                 let mut buffer = [0; 4];
@@ -700,9 +706,15 @@ fn main() -> std::io::Result<()> {
                         //     }
                         // }
                         data_following_mesh = true;
+                        // clear all Vecs
+                        p.clear();
+                        n.clear();
+                        vertex_indices.clear();
+                        loop_indices.clear();
                     } else if code == String::from("DATA") {
                         // DATA
                         if data_following_mesh {
+                            // type_id
                             let type_id: usize = dna_2_type_id[sdna_nr as usize] as usize;
                             if types[type_id] == "MPoly" {
                                 println!("{}[{}] ({})", code, data_len, len);
@@ -739,15 +751,42 @@ fn main() -> std::io::Result<()> {
                                     // pad
                                     // println!("    pad = {}", buffer[skip_bytes]);
                                     skip_bytes += 1;
+                                    // PBRT
+                                    if totloop == 3_u32 {
+                                        // triangle
+                                        for i in 0..3 {
+                                            vertex_indices.push(
+                                                loop_indices[(loopstart + i) as usize] as usize,
+                                            );
+                                        }
+                                    } else if totloop == 4_u32 {
+                                        // quads
+                                        vertex_indices
+                                            .push(loop_indices[(loopstart + 0) as usize] as usize);
+                                        vertex_indices
+                                            .push(loop_indices[(loopstart + 1) as usize] as usize);
+                                        vertex_indices
+                                            .push(loop_indices[(loopstart + 2) as usize] as usize);
+                                        vertex_indices
+                                            .push(loop_indices[(loopstart + 0) as usize] as usize);
+                                        vertex_indices
+                                            .push(loop_indices[(loopstart + 2) as usize] as usize);
+                                        vertex_indices
+                                            .push(loop_indices[(loopstart + 3) as usize] as usize);
+                                    } else {
+                                        println!(
+                                            "WARNING: quads or triangles expected (totloop = {})",
+                                            totloop
+                                        )
+                                    }
                                 }
+                                println!("    vertex_indices = {:?}", vertex_indices);
                             } else if types[type_id] == "MVert" {
                                 println!("{}[{}] ({})", code, data_len, len);
                                 println!("  SDNAnr = {}", sdna_nr);
                                 println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
                                 let factor: f32 = 1.0 / 32767.0;
-                                let mut p: Vec<Point3f> = Vec::with_capacity(data_len as usize);
-                                let mut n: Vec<Normal3f> = Vec::with_capacity(data_len as usize);
                                 let mut coords: [f32; 3] = [0.0_f32; 3];
                                 for v in 0..data_len {
                                     // println!("  {}:", v + 1);
@@ -794,6 +833,32 @@ fn main() -> std::io::Result<()> {
                                     println!("    co: {:?}", p[v]);
                                     println!("    no: {:?}", n[v]);
                                 }
+                            } else if types[type_id] == "MLoop" {
+                                println!("{}[{}] ({})", code, data_len, len);
+                                println!("  SDNAnr = {}", sdna_nr);
+                                println!("  {} ({})", types[type_id], tlen[type_id]);
+                                let mut skip_bytes: usize = 0;
+                                for l in 0..data_len {
+                                    // println!("  {}:", l + 1);
+                                    // v
+                                    let mut v: u32 = 0;
+                                    v += (buffer[skip_bytes] as u32) << 0;
+                                    v += (buffer[skip_bytes + 1] as u32) << 8;
+                                    v += (buffer[skip_bytes + 2] as u32) << 16;
+                                    v += (buffer[skip_bytes + 3] as u32) << 24;
+                                    // println!("    v = {}", v);
+                                    loop_indices.push(v);
+                                    skip_bytes += 4;
+                                    // e
+                                    let mut e: u32 = 0;
+                                    e += (buffer[skip_bytes] as u32) << 0;
+                                    e += (buffer[skip_bytes + 1] as u32) << 8;
+                                    e += (buffer[skip_bytes + 2] as u32) << 16;
+                                    e += (buffer[skip_bytes + 3] as u32) << 24;
+                                    // println!("    e = {}", e);
+                                    skip_bytes += 4;
+                                }
+                                println!("    loop_indices = {:?}", loop_indices);
                             }
                         }
                     } else {
