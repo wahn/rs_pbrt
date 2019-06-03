@@ -9,10 +9,14 @@ use std::mem;
 use std::sync::Arc;
 use structopt::StructOpt;
 // pbrt
-use pbrt::core::geometry::{Normal3f, Point3f};
+use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use pbrt::core::light::Light;
-use pbrt::core::pbrt::Float;
-use pbrt::core::primitive::Primitive;
+use pbrt::core::pbrt::{Float, Spectrum};
+use pbrt::core::primitive::{GeometricPrimitive, Primitive};
+use pbrt::core::transform::Transform;
+use pbrt::materials::matte::MatteMaterial;
+use pbrt::shapes::triangle::{Triangle, TriangleMesh};
+use pbrt::textures::constant::ConstantTexture;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -23,6 +27,87 @@ struct Cli {
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
 }
+
+// TMP (see pbrt_spheres_differentials_texfilt.rs)
+
+struct SceneDescription {
+    meshes: Vec<Arc<TriangleMesh>>,
+}
+
+struct SceneDescriptionBuilder {
+    meshes: Vec<Arc<TriangleMesh>>,
+}
+
+impl SceneDescriptionBuilder {
+    fn new() -> SceneDescriptionBuilder {
+        SceneDescriptionBuilder { meshes: Vec::new() }
+    }
+    fn add_mesh(
+        &mut self,
+        object_to_world: Transform,
+        world_to_object: Transform,
+        n_triangles: usize,
+        vertex_indices: Vec<usize>,
+        n_vertices: usize,
+        p_ws: Vec<Point3f>,
+        s: Vec<Vector3f>,
+        n: Vec<Normal3f>,
+        uv: Vec<Point2f>,
+    ) -> &mut SceneDescriptionBuilder {
+        let triangle_mesh = Arc::new(TriangleMesh::new(
+            object_to_world,
+            world_to_object,
+            false,
+            n_triangles,
+            vertex_indices,
+            n_vertices,
+            p_ws, // in world space
+            s,    // empty
+            n,    // empty
+            uv,   // empty
+        ));
+        println!("triangle_mesh = {:?}", triangle_mesh);
+        self.meshes.push(triangle_mesh);
+        self
+    }
+    fn finalize(self) -> SceneDescription {
+        SceneDescription {
+            meshes: self.meshes,
+        }
+    }
+}
+
+struct RenderOptions {
+    primitives: Vec<Arc<Primitive + Sync + Send>>,
+    triangles: Vec<Arc<Triangle>>,
+}
+
+impl RenderOptions {
+    fn new(scene: SceneDescription) -> RenderOptions {
+        let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
+        let mut triangles: Vec<Arc<Triangle>> = Vec::new();
+        // meshes
+        for mesh in scene.meshes {
+            // create individual triangles
+            for id in 0..mesh.n_triangles {
+                let triangle = Arc::new(Triangle::new(
+                    mesh.object_to_world,
+                    mesh.world_to_object,
+                    mesh.transform_swaps_handedness,
+                    mesh.clone(),
+                    id,
+                ));
+                triangles.push(triangle);
+            }
+        }
+        RenderOptions {
+            primitives: primitives,
+            triangles: triangles,
+        }
+    }
+}
+
+// TMP
 
 fn decode_blender_header(header: &[u8], version: &mut u32) -> bool {
     // BLENDER
@@ -166,7 +251,7 @@ fn main() -> std::io::Result<()> {
         "parse_blend_file version {} [Detected {} cores]",
         VERSION, num_threads
     );
-    let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
+    // TODO: let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
     let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
     // first get the DNA
     let mut names: Vec<String> = Vec::new();
@@ -401,6 +486,7 @@ fn main() -> std::io::Result<()> {
         }
     }
     // then use the DNA
+    let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     {
         let mut f = File::open(&args.path)?;
         // read exactly 12 bytes
@@ -629,6 +715,36 @@ fn main() -> std::io::Result<()> {
                         }
                         data_following_mesh = false;
                     } else if code == String::from("ME") {
+                        if data_following_mesh {
+                            // TODO: get a proper Transform
+                            let object_to_world: Transform = Transform::translate(&Vector3f {
+                                x: 0.0,
+                                y: 0.0,
+                                z: 0.0,
+                            });
+                            let world_to_object: Transform = Transform::inverse(&object_to_world);
+                            let n_triangles: usize = vertex_indices.len() / 3;
+                            // transform mesh vertices to world space
+                            let mut p_ws: Vec<Point3f> = Vec::new();
+                            let n_vertices: usize = p.len();
+                            for i in 0..n_vertices {
+                                p_ws.push(object_to_world.transform_point(&p[i]));
+                            }
+                            let s: Vec<Vector3f> = Vec::new();
+                            let n: Vec<Normal3f> = Vec::new();
+                            let uv: Vec<Point2f> = Vec::new();
+                            builder.add_mesh(
+                                object_to_world,
+                                world_to_object,
+                                n_triangles,
+                                vertex_indices.clone(),
+                                n_vertices,
+                                p_ws, // in world space
+                                s,    // empty
+                                n,    // empty
+                                uv,   // empty
+                            );
+                        }
                         // ME
                         println!("{} ({})", code, len);
                         println!("  SDNAnr = {}", sdna_nr);
@@ -660,27 +776,27 @@ fn main() -> std::io::Result<()> {
                         println!("  totvert = {}", totvert);
                         skip_bytes += 4;
                         // totedge
-                        let mut totedge: u32 = 0;
-                        totedge += (buffer[skip_bytes] as u32) << 0;
-                        totedge += (buffer[skip_bytes + 1] as u32) << 8;
-                        totedge += (buffer[skip_bytes + 2] as u32) << 16;
-                        totedge += (buffer[skip_bytes + 3] as u32) << 24;
+                        // let mut totedge: u32 = 0;
+                        // totedge += (buffer[skip_bytes] as u32) << 0;
+                        // totedge += (buffer[skip_bytes + 1] as u32) << 8;
+                        // totedge += (buffer[skip_bytes + 2] as u32) << 16;
+                        // totedge += (buffer[skip_bytes + 3] as u32) << 24;
                         // println!("  totedge = {}", totedge);
                         skip_bytes += 4;
                         // totface
-                        let mut totface: u32 = 0;
-                        totface += (buffer[skip_bytes] as u32) << 0;
-                        totface += (buffer[skip_bytes + 1] as u32) << 8;
-                        totface += (buffer[skip_bytes + 2] as u32) << 16;
-                        totface += (buffer[skip_bytes + 3] as u32) << 24;
+                        // let mut totface: u32 = 0;
+                        // totface += (buffer[skip_bytes] as u32) << 0;
+                        // totface += (buffer[skip_bytes + 1] as u32) << 8;
+                        // totface += (buffer[skip_bytes + 2] as u32) << 16;
+                        // totface += (buffer[skip_bytes + 3] as u32) << 24;
                         // println!("  totface = {}", totface);
                         skip_bytes += 4;
                         // totselect
-                        let mut totselect: u32 = 0;
-                        totselect += (buffer[skip_bytes] as u32) << 0;
-                        totselect += (buffer[skip_bytes + 1] as u32) << 8;
-                        totselect += (buffer[skip_bytes + 2] as u32) << 16;
-                        totselect += (buffer[skip_bytes + 3] as u32) << 24;
+                        // let mut totselect: u32 = 0;
+                        // totselect += (buffer[skip_bytes] as u32) << 0;
+                        // totselect += (buffer[skip_bytes + 1] as u32) << 8;
+                        // totselect += (buffer[skip_bytes + 2] as u32) << 16;
+                        // totselect += (buffer[skip_bytes + 3] as u32) << 24;
                         // println!("  totselect = {}", totselect);
                         skip_bytes += 4;
                         // totpoly
@@ -690,15 +806,15 @@ fn main() -> std::io::Result<()> {
                         totpoly += (buffer[skip_bytes + 2] as u32) << 16;
                         totpoly += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("  totpoly = {}", totpoly);
-                        skip_bytes += 4;
+                        // skip_bytes += 4;
                         // totloop
-                        let mut totloop: u32 = 0;
-                        totloop += (buffer[skip_bytes] as u32) << 0;
-                        totloop += (buffer[skip_bytes + 1] as u32) << 8;
-                        totloop += (buffer[skip_bytes + 2] as u32) << 16;
-                        totloop += (buffer[skip_bytes + 3] as u32) << 24;
+                        // let mut totloop: u32 = 0;
+                        // totloop += (buffer[skip_bytes] as u32) << 0;
+                        // totloop += (buffer[skip_bytes + 1] as u32) << 8;
+                        // totloop += (buffer[skip_bytes + 2] as u32) << 16;
+                        // totloop += (buffer[skip_bytes + 3] as u32) << 24;
                         // println!("  totloop = {}", totloop);
-                        skip_bytes += 4;
+                        // skip_bytes += 4;
                         // check tlen
                         // for n in 0..types.len() {
                         //     if types[n] == "CustomData" {
@@ -721,7 +837,7 @@ fn main() -> std::io::Result<()> {
                                 println!("  SDNAnr = {}", sdna_nr);
                                 println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
-                                for p in 0..data_len {
+                                for _p in 0..data_len {
                                     // println!("  {}:", p + 1);
                                     // loopstart
                                     let mut loopstart: u32 = 0;
@@ -740,9 +856,9 @@ fn main() -> std::io::Result<()> {
                                     // println!("    totloop = {}", totloop);
                                     skip_bytes += 4;
                                     // mat_nr
-                                    let mut mat_nr: u16 = 0;
-                                    mat_nr += (buffer[skip_bytes] as u16) << 0;
-                                    mat_nr += (buffer[skip_bytes + 1] as u16) << 8;
+                                    // let mut mat_nr: u16 = 0;
+                                    // mat_nr += (buffer[skip_bytes] as u16) << 0;
+                                    // mat_nr += (buffer[skip_bytes + 1] as u16) << 8;
                                     // println!("    mat_nr = {}", mat_nr);
                                     skip_bytes += 2;
                                     // flag
@@ -780,7 +896,7 @@ fn main() -> std::io::Result<()> {
                                         )
                                     }
                                 }
-                                // println!("  vertex_indices = {:?}", vertex_indices);
+                            // println!("  vertex_indices = {:?}", vertex_indices);
                             } else if types[type_id] == "MVert" {
                                 println!("{}[{}] ({})", code, data_len, len);
                                 println!("  SDNAnr = {}", sdna_nr);
@@ -788,7 +904,7 @@ fn main() -> std::io::Result<()> {
                                 let mut skip_bytes: usize = 0;
                                 let factor: f32 = 1.0 / 32767.0;
                                 let mut coords: [f32; 3] = [0.0_f32; 3];
-                                for v in 0..data_len {
+                                for _v in 0..data_len {
                                     // println!("  {}:", v + 1);
                                     // co
                                     for i in 0..3 {
@@ -828,17 +944,17 @@ fn main() -> std::io::Result<()> {
                                     // println!("    bweight = {}", buffer[skip_bytes]);
                                     skip_bytes += 1;
                                 }
-                                // for v in 0..data_len as usize {
-                                //     println!("  {}:", v + 1);
-                                //     println!("    co: {:?}", p[v]);
-                                //     println!("    no: {:?}", n[v]);
-                                // }
+                            // for v in 0..data_len as usize {
+                            //     println!("  {}:", v + 1);
+                            //     println!("    co: {:?}", p[v]);
+                            //     println!("    no: {:?}", n[v]);
+                            // }
                             } else if types[type_id] == "MLoop" {
                                 println!("{}[{}] ({})", code, data_len, len);
                                 println!("  SDNAnr = {}", sdna_nr);
                                 println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
-                                for l in 0..data_len {
+                                for _l in 0..data_len {
                                     // println!("  {}:", l + 1);
                                     // v
                                     let mut v: u32 = 0;
@@ -850,11 +966,11 @@ fn main() -> std::io::Result<()> {
                                     loop_indices.push(v);
                                     skip_bytes += 4;
                                     // e
-                                    let mut e: u32 = 0;
-                                    e += (buffer[skip_bytes] as u32) << 0;
-                                    e += (buffer[skip_bytes + 1] as u32) << 8;
-                                    e += (buffer[skip_bytes + 2] as u32) << 16;
-                                    e += (buffer[skip_bytes + 3] as u32) << 24;
+                                    // let mut e: u32 = 0;
+                                    // e += (buffer[skip_bytes] as u32) << 0;
+                                    // e += (buffer[skip_bytes + 1] as u32) << 8;
+                                    // e += (buffer[skip_bytes + 2] as u32) << 16;
+                                    // e += (buffer[skip_bytes + 3] as u32) << 24;
                                     // println!("    e = {}", e);
                                     skip_bytes += 4;
                                 }
@@ -862,6 +978,36 @@ fn main() -> std::io::Result<()> {
                             }
                         }
                     } else {
+                        if data_following_mesh {
+                            // TODO: get a proper Transform
+                            let object_to_world: Transform = Transform::translate(&Vector3f {
+                                x: 0.0,
+                                y: 0.0,
+                                z: 0.0,
+                            });
+                            let world_to_object: Transform = Transform::inverse(&object_to_world);
+                            let n_triangles: usize = vertex_indices.len() / 3;
+                            // transform mesh vertices to world space
+                            let mut p_ws: Vec<Point3f> = Vec::new();
+                            let n_vertices: usize = p.len();
+                            for i in 0..n_vertices {
+                                p_ws.push(object_to_world.transform_point(&p[i]));
+                            }
+                            let s: Vec<Vector3f> = Vec::new();
+                            let n: Vec<Normal3f> = Vec::new();
+                            let uv: Vec<Point2f> = Vec::new();
+                            builder.add_mesh(
+                                object_to_world,
+                                world_to_object,
+                                n_triangles,
+                                vertex_indices.clone(),
+                                n_vertices,
+                                p_ws, // in world space
+                                s,    // empty
+                                n,    // empty
+                                uv,   // empty
+                            );
+                        }
                         data_following_mesh = false;
                     }
                     if code != String::from("DATA")
@@ -878,9 +1024,23 @@ fn main() -> std::io::Result<()> {
             println!("{} bytes read", counter);
         }
     }
+    let scene_description: SceneDescription = builder.finalize();
+    let mut render_options: RenderOptions = RenderOptions::new(scene_description);
+    let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
+    let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+    let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
+    for triangle in render_options.triangles {
+        let geo_prim = Arc::new(GeometricPrimitive::new(
+            triangle,
+            Some(matte.clone()),
+            None,
+            None,
+        ));
+        render_options.primitives.push(geo_prim.clone());
+    }
     // WORK
     println!("number of lights = {:?}", lights.len());
-    println!("number of primitives = {:?}", primitives.len());
+    println!("number of primitives = {:?}", render_options.primitives.len());
     // let accelerator = Arc::new(BVHAccel::new(
     //     primitives.clone(),
     //     max_prims_in_node as usize,
