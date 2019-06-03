@@ -738,11 +738,43 @@ fn main() -> std::io::Result<()> {
                                     // println!("    pad = {}", buffer[skip_bytes]);
                                     skip_bytes += 1;
                                 }
+                            } else if types[type_id] == "MVert" {
+                                println!("{}[{}] ({})", code, data_len, len);
+                                println!("  SDNAnr = {}", sdna_nr);
+                                println!("  {} ({})", types[type_id], tlen[type_id]);
+                                let mut skip_bytes: usize = 0;
+                                for p in 0..data_len {
+                                    println!("  {}:", p + 1);
+                                    // co
+                                    for i in 0..3 {
+                                        let mut co_buf: [u8; 4] = [0_u8; 4];
+                                        for b in 0..4 as usize {
+                                            co_buf[b] = buffer[skip_bytes + b];
+                                        }
+                                        let co: f32 = unsafe { mem::transmute(co_buf) };
+                                        println!("    co[{}] = {}", i, co);
+                                        skip_bytes += 4;
+                                    }
+                                    // no
+                                    for i in 0..3 {
+                                        let mut no: u16 = 0;
+                                        no += (buffer[skip_bytes] as u16) << 0;
+                                        no += (buffer[skip_bytes + 1] as u16) << 0;
+                                        println!("    no[{}] = {}", i, no);
+                                        skip_bytes += 2;
+                                    }
+                                    // flag
+                                    // println!("    flag = {}", buffer[skip_bytes]);
+                                    skip_bytes += 1;
+                                    // bweight
+                                    // println!("    bweight = {}", buffer[skip_bytes]);
+                                    skip_bytes += 1;
+                                }
                             }
                         }
                     } else {
                         data_following_mesh = false;
-                    }                        
+                    }
                     if code != String::from("DATA")
                         && code != String::from("REND")
                         && code != String::from("TEST")
