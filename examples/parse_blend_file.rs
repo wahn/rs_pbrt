@@ -665,7 +665,7 @@ fn main() -> std::io::Result<()> {
                         totedge += (buffer[skip_bytes + 1] as u32) << 8;
                         totedge += (buffer[skip_bytes + 2] as u32) << 16;
                         totedge += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("  totedge = {}", totedge);
+                        // println!("  totedge = {}", totedge);
                         skip_bytes += 4;
                         // totface
                         let mut totface: u32 = 0;
@@ -673,7 +673,7 @@ fn main() -> std::io::Result<()> {
                         totface += (buffer[skip_bytes + 1] as u32) << 8;
                         totface += (buffer[skip_bytes + 2] as u32) << 16;
                         totface += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("  totface = {}", totface);
+                        // println!("  totface = {}", totface);
                         skip_bytes += 4;
                         // totselect
                         let mut totselect: u32 = 0;
@@ -681,7 +681,7 @@ fn main() -> std::io::Result<()> {
                         totselect += (buffer[skip_bytes + 1] as u32) << 8;
                         totselect += (buffer[skip_bytes + 2] as u32) << 16;
                         totselect += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("  totselect = {}", totselect);
+                        // println!("  totselect = {}", totselect);
                         skip_bytes += 4;
                         // totpoly
                         let mut totpoly: u32 = 0;
@@ -697,7 +697,7 @@ fn main() -> std::io::Result<()> {
                         totloop += (buffer[skip_bytes + 1] as u32) << 8;
                         totloop += (buffer[skip_bytes + 2] as u32) << 16;
                         totloop += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("  totloop = {}", totloop);
+                        // println!("  totloop = {}", totloop);
                         skip_bytes += 4;
                         // check tlen
                         // for n in 0..types.len() {
@@ -722,14 +722,14 @@ fn main() -> std::io::Result<()> {
                                 println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
                                 for p in 0..data_len {
-                                    println!("  {}:", p + 1);
+                                    // println!("  {}:", p + 1);
                                     // loopstart
                                     let mut loopstart: u32 = 0;
                                     loopstart += (buffer[skip_bytes] as u32) << 0;
                                     loopstart += (buffer[skip_bytes + 1] as u32) << 8;
                                     loopstart += (buffer[skip_bytes + 2] as u32) << 16;
                                     loopstart += (buffer[skip_bytes + 3] as u32) << 24;
-                                    println!("    loopstart = {}", loopstart);
+                                    // println!("    loopstart = {}", loopstart);
                                     skip_bytes += 4;
                                     // totloop
                                     let mut totloop: u32 = 0;
@@ -737,13 +737,13 @@ fn main() -> std::io::Result<()> {
                                     totloop += (buffer[skip_bytes + 1] as u32) << 8;
                                     totloop += (buffer[skip_bytes + 2] as u32) << 16;
                                     totloop += (buffer[skip_bytes + 3] as u32) << 24;
-                                    println!("    totloop = {}", totloop);
+                                    // println!("    totloop = {}", totloop);
                                     skip_bytes += 4;
                                     // mat_nr
                                     let mut mat_nr: u16 = 0;
                                     mat_nr += (buffer[skip_bytes] as u16) << 0;
                                     mat_nr += (buffer[skip_bytes + 1] as u16) << 8;
-                                    println!("    mat_nr = {}", mat_nr);
+                                    // println!("    mat_nr = {}", mat_nr);
                                     skip_bytes += 2;
                                     // flag
                                     // println!("    flag = {}", buffer[skip_bytes]);
@@ -780,7 +780,7 @@ fn main() -> std::io::Result<()> {
                                         )
                                     }
                                 }
-                                println!("    vertex_indices = {:?}", vertex_indices);
+                                // println!("  vertex_indices = {:?}", vertex_indices);
                             } else if types[type_id] == "MVert" {
                                 println!("{}[{}] ({})", code, data_len, len);
                                 println!("  SDNAnr = {}", sdna_nr);
@@ -828,11 +828,11 @@ fn main() -> std::io::Result<()> {
                                     // println!("    bweight = {}", buffer[skip_bytes]);
                                     skip_bytes += 1;
                                 }
-                                for v in 0..data_len as usize {
-                                    println!("  {}:", v + 1);
-                                    println!("    co: {:?}", p[v]);
-                                    println!("    no: {:?}", n[v]);
-                                }
+                                // for v in 0..data_len as usize {
+                                //     println!("  {}:", v + 1);
+                                //     println!("    co: {:?}", p[v]);
+                                //     println!("    no: {:?}", n[v]);
+                                // }
                             } else if types[type_id] == "MLoop" {
                                 println!("{}[{}] ({})", code, data_len, len);
                                 println!("  SDNAnr = {}", sdna_nr);
@@ -858,7 +858,7 @@ fn main() -> std::io::Result<()> {
                                     // println!("    e = {}", e);
                                     skip_bytes += 4;
                                 }
-                                println!("    loop_indices = {:?}", loop_indices);
+                                // println!("    loop_indices = {:?}", loop_indices);
                             }
                         }
                     } else {
