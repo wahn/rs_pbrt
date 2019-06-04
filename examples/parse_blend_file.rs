@@ -93,7 +93,6 @@ impl SceneDescriptionBuilder {
             n,    // empty
             uv,   // empty
         ));
-        println!("triangle_mesh = {:?}", triangle_mesh);
         self.meshes.push(triangle_mesh);
         self
     }
@@ -715,23 +714,22 @@ fn main() -> std::io::Result<()> {
                         }
                         object_to_world = Transform::new(
                             mat_values[0],
-                            mat_values[1],
-                            mat_values[2],
-                            mat_values[3],
                             mat_values[4],
-                            mat_values[5],
-                            mat_values[6],
-                            mat_values[7],
                             mat_values[8],
+                            mat_values[12] * scale_length,
+                            mat_values[1],
+                            mat_values[5],
                             mat_values[9],
+                            mat_values[13] * scale_length,
+                            mat_values[2],
+                            mat_values[6],
                             mat_values[10],
+                            mat_values[14] * scale_length,
+                            mat_values[3],
+                            mat_values[7],
                             mat_values[11],
-                            mat_values[12],
-                            mat_values[13],
-                            mat_values[14],
                             mat_values[15],
                         );
-                        println!("  object_to_world = {:?}", object_to_world);
                         object_to_world_hm.insert(base_name.clone(), object_to_world);
                         // parentinv
                         for _i in 0..4 {
@@ -784,7 +782,6 @@ fn main() -> std::io::Result<()> {
                         data_following_mesh = false;
                     } else if code == String::from("ME") {
                         if data_following_mesh {
-                            println!("WORK: lookup {:?} for transform", base_name);
                             if let Some(o2w) = object_to_world_hm.get(&base_name) {
                                 object_to_world = *o2w;
                             } else {
@@ -804,7 +801,6 @@ fn main() -> std::io::Result<()> {
                             let s: Vec<Vector3f> = Vec::new();
                             let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
-                            println!("  object_to_world = {:?}", object_to_world);
                             builder.add_mesh(
                                 object_to_world,
                                 world_to_object,
@@ -1056,7 +1052,6 @@ fn main() -> std::io::Result<()> {
                         }
                     } else {
                         if data_following_mesh {
-                            println!("WORK: lookup {:?} for transform", base_name);
                             if let Some(o2w) = object_to_world_hm.get(&base_name) {
                                 object_to_world = *o2w;
                             } else {
@@ -1076,7 +1071,6 @@ fn main() -> std::io::Result<()> {
                             let s: Vec<Vector3f> = Vec::new();
                             let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
-                            println!("  object_to_world = {:?}", object_to_world);
                             builder.add_mesh(
                                 object_to_world,
                                 world_to_object,
