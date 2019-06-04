@@ -1,8 +1,16 @@
+// Assumptions:
+// 1. objects and data have the same base name:
+//    e.g. OBcornellbox and MEcornellbox
+//    TODO: Find a better solution (following the Object->data pointer?)
+// 2. bpy.context.scene.unit_settings.scale_length = 0.001
+//    TODO: get the scale_length from Blender file
+
 extern crate num_cpus;
 extern crate pbrt;
 extern crate structopt;
 
 // std
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::mem;
@@ -529,6 +537,12 @@ fn main() -> std::io::Result<()> {
         } else {
             let mut data_following_mesh: bool = false;
             // PBRT
+            let scale_length: f32 = 0.001;
+            let mut base_name = String::new();
+            let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
+            let mut object_to_world: Transform = Transform::new(
+                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            );
             let mut p: Vec<Point3f> = Vec::new();
             let mut n: Vec<Normal3f> = Vec::new();
             let mut vertex_indices: Vec<usize> = Vec::new();
@@ -592,13 +606,18 @@ fn main() -> std::io::Result<()> {
                         // Object (len=1440) { ... }
                         let mut skip_bytes: usize = 0;
                         // id
-                        let mut id_name = String::with_capacity(4);
+                        let mut id_name = String::new();
+                        base_name = String::new();
                         for i in 32..(32 + 66) {
                             if (buffer[i] as char).is_ascii_alphanumeric() {
                                 id_name.push(buffer[i] as char);
+                                if i != 32 && i != 33 {
+                                    base_name.push(buffer[i] as char);
+                                }
                             }
                         }
                         println!("  id_name = {}", id_name);
+                        println!("  base_name = {}", base_name);
                         skip_bytes += 120;
                         // adt
                         skip_bytes += 8;
@@ -681,17 +700,39 @@ fn main() -> std::io::Result<()> {
                         // drotAngle
                         skip_bytes += 4;
                         // obmat
-                        for _i in 0..4 {
-                            for _j in 0..4 {
+                        let mut mat_values: [f32; 16] = [0.0_f32; 16];
+                        for i in 0..4 {
+                            for j in 0..4 {
                                 let mut obmat_buf: [u8; 4] = [0_u8; 4];
                                 for i in 0..4 as usize {
                                     obmat_buf[i] = buffer[skip_bytes + i];
                                 }
-                                let _obmat: f32 = unsafe { mem::transmute(obmat_buf) };
+                                let obmat: f32 = unsafe { mem::transmute(obmat_buf) };
                                 // println!("  obmat[{}][{}] = {}", i, j, obmat);
+                                mat_values[i * 4 + j] = obmat;
                                 skip_bytes += 4;
                             }
                         }
+                        object_to_world = Transform::new(
+                            mat_values[0],
+                            mat_values[1],
+                            mat_values[2],
+                            mat_values[3],
+                            mat_values[4],
+                            mat_values[5],
+                            mat_values[6],
+                            mat_values[7],
+                            mat_values[8],
+                            mat_values[9],
+                            mat_values[10],
+                            mat_values[11],
+                            mat_values[12],
+                            mat_values[13],
+                            mat_values[14],
+                            mat_values[15],
+                        );
+                        println!("  object_to_world = {:?}", object_to_world);
+                        object_to_world_hm.insert(base_name.clone(), object_to_world);
                         // parentinv
                         for _i in 0..4 {
                             for _j in 0..4 {
@@ -743,12 +784,15 @@ fn main() -> std::io::Result<()> {
                         data_following_mesh = false;
                     } else if code == String::from("ME") {
                         if data_following_mesh {
-                            // TODO: get a proper Transform
-                            let object_to_world: Transform = Transform::translate(&Vector3f {
-                                x: 0.0,
-                                y: 0.0,
-                                z: 0.0,
-                            });
+                            println!("WORK: lookup {:?} for transform", base_name);
+                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                object_to_world = *o2w;
+                            } else {
+                                println!(
+                                    "WARNING: looking up object_to_world by name ({:?}) failed",
+                                    base_name
+                                );
+                            }
                             let world_to_object: Transform = Transform::inverse(&object_to_world);
                             let n_triangles: usize = vertex_indices.len() / 3;
                             // transform mesh vertices to world space
@@ -760,6 +804,7 @@ fn main() -> std::io::Result<()> {
                             let s: Vec<Vector3f> = Vec::new();
                             let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
+                            println!("  object_to_world = {:?}", object_to_world);
                             builder.add_mesh(
                                 object_to_world,
                                 world_to_object,
@@ -779,12 +824,17 @@ fn main() -> std::io::Result<()> {
                         let mut skip_bytes: usize = 0;
                         // id
                         let mut id_name = String::with_capacity(4);
+                        base_name = String::new();
                         for i in 32..(32 + 66) {
                             if (buffer[i] as char).is_ascii_alphanumeric() {
                                 id_name.push(buffer[i] as char);
+                                if i != 32 && i != 33 {
+                                    base_name.push(buffer[i] as char);
+                                }
                             }
                         }
                         println!("  id_name = {}", id_name);
+                        println!("  base_name = {}", base_name);
                         skip_bytes += 120;
                         // adt
                         skip_bytes += 8;
@@ -945,9 +995,9 @@ fn main() -> std::io::Result<()> {
                                         skip_bytes += 4;
                                     }
                                     p.push(Point3f {
-                                        x: coords[0] as Float,
-                                        y: coords[1] as Float,
-                                        z: coords[2] as Float,
+                                        x: (coords[0] * scale_length) as Float,
+                                        y: (coords[1] * scale_length) as Float,
+                                        z: (coords[2] * scale_length) as Float,
                                     });
                                     // no
                                     for i in 0..3 {
@@ -1006,12 +1056,15 @@ fn main() -> std::io::Result<()> {
                         }
                     } else {
                         if data_following_mesh {
-                            // TODO: get a proper Transform
-                            let object_to_world: Transform = Transform::translate(&Vector3f {
-                                x: 0.0,
-                                y: 0.0,
-                                z: 0.0,
-                            });
+                            println!("WORK: lookup {:?} for transform", base_name);
+                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                object_to_world = *o2w;
+                            } else {
+                                println!(
+                                    "WARNING: looking up object_to_world by name ({:?}) failed",
+                                    base_name
+                                );
+                            }
                             let world_to_object: Transform = Transform::inverse(&object_to_world);
                             let n_triangles: usize = vertex_indices.len() / 3;
                             // transform mesh vertices to world space
@@ -1023,6 +1076,7 @@ fn main() -> std::io::Result<()> {
                             let s: Vec<Vector3f> = Vec::new();
                             let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
+                            println!("  object_to_world = {:?}", object_to_world);
                             builder.add_mesh(
                                 object_to_world,
                                 world_to_object,
@@ -1158,12 +1212,6 @@ fn main() -> std::io::Result<()> {
     let mut integrator: Box<SamplerIntegrator + Send + Sync> =
         Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
     // TMP
-    // let accelerator = Arc::new(BVHAccel::new(
-    //     primitives.clone(),
-    //     max_prims_in_node as usize,
-    //     split_method,
-    // ));
-    // let scene: Scene = Scene::new(accelerator.clone(), lights.clone());
     // in the end we want to call render()
     render(
         &scene,
