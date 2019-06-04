@@ -4,6 +4,8 @@
 //    TODO: Find a better solution (following the Object->data pointer?)
 // 2. bpy.context.scene.unit_settings.scale_length = 0.001
 //    TODO: get the scale_length from Blender file
+// 3. Right now we search for "Camera" for Transform::look_at(...)
+//    TODO: get the render camera/transform from the scene (self.scene.camera)
 
 extern crate num_cpus;
 extern crate pbrt;
@@ -285,6 +287,16 @@ fn main() -> std::io::Result<()> {
         "parse_blend_file version {} [Detected {} cores]",
         VERSION, num_threads
     );
+    // PBRT
+    let scale_length: f32 = 0.001;
+    let mut base_name = String::new();
+    let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
+    let mut object_to_world: Transform = Transform::new(
+        1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    );
+    let mut p: Vec<Point3f> = Vec::new();
+    let mut n: Vec<Normal3f> = Vec::new();
+    let mut vertex_indices: Vec<usize> = Vec::new();
     // TODO: let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
     let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
     // first get the DNA
@@ -535,16 +547,6 @@ fn main() -> std::io::Result<()> {
             println!("{:?}", buffer);
         } else {
             let mut data_following_mesh: bool = false;
-            // PBRT
-            let scale_length: f32 = 0.001;
-            let mut base_name = String::new();
-            let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
-            let mut object_to_world: Transform = Transform::new(
-                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-            );
-            let mut p: Vec<Point3f> = Vec::new();
-            let mut n: Vec<Normal3f> = Vec::new();
-            let mut vertex_indices: Vec<usize> = Vec::new();
             // Blender
             let mut loop_indices: Vec<u32> = Vec::new();
             loop {
@@ -1126,21 +1128,45 @@ fn main() -> std::io::Result<()> {
         SplitMethod::SAH,
     ));
     let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
-    let pos = Point3f {
+    let mut pos = Point3f {
         x: -0.2779999521691323,
         y: -0.800000037997961,
         z: 0.2730000129668042,
     };
-    let look = Point3f {
+    let mut look = Point3f {
         x: -0.2779999521691323,
         y: -0.7990000379504636,
         z: 0.2730000129668042,
     };
-    let up = Vector3f {
+    let mut up = Vector3f {
         x: -2.279973153091093e-14,
         y: 7.549790126404332e-08,
         z: 1.0,
     };
+    base_name = String::from("Camera");
+    if let Some(o2w) = object_to_world_hm.get(&base_name) {
+        pos = Point3f {
+            x: o2w.m.m[0][3],
+            y: o2w.m.m[1][3],
+            z: o2w.m.m[2][3],
+        };
+        let forwards: Point3f = Point3f {
+            x: -o2w.m.m[0][2] * scale_length,
+            y: -o2w.m.m[1][2] * scale_length,
+            z: -o2w.m.m[2][2] * scale_length,
+        };
+        look = pos + forwards;
+        up = Vector3f {
+            x: o2w.m.m[0][1],
+            y: o2w.m.m[1][1],
+            z: o2w.m.m[2][1],
+        };
+    } else {
+        println!(
+            "WARNING: looking up object_to_world by name ({:?}) failed",
+            base_name
+        );
+    }
     let t: Transform = Transform::scale(-1.0, 1.0, 1.0) * Transform::look_at(&pos, &look, &up);
     let it: Transform = Transform {
         m: t.m_inv.clone(),
