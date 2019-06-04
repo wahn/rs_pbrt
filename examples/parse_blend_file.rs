@@ -9,12 +9,26 @@ use std::mem;
 use std::sync::Arc;
 use structopt::StructOpt;
 // pbrt
-use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
+use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
+use pbrt::cameras::perspective::PerspectiveCamera;
+use pbrt::core::camera::Camera;
+use pbrt::core::film::Film;
+use pbrt::core::filter::Filter;
+use pbrt::core::geometry::{
+    Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f,
+};
+use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
-use pbrt::core::transform::Transform;
+use pbrt::core::sampler::Sampler;
+use pbrt::core::scene::Scene;
+use pbrt::core::transform::{AnimatedTransform, Transform};
+use pbrt::filters::boxfilter::BoxFilter;
+use pbrt::integrators::ao::AOIntegrator;
+use pbrt::integrators::render;
 use pbrt::materials::matte::MatteMaterial;
+use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
 
@@ -32,15 +46,20 @@ struct Cli {
 
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<Arc<TriangleMesh>>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 impl SceneDescriptionBuilder {
     fn new() -> SceneDescriptionBuilder {
-        SceneDescriptionBuilder { meshes: Vec::new() }
+        SceneDescriptionBuilder {
+            meshes: Vec::new(),
+            lights: Vec::new(),
+        }
     }
     fn add_mesh(
         &mut self,
@@ -73,6 +92,7 @@ impl SceneDescriptionBuilder {
     fn finalize(self) -> SceneDescription {
         SceneDescription {
             meshes: self.meshes,
+            lights: self.lights,
         }
     }
 }
@@ -80,12 +100,18 @@ impl SceneDescriptionBuilder {
 struct RenderOptions {
     primitives: Vec<Arc<Primitive + Sync + Send>>,
     triangles: Vec<Arc<Triangle>>,
+    lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 impl RenderOptions {
     fn new(scene: SceneDescription) -> RenderOptions {
         let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
+        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+        // lights
+        for light in &scene.lights {
+            lights.push(light.clone());
+        }
         // meshes
         for mesh in scene.meshes {
             // create individual triangles
@@ -103,6 +129,7 @@ impl RenderOptions {
         RenderOptions {
             primitives: primitives,
             triangles: triangles,
+            lights: lights,
         }
     }
 }
@@ -1040,7 +1067,97 @@ fn main() -> std::io::Result<()> {
     }
     // WORK
     println!("number of lights = {:?}", lights.len());
-    println!("number of primitives = {:?}", render_options.primitives.len());
+    println!(
+        "number of primitives = {:?}",
+        render_options.primitives.len()
+    );
+    // TMP
+    let accelerator = Arc::new(BVHAccel::new(
+        render_options.primitives,
+        4,
+        SplitMethod::SAH,
+    ));
+    let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
+    let pos = Point3f {
+        x: -0.2779999521691323,
+        y: -0.800000037997961,
+        z: 0.2730000129668042,
+    };
+    let look = Point3f {
+        x: -0.2779999521691323,
+        y: -0.7990000379504636,
+        z: 0.2730000129668042,
+    };
+    let up = Vector3f {
+        x: -2.279973153091093e-14,
+        y: 7.549790126404332e-08,
+        z: 1.0,
+    };
+    let t: Transform = Transform::scale(-1.0, 1.0, 1.0) * Transform::look_at(&pos, &look, &up);
+    let it: Transform = Transform {
+        m: t.m_inv.clone(),
+        m_inv: t.m.clone(),
+    };
+    let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
+    let fov: Float = 39.14625166082039;
+    let xres = 500;
+    let yres = 500;
+    let frame: Float = xres as Float / yres as Float;
+    let mut screen: Bounds2f = Bounds2f::default();
+    if frame > 1.0 {
+        screen.p_min.x = -frame;
+        screen.p_max.x = frame;
+        screen.p_min.y = -1.0;
+        screen.p_max.y = 1.0;
+    } else {
+        screen.p_min.x = -1.0;
+        screen.p_max.x = 1.0;
+        screen.p_min.y = -1.0 / frame;
+        screen.p_max.y = 1.0 / frame;
+    }
+    let shutteropen: Float = 0.0;
+    let shutterclose: Float = 1.0;
+    let lensradius: Float = 0.0;
+    let focaldistance: Float = 1e6;
+    let crop: Bounds2f = Bounds2f {
+        p_min: Point2f { x: 0.0, y: 0.0 },
+        p_max: Point2f { x: 1.0, y: 1.0 },
+    };
+    let xw: Float = 0.5;
+    let yw: Float = 0.5;
+    let filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
+        radius: Vector2f { x: xw, y: yw },
+        inv_radius: Vector2f {
+            x: 1.0 / xw,
+            y: 1.0 / yw,
+        },
+    });
+    let filename: String = String::from("spheres-differentials-texfilt.exr");
+    let film: Arc<Film> = Arc::new(Film::new(
+        Point2i { x: xres, y: yres },
+        crop,
+        filter,
+        35.0,
+        filename,
+        1.0,
+        std::f32::INFINITY,
+    ));
+    let camera: Arc<Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(
+        animated_cam_to_world,
+        screen,
+        shutteropen,
+        shutterclose,
+        lensradius,
+        focaldistance,
+        fov,
+        film.clone(),
+        None,
+    ));
+    let mut sampler: Box<Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::default());
+    let sample_bounds: Bounds2i = film.get_sample_bounds();
+    let mut integrator: Box<SamplerIntegrator + Send + Sync> =
+        Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
+    // TMP
     // let accelerator = Arc::new(BVHAccel::new(
     //     primitives.clone(),
     //     max_prims_in_node as usize,
@@ -1048,12 +1165,12 @@ fn main() -> std::io::Result<()> {
     // ));
     // let scene: Scene = Scene::new(accelerator.clone(), lights.clone());
     // in the end we want to call render()
-    // render(
-    //     &scene,
-    //     &camera.clone(),
-    //     &mut sampler,
-    //     &mut integrator,
-    //     num_threads,
-    // );
+    render(
+        &scene,
+        &camera.clone(),
+        &mut sampler,
+        &mut integrator,
+        num_threads,
+    );
     Ok(())
 }
