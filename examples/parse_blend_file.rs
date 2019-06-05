@@ -643,6 +643,9 @@ fn main() -> std::io::Result<()> {
                         let mut id_name = String::new();
                         base_name = String::new();
                         for i in 32..(32 + 66) {
+                            if buffer[i] == 0 {
+                                break;
+                            }
                             if (buffer[i] as char).is_ascii_alphanumeric() {
                                 id_name.push(buffer[i] as char);
                                 if i != 32 && i != 33 {
@@ -857,6 +860,9 @@ fn main() -> std::io::Result<()> {
                         let mut id_name = String::with_capacity(4);
                         base_name = String::new();
                         for i in 32..(32 + 66) {
+                            if buffer[i] == 0 {
+                                break;
+                            }
                             if (buffer[i] as char).is_ascii_alphanumeric() {
                                 id_name.push(buffer[i] as char);
                                 if i != 32 && i != 33 {
