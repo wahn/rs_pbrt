@@ -2,9 +2,7 @@
 // 1. objects and data have the same base name:
 //    e.g. OBcornellbox and MEcornellbox
 //    TODO: Find a better solution (following the Object->data pointer?)
-// 2. bpy.context.scene.unit_settings.scale_length = 0.001
-//    TODO: get the scale_length from Blender file
-// 3. Right now we search for "Camera" for Transform::look_at(...)
+// 2. Right now we search for "Camera" for Transform::look_at(...)
 //    TODO: get the render camera/transform from the scene (self.scene.camera)
 
 extern crate num_cpus;
@@ -1046,14 +1044,19 @@ fn main() -> std::io::Result<()> {
                         // DisplaySafeAreas (len=32)
                         skip_bytes += 32;
                         // RenderData (len=4432)
+                        let mut render_data_bytes: usize = 0;
                         // ImageFormatData (len=256)
                         skip_bytes += 256;
+                        render_data_bytes += 256;
                         // avicodecdata, qtcodecdata
                         skip_bytes += 8 * 2;
+                        render_data_bytes += 8 * 2;
                         // QuicktimeCodecSettings (len=64)
                         skip_bytes += 64;
+                        render_data_bytes += 64;
                         // FFMpegCodecData (len=88)
                         skip_bytes += 88; 
+                        render_data_bytes += 88;
                         // cfra
                         let mut cfra: u32 = 0;
                         cfra += (buffer[skip_bytes] as u32) << 0;
@@ -1062,6 +1065,7 @@ fn main() -> std::io::Result<()> {
                         cfra += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("    cfra = {}", cfra);
                         skip_bytes += 4;
+                        render_data_bytes += 4;
                         // sfra
                         let mut sfra: u32 = 0;
                         sfra += (buffer[skip_bytes] as u32) << 0;
@@ -1070,6 +1074,7 @@ fn main() -> std::io::Result<()> {
                         sfra += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("    sfra = {}", sfra);
                         skip_bytes += 4;
+                        render_data_bytes += 4;
                         // efra
                         let mut efra: u32 = 0;
                         efra += (buffer[skip_bytes] as u32) << 0;
@@ -1078,20 +1083,28 @@ fn main() -> std::io::Result<()> {
                         efra += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("    efra = {}", efra);
                         skip_bytes += 4;
+                        render_data_bytes += 4;
                         // subframe
                         skip_bytes += 4;
+                        render_data_bytes += 4;
                         // psfra, pefra, images, framapto
                         skip_bytes += 4 * 4;
+                        render_data_bytes += 4 * 4;
                         // flag, threads
                         skip_bytes += 2 * 2;
+                        render_data_bytes += 2 * 2;
                         // framelen, blurfac, edgeR, edgeG, edgeB
                         skip_bytes += 4 * 5;
+                        render_data_bytes += 4 * 5;
                         // fullscreen, xplay, yplay, freqplay, depth, attrib
                         skip_bytes += 2 * 6;
+                        render_data_bytes += 2 * 6;
                         // frame_step
                         skip_bytes += 4;
+                        render_data_bytes += 4;
                         // stereomode, dimensionspreset, filtertype, size, maximsize, pad6
                         skip_bytes += 2 * 6;
+                        render_data_bytes += 2 * 6;
                         // xsch
                         let mut xsch: u32 = 0;
                         xsch += (buffer[skip_bytes] as u32) << 0;
@@ -1100,6 +1113,7 @@ fn main() -> std::io::Result<()> {
                         xsch += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("    xsch = {}", xsch);
                         skip_bytes += 4;
+                        render_data_bytes += 4;
                         resolution_x = xsch;
                         // ysch
                         let mut ysch: u32 = 0;
@@ -1108,8 +1122,38 @@ fn main() -> std::io::Result<()> {
                         ysch += (buffer[skip_bytes + 2] as u32) << 16;
                         ysch += (buffer[skip_bytes + 3] as u32) << 24;
                         println!("    ysch = {}", ysch);
-                        // skip_bytes += 4;
+                        skip_bytes += 4;
+                        render_data_bytes += 4;
                         resolution_y = ysch;
+                        // skip remaining RenderData
+                        skip_bytes += 4432 - render_data_bytes;
+                        // AudioData (len=32)
+                        skip_bytes += 32;
+                        // ListBase * 2
+                        skip_bytes += 16 * 2;
+                        // sound_scene, playback_handle, sound_scrub_handle, speaker_handles, fps_info
+                        skip_bytes += 8 * 5;
+                        // depsgraph, pad1, theDag
+                        skip_bytes += 8 * 3;
+                        // dagflags, pad3
+                        skip_bytes += 2 * 2;
+                        // active_keyingset
+                        skip_bytes += 4;
+                        // ListBase * 1
+                        skip_bytes += 16 * 1;
+                        // GameFraming (len=16)
+                        skip_bytes += 16;
+                        // GameData (len=192)
+                        skip_bytes += 192;
+                        // UnitSettings
+                        // scale_length
+                        let mut scale_length_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            scale_length_buf[i] = buffer[skip_bytes + i];
+                        }
+                        scale_length = unsafe { mem::transmute(scale_length_buf) };
+                        println!("    scale_length = {}", scale_length);
+                        // skip_bytes += 4;
                         // data_following_mesh
                         data_following_mesh = false;
                     } else if code == String::from("DATA") {
