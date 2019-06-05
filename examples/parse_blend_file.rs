@@ -336,7 +336,9 @@ fn main() -> std::io::Result<()> {
         VERSION, num_threads
     );
     // PBRT
-    let scale_length: f32 = 1.0; // 0.001;
+    let mut scale_length: f32 = 1.0;
+    let mut resolution_x: u32 = 640;
+    let mut resolution_y: u32 = 480;
     let mut base_name = String::new();
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
     let mut object_to_world: Transform = Transform::new(
@@ -675,6 +677,7 @@ fn main() -> std::io::Result<()> {
                             uv,   // empty
                         );
                     }
+                    // data_following_mesh
                     data_following_mesh = false;
                 } else {
                     // read len bytes
@@ -865,6 +868,7 @@ fn main() -> std::io::Result<()> {
                                 skip_bytes += 4;
                             }
                         }
+                        // data_following_mesh
                         data_following_mesh = false;
                     } else if code == String::from("ME") {
                         if data_following_mesh {
@@ -983,12 +987,131 @@ fn main() -> std::io::Result<()> {
                         //         println!("  {:?} = types[{}] needs {} bytes", types[n], n, tlen[n]);
                         //     }
                         // }
+                        // data_following_mesh
                         data_following_mesh = true;
                         // clear all Vecs
                         p.clear();
                         n.clear();
                         vertex_indices.clear();
                         loop_indices.clear();
+                    } else if code == String::from("SC") {
+                        // SC
+                        println!("{} ({})", code, len);
+                        println!("  SDNAnr = {}", sdna_nr);
+                        // Scene (len=5472) { ... }
+                        let mut skip_bytes: usize = 0;
+                        // id
+                        let mut id_name = String::with_capacity(4);
+                        base_name = String::new();
+                        for i in 32..(32 + 66) {
+                            if buffer[i] == 0 {
+                                break;
+                            }
+                            if (buffer[i] as char).is_ascii_alphanumeric() {
+                                id_name.push(buffer[i] as char);
+                                if i != 32 && i != 33 {
+                                    base_name.push(buffer[i] as char);
+                                }
+                            }
+                        }
+                        println!("  id_name = {}", id_name);
+                        println!("  base_name = {}", base_name);
+                        skip_bytes += 120;
+                        // adt
+                        skip_bytes += 8;
+                        // camera, world, set
+                        skip_bytes += 8 * 3;
+                        // ListBase * 1
+                        skip_bytes += 16 * 1;
+                        // basact, obedit
+                        skip_bytes += 8 * 2;
+                        // cursor
+                        skip_bytes += 4 * 3;
+                        // twcent
+                        skip_bytes += 4 * 3;
+                        // twmin
+                        skip_bytes += 4 * 3;
+                        // twmax
+                        skip_bytes += 4 * 3;
+                        // lay, layact, lay_updated
+                        skip_bytes += 4 * 3;
+                        // flag
+                        skip_bytes += 2;
+                        // use_nodes
+                        skip_bytes += 1;
+                        // pad
+                        skip_bytes += 1;
+                        // nodetree, ed, toolsettings, stats
+                        skip_bytes += 8 * 4;
+                        // DisplaySafeAreas (len=32)
+                        skip_bytes += 32;
+                        // RenderData (len=4432)
+                        // ImageFormatData (len=256)
+                        skip_bytes += 256;
+                        // avicodecdata, qtcodecdata
+                        skip_bytes += 8 * 2;
+                        // QuicktimeCodecSettings (len=64)
+                        skip_bytes += 64;
+                        // FFMpegCodecData (len=88)
+                        skip_bytes += 88; 
+                        // cfra
+                        let mut cfra: u32 = 0;
+                        cfra += (buffer[skip_bytes] as u32) << 0;
+                        cfra += (buffer[skip_bytes + 1] as u32) << 8;
+                        cfra += (buffer[skip_bytes + 2] as u32) << 16;
+                        cfra += (buffer[skip_bytes + 3] as u32) << 24;
+                        println!("    cfra = {}", cfra);
+                        skip_bytes += 4;
+                        // sfra
+                        let mut sfra: u32 = 0;
+                        sfra += (buffer[skip_bytes] as u32) << 0;
+                        sfra += (buffer[skip_bytes + 1] as u32) << 8;
+                        sfra += (buffer[skip_bytes + 2] as u32) << 16;
+                        sfra += (buffer[skip_bytes + 3] as u32) << 24;
+                        println!("    sfra = {}", sfra);
+                        skip_bytes += 4;
+                        // efra
+                        let mut efra: u32 = 0;
+                        efra += (buffer[skip_bytes] as u32) << 0;
+                        efra += (buffer[skip_bytes + 1] as u32) << 8;
+                        efra += (buffer[skip_bytes + 2] as u32) << 16;
+                        efra += (buffer[skip_bytes + 3] as u32) << 24;
+                        println!("    efra = {}", efra);
+                        skip_bytes += 4;
+                        // subframe
+                        skip_bytes += 4;
+                        // psfra, pefra, images, framapto
+                        skip_bytes += 4 * 4;
+                        // flag, threads
+                        skip_bytes += 2 * 2;
+                        // framelen, blurfac, edgeR, edgeG, edgeB
+                        skip_bytes += 4 * 5;
+                        // fullscreen, xplay, yplay, freqplay, depth, attrib
+                        skip_bytes += 2 * 6;
+                        // frame_step
+                        skip_bytes += 4;
+                        // stereomode, dimensionspreset, filtertype, size, maximsize, pad6
+                        skip_bytes += 2 * 6;
+                        // xsch
+                        let mut xsch: u32 = 0;
+                        xsch += (buffer[skip_bytes] as u32) << 0;
+                        xsch += (buffer[skip_bytes + 1] as u32) << 8;
+                        xsch += (buffer[skip_bytes + 2] as u32) << 16;
+                        xsch += (buffer[skip_bytes + 3] as u32) << 24;
+                        println!("    xsch = {}", xsch);
+                        skip_bytes += 4;
+                        resolution_x = xsch;
+                        // ysch
+                        let mut ysch: u32 = 0;
+                        ysch += (buffer[skip_bytes] as u32) << 0;
+                        ysch += (buffer[skip_bytes + 1] as u32) << 8;
+                        ysch += (buffer[skip_bytes + 2] as u32) << 16;
+                        ysch += (buffer[skip_bytes + 3] as u32) << 24;
+                        println!("    ysch = {}", ysch);
+                        // skip_bytes += 4;
+                        resolution_y = ysch;
+                        // data_following_mesh
+                        data_following_mesh = false;
                     } else if code == String::from("DATA") {
                         // DATA
                         if data_following_mesh {
@@ -1172,6 +1295,7 @@ fn main() -> std::io::Result<()> {
                                 uv,   // empty
                             );
                         }
+                        // data_following_mesh
                         data_following_mesh = false;
                     }
                     if code != String::from("DATA")
@@ -1261,9 +1385,7 @@ fn main() -> std::io::Result<()> {
     };
     let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
     let fov: Float = 39.14625166082039;
-    let xres = 500;
-    let yres = 500;
-    let frame: Float = xres as Float / yres as Float;
+    let frame: Float = resolution_x as Float / resolution_y as Float;
     let mut screen: Bounds2f = Bounds2f::default();
     if frame > 1.0 {
         screen.p_min.x = -frame;
@@ -1295,7 +1417,7 @@ fn main() -> std::io::Result<()> {
     });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
     let film: Arc<Film> = Arc::new(Film::new(
-        Point2i { x: xres, y: yres },
+        Point2i { x: resolution_x as i32, y: resolution_y as i32 },
         crop,
         filter,
         35.0,
