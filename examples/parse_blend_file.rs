@@ -145,56 +145,104 @@ impl RenderOptions {
 
 // TMP
 
-fn decode_blender_header(header: &[u8], version: &mut u32) -> bool {
+fn decode_blender_header(header: &[u8], version: &mut u32, print_it: bool) -> bool {
     // BLENDER
     match header[0] as char {
-        'B' => print!("B"),
+        'B' => {
+            if print_it {
+                print!("B");
+            }
+        }
         _ => return false,
     }
     match header[1] as char {
-        'L' => print!("L"),
+        'L' => {
+            if print_it {
+                print!("L");
+            }
+        }
         _ => return false,
     }
     match header[2] as char {
-        'E' => print!("E"),
+        'E' => {
+            if print_it {
+                print!("E");
+            }
+        }
         _ => return false,
     }
     match header[3] as char {
-        'N' => print!("N"),
+        'N' => {
+            if print_it {
+                print!("N");
+            }
+        }
         _ => return false,
     }
     match header[4] as char {
-        'D' => print!("D"),
+        'D' => {
+            if print_it {
+                print!("D");
+            }
+        }
         _ => return false,
     }
     match header[5] as char {
-        'E' => print!("E"),
+        'E' => {
+            if print_it {
+                print!("E");
+            }
+        }
         _ => return false,
     }
     match header[6] as char {
-        'R' => print!("R"),
+        'R' => {
+            if print_it {
+                print!("R");
+            }
+        }
         _ => return false,
     }
     // [_|-]
     match header[7] as char {
-        '_' => print!("_"),
-        '-' => print!("-"),
+        '_' => {
+            if print_it {
+                print!("_");
+            }
+        }
+        '-' => {
+            if print_it {
+                print!("-");
+            }
+        }
         _ => return false,
     }
     // [v|V]
     match header[8] as char {
-        'v' => print!("v"),
-        'V' => print!("V"),
+        'v' => {
+            if print_it {
+                print!("v");
+            }
+        }
+        'V' => {
+            if print_it {
+                print!("V");
+            }
+        }
         _ => return false,
     }
     for i in 9..12 {
         if header[i].is_ascii_digit() {
-            print!("{:?}", (header[i] as char).to_digit(10).unwrap());
+            if print_it {
+                print!("{:?}", (header[i] as char).to_digit(10).unwrap());
+            }
         } else {
             return false;
         }
     }
-    print!("\n");
+    if print_it {
+        print!("\n");
+    }
     // get the version number
     let last3c = vec![header[9], header[10], header[11]];
     let version_str = String::from_utf8(last3c).unwrap();
@@ -219,7 +267,7 @@ fn read_names(
     names: &mut Vec<String>,
     byte_counter: &mut usize,
 ) -> std::io::Result<()> {
-    let mut name_counter: usize = 0;
+    // let mut name_counter: usize = 0;
     let mut buffer = [0; 1];
     loop {
         if names.len() == nr_names {
@@ -238,10 +286,10 @@ fn read_names(
             }
             // println!("  {:?}", name);
             names.push(name);
-            name_counter += 1;
+            // name_counter += 1;
         }
     }
-    println!("  {} names found in {} bytes", name_counter, byte_counter);
+    // println!("  {} names found in {} bytes", name_counter, byte_counter);
     Ok(())
 }
 
@@ -251,7 +299,7 @@ fn read_type_names(
     type_names: &mut Vec<String>,
     byte_counter: &mut usize,
 ) -> std::io::Result<()> {
-    let mut name_counter: usize = 0;
+    // let mut name_counter: usize = 0;
     let mut buffer = [0; 1];
     loop {
         if type_names.len() == nr_types {
@@ -270,13 +318,13 @@ fn read_type_names(
             }
             // println!("  {:?}", name);
             type_names.push(name);
-            name_counter += 1;
+            // name_counter += 1;
         }
     }
-    println!(
-        "  {} type names found in {} bytes",
-        name_counter, byte_counter
-    );
+    // println!(
+    //     "  {} type names found in {} bytes",
+    //     name_counter, byte_counter
+    // );
     Ok(())
 }
 
@@ -298,7 +346,7 @@ fn main() -> std::io::Result<()> {
     let mut n: Vec<Normal3f> = Vec::new();
     let mut vertex_indices: Vec<usize> = Vec::new();
     // TODO: let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
-    let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+    // TODO: let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
     // first get the DNA
     let mut names: Vec<String> = Vec::new();
     let mut names_len: usize = 0;
@@ -309,12 +357,12 @@ fn main() -> std::io::Result<()> {
     {
         let mut f = File::open(&args.path)?;
         // read exactly 12 bytes
-        let mut counter: usize = 0;
+        // let mut counter: usize = 0;
         let mut buffer = [0; 12];
         f.read(&mut buffer)?;
-        counter += 12;
+        // counter += 12;
         let mut blender_version: u32 = 0;
-        if !decode_blender_header(&buffer, &mut blender_version) {
+        if !decode_blender_header(&buffer, &mut blender_version, true) {
             println!("ERROR: Not a .blend file");
             println!("First 12 bytes:");
             println!("{:?}", buffer);
@@ -323,12 +371,12 @@ fn main() -> std::io::Result<()> {
                 // code
                 let mut buffer = [0; 4];
                 f.read(&mut buffer)?;
-                counter += 4;
+                // counter += 4;
                 let code = make_id(&buffer);
                 // len
                 let mut buffer = [0; 4];
                 f.read(&mut buffer)?;
-                counter += 4;
+                // counter += 4;
                 let mut len: u32 = 0;
                 len += (buffer[0] as u32) << 0;
                 len += (buffer[1] as u32) << 8;
@@ -337,25 +385,25 @@ fn main() -> std::io::Result<()> {
                 // for now ignore the old entry
                 let mut buffer = [0; 8];
                 f.read(&mut buffer)?;
-                counter += 8;
+                // counter += 8;
                 // get SDNAnr
                 let mut buffer = [0; 4];
                 f.read(&mut buffer)?;
-                counter += 4;
+                // counter += 4;
                 // for now ignore the nr entry
                 let mut buffer = [0; 4];
                 f.read(&mut buffer)?;
-                counter += 4;
+                // counter += 4;
                 // are we done?
                 if code == String::from("ENDB") {
                     break;
                 }
                 if code == String::from("DNA1") {
-                    println!("{} ({})", code, len);
+                    // println!("{} ({})", code, len);
                     // "SDNANAME" in first 8 bytes
                     let mut buffer = [0; 8];
                     f.read(&mut buffer)?;
-                    counter += 8;
+                    // counter += 8;
                     let mut sdna_name = String::with_capacity(8);
                     for i in 0..8 {
                         if (buffer[i] as char).is_ascii_alphabetic() {
@@ -366,24 +414,24 @@ fn main() -> std::io::Result<()> {
                         // read remaining bytes
                         let mut buffer = vec![0; (len - 8) as usize];
                         f.read(&mut buffer)?;
-                        counter += (len - 8) as usize;
+                    // counter += (len - 8) as usize;
                     } else {
                         let mut buffer = [0; 4];
                         f.read(&mut buffer)?;
-                        counter += 4;
+                        // counter += 4;
                         let mut nr_names: u32 = 0;
                         nr_names += (buffer[0] as u32) << 0;
                         nr_names += (buffer[1] as u32) << 8;
                         nr_names += (buffer[2] as u32) << 16;
                         nr_names += (buffer[3] as u32) << 24;
                         read_names(&mut f, nr_names as usize, &mut names, &mut names_len)?;
-                        counter += names_len;
+                        // counter += names_len;
                         let mut remaining_bytes: usize = (len - 12) as usize - names_len;
                         // skip pad bytes, read "TYPE" and nr_types
                         let mut buffer = [0; 1];
                         loop {
                             f.read(&mut buffer)?;
-                            counter += 1;
+                            // counter += 1;
                             if buffer[0] == 0 {
                                 // skip pad byte
                                 remaining_bytes -= 1;
@@ -395,7 +443,7 @@ fn main() -> std::io::Result<()> {
                         // match 'YPE' ('T' was matched above)
                         let mut buffer = [0; 3];
                         f.read(&mut buffer)?;
-                        counter += 3;
+                        // counter += 3;
                         remaining_bytes -= 3;
                         if buffer[0] as char == 'Y'
                             && buffer[1] as char == 'P'
@@ -404,7 +452,7 @@ fn main() -> std::io::Result<()> {
                             // nr_types
                             let mut buffer = [0; 4];
                             f.read(&mut buffer)?;
-                            counter += 4;
+                            // counter += 4;
                             remaining_bytes -= 4;
                             let mut nr_types: u32 = 0;
                             nr_types += (buffer[0] as u32) << 0;
@@ -412,13 +460,13 @@ fn main() -> std::io::Result<()> {
                             nr_types += (buffer[2] as u32) << 16;
                             nr_types += (buffer[3] as u32) << 24;
                             read_type_names(&mut f, nr_types as usize, &mut types, &mut types_len)?;
-                            counter += types_len;
+                            // counter += types_len;
                             remaining_bytes -= types_len;
                             // skip pad bytes, read "TLEN"
                             let mut buffer = [0; 1];
                             loop {
                                 f.read(&mut buffer)?;
-                                counter += 1;
+                                // counter += 1;
                                 if buffer[0] == 0 {
                                     // skip pad byte
                                     remaining_bytes -= 1;
@@ -430,7 +478,7 @@ fn main() -> std::io::Result<()> {
                             // match 'LEN' ('T' was matched above)
                             let mut buffer = [0; 3];
                             f.read(&mut buffer)?;
-                            counter += 3;
+                            // counter += 3;
                             remaining_bytes -= 3;
                             if buffer[0] as char == 'L'
                                 && buffer[1] as char == 'E'
@@ -440,7 +488,7 @@ fn main() -> std::io::Result<()> {
                                 for _i in 0..nr_types as usize {
                                     let mut buffer = [0; 2];
                                     f.read(&mut buffer)?;
-                                    counter += 2;
+                                    // counter += 2;
                                     remaining_bytes -= 2;
                                     let mut type_size: u16 = 0;
                                     type_size += (buffer[0] as u16) << 0;
@@ -451,7 +499,7 @@ fn main() -> std::io::Result<()> {
                                 let mut buffer = [0; 1];
                                 loop {
                                     f.read(&mut buffer)?;
-                                    counter += 1;
+                                    // counter += 1;
                                     if buffer[0] == 0 {
                                         // skip pad byte
                                         remaining_bytes -= 1;
@@ -463,7 +511,7 @@ fn main() -> std::io::Result<()> {
                                 // match 'TRC' ('S' was matched above)
                                 let mut buffer = [0; 3];
                                 f.read(&mut buffer)?;
-                                counter += 3;
+                                // counter += 3;
                                 remaining_bytes -= 3;
                                 if buffer[0] as char == 'T'
                                     && buffer[1] as char == 'R'
@@ -472,7 +520,7 @@ fn main() -> std::io::Result<()> {
                                     // nr_structs
                                     let mut buffer = [0; 4];
                                     f.read(&mut buffer)?;
-                                    counter += 4;
+                                    // counter += 4;
                                     remaining_bytes -= 4;
                                     let mut nr_structs: u32 = 0;
                                     nr_structs += (buffer[0] as u32) << 0;
@@ -483,13 +531,13 @@ fn main() -> std::io::Result<()> {
                                         // read two short values
                                         let mut buffer = [0; 2];
                                         f.read(&mut buffer)?;
-                                        counter += 2;
+                                        // counter += 2;
                                         remaining_bytes -= 2;
                                         let mut type_idx: u16 = 0;
                                         type_idx += (buffer[0] as u16) << 0;
                                         type_idx += (buffer[1] as u16) << 8;
                                         f.read(&mut buffer)?;
-                                        counter += 2;
+                                        // counter += 2;
                                         remaining_bytes -= 2;
                                         let mut short2: u16 = 0;
                                         short2 += (buffer[0] as u16) << 0;
@@ -500,10 +548,10 @@ fn main() -> std::io::Result<()> {
                                             // read two short values
                                             let mut buffer = [0; 2];
                                             f.read(&mut buffer)?;
-                                            counter += 2;
+                                            // counter += 2;
                                             remaining_bytes -= 2;
                                             f.read(&mut buffer)?;
-                                            counter += 2;
+                                            // counter += 2;
                                             remaining_bytes -= 2;
                                         }
                                     }
@@ -519,16 +567,16 @@ fn main() -> std::io::Result<()> {
                         // read remaining bytes
                         let mut buffer = vec![0; remaining_bytes];
                         f.read(&mut buffer)?;
-                        counter += remaining_bytes;
+                        // counter += remaining_bytes;
                     }
                 } else {
                     // read len bytes
                     let mut buffer = vec![0; len as usize];
                     f.read(&mut buffer)?;
-                    counter += len as usize;
+                    // counter += len as usize;
                 }
             }
-            println!("{} bytes read", counter);
+            // println!("{} bytes read", counter);
         }
     }
     // then use the DNA
@@ -541,7 +589,7 @@ fn main() -> std::io::Result<()> {
         f.read(&mut buffer)?;
         counter += 12;
         let mut blender_version: u32 = 0;
-        if !decode_blender_header(&buffer, &mut blender_version) {
+        if !decode_blender_header(&buffer, &mut blender_version, false) {
             println!("ERROR: Not a .blend file");
             println!("First 12 bytes:");
             println!("{:?}", buffer);
@@ -635,8 +683,8 @@ fn main() -> std::io::Result<()> {
                     counter += len as usize;
                     if code == String::from("OB") {
                         // OB
-                        println!("{} ({})", code, len);
-                        println!("  SDNAnr = {}", sdna_nr);
+                        // println!("{} ({})", code, len);
+                        // println!("  SDNAnr = {}", sdna_nr);
                         // Object (len=1440) { ... }
                         let mut skip_bytes: usize = 0;
                         // id
@@ -653,24 +701,24 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
-                        println!("  id_name = {}", id_name);
-                        println!("  base_name = {}", base_name);
+                        // println!("  id_name = {}", id_name);
+                        // println!("  base_name = {}", base_name);
                         skip_bytes += 120;
                         // adt
                         skip_bytes += 8;
                         // sculpt
                         skip_bytes += 8;
                         // type
-                        let mut ob_type: u16 = 0;
-                        ob_type += (buffer[skip_bytes] as u16) << 0;
-                        ob_type += (buffer[skip_bytes + 1] as u16) << 8;
+                        // let mut ob_type: u16 = 0;
+                        // ob_type += (buffer[skip_bytes] as u16) << 0;
+                        // ob_type += (buffer[skip_bytes + 1] as u16) << 8;
                         skip_bytes += 2;
-                        match ob_type {
-                            0 => println!("  ob_type = {}", "OB_EMPTY"),
-                            1 => println!("  ob_type = {}", "OB_MESH"),
-                            11 => println!("  ob_type = {}", "OB_CAMERA"),
-                            _ => println!("  ob_type = {}", ob_type),
-                        }
+                        // match ob_type {
+                        //     0 => println!("  ob_type = {}", "OB_EMPTY"),
+                        //     1 => println!("  ob_type = {}", "OB_MESH"),
+                        //     11 => println!("  ob_type = {}", "OB_CAMERA"),
+                        //     _ => println!("  ob_type = {}", ob_type),
+                        // }
                         // partype
                         skip_bytes += 2;
                         // par1, par2, par3
@@ -852,10 +900,10 @@ fn main() -> std::io::Result<()> {
                             );
                         }
                         // ME
-                        println!("{} ({})", code, len);
-                        println!("  SDNAnr = {}", sdna_nr);
+                        // println!("{} ({})", code, len);
+                        // println!("  SDNAnr = {}", sdna_nr);
                         // Mesh (len=1416) { ... }
-                        let mut skip_bytes: usize = 0;
+                        // let mut skip_bytes: usize = 0;
                         // id
                         let mut id_name = String::with_capacity(4);
                         base_name = String::new();
@@ -870,25 +918,25 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
-                        println!("  id_name = {}", id_name);
-                        println!("  base_name = {}", base_name);
-                        skip_bytes += 120;
+                        // println!("  id_name = {}", id_name);
+                        // println!("  base_name = {}", base_name);
+                        // skip_bytes += 120;
                         // adt
-                        skip_bytes += 8;
+                        // skip_bytes += 8;
                         // bb, ipo, key, mat, mselect, mpoly, mtpoly, mloop, mloopuv, mloopcol
-                        skip_bytes += 8 * 10;
+                        // skip_bytes += 8 * 10;
                         // mface, mtface, tface, mvert, medge, dvert, mcol, texcomesh, edit_btmesh
-                        skip_bytes += 8 * 9;
+                        // skip_bytes += 8 * 9;
                         // CustomData * 5
-                        skip_bytes += 208 * 5;
+                        // skip_bytes += 208 * 5;
                         // totvert
-                        let mut totvert: u32 = 0;
-                        totvert += (buffer[skip_bytes] as u32) << 0;
-                        totvert += (buffer[skip_bytes + 1] as u32) << 8;
-                        totvert += (buffer[skip_bytes + 2] as u32) << 16;
-                        totvert += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("  totvert = {}", totvert);
-                        skip_bytes += 4;
+                        // let mut totvert: u32 = 0;
+                        // totvert += (buffer[skip_bytes] as u32) << 0;
+                        // totvert += (buffer[skip_bytes + 1] as u32) << 8;
+                        // totvert += (buffer[skip_bytes + 2] as u32) << 16;
+                        // totvert += (buffer[skip_bytes + 3] as u32) << 24;
+                        // println!("  totvert = {}", totvert);
+                        // skip_bytes += 4;
                         // totedge
                         // let mut totedge: u32 = 0;
                         // totedge += (buffer[skip_bytes] as u32) << 0;
@@ -896,7 +944,7 @@ fn main() -> std::io::Result<()> {
                         // totedge += (buffer[skip_bytes + 2] as u32) << 16;
                         // totedge += (buffer[skip_bytes + 3] as u32) << 24;
                         // println!("  totedge = {}", totedge);
-                        skip_bytes += 4;
+                        // skip_bytes += 4;
                         // totface
                         // let mut totface: u32 = 0;
                         // totface += (buffer[skip_bytes] as u32) << 0;
@@ -904,7 +952,7 @@ fn main() -> std::io::Result<()> {
                         // totface += (buffer[skip_bytes + 2] as u32) << 16;
                         // totface += (buffer[skip_bytes + 3] as u32) << 24;
                         // println!("  totface = {}", totface);
-                        skip_bytes += 4;
+                        // skip_bytes += 4;
                         // totselect
                         // let mut totselect: u32 = 0;
                         // totselect += (buffer[skip_bytes] as u32) << 0;
@@ -912,15 +960,15 @@ fn main() -> std::io::Result<()> {
                         // totselect += (buffer[skip_bytes + 2] as u32) << 16;
                         // totselect += (buffer[skip_bytes + 3] as u32) << 24;
                         // println!("  totselect = {}", totselect);
-                        skip_bytes += 4;
-                        // totpoly
-                        let mut totpoly: u32 = 0;
-                        totpoly += (buffer[skip_bytes] as u32) << 0;
-                        totpoly += (buffer[skip_bytes + 1] as u32) << 8;
-                        totpoly += (buffer[skip_bytes + 2] as u32) << 16;
-                        totpoly += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("  totpoly = {}", totpoly);
                         // skip_bytes += 4;
+                        // totpoly
+                        // let mut totpoly: u32 = 0;
+                        // totpoly += (buffer[skip_bytes] as u32) << 0;
+                        // totpoly += (buffer[skip_bytes + 1] as u32) << 8;
+                        // totpoly += (buffer[skip_bytes + 2] as u32) << 16;
+                        // totpoly += (buffer[skip_bytes + 3] as u32) << 24;
+                        // println!("  totpoly = {}", totpoly);
+                        // // skip_bytes += 4;
                         // totloop
                         // let mut totloop: u32 = 0;
                         // totloop += (buffer[skip_bytes] as u32) << 0;
@@ -947,9 +995,9 @@ fn main() -> std::io::Result<()> {
                             // type_id
                             let type_id: usize = dna_2_type_id[sdna_nr as usize] as usize;
                             if types[type_id] == "MPoly" {
-                                println!("{}[{}] ({})", code, data_len, len);
-                                println!("  SDNAnr = {}", sdna_nr);
-                                println!("  {} ({})", types[type_id], tlen[type_id]);
+                                // println!("{}[{}] ({})", code, data_len, len);
+                                // println!("  SDNAnr = {}", sdna_nr);
+                                // println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
                                 for _p in 0..data_len {
                                     // println!("  {}:", p + 1);
@@ -1012,9 +1060,9 @@ fn main() -> std::io::Result<()> {
                                 }
                             // println!("  vertex_indices = {:?}", vertex_indices);
                             } else if types[type_id] == "MVert" {
-                                println!("{}[{}] ({})", code, data_len, len);
-                                println!("  SDNAnr = {}", sdna_nr);
-                                println!("  {} ({})", types[type_id], tlen[type_id]);
+                                // println!("{}[{}] ({})", code, data_len, len);
+                                // println!("  SDNAnr = {}", sdna_nr);
+                                // println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
                                 let factor: f32 = 1.0 / 32767.0;
                                 let mut coords: [f32; 3] = [0.0_f32; 3];
@@ -1064,9 +1112,9 @@ fn main() -> std::io::Result<()> {
                             //     println!("    no: {:?}", n[v]);
                             // }
                             } else if types[type_id] == "MLoop" {
-                                println!("{}[{}] ({})", code, data_len, len);
-                                println!("  SDNAnr = {}", sdna_nr);
-                                println!("  {} ({})", types[type_id], tlen[type_id]);
+                                // println!("{}[{}] ({})", code, data_len, len);
+                                // println!("  SDNAnr = {}", sdna_nr);
+                                // println!("  {} ({})", types[type_id], tlen[type_id]);
                                 let mut skip_bytes: usize = 0;
                                 for _l in 0..data_len {
                                     // println!("  {}:", l + 1);
@@ -1132,7 +1180,7 @@ fn main() -> std::io::Result<()> {
                     {
                         let type_id: usize = dna_2_type_id[sdna_nr as usize] as usize;
                         if len != tlen[type_id] as u32 {
-                            println!("{} ({} != {})", code, len, tlen[type_id]);
+                            println!("WARNING: {} ({} != {})", code, len, tlen[type_id]);
                         }
                     }
                 }
@@ -1155,7 +1203,7 @@ fn main() -> std::io::Result<()> {
         render_options.primitives.push(geo_prim.clone());
     }
     // WORK
-    println!("number of lights = {:?}", lights.len());
+    // println!("number of lights = {:?}", lights.len());
     println!(
         "number of primitives = {:?}",
         render_options.primitives.len()
