@@ -288,7 +288,7 @@ fn main() -> std::io::Result<()> {
         VERSION, num_threads
     );
     // PBRT
-    let scale_length: f32 = 0.001;
+    let scale_length: f32 = 1.0; // 0.001;
     let mut base_name = String::new();
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
     let mut object_to_world: Transform = Transform::new(
@@ -595,6 +595,39 @@ fn main() -> std::io::Result<()> {
                     let mut buffer = vec![0; len as usize];
                     f.read(&mut buffer)?;
                     counter += len as usize;
+                    if data_following_mesh {
+                        if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                            object_to_world = *o2w;
+                        } else {
+                            println!(
+                                "WARNING: looking up object_to_world by name ({:?}) failed",
+                                base_name
+                            );
+                        }
+                        let world_to_object: Transform = Transform::inverse(&object_to_world);
+                        let n_triangles: usize = vertex_indices.len() / 3;
+                        // transform mesh vertices to world space
+                        let mut p_ws: Vec<Point3f> = Vec::new();
+                        let n_vertices: usize = p.len();
+                        for i in 0..n_vertices {
+                            p_ws.push(object_to_world.transform_point(&p[i]));
+                        }
+                        let s: Vec<Vector3f> = Vec::new();
+                        let n: Vec<Normal3f> = Vec::new();
+                        let uv: Vec<Point2f> = Vec::new();
+                        builder.add_mesh(
+                            object_to_world,
+                            world_to_object,
+                            n_triangles,
+                            vertex_indices.clone(),
+                            n_vertices,
+                            p_ws, // in world space
+                            s,    // empty
+                            n,    // empty
+                            uv,   // empty
+                        );
+                    }
+                    data_following_mesh = false;
                 } else {
                     // read len bytes
                     let mut buffer = vec![0; len as usize];
@@ -1129,18 +1162,18 @@ fn main() -> std::io::Result<()> {
     ));
     let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
     let mut pos = Point3f {
-        x: -0.2779999521691323,
-        y: -0.800000037997961,
-        z: 0.2730000129668042,
+        x: 0.0,
+        y: 0.0,
+        z: 0.0,
     };
     let mut look = Point3f {
-        x: -0.2779999521691323,
-        y: -0.7990000379504636,
-        z: 0.2730000129668042,
+        x: 1.0,
+        y: 0.0,
+        z: 0.0,
     };
     let mut up = Vector3f {
-        x: -2.279973153091093e-14,
-        y: 7.549790126404332e-08,
+        x: 0.0,
+        y: 0.0,
         z: 1.0,
     };
     base_name = String::from("Camera");
