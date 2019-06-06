@@ -1042,8 +1042,8 @@ fn main() -> std::io::Result<()> {
                         loop_indices.clear();
                     } else if code == String::from("SC") {
                         // SC
-                        println!("{} ({})", code, len);
-                        println!("  SDNAnr = {}", sdna_nr);
+                        // println!("{} ({})", code, len);
+                        // println!("  SDNAnr = {}", sdna_nr);
                         // v279: Scene (len=5472) { ... }
                         // v280: Scene (len=6392) { ... }
                         let mut skip_bytes: usize = 0;
@@ -1062,8 +1062,8 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
-                        println!("  id_name = {}", id_name);
-                        println!("  base_name = {}", base_name);
+                        // println!("  id_name = {}", id_name);
+                        // println!("  base_name = {}", base_name);
                         if blender_version < 280 {
                             skip_bytes += 120;
                         } else {
@@ -1129,30 +1129,30 @@ fn main() -> std::io::Result<()> {
                         skip_bytes += 88;
                         render_data_bytes += 88;
                         // cfra
-                        let mut cfra: u32 = 0;
-                        cfra += (buffer[skip_bytes] as u32) << 0;
-                        cfra += (buffer[skip_bytes + 1] as u32) << 8;
-                        cfra += (buffer[skip_bytes + 2] as u32) << 16;
-                        cfra += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("    cfra = {}", cfra);
+                        // let mut cfra: u32 = 0;
+                        // cfra += (buffer[skip_bytes] as u32) << 0;
+                        // cfra += (buffer[skip_bytes + 1] as u32) << 8;
+                        // cfra += (buffer[skip_bytes + 2] as u32) << 16;
+                        // cfra += (buffer[skip_bytes + 3] as u32) << 24;
+                        // println!("    cfra = {}", cfra);
                         skip_bytes += 4;
                         render_data_bytes += 4;
                         // sfra
-                        let mut sfra: u32 = 0;
-                        sfra += (buffer[skip_bytes] as u32) << 0;
-                        sfra += (buffer[skip_bytes + 1] as u32) << 8;
-                        sfra += (buffer[skip_bytes + 2] as u32) << 16;
-                        sfra += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("    sfra = {}", sfra);
+                        // let mut sfra: u32 = 0;
+                        // sfra += (buffer[skip_bytes] as u32) << 0;
+                        // sfra += (buffer[skip_bytes + 1] as u32) << 8;
+                        // sfra += (buffer[skip_bytes + 2] as u32) << 16;
+                        // sfra += (buffer[skip_bytes + 3] as u32) << 24;
+                        // println!("    sfra = {}", sfra);
                         skip_bytes += 4;
                         render_data_bytes += 4;
                         // efra
-                        let mut efra: u32 = 0;
-                        efra += (buffer[skip_bytes] as u32) << 0;
-                        efra += (buffer[skip_bytes + 1] as u32) << 8;
-                        efra += (buffer[skip_bytes + 2] as u32) << 16;
-                        efra += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("    efra = {}", efra);
+                        // let mut efra: u32 = 0;
+                        // efra += (buffer[skip_bytes] as u32) << 0;
+                        // efra += (buffer[skip_bytes + 1] as u32) << 8;
+                        // efra += (buffer[skip_bytes + 2] as u32) << 16;
+                        // efra += (buffer[skip_bytes + 3] as u32) << 24;
+                        // println!("    efra = {}", efra);
                         skip_bytes += 4;
                         render_data_bytes += 4;
                         // subframe
@@ -1209,7 +1209,7 @@ fn main() -> std::io::Result<()> {
                         xsch += (buffer[skip_bytes + 1] as u32) << 8;
                         xsch += (buffer[skip_bytes + 2] as u32) << 16;
                         xsch += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("    xsch = {}", xsch);
+                        // println!("    xsch = {}", xsch);
                         skip_bytes += 4;
                         render_data_bytes += 4;
                         resolution_x = xsch;
@@ -1219,7 +1219,7 @@ fn main() -> std::io::Result<()> {
                         ysch += (buffer[skip_bytes + 1] as u32) << 8;
                         ysch += (buffer[skip_bytes + 2] as u32) << 16;
                         ysch += (buffer[skip_bytes + 3] as u32) << 24;
-                        println!("    ysch = {}", ysch);
+                        // println!("    ysch = {}", ysch);
                         skip_bytes += 4;
                         render_data_bytes += 4;
                         resolution_y = ysch;
@@ -1272,14 +1272,14 @@ fn main() -> std::io::Result<()> {
                             scale_length_buf[i] = buffer[skip_bytes + i];
                         }
                         scale_length = unsafe { mem::transmute(scale_length_buf) };
-                        println!("    scale_length = {}", scale_length);
+                        // println!("    scale_length = {}", scale_length);
                         // skip_bytes += 4;
                         // data_following_mesh
                         data_following_mesh = false;
                     } else if code == String::from("CA") {
                         // CA
-                        println!("{} ({})", code, len);
-                        println!("  SDNAnr = {}", sdna_nr);
+                        // println!("{} ({})", code, len);
+                        // println!("  SDNAnr = {}", sdna_nr);
                         // v279: Camera (len=248) { ... }
                         // v280: Camera (len=520) { ... }
                         let mut skip_bytes: usize = 0;
@@ -1298,8 +1298,8 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
-                        println!("  id_name = {}", id_name);
-                        println!("  base_name = {}", base_name);
+                        // println!("  id_name = {}", id_name);
+                        // println!("  base_name = {}", base_name);
                         if blender_version < 280 {
                             skip_bytes += 120;
                         } else {
@@ -1314,20 +1314,20 @@ fn main() -> std::io::Result<()> {
                         // passepartalpha
                         skip_bytes += 4;
                         // clipsta
-                        let mut clipsta_buf: [u8; 4] = [0_u8; 4];
-                        for i in 0..4 as usize {
-                            clipsta_buf[i] = buffer[skip_bytes + i];
-                        }
-                        let clipsta: f32 = unsafe { mem::transmute(clipsta_buf) };
-                        println!("  clipsta = {}", clipsta);
+                        // let mut clipsta_buf: [u8; 4] = [0_u8; 4];
+                        // for i in 0..4 as usize {
+                        //     clipsta_buf[i] = buffer[skip_bytes + i];
+                        // }
+                        // let clipsta: f32 = unsafe { mem::transmute(clipsta_buf) };
+                        // println!("  clipsta = {}", clipsta);
                         skip_bytes += 4;
                         // clipend
-                        let mut clipend_buf: [u8; 4] = [0_u8; 4];
-                        for i in 0..4 as usize {
-                            clipend_buf[i] = buffer[skip_bytes + i];
-                        }
-                        let clipend: f32 = unsafe { mem::transmute(clipend_buf) };
-                        println!("  clipend = {}", clipend);
+                        // let mut clipend_buf: [u8; 4] = [0_u8; 4];
+                        // for i in 0..4 as usize {
+                        //     clipend_buf[i] = buffer[skip_bytes + i];
+                        // }
+                        // let clipend: f32 = unsafe { mem::transmute(clipend_buf) };
+                        // println!("  clipend = {}", clipend);
                         skip_bytes += 4;
                         // lens
                         let mut lens_buf: [u8; 4] = [0_u8; 4];
@@ -1335,23 +1335,23 @@ fn main() -> std::io::Result<()> {
                             lens_buf[i] = buffer[skip_bytes + i];
                         }
                         let lens: f32 = unsafe { mem::transmute(lens_buf) };
-                        println!("  lens = {}", lens);
+                        // println!("  lens = {}", lens);
                         skip_bytes += 4;
                         // ortho_scale
-                        let mut ortho_scale_buf: [u8; 4] = [0_u8; 4];
-                        for i in 0..4 as usize {
-                            ortho_scale_buf[i] = buffer[skip_bytes + i];
-                        }
-                        let ortho_scale: f32 = unsafe { mem::transmute(ortho_scale_buf) };
-                        println!("  ortho_scale = {}", ortho_scale);
+                        // let mut ortho_scale_buf: [u8; 4] = [0_u8; 4];
+                        // for i in 0..4 as usize {
+                        //     ortho_scale_buf[i] = buffer[skip_bytes + i];
+                        // }
+                        // let ortho_scale: f32 = unsafe { mem::transmute(ortho_scale_buf) };
+                        // println!("  ortho_scale = {}", ortho_scale);
                         skip_bytes += 4;
                         // drawsize
-                        let mut drawsize_buf: [u8; 4] = [0_u8; 4];
-                        for i in 0..4 as usize {
-                            drawsize_buf[i] = buffer[skip_bytes + i];
-                        }
-                        let drawsize: f32 = unsafe { mem::transmute(drawsize_buf) };
-                        println!("  drawsize = {}", drawsize);
+                        // let mut drawsize_buf: [u8; 4] = [0_u8; 4];
+                        // for i in 0..4 as usize {
+                        //     drawsize_buf[i] = buffer[skip_bytes + i];
+                        // }
+                        // let drawsize: f32 = unsafe { mem::transmute(drawsize_buf) };
+                        // println!("  drawsize = {}", drawsize);
                         skip_bytes += 4;
                         // sensor_x
                         let mut sensor_x_buf: [u8; 4] = [0_u8; 4];
@@ -1359,7 +1359,7 @@ fn main() -> std::io::Result<()> {
                             sensor_x_buf[i] = buffer[skip_bytes + i];
                         }
                         let sensor_x: f32 = unsafe { mem::transmute(sensor_x_buf) };
-                        println!("  sensor_x = {}", sensor_x);
+                        // println!("  sensor_x = {}", sensor_x);
                         skip_bytes += 4;
                         // sensor_y
                         let mut sensor_y_buf: [u8; 4] = [0_u8; 4];
@@ -1367,28 +1367,28 @@ fn main() -> std::io::Result<()> {
                             sensor_y_buf[i] = buffer[skip_bytes + i];
                         }
                         let sensor_y: f32 = unsafe { mem::transmute(sensor_y_buf) };
-                        println!("  sensor_y = {}", sensor_y);
-                        skip_bytes += 4;
+                        // println!("  sensor_y = {}", sensor_y);
+                        // skip_bytes += 4;
                         // calculate angle_x and angle_y
                         angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
                         angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
-                        println!("  angle_x = {}", angle_x);
-                        println!("  angle_y = {}", angle_y);
+                        // println!("  angle_x = {}", angle_x);
+                        // println!("  angle_y = {}", angle_y);
                         // shiftx
-                        let mut shiftx_buf: [u8; 4] = [0_u8; 4];
-                        for i in 0..4 as usize {
-                            shiftx_buf[i] = buffer[skip_bytes + i];
-                        }
-                        let shiftx: f32 = unsafe { mem::transmute(shiftx_buf) };
-                        println!("  shiftx = {}", shiftx);
-                        skip_bytes += 4;
+                        // let mut shiftx_buf: [u8; 4] = [0_u8; 4];
+                        // for i in 0..4 as usize {
+                        //     shiftx_buf[i] = buffer[skip_bytes + i];
+                        // }
+                        // let shiftx: f32 = unsafe { mem::transmute(shiftx_buf) };
+                        // println!("  shiftx = {}", shiftx);
+                        // skip_bytes += 4;
                         // shifty
-                        let mut shifty_buf: [u8; 4] = [0_u8; 4];
-                        for i in 0..4 as usize {
-                            shifty_buf[i] = buffer[skip_bytes + i];
-                        }
-                        let shifty: f32 = unsafe { mem::transmute(shifty_buf) };
-                        println!("  shifty = {}", shifty);
+                        // let mut shifty_buf: [u8; 4] = [0_u8; 4];
+                        // for i in 0..4 as usize {
+                        //     shifty_buf[i] = buffer[skip_bytes + i];
+                        // }
+                        // let shifty: f32 = unsafe { mem::transmute(shifty_buf) };
+                        // println!("  shifty = {}", shifty);
                         // skip_bytes += 4;
                         // data_following_mesh
                         data_following_mesh = false;
