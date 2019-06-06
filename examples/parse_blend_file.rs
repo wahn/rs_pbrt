@@ -26,16 +26,20 @@ use pbrt::core::geometry::{
     Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f,
 };
 use pbrt::core::integrator::SamplerIntegrator;
-use pbrt::core::light::Light;
+use pbrt::core::light::{AreaLight, Light};
+use pbrt::core::medium::MediumInterface;
 use pbrt::core::pbrt::degrees;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
+use pbrt::core::shape::Shape;
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::ao::AOIntegrator;
+use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
+use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
@@ -53,6 +57,11 @@ struct Cli {
 
 // Blender
 
+#[derive(Debug, Default, Copy, Clone)]
+struct Blend279Material {
+    pub emit: f32,
+}
+
 fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
     2.0_f32 * ((sensor / 2.0_f32) / focal_length).atan()
 }
@@ -60,11 +69,13 @@ fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
 // TMP (see pbrt_spheres_differentials_texfilt.rs)
 
 struct SceneDescription {
+    mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
     lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
+    mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
     lights: Vec<Arc<Light + Sync + Send>>,
 }
@@ -72,12 +83,14 @@ struct SceneDescriptionBuilder {
 impl SceneDescriptionBuilder {
     fn new() -> SceneDescriptionBuilder {
         SceneDescriptionBuilder {
+            mesh_names: Vec::new(),
             meshes: Vec::new(),
             lights: Vec::new(),
         }
     }
     fn add_mesh(
         &mut self,
+        base_name: String,
         object_to_world: Transform,
         world_to_object: Transform,
         n_triangles: usize,
@@ -88,6 +101,7 @@ impl SceneDescriptionBuilder {
         n: Vec<Normal3f>,
         uv: Vec<Point2f>,
     ) -> &mut SceneDescriptionBuilder {
+        self.mesh_names.push(base_name);
         let triangle_mesh = Arc::new(TriangleMesh::new(
             object_to_world,
             world_to_object,
@@ -105,6 +119,7 @@ impl SceneDescriptionBuilder {
     }
     fn finalize(self) -> SceneDescription {
         SceneDescription {
+            mesh_names: self.mesh_names,
             meshes: self.meshes,
             lights: self.lights,
         }
@@ -112,23 +127,33 @@ impl SceneDescriptionBuilder {
 }
 
 struct RenderOptions {
+    has_emitters: bool,
     primitives: Vec<Arc<Primitive + Sync + Send>>,
     triangles: Vec<Arc<Triangle>>,
+    triangle_lights: Vec<Option<Arc<AreaLight + Sync + Send>>>,
     lights: Vec<Arc<Light + Sync + Send>>,
 }
 
 impl RenderOptions {
-    fn new(scene: SceneDescription) -> RenderOptions {
+    fn new(
+        scene: SceneDescription,
+        material_hm: &HashMap<String, Blend279Material>,
+    ) -> RenderOptions {
+        let mut has_emitters: bool = false;
         let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
+        let mut triangle_lights: Vec<Option<Arc<AreaLight + Sync + Send>>> = Vec::new();
         let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
         // lights
         for light in &scene.lights {
             lights.push(light.clone());
         }
         // meshes
-        for mesh in scene.meshes {
+        for mesh_idx in 0..scene.meshes.len() {
+            let mesh = &scene.meshes[mesh_idx];
+            let mesh_name = &scene.mesh_names[mesh_idx];
             // create individual triangles
+            let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
             for id in 0..mesh.n_triangles {
                 let triangle = Arc::new(Triangle::new(
                     mesh.object_to_world,
@@ -137,12 +162,49 @@ impl RenderOptions {
                     mesh.clone(),
                     id,
                 ));
-                triangles.push(triangle);
+                triangles.push(triangle.clone());
+                shapes.push(triangle.clone());
+            }
+            if let Some(mat) = material_hm.get(mesh_name) {
+                println!("{:?}: {:?}", mesh_name, mat);
+                if mat.emit > 0.0 {
+                    has_emitters = true;
+                    for i in 0..shapes.len() {
+                        let shape = &shapes[i];
+                        let mi: MediumInterface = MediumInterface::default();
+                        let l_emit: Spectrum = Spectrum::new(mat.emit);
+                        let n_samples: i32 = 1;
+                        let two_sided: bool = false;
+                        let area_light: Arc<DiffuseAreaLight> = Arc::new(DiffuseAreaLight::new(
+                            &mesh.object_to_world,
+                            &mi,
+                            &l_emit,
+                            n_samples,
+                            shape.clone(),
+                            two_sided,
+                        ));
+                        lights.push(area_light.clone());
+                        let triangle_light: Option<Arc<AreaLight + Sync + Send>> =
+                            Some(area_light.clone());
+                        triangle_lights.push(triangle_light);
+                    }
+                } else {
+                    for _i in 0..shapes.len() {
+                        triangle_lights.push(None);
+                    }
+                }
+            } else {
+                println!("{:?}: no mat", mesh_name);
+                for _i in 0..shapes.len() {
+                    triangle_lights.push(None);
+                }
             }
         }
         RenderOptions {
+            has_emitters: has_emitters,
             primitives: primitives,
             triangles: triangles,
+            triangle_lights: triangle_lights,
             lights: lights,
         }
     }
@@ -347,6 +409,7 @@ fn main() -> std::io::Result<()> {
     let mut angle_x: f32 = 45.0;
     let mut angle_y: f32 = 45.0;
     let mut base_name = String::new();
+    let mut material_hm: HashMap<String, Blend279Material> = HashMap::new();
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
     let mut object_to_world: Transform = Transform::new(
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
@@ -673,6 +736,7 @@ fn main() -> std::io::Result<()> {
                         let n: Vec<Normal3f> = Vec::new();
                         let uv: Vec<Point2f> = Vec::new();
                         builder.add_mesh(
+                            base_name.clone(),
                             object_to_world,
                             world_to_object,
                             n_triangles,
@@ -934,6 +998,7 @@ fn main() -> std::io::Result<()> {
                             let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
                             builder.add_mesh(
+                                base_name.clone(),
                                 object_to_world,
                                 world_to_object,
                                 n_triangles,
@@ -1393,6 +1458,39 @@ fn main() -> std::io::Result<()> {
                         // data_following_mesh
                         data_following_mesh = false;
                     } else if code == String::from("MA") {
+                        if data_following_mesh {
+                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                object_to_world = *o2w;
+                            } else {
+                                println!(
+                                    "WARNING: looking up object_to_world by name ({:?}) failed",
+                                    base_name
+                                );
+                            }
+                            let world_to_object: Transform = Transform::inverse(&object_to_world);
+                            let n_triangles: usize = vertex_indices.len() / 3;
+                            // transform mesh vertices to world space
+                            let mut p_ws: Vec<Point3f> = Vec::new();
+                            let n_vertices: usize = p.len();
+                            for i in 0..n_vertices {
+                                p_ws.push(object_to_world.transform_point(&p[i]));
+                            }
+                            let s: Vec<Vector3f> = Vec::new();
+                            let n: Vec<Normal3f> = Vec::new();
+                            let uv: Vec<Point2f> = Vec::new();
+                            builder.add_mesh(
+                                base_name.clone(),
+                                object_to_world,
+                                world_to_object,
+                                n_triangles,
+                                vertex_indices.clone(),
+                                n_vertices,
+                                p_ws, // in world space
+                                s,    // empty
+                                n,    // empty
+                                uv,   // empty
+                            );
+                        }
                         // MA
                         println!("{} ({})", code, len);
                         println!("  SDNAnr = {}", sdna_nr);
@@ -1424,7 +1522,27 @@ fn main() -> std::io::Result<()> {
                         // adt
                         skip_bytes += 8;
                         if blender_version < 280 {
-                            // TODO
+                            // material_type, flag
+                            skip_bytes += 2 * 2;
+                            // r, g, b
+                            skip_bytes += 4 * 3;
+                            // specr, specg, specb
+                            skip_bytes += 4 * 3;
+                            // mirr, mirg, mirb
+                            skip_bytes += 4 * 3;
+                            // ambr, ambg, ambb
+                            skip_bytes += 4 * 3;
+                            // amb
+                            skip_bytes += 4;
+                            // emit
+                            let mut emit_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                emit_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let emit: f32 = unsafe { mem::transmute(emit_buf) };
+                            println!("  emit = {}", emit);
+                            material_hm.insert(base_name.clone(), Blend279Material { emit: emit });
+                        // skip_bytes += 4;
                         } else {
                             // flag
                             skip_bytes += 2;
@@ -1615,6 +1733,7 @@ fn main() -> std::io::Result<()> {
                             let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
                             builder.add_mesh(
+                                base_name.clone(),
                                 object_to_world,
                                 world_to_object,
                                 n_triangles,
@@ -1644,21 +1763,24 @@ fn main() -> std::io::Result<()> {
         }
     }
     let scene_description: SceneDescription = builder.finalize();
-    let mut render_options: RenderOptions = RenderOptions::new(scene_description);
-    let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
+    let mut render_options: RenderOptions = RenderOptions::new(scene_description, &material_hm);
+    let kd = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
     let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
-    for triangle in render_options.triangles {
+    assert!(render_options.triangles.len() == render_options.triangle_lights.len());
+    for triangle_idx in 0..render_options.triangles.len() {
+        let triangle = &render_options.triangles[triangle_idx];
+        let triangle_light = &render_options.triangle_lights[triangle_idx];
         let geo_prim = Arc::new(GeometricPrimitive::new(
-            triangle,
+            triangle.clone(),
             Some(matte.clone()),
-            None,
+            triangle_light.clone(),
             None,
         ));
         render_options.primitives.push(geo_prim.clone());
     }
     // WORK
-    // println!("number of lights = {:?}", lights.len());
+    println!("number of lights = {:?}", render_options.lights.len());
     println!(
         "number of primitives = {:?}",
         render_options.primitives.len()
@@ -1776,10 +1898,25 @@ fn main() -> std::io::Result<()> {
         film.clone(),
         None,
     ));
-    let mut sampler: Box<Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::default());
+    let mut sampler: Box<Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::new(16, 4));
     let sample_bounds: Bounds2i = film.get_sample_bounds();
-    let mut integrator: Box<SamplerIntegrator + Send + Sync> =
-        Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
+    let mut integrator: Box<SamplerIntegrator + Send + Sync>;
+    if render_options.has_emitters {
+        // PathIntegrator
+        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+        let rr_threshold: Float = 1.0;
+        let light_strategy: String = String::from("spatial");
+        let max_depth: i32 = 5;
+        integrator = Box::new(PathIntegrator::new(
+            max_depth as u32,
+            pixel_bounds,
+            rr_threshold,
+            light_strategy,
+        ));
+    } else {
+        // AOIntegrator
+        integrator = Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
+    }
     // TMP
     // in the end we want to call render()
     render(
