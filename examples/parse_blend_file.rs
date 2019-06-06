@@ -1392,6 +1392,57 @@ fn main() -> std::io::Result<()> {
                         // skip_bytes += 4;
                         // data_following_mesh
                         data_following_mesh = false;
+                    } else if code == String::from("MA") {
+                        // MA
+                        println!("{} ({})", code, len);
+                        println!("  SDNAnr = {}", sdna_nr);
+                        // v279: Material (len=1528) { ... }
+                        // v280: Material (len=320) { ... }
+                        let mut skip_bytes: usize = 0;
+                        // v279: ID (len=120)
+                        // v280: ID (len=152)
+                        let mut id_name = String::new();
+                        base_name = String::new();
+                        for i in 32..(32 + 66) {
+                            if buffer[i] == 0 {
+                                break;
+                            }
+                            if (buffer[i] as char).is_ascii_alphanumeric() {
+                                id_name.push(buffer[i] as char);
+                                if i != 32 && i != 33 {
+                                    base_name.push(buffer[i] as char);
+                                }
+                            }
+                        }
+                        println!("  id_name = {}", id_name);
+                        println!("  base_name = {}", base_name);
+                        if blender_version < 280 {
+                            skip_bytes += 120;
+                        } else {
+                            skip_bytes += 152;
+                        }
+                        // adt
+                        skip_bytes += 8;
+                        if blender_version < 280 {
+                            // TODO
+                        } else {
+                            // flag
+                            skip_bytes += 2;
+                            // _pad1
+                            skip_bytes += 2;
+                            // r, g, b, a
+                            skip_bytes += 4 * 4;
+                            // specr, specg, specb, alpha
+                            skip_bytes += 4 * 4;
+                            // ray_mirror, spec, gloss_mir, roughness, metallic
+                            skip_bytes += 4 * 5;
+                            // use_nodes
+                            let use_nodes: u8 = buffer[skip_bytes] as u8;
+                            println!("  use_nodes = {}", use_nodes);
+                            // skip_bytes += 1;
+                        }
+                        // data_following_mesh
+                        data_following_mesh = false;
                     } else if code == String::from("DATA") {
                         // DATA
                         if data_following_mesh {
