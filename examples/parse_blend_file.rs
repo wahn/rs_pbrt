@@ -704,7 +704,11 @@ fn main() -> std::io::Result<()> {
                         }
                         // println!("  id_name = {}", id_name);
                         // println!("  base_name = {}", base_name);
-                        skip_bytes += 120;
+                        if blender_version < 280 {
+                            skip_bytes += 120;
+                        } else {
+                            skip_bytes += 152;
+                        }
                         // adt
                         skip_bytes += 8;
                         // sculpt
@@ -907,7 +911,7 @@ fn main() -> std::io::Result<()> {
                         // Mesh (len=1416) { ... }
                         // let mut skip_bytes: usize = 0;
                         // id
-                        let mut id_name = String::with_capacity(4);
+                        let mut id_name = String::new();
                         base_name = String::new();
                         for i in 32..(32 + 66) {
                             if buffer[i] == 0 {
@@ -922,7 +926,11 @@ fn main() -> std::io::Result<()> {
                         }
                         // println!("  id_name = {}", id_name);
                         // println!("  base_name = {}", base_name);
-                        // skip_bytes += 120;
+                        // if blender_version < 280 {
+                        //     skip_bytes += 120;
+                        // } else {
+                        //     skip_bytes += 152;
+                        // }
                         // adt
                         // skip_bytes += 8;
                         // bb, ipo, key, mat, mselect, mpoly, mtpoly, mloop, mloopuv, mloopcol
@@ -996,10 +1004,12 @@ fn main() -> std::io::Result<()> {
                         // SC
                         println!("{} ({})", code, len);
                         println!("  SDNAnr = {}", sdna_nr);
-                        // Scene (len=5472) { ... }
+                        // v279: Scene (len=5472) { ... }
+                        // v280: Scene (len=6392) { ... }
                         let mut skip_bytes: usize = 0;
-                        // id
-                        let mut id_name = String::with_capacity(4);
+                        // v279: ID (len=120)
+                        // v280: ID (len=152)
+                        let mut id_name = String::new();
                         base_name = String::new();
                         for i in 32..(32 + 66) {
                             if buffer[i] == 0 {
@@ -1014,48 +1024,69 @@ fn main() -> std::io::Result<()> {
                         }
                         println!("  id_name = {}", id_name);
                         println!("  base_name = {}", base_name);
-                        skip_bytes += 120;
+                        if blender_version < 280 {
+                            skip_bytes += 120;
+                        } else {
+                            skip_bytes += 152;
+                        }
                         // adt
                         skip_bytes += 8;
                         // camera, world, set
                         skip_bytes += 8 * 3;
                         // ListBase * 1
                         skip_bytes += 16 * 1;
-                        // basact, obedit
-                        skip_bytes += 8 * 2;
-                        // cursor
-                        skip_bytes += 4 * 3;
-                        // twcent
-                        skip_bytes += 4 * 3;
-                        // twmin
-                        skip_bytes += 4 * 3;
-                        // twmax
-                        skip_bytes += 4 * 3;
-                        // lay, layact, lay_updated
+                        // basact
+                        skip_bytes += 8;
+                        if blender_version < 280 {
+                            // obedit
+                            skip_bytes += 8;
+                            // cursor
+                            skip_bytes += 4 * 3;
+                            // twcent
+                            skip_bytes += 4 * 3;
+                            // twmin
+                            skip_bytes += 4 * 3;
+                            // twmax
+                            skip_bytes += 4 * 3;
+                        } else {
+                            // _pad1
+                            skip_bytes += 8;
+                            // View3DCursor (len=64)
+                            skip_bytes += 64;
+                        }
+                        // lay, layact, lay_updated/_pad2[4]
                         skip_bytes += 4 * 3;
                         // flag
                         skip_bytes += 2;
                         // use_nodes
                         skip_bytes += 1;
-                        // pad
+                        // pad/_pad3
                         skip_bytes += 1;
-                        // nodetree, ed, toolsettings, stats
+                        // nodetree, ed, toolsettings, stats/_pad4
                         skip_bytes += 8 * 4;
                         // DisplaySafeAreas (len=32)
                         skip_bytes += 32;
-                        // RenderData (len=4432)
+                        // v279: RenderData (len=4432)
+                        // v280: RenderData (len=4192)
                         let mut render_data_bytes: usize = 0;
                         // ImageFormatData (len=256)
                         skip_bytes += 256;
                         render_data_bytes += 256;
-                        // avicodecdata, qtcodecdata
-                        skip_bytes += 8 * 2;
-                        render_data_bytes += 8 * 2;
-                        // QuicktimeCodecSettings (len=64)
-                        skip_bytes += 64;
-                        render_data_bytes += 64;
+                        // avicodecdata
+                        skip_bytes += 8;
+                        render_data_bytes += 8;
+                        if blender_version < 280 {
+                            // qtcodecdata
+                            skip_bytes += 8;
+                            render_data_bytes += 8;
+                            // QuicktimeCodecSettings (len=64)
+                            skip_bytes += 64;
+                            render_data_bytes += 64;
+                        } else {
+                            // nothing there
+                        }
                         // FFMpegCodecData (len=88)
-                        skip_bytes += 88; 
+                        skip_bytes += 88;
                         render_data_bytes += 88;
                         // cfra
                         let mut cfra: u32 = 0;
@@ -1093,18 +1124,45 @@ fn main() -> std::io::Result<()> {
                         // flag, threads
                         skip_bytes += 2 * 2;
                         render_data_bytes += 2 * 2;
-                        // framelen, blurfac, edgeR, edgeG, edgeB
-                        skip_bytes += 4 * 5;
-                        render_data_bytes += 4 * 5;
-                        // fullscreen, xplay, yplay, freqplay, depth, attrib
-                        skip_bytes += 2 * 6;
-                        render_data_bytes += 2 * 6;
+                        // framelen, blurfac,
+                        skip_bytes += 4 * 2;
+                        render_data_bytes += 4 * 2;
+                        if blender_version < 280 {
+                            // edgeR, edgeG, edgeB
+                            skip_bytes += 4 * 3;
+                            render_data_bytes += 4 * 3;
+                            // fullscreen, xplay, yplay, freqplay, depth, attrib
+                            skip_bytes += 2 * 6;
+                            render_data_bytes += 2 * 6;
+                        } else {
+                            // nothing there
+                        }
                         // frame_step
                         skip_bytes += 4;
                         render_data_bytes += 4;
-                        // stereomode, dimensionspreset, filtertype, size, maximsize, pad6
-                        skip_bytes += 2 * 6;
-                        render_data_bytes += 2 * 6;
+                        // stereomode, dimensionspreset
+                        skip_bytes += 2 * 2;
+                        render_data_bytes += 2 * 2;
+                        if blender_version < 280 {
+                            // filtertype
+                            skip_bytes += 2;
+                            render_data_bytes += 2;
+                        } else {
+                            // nothing there
+                        }
+                        // size
+                        skip_bytes += 2;
+                        render_data_bytes += 2;
+                        if blender_version < 280 {
+                            // maximsize, pad6
+                            skip_bytes += 2;
+                            render_data_bytes += 2;
+                        } else {
+                            // nothing there
+                        }
+                        // pad6
+                        skip_bytes += 2;
+                        render_data_bytes += 2;
                         // xsch
                         let mut xsch: u32 = 0;
                         xsch += (buffer[skip_bytes] as u32) << 0;
@@ -1126,26 +1184,48 @@ fn main() -> std::io::Result<()> {
                         render_data_bytes += 4;
                         resolution_y = ysch;
                         // skip remaining RenderData
-                        skip_bytes += 4432 - render_data_bytes;
+                        if blender_version < 280 {
+                            skip_bytes += 4432 - render_data_bytes;
+                        } else {
+                            skip_bytes += 4192 - render_data_bytes;
+                        }
                         // AudioData (len=32)
                         skip_bytes += 32;
                         // ListBase * 2
                         skip_bytes += 16 * 2;
+                        if blender_version < 280 {
+                            // nothing there
+                        } else {
+                            // TransformOrientationSlot (16) * 4
+                            skip_bytes += 16 * 4;
+                        }
                         // sound_scene, playback_handle, sound_scrub_handle, speaker_handles, fps_info
                         skip_bytes += 8 * 5;
-                        // depsgraph, pad1, theDag
-                        skip_bytes += 8 * 3;
-                        // dagflags, pad3
-                        skip_bytes += 2 * 2;
+                        // depsgraph/depsgraph_hash
+                        skip_bytes += 8;
+                        if blender_version < 280 {
+                            // pad1, theDag
+                            skip_bytes += 8 * 2;
+                            // dagflags, pad3
+                            skip_bytes += 2 * 2;
+                        } else {
+                            // _pad7
+                            skip_bytes += 4;
+                        }
                         // active_keyingset
                         skip_bytes += 4;
                         // ListBase * 1
                         skip_bytes += 16 * 1;
-                        // GameFraming (len=16)
-                        skip_bytes += 16;
-                        // GameData (len=192)
-                        skip_bytes += 192;
-                        // UnitSettings
+                        if blender_version < 280 {
+                            // GameFraming (len=16)
+                            skip_bytes += 16;
+                            // GameData (len=192)
+                            skip_bytes += 192;
+                        } else {
+                            // nothing there
+                        }
+                        // v279: UnitSettings (len=8)
+                        // v280: UnitSettings (len=16)
                         // scale_length
                         let mut scale_length_buf: [u8; 4] = [0_u8; 4];
                         for i in 0..4 as usize {
@@ -1461,7 +1541,10 @@ fn main() -> std::io::Result<()> {
     });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
     let film: Arc<Film> = Arc::new(Film::new(
-        Point2i { x: resolution_x as i32, y: resolution_y as i32 },
+        Point2i {
+            x: resolution_x as i32,
+            y: resolution_y as i32,
+        },
         crop,
         filter,
         35.0,
