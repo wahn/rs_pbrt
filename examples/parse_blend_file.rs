@@ -686,7 +686,8 @@ fn main() -> std::io::Result<()> {
                         // OB
                         // println!("{} ({})", code, len);
                         // println!("  SDNAnr = {}", sdna_nr);
-                        // Object (len=1440) { ... }
+                        // v279: Object (len=1440) { ... }
+                        // v280: Object (len=1408) { ... }
                         let mut skip_bytes: usize = 0;
                         // id
                         let mut id_name = String::new();
@@ -711,6 +712,12 @@ fn main() -> std::io::Result<()> {
                         }
                         // adt
                         skip_bytes += 8;
+                        if blender_version < 280 {
+                            // nothing there
+                        } else {
+                            // DrawDataList (len=16)
+                            skip_bytes += 16;
+                        }
                         // sculpt
                         skip_bytes += 8;
                         // type
@@ -732,14 +739,34 @@ fn main() -> std::io::Result<()> {
                         skip_bytes += 64;
                         // parent, track, proxy, proxy_group, proxy_from
                         skip_bytes += 8 * 5;
-                        // ipo, bb, action, poselib, pose, data, gpd
-                        skip_bytes += 8 * 7;
-                        // bAnimVizSettings
-                        skip_bytes += 48;
+                        // ipo
+                        skip_bytes += 8;
+                        if blender_version < 280 {
+                            // bb
+                            skip_bytes += 8;
+                        } else {
+                            // nothing there
+                        }
+                        // action, poselib, pose, data, gpd
+                        skip_bytes += 8 * 5;
+                        // v279: bAnimVizSettings (len=48)
+                        // v280: bAnimVizSettings (len=32)
+                        if blender_version < 280 {
+                            skip_bytes += 48;
+                        } else {
+                            skip_bytes += 32;
+                        }
                         // mpath
                         skip_bytes += 8;
-                        // ListBase * 4
-                        skip_bytes += 16 * 4;
+                        if blender_version < 280 {
+                            // ListBase * 4
+                            skip_bytes += 16 * 4;
+                        } else {
+                            // _pad0
+                            skip_bytes += 8;
+                            // ListBase * 7
+                            skip_bytes += 16 * 7;
+                        }
                         // mode, restore_mode
                         skip_bytes += 4 * 2;
                         // mat, matbits
@@ -750,8 +777,12 @@ fn main() -> std::io::Result<()> {
                         skip_bytes += 4 * 3;
                         // dloc
                         skip_bytes += 4 * 3;
-                        // orig
-                        skip_bytes += 4 * 3;
+                        if blender_version < 280 {
+                            // orig
+                            skip_bytes += 4 * 3;
+                        } else {
+                            // nothing there
+                        }
                         // size
                         skip_bytes += 4 * 3;
                         // dsize

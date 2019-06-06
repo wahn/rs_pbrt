@@ -1,0 +1,11 @@
+  [SDNAnr = 202]
+  UnitSettings (len=16) {
+    float scale_length;
+    char system;
+    char system_rotation;
+    short flag;
+    char length_unit;
+    char mass_unit;
+    char time_unit;
+    char _pad[5];
+  }

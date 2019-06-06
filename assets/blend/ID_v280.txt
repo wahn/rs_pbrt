@@ -1,0 +1,18 @@
+  [SDNAnr = 15]
+  ID (len=152) {
+    void *next;
+    void *prev;
+    ID *newid;
+    Library *lib;
+    char name[66];
+    short flag;
+    int tag;
+    int us;
+    int icon_id;
+    int recalc;
+    char _pad[4];
+    IDProperty *properties;
+    IDOverrideStatic *override_static;
+    ID *orig_id;
+    void *py_instance;
+  }

@@ -1,0 +1,7 @@
+  [SDNAnr = 201]
+  UnitSettings (len=8) {
+    float scale_length;
+    char system;
+    char system_rotation;
+    short flag;
+  }
