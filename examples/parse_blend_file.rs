@@ -27,6 +27,7 @@ use pbrt::core::geometry::{
 };
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
+use pbrt::core::pbrt::degrees;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
@@ -48,6 +49,12 @@ struct Cli {
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
+}
+
+// Blender
+
+fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
+    2.0_f32 * ((sensor / 2.0_f32) / focal_length).atan()
 }
 
 // TMP (see pbrt_spheres_differentials_texfilt.rs)
@@ -337,6 +344,8 @@ fn main() -> std::io::Result<()> {
     let mut scale_length: f32 = 1.0;
     let mut resolution_x: u32 = 640;
     let mut resolution_y: u32 = 480;
+    let mut angle_x: f32 = 45.0;
+    let mut angle_y: f32 = 45.0;
     let mut base_name = String::new();
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
     let mut object_to_world: Transform = Transform::new(
@@ -1267,6 +1276,122 @@ fn main() -> std::io::Result<()> {
                         // skip_bytes += 4;
                         // data_following_mesh
                         data_following_mesh = false;
+                    } else if code == String::from("CA") {
+                        // CA
+                        println!("{} ({})", code, len);
+                        println!("  SDNAnr = {}", sdna_nr);
+                        // v279: Camera (len=248) { ... }
+                        // v280: Camera (len=520) { ... }
+                        let mut skip_bytes: usize = 0;
+                        // v279: ID (len=120)
+                        // v280: ID (len=152)
+                        let mut id_name = String::new();
+                        base_name = String::new();
+                        for i in 32..(32 + 66) {
+                            if buffer[i] == 0 {
+                                break;
+                            }
+                            if (buffer[i] as char).is_ascii_alphanumeric() {
+                                id_name.push(buffer[i] as char);
+                                if i != 32 && i != 33 {
+                                    base_name.push(buffer[i] as char);
+                                }
+                            }
+                        }
+                        println!("  id_name = {}", id_name);
+                        println!("  base_name = {}", base_name);
+                        if blender_version < 280 {
+                            skip_bytes += 120;
+                        } else {
+                            skip_bytes += 152;
+                        }
+                        // adt
+                        skip_bytes += 8;
+                        // type, dtx
+                        skip_bytes += 2;
+                        // flag
+                        skip_bytes += 2;
+                        // passepartalpha
+                        skip_bytes += 4;
+                        // clipsta
+                        let mut clipsta_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            clipsta_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let clipsta: f32 = unsafe { mem::transmute(clipsta_buf) };
+                        println!("  clipsta = {}", clipsta);
+                        skip_bytes += 4;
+                        // clipend
+                        let mut clipend_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            clipend_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let clipend: f32 = unsafe { mem::transmute(clipend_buf) };
+                        println!("  clipend = {}", clipend);
+                        skip_bytes += 4;
+                        // lens
+                        let mut lens_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            lens_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let lens: f32 = unsafe { mem::transmute(lens_buf) };
+                        println!("  lens = {}", lens);
+                        skip_bytes += 4;
+                        // ortho_scale
+                        let mut ortho_scale_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            ortho_scale_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let ortho_scale: f32 = unsafe { mem::transmute(ortho_scale_buf) };
+                        println!("  ortho_scale = {}", ortho_scale);
+                        skip_bytes += 4;
+                        // drawsize
+                        let mut drawsize_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            drawsize_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let drawsize: f32 = unsafe { mem::transmute(drawsize_buf) };
+                        println!("  drawsize = {}", drawsize);
+                        skip_bytes += 4;
+                        // sensor_x
+                        let mut sensor_x_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            sensor_x_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let sensor_x: f32 = unsafe { mem::transmute(sensor_x_buf) };
+                        println!("  sensor_x = {}", sensor_x);
+                        skip_bytes += 4;
+                        // sensor_y
+                        let mut sensor_y_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            sensor_y_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let sensor_y: f32 = unsafe { mem::transmute(sensor_y_buf) };
+                        println!("  sensor_y = {}", sensor_y);
+                        skip_bytes += 4;
+                        // calculate angle_x and angle_y
+                        angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
+                        angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
+                        println!("  angle_x = {}", angle_x);
+                        println!("  angle_y = {}", angle_y);
+                        // shiftx
+                        let mut shiftx_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            shiftx_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let shiftx: f32 = unsafe { mem::transmute(shiftx_buf) };
+                        println!("  shiftx = {}", shiftx);
+                        skip_bytes += 4;
+                        // shifty
+                        let mut shifty_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            shifty_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let shifty: f32 = unsafe { mem::transmute(shifty_buf) };
+                        println!("  shifty = {}", shifty);
+                        // skip_bytes += 4;
+                        // data_following_mesh
+                        data_following_mesh = false;
                     } else if code == String::from("DATA") {
                         // DATA
                         if data_following_mesh {
@@ -1539,7 +1664,13 @@ fn main() -> std::io::Result<()> {
         m_inv: t.m.clone(),
     };
     let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
-    let fov: Float = 39.14625166082039;
+    let aspect: Float = resolution_x as Float / resolution_y as Float;
+    let fov: Float;
+    if aspect > 1.0 {
+        fov = angle_y;
+    } else {
+        fov = angle_x;
+    }
     let frame: Float = resolution_x as Float / resolution_y as Float;
     let mut screen: Bounds2f = Bounds2f::default();
     if frame > 1.0 {
