@@ -53,6 +53,8 @@ struct Cli {
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
+    #[structopt(short = "s", long = "samples", default_value = "1")]
+    samples: u32,
 }
 
 // Blender
@@ -1898,7 +1900,8 @@ fn main() -> std::io::Result<()> {
         film.clone(),
         None,
     ));
-    let mut sampler: Box<Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::new(16, 4));
+    let mut sampler: Box<Sampler + Sync + Send> =
+        Box::new(ZeroTwoSequenceSampler::new(args.samples as i64, 4));
     let sample_bounds: Bounds2i = film.get_sample_bounds();
     let mut integrator: Box<SamplerIntegrator + Send + Sync>;
     if render_options.has_emitters {
