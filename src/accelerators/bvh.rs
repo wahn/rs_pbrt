@@ -2,7 +2,7 @@
 use std;
 use std::sync::Arc;
 // others
-use time::PreciseTime;
+// use time::PreciseTime;
 use typed_arena::Arena;
 // pbrt
 use core::geometry::{bnd3_union_bnd3, bnd3_union_pnt3};
@@ -145,8 +145,8 @@ impl BVHAccel {
         let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
         let mut ordered_prims: Vec<Arc<Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
-        println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
-        let start = PreciseTime::now();
+        // println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
+        // let start = PreciseTime::now();
         let root = BVHAccel::recursive_build(
             bvh.clone(), // instead of self
             &mut arena,
@@ -156,16 +156,16 @@ impl BVHAccel {
             &mut total_nodes,
             &mut ordered_prims,
         );
-        let end = PreciseTime::now();
-        println!("{} seconds for building BVH ...", start.to(end));
+        // let end = PreciseTime::now();
+        // println!("{} seconds for building BVH ...", start.to(end));
         // flatten first
         let mut nodes = vec![LinearBVHNode::default(); total_nodes];
         let mut offset: usize = 0;
-        println!("BVHAccel::flatten_bvh_tree(...)");
-        let start = PreciseTime::now();
+        // println!("BVHAccel::flatten_bvh_tree(...)");
+        // let start = PreciseTime::now();
         BVHAccel::flatten_bvh_tree(root, &mut nodes, &mut offset);
-        let end = PreciseTime::now();
-        println!("{} seconds for flattening BVH ...", start.to(end));
+        // let end = PreciseTime::now();
+        // println!("{} seconds for flattening BVH ...", start.to(end));
         assert!(nodes.len() == total_nodes);
         // primitives.swap(orderedPrims);
         let bvh_ordered_prims = Arc::new(BVHAccel {

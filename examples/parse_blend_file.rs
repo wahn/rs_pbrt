@@ -37,6 +37,11 @@ use pbrt::core::shape::Shape;
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::ao::AOIntegrator;
+use pbrt::integrators::bdpt::render_bdpt;
+use pbrt::integrators::bdpt::BDPTIntegrator;
+use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::integrators::mlt::render_mlt;
+use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
@@ -50,11 +55,15 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 /// Parse a Blender scene file and render it.
 #[derive(StructOpt)]
 struct Cli {
+    /// pixel samples
+    #[structopt(short = "s", long = "samples", default_value = "1")]
+    samples: u32,
+    /// ao, directlighting, path, bdpt, mlt
+    #[structopt(short = "i", long = "integrator")]
+    integrator: Option<String>,
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
-    #[structopt(short = "s", long = "samples", default_value = "1")]
-    samples: u32,
 }
 
 // Blender
@@ -168,7 +177,7 @@ impl RenderOptions {
                 shapes.push(triangle.clone());
             }
             if let Some(mat) = material_hm.get(mesh_name) {
-                println!("{:?}: {:?}", mesh_name, mat);
+                // println!("{:?}: {:?}", mesh_name, mat);
                 if mat.emit > 0.0 {
                     has_emitters = true;
                     for i in 0..shapes.len() {
@@ -196,7 +205,7 @@ impl RenderOptions {
                     }
                 }
             } else {
-                println!("{:?}: no mat", mesh_name);
+                // println!("{:?}: no mat", mesh_name);
                 for _i in 0..shapes.len() {
                     triangle_lights.push(None);
                 }
@@ -1494,8 +1503,8 @@ fn main() -> std::io::Result<()> {
                             );
                         }
                         // MA
-                        println!("{} ({})", code, len);
-                        println!("  SDNAnr = {}", sdna_nr);
+                        // println!("{} ({})", code, len);
+                        // println!("  SDNAnr = {}", sdna_nr);
                         // v279: Material (len=1528) { ... }
                         // v280: Material (len=320) { ... }
                         let mut skip_bytes: usize = 0;
@@ -1514,8 +1523,8 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
-                        println!("  id_name = {}", id_name);
-                        println!("  base_name = {}", base_name);
+                        // println!("  id_name = {}", id_name);
+                        // println!("  base_name = {}", base_name);
                         if blender_version < 280 {
                             skip_bytes += 120;
                         } else {
@@ -1542,7 +1551,7 @@ fn main() -> std::io::Result<()> {
                                 emit_buf[i] = buffer[skip_bytes + i];
                             }
                             let emit: f32 = unsafe { mem::transmute(emit_buf) };
-                            println!("  emit = {}", emit);
+                            // println!("  emit = {}", emit);
                             material_hm.insert(base_name.clone(), Blend279Material { emit: emit });
                         // skip_bytes += 4;
                         } else {
@@ -1557,8 +1566,8 @@ fn main() -> std::io::Result<()> {
                             // ray_mirror, spec, gloss_mir, roughness, metallic
                             skip_bytes += 4 * 5;
                             // use_nodes
-                            let use_nodes: u8 = buffer[skip_bytes] as u8;
-                            println!("  use_nodes = {}", use_nodes);
+                            let _use_nodes: u8 = buffer[skip_bytes] as u8;
+                            // println!("  use_nodes = {}", use_nodes);
                             // skip_bytes += 1;
                         }
                         // data_following_mesh
@@ -1781,13 +1790,11 @@ fn main() -> std::io::Result<()> {
         ));
         render_options.primitives.push(geo_prim.clone());
     }
-    // WORK
     println!("number of lights = {:?}", render_options.lights.len());
     println!(
         "number of primitives = {:?}",
         render_options.primitives.len()
     );
-    // TMP
     let accelerator = Arc::new(BVHAccel::new(
         render_options.primitives,
         4,
@@ -1904,30 +1911,133 @@ fn main() -> std::io::Result<()> {
         Box::new(ZeroTwoSequenceSampler::new(args.samples as i64, 4));
     let sample_bounds: Bounds2i = film.get_sample_bounds();
     let mut integrator: Box<SamplerIntegrator + Send + Sync>;
-    if render_options.has_emitters {
-        // PathIntegrator
-        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-        let rr_threshold: Float = 1.0;
-        let light_strategy: String = String::from("spatial");
-        let max_depth: i32 = 5;
-        integrator = Box::new(PathIntegrator::new(
-            max_depth as u32,
-            pixel_bounds,
-            rr_threshold,
-            light_strategy,
-        ));
+    if let Some(integrator_str) = args.integrator {
+        print!("integrator = {:?} [", integrator_str);
+        if integrator_str == String::from("ao") {
+            println!("Ambient Occlusion (AO)]");
+            // AOIntegrator
+            integrator = Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
+            // in the end we want to call render()
+            render(
+                &scene,
+                &camera.clone(),
+                &mut sampler,
+                &mut integrator,
+                num_threads,
+            );
+        } else if integrator_str == String::from("directlighting") {
+            println!("Direct Lighting]");
+            // DirectLightingIntegrator
+            let max_depth: i32 = 5;
+            let strategy: LightStrategy = LightStrategy::UniformSampleAll;
+            let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+            integrator = Box::new(DirectLightingIntegrator::new(
+                strategy,
+                max_depth as i64,
+                pixel_bounds,
+            ));
+            // in the end we want to call render()
+            render(
+                &scene,
+                &camera.clone(),
+                &mut sampler,
+                &mut integrator,
+                num_threads,
+            );
+        } else if integrator_str == String::from("path") {
+            println!("(Unidirectional) Path Tracing]");
+            // PathIntegrator
+            let max_depth: i32 = 5;
+            let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+            let rr_threshold: Float = 1.0;
+            let light_strategy: String = String::from("spatial");
+            integrator = Box::new(PathIntegrator::new(
+                max_depth as u32,
+                pixel_bounds,
+                rr_threshold,
+                light_strategy,
+            ));
+            // in the end we want to call render()
+            render(
+                &scene,
+                &camera.clone(),
+                &mut sampler,
+                &mut integrator,
+                num_threads,
+            );
+        } else if integrator_str == String::from("bdpt") {
+            println!("Bidirectional Path Tracing (BDPT)]");
+            // BDPTIntegrator
+            let max_depth: i32 = 5;
+            let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+            let light_strategy: String = String::from("power");
+            let mut integrator: Box<BDPTIntegrator> = Box::new(BDPTIntegrator::new(
+                max_depth as u32,
+                pixel_bounds,
+                light_strategy,
+            ));
+            // in the end we want to call render()
+            render_bdpt(
+                &scene,
+                &camera.clone(),
+                &mut sampler,
+                &mut integrator,
+                num_threads,
+            );
+        } else if integrator_str == String::from("mlt") {
+            println!("Metropolis Light Transport (MLT)]");
+            // CreateMLTIntegrator
+            let max_depth: i32 = 5;
+            let mut n_bootstrap: i32 = 100000;
+            let mut n_chains: i32 = 1000;
+            let mut mutations_per_pixel: i32 = 100;
+            let sigma: Float = 0.01;
+            let large_step_probability: Float = 0.3;
+            let mut integrator: Box<MLTIntegrator> = Box::new(MLTIntegrator::new(
+                camera.clone(),
+                max_depth as u32,
+                n_bootstrap as u32,
+                n_chains as u32,
+                mutations_per_pixel as u32,
+                sigma,
+                large_step_probability,
+            ));
+            // in the end we want to call render()
+            render_mlt(
+                &scene,
+                &camera.clone(),
+                &mut sampler,
+                &mut integrator,
+                num_threads,
+            );
+        } else {
+            println!("unknown]");
+        }
     } else {
-        // AOIntegrator
-        integrator = Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
+        if render_options.has_emitters {
+            // PathIntegrator
+            let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+            let rr_threshold: Float = 1.0;
+            let light_strategy: String = String::from("spatial");
+            let max_depth: i32 = 5;
+            integrator = Box::new(PathIntegrator::new(
+                max_depth as u32,
+                pixel_bounds,
+                rr_threshold,
+                light_strategy,
+            ));
+        } else {
+            // AOIntegrator
+            integrator = Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
+        }
+        // in the end we want to call render()
+        render(
+            &scene,
+            &camera.clone(),
+            &mut sampler,
+            &mut integrator,
+            num_threads,
+        );
     }
-    // TMP
-    // in the end we want to call render()
-    render(
-        &scene,
-        &camera.clone(),
-        &mut sampler,
-        &mut integrator,
-        num_threads,
-    );
     Ok(())
 }

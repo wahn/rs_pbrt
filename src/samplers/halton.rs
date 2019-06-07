@@ -12,7 +12,7 @@ use core::pbrt::Float;
 use core::rng::Rng;
 use core::sampler::{GlobalSampler, Sampler};
 
-/// Generate random digit permutations for Halton sampler
+// Generate random digit permutations for Halton sampler
 lazy_static! {
     #[derive(Debug)]
     static ref RADICAL_INVERSE_PERMUTATIONS: Vec<u16> = {
