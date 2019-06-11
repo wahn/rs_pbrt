@@ -1,6 +1,6 @@
 // Assumptions:
-// 1. objects and data have the same base name:
-//    e.g. OBcornellbox and MEcornellbox
+// 1. objects, data, and materials have the same base name:
+//    e.g. OBcornellbox, MEcornellbox and MAcornellbox
 //    TODO: Find a better solution (following the Object->data pointer?)
 // 2. Right now we search for "Camera" for Transform::look_at(...)
 //    TODO: get the render camera/transform from the scene (self.scene.camera)
@@ -27,6 +27,7 @@ use pbrt::core::geometry::{
 };
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::{AreaLight, Light};
+use pbrt::core::material::Material;
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::pbrt::degrees;
 use pbrt::core::pbrt::{Float, Spectrum};
@@ -70,6 +71,10 @@ struct Cli {
 
 #[derive(Debug, Default, Copy, Clone)]
 struct Blend279Material {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub a: f32,
     pub emit: f32,
 }
 
@@ -141,6 +146,7 @@ struct RenderOptions {
     has_emitters: bool,
     primitives: Vec<Arc<Primitive + Sync + Send>>,
     triangles: Vec<Arc<Triangle>>,
+    triangle_materials: Vec<Arc<Material + Sync + Send>>,
     triangle_lights: Vec<Option<Arc<AreaLight + Sync + Send>>>,
     lights: Vec<Arc<Light + Sync + Send>>,
 }
@@ -153,8 +159,13 @@ impl RenderOptions {
         let mut has_emitters: bool = false;
         let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
+        let mut triangle_materials: Vec<Arc<Material + Sync + Send>> = Vec::new();
         let mut triangle_lights: Vec<Option<Arc<AreaLight + Sync + Send>>> = Vec::new();
         let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+        // default material
+        let kd = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+        let default_material = Arc::new(MatteMaterial::new(kd, sigma, None));
         // lights
         for light in &scene.lights {
             lights.push(light.clone());
@@ -183,7 +194,8 @@ impl RenderOptions {
                     for i in 0..shapes.len() {
                         let shape = &shapes[i];
                         let mi: MediumInterface = MediumInterface::default();
-                        let l_emit: Spectrum = Spectrum::new(mat.emit);
+                        let l_emit: Spectrum =
+                            Spectrum::rgb(mat.r * mat.emit, mat.g * mat.emit, mat.b * mat.emit);
                         let n_samples: i32 = 1;
                         let two_sided: bool = false;
                         let area_light: Arc<DiffuseAreaLight> = Arc::new(DiffuseAreaLight::new(
@@ -195,18 +207,24 @@ impl RenderOptions {
                             two_sided,
                         ));
                         lights.push(area_light.clone());
+                        triangle_materials.push(default_material.clone());
                         let triangle_light: Option<Arc<AreaLight + Sync + Send>> =
                             Some(area_light.clone());
                         triangle_lights.push(triangle_light);
                     }
                 } else {
                     for _i in 0..shapes.len() {
+                        let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+                        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
+                        triangle_materials.push(matte);
                         triangle_lights.push(None);
                     }
                 }
             } else {
                 // println!("{:?}: no mat", mesh_name);
                 for _i in 0..shapes.len() {
+                    triangle_materials.push(default_material.clone());
                     triangle_lights.push(None);
                 }
             }
@@ -215,6 +233,7 @@ impl RenderOptions {
             has_emitters: has_emitters,
             primitives: primitives,
             triangles: triangles,
+            triangle_materials: triangle_materials,
             triangle_lights: triangle_lights,
             lights: lights,
         }
@@ -1535,8 +1554,30 @@ fn main() -> std::io::Result<()> {
                         if blender_version < 280 {
                             // material_type, flag
                             skip_bytes += 2 * 2;
-                            // r, g, b
-                            skip_bytes += 4 * 3;
+                            // r
+                            let mut r_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                r_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let r: f32 = unsafe { mem::transmute(r_buf) };
+                            // println!("  r = {}", r);
+                            skip_bytes += 4;
+                            // g
+                            let mut g_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                g_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let g: f32 = unsafe { mem::transmute(g_buf) };
+                            // println!("  g = {}", g);
+                            skip_bytes += 4;
+                            // b
+                            let mut b_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                b_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let b: f32 = unsafe { mem::transmute(b_buf) };
+                            // println!("  b = {}", b);
+                            skip_bytes += 4;
                             // specr, specg, specb
                             skip_bytes += 4 * 3;
                             // mirr, mirg, mirb
@@ -1552,15 +1593,53 @@ fn main() -> std::io::Result<()> {
                             }
                             let emit: f32 = unsafe { mem::transmute(emit_buf) };
                             // println!("  emit = {}", emit);
-                            material_hm.insert(base_name.clone(), Blend279Material { emit: emit });
+                            let mat: Blend279Material = Blend279Material {
+                                r: r,
+                                g: g,
+                                b: b,
+                                a: 1.0,
+                                emit: emit,
+                            };
+                            println!("  mat[{:?}] = {:?}", base_name, mat);
+                            material_hm.insert(base_name.clone(), mat);
                         // skip_bytes += 4;
                         } else {
                             // flag
                             skip_bytes += 2;
                             // _pad1
                             skip_bytes += 2;
-                            // r, g, b, a
-                            skip_bytes += 4 * 4;
+                            // r
+                            let mut r_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                r_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let r: f32 = unsafe { mem::transmute(r_buf) };
+                            // println!("  r = {}", r);
+                            skip_bytes += 4;
+                            // g
+                            let mut g_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                g_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let g: f32 = unsafe { mem::transmute(g_buf) };
+                            // println!("  g = {}", g);
+                            skip_bytes += 4;
+                            // b
+                            let mut b_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                b_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let b: f32 = unsafe { mem::transmute(b_buf) };
+                            // println!("  b = {}", b);
+                            skip_bytes += 4;
+                            // a
+                            let mut a_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                a_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let a: f32 = unsafe { mem::transmute(a_buf) };
+                            // println!("  a = {}", a);
+                            skip_bytes += 4;
                             // specr, specg, specb, alpha
                             skip_bytes += 4 * 4;
                             // ray_mirror, spec, gloss_mir, roughness, metallic
@@ -1569,6 +1648,15 @@ fn main() -> std::io::Result<()> {
                             let _use_nodes: u8 = buffer[skip_bytes] as u8;
                             // println!("  use_nodes = {}", use_nodes);
                             // skip_bytes += 1;
+                            let mat: Blend279Material = Blend279Material {
+                                r: r,
+                                g: g,
+                                b: b,
+                                a: a,
+                                emit: 0.0,
+                            };
+                            println!("  mat[{:?}] = {:?}", base_name, mat);
+                            material_hm.insert(base_name.clone(), mat);
                         }
                         // data_following_mesh
                         data_following_mesh = false;
@@ -1775,16 +1863,14 @@ fn main() -> std::io::Result<()> {
     }
     let scene_description: SceneDescription = builder.finalize();
     let mut render_options: RenderOptions = RenderOptions::new(scene_description, &material_hm);
-    let kd = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
-    let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-    let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
     assert!(render_options.triangles.len() == render_options.triangle_lights.len());
     for triangle_idx in 0..render_options.triangles.len() {
         let triangle = &render_options.triangles[triangle_idx];
+        let triangle_material = &render_options.triangle_materials[triangle_idx];
         let triangle_light = &render_options.triangle_lights[triangle_idx];
         let geo_prim = Arc::new(GeometricPrimitive::new(
             triangle.clone(),
-            Some(matte.clone()),
+            Some(triangle_material.clone()),
             triangle_light.clone(),
             None,
         ));
