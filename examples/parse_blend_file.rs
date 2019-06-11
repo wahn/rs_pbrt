@@ -1695,7 +1695,10 @@ fn main() -> std::io::Result<()> {
                                     // println!("    mat_nr = {}", mat_nr);
                                     skip_bytes += 2;
                                     // flag
-                                    // println!("    flag = {}", buffer[skip_bytes]);
+                                    let flag: u8 = buffer[skip_bytes];
+                                    println!("    flag = {}", flag);
+                                    let is_smooth: bool = flag % 2 == 1;
+                                    println!("    is_smooth = {}", is_smooth);
                                     skip_bytes += 1;
                                     // pad
                                     // println!("    pad = {}", buffer[skip_bytes]);
