@@ -16,6 +16,3 @@ before_script:
   export PATH=$HOME/.local/bin:$PATH
 script:
   - cargo test --verbose --no-default-features
-cache:
-  pip: true
-  cargo: true
