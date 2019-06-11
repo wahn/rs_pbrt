@@ -5,7 +5,6 @@ rust:
   - nightly
 matrix:
   allow_failures:
-    - rust: beta
     - rust: nightly
 env:
   global:
@@ -16,7 +15,7 @@ before_script:
   pip install 'travis-cargo<0.2' --user &&
   export PATH=$HOME/.local/bin:$PATH
 script:
-  - cargo test --no-default-features
+  - cargo test --verbose --no-default-features
 cache:
   pip: true
   cargo: true
