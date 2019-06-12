@@ -49,6 +49,7 @@ use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::materials::matte::MatteMaterial;
+use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
@@ -77,7 +78,11 @@ struct Blend279Material {
     pub g: f32,
     pub b: f32,
     pub a: f32,
+    pub mirr: f32,
+    pub mirg: f32,
+    pub mirb: f32,
     pub emit: f32,
+    pub ray_mirror: f32,
 }
 
 fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
@@ -215,12 +220,28 @@ impl RenderOptions {
                         triangle_lights.push(triangle_light);
                     }
                 } else {
-                    for _i in 0..shapes.len() {
-                        let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
-                        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-                        let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
-                        triangle_materials.push(matte);
-                        triangle_lights.push(None);
+                    if mat.ray_mirror > 0.0 {
+                        // MirrorMaterial
+                        for _i in 0..shapes.len() {
+                            let kr = Arc::new(ConstantTexture::new(Spectrum::rgb(
+                                mat.mirr * mat.ray_mirror,
+                                mat.mirg * mat.ray_mirror,
+                                mat.mirb * mat.ray_mirror,
+                            )));
+                            let mirror = Arc::new(MirrorMaterial::new(kr, None));
+                            triangle_materials.push(mirror);
+                            triangle_lights.push(None);
+                        }
+                    } else {
+                        // MatteMaterial
+                        for _i in 0..shapes.len() {
+                            let kd =
+                                Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+                            let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+                            let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
+                            triangle_materials.push(matte);
+                            triangle_lights.push(None);
+                        }
                     }
                 }
             } else {
@@ -1614,8 +1635,30 @@ fn main() -> std::io::Result<()> {
                             skip_bytes += 4;
                             // specr, specg, specb
                             skip_bytes += 4 * 3;
-                            // mirr, mirg, mirb
-                            skip_bytes += 4 * 3;
+                            // mirr
+                            let mut mirr_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                mirr_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let mirr: f32 = unsafe { mem::transmute(mirr_buf) };
+                            // println!("  mirr = {}", mirr);
+                            skip_bytes += 4;
+                            // mirg
+                            let mut mirg_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                mirg_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let mirg: f32 = unsafe { mem::transmute(mirg_buf) };
+                            // println!("  mirg = {}", mirg);
+                            skip_bytes += 4;
+                            // mirb
+                            let mut mirb_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                mirb_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let mirb: f32 = unsafe { mem::transmute(mirb_buf) };
+                            // println!("  mirb = {}", mirb);
+                            skip_bytes += 4;
                             // ambr, ambg, ambb
                             skip_bytes += 4 * 3;
                             // amb
@@ -1627,16 +1670,32 @@ fn main() -> std::io::Result<()> {
                             }
                             let emit: f32 = unsafe { mem::transmute(emit_buf) };
                             // println!("  emit = {}", emit);
+                            skip_bytes += 4;
+                            // ang
+                            skip_bytes += 4;
+                            // spectra
+                            skip_bytes += 4;
+                            // ray_mirror
+                            let mut ray_mirror_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                ray_mirror_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let ray_mirror: f32 = unsafe { mem::transmute(ray_mirror_buf) };
+                            // println!("  ray_mirror = {}", ray_mirror);
+                            // skip_bytes += 4;
                             let mat: Blend279Material = Blend279Material {
                                 r: r,
                                 g: g,
                                 b: b,
                                 a: 1.0,
+                                mirr: mirr,
+                                mirg: mirg,
+                                mirb: mirb,
                                 emit: emit,
+                                ray_mirror: ray_mirror,
                             };
                             // println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
-                        // skip_bytes += 4;
                         } else {
                             // flag
                             skip_bytes += 2;
@@ -1676,8 +1735,16 @@ fn main() -> std::io::Result<()> {
                             skip_bytes += 4;
                             // specr, specg, specb, alpha
                             skip_bytes += 4 * 4;
-                            // ray_mirror, spec, gloss_mir, roughness, metallic
-                            skip_bytes += 4 * 5;
+                            // ray_mirror
+                            let mut ray_mirror_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                ray_mirror_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let ray_mirror: f32 = unsafe { mem::transmute(ray_mirror_buf) };
+                            // println!("  ray_mirror = {}", ray_mirror);
+                            skip_bytes += 4;
+                            // spec, gloss_mir, roughness, metallic
+                            skip_bytes += 4 * 4;
                             // use_nodes
                             let _use_nodes: u8 = buffer[skip_bytes] as u8;
                             // println!("  use_nodes = {}", use_nodes);
@@ -1687,9 +1754,13 @@ fn main() -> std::io::Result<()> {
                                 g: g,
                                 b: b,
                                 a: a,
+                                mirr: 0.0,
+                                mirg: 0.0,
+                                mirb: 0.0,
                                 emit: 0.0,
+                                ray_mirror: ray_mirror,
                             };
-                            println!("  mat[{:?}] = {:?}", base_name, mat);
+                            // println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         }
                         // reset booleans
