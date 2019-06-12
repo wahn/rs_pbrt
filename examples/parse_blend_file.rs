@@ -48,6 +48,7 @@ use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
+use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
@@ -82,6 +83,7 @@ struct Blend279Material {
     pub mirg: f32,
     pub mirb: f32,
     pub emit: f32,
+    pub ang: f32, // IOR
     pub ray_mirror: f32,
 }
 
@@ -220,26 +222,45 @@ impl RenderOptions {
                         triangle_lights.push(triangle_light);
                     }
                 } else {
-                    if mat.ray_mirror > 0.0 {
-                        // MirrorMaterial
+                    if mat.ang != 1.0 {
+                        // GlassMaterial
+                        let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+                        let kt = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+                        let u_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let index = Arc::new(ConstantTexture::new(mat.ang as Float));
+                        let glass = Arc::new(GlassMaterial {
+                            kr: kr,
+                            kt: kt,
+                            u_roughness: u_roughness,
+                            v_roughness: v_roughness,
+                            index: index,
+                            bump_map: None,
+                            remap_roughness: true,
+                        });
                         for _i in 0..shapes.len() {
-                            let kr = Arc::new(ConstantTexture::new(Spectrum::rgb(
-                                mat.mirr * mat.ray_mirror,
-                                mat.mirg * mat.ray_mirror,
-                                mat.mirb * mat.ray_mirror,
-                            )));
-                            let mirror = Arc::new(MirrorMaterial::new(kr, None));
-                            triangle_materials.push(mirror);
+                            triangle_materials.push(glass.clone());
+                            triangle_lights.push(None);
+                        }
+                    } else if mat.ray_mirror > 0.0 {
+                        // MirrorMaterial
+                        let kr = Arc::new(ConstantTexture::new(Spectrum::rgb(
+                            mat.mirr * mat.ray_mirror,
+                            mat.mirg * mat.ray_mirror,
+                            mat.mirb * mat.ray_mirror,
+                        )));
+                        let mirror = Arc::new(MirrorMaterial::new(kr, None));
+                        for _i in 0..shapes.len() {
+                            triangle_materials.push(mirror.clone());
                             triangle_lights.push(None);
                         }
                     } else {
                         // MatteMaterial
+                        let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+                        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
                         for _i in 0..shapes.len() {
-                            let kd =
-                                Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
-                            let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-                            let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
-                            triangle_materials.push(matte);
+                            triangle_materials.push(matte.clone());
                             triangle_lights.push(None);
                         }
                     }
@@ -1671,7 +1692,13 @@ fn main() -> std::io::Result<()> {
                             let emit: f32 = unsafe { mem::transmute(emit_buf) };
                             // println!("  emit = {}", emit);
                             skip_bytes += 4;
-                            // ang
+                            // ang (called "IOR" in Blender's UI)
+                            let mut ang_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                ang_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let ang: f32 = unsafe { mem::transmute(ang_buf) };
+                            // println!("  ang = {}", ang);
                             skip_bytes += 4;
                             // spectra
                             skip_bytes += 4;
@@ -1683,6 +1710,7 @@ fn main() -> std::io::Result<()> {
                             let ray_mirror: f32 = unsafe { mem::transmute(ray_mirror_buf) };
                             // println!("  ray_mirror = {}", ray_mirror);
                             // skip_bytes += 4;
+                            // Blend279Material
                             let mat: Blend279Material = Blend279Material {
                                 r: r,
                                 g: g,
@@ -1692,6 +1720,7 @@ fn main() -> std::io::Result<()> {
                                 mirg: mirg,
                                 mirb: mirb,
                                 emit: emit,
+                                ang: ang,
                                 ray_mirror: ray_mirror,
                             };
                             // println!("  mat[{:?}] = {:?}", base_name, mat);
@@ -1758,6 +1787,7 @@ fn main() -> std::io::Result<()> {
                                 mirg: 0.0,
                                 mirb: 0.0,
                                 emit: 0.0,
+                                ang: 1.0,
                                 ray_mirror: ray_mirror,
                             };
                             // println!("  mat[{:?}] = {:?}", base_name, mat);
