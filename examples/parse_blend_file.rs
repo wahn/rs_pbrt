@@ -4,6 +4,8 @@
 //    TODO: Find a better solution (following the Object->data pointer?)
 // 2. Right now we search for "Camera" for Transform::look_at(...)
 //    TODO: get the render camera/transform from the scene (self.scene.camera)
+// 3. Smoothness is valid for the whole mesh
+//    TODO: store smoothness per polygon, split mesh into smooth and non-smooth parts
 
 extern crate num_cpus;
 extern crate pbrt;
@@ -114,7 +116,7 @@ impl SceneDescriptionBuilder {
         n_vertices: usize,
         p_ws: Vec<Point3f>,
         s: Vec<Vector3f>,
-        n: Vec<Normal3f>,
+        n_ws: Vec<Normal3f>,
         uv: Vec<Point2f>,
     ) -> &mut SceneDescriptionBuilder {
         self.mesh_names.push(base_name);
@@ -127,7 +129,7 @@ impl SceneDescriptionBuilder {
             n_vertices,
             p_ws, // in world space
             s,    // empty
-            n,    // empty
+            n_ws, // in world space
             uv,   // empty
         ));
         self.meshes.push(triangle_mesh);
@@ -697,6 +699,7 @@ fn main() -> std::io::Result<()> {
             println!("{:?}", buffer);
         } else {
             let mut data_following_mesh: bool = false;
+            let mut is_smooth: bool = false;
             // Blender
             let mut loop_indices: Vec<u32> = Vec::new();
             loop {
@@ -762,8 +765,17 @@ fn main() -> std::io::Result<()> {
                         for i in 0..n_vertices {
                             p_ws.push(object_to_world.transform_point(&p[i]));
                         }
+                        let mut n_ws: Vec<Normal3f> = Vec::new();
+                        if is_smooth {
+                            // println!("  is_smooth = {}", is_smooth);
+                            assert!(n.len() == p.len());
+                            if !n.is_empty() {
+                                for i in 0..n_vertices {
+                                    n_ws.push(object_to_world.transform_normal(&n[i]));
+                                }
+                            }
+                        }
                         let s: Vec<Vector3f> = Vec::new();
-                        let n: Vec<Normal3f> = Vec::new();
                         let uv: Vec<Point2f> = Vec::new();
                         builder.add_mesh(
                             base_name.clone(),
@@ -774,12 +786,13 @@ fn main() -> std::io::Result<()> {
                             n_vertices,
                             p_ws, // in world space
                             s,    // empty
-                            n,    // empty
+                            n_ws, // in world space
                             uv,   // empty
                         );
                     }
-                    // data_following_mesh
+                    // reset booleans
                     data_following_mesh = false;
+                    is_smooth = false;
                 } else {
                     // read len bytes
                     let mut buffer = vec![0; len as usize];
@@ -1004,8 +1017,9 @@ fn main() -> std::io::Result<()> {
                                 skip_bytes += 4;
                             }
                         }
-                        // data_following_mesh
+                        // reset booleans
                         data_following_mesh = false;
+                        is_smooth = false;
                     } else if code == String::from("ME") {
                         if data_following_mesh {
                             if let Some(o2w) = object_to_world_hm.get(&base_name) {
@@ -1024,8 +1038,17 @@ fn main() -> std::io::Result<()> {
                             for i in 0..n_vertices {
                                 p_ws.push(object_to_world.transform_point(&p[i]));
                             }
+                            let mut n_ws: Vec<Normal3f> = Vec::new();
+                            if is_smooth {
+                                // println!("  is_smooth = {}", is_smooth);
+                                assert!(n.len() == p.len());
+                                if !n.is_empty() {
+                                    for i in 0..n_vertices {
+                                        n_ws.push(object_to_world.transform_normal(&n[i]));
+                                    }
+                                }
+                            }
                             let s: Vec<Vector3f> = Vec::new();
-                            let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
                             builder.add_mesh(
                                 base_name.clone(),
@@ -1036,7 +1059,7 @@ fn main() -> std::io::Result<()> {
                                 n_vertices,
                                 p_ws, // in world space
                                 s,    // empty
-                                n,    // empty
+                                n_ws, // in world space
                                 uv,   // empty
                             );
                         }
@@ -1369,8 +1392,9 @@ fn main() -> std::io::Result<()> {
                         scale_length = unsafe { mem::transmute(scale_length_buf) };
                         // println!("    scale_length = {}", scale_length);
                         // skip_bytes += 4;
-                        // data_following_mesh
+                        // reset booleans
                         data_following_mesh = false;
+                        is_smooth = false;
                     } else if code == String::from("CA") {
                         // CA
                         // println!("{} ({})", code, len);
@@ -1485,8 +1509,9 @@ fn main() -> std::io::Result<()> {
                         // let shifty: f32 = unsafe { mem::transmute(shifty_buf) };
                         // println!("  shifty = {}", shifty);
                         // skip_bytes += 4;
-                        // data_following_mesh
+                        // reset booleans
                         data_following_mesh = false;
+                        is_smooth = false;
                     } else if code == String::from("MA") {
                         if data_following_mesh {
                             if let Some(o2w) = object_to_world_hm.get(&base_name) {
@@ -1505,8 +1530,17 @@ fn main() -> std::io::Result<()> {
                             for i in 0..n_vertices {
                                 p_ws.push(object_to_world.transform_point(&p[i]));
                             }
+                            let mut n_ws: Vec<Normal3f> = Vec::new();
+                            if is_smooth {
+                                // println!("  is_smooth = {}", is_smooth);
+                                assert!(n.len() == p.len());
+                                if !n.is_empty() {
+                                    for i in 0..n_vertices {
+                                        n_ws.push(object_to_world.transform_normal(&n[i]));
+                                    }
+                                }
+                            }
                             let s: Vec<Vector3f> = Vec::new();
-                            let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
                             builder.add_mesh(
                                 base_name.clone(),
@@ -1517,7 +1551,7 @@ fn main() -> std::io::Result<()> {
                                 n_vertices,
                                 p_ws, // in world space
                                 s,    // empty
-                                n,    // empty
+                                n_ws, // in world space
                                 uv,   // empty
                             );
                         }
@@ -1600,7 +1634,7 @@ fn main() -> std::io::Result<()> {
                                 a: 1.0,
                                 emit: emit,
                             };
-                            println!("  mat[{:?}] = {:?}", base_name, mat);
+                            // println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         // skip_bytes += 4;
                         } else {
@@ -1658,8 +1692,9 @@ fn main() -> std::io::Result<()> {
                             println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         }
-                        // data_following_mesh
+                        // reset booleans
                         data_following_mesh = false;
+                        is_smooth = false;
                     } else if code == String::from("DATA") {
                         // DATA
                         if data_following_mesh {
@@ -1696,9 +1731,9 @@ fn main() -> std::io::Result<()> {
                                     skip_bytes += 2;
                                     // flag
                                     let flag: u8 = buffer[skip_bytes];
-                                    println!("    flag = {}", flag);
-                                    let is_smooth: bool = flag % 2 == 1;
-                                    println!("    is_smooth = {}", is_smooth);
+                                    // println!("    flag = {}", flag);
+                                    is_smooth = flag % 2 == 1;
+                                    // println!("    is_smooth = {}", is_smooth);
                                     skip_bytes += 1;
                                     // pad
                                     // println!("    pad = {}", buffer[skip_bytes]);
@@ -1831,8 +1866,17 @@ fn main() -> std::io::Result<()> {
                             for i in 0..n_vertices {
                                 p_ws.push(object_to_world.transform_point(&p[i]));
                             }
+                            let mut n_ws: Vec<Normal3f> = Vec::new();
+                            if is_smooth {
+                                // println!("  is_smooth = {}", is_smooth);
+                                assert!(n.len() == p.len());
+                                if !n.is_empty() {
+                                    for i in 0..n_vertices {
+                                        n_ws.push(object_to_world.transform_normal(&n[i]));
+                                    }
+                                }
+                            }
                             let s: Vec<Vector3f> = Vec::new();
-                            let n: Vec<Normal3f> = Vec::new();
                             let uv: Vec<Point2f> = Vec::new();
                             builder.add_mesh(
                                 base_name.clone(),
@@ -1843,12 +1887,13 @@ fn main() -> std::io::Result<()> {
                                 n_vertices,
                                 p_ws, // in world space
                                 s,    // empty
-                                n,    // empty
+                                n_ws, // in world space
                                 uv,   // empty
                             );
                         }
-                        // data_following_mesh
+                        // reset booleans
                         data_following_mesh = false;
+                        is_smooth = false;
                     }
                     if code != String::from("DATA")
                         && code != String::from("REND")
