@@ -840,7 +840,31 @@ fn main() -> std::io::Result<()> {
                     let mut buffer = vec![0; len as usize];
                     f.read(&mut buffer)?;
                     counter += len as usize;
-                    if code == String::from("OB") {
+                    if code == String::from("IM") {
+                        // IM
+                        println!("{} ({})", code, len);
+                        println!("  SDNAnr = {}", sdna_nr);
+                        // v279: Image (len=1992) { ... }
+                        // v280: Image (len=1440) { ... }
+                        // id
+                        let mut id_name = String::new();
+                        base_name = String::new();
+                        for i in 32..(32 + 66) {
+                            if buffer[i] == 0 {
+                                break;
+                            }
+                            if (buffer[i] as char).is_ascii_alphanumeric()
+                                || (buffer[i] as char) == '_'
+                            {
+                                id_name.push(buffer[i] as char);
+                                if i != 32 && i != 33 {
+                                    base_name.push(buffer[i] as char);
+                                }
+                            }
+                        }
+                        println!("  id_name = {}", id_name);
+                        println!("  base_name = {}", base_name);
+                    } else if code == String::from("OB") {
                         // OB
                         // println!("{} ({})", code, len);
                         // println!("  SDNAnr = {}", sdna_nr);
@@ -854,7 +878,9 @@ fn main() -> std::io::Result<()> {
                             if buffer[i] == 0 {
                                 break;
                             }
-                            if (buffer[i] as char).is_ascii_alphanumeric() {
+                            if (buffer[i] as char).is_ascii_alphanumeric()
+                                || (buffer[i] as char) == '_'
+                            {
                                 id_name.push(buffer[i] as char);
                                 if i != 32 && i != 33 {
                                     base_name.push(buffer[i] as char);
@@ -1117,7 +1143,9 @@ fn main() -> std::io::Result<()> {
                             if buffer[i] == 0 {
                                 break;
                             }
-                            if (buffer[i] as char).is_ascii_alphanumeric() {
+                            if (buffer[i] as char).is_ascii_alphanumeric()
+                                || (buffer[i] as char) == '_'
+                            {
                                 id_name.push(buffer[i] as char);
                                 if i != 32 && i != 33 {
                                     base_name.push(buffer[i] as char);
