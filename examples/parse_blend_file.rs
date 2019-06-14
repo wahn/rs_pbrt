@@ -6,6 +6,8 @@
 //    TODO: get the render camera/transform from the scene (self.scene.camera)
 // 3. Smoothness is valid for the whole mesh
 //    TODO: store smoothness per polygon, split mesh into smooth and non-smooth parts
+// 4. There might be one IM block with a HDR image, which is used for IBL
+//    TODO: check if World actually uses "Environment Lighting"
 
 extern crate num_cpus;
 extern crate pbrt;
@@ -13,9 +15,11 @@ extern crate structopt;
 
 // std
 use std::collections::HashMap;
+use std::ffi::OsString;
 use std::fs::File;
 use std::io::Read;
 use std::mem;
+use std::path::Path;
 use std::sync::Arc;
 use structopt::StructOpt;
 // pbrt
@@ -491,6 +495,7 @@ fn main() -> std::io::Result<()> {
     let mut p: Vec<Point3f> = Vec::new();
     let mut n: Vec<Normal3f> = Vec::new();
     let mut vertex_indices: Vec<usize> = Vec::new();
+    let mut hdr_path: OsString = OsString::new();
     // TODO: let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
     // TODO: let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
     // first get the DNA
@@ -729,6 +734,7 @@ fn main() -> std::io::Result<()> {
     let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     {
         let mut f = File::open(&args.path)?;
+        let parent = args.path.parent().unwrap();
         // read exactly 12 bytes
         let mut counter: usize = 0;
         let mut buffer = [0; 12];
@@ -842,10 +848,11 @@ fn main() -> std::io::Result<()> {
                     counter += len as usize;
                     if code == String::from("IM") {
                         // IM
-                        println!("{} ({})", code, len);
-                        println!("  SDNAnr = {}", sdna_nr);
+                        // println!("{} ({})", code, len);
+                        // println!("  SDNAnr = {}", sdna_nr);
                         // v279: Image (len=1992) { ... }
                         // v280: Image (len=1440) { ... }
+                        let mut skip_bytes: usize = 0;
                         // id
                         let mut id_name = String::new();
                         base_name = String::new();
@@ -862,8 +869,41 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                         }
-                        println!("  id_name = {}", id_name);
-                        println!("  base_name = {}", base_name);
+                        // println!("  id_name = {}", id_name);
+                        // println!("  base_name = {}", base_name);
+                        if blender_version < 280 {
+                            skip_bytes += 120;
+                        } else {
+                            skip_bytes += 152;
+                        }
+                        // char name[1024]
+                        let mut img_name = String::new();
+                        for i in 0..1024 {
+                            if buffer[skip_bytes + i] == 0 {
+                                break;
+                            }
+                            img_name.push(buffer[skip_bytes + i] as char);
+                        }
+                        if img_name.len() > 2 {
+                            // println!("  img_name = {}", img_name);
+                            let img_path: &Path = Path::new(&img_name);
+                            // println!("  img_path = {:?}", img_path);
+                            if let Some(img_ext) = img_path.extension() {
+                                // println!("  img_ext = {:?}", img_ext);
+                                if img_ext == "hdr" {
+                                    if img_path.starts_with("//") {
+                                        if let Ok(relative) = img_path.strip_prefix("//") {
+                                            let canonicalized = parent
+                                                .join(relative.clone())
+                                                .canonicalize()
+                                                .unwrap();
+                                            // println!("{:?}", canonicalized);
+                                            hdr_path = canonicalized.into_os_string();
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     } else if code == String::from("OB") {
                         // OB
                         // println!("{} ({})", code, len);
@@ -2037,6 +2077,11 @@ fn main() -> std::io::Result<()> {
             }
             println!("{} bytes read", counter);
         }
+    }
+    // use HDR image if one was found
+    if !hdr_path.is_empty() {
+        println!("TODO: use HDR for image based lighting (IBL)");
+        println!("{:?}", hdr_path);
     }
     let scene_description: SceneDescription = builder.finalize();
     let mut render_options: RenderOptions = RenderOptions::new(scene_description, &material_hm);
