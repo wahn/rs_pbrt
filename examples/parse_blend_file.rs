@@ -52,6 +52,7 @@ use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
+use pbrt::lights::infinite::InfiniteAreaLight;
 use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::mirror::MirrorMaterial;
@@ -144,6 +145,23 @@ impl SceneDescriptionBuilder {
             uv,   // empty
         ));
         self.meshes.push(triangle_mesh);
+        self
+    }
+    fn add_hdr_light(
+        &mut self,
+        light_to_world: Transform,
+        texmap: String,
+    ) -> &mut SceneDescriptionBuilder {
+        let l: Spectrum = Spectrum::new(1.0 as Float);
+        let sc: Spectrum = Spectrum::new(1.0 as Float);
+        let n_samples: i32 = 1;
+        let infinte_light = Arc::new(InfiniteAreaLight::new(
+            &light_to_world,
+            &(l * sc),
+            n_samples,
+            texmap,
+        ));
+        self.lights.push(infinte_light);
         self
     }
     fn finalize(self) -> SceneDescription {
@@ -2080,8 +2098,13 @@ fn main() -> std::io::Result<()> {
     }
     // use HDR image if one was found
     if !hdr_path.is_empty() {
-        println!("TODO: use HDR for image based lighting (IBL)");
-        println!("{:?}", hdr_path);
+        let axis: Vector3f = Vector3f {
+            x: 0.0 as Float,
+            y: 0.0 as Float,
+            z: 1.0 as Float,
+        };
+        let light_to_world: Transform = Transform::rotate(180.0 as Float, &axis);
+        builder.add_hdr_light(light_to_world, String::from(hdr_path.to_str().unwrap()));
     }
     let scene_description: SceneDescription = builder.finalize();
     let mut render_options: RenderOptions = RenderOptions::new(scene_description, &material_hm);
