@@ -65,6 +65,12 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 /// Parse a Blender scene file and render it.
 #[derive(StructOpt)]
 struct Cli {
+    /// camera name
+    #[structopt(short = "c", long = "camera_name")]
+    camera_name: Option<String>,
+    /// global light scaling
+    #[structopt(short = "l", long = "light_scale", default_value = "1.0")]
+    light_scale: f32,
     /// pixel samples
     #[structopt(short = "s", long = "samples", default_value = "1")]
     samples: u32,
@@ -151,9 +157,10 @@ impl SceneDescriptionBuilder {
         &mut self,
         light_to_world: Transform,
         texmap: String,
+        light_scale: f32,
     ) -> &mut SceneDescriptionBuilder {
         let l: Spectrum = Spectrum::new(1.0 as Float);
-        let sc: Spectrum = Spectrum::new(1.0 as Float);
+        let sc: Spectrum = Spectrum::new(light_scale as Float);
         let n_samples: i32 = 1;
         let infinte_light = Arc::new(InfiniteAreaLight::new(
             &light_to_world,
@@ -186,6 +193,7 @@ impl RenderOptions {
     fn new(
         scene: SceneDescription,
         material_hm: &HashMap<String, Blend279Material>,
+        light_scale: Float,
     ) -> RenderOptions {
         let mut has_emitters: bool = false;
         let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
@@ -225,8 +233,11 @@ impl RenderOptions {
                     for i in 0..shapes.len() {
                         let shape = &shapes[i];
                         let mi: MediumInterface = MediumInterface::default();
-                        let l_emit: Spectrum =
-                            Spectrum::rgb(mat.r * mat.emit, mat.g * mat.emit, mat.b * mat.emit);
+                        let l_emit: Spectrum = Spectrum::rgb(
+                            mat.r * mat.emit * light_scale,
+                            mat.g * mat.emit * light_scale,
+                            mat.b * mat.emit * light_scale,
+                        );
                         let n_samples: i32 = 1;
                         let two_sided: bool = false;
                         let area_light: Arc<DiffuseAreaLight> = Arc::new(DiffuseAreaLight::new(
@@ -1791,7 +1802,7 @@ fn main() -> std::io::Result<()> {
                                 ang: ang,
                                 ray_mirror: ray_mirror,
                             };
-                            println!("  mat[{:?}] = {:?}", base_name, mat);
+                            // println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         } else {
                             // flag
@@ -2086,10 +2097,15 @@ fn main() -> std::io::Result<()> {
             z: 1.0 as Float,
         };
         let light_to_world: Transform = Transform::rotate(180.0 as Float, &axis);
-        builder.add_hdr_light(light_to_world, String::from(hdr_path.to_str().unwrap()));
+        builder.add_hdr_light(
+            light_to_world,
+            String::from(hdr_path.to_str().unwrap()),
+            args.light_scale,
+        );
     }
     let scene_description: SceneDescription = builder.finalize();
-    let mut render_options: RenderOptions = RenderOptions::new(scene_description, &material_hm);
+    let mut render_options: RenderOptions =
+        RenderOptions::new(scene_description, &material_hm, args.light_scale as Float);
     assert!(render_options.triangles.len() == render_options.triangle_lights.len());
     for triangle_idx in 0..render_options.triangles.len() {
         let triangle = &render_options.triangles[triangle_idx];
@@ -2130,6 +2146,9 @@ fn main() -> std::io::Result<()> {
         z: 1.0,
     };
     base_name = String::from("Camera");
+    if let Some(camera_name) = args.camera_name {
+        base_name = camera_name.clone();
+    }
     if let Some(o2w) = object_to_world_hm.get(&base_name) {
         pos = Point3f {
             x: o2w.m.m[0][3],
