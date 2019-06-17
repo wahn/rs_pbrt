@@ -878,13 +878,9 @@ fn main() -> std::io::Result<()> {
                             if buffer[i] == 0 {
                                 break;
                             }
-                            if (buffer[i] as char).is_ascii_alphanumeric()
-                                || (buffer[i] as char) == '_'
-                            {
-                                id_name.push(buffer[i] as char);
-                                if i != 32 && i != 33 {
-                                    base_name.push(buffer[i] as char);
-                                }
+                            id_name.push(buffer[i] as char);
+                            if i != 32 && i != 33 {
+                                base_name.push(buffer[i] as char);
                             }
                         }
                         // println!("  id_name = {}", id_name);
@@ -936,13 +932,9 @@ fn main() -> std::io::Result<()> {
                             if buffer[i] == 0 {
                                 break;
                             }
-                            if (buffer[i] as char).is_ascii_alphanumeric()
-                                || (buffer[i] as char) == '_'
-                            {
-                                id_name.push(buffer[i] as char);
-                                if i != 32 && i != 33 {
-                                    base_name.push(buffer[i] as char);
-                                }
+                            id_name.push(buffer[i] as char);
+                            if i != 32 && i != 33 {
+                                base_name.push(buffer[i] as char);
                             }
                         }
                         // println!("  id_name = {}", id_name);
@@ -1201,13 +1193,9 @@ fn main() -> std::io::Result<()> {
                             if buffer[i] == 0 {
                                 break;
                             }
-                            if (buffer[i] as char).is_ascii_alphanumeric()
-                                || (buffer[i] as char) == '_'
-                            {
-                                id_name.push(buffer[i] as char);
-                                if i != 32 && i != 33 {
-                                    base_name.push(buffer[i] as char);
-                                }
+                            id_name.push(buffer[i] as char);
+                            if i != 32 && i != 33 {
+                                base_name.push(buffer[i] as char);
                             }
                         }
                         // println!("  id_name = {}", id_name);
@@ -1301,11 +1289,9 @@ fn main() -> std::io::Result<()> {
                             if buffer[i] == 0 {
                                 break;
                             }
-                            if (buffer[i] as char).is_ascii_alphanumeric() {
-                                id_name.push(buffer[i] as char);
-                                if i != 32 && i != 33 {
-                                    base_name.push(buffer[i] as char);
-                                }
+                            id_name.push(buffer[i] as char);
+                            if i != 32 && i != 33 {
+                                base_name.push(buffer[i] as char);
                             }
                         }
                         // println!("  id_name = {}", id_name);
@@ -1538,11 +1524,9 @@ fn main() -> std::io::Result<()> {
                             if buffer[i] == 0 {
                                 break;
                             }
-                            if (buffer[i] as char).is_ascii_alphanumeric() {
-                                id_name.push(buffer[i] as char);
-                                if i != 32 && i != 33 {
-                                    base_name.push(buffer[i] as char);
-                                }
+                            id_name.push(buffer[i] as char);
+                            if i != 32 && i != 33 {
+                                base_name.push(buffer[i] as char);
                             }
                         }
                         // println!("  id_name = {}", id_name);
@@ -1697,11 +1681,9 @@ fn main() -> std::io::Result<()> {
                             if buffer[i] == 0 {
                                 break;
                             }
-                            if (buffer[i] as char).is_ascii_alphanumeric() {
-                                id_name.push(buffer[i] as char);
-                                if i != 32 && i != 33 {
-                                    base_name.push(buffer[i] as char);
-                                }
+                            id_name.push(buffer[i] as char);
+                            if i != 32 && i != 33 {
+                                base_name.push(buffer[i] as char);
                             }
                         }
                         // println!("  id_name = {}", id_name);
@@ -1809,7 +1791,7 @@ fn main() -> std::io::Result<()> {
                                 ang: ang,
                                 ray_mirror: ray_mirror,
                             };
-                            // println!("  mat[{:?}] = {:?}", base_name, mat);
+                            println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         } else {
                             // flag
