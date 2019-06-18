@@ -1,6 +1,3 @@
-extern crate getopts;
-extern crate pbrt;
-
 use getopts::Options;
 use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;

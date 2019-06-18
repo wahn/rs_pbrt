@@ -20,15 +20,15 @@ use image;
 #[cfg(feature = "openexr")]
 use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
 // pbrt
-use core::filter::Filter;
-use core::geometry::{
+use crate::core::filter::Filter;
+use crate::core::geometry::{
     bnd2_intersect_bnd2, pnt2_ceil, pnt2_floor, pnt2_inside_exclusive, pnt2_max_pnt2, pnt2_min_pnt2,
 };
-use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2f};
-use core::parallel::AtomicFloat;
-use core::pbrt::{clamp_t, gamma_correct};
-use core::pbrt::{Float, Spectrum};
-use core::spectrum::xyz_to_rgb;
+use crate::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2f};
+use crate::core::parallel::AtomicFloat;
+use crate::core::pbrt::{clamp_t, gamma_correct};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::spectrum::xyz_to_rgb;
 
 // see film.h
 

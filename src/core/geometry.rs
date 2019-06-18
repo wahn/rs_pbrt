@@ -13,8 +13,6 @@
 //! differences in how they are treated.
 //!
 //! ```rust
-//! extern crate pbrt;
-//!
 //! use pbrt::core::geometry::Point3;
 //!
 //! fn main() {
@@ -38,8 +36,6 @@
 //! floating-point types.
 //!
 //! ```rust
-//! extern crate pbrt;
-//!
 //! use pbrt::core::geometry::Vector3;
 //!
 //! fn main() {
@@ -68,8 +64,6 @@
 //! applying transformations.
 //!
 //! ```rust
-//! extern crate pbrt;
-//!
 //! use pbrt::core::geometry::Normal3;
 //!
 //! fn main() {
@@ -95,8 +89,6 @@
 //! vectors, and normals were.
 //!
 //! ```rust
-//! extern crate pbrt;
-//!
 //! use pbrt::core::geometry::{Ray, Point3f, Vector3f};
 //!
 //! fn main() {
@@ -148,8 +140,6 @@
 //!
 //!
 //! ```rust
-//! extern crate pbrt;
-//!
 //! use pbrt::core::geometry::{Bounds3, Point3};
 //!
 //! fn main() {
@@ -189,9 +179,9 @@ use std::sync::Arc;
 // others
 use num;
 // pbrt
-use core::medium::Medium;
-use core::pbrt::Float;
-use core::pbrt::{clamp_t, gamma, lerp, next_float_down, next_float_up};
+use crate::core::medium::Medium;
+use crate::core::pbrt::Float;
+use crate::core::pbrt::{clamp_t, gamma, lerp, next_float_down, next_float_up};
 
 // see geometry.h
 

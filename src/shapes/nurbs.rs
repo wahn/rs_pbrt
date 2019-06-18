@@ -1,8 +1,8 @@
 // std
 use std;
 // pbrt
-use core::geometry::{Point3f, Vector3f};
-use core::pbrt::Float;
+use crate::core::geometry::{Point3f, Vector3f};
+use crate::core::pbrt::Float;
 
 // see nurbs.cpp
 

@@ -4,8 +4,8 @@
 // others
 use atomic::{Atomic, Ordering};
 // pbrt
-use core::pbrt::Float;
-use core::pbrt::{bits_to_float, float_to_bits};
+use crate::core::pbrt::Float;
+use crate::core::pbrt::{bits_to_float, float_to_bits};
 
 // parallel.h
 

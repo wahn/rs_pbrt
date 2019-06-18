@@ -7,8 +7,8 @@ use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, 
 // others
 use num::Zero;
 // pbrt
-use core::pbrt::Float;
-use core::pbrt::{clamp_t, find_interval, lerp};
+use crate::core::pbrt::Float;
+use crate::core::pbrt::{clamp_t, find_interval, lerp};
 
 // see spectrum.h
 

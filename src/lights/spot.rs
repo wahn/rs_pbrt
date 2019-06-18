@@ -3,17 +3,17 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{pnt3_distance_squared};
-use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::interaction::{Interaction, InteractionCommon};
-use core::light::{Light, LightFlags, VisibilityTester};
-use core::medium::{Medium, MediumInterface};
-use core::pbrt::radians;
-use core::pbrt::{Float, Spectrum};
-use core::reflection::cos_theta;
-use core::sampling::{uniform_cone_pdf, uniform_sample_cone};
-use core::scene::Scene;
-use core::transform::Transform;
+use crate::core::geometry::{pnt3_distance_squared};
+use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::interaction::{Interaction, InteractionCommon};
+use crate::core::light::{Light, LightFlags, VisibilityTester};
+use crate::core::medium::{Medium, MediumInterface};
+use crate::core::pbrt::radians;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::reflection::cos_theta;
+use crate::core::sampling::{uniform_cone_pdf, uniform_sample_cone};
+use crate::core::scene::Scene;
+use crate::core::transform::Transform;
 
 // see spot.h
 

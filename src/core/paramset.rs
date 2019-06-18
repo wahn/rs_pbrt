@@ -7,13 +7,13 @@ use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 // pbrt
-use core::floatfile::read_float_file;
-use core::geometry::{Normal3f, Point2f, Point3f, Vector2f, Vector3f};
-use core::pbrt::{Float, Spectrum};
-use core::spectrum::blackbody_normalized;
-use core::spectrum::{CIE_LAMBDA, N_CIE_SAMPLES};
-use core::texture::Texture;
-use textures::constant::ConstantTexture;
+use crate::core::floatfile::read_float_file;
+use crate::core::geometry::{Normal3f, Point2f, Point3f, Vector2f, Vector3f};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::spectrum::blackbody_normalized;
+use crate::core::spectrum::{CIE_LAMBDA, N_CIE_SAMPLES};
+use crate::core::texture::Texture;
+use crate::textures::constant::ConstantTexture;
 
 // see paramset.h
 

@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::floatfile::read_float_file;
 use pbrt::core::pbrt::Float;
 

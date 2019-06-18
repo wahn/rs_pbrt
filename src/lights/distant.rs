@@ -3,15 +3,15 @@ use std;
 use std::f32::consts::PI;
 use std::sync::RwLock;
 // pbrt
-use core::geometry::{vec3_coordinate_system};
-use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::interaction::{Interaction, InteractionCommon};
-use core::light::{Light, LightFlags, VisibilityTester};
-use core::medium::MediumInterface;
-use core::pbrt::{Float, Spectrum};
-use core::sampling::concentric_sample_disk;
-use core::scene::Scene;
-use core::transform::Transform;
+use crate::core::geometry::{vec3_coordinate_system};
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::interaction::{Interaction, InteractionCommon};
+use crate::core::light::{Light, LightFlags, VisibilityTester};
+use crate::core::medium::MediumInterface;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::sampling::concentric_sample_disk;
+use crate::core::scene::Scene;
+use crate::core::transform::Transform;
 
 // see distant.h
 

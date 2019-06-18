@@ -4,11 +4,11 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Point2f, Vector2f, Vector3f};
-use core::pbrt::clamp_t;
-use core::pbrt::Float;
-use core::pbrt::{INV_2_PI, INV_4_PI, INV_PI, PI_OVER_2, PI_OVER_4};
-use core::rng::Rng;
+use crate::core::geometry::{Point2f, Vector2f, Vector3f};
+use crate::core::pbrt::clamp_t;
+use crate::core::pbrt::Float;
+use crate::core::pbrt::{INV_2_PI, INV_4_PI, INV_PI, PI_OVER_2, PI_OVER_4};
+use crate::core::rng::Rng;
 
 // see sampling.h
 

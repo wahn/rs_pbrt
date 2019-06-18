@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::Vector3f;
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::pbrt::{Float, Spectrum};

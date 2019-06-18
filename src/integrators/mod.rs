@@ -58,22 +58,18 @@
 //!
 //! ![Stochastic Progressive Photon Mapping](/doc/img/caustic_glass_pbrt_rust_sppm.png)
 
-extern crate crossbeam;
-extern crate num_cpus;
-extern crate pbr;
 // std
-use std;
 use std::sync::mpsc;
 use std::sync::Arc;
 // pbrt
-use blockqueue::BlockQueue;
-use core::camera::{Camera, CameraSample};
-use core::geometry::pnt2_inside_exclusive;
-use core::geometry::{Bounds2i, Point2i, Ray, Vector2i};
-use core::integrator::SamplerIntegrator;
-use core::pbrt::{Float, Spectrum};
-use core::sampler::Sampler;
-use core::scene::Scene;
+use crate::blockqueue::BlockQueue;
+use crate::core::camera::{Camera, CameraSample};
+use crate::core::geometry::pnt2_inside_exclusive;
+use crate::core::geometry::{Bounds2i, Point2i, Ray, Vector2i};
+use crate::core::integrator::SamplerIntegrator;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::sampler::Sampler;
+use crate::core::scene::Scene;
 
 pub mod ao;
 pub mod bdpt;

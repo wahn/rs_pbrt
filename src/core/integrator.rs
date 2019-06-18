@@ -5,18 +5,18 @@
 use std;
 use std::sync::Arc;
 // pbrt
-use core::geometry::vec3_abs_dot_nrm;
-use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
-use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
-use core::light::is_delta_light;
-use core::light::{Light, VisibilityTester};
-use core::pbrt::{Float, Spectrum};
-use core::primitive::Primitive;
-use core::reflection::BxdfType;
-use core::sampler::Sampler;
-use core::sampling::power_heuristic;
-use core::sampling::Distribution1D;
-use core::scene::Scene;
+use crate::core::geometry::vec3_abs_dot_nrm;
+use crate::core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
+use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
+use crate::core::light::is_delta_light;
+use crate::core::light::{Light, VisibilityTester};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::primitive::Primitive;
+use crate::core::reflection::BxdfType;
+use crate::core::sampler::Sampler;
+use crate::core::sampling::power_heuristic;
+use crate::core::sampling::Distribution1D;
+use crate::core::scene::Scene;
 
 // see integrator.h
 

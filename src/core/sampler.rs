@@ -3,9 +3,9 @@
 //! **Sampler** implementations.
 
 // pbrt
-use core::camera::CameraSample;
-use core::geometry::{Point2f, Point2i};
-use core::pbrt::Float;
+use crate::core::camera::CameraSample;
+use crate::core::geometry::{Point2f, Point2i};
+use crate::core::pbrt::Float;
 
 // see sampler.h
 

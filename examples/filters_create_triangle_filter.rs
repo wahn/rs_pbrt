@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::Vector2f;
 use pbrt::core::pbrt::Float;
 use pbrt::filters::triangle::TriangleFilter;

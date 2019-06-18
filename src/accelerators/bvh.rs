@@ -5,14 +5,14 @@ use std::sync::Arc;
 // use time::PreciseTime;
 use typed_arena::Arena;
 // pbrt
-use core::geometry::{bnd3_union_bnd3, bnd3_union_pnt3};
-use core::geometry::{Bounds3f, Point3f, Ray, Vector3f};
-use core::interaction::SurfaceInteraction;
-use core::light::AreaLight;
-use core::material::Material;
-use core::paramset::ParamSet;
-use core::pbrt::Float;
-use core::primitive::Primitive;
+use crate::core::geometry::{bnd3_union_bnd3, bnd3_union_pnt3};
+use crate::core::geometry::{Bounds3f, Point3f, Ray, Vector3f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::light::AreaLight;
+use crate::core::material::Material;
+use crate::core::paramset::ParamSet;
+use crate::core::pbrt::Float;
+use crate::core::primitive::Primitive;
 
 // see bvh.h
 

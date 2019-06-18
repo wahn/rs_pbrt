@@ -4,9 +4,9 @@
 // std
 use std::f32::consts::PI;
 // pbrt
-use core::pbrt::find_interval;
-use core::pbrt::Float;
-use core::pbrt::INV_2_PI;
+use crate::core::pbrt::find_interval;
+use crate::core::pbrt::Float;
+use crate::core::pbrt::INV_2_PI;
 
 /// Calculates an offset and four weights for Catmull-Rom spline
 /// interpolation.

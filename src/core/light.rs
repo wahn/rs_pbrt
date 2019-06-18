@@ -5,13 +5,13 @@
 // std
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
-use core::interaction::{Interaction, InteractionCommon};
-use core::medium::MediumInterface;
-use core::pbrt::{Float, Spectrum};
-use core::primitive::Primitive;
-use core::sampler::Sampler;
-use core::scene::Scene;
+use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
+use crate::core::interaction::{Interaction, InteractionCommon};
+use crate::core::medium::MediumInterface;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::primitive::Primitive;
+use crate::core::sampler::Sampler;
+use crate::core::scene::Scene;
 
 // see light.h
 

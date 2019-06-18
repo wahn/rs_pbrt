@@ -11,19 +11,19 @@
 use std;
 use std::sync::Arc;
 // pbrt
-use core::bssrdf::TabulatedBssrdf;
-use core::geometry::{
+use crate::core::bssrdf::TabulatedBssrdf;
+use crate::core::geometry::{
     nrm_faceforward_nrm, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm, vec3_dot_vec3,
 };
-use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::material::TransportMode;
-use core::medium::{Medium, MediumInterface, PhaseFunction};
-use core::pbrt::SHADOW_EPSILON;
-use core::pbrt::{Float, Spectrum};
-use core::primitive::{GeometricPrimitive, Primitive};
-use core::reflection::Bsdf;
-use core::shape::Shape;
-use core::transform::solve_linear_system_2x2;
+use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::material::TransportMode;
+use crate::core::medium::{Medium, MediumInterface, PhaseFunction};
+use crate::core::pbrt::SHADOW_EPSILON;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::primitive::{GeometricPrimitive, Primitive};
+use crate::core::reflection::Bsdf;
+use crate::core::shape::Shape;
+use crate::core::transform::solve_linear_system_2x2;
 
 // see interaction.h
 

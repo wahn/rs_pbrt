@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::pbrt::Float;
 use pbrt::core::transform::Transform;
 

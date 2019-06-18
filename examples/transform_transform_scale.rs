@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::transform::Transform;
 
 fn main() {

@@ -3,16 +3,16 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::camera::{Camera, CameraSample};
-use core::film::Film;
-use core::geometry::{Bounds2f, Point2f, Point3f, Ray, Vector3f};
-use core::interaction::InteractionCommon;
-use core::light::VisibilityTester;
-use core::medium::Medium;
-use core::paramset::ParamSet;
-use core::pbrt::lerp;
-use core::pbrt::{Float, Spectrum};
-use core::transform::AnimatedTransform;
+use crate::core::camera::{Camera, CameraSample};
+use crate::core::film::Film;
+use crate::core::geometry::{Bounds2f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::interaction::InteractionCommon;
+use crate::core::light::VisibilityTester;
+use crate::core::medium::Medium;
+use crate::core::paramset::ParamSet;
+use crate::core::pbrt::lerp;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::transform::AnimatedTransform;
 
 // see environment.h
 

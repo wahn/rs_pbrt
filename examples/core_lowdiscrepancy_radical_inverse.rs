@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::lowdiscrepancy::radical_inverse;
 
 fn main() {

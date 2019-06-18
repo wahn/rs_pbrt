@@ -15,20 +15,20 @@ use std::sync::Arc;
 use byteorder::{LittleEndian, ReadBytesExt};
 use num::Zero;
 // pbrt
-use core::geometry::{
+use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_abs_dot_vec3, vec3_dot_nrm,
     vec3_dot_vec3,
 };
-use core::geometry::{Normal3f, Point2f, Vector3f};
-use core::interaction::SurfaceInteraction;
-use core::interpolation::{catmull_rom_weights, fourier, sample_catmull_rom_2d, sample_fourier};
-use core::material::TransportMode;
-use core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
-use core::pbrt::INV_PI;
-use core::pbrt::{clamp_t, radians};
-use core::pbrt::{Float, Spectrum};
-use core::rng::FLOAT_ONE_MINUS_EPSILON;
-use core::sampling::cosine_sample_hemisphere;
+use crate::core::geometry::{Normal3f, Point2f, Vector3f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::interpolation::{catmull_rom_weights, fourier, sample_catmull_rom_2d, sample_fourier};
+use crate::core::material::TransportMode;
+use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
+use crate::core::pbrt::INV_PI;
+use crate::core::pbrt::{clamp_t, radians};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
+use crate::core::sampling::cosine_sample_hemisphere;
 
 // see reflection.h
 

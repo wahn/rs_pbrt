@@ -1,18 +1,18 @@
 // std
 use std::sync::Arc;
 // pbrt
-use core::geometry::{
+use crate::core::geometry::{
     bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, nrm_cross_vec3, nrm_dot_nrm, pnt3_distance,
     pnt3_distance_squared, pnt3_lerp, vec2_dot, vec3_coordinate_system, vec3_cross_vec3,
 };
-use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
-use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
-use core::material::Material;
-use core::paramset::ParamSet;
-use core::pbrt::Float;
-use core::pbrt::{clamp_t, float_to_bits, lerp};
-use core::shape::Shape;
-use core::transform::Transform;
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
+use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
+use crate::core::material::Material;
+use crate::core::paramset::ParamSet;
+use crate::core::pbrt::Float;
+use crate::core::pbrt::{clamp_t, float_to_bits, lerp};
+use crate::core::shape::Shape;
+use crate::core::transform::Transform;
 
 // see curve.h
 

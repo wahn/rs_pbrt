@@ -1,10 +1,4 @@
-extern crate atom;
-extern crate crossbeam;
-extern crate num_cpus;
-extern crate pbr;
-
 // std
-use std;
 use std::f32::consts::PI;
 use std::sync::mpsc;
 use std::sync::Arc;
@@ -12,27 +6,27 @@ use std::sync::Arc;
 use atom::*;
 use atomic::Atomic;
 // pbrt
-use blockqueue::BlockQueue;
-use core::camera::{Camera, CameraSample};
-use core::film::Film;
-use core::geometry::{
+use crate::blockqueue::BlockQueue;
+use crate::core::camera::{Camera, CameraSample};
+use crate::core::film::Film;
+use crate::core::geometry::{
     bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, pnt3_distance_squared, vec3_abs_dot_nrm,
     vec3_max_component,
 };
-use core::geometry::{
+use crate::core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f,
 };
-use core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
-use core::interaction::Interaction;
-use core::lowdiscrepancy::radical_inverse;
-use core::material::TransportMode;
-use core::parallel::AtomicFloat;
-use core::pbrt::{clamp_t, lerp};
-use core::pbrt::{Float, Spectrum};
-use core::reflection::{Bsdf, BxdfType};
-use core::sampler::{GlobalSampler, Sampler, SamplerClone};
-use core::scene::Scene;
-use samplers::halton::HaltonSampler;
+use crate::core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
+use crate::core::interaction::Interaction;
+use crate::core::lowdiscrepancy::radical_inverse;
+use crate::core::material::TransportMode;
+use crate::core::parallel::AtomicFloat;
+use crate::core::pbrt::{clamp_t, lerp};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::reflection::{Bsdf, BxdfType};
+use crate::core::sampler::{GlobalSampler, Sampler, SamplerClone};
+use crate::core::scene::Scene;
+use crate::samplers::halton::HaltonSampler;
 
 /// Stochastic Progressive Photon Mapping
 pub struct SPPMIntegrator {

@@ -1,14 +1,14 @@
 // std
 use std::sync::Arc;
 // pbrt
-use core::geometry::pnt3i_inside_exclusive;
-use core::geometry::{Bounds3f, Bounds3i, Point3f, Point3i, Ray, Vector3f, Vector3i};
-use core::interaction::MediumInteraction;
-use core::medium::{HenyeyGreenstein, Medium};
-use core::pbrt::lerp;
-use core::pbrt::{Float, Spectrum};
-use core::sampler::Sampler;
-use core::transform::Transform;
+use crate::core::geometry::pnt3i_inside_exclusive;
+use crate::core::geometry::{Bounds3f, Bounds3i, Point3f, Point3i, Ray, Vector3f, Vector3i};
+use crate::core::interaction::MediumInteraction;
+use crate::core::medium::{HenyeyGreenstein, Medium};
+use crate::core::pbrt::lerp;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::sampler::Sampler;
+use crate::core::transform::Transform;
 
 // see grid.h
 

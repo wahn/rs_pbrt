@@ -1,34 +1,29 @@
-extern crate crossbeam;
-extern crate num_cpus;
-extern crate pbr;
-
 // std
-use std;
 use std::f32::consts::PI;
 use std::sync::mpsc;
 use std::sync::Arc;
 // pbrt
-use blockqueue::BlockQueue;
-use core::camera::{Camera, CameraSample};
-use core::geometry::{
+use crate::blockqueue::BlockQueue;
+use crate::core::camera::{Camera, CameraSample};
+use crate::core::geometry::{
     nrm_abs_dot_vec3, pnt2_inside_exclusive, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_dot_nrm,
 };
-use core::geometry::{
+use crate::core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector2i, Vector3f,
 };
-use core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
-use core::light::is_delta_light;
-use core::light::{Light, LightFlags, VisibilityTester};
-use core::lightdistrib::create_light_sample_distribution;
-use core::material::TransportMode;
-use core::medium::{Medium, MediumInterface, PhaseFunction};
-use core::pbrt::{Float, Spectrum};
-use core::primitive::Primitive;
-use core::reflection::Bsdf;
-use core::reflection::BxdfType;
-use core::sampler::Sampler;
-use core::sampling::Distribution1D;
-use core::scene::Scene;
+use crate::core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
+use crate::core::light::is_delta_light;
+use crate::core::light::{Light, LightFlags, VisibilityTester};
+use crate::core::lightdistrib::create_light_sample_distribution;
+use crate::core::material::TransportMode;
+use crate::core::medium::{Medium, MediumInterface, PhaseFunction};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::primitive::Primitive;
+use crate::core::reflection::Bsdf;
+use crate::core::reflection::BxdfType;
+use crate::core::sampler::Sampler;
+use crate::core::sampling::Distribution1D;
+use crate::core::scene::Scene;
 
 // see bdpt.h
 

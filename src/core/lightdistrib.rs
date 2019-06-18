@@ -5,16 +5,16 @@ use atomic::{Atomic, Ordering};
 use std;
 use std::sync::{Arc, RwLock};
 // pbrt
-use core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f};
-use core::integrator::compute_light_power_distribution;
-use core::interaction::InteractionCommon;
-use core::light::VisibilityTester;
-use core::lowdiscrepancy::radical_inverse;
-use core::medium::MediumInterface;
-use core::pbrt::clamp_t;
-use core::pbrt::{Float, Spectrum};
-use core::sampling::Distribution1D;
-use core::scene::Scene;
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f};
+use crate::core::integrator::compute_light_power_distribution;
+use crate::core::interaction::InteractionCommon;
+use crate::core::light::VisibilityTester;
+use crate::core::lowdiscrepancy::radical_inverse;
+use crate::core::medium::MediumInterface;
+use crate::core::pbrt::clamp_t;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::sampling::Distribution1D;
+use crate::core::scene::Scene;
 
 // see lightdistrib.h
 

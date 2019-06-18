@@ -1,19 +1,19 @@
 // std
 use std::sync::RwLock;
 // pbrt
-use core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
-use core::lowdiscrepancy::{
+use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
+use crate::core::lowdiscrepancy::{
     compute_radical_inverse_permutations, inverse_radical_inverse, radical_inverse,
     scrambled_radical_inverse,
 };
-use core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
-use core::pbrt::mod_t;
-use core::pbrt::Float;
-use core::rng::Rng;
-use core::sampler::{GlobalSampler, Sampler};
+use crate::core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
+use crate::core::pbrt::mod_t;
+use crate::core::pbrt::Float;
+use crate::core::rng::Rng;
+use crate::core::sampler::{GlobalSampler, Sampler};
 
 // Generate random digit permutations for Halton sampler
-lazy_static! {
+lazy_static::lazy_static! {
     #[derive(Debug)]
     static ref RADICAL_INVERSE_PERMUTATIONS: Vec<u16> = {
         let mut rng: Rng = Rng::new();

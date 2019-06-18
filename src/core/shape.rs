@@ -7,9 +7,9 @@
 //! geometric and the shading subsystem of pbrt.
 
 // pbrt
-use core::geometry::{Bounds3f, Point2f, Ray, Vector3f};
-use core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
-use core::pbrt::Float;
+use crate::core::geometry::{Bounds3f, Point2f, Ray, Vector3f};
+use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
+use crate::core::pbrt::Float;
 
 // see shape.h
 

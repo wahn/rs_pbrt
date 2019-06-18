@@ -3,20 +3,20 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::camera::{Camera, CameraSample};
-use core::film::Film;
-use core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3};
-use core::geometry::{
+use crate::core::camera::{Camera, CameraSample};
+use crate::core::film::Film;
+use crate::core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3};
+use crate::core::geometry::{
     Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f,
 };
-use core::interaction::InteractionCommon;
-use core::light::VisibilityTester;
-use core::medium::{Medium, MediumInterface};
-use core::paramset::ParamSet;
-use core::pbrt::lerp;
-use core::pbrt::{Float, Spectrum};
-use core::sampling::concentric_sample_disk;
-use core::transform::{AnimatedTransform, Transform};
+use crate::core::interaction::InteractionCommon;
+use crate::core::light::VisibilityTester;
+use crate::core::medium::{Medium, MediumInterface};
+use crate::core::paramset::ParamSet;
+use crate::core::pbrt::lerp;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::sampling::concentric_sample_disk;
+use crate::core::transform::{AnimatedTransform, Transform};
 
 // see perspective.h
 

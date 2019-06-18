@@ -2,20 +2,20 @@
 use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
-use core::bssrdf::Bssrdf;
-use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
-use core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
-use core::integrator::uniform_sample_one_light;
-use core::integrator::SamplerIntegrator;
-use core::interaction::Interaction;
-use core::lightdistrib::create_light_sample_distribution;
-use core::lightdistrib::LightDistribution;
-use core::material::TransportMode;
-use core::pbrt::{Float, Spectrum};
-use core::reflection::BxdfType;
-use core::sampler::Sampler;
-use core::sampling::Distribution1D;
-use core::scene::Scene;
+use crate::core::bssrdf::Bssrdf;
+use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
+use crate::core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
+use crate::core::integrator::uniform_sample_one_light;
+use crate::core::integrator::SamplerIntegrator;
+use crate::core::interaction::Interaction;
+use crate::core::lightdistrib::create_light_sample_distribution;
+use crate::core::lightdistrib::LightDistribution;
+use crate::core::material::TransportMode;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::reflection::BxdfType;
+use crate::core::sampler::Sampler;
+use crate::core::sampling::Distribution1D;
+use crate::core::scene::Scene;
 
 // see path.h
 

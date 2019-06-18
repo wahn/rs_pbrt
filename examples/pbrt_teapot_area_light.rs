@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::Camera;

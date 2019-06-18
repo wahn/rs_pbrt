@@ -3,18 +3,18 @@ use std::sync::Arc;
 
 use num::Zero;
 
-use core::geometry::{spherical_direction, vec3_dot_vec3, Point2f, Vector3f};
-use core::interaction::SurfaceInteraction;
-use core::material::{Material, TransportMode};
-use core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
-use core::paramset::TextureParams;
-use core::pbrt::{clamp_t, lerp, Float, Spectrum};
-use core::reflection::{
+use crate::core::geometry::{spherical_direction, vec3_dot_vec3, Point2f, Vector3f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::material::{Material, TransportMode};
+use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
+use crate::core::paramset::TextureParams;
+use crate::core::pbrt::{clamp_t, lerp, Float, Spectrum};
+use crate::core::reflection::{
     abs_cos_theta, vec3_same_hemisphere_vec3, MicrofacetReflection, MicrofacetTransmission,
 };
-use core::reflection::{fr_dielectric, reflect, Fresnel};
-use core::reflection::{Bsdf, Bxdf, BxdfType, LambertianTransmission, SpecularTransmission};
-use core::texture::Texture;
+use crate::core::reflection::{fr_dielectric, reflect, Fresnel};
+use crate::core::reflection::{Bsdf, Bxdf, BxdfType, LambertianTransmission, SpecularTransmission};
+use crate::core::texture::Texture;
 
 pub struct DisneyMaterial {
     color: Arc<Texture<Spectrum> + Send + Sync>,

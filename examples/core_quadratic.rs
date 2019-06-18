@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::{Point3f, Ray, Vector3f};
 use pbrt::core::pbrt::quadratic;
 use pbrt::core::pbrt::Float;

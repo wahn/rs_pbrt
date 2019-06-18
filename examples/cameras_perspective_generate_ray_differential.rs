@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::camera::{Camera, CameraSample};
 use pbrt::core::film::Film;

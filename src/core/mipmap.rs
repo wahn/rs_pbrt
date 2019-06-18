@@ -9,11 +9,11 @@ use std::ops::{Add, AddAssign, Div, Mul};
 // others
 use num;
 // pbrt
-use core::geometry::{Point2f, Point2i, Vector2f};
-use core::memory::BlockedArray;
-use core::pbrt::{clamp_t, is_power_of_2, lerp, mod_t, round_up_pow2_32};
-use core::pbrt::{Float, Spectrum};
-use core::texture::lanczos;
+use crate::core::geometry::{Point2f, Point2i, Vector2f};
+use crate::core::memory::BlockedArray;
+use crate::core::pbrt::{clamp_t, is_power_of_2, lerp, mod_t, round_up_pow2_32};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::texture::lanczos;
 
 // see mipmap.h
 

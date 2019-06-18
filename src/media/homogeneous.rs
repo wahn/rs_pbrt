@@ -2,11 +2,11 @@
 use std::f32;
 use std::sync::Arc;
 // pbrt
-use core::geometry::Ray;
-use core::interaction::MediumInteraction;
-use core::medium::{HenyeyGreenstein, Medium};
-use core::pbrt::{Float, Spectrum};
-use core::sampler::Sampler;
+use crate::core::geometry::Ray;
+use crate::core::interaction::MediumInteraction;
+use crate::core::medium::{HenyeyGreenstein, Medium};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::sampler::Sampler;
 
 // see homogeneous.h
 

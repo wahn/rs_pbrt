@@ -3,17 +3,17 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system};
-use core::geometry::{Normal3f, Point2f, Ray, Vector3f};
-use core::interaction::{Interaction, InteractionCommon};
-use core::light::{AreaLight, Light, LightFlags, VisibilityTester};
-use core::medium::{Medium, MediumInterface};
-use core::pbrt::{Float, Spectrum};
-use core::rng::FLOAT_ONE_MINUS_EPSILON;
-use core::sampling::{cosine_hemisphere_pdf, cosine_sample_hemisphere};
-use core::scene::Scene;
-use core::shape::Shape;
-use core::transform::Transform;
+use crate::core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system};
+use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
+use crate::core::interaction::{Interaction, InteractionCommon};
+use crate::core::light::{AreaLight, Light, LightFlags, VisibilityTester};
+use crate::core::medium::{Medium, MediumInterface};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
+use crate::core::sampling::{cosine_hemisphere_pdf, cosine_sample_hemisphere};
+use crate::core::scene::Scene;
+use crate::core::shape::Shape;
+use crate::core::transform::Transform;
 
 // see diffuse.h
 

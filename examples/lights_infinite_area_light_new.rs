@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::pbrt::Spectrum;
 use pbrt::core::transform::Transform;
 use pbrt::lights::infinite::InfiniteAreaLight;

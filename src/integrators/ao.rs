@@ -1,16 +1,16 @@
 // pbrt
-use core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm};
-use core::geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
-use core::integrator::SamplerIntegrator;
-use core::interaction::Interaction;
-use core::material::TransportMode;
-use core::pbrt::{Float, Spectrum};
-use core::sampler::Sampler;
-use core::sampling::{
+use crate::core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm};
+use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
+use crate::core::integrator::SamplerIntegrator;
+use crate::core::interaction::Interaction;
+use crate::core::material::TransportMode;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::sampler::Sampler;
+use crate::core::sampling::{
     cosine_hemisphere_pdf, cosine_sample_hemisphere, uniform_hemisphere_pdf,
     uniform_sample_hemisphere,
 };
-use core::scene::Scene;
+use crate::core::scene::Scene;
 
 // see ao.h
 

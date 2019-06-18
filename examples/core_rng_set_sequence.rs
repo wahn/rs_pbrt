@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::rng::Rng;
 
 fn main() {

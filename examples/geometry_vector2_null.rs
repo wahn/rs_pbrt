@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::Vector2;
 
 fn main() {

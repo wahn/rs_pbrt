@@ -1,9 +1,9 @@
 // pbrt
-use core::geometry::{Point3f, Vector3f};
-use core::interaction::SurfaceInteraction;
-use core::pbrt::Float;
-use core::texture::fbm;
-use core::texture::{Texture, TextureMapping3D};
+use crate::core::geometry::{Point3f, Vector3f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::pbrt::Float;
+use crate::core::texture::fbm;
+use crate::core::texture::{Texture, TextureMapping3D};
 
 // see windy.h
 
