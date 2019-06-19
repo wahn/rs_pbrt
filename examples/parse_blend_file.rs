@@ -151,7 +151,7 @@ impl SceneDescriptionBuilder {
             p_ws, // in world space
             s,    // empty
             n_ws, // in world space
-            uv,   // empty
+            uv,
         ));
         self.meshes.push(triangle_mesh);
         self
@@ -585,6 +585,7 @@ fn main() -> std::io::Result<()> {
     );
     let mut p: Vec<Point3f> = Vec::new();
     let mut n: Vec<Normal3f> = Vec::new();
+    let mut uvs: Vec<Point2f> = Vec::new();
     let mut vertex_indices: Vec<usize> = Vec::new();
     let mut hdr_path: OsString = OsString::new();
     // first get the DNA
@@ -913,7 +914,13 @@ fn main() -> std::io::Result<()> {
                             }
                         }
                         let s: Vec<Vector3f> = Vec::new();
-                        let uv: Vec<Point2f> = Vec::new();
+                        let mut uv: Vec<Point2f> = Vec::new();
+                        if !uvs.is_empty() {
+                            assert!(uvs.len() == p.len());
+                            for i in 0..n_vertices {
+                                uv.push(uvs[i]);
+                            }
+                        }
                         builder.add_mesh(
                             base_name.clone(),
                             object_to_world,
@@ -924,7 +931,7 @@ fn main() -> std::io::Result<()> {
                             p_ws, // in world space
                             s,    // empty
                             n_ws, // in world space
-                            uv,   // empty
+                            uv,
                         );
                     }
                     // reset booleans
@@ -1253,7 +1260,13 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                             let s: Vec<Vector3f> = Vec::new();
-                            let uv: Vec<Point2f> = Vec::new();
+                            let mut uv: Vec<Point2f> = Vec::new();
+                            if !uvs.is_empty() {
+                                assert!(uvs.len() == p.len());
+                                for i in 0..n_vertices {
+                                    uv.push(uvs[i]);
+                                }
+                            }
                             builder.add_mesh(
                                 base_name.clone(),
                                 object_to_world,
@@ -1264,7 +1277,7 @@ fn main() -> std::io::Result<()> {
                                 p_ws, // in world space
                                 s,    // empty
                                 n_ws, // in world space
-                                uv,   // empty
+                                uv,
                             );
                         }
                         // ME
@@ -1358,6 +1371,7 @@ fn main() -> std::io::Result<()> {
                         // clear all Vecs
                         p.clear();
                         n.clear();
+                        uvs.clear();
                         vertex_indices.clear();
                         loop_indices.clear();
                     } else if code == String::from("SC") {
@@ -1739,7 +1753,13 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                             let s: Vec<Vector3f> = Vec::new();
-                            let uv: Vec<Point2f> = Vec::new();
+                            let mut uv: Vec<Point2f> = Vec::new();
+                            if !uvs.is_empty() {
+                                assert!(uvs.len() == p.len());
+                                for i in 0..n_vertices {
+                                    uv.push(uvs[i]);
+                                }
+                            }
                             builder.add_mesh(
                                 base_name.clone(),
                                 object_to_world,
@@ -1750,7 +1770,7 @@ fn main() -> std::io::Result<()> {
                                 p_ws, // in world space
                                 s,    // empty
                                 n_ws, // in world space
-                                uv,   // empty
+                                uv,
                             );
                         }
                         // MA
@@ -2192,7 +2212,37 @@ fn main() -> std::io::Result<()> {
                                     // println!("    e = {}", e);
                                     skip_bytes += 4;
                                 }
-                                // println!("    loop_indices = {:?}", loop_indices);
+                            // println!("    loop_indices = {:?}", loop_indices);
+                            } else if types[type_id] == "MLoopUV" {
+                                // println!("{}[{}] ({})", code, data_len, len);
+                                // println!("  SDNAnr = {}", sdna_nr);
+                                // println!("  {} ({})", types[type_id], tlen[type_id]);
+                                let mut skip_bytes: usize = 0;
+                                let mut coords: [f32; 2] = [0.0_f32; 2];
+                                for _l in 0..data_len {
+                                    // println!("  {}:", l + 1);
+                                    // float uv[2]
+                                    for i in 0..2 {
+                                        let mut uv_buf: [u8; 4] = [0_u8; 4];
+                                        for b in 0..4 as usize {
+                                            uv_buf[b] = buffer[skip_bytes + b];
+                                        }
+                                        let uv: f32 = unsafe { mem::transmute(uv_buf) };
+                                        // println!("    uv[{}] = {}", i, uv);
+                                        coords[i] = uv;
+                                        skip_bytes += 4;
+                                    }
+                                    uvs.push(Point2f {
+                                        x: coords[0] as Float,
+                                        y: coords[1] as Float,
+                                    });
+                                    // int flag
+                                    skip_bytes += 4;
+                                }
+                                // for l in 0..data_len as usize {
+                                //     println!("  {}:", l + 1);
+                                //     println!("    uv: {:?}", uvs[l]);
+                                // }
                             }
                         }
                     } else {
@@ -2224,7 +2274,13 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                             let s: Vec<Vector3f> = Vec::new();
-                            let uv: Vec<Point2f> = Vec::new();
+                            let mut uv: Vec<Point2f> = Vec::new();
+                            if !uvs.is_empty() {
+                                assert!(uvs.len() == p.len());
+                                for i in 0..n_vertices {
+                                    uv.push(uvs[i]);
+                                }
+                            }
                             builder.add_mesh(
                                 base_name.clone(),
                                 object_to_world,
@@ -2235,7 +2291,7 @@ fn main() -> std::io::Result<()> {
                                 p_ws, // in world space
                                 s,    // empty
                                 n_ws, // in world space
-                                uv,   // empty
+                                uv,
                             );
                         }
                         // reset booleans
