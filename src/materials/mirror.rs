@@ -2,12 +2,12 @@
 use std;
 use std::sync::Arc;
 // pbrt
-use core::interaction::SurfaceInteraction;
-use core::material::{Material, TransportMode};
-use core::paramset::TextureParams;
-use core::pbrt::{Float, Spectrum};
-use core::reflection::{Bsdf, Bxdf, FresnelNoOp, SpecularReflection};
-use core::texture::Texture;
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::material::{Material, TransportMode};
+use crate::core::paramset::TextureParams;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::reflection::{Bsdf, Bxdf, FresnelNoOp, SpecularReflection};
+use crate::core::texture::Texture;
 
 // see mirror.h
 

@@ -5,12 +5,12 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{spherical_direction_vec3, vec3_coordinate_system, vec3_dot_vec3};
-use core::geometry::{Point2f, Ray, Vector3f};
-use core::interaction::MediumInteraction;
-use core::pbrt::INV_4_PI;
-use core::pbrt::{Float, Spectrum};
-use core::sampler::Sampler;
+use crate::core::geometry::{spherical_direction_vec3, vec3_coordinate_system, vec3_dot_vec3};
+use crate::core::geometry::{Point2f, Ray, Vector3f};
+use crate::core::interaction::MediumInteraction;
+use crate::core::pbrt::INV_4_PI;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::sampler::Sampler;
 
 pub const SUBSURFACE_PARAMETER_TABLE: [MeasuredSS; 47] = [
     // From "A Practical Model for Subsurface Light Transport"

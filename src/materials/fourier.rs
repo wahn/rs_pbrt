@@ -1,13 +1,13 @@
 //std
 use std::sync::Arc;
 // pbrt
-use core::api::BsdfState;
-use core::interaction::SurfaceInteraction;
-use core::material::{Material, TransportMode};
-use core::paramset::TextureParams;
-use core::pbrt::Float;
-use core::reflection::{Bsdf, Bxdf, FourierBSDF, FourierBSDFTable};
-use core::texture::Texture;
+use crate::core::api::BsdfState;
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::material::{Material, TransportMode};
+use crate::core::paramset::TextureParams;
+use crate::core::pbrt::Float;
+use crate::core::reflection::{Bsdf, Bxdf, FourierBSDF, FourierBSDFTable};
+use crate::core::texture::Texture;
 
 // see fourier.h
 

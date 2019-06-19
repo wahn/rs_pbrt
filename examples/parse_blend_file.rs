@@ -9,10 +9,6 @@
 // 4. There might be one IM block with a HDR image, which is used for IBL
 //    TODO: check if World actually uses "Environment Lighting"
 
-extern crate num_cpus;
-extern crate pbrt;
-extern crate structopt;
-
 // std
 use std::collections::HashMap;
 use std::ffi::OsString;

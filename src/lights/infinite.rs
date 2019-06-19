@@ -1,7 +1,4 @@
-extern crate image;
-
 // std
-use std;
 use std::f32::consts::PI;
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
@@ -11,18 +8,18 @@ use half::f16;
 #[cfg(feature = "openexr")]
 use openexr::{FrameBufferMut, InputFile, PixelType};
 // pbrt
-use core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system};
-use core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
-use core::interaction::{Interaction, InteractionCommon};
-use core::light::{Light, LightFlags, VisibilityTester};
-use core::medium::MediumInterface;
-use core::mipmap::{ImageWrap, MipMap};
-use core::pbrt::{Float, Spectrum};
-use core::pbrt::{INV_2_PI, INV_PI};
-use core::sampling::concentric_sample_disk;
-use core::sampling::Distribution2D;
-use core::scene::Scene;
-use core::transform::Transform;
+use crate::core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system};
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
+use crate::core::interaction::{Interaction, InteractionCommon};
+use crate::core::light::{Light, LightFlags, VisibilityTester};
+use crate::core::medium::MediumInterface;
+use crate::core::mipmap::{ImageWrap, MipMap};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::pbrt::{INV_2_PI, INV_PI};
+use crate::core::sampling::concentric_sample_disk;
+use crate::core::sampling::Distribution2D;
+use crate::core::scene::Scene;
+use crate::core::transform::Transform;
 
 // see https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
 #[inline]

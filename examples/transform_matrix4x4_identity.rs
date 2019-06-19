@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::transform::Matrix4x4;
 
 fn main() {

@@ -1,25 +1,21 @@
-extern crate crossbeam;
-extern crate num_cpus;
-extern crate pbr;
-
 // std
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
 // pbrt
-use core::camera::Camera;
-use core::film::Film;
-use core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i};
-use core::integrator::compute_light_power_distribution;
-use core::pbrt::erf_inv;
-use core::pbrt::SQRT_2;
-use core::pbrt::{Float, Spectrum};
-use core::rng::Rng;
-use core::sampler::{Sampler, SamplerClone};
-use core::sampling::Distribution1D;
-use core::scene::Scene;
-use integrators::bdpt::Vertex;
-use integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_subpath};
+use crate::core::camera::Camera;
+use crate::core::film::Film;
+use crate::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i};
+use crate::core::integrator::compute_light_power_distribution;
+use crate::core::pbrt::erf_inv;
+use crate::core::pbrt::SQRT_2;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::rng::Rng;
+use crate::core::sampler::{Sampler, SamplerClone};
+use crate::core::sampling::Distribution1D;
+use crate::core::scene::Scene;
+use crate::integrators::bdpt::Vertex;
+use crate::integrators::bdpt::{connect_bdpt, generate_camera_subpath, generate_light_subpath};
 // others
 use rayon::prelude::*;
 

@@ -1,13 +1,13 @@
 //std
 use std::sync::Arc;
 // pbrt
-use core::interaction::SurfaceInteraction;
-use core::material::{Material, TransportMode};
-use core::microfacet::TrowbridgeReitzDistribution;
-use core::paramset::TextureParams;
-use core::pbrt::{Float, Spectrum};
-use core::reflection::{Bsdf, Bxdf, FresnelConductor, MicrofacetReflection};
-use core::texture::Texture;
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::material::{Material, TransportMode};
+use crate::core::microfacet::TrowbridgeReitzDistribution;
+use crate::core::paramset::TextureParams;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::reflection::{Bsdf, Bxdf, FresnelConductor, MicrofacetReflection};
+use crate::core::texture::Texture;
 
 pub const COPPER_SAMPLES: u8 = 56_u8;
 pub const COPPER_WAVELENGTHS: [Float; COPPER_SAMPLES as usize] = [

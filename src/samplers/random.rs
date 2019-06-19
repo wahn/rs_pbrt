@@ -1,8 +1,8 @@
 // pbrt
-use core::geometry::{Point2f, Point2i};
-use core::pbrt::Float;
-use core::rng::Rng;
-use core::sampler::Sampler;
+use crate::core::geometry::{Point2f, Point2i};
+use crate::core::pbrt::Float;
+use crate::core::rng::Rng;
+use crate::core::sampler::Sampler;
 
 // see random.h
 

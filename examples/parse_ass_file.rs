@@ -1,10 +1,4 @@
-extern crate getopts;
-extern crate num_cpus;
-extern crate pbrt;
-// pest
-extern crate pest;
-#[macro_use]
-extern crate pest_derive;
+use pest_derive::*;
 
 // parser
 use pest::Parser;

@@ -3,16 +3,16 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{Point2f, Vector3f};
-use core::interaction::SurfaceInteraction;
-use core::material::{Material, TransportMode};
-use core::paramset::TextureParams;
-use core::pbrt::{clamp_t, radians};
-use core::pbrt::{Float, Spectrum};
-use core::reflection::{abs_cos_theta, fr_dielectric};
-use core::reflection::{Bsdf, Bxdf, BxdfType};
-use core::texture::Texture;
-use textures::constant::ConstantTexture;
+use crate::core::geometry::{Point2f, Vector3f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::material::{Material, TransportMode};
+use crate::core::paramset::TextureParams;
+use crate::core::pbrt::{clamp_t, radians};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::reflection::{abs_cos_theta, fr_dielectric};
+use crate::core::reflection::{Bsdf, Bxdf, BxdfType};
+use crate::core::texture::Texture;
+use crate::textures::constant::ConstantTexture;
 
 pub struct HairMaterial {
     pub sigma_a: Option<Arc<Texture<Spectrum> + Sync + Send>>,

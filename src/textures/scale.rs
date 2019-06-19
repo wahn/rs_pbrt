@@ -2,8 +2,8 @@
 use std::ops::Mul;
 use std::sync::Arc;
 // pbrt
-use core::interaction::SurfaceInteraction;
-use core::texture::Texture;
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::texture::Texture;
 
 pub struct ScaleTexture<T> {
     pub tex1: Arc<Texture<T> + Send + Sync>,

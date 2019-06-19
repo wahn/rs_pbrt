@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 // pbrt
-use core::pbrt::Float;
+use crate::core::pbrt::Float;
 
 pub fn read_float_file(filename: &String, values: &mut Vec<Float>) -> bool {
     let path = Path::new(&filename);

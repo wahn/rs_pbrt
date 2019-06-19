@@ -7,12 +7,12 @@
 // std
 use std::f32::consts::PI;
 // pbrt
-use core::geometry::vec3_dot_vec3;
-use core::geometry::{Point2f, Point3f, Vector2f, Vector3f};
-use core::interaction::SurfaceInteraction;
-use core::pbrt::Float;
-use core::pbrt::{clamp_t, lerp, log_2};
-use core::transform::Transform;
+use crate::core::geometry::vec3_dot_vec3;
+use crate::core::geometry::{Point2f, Point3f, Vector2f, Vector3f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::pbrt::Float;
+use crate::core::pbrt::{clamp_t, lerp, log_2};
+use crate::core::transform::Transform;
 
 // see texture.h
 

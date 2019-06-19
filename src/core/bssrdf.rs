@@ -7,21 +7,21 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use core::geometry::{
+use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_nrm, nrm_dot_vec3, pnt3_distance, vec3_dot_nrm, vec3_dot_vec3,
 };
-use core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
-use core::interaction::{InteractionCommon, SurfaceInteraction};
-use core::interpolation::{catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d};
-use core::material::{Material, TransportMode};
-use core::medium::phase_hg;
-use core::pbrt::clamp_t;
-use core::pbrt::INV_4_PI;
-use core::pbrt::{Float, Spectrum};
-use core::primitive::Primitive;
-use core::reflection::{cos_theta, fr_dielectric};
-use core::reflection::{Bsdf, Bxdf, BxdfType};
-use core::scene::Scene;
+use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::interaction::{InteractionCommon, SurfaceInteraction};
+use crate::core::interpolation::{catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d};
+use crate::core::material::{Material, TransportMode};
+use crate::core::medium::phase_hg;
+use crate::core::pbrt::clamp_t;
+use crate::core::pbrt::INV_4_PI;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::primitive::Primitive;
+use crate::core::reflection::{cos_theta, fr_dielectric};
+use crate::core::reflection::{Bsdf, Bxdf, BxdfType};
+use crate::core::scene::Scene;
 
 pub trait Bssrdf {
     fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum;

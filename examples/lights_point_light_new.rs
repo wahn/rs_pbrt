@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::pbrt::Spectrum;
 use pbrt::core::transform::Transform;

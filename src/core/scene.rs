@@ -6,13 +6,13 @@
 // std
 use std::sync::Arc;
 // pbrt
-use accelerators::bvh::BVHAccel;
-use core::geometry::{Bounds3f, Ray, Vector3f};
-use core::interaction::{Interaction, SurfaceInteraction};
-use core::light::{Light, LightFlags};
-use core::pbrt::{Float, Spectrum};
-use core::primitive::Primitive;
-use core::sampler::Sampler;
+use crate::accelerators::bvh::BVHAccel;
+use crate::core::geometry::{Bounds3f, Ray, Vector3f};
+use crate::core::interaction::{Interaction, SurfaceInteraction};
+use crate::core::light::{Light, LightFlags};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::primitive::Primitive;
+use crate::core::sampler::Sampler;
 
 // see scene.h
 

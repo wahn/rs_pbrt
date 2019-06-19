@@ -7,8 +7,8 @@
 use std;
 use std::ops::{Add, Div, Mul, Sub};
 // pbrt
-use core::pbrt::MACHINE_EPSILON;
-use core::pbrt::{next_float_down, next_float_up};
+use crate::core::pbrt::MACHINE_EPSILON;
+use crate::core::pbrt::{next_float_down, next_float_up};
 
 // see efloat.h
 

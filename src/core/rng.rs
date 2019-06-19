@@ -1,7 +1,9 @@
 //! Random Number Generator
 
+use hexf::*;
+
 // pbrt
-use core::pbrt::Float;
+use crate::core::pbrt::Float;
 
 // see rng.h
 

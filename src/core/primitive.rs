@@ -4,15 +4,15 @@
 // std
 use std::sync::Arc;
 // pbrt
-use core::geometry::nrm_dot_nrm;
-use core::geometry::{Bounds3f, Ray};
-use core::interaction::SurfaceInteraction;
-use core::light::AreaLight;
-use core::material::{Material, TransportMode};
-use core::medium::{Medium, MediumInterface};
-use core::pbrt::Float;
-use core::shape::Shape;
-use core::transform::{AnimatedTransform, Transform};
+use crate::core::geometry::nrm_dot_nrm;
+use crate::core::geometry::{Bounds3f, Ray};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::light::AreaLight;
+use crate::core::material::{Material, TransportMode};
+use crate::core::medium::{Medium, MediumInterface};
+use crate::core::pbrt::Float;
+use crate::core::shape::Shape;
+use crate::core::transform::{AnimatedTransform, Transform};
 
 // see primitive.h
 

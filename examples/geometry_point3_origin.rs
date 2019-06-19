@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::Point3;
 
 fn main() {

@@ -7,11 +7,11 @@
 // std
 use std::ops::{Add, Div, Mul, Neg, Sub};
 // pbrt
-use core::geometry::vec3_dot_vec3;
-use core::geometry::Vector3f;
-use core::pbrt::clamp_t;
-use core::pbrt::Float;
-use core::transform::{Matrix4x4, Transform};
+use crate::core::geometry::vec3_dot_vec3;
+use crate::core::geometry::Vector3f;
+use crate::core::pbrt::clamp_t;
+use crate::core::pbrt::Float;
+use crate::core::transform::{Matrix4x4, Transform};
 
 // see quaternion.h
 

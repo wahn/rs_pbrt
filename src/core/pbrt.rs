@@ -8,7 +8,7 @@ use std::ops::{Add, BitAnd, Div, Mul, Sub};
 // others
 use num;
 // pbrt
-use core::spectrum::RGBSpectrum;
+use crate::core::spectrum::RGBSpectrum;
 
 // see pbrt.h
 

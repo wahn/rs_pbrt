@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::spherical_direction_vec3;
 use pbrt::core::geometry::Vector3f;
 use pbrt::core::pbrt::Float;

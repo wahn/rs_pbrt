@@ -20,25 +20,6 @@
 //! [render_bdpt]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/bdpt/fn.render_bdpt.html
 //! [render_mlt]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/mlt/fn.render_mlt.html
 //! [render_sppm]: https://www.rs-pbrt.org/doc/crates/pbrt/integrators/sppm/fn.render_sppm.html
-
-#[macro_use]
-extern crate hexf;
-extern crate atom;
-extern crate atomic;
-extern crate byteorder;
-#[cfg(feature = "openexr")]
-extern crate half;
-extern crate image;
-#[macro_use]
-extern crate lazy_static;
-extern crate num;
-#[cfg(feature = "openexr")]
-extern crate openexr;
-extern crate ply_rs;
-extern crate rayon;
-extern crate time;
-extern crate typed_arena;
-
 pub mod accelerators;
 pub mod blockqueue;
 pub mod cameras;

@@ -5,11 +5,11 @@
 // std
 use std::sync::Arc;
 // pbrt
-use core::film::Film;
-use core::geometry::{Point2f, Ray, Vector3f};
-use core::interaction::InteractionCommon;
-use core::light::VisibilityTester;
-use core::pbrt::{Float, Spectrum};
+use crate::core::film::Film;
+use crate::core::geometry::{Point2f, Ray, Vector3f};
+use crate::core::interaction::InteractionCommon;
+use crate::core::light::VisibilityTester;
+use crate::core::pbrt::{Float, Spectrum};
 
 // see camera.h
 

@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use core::filter::Filter;
-use core::geometry::{Point2f, Vector2f};
-use core::paramset::ParamSet;
-use core::pbrt::Float;
+use crate::core::filter::Filter;
+use crate::core::geometry::{Point2f, Vector2f};
+use crate::core::paramset::ParamSet;
+use crate::core::pbrt::Float;
 
 pub struct MitchellNetravali {
     width: Float,

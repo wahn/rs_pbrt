@@ -3,8 +3,8 @@
 //! filtering.
 
 // pbrt
-use core::geometry::{Point2f, Vector2f};
-use core::pbrt::Float;
+use crate::core::geometry::{Point2f, Vector2f};
+use crate::core::pbrt::Float;
 
 // see filter.h
 

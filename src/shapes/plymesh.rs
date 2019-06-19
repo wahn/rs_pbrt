@@ -1,5 +1,3 @@
-extern crate ply_rs;
-
 // std
 use std::collections::HashMap;
 use std::fs::File;
@@ -12,13 +10,13 @@ use std::vec::Vec;
 use ply_rs::parser;
 use ply_rs::ply;
 // pbrt
-use core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
-use core::paramset::ParamSet;
-use core::pbrt::Float;
-use core::shape::Shape;
-use core::texture::Texture;
-use core::transform::Transform;
-use shapes::triangle::{Triangle, TriangleMesh};
+use crate::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
+use crate::core::paramset::ParamSet;
+use crate::core::pbrt::Float;
+use crate::core::shape::Shape;
+use crate::core::texture::Texture;
+use crate::core::transform::Transform;
+use crate::shapes::triangle::{Triangle, TriangleMesh};
 
 pub fn create_ply_mesh(
     o2w: &Transform,

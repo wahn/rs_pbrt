@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::{Point3f, Vector3f};
 use pbrt::core::pbrt::Spectrum;
 use pbrt::core::transform::Transform;

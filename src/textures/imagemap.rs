@@ -1,7 +1,4 @@
-extern crate image;
-
 // std
-use std;
 use std::ops::{Add, AddAssign, Div, Mul};
 use std::path::Path;
 use std::sync::Arc;
@@ -9,11 +6,11 @@ use std::sync::Arc;
 use image::{DynamicImage, ImageResult};
 use num;
 // pbrt
-use core::geometry::{Point2f, Point2i, Vector2f};
-use core::interaction::SurfaceInteraction;
-use core::mipmap::{Clampable, ImageWrap, MipMap};
-use core::pbrt::{Float, Spectrum};
-use core::texture::{Texture, TextureMapping2D};
+use crate::core::geometry::{Point2f, Point2i, Vector2f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::mipmap::{Clampable, ImageWrap, MipMap};
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::texture::{Texture, TextureMapping2D};
 
 // see imagemap.h
 

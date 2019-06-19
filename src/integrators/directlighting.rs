@@ -1,14 +1,14 @@
 // pbrt
-use core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
-use core::geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
-use core::integrator::SamplerIntegrator;
-use core::integrator::{uniform_sample_all_lights, uniform_sample_one_light};
-use core::interaction::{Interaction, SurfaceInteraction};
-use core::material::TransportMode;
-use core::pbrt::{Float, Spectrum};
-use core::reflection::BxdfType;
-use core::sampler::Sampler;
-use core::scene::Scene;
+use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
+use crate::core::geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
+use crate::core::integrator::SamplerIntegrator;
+use crate::core::integrator::{uniform_sample_all_lights, uniform_sample_one_light};
+use crate::core::interaction::{Interaction, SurfaceInteraction};
+use crate::core::material::TransportMode;
+use crate::core::pbrt::{Float, Spectrum};
+use crate::core::reflection::BxdfType;
+use crate::core::sampler::Sampler;
+use crate::core::scene::Scene;
 
 // see directlighting.h
 

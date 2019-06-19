@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Vector3f};
 use pbrt::core::shape::Shape;
 use pbrt::core::transform::Transform;

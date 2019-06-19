@@ -16,8 +16,6 @@
 //! about the worst filter possible.
 //!
 //! ```rust
-//! extern crate pbrt;
-//!
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::filters::boxfilter::BoxFilter;
 //! use pbrt::core::geometry::Vector2f;
@@ -46,8 +44,6 @@
 //! remaining aliasing in the image.
 //!
 //! ```rust
-//! extern crate pbrt;
-//!
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::filters::gaussian::GaussianFilter;
 //! use pbrt::core::geometry::Vector2f;
@@ -84,8 +80,6 @@
 //! ## TriangleFilter
 //!
 //! ```rust
-//! extern crate pbrt;
-//!
 //! use pbrt::core::geometry::Vector2f;
 //! use pbrt::core::pbrt::Float;
 //! use pbrt::filters::triangle::TriangleFilter;

@@ -57,15 +57,15 @@ use std;
 use std::f32::consts::PI;
 use std::ops::{Add, Mul};
 // pbrt
-use core::geometry::{
+use crate::core::geometry::{
     bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3,
 };
-use core::geometry::{Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f};
-use core::interaction::SurfaceInteraction;
-use core::pbrt::Float;
-use core::pbrt::{clamp_t, gamma, lerp, radians};
-use core::quaternion::Quaternion;
-use core::quaternion::{quat_dot_quat, quat_normalize, quat_slerp};
+use crate::core::geometry::{Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::pbrt::Float;
+use crate::core::pbrt::{clamp_t, gamma, lerp, radians};
+use crate::core::quaternion::Quaternion;
+use crate::core::quaternion::{quat_dot_quat, quat_normalize, quat_slerp};
 
 // see transform.h
 

@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::Point3i;
 
 fn hash(p: &Point3i, hash_size: i32) -> usize {

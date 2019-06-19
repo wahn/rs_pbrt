@@ -5,11 +5,11 @@ use std::f32::consts::PI;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 // pbrt
-use core::geometry::vec3_cross_vec3;
-use core::geometry::{Normal3f, Point3f, Vector3f};
-use core::pbrt::Float;
-use core::transform::Transform;
-use shapes::triangle::TriangleMesh;
+use crate::core::geometry::vec3_cross_vec3;
+use crate::core::geometry::{Normal3f, Point3f, Vector3f};
+use crate::core::pbrt::Float;
+use crate::core::transform::Transform;
+use crate::shapes::triangle::TriangleMesh;
 
 // see loopsubdiv.cpp
 

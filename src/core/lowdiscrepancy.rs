@@ -1,15 +1,18 @@
 //! Algorithms that deal with low-discrepancy point sets.
 
+use hexf::*;
+
 // pbrt
-use core::geometry::{Point2f, Point2i};
-use core::pbrt::Float;
-use core::rng::Rng;
-use core::rng::FLOAT_ONE_MINUS_EPSILON;
-use core::sampling::shuffle;
-use core::sobolmatrices::{
+use crate::core::geometry::{Point2f, Point2i};
+use crate::core::pbrt::Float;
+use crate::core::rng::Rng;
+use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
+use crate::core::sampling::shuffle;
+use crate::core::sobolmatrices::{
     NUM_SOBOL_DIMENSIONS, SOBOL_MATRICES_32, SOBOL_MATRIX_SIZE, VD_C_SOBOL_MATRICES,
     VD_C_SOBOL_MATRICES_INV,
 };
+
 
 // see lowdiscrepancy.h
 

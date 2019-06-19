@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::pbrt::next_float_up;
 
 fn main() {

@@ -4,11 +4,11 @@
 //std
 use std::sync::Arc;
 // pbrt
-use core::geometry::vec3_cross_vec3;
-use core::geometry::{Normal3f, Vector2f, Vector3f};
-use core::interaction::SurfaceInteraction;
-use core::pbrt::Float;
-use core::texture::Texture;
+use crate::core::geometry::vec3_cross_vec3;
+use crate::core::geometry::{Normal3f, Vector2f, Vector3f};
+use crate::core::interaction::SurfaceInteraction;
+use crate::core::pbrt::Float;
+use crate::core::texture::Texture;
 
 // see material.h
 

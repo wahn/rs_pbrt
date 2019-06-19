@@ -1,5 +1,3 @@
-extern crate pbrt;
-
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
 use pbrt::core::transform::Transform;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
