@@ -33,12 +33,14 @@ use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::{AreaLight, Light};
 use pbrt::core::material::Material;
 use pbrt::core::medium::MediumInterface;
+use pbrt::core::mipmap::ImageWrap;
 use pbrt::core::pbrt::degrees;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
 use pbrt::core::shape::Shape;
+use pbrt::core::texture::{Texture, TextureMapping2D, UVMapping2D};
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::ao::AOIntegrator;
@@ -58,6 +60,8 @@ use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
+use pbrt::textures::imagemap::convert_to_spectrum;
+use pbrt::textures::imagemap::ImageTexture;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -218,6 +222,7 @@ impl RenderOptions {
     fn new(
         scene: SceneDescription,
         material_hm: &HashMap<String, Blend279Material>,
+        texture_hm: &HashMap<String, OsString>,
         light_scale: Float,
     ) -> RenderOptions {
         let mut has_emitters: bool = false;
@@ -314,7 +319,38 @@ impl RenderOptions {
                         }
                     } else {
                         // MatteMaterial
-                        let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+                        let mut kd: Arc<Texture<Spectrum> + Send + Sync> =
+                            Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+                        if let Some(tex) = texture_hm.get(mesh_name) {
+                            let su: Float = 1.0;
+                            let sv: Float = 1.0;
+                            let du: Float = 0.0;
+                            let dv: Float = 0.0;
+                            let mapping: Box<TextureMapping2D + Send + Sync> =
+                                Box::new(UVMapping2D {
+                                    su: su,
+                                    sv: sv,
+                                    du: du,
+                                    dv: dv,
+                                });
+                            // println!("Kd texture: {:?}", tex);
+                            let filename: String = String::from(tex.to_str().unwrap());
+                            let do_trilinear: bool = false;
+                            let max_aniso: Float = 8.0;
+                            let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                            let scale: Float = 1.0;
+                            let gamma: bool = true;
+                            kd = Arc::new(ImageTexture::new(
+                                mapping,
+                                filename,
+                                do_trilinear,
+                                max_aniso,
+                                wrap_mode,
+                                scale,
+                                gamma,
+                                convert_to_spectrum,
+                            ));
+                        }
                         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
                         let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
                         for _i in 0..shapes.len() {
@@ -542,6 +578,7 @@ fn main() -> std::io::Result<()> {
     let mut angle_y: f32 = 45.0;
     let mut base_name = String::new();
     let mut material_hm: HashMap<String, Blend279Material> = HashMap::new();
+    let mut texture_hm: HashMap<String, OsString> = HashMap::new();
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
     let mut object_to_world: Transform = Transform::new(
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
@@ -550,8 +587,6 @@ fn main() -> std::io::Result<()> {
     let mut n: Vec<Normal3f> = Vec::new();
     let mut vertex_indices: Vec<usize> = Vec::new();
     let mut hdr_path: OsString = OsString::new();
-    // TODO: let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
-    // TODO: let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
     // first get the DNA
     let mut names: Vec<String> = Vec::new();
     let mut names_len: usize = 0;
@@ -934,21 +969,36 @@ fn main() -> std::io::Result<()> {
                             }
                             img_name.push(buffer[skip_bytes + i] as char);
                         }
+                        // skip_bytes += 1024;
                         if img_name.len() > 2 {
                             // println!("  img_name = {}", img_name);
-                            let img_path: &Path = Path::new(&img_name);
-                            // println!("  img_path = {:?}", img_path);
-                            if let Some(img_ext) = img_path.extension() {
+                            let image_path: &Path = Path::new(&img_name);
+                            // println!("  image_path = {:?}", image_path);
+                            if let Some(img_ext) = image_path.extension() {
                                 // println!("  img_ext = {:?}", img_ext);
                                 if img_ext == "hdr" {
-                                    if img_path.starts_with("//") {
-                                        if let Ok(relative) = img_path.strip_prefix("//") {
+                                    if image_path.starts_with("//") {
+                                        if let Ok(relative) = image_path.strip_prefix("//") {
                                             let canonicalized = parent
                                                 .join(relative.clone())
                                                 .canonicalize()
                                                 .unwrap();
                                             // println!("{:?}", canonicalized);
                                             hdr_path = canonicalized.into_os_string();
+                                        }
+                                    }
+                                } else {
+                                    if image_path.starts_with("//") {
+                                        if let Ok(relative) = image_path.strip_prefix("//") {
+                                            let canonicalized = parent
+                                                .join(relative.clone())
+                                                .canonicalize()
+                                                .unwrap();
+                                            // println!("{:?}", canonicalized);
+                                            texture_hm.insert(
+                                                base_name.clone(),
+                                                canonicalized.into_os_string(),
+                                            );
                                         }
                                     }
                                 }
@@ -2221,8 +2271,12 @@ fn main() -> std::io::Result<()> {
         );
     }
     let scene_description: SceneDescription = builder.finalize();
-    let mut render_options: RenderOptions =
-        RenderOptions::new(scene_description, &material_hm, args.light_scale as Float);
+    let mut render_options: RenderOptions = RenderOptions::new(
+        scene_description,
+        &material_hm,
+        &texture_hm,
+        args.light_scale as Float,
+    );
     assert!(render_options.triangles.len() == render_options.triangle_lights.len());
     for triangle_idx in 0..render_options.triangles.len() {
         let triangle = &render_options.triangles[triangle_idx];
