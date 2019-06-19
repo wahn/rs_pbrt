@@ -11,7 +11,9 @@ use crate::core::geometry::{
 use crate::core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector2i, Vector3f,
 };
-use crate::core::interaction::{Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction};
+use crate::core::interaction::{
+    Interaction, InteractionCommon, MediumInteraction, SurfaceInteraction,
+};
 use crate::core::light::is_delta_light;
 use crate::core::light::{Light, LightFlags, VisibilityTester};
 use crate::core::lightdistrib::create_light_sample_distribution;
@@ -1044,7 +1046,7 @@ pub fn random_walk<'a>(
                     ray = new_ray;
                 }
                 // compute reverse area density at preceding vertex
-                let mut new_pdf_rev;
+                let new_pdf_rev;
                 {
                     let prev: &Vertex = &path[path.len() - 1];
                     new_pdf_rev = vertex.convert_density(pdf_rev, prev);
@@ -1132,7 +1134,7 @@ pub fn random_walk<'a>(
                     ray = new_ray;
                 }
                 // compute reverse area density at preceding vertex
-                let mut new_pdf_rev: Float;
+                let new_pdf_rev: Float;
                 {
                     let prev: &Vertex = &path[path.len() - 1];
                     new_pdf_rev = vertex.convert_density(pdf_rev, prev);
@@ -1688,7 +1690,7 @@ pub fn mis_weight<'a>(
                 };
                 si = Some(new_si);
             }
-            let mut pdf_rev;
+            let pdf_rev;
             if s > 0 {
                 if let Some(ref qs_ref) = qs {
                     pdf_rev = callable.pdf(scene, Some(&qs_ref), &camera_vertices[t - 2]);
@@ -1788,7 +1790,7 @@ pub fn mis_weight<'a>(
                 };
                 si = Some(new_si);
             }
-            let mut pdf_rev;
+            let pdf_rev;
             if let Some(ref pt_ref) = pt {
                 pdf_rev = callable.pdf(scene, Some(&pt_ref), &light_vertices[s - 2]);
             } else {
@@ -2292,9 +2294,9 @@ pub fn render_bdpt(
                                         // trace the camera subpath
                                         let mut camera_vertices: Vec<Vertex> =
                                             Vec::with_capacity((integrator.max_depth + 2) as usize);
-                                        let mut n_camera;
-                                        let mut p;
-                                        let mut time;
+                                        let n_camera;
+                                        let p;
+                                        let time;
                                         {
                                             let (n_camera_new, p_new, time_new) =
                                                 generate_camera_subpath(
@@ -2313,7 +2315,7 @@ pub fn render_bdpt(
                                             light_distribution.lookup(&p);
                                         let mut light_vertices: Vec<Vertex> =
                                             Vec::with_capacity((integrator.max_depth + 1) as usize);
-                                        let mut n_light;
+                                        let n_light;
                                         {
                                             n_light = generate_light_subpath(
                                                 scene,

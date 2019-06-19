@@ -480,7 +480,7 @@ pub fn loop_subdivide(
                     child.f[next(j as i32) as usize] = face.children[3];
                 }
                 // update children _f_ pointers for neighbor children
-                let mut fi2 = face.f[j];
+                let fi2 = face.f[j];
                 if fi2 != -1_i32 {
                     let f2 = faces[fi2 as usize].clone();
                     let ci2 = f2.children[f2.vnum(face.v[j]) as usize];
@@ -494,7 +494,7 @@ pub fn loop_subdivide(
                         child.f[j] = -1_i32;
                     }
                 }
-                let mut fi2 = face.f[prev(j as i32) as usize];
+                let fi2 = face.f[prev(j as i32) as usize];
                 if fi2 != -1_i32 {
                     let f2 = faces[fi2 as usize].clone();
                     let ci2 = f2.children[f2.vnum(face.v[j]) as usize];

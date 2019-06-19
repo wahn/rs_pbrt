@@ -353,7 +353,7 @@ impl Bxdf for HairBSDF {
         let mut fsum: Spectrum = Spectrum::default();
         for p in 0..P_MAX {
             // compute $\sin \thetai$ and $\cos \thetai$ terms accounting for scales
-            let mut sin_theta_ip: Float;
+            let sin_theta_ip: Float;
             let mut cos_theta_ip: Float;
             if p == 0 {
                 sin_theta_ip =
@@ -387,13 +387,15 @@ impl Bxdf for HairBSDF {
                 * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
         }
         // compute contribution of remaining terms after _pMax_
-        fsum += ap[P_MAX as usize] * mp(
-            cos_theta_i,
-            cos_theta_o,
-            sin_theta_i,
-            sin_theta_o,
-            self.v[P_MAX as usize],
-        ) / (2.0 as Float * PI);
+        fsum += ap[P_MAX as usize]
+            * mp(
+                cos_theta_i,
+                cos_theta_o,
+                sin_theta_i,
+                sin_theta_o,
+                self.v[P_MAX as usize],
+            )
+            / (2.0 as Float * PI);
         if abs_cos_theta(wi) > 0.0 as Float {
             fsum = fsum / abs_cos_theta(wi);
         }
@@ -551,7 +553,7 @@ impl Bxdf for HairBSDF {
         let mut pdf: Float = 0.0 as Float;
         for p in 0..P_MAX {
             // compute $\sin \thetai$ and $\cos \thetai$ terms accounting for scales
-            let mut sin_theta_ip: Float;
+            let sin_theta_ip: Float;
             let mut cos_theta_ip: Float;
             if p == 0 {
                 sin_theta_ip =
@@ -645,7 +647,8 @@ fn mp(
     if v <= 0.1 as Float {
         mp = (log_i0(a) - b - 1.0 as Float / v
             + 0.6931 as Float
-            + (1.0 as Float / (2. as Float * v)).ln()).exp();
+            + (1.0 as Float / (2. as Float * v)).ln())
+        .exp();
     } else {
         mp = ((-b).exp() * i0(a)) / ((1.0 as Float / v).sinh() * 2.0 as Float * v);
     }

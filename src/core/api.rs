@@ -1920,7 +1920,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             .render_options
                             .integrator_params
                             .find_one_string("lightsamplestrategy", String::from("power"));
-                        let mut integrator = Box::new(BDPTIntegrator::new(
+                        let integrator = Box::new(BDPTIntegrator::new(
                             max_depth as u32,
                             // visualize_strategies,
                             // visualize_weights,
@@ -1930,19 +1930,19 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         some_bdpt_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == "mlt" {
                         // CreateMLTIntegrator
-                        let mut max_depth: i32 = api_state
+                        let max_depth: i32 = api_state
                             .render_options
                             .integrator_params
                             .find_one_int("maxdepth", 5);
-                        let mut n_bootstrap: i32 = api_state
+                        let n_bootstrap: i32 = api_state
                             .render_options
                             .integrator_params
                             .find_one_int("bootstrapsamples", 100000);
-                        let mut n_chains: i32 = api_state
+                        let n_chains: i32 = api_state
                             .render_options
                             .integrator_params
                             .find_one_int("chains", 1000);
-                        let mut mutations_per_pixel: i32 = api_state
+                        let mutations_per_pixel: i32 = api_state
                             .render_options
                             .integrator_params
                             .find_one_int("mutationsperpixel", 100);
@@ -1954,7 +1954,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             .render_options
                             .integrator_params
                             .find_one_float("sigma", 0.01 as Float);
-                        let mut integrator = Box::new(MLTIntegrator::new(
+                        let integrator = Box::new(MLTIntegrator::new(
                             camera.clone(),
                             max_depth as u32,
                             n_bootstrap as u32,
@@ -2024,7 +2024,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             .integrator_params
                             .find_one_float("radius", 1.0 as Float);
                         // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
-                        let mut integrator = Box::new(SPPMIntegrator::new(
+                        let integrator = Box::new(SPPMIntegrator::new(
                             camera.clone(),
                             n_iterations,
                             photons_per_iter,

@@ -2316,9 +2316,9 @@ fn main() -> std::io::Result<()> {
             println!("Metropolis Light Transport (MLT)]");
             // CreateMLTIntegrator
             let max_depth: i32 = 5;
-            let mut n_bootstrap: i32 = 100000;
-            let mut n_chains: i32 = 1000;
-            let mut mutations_per_pixel: i32 = 100;
+            let n_bootstrap: i32 = 100000;
+            let n_chains: i32 = 1000;
+            let mutations_per_pixel: i32 = 100;
             let sigma: Float = 0.01;
             let large_step_probability: Float = 0.3;
             let mut integrator: Box<MLTIntegrator> = Box::new(MLTIntegrator::new(

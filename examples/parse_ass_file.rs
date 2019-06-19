@@ -496,8 +496,8 @@ fn main() {
                                                     // <elem1> <elem2>
                                                     // <elem3> <elem4>
                                                     // ...
-                                                    let mut num_elements: u32;
-                                                    let mut num_motionblur_keys: u32;
+                                                    let num_elements: u32;
+                                                    let num_motionblur_keys: u32;
                                                     let data_type: String = String::from("VECTOR");
                                                     let mut elems: Vec<Float> = Vec::new();
                                                     if let Some(num_elements_str) = iter.next() {
@@ -642,8 +642,8 @@ fn main() {
                                                     // <elem1> <elem2>
                                                     // <elem3> <elem4>
                                                     // ...
-                                                    let mut num_elements: u32;
-                                                    let mut num_motionblur_keys: u32;
+                                                    let num_elements: u32;
+                                                    let num_motionblur_keys: u32;
                                                     let data_type: String = String::from("UINT");
                                                     vi = Vec::new();
                                                     if let Some(num_elements_str) = iter.next() {
@@ -1281,7 +1281,7 @@ fn main() {
             ));
             // MakeCamera
             let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
-            let mut medium_interface: MediumInterface = MediumInterface::default();
+            let medium_interface: MediumInterface = MediumInterface::default();
             if camera_name == "perspective" {
                 let mut camera_params: ParamSet = ParamSet::default();
                 camera_params.add_float(String::from("fov"), fov);

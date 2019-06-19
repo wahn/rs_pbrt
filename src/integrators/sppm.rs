@@ -149,7 +149,7 @@ pub fn render_sppm(
     // compute _light_distr_ for sampling lights proportional to power
     if let Some(light_distr) = compute_light_power_distribution(scene) {
         // perform _n_iterations_ of SPPM integration
-        let mut sampler: Box<HaltonSampler> = Box::new(HaltonSampler::new(
+        let sampler: Box<HaltonSampler> = Box::new(HaltonSampler::new(
             integrator.n_iterations as i64,
             pixel_bounds,
             false,
@@ -459,7 +459,7 @@ pub fn render_sppm(
                                                         &Point3i { x: x, y: y, z: z },
                                                         hash_size as i32,
                                                     );
-                                                    let mut node_arc =
+                                                    let node_arc =
                                                         Arc::new(SPPMPixelListNode::new(pixel));
                                                     let old_opt = grid[h].swap(node_arc.clone());
                                                     if let Some(old) = old_opt {
@@ -502,8 +502,8 @@ pub fn render_sppm(
                 let chunk_size: usize =
                     (integrator.photons_per_iteration / num_cores as i32) as usize;
                 {
-                    let mut photons_vec: Vec<i32> = (0..integrator.photons_per_iteration).collect();
-                    let mut bands: Vec<&[i32]> = photons_vec.chunks(chunk_size).collect();
+                    let photons_vec: Vec<i32> = (0..integrator.photons_per_iteration).collect();
+                    let bands: Vec<&[i32]> = photons_vec.chunks(chunk_size).collect();
                     let grid_once = &grid_once;
                     let integrator = &integrator;
                     let light_distr = &light_distr;
