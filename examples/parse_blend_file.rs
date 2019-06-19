@@ -8,6 +8,8 @@
 //    TODO: store smoothness per polygon, split mesh into smooth and non-smooth parts
 // 4. There might be one IM block with a HDR image, which is used for IBL
 //    TODO: check if World actually uses "Environment Lighting"
+// 5. Lights with type LA_SUN have a position but point always to the origin
+//    TODO: use an empty (compass) object as target
 
 // std
 use std::collections::HashMap;
@@ -48,6 +50,7 @@ use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
+use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
 use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::matte::MatteMaterial;
@@ -165,6 +168,32 @@ impl SceneDescriptionBuilder {
             texmap,
         ));
         self.lights.push(infinte_light);
+        self
+    }
+    fn add_distant_light(
+        &mut self,
+        light_to_world: Transform,
+        l: Spectrum,
+        light_scale: f32,
+    ) -> &mut SceneDescriptionBuilder {
+        let sc: Spectrum = Spectrum::new(light_scale as Float);
+        let mut from: Point3f = Point3f {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        let to: Point3f = Point3f {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0,
+        };
+        from = light_to_world.transform_point(&from);
+        let dir: Vector3f = from - to;
+        let object_to_world: Transform = Transform::new(
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        );
+        let distant_light = Arc::new(DistantLight::new(&object_to_world, &(l * sc), &dir));
+        self.lights.push(distant_light);
         self
     }
     fn finalize(self) -> SceneDescription {
@@ -1871,6 +1900,98 @@ fn main() -> std::io::Result<()> {
                         // reset booleans
                         data_following_mesh = false;
                         is_smooth = false;
+                    } else if code == String::from("LA") {
+                        // LA
+                        // println!("{} ({})", code, len);
+                        // println!("  SDNAnr = {}", sdna_nr);
+                        // v279: Lamp (len=536) { ... }
+                        // v280: Lamp (len=TODO) { ... }
+                        let mut skip_bytes: usize = 0;
+                        // id
+                        let mut id_name = String::new();
+                        base_name = String::new();
+                        for i in 32..(32 + 66) {
+                            if buffer[i] == 0 {
+                                break;
+                            }
+                            id_name.push(buffer[i] as char);
+                            if i != 32 && i != 33 {
+                                base_name.push(buffer[i] as char);
+                            }
+                        }
+                        // println!("  id_name = {}", id_name);
+                        // println!("  base_name = {}", base_name);
+                        if blender_version < 280 {
+                            skip_bytes += 120;
+                        } else {
+                            skip_bytes += 152;
+                        }
+                        // adt
+                        skip_bytes += 8;
+                        // type
+                        let mut la_type: u16 = 0;
+                        la_type += (buffer[skip_bytes] as u16) << 0;
+                        la_type += (buffer[skip_bytes + 1] as u16) << 8;
+                        // println!("  la_type = {}", la_type);
+                        skip_bytes += 2;
+                        // flag
+                        skip_bytes += 2;
+                        // mode
+                        skip_bytes += 4;
+                        // colormodel, totex
+                        skip_bytes += 2 * 2;
+                        // r
+                        let mut r_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            r_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let r: f32 = unsafe { mem::transmute(r_buf) };
+                        // println!("  r = {}", r);
+                        skip_bytes += 4;
+                        // g
+                        let mut g_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            g_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let g: f32 = unsafe { mem::transmute(g_buf) };
+                        // println!("  g = {}", g);
+                        skip_bytes += 4;
+                        // b
+                        let mut b_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            b_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let b: f32 = unsafe { mem::transmute(b_buf) };
+                        // println!("  b = {}", b);
+                        skip_bytes += 4;
+                        // k, shdwr, shdwg, shdwb, shdwpad
+                        skip_bytes += 4 * 5;
+                        // energy
+                        let mut energy_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            energy_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let energy: f32 = unsafe { mem::transmute(energy_buf) };
+                        // println!("  energy = {}", energy);
+                        // skip_bytes += 4;
+                        // check light type
+                        if la_type == 1 {
+                            // LA_SUN
+                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                object_to_world = *o2w;
+                            } else {
+                                println!(
+                                    "WARNING: looking up object_to_world by name ({:?}) failed",
+                                    base_name
+                                );
+                            }
+                            let l: Spectrum = Spectrum::rgb(r, g, b);
+                            builder.add_distant_light(
+                                object_to_world,
+                                l,
+                                args.light_scale * energy,
+                            );
+                        }
                     } else if code == String::from("DATA") {
                         // DATA
                         if data_following_mesh {
