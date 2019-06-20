@@ -93,6 +93,9 @@ struct Blend279Material {
     pub g: f32,
     pub b: f32,
     pub a: f32,
+    pub specr: f32,
+    pub specg: f32,
+    pub specb: f32,
     pub mirr: f32,
     pub mirg: f32,
     pub mirb: f32,
@@ -288,7 +291,9 @@ impl RenderOptions {
                     if mat.ang != 1.0 {
                         // GlassMaterial
                         let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
-                        let kt = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+                        let kt = Arc::new(ConstantTexture::new(Spectrum::rgb(
+                            mat.specr, mat.specg, mat.specb,
+                        )));
                         let u_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
                         let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
                         let index = Arc::new(ConstantTexture::new(mat.ang as Float));
@@ -1828,8 +1833,30 @@ fn main() -> std::io::Result<()> {
                             let b: f32 = unsafe { mem::transmute(b_buf) };
                             // println!("  b = {}", b);
                             skip_bytes += 4;
-                            // specr, specg, specb
-                            skip_bytes += 4 * 3;
+                            // specr
+                            let mut specr_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                specr_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let specr: f32 = unsafe { mem::transmute(specr_buf) };
+                            // println!("  specr = {}", specr);
+                            skip_bytes += 4;
+                            // specg
+                            let mut specg_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                specg_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let specg: f32 = unsafe { mem::transmute(specg_buf) };
+                            // println!("  specg = {}", specg);
+                            skip_bytes += 4;
+                            // specb
+                            let mut specb_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                specb_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let specb: f32 = unsafe { mem::transmute(specb_buf) };
+                            // println!("  specb = {}", specb);
+                            skip_bytes += 4;
                             // mirr
                             let mut mirr_buf: [u8; 4] = [0_u8; 4];
                             for i in 0..4 as usize {
@@ -1890,6 +1917,9 @@ fn main() -> std::io::Result<()> {
                                 g: g,
                                 b: b,
                                 a: 1.0,
+                                specr: specr,
+                                specg: specg,
+                                specb: specb,
                                 mirr: mirr,
                                 mirg: mirg,
                                 mirb: mirb,
@@ -1936,8 +1966,32 @@ fn main() -> std::io::Result<()> {
                             let a: f32 = unsafe { mem::transmute(a_buf) };
                             // println!("  a = {}", a);
                             skip_bytes += 4;
-                            // specr, specg, specb, alpha
-                            skip_bytes += 4 * 4;
+                            // specr
+                            let mut specr_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                specr_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let specr: f32 = unsafe { mem::transmute(specr_buf) };
+                            // println!("  specr = {}", specr);
+                            skip_bytes += 4;
+                            // specg
+                            let mut specg_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                specg_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let specg: f32 = unsafe { mem::transmute(specg_buf) };
+                            // println!("  specg = {}", specg);
+                            skip_bytes += 4;
+                            // specb
+                            let mut specb_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                specb_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let specb: f32 = unsafe { mem::transmute(specb_buf) };
+                            // println!("  specb = {}", specb);
+                            skip_bytes += 4;
+                            // alpha
+                            skip_bytes += 4;
                             // ray_mirror
                             let mut ray_mirror_buf: [u8; 4] = [0_u8; 4];
                             for i in 0..4 as usize {
@@ -1957,6 +2011,9 @@ fn main() -> std::io::Result<()> {
                                 g: g,
                                 b: b,
                                 a: a,
+                                specr: specr,
+                                specg: specg,
+                                specb: specb,
                                 mirr: 0.0,
                                 mirg: 0.0,
                                 mirb: 0.0,
