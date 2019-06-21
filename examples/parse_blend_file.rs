@@ -88,6 +88,12 @@ struct Cli {
 // Blender
 
 #[derive(Debug, Default, Copy, Clone)]
+struct BlendCamera {
+    pub angle_x: f32,
+    pub angle_y: f32,
+}
+
+#[derive(Debug, Default, Copy, Clone)]
 struct Blend279Material {
     pub r: f32,
     pub g: f32,
@@ -582,6 +588,7 @@ fn main() -> std::io::Result<()> {
     let mut angle_x: f32 = 45.0;
     let mut angle_y: f32 = 45.0;
     let mut base_name = String::new();
+    let mut camera_hm: HashMap<String, BlendCamera> = HashMap::new();
     let mut material_hm: HashMap<String, Blend279Material> = HashMap::new();
     let mut texture_hm: HashMap<String, OsString> = HashMap::new();
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
@@ -1708,8 +1715,8 @@ fn main() -> std::io::Result<()> {
                         // calculate angle_x and angle_y
                         angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
                         angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
-                        // println!("  angle_x = {}", angle_x);
-                        // println!("  angle_y = {}", angle_y);
+                        println!("  angle_x = {}", angle_x);
+                        println!("  angle_y = {}", angle_y);
                         // shiftx
                         // let mut shiftx_buf: [u8; 4] = [0_u8; 4];
                         // for i in 0..4 as usize {
@@ -1726,6 +1733,11 @@ fn main() -> std::io::Result<()> {
                         // let shifty: f32 = unsafe { mem::transmute(shifty_buf) };
                         // println!("  shifty = {}", shifty);
                         // skip_bytes += 4;
+                        let cam: BlendCamera = BlendCamera {
+                            angle_x: angle_x,
+                            angle_y: angle_y,
+                        };
+                        camera_hm.insert(base_name.clone(), cam);
                         // reset booleans
                         data_following_mesh = false;
                         is_smooth = false;
@@ -2463,11 +2475,20 @@ fn main() -> std::io::Result<()> {
     };
     let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
     let aspect: Float = resolution_x as Float / resolution_y as Float;
-    let fov: Float;
+    let mut fov: Float;
     if aspect > 1.0 {
         fov = angle_y;
     } else {
         fov = angle_x;
+    }
+    if let Some(cam) = camera_hm.get(&base_name) {
+        // overwrite fov
+        if aspect > 1.0 {
+            fov = cam.angle_y;
+        } else {
+            fov = cam.angle_x;
+        }
+        println!("fov[{}] overwritten", fov);
     }
     let frame: Float = resolution_x as Float / resolution_y as Float;
     let mut screen: Bounds2f = Bounds2f::default();
