@@ -34,7 +34,7 @@ impl Default for Cylinder {
         let object_to_world: Transform = Transform::default();
         Cylinder {
             // Shape
-            object_to_world: object_to_world,
+            object_to_world,
             world_to_object: Transform::default(),
             reverse_orientation: false,
             transform_swaps_handedness: object_to_world.swaps_handedness(),
@@ -60,12 +60,12 @@ impl Cylinder {
     ) -> Self {
         Cylinder {
             // Shape
-            object_to_world: object_to_world,
-            world_to_object: world_to_object,
-            reverse_orientation: reverse_orientation,
+            object_to_world,
+            world_to_object,
+            reverse_orientation,
             transform_swaps_handedness: object_to_world.swaps_handedness(),
             // Cylinder
-            radius: radius,
+            radius,
             z_min: z_min.min(z_max),
             z_max: z_min.max(z_max),
             phi_max: radians(clamp_t(phi_max, 0.0, 360.0)),
@@ -343,7 +343,7 @@ impl Shape for Cylinder {
         let mut p_obj: Point3f = Point3f {
             x: self.radius * phi.cos(),
             y: self.radius * phi.sin(),
-            z: z,
+            z,
         };
         let mut it: InteractionCommon = InteractionCommon::default();
         it.n = self

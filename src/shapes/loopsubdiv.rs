@@ -33,7 +33,7 @@ struct SDVertex {
 impl SDVertex {
     pub fn new(p: Point3f) -> Self {
         SDVertex {
-            p: p,
+            p,
             start_face: -1_i32,
             child: -1_i32,
             regular: false,

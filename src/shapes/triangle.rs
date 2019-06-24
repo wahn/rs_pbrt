@@ -57,18 +57,18 @@ impl TriangleMesh {
     ) -> Self {
         TriangleMesh {
             // Shape
-            object_to_world: object_to_world,
-            world_to_object: world_to_object,
-            reverse_orientation: reverse_orientation,
+            object_to_world,
+            world_to_object,
+            reverse_orientation,
             transform_swaps_handedness: object_to_world.swaps_handedness(),
             // TriangleMesh
-            n_triangles: n_triangles,
-            vertex_indices: vertex_indices,
-            n_vertices: n_vertices,
-            p: p,
-            n: n,
-            s: s,
-            uv: uv,
+            n_triangles,
+            vertex_indices,
+            n_vertices,
+            p,
+            n,
+            s,
+            uv,
         }
     }
 }
@@ -94,11 +94,11 @@ impl Triangle {
         tri_number: usize,
     ) -> Self {
         Triangle {
-            mesh: mesh,
+            mesh,
             id: tri_number,
-            object_to_world: object_to_world,
-            world_to_object: world_to_object,
-            reverse_orientation: reverse_orientation,
+            object_to_world,
+            world_to_object,
+            reverse_orientation,
             transform_swaps_handedness: false,
             material: None,
         }
