@@ -591,7 +591,7 @@ fn main() {
     };
     let xw: Float = 0.5;
     let yw: Float = 0.5;
-    let filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
+    let filter: Box<Filter + Sync + Send> = Box::new(BoxFilter {
         radius: Vector2f { x: xw, y: yw },
         inv_radius: Vector2f {
             x: 1.0 / xw,

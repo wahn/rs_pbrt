@@ -1,5 +1,3 @@
-//std
-use std::sync::Arc;
 // pbrt
 use crate::core::filter::Filter;
 use crate::core::geometry::{Point2f, Vector2f};
@@ -16,10 +14,10 @@ pub struct BoxFilter {
 }
 
 impl BoxFilter {
-    pub fn create(ps: &ParamSet) -> Arc<Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<Filter + Sync + Send> {
         let xw: Float = ps.find_one_float("xwidth", 0.5);
         let yw: Float = ps.find_one_float("ywidth", 0.5);
-        let box_filter: Arc<Filter + Sync + Send> = Arc::new(BoxFilter {
+        let box_filter: Box<Filter + Sync + Send> = Box::new(BoxFilter {
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
                 x: 1.0 / xw,

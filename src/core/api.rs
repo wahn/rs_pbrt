@@ -1575,7 +1575,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         "Missing end to pbrtTransformBegin()"
     );
     // MakeFilter
-    let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
+    let mut some_filter: Option<Box<Filter + Sync + Send>> = None;
     if api_state.render_options.filter_name == "box" {
         some_filter = Some(BoxFilter::create(&api_state.render_options.filter_params));
     } else if api_state.render_options.filter_name == "gaussian" {
