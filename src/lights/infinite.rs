@@ -110,9 +110,9 @@ impl InfiniteAreaLight {
                         let (r, g, b) = pixel_data[i as usize];
                         texels.push(
                             Spectrum::rgb(
-                                decode_f16(r.as_bits()),
-                                decode_f16(g.as_bits()),
-                                decode_f16(b.as_bits()),
+                                decode_f16(r.to_bits()),
+                                decode_f16(g.to_bits()),
+                                decode_f16(b.to_bits()),
                             ) * *l,
                         );
                     }
