@@ -1715,8 +1715,8 @@ fn main() -> std::io::Result<()> {
                         // calculate angle_x and angle_y
                         angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
                         angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
-                        println!("  angle_x = {}", angle_x);
-                        println!("  angle_y = {}", angle_y);
+                        // println!("  angle_x = {}", angle_x);
+                        // println!("  angle_y = {}", angle_y);
                         // shiftx
                         // let mut shiftx_buf: [u8; 4] = [0_u8; 4];
                         // for i in 0..4 as usize {
@@ -2488,7 +2488,7 @@ fn main() -> std::io::Result<()> {
         } else {
             fov = cam.angle_x;
         }
-        println!("fov[{}] overwritten", fov);
+        // println!("fov[{}] overwritten", fov);
     }
     let frame: Float = resolution_x as Float / resolution_y as Float;
     let mut screen: Bounds2f = Bounds2f::default();
