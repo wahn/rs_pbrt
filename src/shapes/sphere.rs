@@ -40,7 +40,7 @@ impl Default for Sphere {
         let object_to_world: Transform = Transform::default();
         Sphere {
             // Shape
-            object_to_world: object_to_world,
+            object_to_world,
             world_to_object: Transform::default(),
             reverse_orientation: false,
             transform_swaps_handedness: object_to_world.swaps_handedness(),
@@ -68,12 +68,12 @@ impl Sphere {
     ) -> Self {
         Sphere {
             // Shape
-            object_to_world: object_to_world,
-            world_to_object: world_to_object,
-            reverse_orientation: reverse_orientation,
+            object_to_world,
+            world_to_object,
+            reverse_orientation,
             transform_swaps_handedness: object_to_world.swaps_handedness(),
             // Sphere
-            radius: radius,
+            radius,
             z_min: clamp_t(z_min.min(z_max), -radius, radius),
             z_max: clamp_t(z_min.max(z_max), -radius, radius),
             theta_min: clamp_t(z_min.min(z_max) / radius, -1.0, 1.0).acos(),

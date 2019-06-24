@@ -1,5 +1,3 @@
-//std
-use std::sync::Arc;
 // pbrt
 use crate::core::filter::Filter;
 use crate::core::geometry::{Point2f, Vector2f};
@@ -16,10 +14,10 @@ pub struct TriangleFilter {
 }
 
 impl TriangleFilter {
-    pub fn create(ps: &ParamSet) -> Arc<Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<Filter + Sync + Send> {
         let xw: Float = ps.find_one_float("xwidth", 2.0);
         let yw: Float = ps.find_one_float("ywidth", 2.0);
-        let triangle_filter: Arc<Filter + Sync + Send> = Arc::new(TriangleFilter {
+        let triangle_filter: Box<Filter + Sync + Send> = Box::new(TriangleFilter {
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
                 x: 1.0 / xw,

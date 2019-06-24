@@ -14,7 +14,8 @@
 use std;
 use std::ops::{DerefMut, Index};
 use std::path::Path;
-use std::sync::{Arc, RwLock, RwLockWriteGuard};
+use std::sync::{RwLock, RwLockWriteGuard};
+
 // others
 use image;
 #[cfg(feature = "openexr")]
@@ -163,7 +164,7 @@ pub struct Film {
     /// The length of the diagonal of the film's physical area (specified in mm, stored in meters)
     pub diagonal: Float,
     /// A filter function
-    pub filter: Arc<Filter + Sync + Send>,
+    pub filter: Box<Filter + Sync + Send>,
     /// The filename of the output image
     pub filename: String,
     /// A crop window that may specify a subset of the image to render
@@ -180,7 +181,7 @@ impl Film {
     pub fn new(
         resolution: Point2i,
         crop_window: Bounds2f,
-        filter: Arc<Filter + Sync + Send>,
+        filter: Box<Filter + Sync + Send>,
         diagonal: Float,
         filename: String,
         scale: Float,

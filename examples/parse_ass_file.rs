@@ -1242,7 +1242,7 @@ fn main() {
         println!("number of lights = {:?}", lights.len());
         println!("number of primitives = {:?}", primitives.len());
         // MakeFilter
-        let mut some_filter: Option<Arc<Filter + Sync + Send>> = None;
+        let mut some_filter: Option<Box<Filter + Sync + Send>> = None;
         if filter_name == "box" {
             println!("TODO: CreateBoxFilter");
         } else if filter_name == "gaussian" {

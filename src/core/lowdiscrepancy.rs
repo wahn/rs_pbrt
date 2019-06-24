@@ -13,7 +13,6 @@ use crate::core::sobolmatrices::{
     VD_C_SOBOL_MATRICES_INV,
 };
 
-
 // see lowdiscrepancy.h
 
 pub const PRIME_TABLE_SIZE: u16 = 1000_u16;
@@ -196,7 +195,7 @@ pub fn reverse_bits_64(n: u64) -> u64 {
 /// Compute the inverse of the radical inverse function.
 pub fn inverse_radical_inverse(base: u8, inverse: u64, n_digits: u64) -> u64 {
     let mut inverse: u64 = inverse;
-    let mut index: u64 = 0_64;
+    let mut index: u64 = 0;
     for _i in 0..n_digits {
         let digit: u64 = inverse % base as u64;
         inverse /= base as u64;
@@ -468,3084 +467,1038 @@ pub fn radical_inverse(base_index: u16, a: u64) -> Float {
     match base_index {
         0 => {
             //#ifndef PBRT_HAVE_HEX_FP_CONSTANTS
-            //return reverse_bits_64(a) as Float * (2.0 as Float).powi(-64 as i32);
+            //reverse_bits_64(a) as Float * (2.0 as Float).powi(-64 as i32)
             //#else
-            return reverse_bits_64(a) as Float * hexf32!("0x1.0p-64") as Float;
+            reverse_bits_64(a) as Float * hexf32!("0x1.0p-64") as Float
             //#endif
         }
-        1 => {
-            return radical_inverse_specialized(3_u16, a);
-        }
-        2 => {
-            return radical_inverse_specialized(5_u16, a);
-        }
-        3 => {
-            return radical_inverse_specialized(7_u16, a);
-        }
-        4 => {
-            return radical_inverse_specialized(11_u16, a);
-        }
-        5 => {
-            return radical_inverse_specialized(13_u16, a);
-        }
-        6 => {
-            return radical_inverse_specialized(17_u16, a);
-        }
-        7 => {
-            return radical_inverse_specialized(19_u16, a);
-        }
-        8 => {
-            return radical_inverse_specialized(23_u16, a);
-        }
-        9 => {
-            return radical_inverse_specialized(29_u16, a);
-        }
-        10 => {
-            return radical_inverse_specialized(31_u16, a);
-        }
-        11 => {
-            return radical_inverse_specialized(37_u16, a);
-        }
-        12 => {
-            return radical_inverse_specialized(41_u16, a);
-        }
-        13 => {
-            return radical_inverse_specialized(43_u16, a);
-        }
-        14 => {
-            return radical_inverse_specialized(47_u16, a);
-        }
-        15 => {
-            return radical_inverse_specialized(53_u16, a);
-        }
-        16 => {
-            return radical_inverse_specialized(59_u16, a);
-        }
-        17 => {
-            return radical_inverse_specialized(61_u16, a);
-        }
-        18 => {
-            return radical_inverse_specialized(67_u16, a);
-        }
-        19 => {
-            return radical_inverse_specialized(71_u16, a);
-        }
-        20 => {
-            return radical_inverse_specialized(73_u16, a);
-        }
-        21 => {
-            return radical_inverse_specialized(79_u16, a);
-        }
-        22 => {
-            return radical_inverse_specialized(83_u16, a);
-        }
-        23 => {
-            return radical_inverse_specialized(89_u16, a);
-        }
-        24 => {
-            return radical_inverse_specialized(97_u16, a);
-        }
-        25 => {
-            return radical_inverse_specialized(101_u16, a);
-        }
-        26 => {
-            return radical_inverse_specialized(103_u16, a);
-        }
-        27 => {
-            return radical_inverse_specialized(107_u16, a);
-        }
-        28 => {
-            return radical_inverse_specialized(109_u16, a);
-        }
-        29 => {
-            return radical_inverse_specialized(113_u16, a);
-        }
-        30 => {
-            return radical_inverse_specialized(127_u16, a);
-        }
-        31 => {
-            return radical_inverse_specialized(131_u16, a);
-        }
-        32 => {
-            return radical_inverse_specialized(137_u16, a);
-        }
-        33 => {
-            return radical_inverse_specialized(139_u16, a);
-        }
-        34 => {
-            return radical_inverse_specialized(149_u16, a);
-        }
-        35 => {
-            return radical_inverse_specialized(151_u16, a);
-        }
-        36 => {
-            return radical_inverse_specialized(157_u16, a);
-        }
-        37 => {
-            return radical_inverse_specialized(163_u16, a);
-        }
-        38 => {
-            return radical_inverse_specialized(167_u16, a);
-        }
-        39 => {
-            return radical_inverse_specialized(173_u16, a);
-        }
-        40 => {
-            return radical_inverse_specialized(179_u16, a);
-        }
-        41 => {
-            return radical_inverse_specialized(181_u16, a);
-        }
-        42 => {
-            return radical_inverse_specialized(191_u16, a);
-        }
-        43 => {
-            return radical_inverse_specialized(193_u16, a);
-        }
-        44 => {
-            return radical_inverse_specialized(197_u16, a);
-        }
-        45 => {
-            return radical_inverse_specialized(199_u16, a);
-        }
-        46 => {
-            return radical_inverse_specialized(211_u16, a);
-        }
-        47 => {
-            return radical_inverse_specialized(223_u16, a);
-        }
-        48 => {
-            return radical_inverse_specialized(227_u16, a);
-        }
-        49 => {
-            return radical_inverse_specialized(229_u16, a);
-        }
-        50 => {
-            return radical_inverse_specialized(233_u16, a);
-        }
-        51 => {
-            return radical_inverse_specialized(239_u16, a);
-        }
-        52 => {
-            return radical_inverse_specialized(241_u16, a);
-        }
-        53 => {
-            return radical_inverse_specialized(251_u16, a);
-        }
-        54 => {
-            return radical_inverse_specialized(257_u16, a);
-        }
-        55 => {
-            return radical_inverse_specialized(263_u16, a);
-        }
-        56 => {
-            return radical_inverse_specialized(269_u16, a);
-        }
-        57 => {
-            return radical_inverse_specialized(271_u16, a);
-        }
-        58 => {
-            return radical_inverse_specialized(277_u16, a);
-        }
-        59 => {
-            return radical_inverse_specialized(281_u16, a);
-        }
-        60 => {
-            return radical_inverse_specialized(283_u16, a);
-        }
-        61 => {
-            return radical_inverse_specialized(293_u16, a);
-        }
-        62 => {
-            return radical_inverse_specialized(307_u16, a);
-        }
-        63 => {
-            return radical_inverse_specialized(311_u16, a);
-        }
-        64 => {
-            return radical_inverse_specialized(313_u16, a);
-        }
-        65 => {
-            return radical_inverse_specialized(317_u16, a);
-        }
-        66 => {
-            return radical_inverse_specialized(331_u16, a);
-        }
-        67 => {
-            return radical_inverse_specialized(337_u16, a);
-        }
-        68 => {
-            return radical_inverse_specialized(347_u16, a);
-        }
-        69 => {
-            return radical_inverse_specialized(349_u16, a);
-        }
-        70 => {
-            return radical_inverse_specialized(353_u16, a);
-        }
-        71 => {
-            return radical_inverse_specialized(359_u16, a);
-        }
-        72 => {
-            return radical_inverse_specialized(367_u16, a);
-        }
-        73 => {
-            return radical_inverse_specialized(373_u16, a);
-        }
-        74 => {
-            return radical_inverse_specialized(379_u16, a);
-        }
-        75 => {
-            return radical_inverse_specialized(383_u16, a);
-        }
-        76 => {
-            return radical_inverse_specialized(389_u16, a);
-        }
-        77 => {
-            return radical_inverse_specialized(397_u16, a);
-        }
-        78 => {
-            return radical_inverse_specialized(401_u16, a);
-        }
-        79 => {
-            return radical_inverse_specialized(409_u16, a);
-        }
-        80 => {
-            return radical_inverse_specialized(419_u16, a);
-        }
-        81 => {
-            return radical_inverse_specialized(421_u16, a);
-        }
-        82 => {
-            return radical_inverse_specialized(431_u16, a);
-        }
-        83 => {
-            return radical_inverse_specialized(433_u16, a);
-        }
-        84 => {
-            return radical_inverse_specialized(439_u16, a);
-        }
-        85 => {
-            return radical_inverse_specialized(443_u16, a);
-        }
-        86 => {
-            return radical_inverse_specialized(449_u16, a);
-        }
-        87 => {
-            return radical_inverse_specialized(457_u16, a);
-        }
-        88 => {
-            return radical_inverse_specialized(461_u16, a);
-        }
-        89 => {
-            return radical_inverse_specialized(463_u16, a);
-        }
-        90 => {
-            return radical_inverse_specialized(467_u16, a);
-        }
-        91 => {
-            return radical_inverse_specialized(479_u16, a);
-        }
-        92 => {
-            return radical_inverse_specialized(487_u16, a);
-        }
-        93 => {
-            return radical_inverse_specialized(491_u16, a);
-        }
-        94 => {
-            return radical_inverse_specialized(499_u16, a);
-        }
-        95 => {
-            return radical_inverse_specialized(503_u16, a);
-        }
-        96 => {
-            return radical_inverse_specialized(509_u16, a);
-        }
-        97 => {
-            return radical_inverse_specialized(521_u16, a);
-        }
-        98 => {
-            return radical_inverse_specialized(523_u16, a);
-        }
-        99 => {
-            return radical_inverse_specialized(541_u16, a);
-        }
-        100 => {
-            return radical_inverse_specialized(547_u16, a);
-        }
-        101 => {
-            return radical_inverse_specialized(557_u16, a);
-        }
-        102 => {
-            return radical_inverse_specialized(563_u16, a);
-        }
-        103 => {
-            return radical_inverse_specialized(569_u16, a);
-        }
-        104 => {
-            return radical_inverse_specialized(571_u16, a);
-        }
-        105 => {
-            return radical_inverse_specialized(577_u16, a);
-        }
-        106 => {
-            return radical_inverse_specialized(587_u16, a);
-        }
-        107 => {
-            return radical_inverse_specialized(593_u16, a);
-        }
-        108 => {
-            return radical_inverse_specialized(599_u16, a);
-        }
-        109 => {
-            return radical_inverse_specialized(601_u16, a);
-        }
-        110 => {
-            return radical_inverse_specialized(607_u16, a);
-        }
-        111 => {
-            return radical_inverse_specialized(613_u16, a);
-        }
-        112 => {
-            return radical_inverse_specialized(617_u16, a);
-        }
-        113 => {
-            return radical_inverse_specialized(619_u16, a);
-        }
-        114 => {
-            return radical_inverse_specialized(631_u16, a);
-        }
-        115 => {
-            return radical_inverse_specialized(641_u16, a);
-        }
-        116 => {
-            return radical_inverse_specialized(643_u16, a);
-        }
-        117 => {
-            return radical_inverse_specialized(647_u16, a);
-        }
-        118 => {
-            return radical_inverse_specialized(653_u16, a);
-        }
-        119 => {
-            return radical_inverse_specialized(659_u16, a);
-        }
-        120 => {
-            return radical_inverse_specialized(661_u16, a);
-        }
-        121 => {
-            return radical_inverse_specialized(673_u16, a);
-        }
-        122 => {
-            return radical_inverse_specialized(677_u16, a);
-        }
-        123 => {
-            return radical_inverse_specialized(683_u16, a);
-        }
-        124 => {
-            return radical_inverse_specialized(691_u16, a);
-        }
-        125 => {
-            return radical_inverse_specialized(701_u16, a);
-        }
-        126 => {
-            return radical_inverse_specialized(709_u16, a);
-        }
-        127 => {
-            return radical_inverse_specialized(719_u16, a);
-        }
-        128 => {
-            return radical_inverse_specialized(727_u16, a);
-        }
-        129 => {
-            return radical_inverse_specialized(733_u16, a);
-        }
-        130 => {
-            return radical_inverse_specialized(739_u16, a);
-        }
-        131 => {
-            return radical_inverse_specialized(743_u16, a);
-        }
-        132 => {
-            return radical_inverse_specialized(751_u16, a);
-        }
-        133 => {
-            return radical_inverse_specialized(757_u16, a);
-        }
-        134 => {
-            return radical_inverse_specialized(761_u16, a);
-        }
-        135 => {
-            return radical_inverse_specialized(769_u16, a);
-        }
-        136 => {
-            return radical_inverse_specialized(773_u16, a);
-        }
-        137 => {
-            return radical_inverse_specialized(787_u16, a);
-        }
-        138 => {
-            return radical_inverse_specialized(797_u16, a);
-        }
-        139 => {
-            return radical_inverse_specialized(809_u16, a);
-        }
-        140 => {
-            return radical_inverse_specialized(811_u16, a);
-        }
-        141 => {
-            return radical_inverse_specialized(821_u16, a);
-        }
-        142 => {
-            return radical_inverse_specialized(823_u16, a);
-        }
-        143 => {
-            return radical_inverse_specialized(827_u16, a);
-        }
-        144 => {
-            return radical_inverse_specialized(829_u16, a);
-        }
-        145 => {
-            return radical_inverse_specialized(839_u16, a);
-        }
-        146 => {
-            return radical_inverse_specialized(853_u16, a);
-        }
-        147 => {
-            return radical_inverse_specialized(857_u16, a);
-        }
-        148 => {
-            return radical_inverse_specialized(859_u16, a);
-        }
-        149 => {
-            return radical_inverse_specialized(863_u16, a);
-        }
-        150 => {
-            return radical_inverse_specialized(877_u16, a);
-        }
-        151 => {
-            return radical_inverse_specialized(881_u16, a);
-        }
-        152 => {
-            return radical_inverse_specialized(883_u16, a);
-        }
-        153 => {
-            return radical_inverse_specialized(887_u16, a);
-        }
-        154 => {
-            return radical_inverse_specialized(907_u16, a);
-        }
-        155 => {
-            return radical_inverse_specialized(911_u16, a);
-        }
-        156 => {
-            return radical_inverse_specialized(919_u16, a);
-        }
-        157 => {
-            return radical_inverse_specialized(929_u16, a);
-        }
-        158 => {
-            return radical_inverse_specialized(937_u16, a);
-        }
-        159 => {
-            return radical_inverse_specialized(941_u16, a);
-        }
-        160 => {
-            return radical_inverse_specialized(947_u16, a);
-        }
-        161 => {
-            return radical_inverse_specialized(953_u16, a);
-        }
-        162 => {
-            return radical_inverse_specialized(967_u16, a);
-        }
-        163 => {
-            return radical_inverse_specialized(971_u16, a);
-        }
-        164 => {
-            return radical_inverse_specialized(977_u16, a);
-        }
-        165 => {
-            return radical_inverse_specialized(983_u16, a);
-        }
-        166 => {
-            return radical_inverse_specialized(991_u16, a);
-        }
-        167 => {
-            return radical_inverse_specialized(997_u16, a);
-        }
-        168 => {
-            return radical_inverse_specialized(1009_u16, a);
-        }
-        169 => {
-            return radical_inverse_specialized(1013_u16, a);
-        }
-        170 => {
-            return radical_inverse_specialized(1019_u16, a);
-        }
-        171 => {
-            return radical_inverse_specialized(1021_u16, a);
-        }
-        172 => {
-            return radical_inverse_specialized(1031_u16, a);
-        }
-        173 => {
-            return radical_inverse_specialized(1033_u16, a);
-        }
-        174 => {
-            return radical_inverse_specialized(1039_u16, a);
-        }
-        175 => {
-            return radical_inverse_specialized(1049_u16, a);
-        }
-        176 => {
-            return radical_inverse_specialized(1051_u16, a);
-        }
-        177 => {
-            return radical_inverse_specialized(1061_u16, a);
-        }
-        178 => {
-            return radical_inverse_specialized(1063_u16, a);
-        }
-        179 => {
-            return radical_inverse_specialized(1069_u16, a);
-        }
-        180 => {
-            return radical_inverse_specialized(1087_u16, a);
-        }
-        181 => {
-            return radical_inverse_specialized(1091_u16, a);
-        }
-        182 => {
-            return radical_inverse_specialized(1093_u16, a);
-        }
-        183 => {
-            return radical_inverse_specialized(1097_u16, a);
-        }
-        184 => {
-            return radical_inverse_specialized(1103_u16, a);
-        }
-        185 => {
-            return radical_inverse_specialized(1109_u16, a);
-        }
-        186 => {
-            return radical_inverse_specialized(1117_u16, a);
-        }
-        187 => {
-            return radical_inverse_specialized(1123_u16, a);
-        }
-        188 => {
-            return radical_inverse_specialized(1129_u16, a);
-        }
-        189 => {
-            return radical_inverse_specialized(1151_u16, a);
-        }
-        190 => {
-            return radical_inverse_specialized(1153_u16, a);
-        }
-        191 => {
-            return radical_inverse_specialized(1163_u16, a);
-        }
-        192 => {
-            return radical_inverse_specialized(1171_u16, a);
-        }
-        193 => {
-            return radical_inverse_specialized(1181_u16, a);
-        }
-        194 => {
-            return radical_inverse_specialized(1187_u16, a);
-        }
-        195 => {
-            return radical_inverse_specialized(1193_u16, a);
-        }
-        196 => {
-            return radical_inverse_specialized(1201_u16, a);
-        }
-        197 => {
-            return radical_inverse_specialized(1213_u16, a);
-        }
-        198 => {
-            return radical_inverse_specialized(1217_u16, a);
-        }
-        199 => {
-            return radical_inverse_specialized(1223_u16, a);
-        }
-        200 => {
-            return radical_inverse_specialized(1229_u16, a);
-        }
-        201 => {
-            return radical_inverse_specialized(1231_u16, a);
-        }
-        202 => {
-            return radical_inverse_specialized(1237_u16, a);
-        }
-        203 => {
-            return radical_inverse_specialized(1249_u16, a);
-        }
-        204 => {
-            return radical_inverse_specialized(1259_u16, a);
-        }
-        205 => {
-            return radical_inverse_specialized(1277_u16, a);
-        }
-        206 => {
-            return radical_inverse_specialized(1279_u16, a);
-        }
-        207 => {
-            return radical_inverse_specialized(1283_u16, a);
-        }
-        208 => {
-            return radical_inverse_specialized(1289_u16, a);
-        }
-        209 => {
-            return radical_inverse_specialized(1291_u16, a);
-        }
-        210 => {
-            return radical_inverse_specialized(1297_u16, a);
-        }
-        211 => {
-            return radical_inverse_specialized(1301_u16, a);
-        }
-        212 => {
-            return radical_inverse_specialized(1303_u16, a);
-        }
-        213 => {
-            return radical_inverse_specialized(1307_u16, a);
-        }
-        214 => {
-            return radical_inverse_specialized(1319_u16, a);
-        }
-        215 => {
-            return radical_inverse_specialized(1321_u16, a);
-        }
-        216 => {
-            return radical_inverse_specialized(1327_u16, a);
-        }
-        217 => {
-            return radical_inverse_specialized(1361_u16, a);
-        }
-        218 => {
-            return radical_inverse_specialized(1367_u16, a);
-        }
-        219 => {
-            return radical_inverse_specialized(1373_u16, a);
-        }
-        220 => {
-            return radical_inverse_specialized(1381_u16, a);
-        }
-        221 => {
-            return radical_inverse_specialized(1399_u16, a);
-        }
-        222 => {
-            return radical_inverse_specialized(1409_u16, a);
-        }
-        223 => {
-            return radical_inverse_specialized(1423_u16, a);
-        }
-        224 => {
-            return radical_inverse_specialized(1427_u16, a);
-        }
-        225 => {
-            return radical_inverse_specialized(1429_u16, a);
-        }
-        226 => {
-            return radical_inverse_specialized(1433_u16, a);
-        }
-        227 => {
-            return radical_inverse_specialized(1439_u16, a);
-        }
-        228 => {
-            return radical_inverse_specialized(1447_u16, a);
-        }
-        229 => {
-            return radical_inverse_specialized(1451_u16, a);
-        }
-        230 => {
-            return radical_inverse_specialized(1453_u16, a);
-        }
-        231 => {
-            return radical_inverse_specialized(1459_u16, a);
-        }
-        232 => {
-            return radical_inverse_specialized(1471_u16, a);
-        }
-        233 => {
-            return radical_inverse_specialized(1481_u16, a);
-        }
-        234 => {
-            return radical_inverse_specialized(1483_u16, a);
-        }
-        235 => {
-            return radical_inverse_specialized(1487_u16, a);
-        }
-        236 => {
-            return radical_inverse_specialized(1489_u16, a);
-        }
-        237 => {
-            return radical_inverse_specialized(1493_u16, a);
-        }
-        238 => {
-            return radical_inverse_specialized(1499_u16, a);
-        }
-        239 => {
-            return radical_inverse_specialized(1511_u16, a);
-        }
-        240 => {
-            return radical_inverse_specialized(1523_u16, a);
-        }
-        241 => {
-            return radical_inverse_specialized(1531_u16, a);
-        }
-        242 => {
-            return radical_inverse_specialized(1543_u16, a);
-        }
-        243 => {
-            return radical_inverse_specialized(1549_u16, a);
-        }
-        244 => {
-            return radical_inverse_specialized(1553_u16, a);
-        }
-        245 => {
-            return radical_inverse_specialized(1559_u16, a);
-        }
-        246 => {
-            return radical_inverse_specialized(1567_u16, a);
-        }
-        247 => {
-            return radical_inverse_specialized(1571_u16, a);
-        }
-        248 => {
-            return radical_inverse_specialized(1579_u16, a);
-        }
-        249 => {
-            return radical_inverse_specialized(1583_u16, a);
-        }
-        250 => {
-            return radical_inverse_specialized(1597_u16, a);
-        }
-        251 => {
-            return radical_inverse_specialized(1601_u16, a);
-        }
-        252 => {
-            return radical_inverse_specialized(1607_u16, a);
-        }
-        253 => {
-            return radical_inverse_specialized(1609_u16, a);
-        }
-        254 => {
-            return radical_inverse_specialized(1613_u16, a);
-        }
-        255 => {
-            return radical_inverse_specialized(1619_u16, a);
-        }
-        256 => {
-            return radical_inverse_specialized(1621_u16, a);
-        }
-        257 => {
-            return radical_inverse_specialized(1627_u16, a);
-        }
-        258 => {
-            return radical_inverse_specialized(1637_u16, a);
-        }
-        259 => {
-            return radical_inverse_specialized(1657_u16, a);
-        }
-        260 => {
-            return radical_inverse_specialized(1663_u16, a);
-        }
-        261 => {
-            return radical_inverse_specialized(1667_u16, a);
-        }
-        262 => {
-            return radical_inverse_specialized(1669_u16, a);
-        }
-        263 => {
-            return radical_inverse_specialized(1693_u16, a);
-        }
-        264 => {
-            return radical_inverse_specialized(1697_u16, a);
-        }
-        265 => {
-            return radical_inverse_specialized(1699_u16, a);
-        }
-        266 => {
-            return radical_inverse_specialized(1709_u16, a);
-        }
-        267 => {
-            return radical_inverse_specialized(1721_u16, a);
-        }
-        268 => {
-            return radical_inverse_specialized(1723_u16, a);
-        }
-        269 => {
-            return radical_inverse_specialized(1733_u16, a);
-        }
-        270 => {
-            return radical_inverse_specialized(1741_u16, a);
-        }
-        271 => {
-            return radical_inverse_specialized(1747_u16, a);
-        }
-        272 => {
-            return radical_inverse_specialized(1753_u16, a);
-        }
-        273 => {
-            return radical_inverse_specialized(1759_u16, a);
-        }
-        274 => {
-            return radical_inverse_specialized(1777_u16, a);
-        }
-        275 => {
-            return radical_inverse_specialized(1783_u16, a);
-        }
-        276 => {
-            return radical_inverse_specialized(1787_u16, a);
-        }
-        277 => {
-            return radical_inverse_specialized(1789_u16, a);
-        }
-        278 => {
-            return radical_inverse_specialized(1801_u16, a);
-        }
-        279 => {
-            return radical_inverse_specialized(1811_u16, a);
-        }
-        280 => {
-            return radical_inverse_specialized(1823_u16, a);
-        }
-        281 => {
-            return radical_inverse_specialized(1831_u16, a);
-        }
-        282 => {
-            return radical_inverse_specialized(1847_u16, a);
-        }
-        283 => {
-            return radical_inverse_specialized(1861_u16, a);
-        }
-        284 => {
-            return radical_inverse_specialized(1867_u16, a);
-        }
-        285 => {
-            return radical_inverse_specialized(1871_u16, a);
-        }
-        286 => {
-            return radical_inverse_specialized(1873_u16, a);
-        }
-        287 => {
-            return radical_inverse_specialized(1877_u16, a);
-        }
-        288 => {
-            return radical_inverse_specialized(1879_u16, a);
-        }
-        289 => {
-            return radical_inverse_specialized(1889_u16, a);
-        }
-        290 => {
-            return radical_inverse_specialized(1901_u16, a);
-        }
-        291 => {
-            return radical_inverse_specialized(1907_u16, a);
-        }
-        292 => {
-            return radical_inverse_specialized(1913_u16, a);
-        }
-        293 => {
-            return radical_inverse_specialized(1931_u16, a);
-        }
-        294 => {
-            return radical_inverse_specialized(1933_u16, a);
-        }
-        295 => {
-            return radical_inverse_specialized(1949_u16, a);
-        }
-        296 => {
-            return radical_inverse_specialized(1951_u16, a);
-        }
-        297 => {
-            return radical_inverse_specialized(1973_u16, a);
-        }
-        298 => {
-            return radical_inverse_specialized(1979_u16, a);
-        }
-        299 => {
-            return radical_inverse_specialized(1987_u16, a);
-        }
-        300 => {
-            return radical_inverse_specialized(1993_u16, a);
-        }
-        301 => {
-            return radical_inverse_specialized(1997_u16, a);
-        }
-        302 => {
-            return radical_inverse_specialized(1999_u16, a);
-        }
-        303 => {
-            return radical_inverse_specialized(2003_u16, a);
-        }
-        304 => {
-            return radical_inverse_specialized(2011_u16, a);
-        }
-        305 => {
-            return radical_inverse_specialized(2017_u16, a);
-        }
-        306 => {
-            return radical_inverse_specialized(2027_u16, a);
-        }
-        307 => {
-            return radical_inverse_specialized(2029_u16, a);
-        }
-        308 => {
-            return radical_inverse_specialized(2039_u16, a);
-        }
-        309 => {
-            return radical_inverse_specialized(2053_u16, a);
-        }
-        310 => {
-            return radical_inverse_specialized(2063_u16, a);
-        }
-        311 => {
-            return radical_inverse_specialized(2069_u16, a);
-        }
-        312 => {
-            return radical_inverse_specialized(2081_u16, a);
-        }
-        313 => {
-            return radical_inverse_specialized(2083_u16, a);
-        }
-        314 => {
-            return radical_inverse_specialized(2087_u16, a);
-        }
-        315 => {
-            return radical_inverse_specialized(2089_u16, a);
-        }
-        316 => {
-            return radical_inverse_specialized(2099_u16, a);
-        }
-        317 => {
-            return radical_inverse_specialized(2111_u16, a);
-        }
-        318 => {
-            return radical_inverse_specialized(2113_u16, a);
-        }
-        319 => {
-            return radical_inverse_specialized(2129_u16, a);
-        }
-        320 => {
-            return radical_inverse_specialized(2131_u16, a);
-        }
-        321 => {
-            return radical_inverse_specialized(2137_u16, a);
-        }
-        322 => {
-            return radical_inverse_specialized(2141_u16, a);
-        }
-        323 => {
-            return radical_inverse_specialized(2143_u16, a);
-        }
-        324 => {
-            return radical_inverse_specialized(2153_u16, a);
-        }
-        325 => {
-            return radical_inverse_specialized(2161_u16, a);
-        }
-        326 => {
-            return radical_inverse_specialized(2179_u16, a);
-        }
-        327 => {
-            return radical_inverse_specialized(2203_u16, a);
-        }
-        328 => {
-            return radical_inverse_specialized(2207_u16, a);
-        }
-        329 => {
-            return radical_inverse_specialized(2213_u16, a);
-        }
-        330 => {
-            return radical_inverse_specialized(2221_u16, a);
-        }
-        331 => {
-            return radical_inverse_specialized(2237_u16, a);
-        }
-        332 => {
-            return radical_inverse_specialized(2239_u16, a);
-        }
-        333 => {
-            return radical_inverse_specialized(2243_u16, a);
-        }
-        334 => {
-            return radical_inverse_specialized(2251_u16, a);
-        }
-        335 => {
-            return radical_inverse_specialized(2267_u16, a);
-        }
-        336 => {
-            return radical_inverse_specialized(2269_u16, a);
-        }
-        337 => {
-            return radical_inverse_specialized(2273_u16, a);
-        }
-        338 => {
-            return radical_inverse_specialized(2281_u16, a);
-        }
-        339 => {
-            return radical_inverse_specialized(2287_u16, a);
-        }
-        340 => {
-            return radical_inverse_specialized(2293_u16, a);
-        }
-        341 => {
-            return radical_inverse_specialized(2297_u16, a);
-        }
-        342 => {
-            return radical_inverse_specialized(2309_u16, a);
-        }
-        343 => {
-            return radical_inverse_specialized(2311_u16, a);
-        }
-        344 => {
-            return radical_inverse_specialized(2333_u16, a);
-        }
-        345 => {
-            return radical_inverse_specialized(2339_u16, a);
-        }
-        346 => {
-            return radical_inverse_specialized(2341_u16, a);
-        }
-        347 => {
-            return radical_inverse_specialized(2347_u16, a);
-        }
-        348 => {
-            return radical_inverse_specialized(2351_u16, a);
-        }
-        349 => {
-            return radical_inverse_specialized(2357_u16, a);
-        }
-        350 => {
-            return radical_inverse_specialized(2371_u16, a);
-        }
-        351 => {
-            return radical_inverse_specialized(2377_u16, a);
-        }
-        352 => {
-            return radical_inverse_specialized(2381_u16, a);
-        }
-        353 => {
-            return radical_inverse_specialized(2383_u16, a);
-        }
-        354 => {
-            return radical_inverse_specialized(2389_u16, a);
-        }
-        355 => {
-            return radical_inverse_specialized(2393_u16, a);
-        }
-        356 => {
-            return radical_inverse_specialized(2399_u16, a);
-        }
-        357 => {
-            return radical_inverse_specialized(2411_u16, a);
-        }
-        358 => {
-            return radical_inverse_specialized(2417_u16, a);
-        }
-        359 => {
-            return radical_inverse_specialized(2423_u16, a);
-        }
-        360 => {
-            return radical_inverse_specialized(2437_u16, a);
-        }
-        361 => {
-            return radical_inverse_specialized(2441_u16, a);
-        }
-        362 => {
-            return radical_inverse_specialized(2447_u16, a);
-        }
-        363 => {
-            return radical_inverse_specialized(2459_u16, a);
-        }
-        364 => {
-            return radical_inverse_specialized(2467_u16, a);
-        }
-        365 => {
-            return radical_inverse_specialized(2473_u16, a);
-        }
-        366 => {
-            return radical_inverse_specialized(2477_u16, a);
-        }
-        367 => {
-            return radical_inverse_specialized(2503_u16, a);
-        }
-        368 => {
-            return radical_inverse_specialized(2521_u16, a);
-        }
-        369 => {
-            return radical_inverse_specialized(2531_u16, a);
-        }
-        370 => {
-            return radical_inverse_specialized(2539_u16, a);
-        }
-        371 => {
-            return radical_inverse_specialized(2543_u16, a);
-        }
-        372 => {
-            return radical_inverse_specialized(2549_u16, a);
-        }
-        373 => {
-            return radical_inverse_specialized(2551_u16, a);
-        }
-        374 => {
-            return radical_inverse_specialized(2557_u16, a);
-        }
-        375 => {
-            return radical_inverse_specialized(2579_u16, a);
-        }
-        376 => {
-            return radical_inverse_specialized(2591_u16, a);
-        }
-        377 => {
-            return radical_inverse_specialized(2593_u16, a);
-        }
-        378 => {
-            return radical_inverse_specialized(2609_u16, a);
-        }
-        379 => {
-            return radical_inverse_specialized(2617_u16, a);
-        }
-        380 => {
-            return radical_inverse_specialized(2621_u16, a);
-        }
-        381 => {
-            return radical_inverse_specialized(2633_u16, a);
-        }
-        382 => {
-            return radical_inverse_specialized(2647_u16, a);
-        }
-        383 => {
-            return radical_inverse_specialized(2657_u16, a);
-        }
-        384 => {
-            return radical_inverse_specialized(2659_u16, a);
-        }
-        385 => {
-            return radical_inverse_specialized(2663_u16, a);
-        }
-        386 => {
-            return radical_inverse_specialized(2671_u16, a);
-        }
-        387 => {
-            return radical_inverse_specialized(2677_u16, a);
-        }
-        388 => {
-            return radical_inverse_specialized(2683_u16, a);
-        }
-        389 => {
-            return radical_inverse_specialized(2687_u16, a);
-        }
-        390 => {
-            return radical_inverse_specialized(2689_u16, a);
-        }
-        391 => {
-            return radical_inverse_specialized(2693_u16, a);
-        }
-        392 => {
-            return radical_inverse_specialized(2699_u16, a);
-        }
-        393 => {
-            return radical_inverse_specialized(2707_u16, a);
-        }
-        394 => {
-            return radical_inverse_specialized(2711_u16, a);
-        }
-        395 => {
-            return radical_inverse_specialized(2713_u16, a);
-        }
-        396 => {
-            return radical_inverse_specialized(2719_u16, a);
-        }
-        397 => {
-            return radical_inverse_specialized(2729_u16, a);
-        }
-        398 => {
-            return radical_inverse_specialized(2731_u16, a);
-        }
-        399 => {
-            return radical_inverse_specialized(2741_u16, a);
-        }
-        400 => {
-            return radical_inverse_specialized(2749_u16, a);
-        }
-        401 => {
-            return radical_inverse_specialized(2753_u16, a);
-        }
-        402 => {
-            return radical_inverse_specialized(2767_u16, a);
-        }
-        403 => {
-            return radical_inverse_specialized(2777_u16, a);
-        }
-        404 => {
-            return radical_inverse_specialized(2789_u16, a);
-        }
-        405 => {
-            return radical_inverse_specialized(2791_u16, a);
-        }
-        406 => {
-            return radical_inverse_specialized(2797_u16, a);
-        }
-        407 => {
-            return radical_inverse_specialized(2801_u16, a);
-        }
-        408 => {
-            return radical_inverse_specialized(2803_u16, a);
-        }
-        409 => {
-            return radical_inverse_specialized(2819_u16, a);
-        }
-        410 => {
-            return radical_inverse_specialized(2833_u16, a);
-        }
-        411 => {
-            return radical_inverse_specialized(2837_u16, a);
-        }
-        412 => {
-            return radical_inverse_specialized(2843_u16, a);
-        }
-        413 => {
-            return radical_inverse_specialized(2851_u16, a);
-        }
-        414 => {
-            return radical_inverse_specialized(2857_u16, a);
-        }
-        415 => {
-            return radical_inverse_specialized(2861_u16, a);
-        }
-        416 => {
-            return radical_inverse_specialized(2879_u16, a);
-        }
-        417 => {
-            return radical_inverse_specialized(2887_u16, a);
-        }
-        418 => {
-            return radical_inverse_specialized(2897_u16, a);
-        }
-        419 => {
-            return radical_inverse_specialized(2903_u16, a);
-        }
-        420 => {
-            return radical_inverse_specialized(2909_u16, a);
-        }
-        421 => {
-            return radical_inverse_specialized(2917_u16, a);
-        }
-        422 => {
-            return radical_inverse_specialized(2927_u16, a);
-        }
-        423 => {
-            return radical_inverse_specialized(2939_u16, a);
-        }
-        424 => {
-            return radical_inverse_specialized(2953_u16, a);
-        }
-        425 => {
-            return radical_inverse_specialized(2957_u16, a);
-        }
-        426 => {
-            return radical_inverse_specialized(2963_u16, a);
-        }
-        427 => {
-            return radical_inverse_specialized(2969_u16, a);
-        }
-        428 => {
-            return radical_inverse_specialized(2971_u16, a);
-        }
-        429 => {
-            return radical_inverse_specialized(2999_u16, a);
-        }
-        430 => {
-            return radical_inverse_specialized(3001_u16, a);
-        }
-        431 => {
-            return radical_inverse_specialized(3011_u16, a);
-        }
-        432 => {
-            return radical_inverse_specialized(3019_u16, a);
-        }
-        433 => {
-            return radical_inverse_specialized(3023_u16, a);
-        }
-        434 => {
-            return radical_inverse_specialized(3037_u16, a);
-        }
-        435 => {
-            return radical_inverse_specialized(3041_u16, a);
-        }
-        436 => {
-            return radical_inverse_specialized(3049_u16, a);
-        }
-        437 => {
-            return radical_inverse_specialized(3061_u16, a);
-        }
-        438 => {
-            return radical_inverse_specialized(3067_u16, a);
-        }
-        439 => {
-            return radical_inverse_specialized(3079_u16, a);
-        }
-        440 => {
-            return radical_inverse_specialized(3083_u16, a);
-        }
-        441 => {
-            return radical_inverse_specialized(3089_u16, a);
-        }
-        442 => {
-            return radical_inverse_specialized(3109_u16, a);
-        }
-        443 => {
-            return radical_inverse_specialized(3119_u16, a);
-        }
-        444 => {
-            return radical_inverse_specialized(3121_u16, a);
-        }
-        445 => {
-            return radical_inverse_specialized(3137_u16, a);
-        }
-        446 => {
-            return radical_inverse_specialized(3163_u16, a);
-        }
-        447 => {
-            return radical_inverse_specialized(3167_u16, a);
-        }
-        448 => {
-            return radical_inverse_specialized(3169_u16, a);
-        }
-        449 => {
-            return radical_inverse_specialized(3181_u16, a);
-        }
-        450 => {
-            return radical_inverse_specialized(3187_u16, a);
-        }
-        451 => {
-            return radical_inverse_specialized(3191_u16, a);
-        }
-        452 => {
-            return radical_inverse_specialized(3203_u16, a);
-        }
-        453 => {
-            return radical_inverse_specialized(3209_u16, a);
-        }
-        454 => {
-            return radical_inverse_specialized(3217_u16, a);
-        }
-        455 => {
-            return radical_inverse_specialized(3221_u16, a);
-        }
-        456 => {
-            return radical_inverse_specialized(3229_u16, a);
-        }
-        457 => {
-            return radical_inverse_specialized(3251_u16, a);
-        }
-        458 => {
-            return radical_inverse_specialized(3253_u16, a);
-        }
-        459 => {
-            return radical_inverse_specialized(3257_u16, a);
-        }
-        460 => {
-            return radical_inverse_specialized(3259_u16, a);
-        }
-        461 => {
-            return radical_inverse_specialized(3271_u16, a);
-        }
-        462 => {
-            return radical_inverse_specialized(3299_u16, a);
-        }
-        463 => {
-            return radical_inverse_specialized(3301_u16, a);
-        }
-        464 => {
-            return radical_inverse_specialized(3307_u16, a);
-        }
-        465 => {
-            return radical_inverse_specialized(3313_u16, a);
-        }
-        466 => {
-            return radical_inverse_specialized(3319_u16, a);
-        }
-        467 => {
-            return radical_inverse_specialized(3323_u16, a);
-        }
-        468 => {
-            return radical_inverse_specialized(3329_u16, a);
-        }
-        469 => {
-            return radical_inverse_specialized(3331_u16, a);
-        }
-        470 => {
-            return radical_inverse_specialized(3343_u16, a);
-        }
-        471 => {
-            return radical_inverse_specialized(3347_u16, a);
-        }
-        472 => {
-            return radical_inverse_specialized(3359_u16, a);
-        }
-        473 => {
-            return radical_inverse_specialized(3361_u16, a);
-        }
-        474 => {
-            return radical_inverse_specialized(3371_u16, a);
-        }
-        475 => {
-            return radical_inverse_specialized(3373_u16, a);
-        }
-        476 => {
-            return radical_inverse_specialized(3389_u16, a);
-        }
-        477 => {
-            return radical_inverse_specialized(3391_u16, a);
-        }
-        478 => {
-            return radical_inverse_specialized(3407_u16, a);
-        }
-        479 => {
-            return radical_inverse_specialized(3413_u16, a);
-        }
-        480 => {
-            return radical_inverse_specialized(3433_u16, a);
-        }
-        481 => {
-            return radical_inverse_specialized(3449_u16, a);
-        }
-        482 => {
-            return radical_inverse_specialized(3457_u16, a);
-        }
-        483 => {
-            return radical_inverse_specialized(3461_u16, a);
-        }
-        484 => {
-            return radical_inverse_specialized(3463_u16, a);
-        }
-        485 => {
-            return radical_inverse_specialized(3467_u16, a);
-        }
-        486 => {
-            return radical_inverse_specialized(3469_u16, a);
-        }
-        487 => {
-            return radical_inverse_specialized(3491_u16, a);
-        }
-        488 => {
-            return radical_inverse_specialized(3499_u16, a);
-        }
-        489 => {
-            return radical_inverse_specialized(3511_u16, a);
-        }
-        490 => {
-            return radical_inverse_specialized(3517_u16, a);
-        }
-        491 => {
-            return radical_inverse_specialized(3527_u16, a);
-        }
-        492 => {
-            return radical_inverse_specialized(3529_u16, a);
-        }
-        493 => {
-            return radical_inverse_specialized(3533_u16, a);
-        }
-        494 => {
-            return radical_inverse_specialized(3539_u16, a);
-        }
-        495 => {
-            return radical_inverse_specialized(3541_u16, a);
-        }
-        496 => {
-            return radical_inverse_specialized(3547_u16, a);
-        }
-        497 => {
-            return radical_inverse_specialized(3557_u16, a);
-        }
-        498 => {
-            return radical_inverse_specialized(3559_u16, a);
-        }
-        499 => {
-            return radical_inverse_specialized(3571_u16, a);
-        }
-        500 => {
-            return radical_inverse_specialized(3581_u16, a);
-        }
-        501 => {
-            return radical_inverse_specialized(3583_u16, a);
-        }
-        502 => {
-            return radical_inverse_specialized(3593_u16, a);
-        }
-        503 => {
-            return radical_inverse_specialized(3607_u16, a);
-        }
-        504 => {
-            return radical_inverse_specialized(3613_u16, a);
-        }
-        505 => {
-            return radical_inverse_specialized(3617_u16, a);
-        }
-        506 => {
-            return radical_inverse_specialized(3623_u16, a);
-        }
-        507 => {
-            return radical_inverse_specialized(3631_u16, a);
-        }
-        508 => {
-            return radical_inverse_specialized(3637_u16, a);
-        }
-        509 => {
-            return radical_inverse_specialized(3643_u16, a);
-        }
-        510 => {
-            return radical_inverse_specialized(3659_u16, a);
-        }
-        511 => {
-            return radical_inverse_specialized(3671_u16, a);
-        }
-        512 => {
-            return radical_inverse_specialized(3673_u16, a);
-        }
-        513 => {
-            return radical_inverse_specialized(3677_u16, a);
-        }
-        514 => {
-            return radical_inverse_specialized(3691_u16, a);
-        }
-        515 => {
-            return radical_inverse_specialized(3697_u16, a);
-        }
-        516 => {
-            return radical_inverse_specialized(3701_u16, a);
-        }
-        517 => {
-            return radical_inverse_specialized(3709_u16, a);
-        }
-        518 => {
-            return radical_inverse_specialized(3719_u16, a);
-        }
-        519 => {
-            return radical_inverse_specialized(3727_u16, a);
-        }
-        520 => {
-            return radical_inverse_specialized(3733_u16, a);
-        }
-        521 => {
-            return radical_inverse_specialized(3739_u16, a);
-        }
-        522 => {
-            return radical_inverse_specialized(3761_u16, a);
-        }
-        523 => {
-            return radical_inverse_specialized(3767_u16, a);
-        }
-        524 => {
-            return radical_inverse_specialized(3769_u16, a);
-        }
-        525 => {
-            return radical_inverse_specialized(3779_u16, a);
-        }
-        526 => {
-            return radical_inverse_specialized(3793_u16, a);
-        }
-        527 => {
-            return radical_inverse_specialized(3797_u16, a);
-        }
-        528 => {
-            return radical_inverse_specialized(3803_u16, a);
-        }
-        529 => {
-            return radical_inverse_specialized(3821_u16, a);
-        }
-        530 => {
-            return radical_inverse_specialized(3823_u16, a);
-        }
-        531 => {
-            return radical_inverse_specialized(3833_u16, a);
-        }
-        532 => {
-            return radical_inverse_specialized(3847_u16, a);
-        }
-        533 => {
-            return radical_inverse_specialized(3851_u16, a);
-        }
-        534 => {
-            return radical_inverse_specialized(3853_u16, a);
-        }
-        535 => {
-            return radical_inverse_specialized(3863_u16, a);
-        }
-        536 => {
-            return radical_inverse_specialized(3877_u16, a);
-        }
-        537 => {
-            return radical_inverse_specialized(3881_u16, a);
-        }
-        538 => {
-            return radical_inverse_specialized(3889_u16, a);
-        }
-        539 => {
-            return radical_inverse_specialized(3907_u16, a);
-        }
-        540 => {
-            return radical_inverse_specialized(3911_u16, a);
-        }
-        541 => {
-            return radical_inverse_specialized(3917_u16, a);
-        }
-        542 => {
-            return radical_inverse_specialized(3919_u16, a);
-        }
-        543 => {
-            return radical_inverse_specialized(3923_u16, a);
-        }
-        544 => {
-            return radical_inverse_specialized(3929_u16, a);
-        }
-        545 => {
-            return radical_inverse_specialized(3931_u16, a);
-        }
-        546 => {
-            return radical_inverse_specialized(3943_u16, a);
-        }
-        547 => {
-            return radical_inverse_specialized(3947_u16, a);
-        }
-        548 => {
-            return radical_inverse_specialized(3967_u16, a);
-        }
-        549 => {
-            return radical_inverse_specialized(3989_u16, a);
-        }
-        550 => {
-            return radical_inverse_specialized(4001_u16, a);
-        }
-        551 => {
-            return radical_inverse_specialized(4003_u16, a);
-        }
-        552 => {
-            return radical_inverse_specialized(4007_u16, a);
-        }
-        553 => {
-            return radical_inverse_specialized(4013_u16, a);
-        }
-        554 => {
-            return radical_inverse_specialized(4019_u16, a);
-        }
-        555 => {
-            return radical_inverse_specialized(4021_u16, a);
-        }
-        556 => {
-            return radical_inverse_specialized(4027_u16, a);
-        }
-        557 => {
-            return radical_inverse_specialized(4049_u16, a);
-        }
-        558 => {
-            return radical_inverse_specialized(4051_u16, a);
-        }
-        559 => {
-            return radical_inverse_specialized(4057_u16, a);
-        }
-        560 => {
-            return radical_inverse_specialized(4073_u16, a);
-        }
-        561 => {
-            return radical_inverse_specialized(4079_u16, a);
-        }
-        562 => {
-            return radical_inverse_specialized(4091_u16, a);
-        }
-        563 => {
-            return radical_inverse_specialized(4093_u16, a);
-        }
-        564 => {
-            return radical_inverse_specialized(4099_u16, a);
-        }
-        565 => {
-            return radical_inverse_specialized(4111_u16, a);
-        }
-        566 => {
-            return radical_inverse_specialized(4127_u16, a);
-        }
-        567 => {
-            return radical_inverse_specialized(4129_u16, a);
-        }
-        568 => {
-            return radical_inverse_specialized(4133_u16, a);
-        }
-        569 => {
-            return radical_inverse_specialized(4139_u16, a);
-        }
-        570 => {
-            return radical_inverse_specialized(4153_u16, a);
-        }
-        571 => {
-            return radical_inverse_specialized(4157_u16, a);
-        }
-        572 => {
-            return radical_inverse_specialized(4159_u16, a);
-        }
-        573 => {
-            return radical_inverse_specialized(4177_u16, a);
-        }
-        574 => {
-            return radical_inverse_specialized(4201_u16, a);
-        }
-        575 => {
-            return radical_inverse_specialized(4211_u16, a);
-        }
-        576 => {
-            return radical_inverse_specialized(4217_u16, a);
-        }
-        577 => {
-            return radical_inverse_specialized(4219_u16, a);
-        }
-        578 => {
-            return radical_inverse_specialized(4229_u16, a);
-        }
-        579 => {
-            return radical_inverse_specialized(4231_u16, a);
-        }
-        580 => {
-            return radical_inverse_specialized(4241_u16, a);
-        }
-        581 => {
-            return radical_inverse_specialized(4243_u16, a);
-        }
-        582 => {
-            return radical_inverse_specialized(4253_u16, a);
-        }
-        583 => {
-            return radical_inverse_specialized(4259_u16, a);
-        }
-        584 => {
-            return radical_inverse_specialized(4261_u16, a);
-        }
-        585 => {
-            return radical_inverse_specialized(4271_u16, a);
-        }
-        586 => {
-            return radical_inverse_specialized(4273_u16, a);
-        }
-        587 => {
-            return radical_inverse_specialized(4283_u16, a);
-        }
-        588 => {
-            return radical_inverse_specialized(4289_u16, a);
-        }
-        589 => {
-            return radical_inverse_specialized(4297_u16, a);
-        }
-        590 => {
-            return radical_inverse_specialized(4327_u16, a);
-        }
-        591 => {
-            return radical_inverse_specialized(4337_u16, a);
-        }
-        592 => {
-            return radical_inverse_specialized(4339_u16, a);
-        }
-        593 => {
-            return radical_inverse_specialized(4349_u16, a);
-        }
-        594 => {
-            return radical_inverse_specialized(4357_u16, a);
-        }
-        595 => {
-            return radical_inverse_specialized(4363_u16, a);
-        }
-        596 => {
-            return radical_inverse_specialized(4373_u16, a);
-        }
-        597 => {
-            return radical_inverse_specialized(4391_u16, a);
-        }
-        598 => {
-            return radical_inverse_specialized(4397_u16, a);
-        }
-        599 => {
-            return radical_inverse_specialized(4409_u16, a);
-        }
-        600 => {
-            return radical_inverse_specialized(4421_u16, a);
-        }
-        601 => {
-            return radical_inverse_specialized(4423_u16, a);
-        }
-        602 => {
-            return radical_inverse_specialized(4441_u16, a);
-        }
-        603 => {
-            return radical_inverse_specialized(4447_u16, a);
-        }
-        604 => {
-            return radical_inverse_specialized(4451_u16, a);
-        }
-        605 => {
-            return radical_inverse_specialized(4457_u16, a);
-        }
-        606 => {
-            return radical_inverse_specialized(4463_u16, a);
-        }
-        607 => {
-            return radical_inverse_specialized(4481_u16, a);
-        }
-        608 => {
-            return radical_inverse_specialized(4483_u16, a);
-        }
-        609 => {
-            return radical_inverse_specialized(4493_u16, a);
-        }
-        610 => {
-            return radical_inverse_specialized(4507_u16, a);
-        }
-        611 => {
-            return radical_inverse_specialized(4513_u16, a);
-        }
-        612 => {
-            return radical_inverse_specialized(4517_u16, a);
-        }
-        613 => {
-            return radical_inverse_specialized(4519_u16, a);
-        }
-        614 => {
-            return radical_inverse_specialized(4523_u16, a);
-        }
-        615 => {
-            return radical_inverse_specialized(4547_u16, a);
-        }
-        616 => {
-            return radical_inverse_specialized(4549_u16, a);
-        }
-        617 => {
-            return radical_inverse_specialized(4561_u16, a);
-        }
-        618 => {
-            return radical_inverse_specialized(4567_u16, a);
-        }
-        619 => {
-            return radical_inverse_specialized(4583_u16, a);
-        }
-        620 => {
-            return radical_inverse_specialized(4591_u16, a);
-        }
-        621 => {
-            return radical_inverse_specialized(4597_u16, a);
-        }
-        622 => {
-            return radical_inverse_specialized(4603_u16, a);
-        }
-        623 => {
-            return radical_inverse_specialized(4621_u16, a);
-        }
-        624 => {
-            return radical_inverse_specialized(4637_u16, a);
-        }
-        625 => {
-            return radical_inverse_specialized(4639_u16, a);
-        }
-        626 => {
-            return radical_inverse_specialized(4643_u16, a);
-        }
-        627 => {
-            return radical_inverse_specialized(4649_u16, a);
-        }
-        628 => {
-            return radical_inverse_specialized(4651_u16, a);
-        }
-        629 => {
-            return radical_inverse_specialized(4657_u16, a);
-        }
-        630 => {
-            return radical_inverse_specialized(4663_u16, a);
-        }
-        631 => {
-            return radical_inverse_specialized(4673_u16, a);
-        }
-        632 => {
-            return radical_inverse_specialized(4679_u16, a);
-        }
-        633 => {
-            return radical_inverse_specialized(4691_u16, a);
-        }
-        634 => {
-            return radical_inverse_specialized(4703_u16, a);
-        }
-        635 => {
-            return radical_inverse_specialized(4721_u16, a);
-        }
-        636 => {
-            return radical_inverse_specialized(4723_u16, a);
-        }
-        637 => {
-            return radical_inverse_specialized(4729_u16, a);
-        }
-        638 => {
-            return radical_inverse_specialized(4733_u16, a);
-        }
-        639 => {
-            return radical_inverse_specialized(4751_u16, a);
-        }
-        640 => {
-            return radical_inverse_specialized(4759_u16, a);
-        }
-        641 => {
-            return radical_inverse_specialized(4783_u16, a);
-        }
-        642 => {
-            return radical_inverse_specialized(4787_u16, a);
-        }
-        643 => {
-            return radical_inverse_specialized(4789_u16, a);
-        }
-        644 => {
-            return radical_inverse_specialized(4793_u16, a);
-        }
-        645 => {
-            return radical_inverse_specialized(4799_u16, a);
-        }
-        646 => {
-            return radical_inverse_specialized(4801_u16, a);
-        }
-        647 => {
-            return radical_inverse_specialized(4813_u16, a);
-        }
-        648 => {
-            return radical_inverse_specialized(4817_u16, a);
-        }
-        649 => {
-            return radical_inverse_specialized(4831_u16, a);
-        }
-        650 => {
-            return radical_inverse_specialized(4861_u16, a);
-        }
-        651 => {
-            return radical_inverse_specialized(4871_u16, a);
-        }
-        652 => {
-            return radical_inverse_specialized(4877_u16, a);
-        }
-        653 => {
-            return radical_inverse_specialized(4889_u16, a);
-        }
-        654 => {
-            return radical_inverse_specialized(4903_u16, a);
-        }
-        655 => {
-            return radical_inverse_specialized(4909_u16, a);
-        }
-        656 => {
-            return radical_inverse_specialized(4919_u16, a);
-        }
-        657 => {
-            return radical_inverse_specialized(4931_u16, a);
-        }
-        658 => {
-            return radical_inverse_specialized(4933_u16, a);
-        }
-        659 => {
-            return radical_inverse_specialized(4937_u16, a);
-        }
-        660 => {
-            return radical_inverse_specialized(4943_u16, a);
-        }
-        661 => {
-            return radical_inverse_specialized(4951_u16, a);
-        }
-        662 => {
-            return radical_inverse_specialized(4957_u16, a);
-        }
-        663 => {
-            return radical_inverse_specialized(4967_u16, a);
-        }
-        664 => {
-            return radical_inverse_specialized(4969_u16, a);
-        }
-        665 => {
-            return radical_inverse_specialized(4973_u16, a);
-        }
-        666 => {
-            return radical_inverse_specialized(4987_u16, a);
-        }
-        667 => {
-            return radical_inverse_specialized(4993_u16, a);
-        }
-        668 => {
-            return radical_inverse_specialized(4999_u16, a);
-        }
-        669 => {
-            return radical_inverse_specialized(5003_u16, a);
-        }
-        670 => {
-            return radical_inverse_specialized(5009_u16, a);
-        }
-        671 => {
-            return radical_inverse_specialized(5011_u16, a);
-        }
-        672 => {
-            return radical_inverse_specialized(5021_u16, a);
-        }
-        673 => {
-            return radical_inverse_specialized(5023_u16, a);
-        }
-        674 => {
-            return radical_inverse_specialized(5039_u16, a);
-        }
-        675 => {
-            return radical_inverse_specialized(5051_u16, a);
-        }
-        676 => {
-            return radical_inverse_specialized(5059_u16, a);
-        }
-        677 => {
-            return radical_inverse_specialized(5077_u16, a);
-        }
-        678 => {
-            return radical_inverse_specialized(5081_u16, a);
-        }
-        679 => {
-            return radical_inverse_specialized(5087_u16, a);
-        }
-        680 => {
-            return radical_inverse_specialized(5099_u16, a);
-        }
-        681 => {
-            return radical_inverse_specialized(5101_u16, a);
-        }
-        682 => {
-            return radical_inverse_specialized(5107_u16, a);
-        }
-        683 => {
-            return radical_inverse_specialized(5113_u16, a);
-        }
-        684 => {
-            return radical_inverse_specialized(5119_u16, a);
-        }
-        685 => {
-            return radical_inverse_specialized(5147_u16, a);
-        }
-        686 => {
-            return radical_inverse_specialized(5153_u16, a);
-        }
-        687 => {
-            return radical_inverse_specialized(5167_u16, a);
-        }
-        688 => {
-            return radical_inverse_specialized(5171_u16, a);
-        }
-        689 => {
-            return radical_inverse_specialized(5179_u16, a);
-        }
-        690 => {
-            return radical_inverse_specialized(5189_u16, a);
-        }
-        691 => {
-            return radical_inverse_specialized(5197_u16, a);
-        }
-        692 => {
-            return radical_inverse_specialized(5209_u16, a);
-        }
-        693 => {
-            return radical_inverse_specialized(5227_u16, a);
-        }
-        694 => {
-            return radical_inverse_specialized(5231_u16, a);
-        }
-        695 => {
-            return radical_inverse_specialized(5233_u16, a);
-        }
-        696 => {
-            return radical_inverse_specialized(5237_u16, a);
-        }
-        697 => {
-            return radical_inverse_specialized(5261_u16, a);
-        }
-        698 => {
-            return radical_inverse_specialized(5273_u16, a);
-        }
-        699 => {
-            return radical_inverse_specialized(5279_u16, a);
-        }
-        700 => {
-            return radical_inverse_specialized(5281_u16, a);
-        }
-        701 => {
-            return radical_inverse_specialized(5297_u16, a);
-        }
-        702 => {
-            return radical_inverse_specialized(5303_u16, a);
-        }
-        703 => {
-            return radical_inverse_specialized(5309_u16, a);
-        }
-        704 => {
-            return radical_inverse_specialized(5323_u16, a);
-        }
-        705 => {
-            return radical_inverse_specialized(5333_u16, a);
-        }
-        706 => {
-            return radical_inverse_specialized(5347_u16, a);
-        }
-        707 => {
-            return radical_inverse_specialized(5351_u16, a);
-        }
-        708 => {
-            return radical_inverse_specialized(5381_u16, a);
-        }
-        709 => {
-            return radical_inverse_specialized(5387_u16, a);
-        }
-        710 => {
-            return radical_inverse_specialized(5393_u16, a);
-        }
-        711 => {
-            return radical_inverse_specialized(5399_u16, a);
-        }
-        712 => {
-            return radical_inverse_specialized(5407_u16, a);
-        }
-        713 => {
-            return radical_inverse_specialized(5413_u16, a);
-        }
-        714 => {
-            return radical_inverse_specialized(5417_u16, a);
-        }
-        715 => {
-            return radical_inverse_specialized(5419_u16, a);
-        }
-        716 => {
-            return radical_inverse_specialized(5431_u16, a);
-        }
-        717 => {
-            return radical_inverse_specialized(5437_u16, a);
-        }
-        718 => {
-            return radical_inverse_specialized(5441_u16, a);
-        }
-        719 => {
-            return radical_inverse_specialized(5443_u16, a);
-        }
-        720 => {
-            return radical_inverse_specialized(5449_u16, a);
-        }
-        721 => {
-            return radical_inverse_specialized(5471_u16, a);
-        }
-        722 => {
-            return radical_inverse_specialized(5477_u16, a);
-        }
-        723 => {
-            return radical_inverse_specialized(5479_u16, a);
-        }
-        724 => {
-            return radical_inverse_specialized(5483_u16, a);
-        }
-        725 => {
-            return radical_inverse_specialized(5501_u16, a);
-        }
-        726 => {
-            return radical_inverse_specialized(5503_u16, a);
-        }
-        727 => {
-            return radical_inverse_specialized(5507_u16, a);
-        }
-        728 => {
-            return radical_inverse_specialized(5519_u16, a);
-        }
-        729 => {
-            return radical_inverse_specialized(5521_u16, a);
-        }
-        730 => {
-            return radical_inverse_specialized(5527_u16, a);
-        }
-        731 => {
-            return radical_inverse_specialized(5531_u16, a);
-        }
-        732 => {
-            return radical_inverse_specialized(5557_u16, a);
-        }
-        733 => {
-            return radical_inverse_specialized(5563_u16, a);
-        }
-        734 => {
-            return radical_inverse_specialized(5569_u16, a);
-        }
-        735 => {
-            return radical_inverse_specialized(5573_u16, a);
-        }
-        736 => {
-            return radical_inverse_specialized(5581_u16, a);
-        }
-        737 => {
-            return radical_inverse_specialized(5591_u16, a);
-        }
-        738 => {
-            return radical_inverse_specialized(5623_u16, a);
-        }
-        739 => {
-            return radical_inverse_specialized(5639_u16, a);
-        }
-        740 => {
-            return radical_inverse_specialized(5641_u16, a);
-        }
-        741 => {
-            return radical_inverse_specialized(5647_u16, a);
-        }
-        742 => {
-            return radical_inverse_specialized(5651_u16, a);
-        }
-        743 => {
-            return radical_inverse_specialized(5653_u16, a);
-        }
-        744 => {
-            return radical_inverse_specialized(5657_u16, a);
-        }
-        745 => {
-            return radical_inverse_specialized(5659_u16, a);
-        }
-        746 => {
-            return radical_inverse_specialized(5669_u16, a);
-        }
-        747 => {
-            return radical_inverse_specialized(5683_u16, a);
-        }
-        748 => {
-            return radical_inverse_specialized(5689_u16, a);
-        }
-        749 => {
-            return radical_inverse_specialized(5693_u16, a);
-        }
-        750 => {
-            return radical_inverse_specialized(5701_u16, a);
-        }
-        751 => {
-            return radical_inverse_specialized(5711_u16, a);
-        }
-        752 => {
-            return radical_inverse_specialized(5717_u16, a);
-        }
-        753 => {
-            return radical_inverse_specialized(5737_u16, a);
-        }
-        754 => {
-            return radical_inverse_specialized(5741_u16, a);
-        }
-        755 => {
-            return radical_inverse_specialized(5743_u16, a);
-        }
-        756 => {
-            return radical_inverse_specialized(5749_u16, a);
-        }
-        757 => {
-            return radical_inverse_specialized(5779_u16, a);
-        }
-        758 => {
-            return radical_inverse_specialized(5783_u16, a);
-        }
-        759 => {
-            return radical_inverse_specialized(5791_u16, a);
-        }
-        760 => {
-            return radical_inverse_specialized(5801_u16, a);
-        }
-        761 => {
-            return radical_inverse_specialized(5807_u16, a);
-        }
-        762 => {
-            return radical_inverse_specialized(5813_u16, a);
-        }
-        763 => {
-            return radical_inverse_specialized(5821_u16, a);
-        }
-        764 => {
-            return radical_inverse_specialized(5827_u16, a);
-        }
-        765 => {
-            return radical_inverse_specialized(5839_u16, a);
-        }
-        766 => {
-            return radical_inverse_specialized(5843_u16, a);
-        }
-        767 => {
-            return radical_inverse_specialized(5849_u16, a);
-        }
-        768 => {
-            return radical_inverse_specialized(5851_u16, a);
-        }
-        769 => {
-            return radical_inverse_specialized(5857_u16, a);
-        }
-        770 => {
-            return radical_inverse_specialized(5861_u16, a);
-        }
-        771 => {
-            return radical_inverse_specialized(5867_u16, a);
-        }
-        772 => {
-            return radical_inverse_specialized(5869_u16, a);
-        }
-        773 => {
-            return radical_inverse_specialized(5879_u16, a);
-        }
-        774 => {
-            return radical_inverse_specialized(5881_u16, a);
-        }
-        775 => {
-            return radical_inverse_specialized(5897_u16, a);
-        }
-        776 => {
-            return radical_inverse_specialized(5903_u16, a);
-        }
-        777 => {
-            return radical_inverse_specialized(5923_u16, a);
-        }
-        778 => {
-            return radical_inverse_specialized(5927_u16, a);
-        }
-        779 => {
-            return radical_inverse_specialized(5939_u16, a);
-        }
-        780 => {
-            return radical_inverse_specialized(5953_u16, a);
-        }
-        781 => {
-            return radical_inverse_specialized(5981_u16, a);
-        }
-        782 => {
-            return radical_inverse_specialized(5987_u16, a);
-        }
-        783 => {
-            return radical_inverse_specialized(6007_u16, a);
-        }
-        784 => {
-            return radical_inverse_specialized(6011_u16, a);
-        }
-        785 => {
-            return radical_inverse_specialized(6029_u16, a);
-        }
-        786 => {
-            return radical_inverse_specialized(6037_u16, a);
-        }
-        787 => {
-            return radical_inverse_specialized(6043_u16, a);
-        }
-        788 => {
-            return radical_inverse_specialized(6047_u16, a);
-        }
-        789 => {
-            return radical_inverse_specialized(6053_u16, a);
-        }
-        790 => {
-            return radical_inverse_specialized(6067_u16, a);
-        }
-        791 => {
-            return radical_inverse_specialized(6073_u16, a);
-        }
-        792 => {
-            return radical_inverse_specialized(6079_u16, a);
-        }
-        793 => {
-            return radical_inverse_specialized(6089_u16, a);
-        }
-        794 => {
-            return radical_inverse_specialized(6091_u16, a);
-        }
-        795 => {
-            return radical_inverse_specialized(6101_u16, a);
-        }
-        796 => {
-            return radical_inverse_specialized(6113_u16, a);
-        }
-        797 => {
-            return radical_inverse_specialized(6121_u16, a);
-        }
-        798 => {
-            return radical_inverse_specialized(6131_u16, a);
-        }
-        799 => {
-            return radical_inverse_specialized(6133_u16, a);
-        }
-        800 => {
-            return radical_inverse_specialized(6143_u16, a);
-        }
-        801 => {
-            return radical_inverse_specialized(6151_u16, a);
-        }
-        802 => {
-            return radical_inverse_specialized(6163_u16, a);
-        }
-        803 => {
-            return radical_inverse_specialized(6173_u16, a);
-        }
-        804 => {
-            return radical_inverse_specialized(6197_u16, a);
-        }
-        805 => {
-            return radical_inverse_specialized(6199_u16, a);
-        }
-        806 => {
-            return radical_inverse_specialized(6203_u16, a);
-        }
-        807 => {
-            return radical_inverse_specialized(6211_u16, a);
-        }
-        808 => {
-            return radical_inverse_specialized(6217_u16, a);
-        }
-        809 => {
-            return radical_inverse_specialized(6221_u16, a);
-        }
-        810 => {
-            return radical_inverse_specialized(6229_u16, a);
-        }
-        811 => {
-            return radical_inverse_specialized(6247_u16, a);
-        }
-        812 => {
-            return radical_inverse_specialized(6257_u16, a);
-        }
-        813 => {
-            return radical_inverse_specialized(6263_u16, a);
-        }
-        814 => {
-            return radical_inverse_specialized(6269_u16, a);
-        }
-        815 => {
-            return radical_inverse_specialized(6271_u16, a);
-        }
-        816 => {
-            return radical_inverse_specialized(6277_u16, a);
-        }
-        817 => {
-            return radical_inverse_specialized(6287_u16, a);
-        }
-        818 => {
-            return radical_inverse_specialized(6299_u16, a);
-        }
-        819 => {
-            return radical_inverse_specialized(6301_u16, a);
-        }
-        820 => {
-            return radical_inverse_specialized(6311_u16, a);
-        }
-        821 => {
-            return radical_inverse_specialized(6317_u16, a);
-        }
-        822 => {
-            return radical_inverse_specialized(6323_u16, a);
-        }
-        823 => {
-            return radical_inverse_specialized(6329_u16, a);
-        }
-        824 => {
-            return radical_inverse_specialized(6337_u16, a);
-        }
-        825 => {
-            return radical_inverse_specialized(6343_u16, a);
-        }
-        826 => {
-            return radical_inverse_specialized(6353_u16, a);
-        }
-        827 => {
-            return radical_inverse_specialized(6359_u16, a);
-        }
-        828 => {
-            return radical_inverse_specialized(6361_u16, a);
-        }
-        829 => {
-            return radical_inverse_specialized(6367_u16, a);
-        }
-        830 => {
-            return radical_inverse_specialized(6373_u16, a);
-        }
-        831 => {
-            return radical_inverse_specialized(6379_u16, a);
-        }
-        832 => {
-            return radical_inverse_specialized(6389_u16, a);
-        }
-        833 => {
-            return radical_inverse_specialized(6397_u16, a);
-        }
-        834 => {
-            return radical_inverse_specialized(6421_u16, a);
-        }
-        835 => {
-            return radical_inverse_specialized(6427_u16, a);
-        }
-        836 => {
-            return radical_inverse_specialized(6449_u16, a);
-        }
-        837 => {
-            return radical_inverse_specialized(6451_u16, a);
-        }
-        838 => {
-            return radical_inverse_specialized(6469_u16, a);
-        }
-        839 => {
-            return radical_inverse_specialized(6473_u16, a);
-        }
-        840 => {
-            return radical_inverse_specialized(6481_u16, a);
-        }
-        841 => {
-            return radical_inverse_specialized(6491_u16, a);
-        }
-        842 => {
-            return radical_inverse_specialized(6521_u16, a);
-        }
-        843 => {
-            return radical_inverse_specialized(6529_u16, a);
-        }
-        844 => {
-            return radical_inverse_specialized(6547_u16, a);
-        }
-        845 => {
-            return radical_inverse_specialized(6551_u16, a);
-        }
-        846 => {
-            return radical_inverse_specialized(6553_u16, a);
-        }
-        847 => {
-            return radical_inverse_specialized(6563_u16, a);
-        }
-        848 => {
-            return radical_inverse_specialized(6569_u16, a);
-        }
-        849 => {
-            return radical_inverse_specialized(6571_u16, a);
-        }
-        850 => {
-            return radical_inverse_specialized(6577_u16, a);
-        }
-        851 => {
-            return radical_inverse_specialized(6581_u16, a);
-        }
-        852 => {
-            return radical_inverse_specialized(6599_u16, a);
-        }
-        853 => {
-            return radical_inverse_specialized(6607_u16, a);
-        }
-        854 => {
-            return radical_inverse_specialized(6619_u16, a);
-        }
-        855 => {
-            return radical_inverse_specialized(6637_u16, a);
-        }
-        856 => {
-            return radical_inverse_specialized(6653_u16, a);
-        }
-        857 => {
-            return radical_inverse_specialized(6659_u16, a);
-        }
-        858 => {
-            return radical_inverse_specialized(6661_u16, a);
-        }
-        859 => {
-            return radical_inverse_specialized(6673_u16, a);
-        }
-        860 => {
-            return radical_inverse_specialized(6679_u16, a);
-        }
-        861 => {
-            return radical_inverse_specialized(6689_u16, a);
-        }
-        862 => {
-            return radical_inverse_specialized(6691_u16, a);
-        }
-        863 => {
-            return radical_inverse_specialized(6701_u16, a);
-        }
-        864 => {
-            return radical_inverse_specialized(6703_u16, a);
-        }
-        865 => {
-            return radical_inverse_specialized(6709_u16, a);
-        }
-        866 => {
-            return radical_inverse_specialized(6719_u16, a);
-        }
-        867 => {
-            return radical_inverse_specialized(6733_u16, a);
-        }
-        868 => {
-            return radical_inverse_specialized(6737_u16, a);
-        }
-        869 => {
-            return radical_inverse_specialized(6761_u16, a);
-        }
-        870 => {
-            return radical_inverse_specialized(6763_u16, a);
-        }
-        871 => {
-            return radical_inverse_specialized(6779_u16, a);
-        }
-        872 => {
-            return radical_inverse_specialized(6781_u16, a);
-        }
-        873 => {
-            return radical_inverse_specialized(6791_u16, a);
-        }
-        874 => {
-            return radical_inverse_specialized(6793_u16, a);
-        }
-        875 => {
-            return radical_inverse_specialized(6803_u16, a);
-        }
-        876 => {
-            return radical_inverse_specialized(6823_u16, a);
-        }
-        877 => {
-            return radical_inverse_specialized(6827_u16, a);
-        }
-        878 => {
-            return radical_inverse_specialized(6829_u16, a);
-        }
-        879 => {
-            return radical_inverse_specialized(6833_u16, a);
-        }
-        880 => {
-            return radical_inverse_specialized(6841_u16, a);
-        }
-        881 => {
-            return radical_inverse_specialized(6857_u16, a);
-        }
-        882 => {
-            return radical_inverse_specialized(6863_u16, a);
-        }
-        883 => {
-            return radical_inverse_specialized(6869_u16, a);
-        }
-        884 => {
-            return radical_inverse_specialized(6871_u16, a);
-        }
-        885 => {
-            return radical_inverse_specialized(6883_u16, a);
-        }
-        886 => {
-            return radical_inverse_specialized(6899_u16, a);
-        }
-        887 => {
-            return radical_inverse_specialized(6907_u16, a);
-        }
-        888 => {
-            return radical_inverse_specialized(6911_u16, a);
-        }
-        889 => {
-            return radical_inverse_specialized(6917_u16, a);
-        }
-        890 => {
-            return radical_inverse_specialized(6947_u16, a);
-        }
-        891 => {
-            return radical_inverse_specialized(6949_u16, a);
-        }
-        892 => {
-            return radical_inverse_specialized(6959_u16, a);
-        }
-        893 => {
-            return radical_inverse_specialized(6961_u16, a);
-        }
-        894 => {
-            return radical_inverse_specialized(6967_u16, a);
-        }
-        895 => {
-            return radical_inverse_specialized(6971_u16, a);
-        }
-        896 => {
-            return radical_inverse_specialized(6977_u16, a);
-        }
-        897 => {
-            return radical_inverse_specialized(6983_u16, a);
-        }
-        898 => {
-            return radical_inverse_specialized(6991_u16, a);
-        }
-        899 => {
-            return radical_inverse_specialized(6997_u16, a);
-        }
-        900 => {
-            return radical_inverse_specialized(7001_u16, a);
-        }
-        901 => {
-            return radical_inverse_specialized(7013_u16, a);
-        }
-        902 => {
-            return radical_inverse_specialized(7019_u16, a);
-        }
-        903 => {
-            return radical_inverse_specialized(7027_u16, a);
-        }
-        904 => {
-            return radical_inverse_specialized(7039_u16, a);
-        }
-        905 => {
-            return radical_inverse_specialized(7043_u16, a);
-        }
-        906 => {
-            return radical_inverse_specialized(7057_u16, a);
-        }
-        907 => {
-            return radical_inverse_specialized(7069_u16, a);
-        }
-        908 => {
-            return radical_inverse_specialized(7079_u16, a);
-        }
-        909 => {
-            return radical_inverse_specialized(7103_u16, a);
-        }
-        910 => {
-            return radical_inverse_specialized(7109_u16, a);
-        }
-        911 => {
-            return radical_inverse_specialized(7121_u16, a);
-        }
-        912 => {
-            return radical_inverse_specialized(7127_u16, a);
-        }
-        913 => {
-            return radical_inverse_specialized(7129_u16, a);
-        }
-        914 => {
-            return radical_inverse_specialized(7151_u16, a);
-        }
-        915 => {
-            return radical_inverse_specialized(7159_u16, a);
-        }
-        916 => {
-            return radical_inverse_specialized(7177_u16, a);
-        }
-        917 => {
-            return radical_inverse_specialized(7187_u16, a);
-        }
-        918 => {
-            return radical_inverse_specialized(7193_u16, a);
-        }
-        919 => {
-            return radical_inverse_specialized(7207_u16, a);
-        }
-        920 => {
-            return radical_inverse_specialized(7211_u16, a);
-        }
-        921 => {
-            return radical_inverse_specialized(7213_u16, a);
-        }
-        922 => {
-            return radical_inverse_specialized(7219_u16, a);
-        }
-        923 => {
-            return radical_inverse_specialized(7229_u16, a);
-        }
-        924 => {
-            return radical_inverse_specialized(7237_u16, a);
-        }
-        925 => {
-            return radical_inverse_specialized(7243_u16, a);
-        }
-        926 => {
-            return radical_inverse_specialized(7247_u16, a);
-        }
-        927 => {
-            return radical_inverse_specialized(7253_u16, a);
-        }
-        928 => {
-            return radical_inverse_specialized(7283_u16, a);
-        }
-        929 => {
-            return radical_inverse_specialized(7297_u16, a);
-        }
-        930 => {
-            return radical_inverse_specialized(7307_u16, a);
-        }
-        931 => {
-            return radical_inverse_specialized(7309_u16, a);
-        }
-        932 => {
-            return radical_inverse_specialized(7321_u16, a);
-        }
-        933 => {
-            return radical_inverse_specialized(7331_u16, a);
-        }
-        934 => {
-            return radical_inverse_specialized(7333_u16, a);
-        }
-        935 => {
-            return radical_inverse_specialized(7349_u16, a);
-        }
-        936 => {
-            return radical_inverse_specialized(7351_u16, a);
-        }
-        937 => {
-            return radical_inverse_specialized(7369_u16, a);
-        }
-        938 => {
-            return radical_inverse_specialized(7393_u16, a);
-        }
-        939 => {
-            return radical_inverse_specialized(7411_u16, a);
-        }
-        940 => {
-            return radical_inverse_specialized(7417_u16, a);
-        }
-        941 => {
-            return radical_inverse_specialized(7433_u16, a);
-        }
-        942 => {
-            return radical_inverse_specialized(7451_u16, a);
-        }
-        943 => {
-            return radical_inverse_specialized(7457_u16, a);
-        }
-        944 => {
-            return radical_inverse_specialized(7459_u16, a);
-        }
-        945 => {
-            return radical_inverse_specialized(7477_u16, a);
-        }
-        946 => {
-            return radical_inverse_specialized(7481_u16, a);
-        }
-        947 => {
-            return radical_inverse_specialized(7487_u16, a);
-        }
-        948 => {
-            return radical_inverse_specialized(7489_u16, a);
-        }
-        949 => {
-            return radical_inverse_specialized(7499_u16, a);
-        }
-        950 => {
-            return radical_inverse_specialized(7507_u16, a);
-        }
-        951 => {
-            return radical_inverse_specialized(7517_u16, a);
-        }
-        952 => {
-            return radical_inverse_specialized(7523_u16, a);
-        }
-        953 => {
-            return radical_inverse_specialized(7529_u16, a);
-        }
-        954 => {
-            return radical_inverse_specialized(7537_u16, a);
-        }
-        955 => {
-            return radical_inverse_specialized(7541_u16, a);
-        }
-        956 => {
-            return radical_inverse_specialized(7547_u16, a);
-        }
-        957 => {
-            return radical_inverse_specialized(7549_u16, a);
-        }
-        958 => {
-            return radical_inverse_specialized(7559_u16, a);
-        }
-        959 => {
-            return radical_inverse_specialized(7561_u16, a);
-        }
-        960 => {
-            return radical_inverse_specialized(7573_u16, a);
-        }
-        961 => {
-            return radical_inverse_specialized(7577_u16, a);
-        }
-        962 => {
-            return radical_inverse_specialized(7583_u16, a);
-        }
-        963 => {
-            return radical_inverse_specialized(7589_u16, a);
-        }
-        964 => {
-            return radical_inverse_specialized(7591_u16, a);
-        }
-        965 => {
-            return radical_inverse_specialized(7603_u16, a);
-        }
-        966 => {
-            return radical_inverse_specialized(7607_u16, a);
-        }
-        967 => {
-            return radical_inverse_specialized(7621_u16, a);
-        }
-        968 => {
-            return radical_inverse_specialized(7639_u16, a);
-        }
-        969 => {
-            return radical_inverse_specialized(7643_u16, a);
-        }
-        970 => {
-            return radical_inverse_specialized(7649_u16, a);
-        }
-        971 => {
-            return radical_inverse_specialized(7669_u16, a);
-        }
-        972 => {
-            return radical_inverse_specialized(7673_u16, a);
-        }
-        973 => {
-            return radical_inverse_specialized(7681_u16, a);
-        }
-        974 => {
-            return radical_inverse_specialized(7687_u16, a);
-        }
-        975 => {
-            return radical_inverse_specialized(7691_u16, a);
-        }
-        976 => {
-            return radical_inverse_specialized(7699_u16, a);
-        }
-        977 => {
-            return radical_inverse_specialized(7703_u16, a);
-        }
-        978 => {
-            return radical_inverse_specialized(7717_u16, a);
-        }
-        979 => {
-            return radical_inverse_specialized(7723_u16, a);
-        }
-        980 => {
-            return radical_inverse_specialized(7727_u16, a);
-        }
-        981 => {
-            return radical_inverse_specialized(7741_u16, a);
-        }
-        982 => {
-            return radical_inverse_specialized(7753_u16, a);
-        }
-        983 => {
-            return radical_inverse_specialized(7757_u16, a);
-        }
-        984 => {
-            return radical_inverse_specialized(7759_u16, a);
-        }
-        985 => {
-            return radical_inverse_specialized(7789_u16, a);
-        }
-        986 => {
-            return radical_inverse_specialized(7793_u16, a);
-        }
-        987 => {
-            return radical_inverse_specialized(7817_u16, a);
-        }
-        988 => {
-            return radical_inverse_specialized(7823_u16, a);
-        }
-        989 => {
-            return radical_inverse_specialized(7829_u16, a);
-        }
-        990 => {
-            return radical_inverse_specialized(7841_u16, a);
-        }
-        991 => {
-            return radical_inverse_specialized(7853_u16, a);
-        }
-        992 => {
-            return radical_inverse_specialized(7867_u16, a);
-        }
-        993 => {
-            return radical_inverse_specialized(7873_u16, a);
-        }
-        994 => {
-            return radical_inverse_specialized(7877_u16, a);
-        }
-        995 => {
-            return radical_inverse_specialized(7879_u16, a);
-        }
-        996 => {
-            return radical_inverse_specialized(7883_u16, a);
-        }
-        997 => {
-            return radical_inverse_specialized(7901_u16, a);
-        }
-        998 => {
-            return radical_inverse_specialized(7907_u16, a);
-        }
-        999 => {
-            return radical_inverse_specialized(7919_u16, a);
-        }
-        1000 => {
-            return radical_inverse_specialized(7927_u16, a);
-        }
-        1001 => {
-            return radical_inverse_specialized(7933_u16, a);
-        }
-        1002 => {
-            return radical_inverse_specialized(7937_u16, a);
-        }
-        1003 => {
-            return radical_inverse_specialized(7949_u16, a);
-        }
-        1004 => {
-            return radical_inverse_specialized(7951_u16, a);
-        }
-        1005 => {
-            return radical_inverse_specialized(7963_u16, a);
-        }
-        1006 => {
-            return radical_inverse_specialized(7993_u16, a);
-        }
-        1007 => {
-            return radical_inverse_specialized(8009_u16, a);
-        }
-        1008 => {
-            return radical_inverse_specialized(8011_u16, a);
-        }
-        1009 => {
-            return radical_inverse_specialized(8017_u16, a);
-        }
-        1010 => {
-            return radical_inverse_specialized(8039_u16, a);
-        }
-        1011 => {
-            return radical_inverse_specialized(8053_u16, a);
-        }
-        1012 => {
-            return radical_inverse_specialized(8059_u16, a);
-        }
-        1013 => {
-            return radical_inverse_specialized(8069_u16, a);
-        }
-        1014 => {
-            return radical_inverse_specialized(8081_u16, a);
-        }
-        1015 => {
-            return radical_inverse_specialized(8087_u16, a);
-        }
-        1016 => {
-            return radical_inverse_specialized(8089_u16, a);
-        }
-        1017 => {
-            return radical_inverse_specialized(8093_u16, a);
-        }
-        1018 => {
-            return radical_inverse_specialized(8101_u16, a);
-        }
-        1019 => {
-            return radical_inverse_specialized(8111_u16, a);
-        }
-        1020 => {
-            return radical_inverse_specialized(8117_u16, a);
-        }
-        1021 => {
-            return radical_inverse_specialized(8123_u16, a);
-        }
-        1022 => {
-            return radical_inverse_specialized(8147_u16, a);
-        }
-        1023 => {
-            return radical_inverse_specialized(8161_u16, a);
-        }
+        1 => radical_inverse_specialized(3_u16, a),
+        2 => radical_inverse_specialized(5_u16, a),
+        3 => radical_inverse_specialized(7_u16, a),
+        4 => radical_inverse_specialized(11_u16, a),
+        5 => radical_inverse_specialized(13_u16, a),
+        6 => radical_inverse_specialized(17_u16, a),
+        7 => radical_inverse_specialized(19_u16, a),
+        8 => radical_inverse_specialized(23_u16, a),
+        9 => radical_inverse_specialized(29_u16, a),
+        10 => radical_inverse_specialized(31_u16, a),
+        11 => radical_inverse_specialized(37_u16, a),
+        12 => radical_inverse_specialized(41_u16, a),
+        13 => radical_inverse_specialized(43_u16, a),
+        14 => radical_inverse_specialized(47_u16, a),
+        15 => radical_inverse_specialized(53_u16, a),
+        16 => radical_inverse_specialized(59_u16, a),
+        17 => radical_inverse_specialized(61_u16, a),
+        18 => radical_inverse_specialized(67_u16, a),
+        19 => radical_inverse_specialized(71_u16, a),
+        20 => radical_inverse_specialized(73_u16, a),
+        21 => radical_inverse_specialized(79_u16, a),
+        22 => radical_inverse_specialized(83_u16, a),
+        23 => radical_inverse_specialized(89_u16, a),
+        24 => radical_inverse_specialized(97_u16, a),
+        25 => radical_inverse_specialized(101_u16, a),
+        26 => radical_inverse_specialized(103_u16, a),
+        27 => radical_inverse_specialized(107_u16, a),
+        28 => radical_inverse_specialized(109_u16, a),
+        29 => radical_inverse_specialized(113_u16, a),
+        30 => radical_inverse_specialized(127_u16, a),
+        31 => radical_inverse_specialized(131_u16, a),
+        32 => radical_inverse_specialized(137_u16, a),
+        33 => radical_inverse_specialized(139_u16, a),
+        34 => radical_inverse_specialized(149_u16, a),
+        35 => radical_inverse_specialized(151_u16, a),
+        36 => radical_inverse_specialized(157_u16, a),
+        37 => radical_inverse_specialized(163_u16, a),
+        38 => radical_inverse_specialized(167_u16, a),
+        39 => radical_inverse_specialized(173_u16, a),
+        40 => radical_inverse_specialized(179_u16, a),
+        41 => radical_inverse_specialized(181_u16, a),
+        42 => radical_inverse_specialized(191_u16, a),
+        43 => radical_inverse_specialized(193_u16, a),
+        44 => radical_inverse_specialized(197_u16, a),
+        45 => radical_inverse_specialized(199_u16, a),
+        46 => radical_inverse_specialized(211_u16, a),
+        47 => radical_inverse_specialized(223_u16, a),
+        48 => radical_inverse_specialized(227_u16, a),
+        49 => radical_inverse_specialized(229_u16, a),
+        50 => radical_inverse_specialized(233_u16, a),
+        51 => radical_inverse_specialized(239_u16, a),
+        52 => radical_inverse_specialized(241_u16, a),
+        53 => radical_inverse_specialized(251_u16, a),
+        54 => radical_inverse_specialized(257_u16, a),
+        55 => radical_inverse_specialized(263_u16, a),
+        56 => radical_inverse_specialized(269_u16, a),
+        57 => radical_inverse_specialized(271_u16, a),
+        58 => radical_inverse_specialized(277_u16, a),
+        59 => radical_inverse_specialized(281_u16, a),
+        60 => radical_inverse_specialized(283_u16, a),
+        61 => radical_inverse_specialized(293_u16, a),
+        62 => radical_inverse_specialized(307_u16, a),
+        63 => radical_inverse_specialized(311_u16, a),
+        64 => radical_inverse_specialized(313_u16, a),
+        65 => radical_inverse_specialized(317_u16, a),
+        66 => radical_inverse_specialized(331_u16, a),
+        67 => radical_inverse_specialized(337_u16, a),
+        68 => radical_inverse_specialized(347_u16, a),
+        69 => radical_inverse_specialized(349_u16, a),
+        70 => radical_inverse_specialized(353_u16, a),
+        71 => radical_inverse_specialized(359_u16, a),
+        72 => radical_inverse_specialized(367_u16, a),
+        73 => radical_inverse_specialized(373_u16, a),
+        74 => radical_inverse_specialized(379_u16, a),
+        75 => radical_inverse_specialized(383_u16, a),
+        76 => radical_inverse_specialized(389_u16, a),
+        77 => radical_inverse_specialized(397_u16, a),
+        78 => radical_inverse_specialized(401_u16, a),
+        79 => radical_inverse_specialized(409_u16, a),
+        80 => radical_inverse_specialized(419_u16, a),
+        81 => radical_inverse_specialized(421_u16, a),
+        82 => radical_inverse_specialized(431_u16, a),
+        83 => radical_inverse_specialized(433_u16, a),
+        84 => radical_inverse_specialized(439_u16, a),
+        85 => radical_inverse_specialized(443_u16, a),
+        86 => radical_inverse_specialized(449_u16, a),
+        87 => radical_inverse_specialized(457_u16, a),
+        88 => radical_inverse_specialized(461_u16, a),
+        89 => radical_inverse_specialized(463_u16, a),
+        90 => radical_inverse_specialized(467_u16, a),
+        91 => radical_inverse_specialized(479_u16, a),
+        92 => radical_inverse_specialized(487_u16, a),
+        93 => radical_inverse_specialized(491_u16, a),
+        94 => radical_inverse_specialized(499_u16, a),
+        95 => radical_inverse_specialized(503_u16, a),
+        96 => radical_inverse_specialized(509_u16, a),
+        97 => radical_inverse_specialized(521_u16, a),
+        98 => radical_inverse_specialized(523_u16, a),
+        99 => radical_inverse_specialized(541_u16, a),
+        100 => radical_inverse_specialized(547_u16, a),
+        101 => radical_inverse_specialized(557_u16, a),
+        102 => radical_inverse_specialized(563_u16, a),
+        103 => radical_inverse_specialized(569_u16, a),
+        104 => radical_inverse_specialized(571_u16, a),
+        105 => radical_inverse_specialized(577_u16, a),
+        106 => radical_inverse_specialized(587_u16, a),
+        107 => radical_inverse_specialized(593_u16, a),
+        108 => radical_inverse_specialized(599_u16, a),
+        109 => radical_inverse_specialized(601_u16, a),
+        110 => radical_inverse_specialized(607_u16, a),
+        111 => radical_inverse_specialized(613_u16, a),
+        112 => radical_inverse_specialized(617_u16, a),
+        113 => radical_inverse_specialized(619_u16, a),
+        114 => radical_inverse_specialized(631_u16, a),
+        115 => radical_inverse_specialized(641_u16, a),
+        116 => radical_inverse_specialized(643_u16, a),
+        117 => radical_inverse_specialized(647_u16, a),
+        118 => radical_inverse_specialized(653_u16, a),
+        119 => radical_inverse_specialized(659_u16, a),
+        120 => radical_inverse_specialized(661_u16, a),
+        121 => radical_inverse_specialized(673_u16, a),
+        122 => radical_inverse_specialized(677_u16, a),
+        123 => radical_inverse_specialized(683_u16, a),
+        124 => radical_inverse_specialized(691_u16, a),
+        125 => radical_inverse_specialized(701_u16, a),
+        126 => radical_inverse_specialized(709_u16, a),
+        127 => radical_inverse_specialized(719_u16, a),
+        128 => radical_inverse_specialized(727_u16, a),
+        129 => radical_inverse_specialized(733_u16, a),
+        130 => radical_inverse_specialized(739_u16, a),
+        131 => radical_inverse_specialized(743_u16, a),
+        132 => radical_inverse_specialized(751_u16, a),
+        133 => radical_inverse_specialized(757_u16, a),
+        134 => radical_inverse_specialized(761_u16, a),
+        135 => radical_inverse_specialized(769_u16, a),
+        136 => radical_inverse_specialized(773_u16, a),
+        137 => radical_inverse_specialized(787_u16, a),
+        138 => radical_inverse_specialized(797_u16, a),
+        139 => radical_inverse_specialized(809_u16, a),
+        140 => radical_inverse_specialized(811_u16, a),
+        141 => radical_inverse_specialized(821_u16, a),
+        142 => radical_inverse_specialized(823_u16, a),
+        143 => radical_inverse_specialized(827_u16, a),
+        144 => radical_inverse_specialized(829_u16, a),
+        145 => radical_inverse_specialized(839_u16, a),
+        146 => radical_inverse_specialized(853_u16, a),
+        147 => radical_inverse_specialized(857_u16, a),
+        148 => radical_inverse_specialized(859_u16, a),
+        149 => radical_inverse_specialized(863_u16, a),
+        150 => radical_inverse_specialized(877_u16, a),
+        151 => radical_inverse_specialized(881_u16, a),
+        152 => radical_inverse_specialized(883_u16, a),
+        153 => radical_inverse_specialized(887_u16, a),
+        154 => radical_inverse_specialized(907_u16, a),
+        155 => radical_inverse_specialized(911_u16, a),
+        156 => radical_inverse_specialized(919_u16, a),
+        157 => radical_inverse_specialized(929_u16, a),
+        158 => radical_inverse_specialized(937_u16, a),
+        159 => radical_inverse_specialized(941_u16, a),
+        160 => radical_inverse_specialized(947_u16, a),
+        161 => radical_inverse_specialized(953_u16, a),
+        162 => radical_inverse_specialized(967_u16, a),
+        163 => radical_inverse_specialized(971_u16, a),
+        164 => radical_inverse_specialized(977_u16, a),
+        165 => radical_inverse_specialized(983_u16, a),
+        166 => radical_inverse_specialized(991_u16, a),
+        167 => radical_inverse_specialized(997_u16, a),
+        168 => radical_inverse_specialized(1009_u16, a),
+        169 => radical_inverse_specialized(1013_u16, a),
+        170 => radical_inverse_specialized(1019_u16, a),
+        171 => radical_inverse_specialized(1021_u16, a),
+        172 => radical_inverse_specialized(1031_u16, a),
+        173 => radical_inverse_specialized(1033_u16, a),
+        174 => radical_inverse_specialized(1039_u16, a),
+        175 => radical_inverse_specialized(1049_u16, a),
+        176 => radical_inverse_specialized(1051_u16, a),
+        177 => radical_inverse_specialized(1061_u16, a),
+        178 => radical_inverse_specialized(1063_u16, a),
+        179 => radical_inverse_specialized(1069_u16, a),
+        180 => radical_inverse_specialized(1087_u16, a),
+        181 => radical_inverse_specialized(1091_u16, a),
+        182 => radical_inverse_specialized(1093_u16, a),
+        183 => radical_inverse_specialized(1097_u16, a),
+        184 => radical_inverse_specialized(1103_u16, a),
+        185 => radical_inverse_specialized(1109_u16, a),
+        186 => radical_inverse_specialized(1117_u16, a),
+        187 => radical_inverse_specialized(1123_u16, a),
+        188 => radical_inverse_specialized(1129_u16, a),
+        189 => radical_inverse_specialized(1151_u16, a),
+        190 => radical_inverse_specialized(1153_u16, a),
+        191 => radical_inverse_specialized(1163_u16, a),
+        192 => radical_inverse_specialized(1171_u16, a),
+        193 => radical_inverse_specialized(1181_u16, a),
+        194 => radical_inverse_specialized(1187_u16, a),
+        195 => radical_inverse_specialized(1193_u16, a),
+        196 => radical_inverse_specialized(1201_u16, a),
+        197 => radical_inverse_specialized(1213_u16, a),
+        198 => radical_inverse_specialized(1217_u16, a),
+        199 => radical_inverse_specialized(1223_u16, a),
+        200 => radical_inverse_specialized(1229_u16, a),
+        201 => radical_inverse_specialized(1231_u16, a),
+        202 => radical_inverse_specialized(1237_u16, a),
+        203 => radical_inverse_specialized(1249_u16, a),
+        204 => radical_inverse_specialized(1259_u16, a),
+        205 => radical_inverse_specialized(1277_u16, a),
+        206 => radical_inverse_specialized(1279_u16, a),
+        207 => radical_inverse_specialized(1283_u16, a),
+        208 => radical_inverse_specialized(1289_u16, a),
+        209 => radical_inverse_specialized(1291_u16, a),
+        210 => radical_inverse_specialized(1297_u16, a),
+        211 => radical_inverse_specialized(1301_u16, a),
+        212 => radical_inverse_specialized(1303_u16, a),
+        213 => radical_inverse_specialized(1307_u16, a),
+        214 => radical_inverse_specialized(1319_u16, a),
+        215 => radical_inverse_specialized(1321_u16, a),
+        216 => radical_inverse_specialized(1327_u16, a),
+        217 => radical_inverse_specialized(1361_u16, a),
+        218 => radical_inverse_specialized(1367_u16, a),
+        219 => radical_inverse_specialized(1373_u16, a),
+        220 => radical_inverse_specialized(1381_u16, a),
+        221 => radical_inverse_specialized(1399_u16, a),
+        222 => radical_inverse_specialized(1409_u16, a),
+        223 => radical_inverse_specialized(1423_u16, a),
+        224 => radical_inverse_specialized(1427_u16, a),
+        225 => radical_inverse_specialized(1429_u16, a),
+        226 => radical_inverse_specialized(1433_u16, a),
+        227 => radical_inverse_specialized(1439_u16, a),
+        228 => radical_inverse_specialized(1447_u16, a),
+        229 => radical_inverse_specialized(1451_u16, a),
+        230 => radical_inverse_specialized(1453_u16, a),
+        231 => radical_inverse_specialized(1459_u16, a),
+        232 => radical_inverse_specialized(1471_u16, a),
+        233 => radical_inverse_specialized(1481_u16, a),
+        234 => radical_inverse_specialized(1483_u16, a),
+        235 => radical_inverse_specialized(1487_u16, a),
+        236 => radical_inverse_specialized(1489_u16, a),
+        237 => radical_inverse_specialized(1493_u16, a),
+        238 => radical_inverse_specialized(1499_u16, a),
+        239 => radical_inverse_specialized(1511_u16, a),
+        240 => radical_inverse_specialized(1523_u16, a),
+        241 => radical_inverse_specialized(1531_u16, a),
+        242 => radical_inverse_specialized(1543_u16, a),
+        243 => radical_inverse_specialized(1549_u16, a),
+        244 => radical_inverse_specialized(1553_u16, a),
+        245 => radical_inverse_specialized(1559_u16, a),
+        246 => radical_inverse_specialized(1567_u16, a),
+        247 => radical_inverse_specialized(1571_u16, a),
+        248 => radical_inverse_specialized(1579_u16, a),
+        249 => radical_inverse_specialized(1583_u16, a),
+        250 => radical_inverse_specialized(1597_u16, a),
+        251 => radical_inverse_specialized(1601_u16, a),
+        252 => radical_inverse_specialized(1607_u16, a),
+        253 => radical_inverse_specialized(1609_u16, a),
+        254 => radical_inverse_specialized(1613_u16, a),
+        255 => radical_inverse_specialized(1619_u16, a),
+        256 => radical_inverse_specialized(1621_u16, a),
+        257 => radical_inverse_specialized(1627_u16, a),
+        258 => radical_inverse_specialized(1637_u16, a),
+        259 => radical_inverse_specialized(1657_u16, a),
+        260 => radical_inverse_specialized(1663_u16, a),
+        261 => radical_inverse_specialized(1667_u16, a),
+        262 => radical_inverse_specialized(1669_u16, a),
+        263 => radical_inverse_specialized(1693_u16, a),
+        264 => radical_inverse_specialized(1697_u16, a),
+        265 => radical_inverse_specialized(1699_u16, a),
+        266 => radical_inverse_specialized(1709_u16, a),
+        267 => radical_inverse_specialized(1721_u16, a),
+        268 => radical_inverse_specialized(1723_u16, a),
+        269 => radical_inverse_specialized(1733_u16, a),
+        270 => radical_inverse_specialized(1741_u16, a),
+        271 => radical_inverse_specialized(1747_u16, a),
+        272 => radical_inverse_specialized(1753_u16, a),
+        273 => radical_inverse_specialized(1759_u16, a),
+        274 => radical_inverse_specialized(1777_u16, a),
+        275 => radical_inverse_specialized(1783_u16, a),
+        276 => radical_inverse_specialized(1787_u16, a),
+        277 => radical_inverse_specialized(1789_u16, a),
+        278 => radical_inverse_specialized(1801_u16, a),
+        279 => radical_inverse_specialized(1811_u16, a),
+        280 => radical_inverse_specialized(1823_u16, a),
+        281 => radical_inverse_specialized(1831_u16, a),
+        282 => radical_inverse_specialized(1847_u16, a),
+        283 => radical_inverse_specialized(1861_u16, a),
+        284 => radical_inverse_specialized(1867_u16, a),
+        285 => radical_inverse_specialized(1871_u16, a),
+        286 => radical_inverse_specialized(1873_u16, a),
+        287 => radical_inverse_specialized(1877_u16, a),
+        288 => radical_inverse_specialized(1879_u16, a),
+        289 => radical_inverse_specialized(1889_u16, a),
+        290 => radical_inverse_specialized(1901_u16, a),
+        291 => radical_inverse_specialized(1907_u16, a),
+        292 => radical_inverse_specialized(1913_u16, a),
+        293 => radical_inverse_specialized(1931_u16, a),
+        294 => radical_inverse_specialized(1933_u16, a),
+        295 => radical_inverse_specialized(1949_u16, a),
+        296 => radical_inverse_specialized(1951_u16, a),
+        297 => radical_inverse_specialized(1973_u16, a),
+        298 => radical_inverse_specialized(1979_u16, a),
+        299 => radical_inverse_specialized(1987_u16, a),
+        300 => radical_inverse_specialized(1993_u16, a),
+        301 => radical_inverse_specialized(1997_u16, a),
+        302 => radical_inverse_specialized(1999_u16, a),
+        303 => radical_inverse_specialized(2003_u16, a),
+        304 => radical_inverse_specialized(2011_u16, a),
+        305 => radical_inverse_specialized(2017_u16, a),
+        306 => radical_inverse_specialized(2027_u16, a),
+        307 => radical_inverse_specialized(2029_u16, a),
+        308 => radical_inverse_specialized(2039_u16, a),
+        309 => radical_inverse_specialized(2053_u16, a),
+        310 => radical_inverse_specialized(2063_u16, a),
+        311 => radical_inverse_specialized(2069_u16, a),
+        312 => radical_inverse_specialized(2081_u16, a),
+        313 => radical_inverse_specialized(2083_u16, a),
+        314 => radical_inverse_specialized(2087_u16, a),
+        315 => radical_inverse_specialized(2089_u16, a),
+        316 => radical_inverse_specialized(2099_u16, a),
+        317 => radical_inverse_specialized(2111_u16, a),
+        318 => radical_inverse_specialized(2113_u16, a),
+        319 => radical_inverse_specialized(2129_u16, a),
+        320 => radical_inverse_specialized(2131_u16, a),
+        321 => radical_inverse_specialized(2137_u16, a),
+        322 => radical_inverse_specialized(2141_u16, a),
+        323 => radical_inverse_specialized(2143_u16, a),
+        324 => radical_inverse_specialized(2153_u16, a),
+        325 => radical_inverse_specialized(2161_u16, a),
+        326 => radical_inverse_specialized(2179_u16, a),
+        327 => radical_inverse_specialized(2203_u16, a),
+        328 => radical_inverse_specialized(2207_u16, a),
+        329 => radical_inverse_specialized(2213_u16, a),
+        330 => radical_inverse_specialized(2221_u16, a),
+        331 => radical_inverse_specialized(2237_u16, a),
+        332 => radical_inverse_specialized(2239_u16, a),
+        333 => radical_inverse_specialized(2243_u16, a),
+        334 => radical_inverse_specialized(2251_u16, a),
+        335 => radical_inverse_specialized(2267_u16, a),
+        336 => radical_inverse_specialized(2269_u16, a),
+        337 => radical_inverse_specialized(2273_u16, a),
+        338 => radical_inverse_specialized(2281_u16, a),
+        339 => radical_inverse_specialized(2287_u16, a),
+        340 => radical_inverse_specialized(2293_u16, a),
+        341 => radical_inverse_specialized(2297_u16, a),
+        342 => radical_inverse_specialized(2309_u16, a),
+        343 => radical_inverse_specialized(2311_u16, a),
+        344 => radical_inverse_specialized(2333_u16, a),
+        345 => radical_inverse_specialized(2339_u16, a),
+        346 => radical_inverse_specialized(2341_u16, a),
+        347 => radical_inverse_specialized(2347_u16, a),
+        348 => radical_inverse_specialized(2351_u16, a),
+        349 => radical_inverse_specialized(2357_u16, a),
+        350 => radical_inverse_specialized(2371_u16, a),
+        351 => radical_inverse_specialized(2377_u16, a),
+        352 => radical_inverse_specialized(2381_u16, a),
+        353 => radical_inverse_specialized(2383_u16, a),
+        354 => radical_inverse_specialized(2389_u16, a),
+        355 => radical_inverse_specialized(2393_u16, a),
+        356 => radical_inverse_specialized(2399_u16, a),
+        357 => radical_inverse_specialized(2411_u16, a),
+        358 => radical_inverse_specialized(2417_u16, a),
+        359 => radical_inverse_specialized(2423_u16, a),
+        360 => radical_inverse_specialized(2437_u16, a),
+        361 => radical_inverse_specialized(2441_u16, a),
+        362 => radical_inverse_specialized(2447_u16, a),
+        363 => radical_inverse_specialized(2459_u16, a),
+        364 => radical_inverse_specialized(2467_u16, a),
+        365 => radical_inverse_specialized(2473_u16, a),
+        366 => radical_inverse_specialized(2477_u16, a),
+        367 => radical_inverse_specialized(2503_u16, a),
+        368 => radical_inverse_specialized(2521_u16, a),
+        369 => radical_inverse_specialized(2531_u16, a),
+        370 => radical_inverse_specialized(2539_u16, a),
+        371 => radical_inverse_specialized(2543_u16, a),
+        372 => radical_inverse_specialized(2549_u16, a),
+        373 => radical_inverse_specialized(2551_u16, a),
+        374 => radical_inverse_specialized(2557_u16, a),
+        375 => radical_inverse_specialized(2579_u16, a),
+        376 => radical_inverse_specialized(2591_u16, a),
+        377 => radical_inverse_specialized(2593_u16, a),
+        378 => radical_inverse_specialized(2609_u16, a),
+        379 => radical_inverse_specialized(2617_u16, a),
+        380 => radical_inverse_specialized(2621_u16, a),
+        381 => radical_inverse_specialized(2633_u16, a),
+        382 => radical_inverse_specialized(2647_u16, a),
+        383 => radical_inverse_specialized(2657_u16, a),
+        384 => radical_inverse_specialized(2659_u16, a),
+        385 => radical_inverse_specialized(2663_u16, a),
+        386 => radical_inverse_specialized(2671_u16, a),
+        387 => radical_inverse_specialized(2677_u16, a),
+        388 => radical_inverse_specialized(2683_u16, a),
+        389 => radical_inverse_specialized(2687_u16, a),
+        390 => radical_inverse_specialized(2689_u16, a),
+        391 => radical_inverse_specialized(2693_u16, a),
+        392 => radical_inverse_specialized(2699_u16, a),
+        393 => radical_inverse_specialized(2707_u16, a),
+        394 => radical_inverse_specialized(2711_u16, a),
+        395 => radical_inverse_specialized(2713_u16, a),
+        396 => radical_inverse_specialized(2719_u16, a),
+        397 => radical_inverse_specialized(2729_u16, a),
+        398 => radical_inverse_specialized(2731_u16, a),
+        399 => radical_inverse_specialized(2741_u16, a),
+        400 => radical_inverse_specialized(2749_u16, a),
+        401 => radical_inverse_specialized(2753_u16, a),
+        402 => radical_inverse_specialized(2767_u16, a),
+        403 => radical_inverse_specialized(2777_u16, a),
+        404 => radical_inverse_specialized(2789_u16, a),
+        405 => radical_inverse_specialized(2791_u16, a),
+        406 => radical_inverse_specialized(2797_u16, a),
+        407 => radical_inverse_specialized(2801_u16, a),
+        408 => radical_inverse_specialized(2803_u16, a),
+        409 => radical_inverse_specialized(2819_u16, a),
+        410 => radical_inverse_specialized(2833_u16, a),
+        411 => radical_inverse_specialized(2837_u16, a),
+        412 => radical_inverse_specialized(2843_u16, a),
+        413 => radical_inverse_specialized(2851_u16, a),
+        414 => radical_inverse_specialized(2857_u16, a),
+        415 => radical_inverse_specialized(2861_u16, a),
+        416 => radical_inverse_specialized(2879_u16, a),
+        417 => radical_inverse_specialized(2887_u16, a),
+        418 => radical_inverse_specialized(2897_u16, a),
+        419 => radical_inverse_specialized(2903_u16, a),
+        420 => radical_inverse_specialized(2909_u16, a),
+        421 => radical_inverse_specialized(2917_u16, a),
+        422 => radical_inverse_specialized(2927_u16, a),
+        423 => radical_inverse_specialized(2939_u16, a),
+        424 => radical_inverse_specialized(2953_u16, a),
+        425 => radical_inverse_specialized(2957_u16, a),
+        426 => radical_inverse_specialized(2963_u16, a),
+        427 => radical_inverse_specialized(2969_u16, a),
+        428 => radical_inverse_specialized(2971_u16, a),
+        429 => radical_inverse_specialized(2999_u16, a),
+        430 => radical_inverse_specialized(3001_u16, a),
+        431 => radical_inverse_specialized(3011_u16, a),
+        432 => radical_inverse_specialized(3019_u16, a),
+        433 => radical_inverse_specialized(3023_u16, a),
+        434 => radical_inverse_specialized(3037_u16, a),
+        435 => radical_inverse_specialized(3041_u16, a),
+        436 => radical_inverse_specialized(3049_u16, a),
+        437 => radical_inverse_specialized(3061_u16, a),
+        438 => radical_inverse_specialized(3067_u16, a),
+        439 => radical_inverse_specialized(3079_u16, a),
+        440 => radical_inverse_specialized(3083_u16, a),
+        441 => radical_inverse_specialized(3089_u16, a),
+        442 => radical_inverse_specialized(3109_u16, a),
+        443 => radical_inverse_specialized(3119_u16, a),
+        444 => radical_inverse_specialized(3121_u16, a),
+        445 => radical_inverse_specialized(3137_u16, a),
+        446 => radical_inverse_specialized(3163_u16, a),
+        447 => radical_inverse_specialized(3167_u16, a),
+        448 => radical_inverse_specialized(3169_u16, a),
+        449 => radical_inverse_specialized(3181_u16, a),
+        450 => radical_inverse_specialized(3187_u16, a),
+        451 => radical_inverse_specialized(3191_u16, a),
+        452 => radical_inverse_specialized(3203_u16, a),
+        453 => radical_inverse_specialized(3209_u16, a),
+        454 => radical_inverse_specialized(3217_u16, a),
+        455 => radical_inverse_specialized(3221_u16, a),
+        456 => radical_inverse_specialized(3229_u16, a),
+        457 => radical_inverse_specialized(3251_u16, a),
+        458 => radical_inverse_specialized(3253_u16, a),
+        459 => radical_inverse_specialized(3257_u16, a),
+        460 => radical_inverse_specialized(3259_u16, a),
+        461 => radical_inverse_specialized(3271_u16, a),
+        462 => radical_inverse_specialized(3299_u16, a),
+        463 => radical_inverse_specialized(3301_u16, a),
+        464 => radical_inverse_specialized(3307_u16, a),
+        465 => radical_inverse_specialized(3313_u16, a),
+        466 => radical_inverse_specialized(3319_u16, a),
+        467 => radical_inverse_specialized(3323_u16, a),
+        468 => radical_inverse_specialized(3329_u16, a),
+        469 => radical_inverse_specialized(3331_u16, a),
+        470 => radical_inverse_specialized(3343_u16, a),
+        471 => radical_inverse_specialized(3347_u16, a),
+        472 => radical_inverse_specialized(3359_u16, a),
+        473 => radical_inverse_specialized(3361_u16, a),
+        474 => radical_inverse_specialized(3371_u16, a),
+        475 => radical_inverse_specialized(3373_u16, a),
+        476 => radical_inverse_specialized(3389_u16, a),
+        477 => radical_inverse_specialized(3391_u16, a),
+        478 => radical_inverse_specialized(3407_u16, a),
+        479 => radical_inverse_specialized(3413_u16, a),
+        480 => radical_inverse_specialized(3433_u16, a),
+        481 => radical_inverse_specialized(3449_u16, a),
+        482 => radical_inverse_specialized(3457_u16, a),
+        483 => radical_inverse_specialized(3461_u16, a),
+        484 => radical_inverse_specialized(3463_u16, a),
+        485 => radical_inverse_specialized(3467_u16, a),
+        486 => radical_inverse_specialized(3469_u16, a),
+        487 => radical_inverse_specialized(3491_u16, a),
+        488 => radical_inverse_specialized(3499_u16, a),
+        489 => radical_inverse_specialized(3511_u16, a),
+        490 => radical_inverse_specialized(3517_u16, a),
+        491 => radical_inverse_specialized(3527_u16, a),
+        492 => radical_inverse_specialized(3529_u16, a),
+        493 => radical_inverse_specialized(3533_u16, a),
+        494 => radical_inverse_specialized(3539_u16, a),
+        495 => radical_inverse_specialized(3541_u16, a),
+        496 => radical_inverse_specialized(3547_u16, a),
+        497 => radical_inverse_specialized(3557_u16, a),
+        498 => radical_inverse_specialized(3559_u16, a),
+        499 => radical_inverse_specialized(3571_u16, a),
+        500 => radical_inverse_specialized(3581_u16, a),
+        501 => radical_inverse_specialized(3583_u16, a),
+        502 => radical_inverse_specialized(3593_u16, a),
+        503 => radical_inverse_specialized(3607_u16, a),
+        504 => radical_inverse_specialized(3613_u16, a),
+        505 => radical_inverse_specialized(3617_u16, a),
+        506 => radical_inverse_specialized(3623_u16, a),
+        507 => radical_inverse_specialized(3631_u16, a),
+        508 => radical_inverse_specialized(3637_u16, a),
+        509 => radical_inverse_specialized(3643_u16, a),
+        510 => radical_inverse_specialized(3659_u16, a),
+        511 => radical_inverse_specialized(3671_u16, a),
+        512 => radical_inverse_specialized(3673_u16, a),
+        513 => radical_inverse_specialized(3677_u16, a),
+        514 => radical_inverse_specialized(3691_u16, a),
+        515 => radical_inverse_specialized(3697_u16, a),
+        516 => radical_inverse_specialized(3701_u16, a),
+        517 => radical_inverse_specialized(3709_u16, a),
+        518 => radical_inverse_specialized(3719_u16, a),
+        519 => radical_inverse_specialized(3727_u16, a),
+        520 => radical_inverse_specialized(3733_u16, a),
+        521 => radical_inverse_specialized(3739_u16, a),
+        522 => radical_inverse_specialized(3761_u16, a),
+        523 => radical_inverse_specialized(3767_u16, a),
+        524 => radical_inverse_specialized(3769_u16, a),
+        525 => radical_inverse_specialized(3779_u16, a),
+        526 => radical_inverse_specialized(3793_u16, a),
+        527 => radical_inverse_specialized(3797_u16, a),
+        528 => radical_inverse_specialized(3803_u16, a),
+        529 => radical_inverse_specialized(3821_u16, a),
+        530 => radical_inverse_specialized(3823_u16, a),
+        531 => radical_inverse_specialized(3833_u16, a),
+        532 => radical_inverse_specialized(3847_u16, a),
+        533 => radical_inverse_specialized(3851_u16, a),
+        534 => radical_inverse_specialized(3853_u16, a),
+        535 => radical_inverse_specialized(3863_u16, a),
+        536 => radical_inverse_specialized(3877_u16, a),
+        537 => radical_inverse_specialized(3881_u16, a),
+        538 => radical_inverse_specialized(3889_u16, a),
+        539 => radical_inverse_specialized(3907_u16, a),
+        540 => radical_inverse_specialized(3911_u16, a),
+        541 => radical_inverse_specialized(3917_u16, a),
+        542 => radical_inverse_specialized(3919_u16, a),
+        543 => radical_inverse_specialized(3923_u16, a),
+        544 => radical_inverse_specialized(3929_u16, a),
+        545 => radical_inverse_specialized(3931_u16, a),
+        546 => radical_inverse_specialized(3943_u16, a),
+        547 => radical_inverse_specialized(3947_u16, a),
+        548 => radical_inverse_specialized(3967_u16, a),
+        549 => radical_inverse_specialized(3989_u16, a),
+        550 => radical_inverse_specialized(4001_u16, a),
+        551 => radical_inverse_specialized(4003_u16, a),
+        552 => radical_inverse_specialized(4007_u16, a),
+        553 => radical_inverse_specialized(4013_u16, a),
+        554 => radical_inverse_specialized(4019_u16, a),
+        555 => radical_inverse_specialized(4021_u16, a),
+        556 => radical_inverse_specialized(4027_u16, a),
+        557 => radical_inverse_specialized(4049_u16, a),
+        558 => radical_inverse_specialized(4051_u16, a),
+        559 => radical_inverse_specialized(4057_u16, a),
+        560 => radical_inverse_specialized(4073_u16, a),
+        561 => radical_inverse_specialized(4079_u16, a),
+        562 => radical_inverse_specialized(4091_u16, a),
+        563 => radical_inverse_specialized(4093_u16, a),
+        564 => radical_inverse_specialized(4099_u16, a),
+        565 => radical_inverse_specialized(4111_u16, a),
+        566 => radical_inverse_specialized(4127_u16, a),
+        567 => radical_inverse_specialized(4129_u16, a),
+        568 => radical_inverse_specialized(4133_u16, a),
+        569 => radical_inverse_specialized(4139_u16, a),
+        570 => radical_inverse_specialized(4153_u16, a),
+        571 => radical_inverse_specialized(4157_u16, a),
+        572 => radical_inverse_specialized(4159_u16, a),
+        573 => radical_inverse_specialized(4177_u16, a),
+        574 => radical_inverse_specialized(4201_u16, a),
+        575 => radical_inverse_specialized(4211_u16, a),
+        576 => radical_inverse_specialized(4217_u16, a),
+        577 => radical_inverse_specialized(4219_u16, a),
+        578 => radical_inverse_specialized(4229_u16, a),
+        579 => radical_inverse_specialized(4231_u16, a),
+        580 => radical_inverse_specialized(4241_u16, a),
+        581 => radical_inverse_specialized(4243_u16, a),
+        582 => radical_inverse_specialized(4253_u16, a),
+        583 => radical_inverse_specialized(4259_u16, a),
+        584 => radical_inverse_specialized(4261_u16, a),
+        585 => radical_inverse_specialized(4271_u16, a),
+        586 => radical_inverse_specialized(4273_u16, a),
+        587 => radical_inverse_specialized(4283_u16, a),
+        588 => radical_inverse_specialized(4289_u16, a),
+        589 => radical_inverse_specialized(4297_u16, a),
+        590 => radical_inverse_specialized(4327_u16, a),
+        591 => radical_inverse_specialized(4337_u16, a),
+        592 => radical_inverse_specialized(4339_u16, a),
+        593 => radical_inverse_specialized(4349_u16, a),
+        594 => radical_inverse_specialized(4357_u16, a),
+        595 => radical_inverse_specialized(4363_u16, a),
+        596 => radical_inverse_specialized(4373_u16, a),
+        597 => radical_inverse_specialized(4391_u16, a),
+        598 => radical_inverse_specialized(4397_u16, a),
+        599 => radical_inverse_specialized(4409_u16, a),
+        600 => radical_inverse_specialized(4421_u16, a),
+        601 => radical_inverse_specialized(4423_u16, a),
+        602 => radical_inverse_specialized(4441_u16, a),
+        603 => radical_inverse_specialized(4447_u16, a),
+        604 => radical_inverse_specialized(4451_u16, a),
+        605 => radical_inverse_specialized(4457_u16, a),
+        606 => radical_inverse_specialized(4463_u16, a),
+        607 => radical_inverse_specialized(4481_u16, a),
+        608 => radical_inverse_specialized(4483_u16, a),
+        609 => radical_inverse_specialized(4493_u16, a),
+        610 => radical_inverse_specialized(4507_u16, a),
+        611 => radical_inverse_specialized(4513_u16, a),
+        612 => radical_inverse_specialized(4517_u16, a),
+        613 => radical_inverse_specialized(4519_u16, a),
+        614 => radical_inverse_specialized(4523_u16, a),
+        615 => radical_inverse_specialized(4547_u16, a),
+        616 => radical_inverse_specialized(4549_u16, a),
+        617 => radical_inverse_specialized(4561_u16, a),
+        618 => radical_inverse_specialized(4567_u16, a),
+        619 => radical_inverse_specialized(4583_u16, a),
+        620 => radical_inverse_specialized(4591_u16, a),
+        621 => radical_inverse_specialized(4597_u16, a),
+        622 => radical_inverse_specialized(4603_u16, a),
+        623 => radical_inverse_specialized(4621_u16, a),
+        624 => radical_inverse_specialized(4637_u16, a),
+        625 => radical_inverse_specialized(4639_u16, a),
+        626 => radical_inverse_specialized(4643_u16, a),
+        627 => radical_inverse_specialized(4649_u16, a),
+        628 => radical_inverse_specialized(4651_u16, a),
+        629 => radical_inverse_specialized(4657_u16, a),
+        630 => radical_inverse_specialized(4663_u16, a),
+        631 => radical_inverse_specialized(4673_u16, a),
+        632 => radical_inverse_specialized(4679_u16, a),
+        633 => radical_inverse_specialized(4691_u16, a),
+        634 => radical_inverse_specialized(4703_u16, a),
+        635 => radical_inverse_specialized(4721_u16, a),
+        636 => radical_inverse_specialized(4723_u16, a),
+        637 => radical_inverse_specialized(4729_u16, a),
+        638 => radical_inverse_specialized(4733_u16, a),
+        639 => radical_inverse_specialized(4751_u16, a),
+        640 => radical_inverse_specialized(4759_u16, a),
+        641 => radical_inverse_specialized(4783_u16, a),
+        642 => radical_inverse_specialized(4787_u16, a),
+        643 => radical_inverse_specialized(4789_u16, a),
+        644 => radical_inverse_specialized(4793_u16, a),
+        645 => radical_inverse_specialized(4799_u16, a),
+        646 => radical_inverse_specialized(4801_u16, a),
+        647 => radical_inverse_specialized(4813_u16, a),
+        648 => radical_inverse_specialized(4817_u16, a),
+        649 => radical_inverse_specialized(4831_u16, a),
+        650 => radical_inverse_specialized(4861_u16, a),
+        651 => radical_inverse_specialized(4871_u16, a),
+        652 => radical_inverse_specialized(4877_u16, a),
+        653 => radical_inverse_specialized(4889_u16, a),
+        654 => radical_inverse_specialized(4903_u16, a),
+        655 => radical_inverse_specialized(4909_u16, a),
+        656 => radical_inverse_specialized(4919_u16, a),
+        657 => radical_inverse_specialized(4931_u16, a),
+        658 => radical_inverse_specialized(4933_u16, a),
+        659 => radical_inverse_specialized(4937_u16, a),
+        660 => radical_inverse_specialized(4943_u16, a),
+        661 => radical_inverse_specialized(4951_u16, a),
+        662 => radical_inverse_specialized(4957_u16, a),
+        663 => radical_inverse_specialized(4967_u16, a),
+        664 => radical_inverse_specialized(4969_u16, a),
+        665 => radical_inverse_specialized(4973_u16, a),
+        666 => radical_inverse_specialized(4987_u16, a),
+        667 => radical_inverse_specialized(4993_u16, a),
+        668 => radical_inverse_specialized(4999_u16, a),
+        669 => radical_inverse_specialized(5003_u16, a),
+        670 => radical_inverse_specialized(5009_u16, a),
+        671 => radical_inverse_specialized(5011_u16, a),
+        672 => radical_inverse_specialized(5021_u16, a),
+        673 => radical_inverse_specialized(5023_u16, a),
+        674 => radical_inverse_specialized(5039_u16, a),
+        675 => radical_inverse_specialized(5051_u16, a),
+        676 => radical_inverse_specialized(5059_u16, a),
+        677 => radical_inverse_specialized(5077_u16, a),
+        678 => radical_inverse_specialized(5081_u16, a),
+        679 => radical_inverse_specialized(5087_u16, a),
+        680 => radical_inverse_specialized(5099_u16, a),
+        681 => radical_inverse_specialized(5101_u16, a),
+        682 => radical_inverse_specialized(5107_u16, a),
+        683 => radical_inverse_specialized(5113_u16, a),
+        684 => radical_inverse_specialized(5119_u16, a),
+        685 => radical_inverse_specialized(5147_u16, a),
+        686 => radical_inverse_specialized(5153_u16, a),
+        687 => radical_inverse_specialized(5167_u16, a),
+        688 => radical_inverse_specialized(5171_u16, a),
+        689 => radical_inverse_specialized(5179_u16, a),
+        690 => radical_inverse_specialized(5189_u16, a),
+        691 => radical_inverse_specialized(5197_u16, a),
+        692 => radical_inverse_specialized(5209_u16, a),
+        693 => radical_inverse_specialized(5227_u16, a),
+        694 => radical_inverse_specialized(5231_u16, a),
+        695 => radical_inverse_specialized(5233_u16, a),
+        696 => radical_inverse_specialized(5237_u16, a),
+        697 => radical_inverse_specialized(5261_u16, a),
+        698 => radical_inverse_specialized(5273_u16, a),
+        699 => radical_inverse_specialized(5279_u16, a),
+        700 => radical_inverse_specialized(5281_u16, a),
+        701 => radical_inverse_specialized(5297_u16, a),
+        702 => radical_inverse_specialized(5303_u16, a),
+        703 => radical_inverse_specialized(5309_u16, a),
+        704 => radical_inverse_specialized(5323_u16, a),
+        705 => radical_inverse_specialized(5333_u16, a),
+        706 => radical_inverse_specialized(5347_u16, a),
+        707 => radical_inverse_specialized(5351_u16, a),
+        708 => radical_inverse_specialized(5381_u16, a),
+        709 => radical_inverse_specialized(5387_u16, a),
+        710 => radical_inverse_specialized(5393_u16, a),
+        711 => radical_inverse_specialized(5399_u16, a),
+        712 => radical_inverse_specialized(5407_u16, a),
+        713 => radical_inverse_specialized(5413_u16, a),
+        714 => radical_inverse_specialized(5417_u16, a),
+        715 => radical_inverse_specialized(5419_u16, a),
+        716 => radical_inverse_specialized(5431_u16, a),
+        717 => radical_inverse_specialized(5437_u16, a),
+        718 => radical_inverse_specialized(5441_u16, a),
+        719 => radical_inverse_specialized(5443_u16, a),
+        720 => radical_inverse_specialized(5449_u16, a),
+        721 => radical_inverse_specialized(5471_u16, a),
+        722 => radical_inverse_specialized(5477_u16, a),
+        723 => radical_inverse_specialized(5479_u16, a),
+        724 => radical_inverse_specialized(5483_u16, a),
+        725 => radical_inverse_specialized(5501_u16, a),
+        726 => radical_inverse_specialized(5503_u16, a),
+        727 => radical_inverse_specialized(5507_u16, a),
+        728 => radical_inverse_specialized(5519_u16, a),
+        729 => radical_inverse_specialized(5521_u16, a),
+        730 => radical_inverse_specialized(5527_u16, a),
+        731 => radical_inverse_specialized(5531_u16, a),
+        732 => radical_inverse_specialized(5557_u16, a),
+        733 => radical_inverse_specialized(5563_u16, a),
+        734 => radical_inverse_specialized(5569_u16, a),
+        735 => radical_inverse_specialized(5573_u16, a),
+        736 => radical_inverse_specialized(5581_u16, a),
+        737 => radical_inverse_specialized(5591_u16, a),
+        738 => radical_inverse_specialized(5623_u16, a),
+        739 => radical_inverse_specialized(5639_u16, a),
+        740 => radical_inverse_specialized(5641_u16, a),
+        741 => radical_inverse_specialized(5647_u16, a),
+        742 => radical_inverse_specialized(5651_u16, a),
+        743 => radical_inverse_specialized(5653_u16, a),
+        744 => radical_inverse_specialized(5657_u16, a),
+        745 => radical_inverse_specialized(5659_u16, a),
+        746 => radical_inverse_specialized(5669_u16, a),
+        747 => radical_inverse_specialized(5683_u16, a),
+        748 => radical_inverse_specialized(5689_u16, a),
+        749 => radical_inverse_specialized(5693_u16, a),
+        750 => radical_inverse_specialized(5701_u16, a),
+        751 => radical_inverse_specialized(5711_u16, a),
+        752 => radical_inverse_specialized(5717_u16, a),
+        753 => radical_inverse_specialized(5737_u16, a),
+        754 => radical_inverse_specialized(5741_u16, a),
+        755 => radical_inverse_specialized(5743_u16, a),
+        756 => radical_inverse_specialized(5749_u16, a),
+        757 => radical_inverse_specialized(5779_u16, a),
+        758 => radical_inverse_specialized(5783_u16, a),
+        759 => radical_inverse_specialized(5791_u16, a),
+        760 => radical_inverse_specialized(5801_u16, a),
+        761 => radical_inverse_specialized(5807_u16, a),
+        762 => radical_inverse_specialized(5813_u16, a),
+        763 => radical_inverse_specialized(5821_u16, a),
+        764 => radical_inverse_specialized(5827_u16, a),
+        765 => radical_inverse_specialized(5839_u16, a),
+        766 => radical_inverse_specialized(5843_u16, a),
+        767 => radical_inverse_specialized(5849_u16, a),
+        768 => radical_inverse_specialized(5851_u16, a),
+        769 => radical_inverse_specialized(5857_u16, a),
+        770 => radical_inverse_specialized(5861_u16, a),
+        771 => radical_inverse_specialized(5867_u16, a),
+        772 => radical_inverse_specialized(5869_u16, a),
+        773 => radical_inverse_specialized(5879_u16, a),
+        774 => radical_inverse_specialized(5881_u16, a),
+        775 => radical_inverse_specialized(5897_u16, a),
+        776 => radical_inverse_specialized(5903_u16, a),
+        777 => radical_inverse_specialized(5923_u16, a),
+        778 => radical_inverse_specialized(5927_u16, a),
+        779 => radical_inverse_specialized(5939_u16, a),
+        780 => radical_inverse_specialized(5953_u16, a),
+        781 => radical_inverse_specialized(5981_u16, a),
+        782 => radical_inverse_specialized(5987_u16, a),
+        783 => radical_inverse_specialized(6007_u16, a),
+        784 => radical_inverse_specialized(6011_u16, a),
+        785 => radical_inverse_specialized(6029_u16, a),
+        786 => radical_inverse_specialized(6037_u16, a),
+        787 => radical_inverse_specialized(6043_u16, a),
+        788 => radical_inverse_specialized(6047_u16, a),
+        789 => radical_inverse_specialized(6053_u16, a),
+        790 => radical_inverse_specialized(6067_u16, a),
+        791 => radical_inverse_specialized(6073_u16, a),
+        792 => radical_inverse_specialized(6079_u16, a),
+        793 => radical_inverse_specialized(6089_u16, a),
+        794 => radical_inverse_specialized(6091_u16, a),
+        795 => radical_inverse_specialized(6101_u16, a),
+        796 => radical_inverse_specialized(6113_u16, a),
+        797 => radical_inverse_specialized(6121_u16, a),
+        798 => radical_inverse_specialized(6131_u16, a),
+        799 => radical_inverse_specialized(6133_u16, a),
+        800 => radical_inverse_specialized(6143_u16, a),
+        801 => radical_inverse_specialized(6151_u16, a),
+        802 => radical_inverse_specialized(6163_u16, a),
+        803 => radical_inverse_specialized(6173_u16, a),
+        804 => radical_inverse_specialized(6197_u16, a),
+        805 => radical_inverse_specialized(6199_u16, a),
+        806 => radical_inverse_specialized(6203_u16, a),
+        807 => radical_inverse_specialized(6211_u16, a),
+        808 => radical_inverse_specialized(6217_u16, a),
+        809 => radical_inverse_specialized(6221_u16, a),
+        810 => radical_inverse_specialized(6229_u16, a),
+        811 => radical_inverse_specialized(6247_u16, a),
+        812 => radical_inverse_specialized(6257_u16, a),
+        813 => radical_inverse_specialized(6263_u16, a),
+        814 => radical_inverse_specialized(6269_u16, a),
+        815 => radical_inverse_specialized(6271_u16, a),
+        816 => radical_inverse_specialized(6277_u16, a),
+        817 => radical_inverse_specialized(6287_u16, a),
+        818 => radical_inverse_specialized(6299_u16, a),
+        819 => radical_inverse_specialized(6301_u16, a),
+        820 => radical_inverse_specialized(6311_u16, a),
+        821 => radical_inverse_specialized(6317_u16, a),
+        822 => radical_inverse_specialized(6323_u16, a),
+        823 => radical_inverse_specialized(6329_u16, a),
+        824 => radical_inverse_specialized(6337_u16, a),
+        825 => radical_inverse_specialized(6343_u16, a),
+        826 => radical_inverse_specialized(6353_u16, a),
+        827 => radical_inverse_specialized(6359_u16, a),
+        828 => radical_inverse_specialized(6361_u16, a),
+        829 => radical_inverse_specialized(6367_u16, a),
+        830 => radical_inverse_specialized(6373_u16, a),
+        831 => radical_inverse_specialized(6379_u16, a),
+        832 => radical_inverse_specialized(6389_u16, a),
+        833 => radical_inverse_specialized(6397_u16, a),
+        834 => radical_inverse_specialized(6421_u16, a),
+        835 => radical_inverse_specialized(6427_u16, a),
+        836 => radical_inverse_specialized(6449_u16, a),
+        837 => radical_inverse_specialized(6451_u16, a),
+        838 => radical_inverse_specialized(6469_u16, a),
+        839 => radical_inverse_specialized(6473_u16, a),
+        840 => radical_inverse_specialized(6481_u16, a),
+        841 => radical_inverse_specialized(6491_u16, a),
+        842 => radical_inverse_specialized(6521_u16, a),
+        843 => radical_inverse_specialized(6529_u16, a),
+        844 => radical_inverse_specialized(6547_u16, a),
+        845 => radical_inverse_specialized(6551_u16, a),
+        846 => radical_inverse_specialized(6553_u16, a),
+        847 => radical_inverse_specialized(6563_u16, a),
+        848 => radical_inverse_specialized(6569_u16, a),
+        849 => radical_inverse_specialized(6571_u16, a),
+        850 => radical_inverse_specialized(6577_u16, a),
+        851 => radical_inverse_specialized(6581_u16, a),
+        852 => radical_inverse_specialized(6599_u16, a),
+        853 => radical_inverse_specialized(6607_u16, a),
+        854 => radical_inverse_specialized(6619_u16, a),
+        855 => radical_inverse_specialized(6637_u16, a),
+        856 => radical_inverse_specialized(6653_u16, a),
+        857 => radical_inverse_specialized(6659_u16, a),
+        858 => radical_inverse_specialized(6661_u16, a),
+        859 => radical_inverse_specialized(6673_u16, a),
+        860 => radical_inverse_specialized(6679_u16, a),
+        861 => radical_inverse_specialized(6689_u16, a),
+        862 => radical_inverse_specialized(6691_u16, a),
+        863 => radical_inverse_specialized(6701_u16, a),
+        864 => radical_inverse_specialized(6703_u16, a),
+        865 => radical_inverse_specialized(6709_u16, a),
+        866 => radical_inverse_specialized(6719_u16, a),
+        867 => radical_inverse_specialized(6733_u16, a),
+        868 => radical_inverse_specialized(6737_u16, a),
+        869 => radical_inverse_specialized(6761_u16, a),
+        870 => radical_inverse_specialized(6763_u16, a),
+        871 => radical_inverse_specialized(6779_u16, a),
+        872 => radical_inverse_specialized(6781_u16, a),
+        873 => radical_inverse_specialized(6791_u16, a),
+        874 => radical_inverse_specialized(6793_u16, a),
+        875 => radical_inverse_specialized(6803_u16, a),
+        876 => radical_inverse_specialized(6823_u16, a),
+        877 => radical_inverse_specialized(6827_u16, a),
+        878 => radical_inverse_specialized(6829_u16, a),
+        879 => radical_inverse_specialized(6833_u16, a),
+        880 => radical_inverse_specialized(6841_u16, a),
+        881 => radical_inverse_specialized(6857_u16, a),
+        882 => radical_inverse_specialized(6863_u16, a),
+        883 => radical_inverse_specialized(6869_u16, a),
+        884 => radical_inverse_specialized(6871_u16, a),
+        885 => radical_inverse_specialized(6883_u16, a),
+        886 => radical_inverse_specialized(6899_u16, a),
+        887 => radical_inverse_specialized(6907_u16, a),
+        888 => radical_inverse_specialized(6911_u16, a),
+        889 => radical_inverse_specialized(6917_u16, a),
+        890 => radical_inverse_specialized(6947_u16, a),
+        891 => radical_inverse_specialized(6949_u16, a),
+        892 => radical_inverse_specialized(6959_u16, a),
+        893 => radical_inverse_specialized(6961_u16, a),
+        894 => radical_inverse_specialized(6967_u16, a),
+        895 => radical_inverse_specialized(6971_u16, a),
+        896 => radical_inverse_specialized(6977_u16, a),
+        897 => radical_inverse_specialized(6983_u16, a),
+        898 => radical_inverse_specialized(6991_u16, a),
+        899 => radical_inverse_specialized(6997_u16, a),
+        900 => radical_inverse_specialized(7001_u16, a),
+        901 => radical_inverse_specialized(7013_u16, a),
+        902 => radical_inverse_specialized(7019_u16, a),
+        903 => radical_inverse_specialized(7027_u16, a),
+        904 => radical_inverse_specialized(7039_u16, a),
+        905 => radical_inverse_specialized(7043_u16, a),
+        906 => radical_inverse_specialized(7057_u16, a),
+        907 => radical_inverse_specialized(7069_u16, a),
+        908 => radical_inverse_specialized(7079_u16, a),
+        909 => radical_inverse_specialized(7103_u16, a),
+        910 => radical_inverse_specialized(7109_u16, a),
+        911 => radical_inverse_specialized(7121_u16, a),
+        912 => radical_inverse_specialized(7127_u16, a),
+        913 => radical_inverse_specialized(7129_u16, a),
+        914 => radical_inverse_specialized(7151_u16, a),
+        915 => radical_inverse_specialized(7159_u16, a),
+        916 => radical_inverse_specialized(7177_u16, a),
+        917 => radical_inverse_specialized(7187_u16, a),
+        918 => radical_inverse_specialized(7193_u16, a),
+        919 => radical_inverse_specialized(7207_u16, a),
+        920 => radical_inverse_specialized(7211_u16, a),
+        921 => radical_inverse_specialized(7213_u16, a),
+        922 => radical_inverse_specialized(7219_u16, a),
+        923 => radical_inverse_specialized(7229_u16, a),
+        924 => radical_inverse_specialized(7237_u16, a),
+        925 => radical_inverse_specialized(7243_u16, a),
+        926 => radical_inverse_specialized(7247_u16, a),
+        927 => radical_inverse_specialized(7253_u16, a),
+        928 => radical_inverse_specialized(7283_u16, a),
+        929 => radical_inverse_specialized(7297_u16, a),
+        930 => radical_inverse_specialized(7307_u16, a),
+        931 => radical_inverse_specialized(7309_u16, a),
+        932 => radical_inverse_specialized(7321_u16, a),
+        933 => radical_inverse_specialized(7331_u16, a),
+        934 => radical_inverse_specialized(7333_u16, a),
+        935 => radical_inverse_specialized(7349_u16, a),
+        936 => radical_inverse_specialized(7351_u16, a),
+        937 => radical_inverse_specialized(7369_u16, a),
+        938 => radical_inverse_specialized(7393_u16, a),
+        939 => radical_inverse_specialized(7411_u16, a),
+        940 => radical_inverse_specialized(7417_u16, a),
+        941 => radical_inverse_specialized(7433_u16, a),
+        942 => radical_inverse_specialized(7451_u16, a),
+        943 => radical_inverse_specialized(7457_u16, a),
+        944 => radical_inverse_specialized(7459_u16, a),
+        945 => radical_inverse_specialized(7477_u16, a),
+        946 => radical_inverse_specialized(7481_u16, a),
+        947 => radical_inverse_specialized(7487_u16, a),
+        948 => radical_inverse_specialized(7489_u16, a),
+        949 => radical_inverse_specialized(7499_u16, a),
+        950 => radical_inverse_specialized(7507_u16, a),
+        951 => radical_inverse_specialized(7517_u16, a),
+        952 => radical_inverse_specialized(7523_u16, a),
+        953 => radical_inverse_specialized(7529_u16, a),
+        954 => radical_inverse_specialized(7537_u16, a),
+        955 => radical_inverse_specialized(7541_u16, a),
+        956 => radical_inverse_specialized(7547_u16, a),
+        957 => radical_inverse_specialized(7549_u16, a),
+        958 => radical_inverse_specialized(7559_u16, a),
+        959 => radical_inverse_specialized(7561_u16, a),
+        960 => radical_inverse_specialized(7573_u16, a),
+        961 => radical_inverse_specialized(7577_u16, a),
+        962 => radical_inverse_specialized(7583_u16, a),
+        963 => radical_inverse_specialized(7589_u16, a),
+        964 => radical_inverse_specialized(7591_u16, a),
+        965 => radical_inverse_specialized(7603_u16, a),
+        966 => radical_inverse_specialized(7607_u16, a),
+        967 => radical_inverse_specialized(7621_u16, a),
+        968 => radical_inverse_specialized(7639_u16, a),
+        969 => radical_inverse_specialized(7643_u16, a),
+        970 => radical_inverse_specialized(7649_u16, a),
+        971 => radical_inverse_specialized(7669_u16, a),
+        972 => radical_inverse_specialized(7673_u16, a),
+        973 => radical_inverse_specialized(7681_u16, a),
+        974 => radical_inverse_specialized(7687_u16, a),
+        975 => radical_inverse_specialized(7691_u16, a),
+        976 => radical_inverse_specialized(7699_u16, a),
+        977 => radical_inverse_specialized(7703_u16, a),
+        978 => radical_inverse_specialized(7717_u16, a),
+        979 => radical_inverse_specialized(7723_u16, a),
+        980 => radical_inverse_specialized(7727_u16, a),
+        981 => radical_inverse_specialized(7741_u16, a),
+        982 => radical_inverse_specialized(7753_u16, a),
+        983 => radical_inverse_specialized(7757_u16, a),
+        984 => radical_inverse_specialized(7759_u16, a),
+        985 => radical_inverse_specialized(7789_u16, a),
+        986 => radical_inverse_specialized(7793_u16, a),
+        987 => radical_inverse_specialized(7817_u16, a),
+        988 => radical_inverse_specialized(7823_u16, a),
+        989 => radical_inverse_specialized(7829_u16, a),
+        990 => radical_inverse_specialized(7841_u16, a),
+        991 => radical_inverse_specialized(7853_u16, a),
+        992 => radical_inverse_specialized(7867_u16, a),
+        993 => radical_inverse_specialized(7873_u16, a),
+        994 => radical_inverse_specialized(7877_u16, a),
+        995 => radical_inverse_specialized(7879_u16, a),
+        996 => radical_inverse_specialized(7883_u16, a),
+        997 => radical_inverse_specialized(7901_u16, a),
+        998 => radical_inverse_specialized(7907_u16, a),
+        999 => radical_inverse_specialized(7919_u16, a),
+        1000 => radical_inverse_specialized(7927_u16, a),
+        1001 => radical_inverse_specialized(7933_u16, a),
+        1002 => radical_inverse_specialized(7937_u16, a),
+        1003 => radical_inverse_specialized(7949_u16, a),
+        1004 => radical_inverse_specialized(7951_u16, a),
+        1005 => radical_inverse_specialized(7963_u16, a),
+        1006 => radical_inverse_specialized(7993_u16, a),
+        1007 => radical_inverse_specialized(8009_u16, a),
+        1008 => radical_inverse_specialized(8011_u16, a),
+        1009 => radical_inverse_specialized(8017_u16, a),
+        1010 => radical_inverse_specialized(8039_u16, a),
+        1011 => radical_inverse_specialized(8053_u16, a),
+        1012 => radical_inverse_specialized(8059_u16, a),
+        1013 => radical_inverse_specialized(8069_u16, a),
+        1014 => radical_inverse_specialized(8081_u16, a),
+        1015 => radical_inverse_specialized(8087_u16, a),
+        1016 => radical_inverse_specialized(8089_u16, a),
+        1017 => radical_inverse_specialized(8093_u16, a),
+        1018 => radical_inverse_specialized(8101_u16, a),
+        1019 => radical_inverse_specialized(8111_u16, a),
+        1020 => radical_inverse_specialized(8117_u16, a),
+        1021 => radical_inverse_specialized(8123_u16, a),
+        1022 => radical_inverse_specialized(8147_u16, a),
+        1023 => radical_inverse_specialized(8161_u16, a),
         _ => {
             panic!("TODO: radical_inverse({:?}, {:?})", base_index, a);
         }
-    };
+    }
 }
 
 /// Computes random permutation tables.
@@ -3570,4099 +1523,2051 @@ pub fn compute_radical_inverse_permutations(mut rng: &mut Rng) -> Vec<u16> {
         );
         p += PRIMES[i as usize] as usize;
     }
-    return perms;
+    perms
 }
 
 /// Compute the radical inverse, but put each pixel through the
 /// permutation table for the given base.
 pub fn scrambled_radical_inverse(base_index: u16, a: u64, perm: &[u16]) -> Float {
     match base_index {
-        0 => {
-            return scrambled_radical_inverse_specialized(2_u16, perm, a);
-        }
-        1 => {
-            return scrambled_radical_inverse_specialized(3_u16, perm, a);
-        }
-        2 => {
-            return scrambled_radical_inverse_specialized(5_u16, perm, a);
-        }
-        3 => {
-            return scrambled_radical_inverse_specialized(7_u16, perm, a);
-        }
-        4 => {
-            return scrambled_radical_inverse_specialized(11_u16, perm, a);
-        }
-        5 => {
-            return scrambled_radical_inverse_specialized(13_u16, perm, a);
-        }
-        6 => {
-            return scrambled_radical_inverse_specialized(17_u16, perm, a);
-        }
-        7 => {
-            return scrambled_radical_inverse_specialized(19_u16, perm, a);
-        }
-        8 => {
-            return scrambled_radical_inverse_specialized(23_u16, perm, a);
-        }
-        9 => {
-            return scrambled_radical_inverse_specialized(29_u16, perm, a);
-        }
-        10 => {
-            return scrambled_radical_inverse_specialized(31_u16, perm, a);
-        }
-        11 => {
-            return scrambled_radical_inverse_specialized(37_u16, perm, a);
-        }
-
-        12 => {
-            return scrambled_radical_inverse_specialized(41_u16, perm, a);
-        }
-
-        13 => {
-            return scrambled_radical_inverse_specialized(43_u16, perm, a);
-        }
-
-        14 => {
-            return scrambled_radical_inverse_specialized(47_u16, perm, a);
-        }
-
-        15 => {
-            return scrambled_radical_inverse_specialized(53_u16, perm, a);
-        }
-
-        16 => {
-            return scrambled_radical_inverse_specialized(59_u16, perm, a);
-        }
-
-        17 => {
-            return scrambled_radical_inverse_specialized(61_u16, perm, a);
-        }
-
-        18 => {
-            return scrambled_radical_inverse_specialized(67_u16, perm, a);
-        }
-
-        19 => {
-            return scrambled_radical_inverse_specialized(71_u16, perm, a);
-        }
-
-        20 => {
-            return scrambled_radical_inverse_specialized(73_u16, perm, a);
-        }
-
-        21 => {
-            return scrambled_radical_inverse_specialized(79_u16, perm, a);
-        }
-
-        22 => {
-            return scrambled_radical_inverse_specialized(83_u16, perm, a);
-        }
-
-        23 => {
-            return scrambled_radical_inverse_specialized(89_u16, perm, a);
-        }
-
-        24 => {
-            return scrambled_radical_inverse_specialized(97_u16, perm, a);
-        }
-
-        25 => {
-            return scrambled_radical_inverse_specialized(101_u16, perm, a);
-        }
-
-        26 => {
-            return scrambled_radical_inverse_specialized(103_u16, perm, a);
-        }
-
-        27 => {
-            return scrambled_radical_inverse_specialized(107_u16, perm, a);
-        }
-
-        28 => {
-            return scrambled_radical_inverse_specialized(109_u16, perm, a);
-        }
+        0 => scrambled_radical_inverse_specialized(2_u16, perm, a),
+        1 => scrambled_radical_inverse_specialized(3_u16, perm, a),
+        2 => scrambled_radical_inverse_specialized(5_u16, perm, a),
+        3 => scrambled_radical_inverse_specialized(7_u16, perm, a),
+        4 => scrambled_radical_inverse_specialized(11_u16, perm, a),
+        5 => scrambled_radical_inverse_specialized(13_u16, perm, a),
+        6 => scrambled_radical_inverse_specialized(17_u16, perm, a),
+        7 => scrambled_radical_inverse_specialized(19_u16, perm, a),
+        8 => scrambled_radical_inverse_specialized(23_u16, perm, a),
+        9 => scrambled_radical_inverse_specialized(29_u16, perm, a),
+        10 => scrambled_radical_inverse_specialized(31_u16, perm, a),
+        11 => scrambled_radical_inverse_specialized(37_u16, perm, a),
 
-        29 => {
-            return scrambled_radical_inverse_specialized(113_u16, perm, a);
-        }
+        12 => scrambled_radical_inverse_specialized(41_u16, perm, a),
 
-        30 => {
-            return scrambled_radical_inverse_specialized(127_u16, perm, a);
-        }
+        13 => scrambled_radical_inverse_specialized(43_u16, perm, a),
 
-        31 => {
-            return scrambled_radical_inverse_specialized(131_u16, perm, a);
-        }
+        14 => scrambled_radical_inverse_specialized(47_u16, perm, a),
 
-        32 => {
-            return scrambled_radical_inverse_specialized(137_u16, perm, a);
-        }
+        15 => scrambled_radical_inverse_specialized(53_u16, perm, a),
 
-        33 => {
-            return scrambled_radical_inverse_specialized(139_u16, perm, a);
-        }
+        16 => scrambled_radical_inverse_specialized(59_u16, perm, a),
 
-        34 => {
-            return scrambled_radical_inverse_specialized(149_u16, perm, a);
-        }
+        17 => scrambled_radical_inverse_specialized(61_u16, perm, a),
 
-        35 => {
-            return scrambled_radical_inverse_specialized(151_u16, perm, a);
-        }
+        18 => scrambled_radical_inverse_specialized(67_u16, perm, a),
 
-        36 => {
-            return scrambled_radical_inverse_specialized(157_u16, perm, a);
-        }
+        19 => scrambled_radical_inverse_specialized(71_u16, perm, a),
 
-        37 => {
-            return scrambled_radical_inverse_specialized(163_u16, perm, a);
-        }
+        20 => scrambled_radical_inverse_specialized(73_u16, perm, a),
 
-        38 => {
-            return scrambled_radical_inverse_specialized(167_u16, perm, a);
-        }
+        21 => scrambled_radical_inverse_specialized(79_u16, perm, a),
 
-        39 => {
-            return scrambled_radical_inverse_specialized(173_u16, perm, a);
-        }
+        22 => scrambled_radical_inverse_specialized(83_u16, perm, a),
 
-        40 => {
-            return scrambled_radical_inverse_specialized(179_u16, perm, a);
-        }
+        23 => scrambled_radical_inverse_specialized(89_u16, perm, a),
 
-        41 => {
-            return scrambled_radical_inverse_specialized(181_u16, perm, a);
-        }
+        24 => scrambled_radical_inverse_specialized(97_u16, perm, a),
 
-        42 => {
-            return scrambled_radical_inverse_specialized(191_u16, perm, a);
-        }
+        25 => scrambled_radical_inverse_specialized(101_u16, perm, a),
 
-        43 => {
-            return scrambled_radical_inverse_specialized(193_u16, perm, a);
-        }
+        26 => scrambled_radical_inverse_specialized(103_u16, perm, a),
 
-        44 => {
-            return scrambled_radical_inverse_specialized(197_u16, perm, a);
-        }
+        27 => scrambled_radical_inverse_specialized(107_u16, perm, a),
 
-        45 => {
-            return scrambled_radical_inverse_specialized(199_u16, perm, a);
-        }
+        28 => scrambled_radical_inverse_specialized(109_u16, perm, a),
 
-        46 => {
-            return scrambled_radical_inverse_specialized(211_u16, perm, a);
-        }
+        29 => scrambled_radical_inverse_specialized(113_u16, perm, a),
 
-        47 => {
-            return scrambled_radical_inverse_specialized(223_u16, perm, a);
-        }
+        30 => scrambled_radical_inverse_specialized(127_u16, perm, a),
 
-        48 => {
-            return scrambled_radical_inverse_specialized(227_u16, perm, a);
-        }
+        31 => scrambled_radical_inverse_specialized(131_u16, perm, a),
 
-        49 => {
-            return scrambled_radical_inverse_specialized(229_u16, perm, a);
-        }
+        32 => scrambled_radical_inverse_specialized(137_u16, perm, a),
 
-        50 => {
-            return scrambled_radical_inverse_specialized(233_u16, perm, a);
-        }
+        33 => scrambled_radical_inverse_specialized(139_u16, perm, a),
 
-        51 => {
-            return scrambled_radical_inverse_specialized(239_u16, perm, a);
-        }
+        34 => scrambled_radical_inverse_specialized(149_u16, perm, a),
 
-        52 => {
-            return scrambled_radical_inverse_specialized(241_u16, perm, a);
-        }
+        35 => scrambled_radical_inverse_specialized(151_u16, perm, a),
 
-        53 => {
-            return scrambled_radical_inverse_specialized(251_u16, perm, a);
-        }
+        36 => scrambled_radical_inverse_specialized(157_u16, perm, a),
 
-        54 => {
-            return scrambled_radical_inverse_specialized(257_u16, perm, a);
-        }
+        37 => scrambled_radical_inverse_specialized(163_u16, perm, a),
 
-        55 => {
-            return scrambled_radical_inverse_specialized(263_u16, perm, a);
-        }
+        38 => scrambled_radical_inverse_specialized(167_u16, perm, a),
 
-        56 => {
-            return scrambled_radical_inverse_specialized(269_u16, perm, a);
-        }
+        39 => scrambled_radical_inverse_specialized(173_u16, perm, a),
 
-        57 => {
-            return scrambled_radical_inverse_specialized(271_u16, perm, a);
-        }
+        40 => scrambled_radical_inverse_specialized(179_u16, perm, a),
 
-        58 => {
-            return scrambled_radical_inverse_specialized(277_u16, perm, a);
-        }
+        41 => scrambled_radical_inverse_specialized(181_u16, perm, a),
 
-        59 => {
-            return scrambled_radical_inverse_specialized(281_u16, perm, a);
-        }
+        42 => scrambled_radical_inverse_specialized(191_u16, perm, a),
 
-        60 => {
-            return scrambled_radical_inverse_specialized(283_u16, perm, a);
-        }
+        43 => scrambled_radical_inverse_specialized(193_u16, perm, a),
 
-        61 => {
-            return scrambled_radical_inverse_specialized(293_u16, perm, a);
-        }
+        44 => scrambled_radical_inverse_specialized(197_u16, perm, a),
 
-        62 => {
-            return scrambled_radical_inverse_specialized(307_u16, perm, a);
-        }
+        45 => scrambled_radical_inverse_specialized(199_u16, perm, a),
 
-        63 => {
-            return scrambled_radical_inverse_specialized(311_u16, perm, a);
-        }
+        46 => scrambled_radical_inverse_specialized(211_u16, perm, a),
 
-        64 => {
-            return scrambled_radical_inverse_specialized(313_u16, perm, a);
-        }
+        47 => scrambled_radical_inverse_specialized(223_u16, perm, a),
 
-        65 => {
-            return scrambled_radical_inverse_specialized(317_u16, perm, a);
-        }
+        48 => scrambled_radical_inverse_specialized(227_u16, perm, a),
 
-        66 => {
-            return scrambled_radical_inverse_specialized(331_u16, perm, a);
-        }
+        49 => scrambled_radical_inverse_specialized(229_u16, perm, a),
 
-        67 => {
-            return scrambled_radical_inverse_specialized(337_u16, perm, a);
-        }
+        50 => scrambled_radical_inverse_specialized(233_u16, perm, a),
 
-        68 => {
-            return scrambled_radical_inverse_specialized(347_u16, perm, a);
-        }
+        51 => scrambled_radical_inverse_specialized(239_u16, perm, a),
 
-        69 => {
-            return scrambled_radical_inverse_specialized(349_u16, perm, a);
-        }
+        52 => scrambled_radical_inverse_specialized(241_u16, perm, a),
 
-        70 => {
-            return scrambled_radical_inverse_specialized(353_u16, perm, a);
-        }
+        53 => scrambled_radical_inverse_specialized(251_u16, perm, a),
 
-        71 => {
-            return scrambled_radical_inverse_specialized(359_u16, perm, a);
-        }
+        54 => scrambled_radical_inverse_specialized(257_u16, perm, a),
 
-        72 => {
-            return scrambled_radical_inverse_specialized(367_u16, perm, a);
-        }
+        55 => scrambled_radical_inverse_specialized(263_u16, perm, a),
 
-        73 => {
-            return scrambled_radical_inverse_specialized(373_u16, perm, a);
-        }
+        56 => scrambled_radical_inverse_specialized(269_u16, perm, a),
 
-        74 => {
-            return scrambled_radical_inverse_specialized(379_u16, perm, a);
-        }
+        57 => scrambled_radical_inverse_specialized(271_u16, perm, a),
 
-        75 => {
-            return scrambled_radical_inverse_specialized(383_u16, perm, a);
-        }
+        58 => scrambled_radical_inverse_specialized(277_u16, perm, a),
 
-        76 => {
-            return scrambled_radical_inverse_specialized(389_u16, perm, a);
-        }
+        59 => scrambled_radical_inverse_specialized(281_u16, perm, a),
 
-        77 => {
-            return scrambled_radical_inverse_specialized(397_u16, perm, a);
-        }
+        60 => scrambled_radical_inverse_specialized(283_u16, perm, a),
 
-        78 => {
-            return scrambled_radical_inverse_specialized(401_u16, perm, a);
-        }
+        61 => scrambled_radical_inverse_specialized(293_u16, perm, a),
 
-        79 => {
-            return scrambled_radical_inverse_specialized(409_u16, perm, a);
-        }
+        62 => scrambled_radical_inverse_specialized(307_u16, perm, a),
 
-        80 => {
-            return scrambled_radical_inverse_specialized(419_u16, perm, a);
-        }
+        63 => scrambled_radical_inverse_specialized(311_u16, perm, a),
 
-        81 => {
-            return scrambled_radical_inverse_specialized(421_u16, perm, a);
-        }
+        64 => scrambled_radical_inverse_specialized(313_u16, perm, a),
 
-        82 => {
-            return scrambled_radical_inverse_specialized(431_u16, perm, a);
-        }
+        65 => scrambled_radical_inverse_specialized(317_u16, perm, a),
 
-        83 => {
-            return scrambled_radical_inverse_specialized(433_u16, perm, a);
-        }
+        66 => scrambled_radical_inverse_specialized(331_u16, perm, a),
 
-        84 => {
-            return scrambled_radical_inverse_specialized(439_u16, perm, a);
-        }
+        67 => scrambled_radical_inverse_specialized(337_u16, perm, a),
 
-        85 => {
-            return scrambled_radical_inverse_specialized(443_u16, perm, a);
-        }
+        68 => scrambled_radical_inverse_specialized(347_u16, perm, a),
 
-        86 => {
-            return scrambled_radical_inverse_specialized(449_u16, perm, a);
-        }
+        69 => scrambled_radical_inverse_specialized(349_u16, perm, a),
 
-        87 => {
-            return scrambled_radical_inverse_specialized(457_u16, perm, a);
-        }
+        70 => scrambled_radical_inverse_specialized(353_u16, perm, a),
 
-        88 => {
-            return scrambled_radical_inverse_specialized(461_u16, perm, a);
-        }
+        71 => scrambled_radical_inverse_specialized(359_u16, perm, a),
 
-        89 => {
-            return scrambled_radical_inverse_specialized(463_u16, perm, a);
-        }
+        72 => scrambled_radical_inverse_specialized(367_u16, perm, a),
 
-        90 => {
-            return scrambled_radical_inverse_specialized(467_u16, perm, a);
-        }
+        73 => scrambled_radical_inverse_specialized(373_u16, perm, a),
 
-        91 => {
-            return scrambled_radical_inverse_specialized(479_u16, perm, a);
-        }
+        74 => scrambled_radical_inverse_specialized(379_u16, perm, a),
 
-        92 => {
-            return scrambled_radical_inverse_specialized(487_u16, perm, a);
-        }
+        75 => scrambled_radical_inverse_specialized(383_u16, perm, a),
 
-        93 => {
-            return scrambled_radical_inverse_specialized(491_u16, perm, a);
-        }
+        76 => scrambled_radical_inverse_specialized(389_u16, perm, a),
 
-        94 => {
-            return scrambled_radical_inverse_specialized(499_u16, perm, a);
-        }
+        77 => scrambled_radical_inverse_specialized(397_u16, perm, a),
 
-        95 => {
-            return scrambled_radical_inverse_specialized(503_u16, perm, a);
-        }
+        78 => scrambled_radical_inverse_specialized(401_u16, perm, a),
 
-        96 => {
-            return scrambled_radical_inverse_specialized(509_u16, perm, a);
-        }
+        79 => scrambled_radical_inverse_specialized(409_u16, perm, a),
 
-        97 => {
-            return scrambled_radical_inverse_specialized(521_u16, perm, a);
-        }
+        80 => scrambled_radical_inverse_specialized(419_u16, perm, a),
 
-        98 => {
-            return scrambled_radical_inverse_specialized(523_u16, perm, a);
-        }
+        81 => scrambled_radical_inverse_specialized(421_u16, perm, a),
 
-        99 => {
-            return scrambled_radical_inverse_specialized(541_u16, perm, a);
-        }
+        82 => scrambled_radical_inverse_specialized(431_u16, perm, a),
 
-        100 => {
-            return scrambled_radical_inverse_specialized(547_u16, perm, a);
-        }
+        83 => scrambled_radical_inverse_specialized(433_u16, perm, a),
 
-        101 => {
-            return scrambled_radical_inverse_specialized(557_u16, perm, a);
-        }
+        84 => scrambled_radical_inverse_specialized(439_u16, perm, a),
 
-        102 => {
-            return scrambled_radical_inverse_specialized(563_u16, perm, a);
-        }
+        85 => scrambled_radical_inverse_specialized(443_u16, perm, a),
 
-        103 => {
-            return scrambled_radical_inverse_specialized(569_u16, perm, a);
-        }
+        86 => scrambled_radical_inverse_specialized(449_u16, perm, a),
 
-        104 => {
-            return scrambled_radical_inverse_specialized(571_u16, perm, a);
-        }
+        87 => scrambled_radical_inverse_specialized(457_u16, perm, a),
 
-        105 => {
-            return scrambled_radical_inverse_specialized(577_u16, perm, a);
-        }
+        88 => scrambled_radical_inverse_specialized(461_u16, perm, a),
 
-        106 => {
-            return scrambled_radical_inverse_specialized(587_u16, perm, a);
-        }
+        89 => scrambled_radical_inverse_specialized(463_u16, perm, a),
 
-        107 => {
-            return scrambled_radical_inverse_specialized(593_u16, perm, a);
-        }
+        90 => scrambled_radical_inverse_specialized(467_u16, perm, a),
 
-        108 => {
-            return scrambled_radical_inverse_specialized(599_u16, perm, a);
-        }
+        91 => scrambled_radical_inverse_specialized(479_u16, perm, a),
 
-        109 => {
-            return scrambled_radical_inverse_specialized(601_u16, perm, a);
-        }
+        92 => scrambled_radical_inverse_specialized(487_u16, perm, a),
 
-        110 => {
-            return scrambled_radical_inverse_specialized(607_u16, perm, a);
-        }
+        93 => scrambled_radical_inverse_specialized(491_u16, perm, a),
 
-        111 => {
-            return scrambled_radical_inverse_specialized(613_u16, perm, a);
-        }
+        94 => scrambled_radical_inverse_specialized(499_u16, perm, a),
 
-        112 => {
-            return scrambled_radical_inverse_specialized(617_u16, perm, a);
-        }
+        95 => scrambled_radical_inverse_specialized(503_u16, perm, a),
 
-        113 => {
-            return scrambled_radical_inverse_specialized(619_u16, perm, a);
-        }
+        96 => scrambled_radical_inverse_specialized(509_u16, perm, a),
 
-        114 => {
-            return scrambled_radical_inverse_specialized(631_u16, perm, a);
-        }
+        97 => scrambled_radical_inverse_specialized(521_u16, perm, a),
 
-        115 => {
-            return scrambled_radical_inverse_specialized(641_u16, perm, a);
-        }
+        98 => scrambled_radical_inverse_specialized(523_u16, perm, a),
 
-        116 => {
-            return scrambled_radical_inverse_specialized(643_u16, perm, a);
-        }
+        99 => scrambled_radical_inverse_specialized(541_u16, perm, a),
 
-        117 => {
-            return scrambled_radical_inverse_specialized(647_u16, perm, a);
-        }
+        100 => scrambled_radical_inverse_specialized(547_u16, perm, a),
 
-        118 => {
-            return scrambled_radical_inverse_specialized(653_u16, perm, a);
-        }
+        101 => scrambled_radical_inverse_specialized(557_u16, perm, a),
 
-        119 => {
-            return scrambled_radical_inverse_specialized(659_u16, perm, a);
-        }
+        102 => scrambled_radical_inverse_specialized(563_u16, perm, a),
 
-        120 => {
-            return scrambled_radical_inverse_specialized(661_u16, perm, a);
-        }
+        103 => scrambled_radical_inverse_specialized(569_u16, perm, a),
 
-        121 => {
-            return scrambled_radical_inverse_specialized(673_u16, perm, a);
-        }
+        104 => scrambled_radical_inverse_specialized(571_u16, perm, a),
 
-        122 => {
-            return scrambled_radical_inverse_specialized(677_u16, perm, a);
-        }
+        105 => scrambled_radical_inverse_specialized(577_u16, perm, a),
 
-        123 => {
-            return scrambled_radical_inverse_specialized(683_u16, perm, a);
-        }
+        106 => scrambled_radical_inverse_specialized(587_u16, perm, a),
 
-        124 => {
-            return scrambled_radical_inverse_specialized(691_u16, perm, a);
-        }
+        107 => scrambled_radical_inverse_specialized(593_u16, perm, a),
 
-        125 => {
-            return scrambled_radical_inverse_specialized(701_u16, perm, a);
-        }
+        108 => scrambled_radical_inverse_specialized(599_u16, perm, a),
 
-        126 => {
-            return scrambled_radical_inverse_specialized(709_u16, perm, a);
-        }
+        109 => scrambled_radical_inverse_specialized(601_u16, perm, a),
 
-        127 => {
-            return scrambled_radical_inverse_specialized(719_u16, perm, a);
-        }
+        110 => scrambled_radical_inverse_specialized(607_u16, perm, a),
 
-        128 => {
-            return scrambled_radical_inverse_specialized(727_u16, perm, a);
-        }
+        111 => scrambled_radical_inverse_specialized(613_u16, perm, a),
 
-        129 => {
-            return scrambled_radical_inverse_specialized(733_u16, perm, a);
-        }
+        112 => scrambled_radical_inverse_specialized(617_u16, perm, a),
 
-        130 => {
-            return scrambled_radical_inverse_specialized(739_u16, perm, a);
-        }
+        113 => scrambled_radical_inverse_specialized(619_u16, perm, a),
 
-        131 => {
-            return scrambled_radical_inverse_specialized(743_u16, perm, a);
-        }
+        114 => scrambled_radical_inverse_specialized(631_u16, perm, a),
 
-        132 => {
-            return scrambled_radical_inverse_specialized(751_u16, perm, a);
-        }
+        115 => scrambled_radical_inverse_specialized(641_u16, perm, a),
 
-        133 => {
-            return scrambled_radical_inverse_specialized(757_u16, perm, a);
-        }
+        116 => scrambled_radical_inverse_specialized(643_u16, perm, a),
 
-        134 => {
-            return scrambled_radical_inverse_specialized(761_u16, perm, a);
-        }
+        117 => scrambled_radical_inverse_specialized(647_u16, perm, a),
 
-        135 => {
-            return scrambled_radical_inverse_specialized(769_u16, perm, a);
-        }
+        118 => scrambled_radical_inverse_specialized(653_u16, perm, a),
 
-        136 => {
-            return scrambled_radical_inverse_specialized(773_u16, perm, a);
-        }
+        119 => scrambled_radical_inverse_specialized(659_u16, perm, a),
 
-        137 => {
-            return scrambled_radical_inverse_specialized(787_u16, perm, a);
-        }
+        120 => scrambled_radical_inverse_specialized(661_u16, perm, a),
 
-        138 => {
-            return scrambled_radical_inverse_specialized(797_u16, perm, a);
-        }
+        121 => scrambled_radical_inverse_specialized(673_u16, perm, a),
 
-        139 => {
-            return scrambled_radical_inverse_specialized(809_u16, perm, a);
-        }
+        122 => scrambled_radical_inverse_specialized(677_u16, perm, a),
 
-        140 => {
-            return scrambled_radical_inverse_specialized(811_u16, perm, a);
-        }
+        123 => scrambled_radical_inverse_specialized(683_u16, perm, a),
 
-        141 => {
-            return scrambled_radical_inverse_specialized(821_u16, perm, a);
-        }
+        124 => scrambled_radical_inverse_specialized(691_u16, perm, a),
 
-        142 => {
-            return scrambled_radical_inverse_specialized(823_u16, perm, a);
-        }
+        125 => scrambled_radical_inverse_specialized(701_u16, perm, a),
 
-        143 => {
-            return scrambled_radical_inverse_specialized(827_u16, perm, a);
-        }
+        126 => scrambled_radical_inverse_specialized(709_u16, perm, a),
 
-        144 => {
-            return scrambled_radical_inverse_specialized(829_u16, perm, a);
-        }
+        127 => scrambled_radical_inverse_specialized(719_u16, perm, a),
 
-        145 => {
-            return scrambled_radical_inverse_specialized(839_u16, perm, a);
-        }
+        128 => scrambled_radical_inverse_specialized(727_u16, perm, a),
 
-        146 => {
-            return scrambled_radical_inverse_specialized(853_u16, perm, a);
-        }
+        129 => scrambled_radical_inverse_specialized(733_u16, perm, a),
 
-        147 => {
-            return scrambled_radical_inverse_specialized(857_u16, perm, a);
-        }
+        130 => scrambled_radical_inverse_specialized(739_u16, perm, a),
 
-        148 => {
-            return scrambled_radical_inverse_specialized(859_u16, perm, a);
-        }
+        131 => scrambled_radical_inverse_specialized(743_u16, perm, a),
 
-        149 => {
-            return scrambled_radical_inverse_specialized(863_u16, perm, a);
-        }
+        132 => scrambled_radical_inverse_specialized(751_u16, perm, a),
 
-        150 => {
-            return scrambled_radical_inverse_specialized(877_u16, perm, a);
-        }
+        133 => scrambled_radical_inverse_specialized(757_u16, perm, a),
 
-        151 => {
-            return scrambled_radical_inverse_specialized(881_u16, perm, a);
-        }
+        134 => scrambled_radical_inverse_specialized(761_u16, perm, a),
 
-        152 => {
-            return scrambled_radical_inverse_specialized(883_u16, perm, a);
-        }
+        135 => scrambled_radical_inverse_specialized(769_u16, perm, a),
 
-        153 => {
-            return scrambled_radical_inverse_specialized(887_u16, perm, a);
-        }
+        136 => scrambled_radical_inverse_specialized(773_u16, perm, a),
 
-        154 => {
-            return scrambled_radical_inverse_specialized(907_u16, perm, a);
-        }
+        137 => scrambled_radical_inverse_specialized(787_u16, perm, a),
 
-        155 => {
-            return scrambled_radical_inverse_specialized(911_u16, perm, a);
-        }
+        138 => scrambled_radical_inverse_specialized(797_u16, perm, a),
 
-        156 => {
-            return scrambled_radical_inverse_specialized(919_u16, perm, a);
-        }
+        139 => scrambled_radical_inverse_specialized(809_u16, perm, a),
 
-        157 => {
-            return scrambled_radical_inverse_specialized(929_u16, perm, a);
-        }
+        140 => scrambled_radical_inverse_specialized(811_u16, perm, a),
 
-        158 => {
-            return scrambled_radical_inverse_specialized(937_u16, perm, a);
-        }
+        141 => scrambled_radical_inverse_specialized(821_u16, perm, a),
 
-        159 => {
-            return scrambled_radical_inverse_specialized(941_u16, perm, a);
-        }
+        142 => scrambled_radical_inverse_specialized(823_u16, perm, a),
 
-        160 => {
-            return scrambled_radical_inverse_specialized(947_u16, perm, a);
-        }
+        143 => scrambled_radical_inverse_specialized(827_u16, perm, a),
 
-        161 => {
-            return scrambled_radical_inverse_specialized(953_u16, perm, a);
-        }
+        144 => scrambled_radical_inverse_specialized(829_u16, perm, a),
 
-        162 => {
-            return scrambled_radical_inverse_specialized(967_u16, perm, a);
-        }
+        145 => scrambled_radical_inverse_specialized(839_u16, perm, a),
 
-        163 => {
-            return scrambled_radical_inverse_specialized(971_u16, perm, a);
-        }
+        146 => scrambled_radical_inverse_specialized(853_u16, perm, a),
 
-        164 => {
-            return scrambled_radical_inverse_specialized(977_u16, perm, a);
-        }
+        147 => scrambled_radical_inverse_specialized(857_u16, perm, a),
 
-        165 => {
-            return scrambled_radical_inverse_specialized(983_u16, perm, a);
-        }
+        148 => scrambled_radical_inverse_specialized(859_u16, perm, a),
 
-        166 => {
-            return scrambled_radical_inverse_specialized(991_u16, perm, a);
-        }
+        149 => scrambled_radical_inverse_specialized(863_u16, perm, a),
 
-        167 => {
-            return scrambled_radical_inverse_specialized(997_u16, perm, a);
-        }
+        150 => scrambled_radical_inverse_specialized(877_u16, perm, a),
 
-        168 => {
-            return scrambled_radical_inverse_specialized(1009_u16, perm, a);
-        }
+        151 => scrambled_radical_inverse_specialized(881_u16, perm, a),
 
-        169 => {
-            return scrambled_radical_inverse_specialized(1013_u16, perm, a);
-        }
+        152 => scrambled_radical_inverse_specialized(883_u16, perm, a),
 
-        170 => {
-            return scrambled_radical_inverse_specialized(1019_u16, perm, a);
-        }
+        153 => scrambled_radical_inverse_specialized(887_u16, perm, a),
 
-        171 => {
-            return scrambled_radical_inverse_specialized(1021_u16, perm, a);
-        }
+        154 => scrambled_radical_inverse_specialized(907_u16, perm, a),
 
-        172 => {
-            return scrambled_radical_inverse_specialized(1031_u16, perm, a);
-        }
+        155 => scrambled_radical_inverse_specialized(911_u16, perm, a),
 
-        173 => {
-            return scrambled_radical_inverse_specialized(1033_u16, perm, a);
-        }
+        156 => scrambled_radical_inverse_specialized(919_u16, perm, a),
 
-        174 => {
-            return scrambled_radical_inverse_specialized(1039_u16, perm, a);
-        }
+        157 => scrambled_radical_inverse_specialized(929_u16, perm, a),
 
-        175 => {
-            return scrambled_radical_inverse_specialized(1049_u16, perm, a);
-        }
+        158 => scrambled_radical_inverse_specialized(937_u16, perm, a),
 
-        176 => {
-            return scrambled_radical_inverse_specialized(1051_u16, perm, a);
-        }
+        159 => scrambled_radical_inverse_specialized(941_u16, perm, a),
 
-        177 => {
-            return scrambled_radical_inverse_specialized(1061_u16, perm, a);
-        }
+        160 => scrambled_radical_inverse_specialized(947_u16, perm, a),
 
-        178 => {
-            return scrambled_radical_inverse_specialized(1063_u16, perm, a);
-        }
+        161 => scrambled_radical_inverse_specialized(953_u16, perm, a),
 
-        179 => {
-            return scrambled_radical_inverse_specialized(1069_u16, perm, a);
-        }
+        162 => scrambled_radical_inverse_specialized(967_u16, perm, a),
 
-        180 => {
-            return scrambled_radical_inverse_specialized(1087_u16, perm, a);
-        }
+        163 => scrambled_radical_inverse_specialized(971_u16, perm, a),
 
-        181 => {
-            return scrambled_radical_inverse_specialized(1091_u16, perm, a);
-        }
+        164 => scrambled_radical_inverse_specialized(977_u16, perm, a),
 
-        182 => {
-            return scrambled_radical_inverse_specialized(1093_u16, perm, a);
-        }
+        165 => scrambled_radical_inverse_specialized(983_u16, perm, a),
 
-        183 => {
-            return scrambled_radical_inverse_specialized(1097_u16, perm, a);
-        }
+        166 => scrambled_radical_inverse_specialized(991_u16, perm, a),
 
-        184 => {
-            return scrambled_radical_inverse_specialized(1103_u16, perm, a);
-        }
+        167 => scrambled_radical_inverse_specialized(997_u16, perm, a),
 
-        185 => {
-            return scrambled_radical_inverse_specialized(1109_u16, perm, a);
-        }
+        168 => scrambled_radical_inverse_specialized(1009_u16, perm, a),
 
-        186 => {
-            return scrambled_radical_inverse_specialized(1117_u16, perm, a);
-        }
+        169 => scrambled_radical_inverse_specialized(1013_u16, perm, a),
 
-        187 => {
-            return scrambled_radical_inverse_specialized(1123_u16, perm, a);
-        }
+        170 => scrambled_radical_inverse_specialized(1019_u16, perm, a),
 
-        188 => {
-            return scrambled_radical_inverse_specialized(1129_u16, perm, a);
-        }
+        171 => scrambled_radical_inverse_specialized(1021_u16, perm, a),
 
-        189 => {
-            return scrambled_radical_inverse_specialized(1151_u16, perm, a);
-        }
+        172 => scrambled_radical_inverse_specialized(1031_u16, perm, a),
 
-        190 => {
-            return scrambled_radical_inverse_specialized(1153_u16, perm, a);
-        }
+        173 => scrambled_radical_inverse_specialized(1033_u16, perm, a),
 
-        191 => {
-            return scrambled_radical_inverse_specialized(1163_u16, perm, a);
-        }
+        174 => scrambled_radical_inverse_specialized(1039_u16, perm, a),
 
-        192 => {
-            return scrambled_radical_inverse_specialized(1171_u16, perm, a);
-        }
+        175 => scrambled_radical_inverse_specialized(1049_u16, perm, a),
 
-        193 => {
-            return scrambled_radical_inverse_specialized(1181_u16, perm, a);
-        }
+        176 => scrambled_radical_inverse_specialized(1051_u16, perm, a),
 
-        194 => {
-            return scrambled_radical_inverse_specialized(1187_u16, perm, a);
-        }
+        177 => scrambled_radical_inverse_specialized(1061_u16, perm, a),
 
-        195 => {
-            return scrambled_radical_inverse_specialized(1193_u16, perm, a);
-        }
+        178 => scrambled_radical_inverse_specialized(1063_u16, perm, a),
 
-        196 => {
-            return scrambled_radical_inverse_specialized(1201_u16, perm, a);
-        }
+        179 => scrambled_radical_inverse_specialized(1069_u16, perm, a),
 
-        197 => {
-            return scrambled_radical_inverse_specialized(1213_u16, perm, a);
-        }
+        180 => scrambled_radical_inverse_specialized(1087_u16, perm, a),
 
-        198 => {
-            return scrambled_radical_inverse_specialized(1217_u16, perm, a);
-        }
+        181 => scrambled_radical_inverse_specialized(1091_u16, perm, a),
 
-        199 => {
-            return scrambled_radical_inverse_specialized(1223_u16, perm, a);
-        }
+        182 => scrambled_radical_inverse_specialized(1093_u16, perm, a),
 
-        200 => {
-            return scrambled_radical_inverse_specialized(1229_u16, perm, a);
-        }
+        183 => scrambled_radical_inverse_specialized(1097_u16, perm, a),
 
-        201 => {
-            return scrambled_radical_inverse_specialized(1231_u16, perm, a);
-        }
+        184 => scrambled_radical_inverse_specialized(1103_u16, perm, a),
 
-        202 => {
-            return scrambled_radical_inverse_specialized(1237_u16, perm, a);
-        }
+        185 => scrambled_radical_inverse_specialized(1109_u16, perm, a),
 
-        203 => {
-            return scrambled_radical_inverse_specialized(1249_u16, perm, a);
-        }
+        186 => scrambled_radical_inverse_specialized(1117_u16, perm, a),
 
-        204 => {
-            return scrambled_radical_inverse_specialized(1259_u16, perm, a);
-        }
+        187 => scrambled_radical_inverse_specialized(1123_u16, perm, a),
 
-        205 => {
-            return scrambled_radical_inverse_specialized(1277_u16, perm, a);
-        }
+        188 => scrambled_radical_inverse_specialized(1129_u16, perm, a),
 
-        206 => {
-            return scrambled_radical_inverse_specialized(1279_u16, perm, a);
-        }
+        189 => scrambled_radical_inverse_specialized(1151_u16, perm, a),
 
-        207 => {
-            return scrambled_radical_inverse_specialized(1283_u16, perm, a);
-        }
+        190 => scrambled_radical_inverse_specialized(1153_u16, perm, a),
 
-        208 => {
-            return scrambled_radical_inverse_specialized(1289_u16, perm, a);
-        }
+        191 => scrambled_radical_inverse_specialized(1163_u16, perm, a),
 
-        209 => {
-            return scrambled_radical_inverse_specialized(1291_u16, perm, a);
-        }
+        192 => scrambled_radical_inverse_specialized(1171_u16, perm, a),
 
-        210 => {
-            return scrambled_radical_inverse_specialized(1297_u16, perm, a);
-        }
+        193 => scrambled_radical_inverse_specialized(1181_u16, perm, a),
 
-        211 => {
-            return scrambled_radical_inverse_specialized(1301_u16, perm, a);
-        }
+        194 => scrambled_radical_inverse_specialized(1187_u16, perm, a),
 
-        212 => {
-            return scrambled_radical_inverse_specialized(1303_u16, perm, a);
-        }
+        195 => scrambled_radical_inverse_specialized(1193_u16, perm, a),
 
-        213 => {
-            return scrambled_radical_inverse_specialized(1307_u16, perm, a);
-        }
+        196 => scrambled_radical_inverse_specialized(1201_u16, perm, a),
 
-        214 => {
-            return scrambled_radical_inverse_specialized(1319_u16, perm, a);
-        }
+        197 => scrambled_radical_inverse_specialized(1213_u16, perm, a),
 
-        215 => {
-            return scrambled_radical_inverse_specialized(1321_u16, perm, a);
-        }
+        198 => scrambled_radical_inverse_specialized(1217_u16, perm, a),
 
-        216 => {
-            return scrambled_radical_inverse_specialized(1327_u16, perm, a);
-        }
+        199 => scrambled_radical_inverse_specialized(1223_u16, perm, a),
 
-        217 => {
-            return scrambled_radical_inverse_specialized(1361_u16, perm, a);
-        }
+        200 => scrambled_radical_inverse_specialized(1229_u16, perm, a),
 
-        218 => {
-            return scrambled_radical_inverse_specialized(1367_u16, perm, a);
-        }
+        201 => scrambled_radical_inverse_specialized(1231_u16, perm, a),
 
-        219 => {
-            return scrambled_radical_inverse_specialized(1373_u16, perm, a);
-        }
+        202 => scrambled_radical_inverse_specialized(1237_u16, perm, a),
 
-        220 => {
-            return scrambled_radical_inverse_specialized(1381_u16, perm, a);
-        }
+        203 => scrambled_radical_inverse_specialized(1249_u16, perm, a),
 
-        221 => {
-            return scrambled_radical_inverse_specialized(1399_u16, perm, a);
-        }
+        204 => scrambled_radical_inverse_specialized(1259_u16, perm, a),
 
-        222 => {
-            return scrambled_radical_inverse_specialized(1409_u16, perm, a);
-        }
+        205 => scrambled_radical_inverse_specialized(1277_u16, perm, a),
 
-        223 => {
-            return scrambled_radical_inverse_specialized(1423_u16, perm, a);
-        }
+        206 => scrambled_radical_inverse_specialized(1279_u16, perm, a),
 
-        224 => {
-            return scrambled_radical_inverse_specialized(1427_u16, perm, a);
-        }
+        207 => scrambled_radical_inverse_specialized(1283_u16, perm, a),
 
-        225 => {
-            return scrambled_radical_inverse_specialized(1429_u16, perm, a);
-        }
+        208 => scrambled_radical_inverse_specialized(1289_u16, perm, a),
 
-        226 => {
-            return scrambled_radical_inverse_specialized(1433_u16, perm, a);
-        }
+        209 => scrambled_radical_inverse_specialized(1291_u16, perm, a),
 
-        227 => {
-            return scrambled_radical_inverse_specialized(1439_u16, perm, a);
-        }
+        210 => scrambled_radical_inverse_specialized(1297_u16, perm, a),
 
-        228 => {
-            return scrambled_radical_inverse_specialized(1447_u16, perm, a);
-        }
+        211 => scrambled_radical_inverse_specialized(1301_u16, perm, a),
 
-        229 => {
-            return scrambled_radical_inverse_specialized(1451_u16, perm, a);
-        }
+        212 => scrambled_radical_inverse_specialized(1303_u16, perm, a),
 
-        230 => {
-            return scrambled_radical_inverse_specialized(1453_u16, perm, a);
-        }
+        213 => scrambled_radical_inverse_specialized(1307_u16, perm, a),
 
-        231 => {
-            return scrambled_radical_inverse_specialized(1459_u16, perm, a);
-        }
+        214 => scrambled_radical_inverse_specialized(1319_u16, perm, a),
 
-        232 => {
-            return scrambled_radical_inverse_specialized(1471_u16, perm, a);
-        }
+        215 => scrambled_radical_inverse_specialized(1321_u16, perm, a),
 
-        233 => {
-            return scrambled_radical_inverse_specialized(1481_u16, perm, a);
-        }
+        216 => scrambled_radical_inverse_specialized(1327_u16, perm, a),
 
-        234 => {
-            return scrambled_radical_inverse_specialized(1483_u16, perm, a);
-        }
+        217 => scrambled_radical_inverse_specialized(1361_u16, perm, a),
 
-        235 => {
-            return scrambled_radical_inverse_specialized(1487_u16, perm, a);
-        }
+        218 => scrambled_radical_inverse_specialized(1367_u16, perm, a),
 
-        236 => {
-            return scrambled_radical_inverse_specialized(1489_u16, perm, a);
-        }
+        219 => scrambled_radical_inverse_specialized(1373_u16, perm, a),
 
-        237 => {
-            return scrambled_radical_inverse_specialized(1493_u16, perm, a);
-        }
+        220 => scrambled_radical_inverse_specialized(1381_u16, perm, a),
 
-        238 => {
-            return scrambled_radical_inverse_specialized(1499_u16, perm, a);
-        }
+        221 => scrambled_radical_inverse_specialized(1399_u16, perm, a),
 
-        239 => {
-            return scrambled_radical_inverse_specialized(1511_u16, perm, a);
-        }
+        222 => scrambled_radical_inverse_specialized(1409_u16, perm, a),
 
-        240 => {
-            return scrambled_radical_inverse_specialized(1523_u16, perm, a);
-        }
+        223 => scrambled_radical_inverse_specialized(1423_u16, perm, a),
 
-        241 => {
-            return scrambled_radical_inverse_specialized(1531_u16, perm, a);
-        }
+        224 => scrambled_radical_inverse_specialized(1427_u16, perm, a),
 
-        242 => {
-            return scrambled_radical_inverse_specialized(1543_u16, perm, a);
-        }
+        225 => scrambled_radical_inverse_specialized(1429_u16, perm, a),
 
-        243 => {
-            return scrambled_radical_inverse_specialized(1549_u16, perm, a);
-        }
+        226 => scrambled_radical_inverse_specialized(1433_u16, perm, a),
 
-        244 => {
-            return scrambled_radical_inverse_specialized(1553_u16, perm, a);
-        }
+        227 => scrambled_radical_inverse_specialized(1439_u16, perm, a),
 
-        245 => {
-            return scrambled_radical_inverse_specialized(1559_u16, perm, a);
-        }
+        228 => scrambled_radical_inverse_specialized(1447_u16, perm, a),
 
-        246 => {
-            return scrambled_radical_inverse_specialized(1567_u16, perm, a);
-        }
+        229 => scrambled_radical_inverse_specialized(1451_u16, perm, a),
 
-        247 => {
-            return scrambled_radical_inverse_specialized(1571_u16, perm, a);
-        }
+        230 => scrambled_radical_inverse_specialized(1453_u16, perm, a),
 
-        248 => {
-            return scrambled_radical_inverse_specialized(1579_u16, perm, a);
-        }
+        231 => scrambled_radical_inverse_specialized(1459_u16, perm, a),
 
-        249 => {
-            return scrambled_radical_inverse_specialized(1583_u16, perm, a);
-        }
+        232 => scrambled_radical_inverse_specialized(1471_u16, perm, a),
 
-        250 => {
-            return scrambled_radical_inverse_specialized(1597_u16, perm, a);
-        }
+        233 => scrambled_radical_inverse_specialized(1481_u16, perm, a),
 
-        251 => {
-            return scrambled_radical_inverse_specialized(1601_u16, perm, a);
-        }
+        234 => scrambled_radical_inverse_specialized(1483_u16, perm, a),
 
-        252 => {
-            return scrambled_radical_inverse_specialized(1607_u16, perm, a);
-        }
+        235 => scrambled_radical_inverse_specialized(1487_u16, perm, a),
 
-        253 => {
-            return scrambled_radical_inverse_specialized(1609_u16, perm, a);
-        }
+        236 => scrambled_radical_inverse_specialized(1489_u16, perm, a),
 
-        254 => {
-            return scrambled_radical_inverse_specialized(1613_u16, perm, a);
-        }
+        237 => scrambled_radical_inverse_specialized(1493_u16, perm, a),
 
-        255 => {
-            return scrambled_radical_inverse_specialized(1619_u16, perm, a);
-        }
+        238 => scrambled_radical_inverse_specialized(1499_u16, perm, a),
 
-        256 => {
-            return scrambled_radical_inverse_specialized(1621_u16, perm, a);
-        }
+        239 => scrambled_radical_inverse_specialized(1511_u16, perm, a),
 
-        257 => {
-            return scrambled_radical_inverse_specialized(1627_u16, perm, a);
-        }
+        240 => scrambled_radical_inverse_specialized(1523_u16, perm, a),
 
-        258 => {
-            return scrambled_radical_inverse_specialized(1637_u16, perm, a);
-        }
+        241 => scrambled_radical_inverse_specialized(1531_u16, perm, a),
 
-        259 => {
-            return scrambled_radical_inverse_specialized(1657_u16, perm, a);
-        }
+        242 => scrambled_radical_inverse_specialized(1543_u16, perm, a),
 
-        260 => {
-            return scrambled_radical_inverse_specialized(1663_u16, perm, a);
-        }
+        243 => scrambled_radical_inverse_specialized(1549_u16, perm, a),
 
-        261 => {
-            return scrambled_radical_inverse_specialized(1667_u16, perm, a);
-        }
+        244 => scrambled_radical_inverse_specialized(1553_u16, perm, a),
 
-        262 => {
-            return scrambled_radical_inverse_specialized(1669_u16, perm, a);
-        }
+        245 => scrambled_radical_inverse_specialized(1559_u16, perm, a),
 
-        263 => {
-            return scrambled_radical_inverse_specialized(1693_u16, perm, a);
-        }
+        246 => scrambled_radical_inverse_specialized(1567_u16, perm, a),
 
-        264 => {
-            return scrambled_radical_inverse_specialized(1697_u16, perm, a);
-        }
+        247 => scrambled_radical_inverse_specialized(1571_u16, perm, a),
 
-        265 => {
-            return scrambled_radical_inverse_specialized(1699_u16, perm, a);
-        }
+        248 => scrambled_radical_inverse_specialized(1579_u16, perm, a),
 
-        266 => {
-            return scrambled_radical_inverse_specialized(1709_u16, perm, a);
-        }
+        249 => scrambled_radical_inverse_specialized(1583_u16, perm, a),
 
-        267 => {
-            return scrambled_radical_inverse_specialized(1721_u16, perm, a);
-        }
+        250 => scrambled_radical_inverse_specialized(1597_u16, perm, a),
 
-        268 => {
-            return scrambled_radical_inverse_specialized(1723_u16, perm, a);
-        }
+        251 => scrambled_radical_inverse_specialized(1601_u16, perm, a),
 
-        269 => {
-            return scrambled_radical_inverse_specialized(1733_u16, perm, a);
-        }
+        252 => scrambled_radical_inverse_specialized(1607_u16, perm, a),
 
-        270 => {
-            return scrambled_radical_inverse_specialized(1741_u16, perm, a);
-        }
+        253 => scrambled_radical_inverse_specialized(1609_u16, perm, a),
 
-        271 => {
-            return scrambled_radical_inverse_specialized(1747_u16, perm, a);
-        }
+        254 => scrambled_radical_inverse_specialized(1613_u16, perm, a),
 
-        272 => {
-            return scrambled_radical_inverse_specialized(1753_u16, perm, a);
-        }
+        255 => scrambled_radical_inverse_specialized(1619_u16, perm, a),
 
-        273 => {
-            return scrambled_radical_inverse_specialized(1759_u16, perm, a);
-        }
+        256 => scrambled_radical_inverse_specialized(1621_u16, perm, a),
 
-        274 => {
-            return scrambled_radical_inverse_specialized(1777_u16, perm, a);
-        }
+        257 => scrambled_radical_inverse_specialized(1627_u16, perm, a),
 
-        275 => {
-            return scrambled_radical_inverse_specialized(1783_u16, perm, a);
-        }
+        258 => scrambled_radical_inverse_specialized(1637_u16, perm, a),
 
-        276 => {
-            return scrambled_radical_inverse_specialized(1787_u16, perm, a);
-        }
+        259 => scrambled_radical_inverse_specialized(1657_u16, perm, a),
 
-        277 => {
-            return scrambled_radical_inverse_specialized(1789_u16, perm, a);
-        }
+        260 => scrambled_radical_inverse_specialized(1663_u16, perm, a),
 
-        278 => {
-            return scrambled_radical_inverse_specialized(1801_u16, perm, a);
-        }
+        261 => scrambled_radical_inverse_specialized(1667_u16, perm, a),
 
-        279 => {
-            return scrambled_radical_inverse_specialized(1811_u16, perm, a);
-        }
+        262 => scrambled_radical_inverse_specialized(1669_u16, perm, a),
 
-        280 => {
-            return scrambled_radical_inverse_specialized(1823_u16, perm, a);
-        }
+        263 => scrambled_radical_inverse_specialized(1693_u16, perm, a),
 
-        281 => {
-            return scrambled_radical_inverse_specialized(1831_u16, perm, a);
-        }
+        264 => scrambled_radical_inverse_specialized(1697_u16, perm, a),
 
-        282 => {
-            return scrambled_radical_inverse_specialized(1847_u16, perm, a);
-        }
+        265 => scrambled_radical_inverse_specialized(1699_u16, perm, a),
 
-        283 => {
-            return scrambled_radical_inverse_specialized(1861_u16, perm, a);
-        }
+        266 => scrambled_radical_inverse_specialized(1709_u16, perm, a),
 
-        284 => {
-            return scrambled_radical_inverse_specialized(1867_u16, perm, a);
-        }
+        267 => scrambled_radical_inverse_specialized(1721_u16, perm, a),
 
-        285 => {
-            return scrambled_radical_inverse_specialized(1871_u16, perm, a);
-        }
+        268 => scrambled_radical_inverse_specialized(1723_u16, perm, a),
 
-        286 => {
-            return scrambled_radical_inverse_specialized(1873_u16, perm, a);
-        }
+        269 => scrambled_radical_inverse_specialized(1733_u16, perm, a),
 
-        287 => {
-            return scrambled_radical_inverse_specialized(1877_u16, perm, a);
-        }
+        270 => scrambled_radical_inverse_specialized(1741_u16, perm, a),
 
-        288 => {
-            return scrambled_radical_inverse_specialized(1879_u16, perm, a);
-        }
+        271 => scrambled_radical_inverse_specialized(1747_u16, perm, a),
 
-        289 => {
-            return scrambled_radical_inverse_specialized(1889_u16, perm, a);
-        }
+        272 => scrambled_radical_inverse_specialized(1753_u16, perm, a),
 
-        290 => {
-            return scrambled_radical_inverse_specialized(1901_u16, perm, a);
-        }
+        273 => scrambled_radical_inverse_specialized(1759_u16, perm, a),
 
-        291 => {
-            return scrambled_radical_inverse_specialized(1907_u16, perm, a);
-        }
+        274 => scrambled_radical_inverse_specialized(1777_u16, perm, a),
 
-        292 => {
-            return scrambled_radical_inverse_specialized(1913_u16, perm, a);
-        }
+        275 => scrambled_radical_inverse_specialized(1783_u16, perm, a),
 
-        293 => {
-            return scrambled_radical_inverse_specialized(1931_u16, perm, a);
-        }
+        276 => scrambled_radical_inverse_specialized(1787_u16, perm, a),
 
-        294 => {
-            return scrambled_radical_inverse_specialized(1933_u16, perm, a);
-        }
+        277 => scrambled_radical_inverse_specialized(1789_u16, perm, a),
 
-        295 => {
-            return scrambled_radical_inverse_specialized(1949_u16, perm, a);
-        }
+        278 => scrambled_radical_inverse_specialized(1801_u16, perm, a),
 
-        296 => {
-            return scrambled_radical_inverse_specialized(1951_u16, perm, a);
-        }
+        279 => scrambled_radical_inverse_specialized(1811_u16, perm, a),
 
-        297 => {
-            return scrambled_radical_inverse_specialized(1973_u16, perm, a);
-        }
+        280 => scrambled_radical_inverse_specialized(1823_u16, perm, a),
 
-        298 => {
-            return scrambled_radical_inverse_specialized(1979_u16, perm, a);
-        }
+        281 => scrambled_radical_inverse_specialized(1831_u16, perm, a),
 
-        299 => {
-            return scrambled_radical_inverse_specialized(1987_u16, perm, a);
-        }
+        282 => scrambled_radical_inverse_specialized(1847_u16, perm, a),
 
-        300 => {
-            return scrambled_radical_inverse_specialized(1993_u16, perm, a);
-        }
+        283 => scrambled_radical_inverse_specialized(1861_u16, perm, a),
 
-        301 => {
-            return scrambled_radical_inverse_specialized(1997_u16, perm, a);
-        }
+        284 => scrambled_radical_inverse_specialized(1867_u16, perm, a),
 
-        302 => {
-            return scrambled_radical_inverse_specialized(1999_u16, perm, a);
-        }
+        285 => scrambled_radical_inverse_specialized(1871_u16, perm, a),
 
-        303 => {
-            return scrambled_radical_inverse_specialized(2003_u16, perm, a);
-        }
+        286 => scrambled_radical_inverse_specialized(1873_u16, perm, a),
 
-        304 => {
-            return scrambled_radical_inverse_specialized(2011_u16, perm, a);
-        }
+        287 => scrambled_radical_inverse_specialized(1877_u16, perm, a),
 
-        305 => {
-            return scrambled_radical_inverse_specialized(2017_u16, perm, a);
-        }
+        288 => scrambled_radical_inverse_specialized(1879_u16, perm, a),
 
-        306 => {
-            return scrambled_radical_inverse_specialized(2027_u16, perm, a);
-        }
+        289 => scrambled_radical_inverse_specialized(1889_u16, perm, a),
 
-        307 => {
-            return scrambled_radical_inverse_specialized(2029_u16, perm, a);
-        }
+        290 => scrambled_radical_inverse_specialized(1901_u16, perm, a),
 
-        308 => {
-            return scrambled_radical_inverse_specialized(2039_u16, perm, a);
-        }
+        291 => scrambled_radical_inverse_specialized(1907_u16, perm, a),
 
-        309 => {
-            return scrambled_radical_inverse_specialized(2053_u16, perm, a);
-        }
+        292 => scrambled_radical_inverse_specialized(1913_u16, perm, a),
 
-        310 => {
-            return scrambled_radical_inverse_specialized(2063_u16, perm, a);
-        }
+        293 => scrambled_radical_inverse_specialized(1931_u16, perm, a),
 
-        311 => {
-            return scrambled_radical_inverse_specialized(2069_u16, perm, a);
-        }
+        294 => scrambled_radical_inverse_specialized(1933_u16, perm, a),
 
-        312 => {
-            return scrambled_radical_inverse_specialized(2081_u16, perm, a);
-        }
+        295 => scrambled_radical_inverse_specialized(1949_u16, perm, a),
 
-        313 => {
-            return scrambled_radical_inverse_specialized(2083_u16, perm, a);
-        }
+        296 => scrambled_radical_inverse_specialized(1951_u16, perm, a),
 
-        314 => {
-            return scrambled_radical_inverse_specialized(2087_u16, perm, a);
-        }
+        297 => scrambled_radical_inverse_specialized(1973_u16, perm, a),
 
-        315 => {
-            return scrambled_radical_inverse_specialized(2089_u16, perm, a);
-        }
+        298 => scrambled_radical_inverse_specialized(1979_u16, perm, a),
 
-        316 => {
-            return scrambled_radical_inverse_specialized(2099_u16, perm, a);
-        }
+        299 => scrambled_radical_inverse_specialized(1987_u16, perm, a),
 
-        317 => {
-            return scrambled_radical_inverse_specialized(2111_u16, perm, a);
-        }
+        300 => scrambled_radical_inverse_specialized(1993_u16, perm, a),
 
-        318 => {
-            return scrambled_radical_inverse_specialized(2113_u16, perm, a);
-        }
+        301 => scrambled_radical_inverse_specialized(1997_u16, perm, a),
 
-        319 => {
-            return scrambled_radical_inverse_specialized(2129_u16, perm, a);
-        }
+        302 => scrambled_radical_inverse_specialized(1999_u16, perm, a),
 
-        320 => {
-            return scrambled_radical_inverse_specialized(2131_u16, perm, a);
-        }
+        303 => scrambled_radical_inverse_specialized(2003_u16, perm, a),
 
-        321 => {
-            return scrambled_radical_inverse_specialized(2137_u16, perm, a);
-        }
+        304 => scrambled_radical_inverse_specialized(2011_u16, perm, a),
 
-        322 => {
-            return scrambled_radical_inverse_specialized(2141_u16, perm, a);
-        }
+        305 => scrambled_radical_inverse_specialized(2017_u16, perm, a),
 
-        323 => {
-            return scrambled_radical_inverse_specialized(2143_u16, perm, a);
-        }
+        306 => scrambled_radical_inverse_specialized(2027_u16, perm, a),
 
-        324 => {
-            return scrambled_radical_inverse_specialized(2153_u16, perm, a);
-        }
+        307 => scrambled_radical_inverse_specialized(2029_u16, perm, a),
 
-        325 => {
-            return scrambled_radical_inverse_specialized(2161_u16, perm, a);
-        }
+        308 => scrambled_radical_inverse_specialized(2039_u16, perm, a),
 
-        326 => {
-            return scrambled_radical_inverse_specialized(2179_u16, perm, a);
-        }
+        309 => scrambled_radical_inverse_specialized(2053_u16, perm, a),
 
-        327 => {
-            return scrambled_radical_inverse_specialized(2203_u16, perm, a);
-        }
+        310 => scrambled_radical_inverse_specialized(2063_u16, perm, a),
 
-        328 => {
-            return scrambled_radical_inverse_specialized(2207_u16, perm, a);
-        }
+        311 => scrambled_radical_inverse_specialized(2069_u16, perm, a),
 
-        329 => {
-            return scrambled_radical_inverse_specialized(2213_u16, perm, a);
-        }
+        312 => scrambled_radical_inverse_specialized(2081_u16, perm, a),
 
-        330 => {
-            return scrambled_radical_inverse_specialized(2221_u16, perm, a);
-        }
+        313 => scrambled_radical_inverse_specialized(2083_u16, perm, a),
 
-        331 => {
-            return scrambled_radical_inverse_specialized(2237_u16, perm, a);
-        }
+        314 => scrambled_radical_inverse_specialized(2087_u16, perm, a),
 
-        332 => {
-            return scrambled_radical_inverse_specialized(2239_u16, perm, a);
-        }
+        315 => scrambled_radical_inverse_specialized(2089_u16, perm, a),
 
-        333 => {
-            return scrambled_radical_inverse_specialized(2243_u16, perm, a);
-        }
+        316 => scrambled_radical_inverse_specialized(2099_u16, perm, a),
 
-        334 => {
-            return scrambled_radical_inverse_specialized(2251_u16, perm, a);
-        }
+        317 => scrambled_radical_inverse_specialized(2111_u16, perm, a),
 
-        335 => {
-            return scrambled_radical_inverse_specialized(2267_u16, perm, a);
-        }
+        318 => scrambled_radical_inverse_specialized(2113_u16, perm, a),
 
-        336 => {
-            return scrambled_radical_inverse_specialized(2269_u16, perm, a);
-        }
+        319 => scrambled_radical_inverse_specialized(2129_u16, perm, a),
 
-        337 => {
-            return scrambled_radical_inverse_specialized(2273_u16, perm, a);
-        }
+        320 => scrambled_radical_inverse_specialized(2131_u16, perm, a),
 
-        338 => {
-            return scrambled_radical_inverse_specialized(2281_u16, perm, a);
-        }
+        321 => scrambled_radical_inverse_specialized(2137_u16, perm, a),
 
-        339 => {
-            return scrambled_radical_inverse_specialized(2287_u16, perm, a);
-        }
+        322 => scrambled_radical_inverse_specialized(2141_u16, perm, a),
 
-        340 => {
-            return scrambled_radical_inverse_specialized(2293_u16, perm, a);
-        }
+        323 => scrambled_radical_inverse_specialized(2143_u16, perm, a),
 
-        341 => {
-            return scrambled_radical_inverse_specialized(2297_u16, perm, a);
-        }
+        324 => scrambled_radical_inverse_specialized(2153_u16, perm, a),
 
-        342 => {
-            return scrambled_radical_inverse_specialized(2309_u16, perm, a);
-        }
+        325 => scrambled_radical_inverse_specialized(2161_u16, perm, a),
 
-        343 => {
-            return scrambled_radical_inverse_specialized(2311_u16, perm, a);
-        }
+        326 => scrambled_radical_inverse_specialized(2179_u16, perm, a),
 
-        344 => {
-            return scrambled_radical_inverse_specialized(2333_u16, perm, a);
-        }
+        327 => scrambled_radical_inverse_specialized(2203_u16, perm, a),
 
-        345 => {
-            return scrambled_radical_inverse_specialized(2339_u16, perm, a);
-        }
+        328 => scrambled_radical_inverse_specialized(2207_u16, perm, a),
 
-        346 => {
-            return scrambled_radical_inverse_specialized(2341_u16, perm, a);
-        }
+        329 => scrambled_radical_inverse_specialized(2213_u16, perm, a),
 
-        347 => {
-            return scrambled_radical_inverse_specialized(2347_u16, perm, a);
-        }
+        330 => scrambled_radical_inverse_specialized(2221_u16, perm, a),
 
-        348 => {
-            return scrambled_radical_inverse_specialized(2351_u16, perm, a);
-        }
+        331 => scrambled_radical_inverse_specialized(2237_u16, perm, a),
 
-        349 => {
-            return scrambled_radical_inverse_specialized(2357_u16, perm, a);
-        }
+        332 => scrambled_radical_inverse_specialized(2239_u16, perm, a),
 
-        350 => {
-            return scrambled_radical_inverse_specialized(2371_u16, perm, a);
-        }
+        333 => scrambled_radical_inverse_specialized(2243_u16, perm, a),
 
-        351 => {
-            return scrambled_radical_inverse_specialized(2377_u16, perm, a);
-        }
+        334 => scrambled_radical_inverse_specialized(2251_u16, perm, a),
 
-        352 => {
-            return scrambled_radical_inverse_specialized(2381_u16, perm, a);
-        }
+        335 => scrambled_radical_inverse_specialized(2267_u16, perm, a),
 
-        353 => {
-            return scrambled_radical_inverse_specialized(2383_u16, perm, a);
-        }
+        336 => scrambled_radical_inverse_specialized(2269_u16, perm, a),
 
-        354 => {
-            return scrambled_radical_inverse_specialized(2389_u16, perm, a);
-        }
+        337 => scrambled_radical_inverse_specialized(2273_u16, perm, a),
 
-        355 => {
-            return scrambled_radical_inverse_specialized(2393_u16, perm, a);
-        }
+        338 => scrambled_radical_inverse_specialized(2281_u16, perm, a),
 
-        356 => {
-            return scrambled_radical_inverse_specialized(2399_u16, perm, a);
-        }
+        339 => scrambled_radical_inverse_specialized(2287_u16, perm, a),
 
-        357 => {
-            return scrambled_radical_inverse_specialized(2411_u16, perm, a);
-        }
+        340 => scrambled_radical_inverse_specialized(2293_u16, perm, a),
 
-        358 => {
-            return scrambled_radical_inverse_specialized(2417_u16, perm, a);
-        }
+        341 => scrambled_radical_inverse_specialized(2297_u16, perm, a),
 
-        359 => {
-            return scrambled_radical_inverse_specialized(2423_u16, perm, a);
-        }
+        342 => scrambled_radical_inverse_specialized(2309_u16, perm, a),
 
-        360 => {
-            return scrambled_radical_inverse_specialized(2437_u16, perm, a);
-        }
+        343 => scrambled_radical_inverse_specialized(2311_u16, perm, a),
 
-        361 => {
-            return scrambled_radical_inverse_specialized(2441_u16, perm, a);
-        }
+        344 => scrambled_radical_inverse_specialized(2333_u16, perm, a),
 
-        362 => {
-            return scrambled_radical_inverse_specialized(2447_u16, perm, a);
-        }
+        345 => scrambled_radical_inverse_specialized(2339_u16, perm, a),
 
-        363 => {
-            return scrambled_radical_inverse_specialized(2459_u16, perm, a);
-        }
+        346 => scrambled_radical_inverse_specialized(2341_u16, perm, a),
 
-        364 => {
-            return scrambled_radical_inverse_specialized(2467_u16, perm, a);
-        }
+        347 => scrambled_radical_inverse_specialized(2347_u16, perm, a),
 
-        365 => {
-            return scrambled_radical_inverse_specialized(2473_u16, perm, a);
-        }
+        348 => scrambled_radical_inverse_specialized(2351_u16, perm, a),
 
-        366 => {
-            return scrambled_radical_inverse_specialized(2477_u16, perm, a);
-        }
+        349 => scrambled_radical_inverse_specialized(2357_u16, perm, a),
 
-        367 => {
-            return scrambled_radical_inverse_specialized(2503_u16, perm, a);
-        }
+        350 => scrambled_radical_inverse_specialized(2371_u16, perm, a),
 
-        368 => {
-            return scrambled_radical_inverse_specialized(2521_u16, perm, a);
-        }
+        351 => scrambled_radical_inverse_specialized(2377_u16, perm, a),
 
-        369 => {
-            return scrambled_radical_inverse_specialized(2531_u16, perm, a);
-        }
+        352 => scrambled_radical_inverse_specialized(2381_u16, perm, a),
 
-        370 => {
-            return scrambled_radical_inverse_specialized(2539_u16, perm, a);
-        }
+        353 => scrambled_radical_inverse_specialized(2383_u16, perm, a),
 
-        371 => {
-            return scrambled_radical_inverse_specialized(2543_u16, perm, a);
-        }
+        354 => scrambled_radical_inverse_specialized(2389_u16, perm, a),
 
-        372 => {
-            return scrambled_radical_inverse_specialized(2549_u16, perm, a);
-        }
+        355 => scrambled_radical_inverse_specialized(2393_u16, perm, a),
 
-        373 => {
-            return scrambled_radical_inverse_specialized(2551_u16, perm, a);
-        }
+        356 => scrambled_radical_inverse_specialized(2399_u16, perm, a),
 
-        374 => {
-            return scrambled_radical_inverse_specialized(2557_u16, perm, a);
-        }
+        357 => scrambled_radical_inverse_specialized(2411_u16, perm, a),
 
-        375 => {
-            return scrambled_radical_inverse_specialized(2579_u16, perm, a);
-        }
+        358 => scrambled_radical_inverse_specialized(2417_u16, perm, a),
 
-        376 => {
-            return scrambled_radical_inverse_specialized(2591_u16, perm, a);
-        }
+        359 => scrambled_radical_inverse_specialized(2423_u16, perm, a),
 
-        377 => {
-            return scrambled_radical_inverse_specialized(2593_u16, perm, a);
-        }
+        360 => scrambled_radical_inverse_specialized(2437_u16, perm, a),
 
-        378 => {
-            return scrambled_radical_inverse_specialized(2609_u16, perm, a);
-        }
+        361 => scrambled_radical_inverse_specialized(2441_u16, perm, a),
 
-        379 => {
-            return scrambled_radical_inverse_specialized(2617_u16, perm, a);
-        }
+        362 => scrambled_radical_inverse_specialized(2447_u16, perm, a),
 
-        380 => {
-            return scrambled_radical_inverse_specialized(2621_u16, perm, a);
-        }
+        363 => scrambled_radical_inverse_specialized(2459_u16, perm, a),
 
-        381 => {
-            return scrambled_radical_inverse_specialized(2633_u16, perm, a);
-        }
+        364 => scrambled_radical_inverse_specialized(2467_u16, perm, a),
 
-        382 => {
-            return scrambled_radical_inverse_specialized(2647_u16, perm, a);
-        }
+        365 => scrambled_radical_inverse_specialized(2473_u16, perm, a),
 
-        383 => {
-            return scrambled_radical_inverse_specialized(2657_u16, perm, a);
-        }
+        366 => scrambled_radical_inverse_specialized(2477_u16, perm, a),
 
-        384 => {
-            return scrambled_radical_inverse_specialized(2659_u16, perm, a);
-        }
+        367 => scrambled_radical_inverse_specialized(2503_u16, perm, a),
 
-        385 => {
-            return scrambled_radical_inverse_specialized(2663_u16, perm, a);
-        }
+        368 => scrambled_radical_inverse_specialized(2521_u16, perm, a),
 
-        386 => {
-            return scrambled_radical_inverse_specialized(2671_u16, perm, a);
-        }
+        369 => scrambled_radical_inverse_specialized(2531_u16, perm, a),
 
-        387 => {
-            return scrambled_radical_inverse_specialized(2677_u16, perm, a);
-        }
+        370 => scrambled_radical_inverse_specialized(2539_u16, perm, a),
 
-        388 => {
-            return scrambled_radical_inverse_specialized(2683_u16, perm, a);
-        }
+        371 => scrambled_radical_inverse_specialized(2543_u16, perm, a),
 
-        389 => {
-            return scrambled_radical_inverse_specialized(2687_u16, perm, a);
-        }
+        372 => scrambled_radical_inverse_specialized(2549_u16, perm, a),
 
-        390 => {
-            return scrambled_radical_inverse_specialized(2689_u16, perm, a);
-        }
+        373 => scrambled_radical_inverse_specialized(2551_u16, perm, a),
 
-        391 => {
-            return scrambled_radical_inverse_specialized(2693_u16, perm, a);
-        }
+        374 => scrambled_radical_inverse_specialized(2557_u16, perm, a),
 
-        392 => {
-            return scrambled_radical_inverse_specialized(2699_u16, perm, a);
-        }
+        375 => scrambled_radical_inverse_specialized(2579_u16, perm, a),
 
-        393 => {
-            return scrambled_radical_inverse_specialized(2707_u16, perm, a);
-        }
+        376 => scrambled_radical_inverse_specialized(2591_u16, perm, a),
 
-        394 => {
-            return scrambled_radical_inverse_specialized(2711_u16, perm, a);
-        }
+        377 => scrambled_radical_inverse_specialized(2593_u16, perm, a),
 
-        395 => {
-            return scrambled_radical_inverse_specialized(2713_u16, perm, a);
-        }
+        378 => scrambled_radical_inverse_specialized(2609_u16, perm, a),
 
-        396 => {
-            return scrambled_radical_inverse_specialized(2719_u16, perm, a);
-        }
+        379 => scrambled_radical_inverse_specialized(2617_u16, perm, a),
 
-        397 => {
-            return scrambled_radical_inverse_specialized(2729_u16, perm, a);
-        }
+        380 => scrambled_radical_inverse_specialized(2621_u16, perm, a),
 
-        398 => {
-            return scrambled_radical_inverse_specialized(2731_u16, perm, a);
-        }
+        381 => scrambled_radical_inverse_specialized(2633_u16, perm, a),
 
-        399 => {
-            return scrambled_radical_inverse_specialized(2741_u16, perm, a);
-        }
+        382 => scrambled_radical_inverse_specialized(2647_u16, perm, a),
 
-        400 => {
-            return scrambled_radical_inverse_specialized(2749_u16, perm, a);
-        }
+        383 => scrambled_radical_inverse_specialized(2657_u16, perm, a),
 
-        401 => {
-            return scrambled_radical_inverse_specialized(2753_u16, perm, a);
-        }
+        384 => scrambled_radical_inverse_specialized(2659_u16, perm, a),
 
-        402 => {
-            return scrambled_radical_inverse_specialized(2767_u16, perm, a);
-        }
+        385 => scrambled_radical_inverse_specialized(2663_u16, perm, a),
 
-        403 => {
-            return scrambled_radical_inverse_specialized(2777_u16, perm, a);
-        }
+        386 => scrambled_radical_inverse_specialized(2671_u16, perm, a),
 
-        404 => {
-            return scrambled_radical_inverse_specialized(2789_u16, perm, a);
-        }
+        387 => scrambled_radical_inverse_specialized(2677_u16, perm, a),
 
-        405 => {
-            return scrambled_radical_inverse_specialized(2791_u16, perm, a);
-        }
+        388 => scrambled_radical_inverse_specialized(2683_u16, perm, a),
 
-        406 => {
-            return scrambled_radical_inverse_specialized(2797_u16, perm, a);
-        }
+        389 => scrambled_radical_inverse_specialized(2687_u16, perm, a),
 
-        407 => {
-            return scrambled_radical_inverse_specialized(2801_u16, perm, a);
-        }
+        390 => scrambled_radical_inverse_specialized(2689_u16, perm, a),
 
-        408 => {
-            return scrambled_radical_inverse_specialized(2803_u16, perm, a);
-        }
+        391 => scrambled_radical_inverse_specialized(2693_u16, perm, a),
 
-        409 => {
-            return scrambled_radical_inverse_specialized(2819_u16, perm, a);
-        }
+        392 => scrambled_radical_inverse_specialized(2699_u16, perm, a),
 
-        410 => {
-            return scrambled_radical_inverse_specialized(2833_u16, perm, a);
-        }
+        393 => scrambled_radical_inverse_specialized(2707_u16, perm, a),
 
-        411 => {
-            return scrambled_radical_inverse_specialized(2837_u16, perm, a);
-        }
+        394 => scrambled_radical_inverse_specialized(2711_u16, perm, a),
 
-        412 => {
-            return scrambled_radical_inverse_specialized(2843_u16, perm, a);
-        }
+        395 => scrambled_radical_inverse_specialized(2713_u16, perm, a),
 
-        413 => {
-            return scrambled_radical_inverse_specialized(2851_u16, perm, a);
-        }
+        396 => scrambled_radical_inverse_specialized(2719_u16, perm, a),
 
-        414 => {
-            return scrambled_radical_inverse_specialized(2857_u16, perm, a);
-        }
+        397 => scrambled_radical_inverse_specialized(2729_u16, perm, a),
 
-        415 => {
-            return scrambled_radical_inverse_specialized(2861_u16, perm, a);
-        }
+        398 => scrambled_radical_inverse_specialized(2731_u16, perm, a),
 
-        416 => {
-            return scrambled_radical_inverse_specialized(2879_u16, perm, a);
-        }
+        399 => scrambled_radical_inverse_specialized(2741_u16, perm, a),
 
-        417 => {
-            return scrambled_radical_inverse_specialized(2887_u16, perm, a);
-        }
+        400 => scrambled_radical_inverse_specialized(2749_u16, perm, a),
 
-        418 => {
-            return scrambled_radical_inverse_specialized(2897_u16, perm, a);
-        }
+        401 => scrambled_radical_inverse_specialized(2753_u16, perm, a),
 
-        419 => {
-            return scrambled_radical_inverse_specialized(2903_u16, perm, a);
-        }
+        402 => scrambled_radical_inverse_specialized(2767_u16, perm, a),
 
-        420 => {
-            return scrambled_radical_inverse_specialized(2909_u16, perm, a);
-        }
+        403 => scrambled_radical_inverse_specialized(2777_u16, perm, a),
 
-        421 => {
-            return scrambled_radical_inverse_specialized(2917_u16, perm, a);
-        }
+        404 => scrambled_radical_inverse_specialized(2789_u16, perm, a),
 
-        422 => {
-            return scrambled_radical_inverse_specialized(2927_u16, perm, a);
-        }
+        405 => scrambled_radical_inverse_specialized(2791_u16, perm, a),
 
-        423 => {
-            return scrambled_radical_inverse_specialized(2939_u16, perm, a);
-        }
+        406 => scrambled_radical_inverse_specialized(2797_u16, perm, a),
 
-        424 => {
-            return scrambled_radical_inverse_specialized(2953_u16, perm, a);
-        }
+        407 => scrambled_radical_inverse_specialized(2801_u16, perm, a),
 
-        425 => {
-            return scrambled_radical_inverse_specialized(2957_u16, perm, a);
-        }
+        408 => scrambled_radical_inverse_specialized(2803_u16, perm, a),
 
-        426 => {
-            return scrambled_radical_inverse_specialized(2963_u16, perm, a);
-        }
+        409 => scrambled_radical_inverse_specialized(2819_u16, perm, a),
 
-        427 => {
-            return scrambled_radical_inverse_specialized(2969_u16, perm, a);
-        }
+        410 => scrambled_radical_inverse_specialized(2833_u16, perm, a),
 
-        428 => {
-            return scrambled_radical_inverse_specialized(2971_u16, perm, a);
-        }
+        411 => scrambled_radical_inverse_specialized(2837_u16, perm, a),
 
-        429 => {
-            return scrambled_radical_inverse_specialized(2999_u16, perm, a);
-        }
+        412 => scrambled_radical_inverse_specialized(2843_u16, perm, a),
 
-        430 => {
-            return scrambled_radical_inverse_specialized(3001_u16, perm, a);
-        }
+        413 => scrambled_radical_inverse_specialized(2851_u16, perm, a),
 
-        431 => {
-            return scrambled_radical_inverse_specialized(3011_u16, perm, a);
-        }
+        414 => scrambled_radical_inverse_specialized(2857_u16, perm, a),
 
-        432 => {
-            return scrambled_radical_inverse_specialized(3019_u16, perm, a);
-        }
+        415 => scrambled_radical_inverse_specialized(2861_u16, perm, a),
 
-        433 => {
-            return scrambled_radical_inverse_specialized(3023_u16, perm, a);
-        }
+        416 => scrambled_radical_inverse_specialized(2879_u16, perm, a),
 
-        434 => {
-            return scrambled_radical_inverse_specialized(3037_u16, perm, a);
-        }
+        417 => scrambled_radical_inverse_specialized(2887_u16, perm, a),
 
-        435 => {
-            return scrambled_radical_inverse_specialized(3041_u16, perm, a);
-        }
+        418 => scrambled_radical_inverse_specialized(2897_u16, perm, a),
 
-        436 => {
-            return scrambled_radical_inverse_specialized(3049_u16, perm, a);
-        }
+        419 => scrambled_radical_inverse_specialized(2903_u16, perm, a),
 
-        437 => {
-            return scrambled_radical_inverse_specialized(3061_u16, perm, a);
-        }
+        420 => scrambled_radical_inverse_specialized(2909_u16, perm, a),
 
-        438 => {
-            return scrambled_radical_inverse_specialized(3067_u16, perm, a);
-        }
+        421 => scrambled_radical_inverse_specialized(2917_u16, perm, a),
 
-        439 => {
-            return scrambled_radical_inverse_specialized(3079_u16, perm, a);
-        }
+        422 => scrambled_radical_inverse_specialized(2927_u16, perm, a),
 
-        440 => {
-            return scrambled_radical_inverse_specialized(3083_u16, perm, a);
-        }
+        423 => scrambled_radical_inverse_specialized(2939_u16, perm, a),
 
-        441 => {
-            return scrambled_radical_inverse_specialized(3089_u16, perm, a);
-        }
+        424 => scrambled_radical_inverse_specialized(2953_u16, perm, a),
 
-        442 => {
-            return scrambled_radical_inverse_specialized(3109_u16, perm, a);
-        }
+        425 => scrambled_radical_inverse_specialized(2957_u16, perm, a),
 
-        443 => {
-            return scrambled_radical_inverse_specialized(3119_u16, perm, a);
-        }
+        426 => scrambled_radical_inverse_specialized(2963_u16, perm, a),
 
-        444 => {
-            return scrambled_radical_inverse_specialized(3121_u16, perm, a);
-        }
+        427 => scrambled_radical_inverse_specialized(2969_u16, perm, a),
 
-        445 => {
-            return scrambled_radical_inverse_specialized(3137_u16, perm, a);
-        }
+        428 => scrambled_radical_inverse_specialized(2971_u16, perm, a),
 
-        446 => {
-            return scrambled_radical_inverse_specialized(3163_u16, perm, a);
-        }
+        429 => scrambled_radical_inverse_specialized(2999_u16, perm, a),
 
-        447 => {
-            return scrambled_radical_inverse_specialized(3167_u16, perm, a);
-        }
+        430 => scrambled_radical_inverse_specialized(3001_u16, perm, a),
 
-        448 => {
-            return scrambled_radical_inverse_specialized(3169_u16, perm, a);
-        }
+        431 => scrambled_radical_inverse_specialized(3011_u16, perm, a),
 
-        449 => {
-            return scrambled_radical_inverse_specialized(3181_u16, perm, a);
-        }
+        432 => scrambled_radical_inverse_specialized(3019_u16, perm, a),
 
-        450 => {
-            return scrambled_radical_inverse_specialized(3187_u16, perm, a);
-        }
+        433 => scrambled_radical_inverse_specialized(3023_u16, perm, a),
 
-        451 => {
-            return scrambled_radical_inverse_specialized(3191_u16, perm, a);
-        }
+        434 => scrambled_radical_inverse_specialized(3037_u16, perm, a),
 
-        452 => {
-            return scrambled_radical_inverse_specialized(3203_u16, perm, a);
-        }
+        435 => scrambled_radical_inverse_specialized(3041_u16, perm, a),
 
-        453 => {
-            return scrambled_radical_inverse_specialized(3209_u16, perm, a);
-        }
+        436 => scrambled_radical_inverse_specialized(3049_u16, perm, a),
 
-        454 => {
-            return scrambled_radical_inverse_specialized(3217_u16, perm, a);
-        }
+        437 => scrambled_radical_inverse_specialized(3061_u16, perm, a),
 
-        455 => {
-            return scrambled_radical_inverse_specialized(3221_u16, perm, a);
-        }
+        438 => scrambled_radical_inverse_specialized(3067_u16, perm, a),
 
-        456 => {
-            return scrambled_radical_inverse_specialized(3229_u16, perm, a);
-        }
+        439 => scrambled_radical_inverse_specialized(3079_u16, perm, a),
 
-        457 => {
-            return scrambled_radical_inverse_specialized(3251_u16, perm, a);
-        }
+        440 => scrambled_radical_inverse_specialized(3083_u16, perm, a),
 
-        458 => {
-            return scrambled_radical_inverse_specialized(3253_u16, perm, a);
-        }
+        441 => scrambled_radical_inverse_specialized(3089_u16, perm, a),
 
-        459 => {
-            return scrambled_radical_inverse_specialized(3257_u16, perm, a);
-        }
+        442 => scrambled_radical_inverse_specialized(3109_u16, perm, a),
 
-        460 => {
-            return scrambled_radical_inverse_specialized(3259_u16, perm, a);
-        }
+        443 => scrambled_radical_inverse_specialized(3119_u16, perm, a),
 
-        461 => {
-            return scrambled_radical_inverse_specialized(3271_u16, perm, a);
-        }
+        444 => scrambled_radical_inverse_specialized(3121_u16, perm, a),
 
-        462 => {
-            return scrambled_radical_inverse_specialized(3299_u16, perm, a);
-        }
+        445 => scrambled_radical_inverse_specialized(3137_u16, perm, a),
 
-        463 => {
-            return scrambled_radical_inverse_specialized(3301_u16, perm, a);
-        }
+        446 => scrambled_radical_inverse_specialized(3163_u16, perm, a),
 
-        464 => {
-            return scrambled_radical_inverse_specialized(3307_u16, perm, a);
-        }
+        447 => scrambled_radical_inverse_specialized(3167_u16, perm, a),
 
-        465 => {
-            return scrambled_radical_inverse_specialized(3313_u16, perm, a);
-        }
+        448 => scrambled_radical_inverse_specialized(3169_u16, perm, a),
 
-        466 => {
-            return scrambled_radical_inverse_specialized(3319_u16, perm, a);
-        }
+        449 => scrambled_radical_inverse_specialized(3181_u16, perm, a),
 
-        467 => {
-            return scrambled_radical_inverse_specialized(3323_u16, perm, a);
-        }
+        450 => scrambled_radical_inverse_specialized(3187_u16, perm, a),
 
-        468 => {
-            return scrambled_radical_inverse_specialized(3329_u16, perm, a);
-        }
+        451 => scrambled_radical_inverse_specialized(3191_u16, perm, a),
 
-        469 => {
-            return scrambled_radical_inverse_specialized(3331_u16, perm, a);
-        }
+        452 => scrambled_radical_inverse_specialized(3203_u16, perm, a),
 
-        470 => {
-            return scrambled_radical_inverse_specialized(3343_u16, perm, a);
-        }
+        453 => scrambled_radical_inverse_specialized(3209_u16, perm, a),
 
-        471 => {
-            return scrambled_radical_inverse_specialized(3347_u16, perm, a);
-        }
+        454 => scrambled_radical_inverse_specialized(3217_u16, perm, a),
 
-        472 => {
-            return scrambled_radical_inverse_specialized(3359_u16, perm, a);
-        }
+        455 => scrambled_radical_inverse_specialized(3221_u16, perm, a),
 
-        473 => {
-            return scrambled_radical_inverse_specialized(3361_u16, perm, a);
-        }
+        456 => scrambled_radical_inverse_specialized(3229_u16, perm, a),
 
-        474 => {
-            return scrambled_radical_inverse_specialized(3371_u16, perm, a);
-        }
+        457 => scrambled_radical_inverse_specialized(3251_u16, perm, a),
 
-        475 => {
-            return scrambled_radical_inverse_specialized(3373_u16, perm, a);
-        }
+        458 => scrambled_radical_inverse_specialized(3253_u16, perm, a),
 
-        476 => {
-            return scrambled_radical_inverse_specialized(3389_u16, perm, a);
-        }
+        459 => scrambled_radical_inverse_specialized(3257_u16, perm, a),
 
-        477 => {
-            return scrambled_radical_inverse_specialized(3391_u16, perm, a);
-        }
+        460 => scrambled_radical_inverse_specialized(3259_u16, perm, a),
 
-        478 => {
-            return scrambled_radical_inverse_specialized(3407_u16, perm, a);
-        }
+        461 => scrambled_radical_inverse_specialized(3271_u16, perm, a),
 
-        479 => {
-            return scrambled_radical_inverse_specialized(3413_u16, perm, a);
-        }
+        462 => scrambled_radical_inverse_specialized(3299_u16, perm, a),
 
-        480 => {
-            return scrambled_radical_inverse_specialized(3433_u16, perm, a);
-        }
+        463 => scrambled_radical_inverse_specialized(3301_u16, perm, a),
 
-        481 => {
-            return scrambled_radical_inverse_specialized(3449_u16, perm, a);
-        }
+        464 => scrambled_radical_inverse_specialized(3307_u16, perm, a),
 
-        482 => {
-            return scrambled_radical_inverse_specialized(3457_u16, perm, a);
-        }
+        465 => scrambled_radical_inverse_specialized(3313_u16, perm, a),
 
-        483 => {
-            return scrambled_radical_inverse_specialized(3461_u16, perm, a);
-        }
+        466 => scrambled_radical_inverse_specialized(3319_u16, perm, a),
 
-        484 => {
-            return scrambled_radical_inverse_specialized(3463_u16, perm, a);
-        }
+        467 => scrambled_radical_inverse_specialized(3323_u16, perm, a),
 
-        485 => {
-            return scrambled_radical_inverse_specialized(3467_u16, perm, a);
-        }
+        468 => scrambled_radical_inverse_specialized(3329_u16, perm, a),
 
-        486 => {
-            return scrambled_radical_inverse_specialized(3469_u16, perm, a);
-        }
+        469 => scrambled_radical_inverse_specialized(3331_u16, perm, a),
 
-        487 => {
-            return scrambled_radical_inverse_specialized(3491_u16, perm, a);
-        }
+        470 => scrambled_radical_inverse_specialized(3343_u16, perm, a),
 
-        488 => {
-            return scrambled_radical_inverse_specialized(3499_u16, perm, a);
-        }
+        471 => scrambled_radical_inverse_specialized(3347_u16, perm, a),
 
-        489 => {
-            return scrambled_radical_inverse_specialized(3511_u16, perm, a);
-        }
+        472 => scrambled_radical_inverse_specialized(3359_u16, perm, a),
 
-        490 => {
-            return scrambled_radical_inverse_specialized(3517_u16, perm, a);
-        }
+        473 => scrambled_radical_inverse_specialized(3361_u16, perm, a),
 
-        491 => {
-            return scrambled_radical_inverse_specialized(3527_u16, perm, a);
-        }
+        474 => scrambled_radical_inverse_specialized(3371_u16, perm, a),
 
-        492 => {
-            return scrambled_radical_inverse_specialized(3529_u16, perm, a);
-        }
+        475 => scrambled_radical_inverse_specialized(3373_u16, perm, a),
 
-        493 => {
-            return scrambled_radical_inverse_specialized(3533_u16, perm, a);
-        }
+        476 => scrambled_radical_inverse_specialized(3389_u16, perm, a),
 
-        494 => {
-            return scrambled_radical_inverse_specialized(3539_u16, perm, a);
-        }
+        477 => scrambled_radical_inverse_specialized(3391_u16, perm, a),
 
-        495 => {
-            return scrambled_radical_inverse_specialized(3541_u16, perm, a);
-        }
+        478 => scrambled_radical_inverse_specialized(3407_u16, perm, a),
 
-        496 => {
-            return scrambled_radical_inverse_specialized(3547_u16, perm, a);
-        }
+        479 => scrambled_radical_inverse_specialized(3413_u16, perm, a),
 
-        497 => {
-            return scrambled_radical_inverse_specialized(3557_u16, perm, a);
-        }
+        480 => scrambled_radical_inverse_specialized(3433_u16, perm, a),
 
-        498 => {
-            return scrambled_radical_inverse_specialized(3559_u16, perm, a);
-        }
+        481 => scrambled_radical_inverse_specialized(3449_u16, perm, a),
 
-        499 => {
-            return scrambled_radical_inverse_specialized(3571_u16, perm, a);
-        }
+        482 => scrambled_radical_inverse_specialized(3457_u16, perm, a),
 
-        500 => {
-            return scrambled_radical_inverse_specialized(3581_u16, perm, a);
-        }
+        483 => scrambled_radical_inverse_specialized(3461_u16, perm, a),
 
-        501 => {
-            return scrambled_radical_inverse_specialized(3583_u16, perm, a);
-        }
+        484 => scrambled_radical_inverse_specialized(3463_u16, perm, a),
 
-        502 => {
-            return scrambled_radical_inverse_specialized(3593_u16, perm, a);
-        }
+        485 => scrambled_radical_inverse_specialized(3467_u16, perm, a),
 
-        503 => {
-            return scrambled_radical_inverse_specialized(3607_u16, perm, a);
-        }
+        486 => scrambled_radical_inverse_specialized(3469_u16, perm, a),
 
-        504 => {
-            return scrambled_radical_inverse_specialized(3613_u16, perm, a);
-        }
+        487 => scrambled_radical_inverse_specialized(3491_u16, perm, a),
 
-        505 => {
-            return scrambled_radical_inverse_specialized(3617_u16, perm, a);
-        }
+        488 => scrambled_radical_inverse_specialized(3499_u16, perm, a),
 
-        506 => {
-            return scrambled_radical_inverse_specialized(3623_u16, perm, a);
-        }
+        489 => scrambled_radical_inverse_specialized(3511_u16, perm, a),
 
-        507 => {
-            return scrambled_radical_inverse_specialized(3631_u16, perm, a);
-        }
+        490 => scrambled_radical_inverse_specialized(3517_u16, perm, a),
 
-        508 => {
-            return scrambled_radical_inverse_specialized(3637_u16, perm, a);
-        }
+        491 => scrambled_radical_inverse_specialized(3527_u16, perm, a),
 
-        509 => {
-            return scrambled_radical_inverse_specialized(3643_u16, perm, a);
-        }
+        492 => scrambled_radical_inverse_specialized(3529_u16, perm, a),
 
-        510 => {
-            return scrambled_radical_inverse_specialized(3659_u16, perm, a);
-        }
+        493 => scrambled_radical_inverse_specialized(3533_u16, perm, a),
 
-        511 => {
-            return scrambled_radical_inverse_specialized(3671_u16, perm, a);
-        }
+        494 => scrambled_radical_inverse_specialized(3539_u16, perm, a),
 
-        512 => {
-            return scrambled_radical_inverse_specialized(3673_u16, perm, a);
-        }
+        495 => scrambled_radical_inverse_specialized(3541_u16, perm, a),
 
-        513 => {
-            return scrambled_radical_inverse_specialized(3677_u16, perm, a);
-        }
+        496 => scrambled_radical_inverse_specialized(3547_u16, perm, a),
 
-        514 => {
-            return scrambled_radical_inverse_specialized(3691_u16, perm, a);
-        }
+        497 => scrambled_radical_inverse_specialized(3557_u16, perm, a),
 
-        515 => {
-            return scrambled_radical_inverse_specialized(3697_u16, perm, a);
-        }
+        498 => scrambled_radical_inverse_specialized(3559_u16, perm, a),
 
-        516 => {
-            return scrambled_radical_inverse_specialized(3701_u16, perm, a);
-        }
+        499 => scrambled_radical_inverse_specialized(3571_u16, perm, a),
 
-        517 => {
-            return scrambled_radical_inverse_specialized(3709_u16, perm, a);
-        }
+        500 => scrambled_radical_inverse_specialized(3581_u16, perm, a),
 
-        518 => {
-            return scrambled_radical_inverse_specialized(3719_u16, perm, a);
-        }
+        501 => scrambled_radical_inverse_specialized(3583_u16, perm, a),
 
-        519 => {
-            return scrambled_radical_inverse_specialized(3727_u16, perm, a);
-        }
+        502 => scrambled_radical_inverse_specialized(3593_u16, perm, a),
 
-        520 => {
-            return scrambled_radical_inverse_specialized(3733_u16, perm, a);
-        }
+        503 => scrambled_radical_inverse_specialized(3607_u16, perm, a),
 
-        521 => {
-            return scrambled_radical_inverse_specialized(3739_u16, perm, a);
-        }
+        504 => scrambled_radical_inverse_specialized(3613_u16, perm, a),
 
-        522 => {
-            return scrambled_radical_inverse_specialized(3761_u16, perm, a);
-        }
+        505 => scrambled_radical_inverse_specialized(3617_u16, perm, a),
 
-        523 => {
-            return scrambled_radical_inverse_specialized(3767_u16, perm, a);
-        }
+        506 => scrambled_radical_inverse_specialized(3623_u16, perm, a),
 
-        524 => {
-            return scrambled_radical_inverse_specialized(3769_u16, perm, a);
-        }
+        507 => scrambled_radical_inverse_specialized(3631_u16, perm, a),
 
-        525 => {
-            return scrambled_radical_inverse_specialized(3779_u16, perm, a);
-        }
+        508 => scrambled_radical_inverse_specialized(3637_u16, perm, a),
 
-        526 => {
-            return scrambled_radical_inverse_specialized(3793_u16, perm, a);
-        }
+        509 => scrambled_radical_inverse_specialized(3643_u16, perm, a),
 
-        527 => {
-            return scrambled_radical_inverse_specialized(3797_u16, perm, a);
-        }
+        510 => scrambled_radical_inverse_specialized(3659_u16, perm, a),
 
-        528 => {
-            return scrambled_radical_inverse_specialized(3803_u16, perm, a);
-        }
+        511 => scrambled_radical_inverse_specialized(3671_u16, perm, a),
 
-        529 => {
-            return scrambled_radical_inverse_specialized(3821_u16, perm, a);
-        }
+        512 => scrambled_radical_inverse_specialized(3673_u16, perm, a),
 
-        530 => {
-            return scrambled_radical_inverse_specialized(3823_u16, perm, a);
-        }
+        513 => scrambled_radical_inverse_specialized(3677_u16, perm, a),
 
-        531 => {
-            return scrambled_radical_inverse_specialized(3833_u16, perm, a);
-        }
+        514 => scrambled_radical_inverse_specialized(3691_u16, perm, a),
 
-        532 => {
-            return scrambled_radical_inverse_specialized(3847_u16, perm, a);
-        }
+        515 => scrambled_radical_inverse_specialized(3697_u16, perm, a),
 
-        533 => {
-            return scrambled_radical_inverse_specialized(3851_u16, perm, a);
-        }
+        516 => scrambled_radical_inverse_specialized(3701_u16, perm, a),
 
-        534 => {
-            return scrambled_radical_inverse_specialized(3853_u16, perm, a);
-        }
+        517 => scrambled_radical_inverse_specialized(3709_u16, perm, a),
 
-        535 => {
-            return scrambled_radical_inverse_specialized(3863_u16, perm, a);
-        }
+        518 => scrambled_radical_inverse_specialized(3719_u16, perm, a),
 
-        536 => {
-            return scrambled_radical_inverse_specialized(3877_u16, perm, a);
-        }
+        519 => scrambled_radical_inverse_specialized(3727_u16, perm, a),
 
-        537 => {
-            return scrambled_radical_inverse_specialized(3881_u16, perm, a);
-        }
+        520 => scrambled_radical_inverse_specialized(3733_u16, perm, a),
 
-        538 => {
-            return scrambled_radical_inverse_specialized(3889_u16, perm, a);
-        }
+        521 => scrambled_radical_inverse_specialized(3739_u16, perm, a),
 
-        539 => {
-            return scrambled_radical_inverse_specialized(3907_u16, perm, a);
-        }
+        522 => scrambled_radical_inverse_specialized(3761_u16, perm, a),
 
-        540 => {
-            return scrambled_radical_inverse_specialized(3911_u16, perm, a);
-        }
+        523 => scrambled_radical_inverse_specialized(3767_u16, perm, a),
 
-        541 => {
-            return scrambled_radical_inverse_specialized(3917_u16, perm, a);
-        }
+        524 => scrambled_radical_inverse_specialized(3769_u16, perm, a),
 
-        542 => {
-            return scrambled_radical_inverse_specialized(3919_u16, perm, a);
-        }
+        525 => scrambled_radical_inverse_specialized(3779_u16, perm, a),
 
-        543 => {
-            return scrambled_radical_inverse_specialized(3923_u16, perm, a);
-        }
+        526 => scrambled_radical_inverse_specialized(3793_u16, perm, a),
 
-        544 => {
-            return scrambled_radical_inverse_specialized(3929_u16, perm, a);
-        }
+        527 => scrambled_radical_inverse_specialized(3797_u16, perm, a),
 
-        545 => {
-            return scrambled_radical_inverse_specialized(3931_u16, perm, a);
-        }
+        528 => scrambled_radical_inverse_specialized(3803_u16, perm, a),
 
-        546 => {
-            return scrambled_radical_inverse_specialized(3943_u16, perm, a);
-        }
+        529 => scrambled_radical_inverse_specialized(3821_u16, perm, a),
 
-        547 => {
-            return scrambled_radical_inverse_specialized(3947_u16, perm, a);
-        }
+        530 => scrambled_radical_inverse_specialized(3823_u16, perm, a),
 
-        548 => {
-            return scrambled_radical_inverse_specialized(3967_u16, perm, a);
-        }
+        531 => scrambled_radical_inverse_specialized(3833_u16, perm, a),
 
-        549 => {
-            return scrambled_radical_inverse_specialized(3989_u16, perm, a);
-        }
+        532 => scrambled_radical_inverse_specialized(3847_u16, perm, a),
 
-        550 => {
-            return scrambled_radical_inverse_specialized(4001_u16, perm, a);
-        }
+        533 => scrambled_radical_inverse_specialized(3851_u16, perm, a),
 
-        551 => {
-            return scrambled_radical_inverse_specialized(4003_u16, perm, a);
-        }
+        534 => scrambled_radical_inverse_specialized(3853_u16, perm, a),
 
-        552 => {
-            return scrambled_radical_inverse_specialized(4007_u16, perm, a);
-        }
+        535 => scrambled_radical_inverse_specialized(3863_u16, perm, a),
 
-        553 => {
-            return scrambled_radical_inverse_specialized(4013_u16, perm, a);
-        }
+        536 => scrambled_radical_inverse_specialized(3877_u16, perm, a),
 
-        554 => {
-            return scrambled_radical_inverse_specialized(4019_u16, perm, a);
-        }
+        537 => scrambled_radical_inverse_specialized(3881_u16, perm, a),
 
-        555 => {
-            return scrambled_radical_inverse_specialized(4021_u16, perm, a);
-        }
+        538 => scrambled_radical_inverse_specialized(3889_u16, perm, a),
 
-        556 => {
-            return scrambled_radical_inverse_specialized(4027_u16, perm, a);
-        }
+        539 => scrambled_radical_inverse_specialized(3907_u16, perm, a),
 
-        557 => {
-            return scrambled_radical_inverse_specialized(4049_u16, perm, a);
-        }
+        540 => scrambled_radical_inverse_specialized(3911_u16, perm, a),
 
-        558 => {
-            return scrambled_radical_inverse_specialized(4051_u16, perm, a);
-        }
+        541 => scrambled_radical_inverse_specialized(3917_u16, perm, a),
 
-        559 => {
-            return scrambled_radical_inverse_specialized(4057_u16, perm, a);
-        }
+        542 => scrambled_radical_inverse_specialized(3919_u16, perm, a),
 
-        560 => {
-            return scrambled_radical_inverse_specialized(4073_u16, perm, a);
-        }
+        543 => scrambled_radical_inverse_specialized(3923_u16, perm, a),
 
-        561 => {
-            return scrambled_radical_inverse_specialized(4079_u16, perm, a);
-        }
+        544 => scrambled_radical_inverse_specialized(3929_u16, perm, a),
 
-        562 => {
-            return scrambled_radical_inverse_specialized(4091_u16, perm, a);
-        }
+        545 => scrambled_radical_inverse_specialized(3931_u16, perm, a),
 
-        563 => {
-            return scrambled_radical_inverse_specialized(4093_u16, perm, a);
-        }
+        546 => scrambled_radical_inverse_specialized(3943_u16, perm, a),
 
-        564 => {
-            return scrambled_radical_inverse_specialized(4099_u16, perm, a);
-        }
+        547 => scrambled_radical_inverse_specialized(3947_u16, perm, a),
 
-        565 => {
-            return scrambled_radical_inverse_specialized(4111_u16, perm, a);
-        }
+        548 => scrambled_radical_inverse_specialized(3967_u16, perm, a),
 
-        566 => {
-            return scrambled_radical_inverse_specialized(4127_u16, perm, a);
-        }
+        549 => scrambled_radical_inverse_specialized(3989_u16, perm, a),
 
-        567 => {
-            return scrambled_radical_inverse_specialized(4129_u16, perm, a);
-        }
+        550 => scrambled_radical_inverse_specialized(4001_u16, perm, a),
 
-        568 => {
-            return scrambled_radical_inverse_specialized(4133_u16, perm, a);
-        }
+        551 => scrambled_radical_inverse_specialized(4003_u16, perm, a),
 
-        569 => {
-            return scrambled_radical_inverse_specialized(4139_u16, perm, a);
-        }
+        552 => scrambled_radical_inverse_specialized(4007_u16, perm, a),
 
-        570 => {
-            return scrambled_radical_inverse_specialized(4153_u16, perm, a);
-        }
+        553 => scrambled_radical_inverse_specialized(4013_u16, perm, a),
 
-        571 => {
-            return scrambled_radical_inverse_specialized(4157_u16, perm, a);
-        }
+        554 => scrambled_radical_inverse_specialized(4019_u16, perm, a),
 
-        572 => {
-            return scrambled_radical_inverse_specialized(4159_u16, perm, a);
-        }
+        555 => scrambled_radical_inverse_specialized(4021_u16, perm, a),
 
-        573 => {
-            return scrambled_radical_inverse_specialized(4177_u16, perm, a);
-        }
+        556 => scrambled_radical_inverse_specialized(4027_u16, perm, a),
 
-        574 => {
-            return scrambled_radical_inverse_specialized(4201_u16, perm, a);
-        }
+        557 => scrambled_radical_inverse_specialized(4049_u16, perm, a),
 
-        575 => {
-            return scrambled_radical_inverse_specialized(4211_u16, perm, a);
-        }
+        558 => scrambled_radical_inverse_specialized(4051_u16, perm, a),
 
-        576 => {
-            return scrambled_radical_inverse_specialized(4217_u16, perm, a);
-        }
+        559 => scrambled_radical_inverse_specialized(4057_u16, perm, a),
 
-        577 => {
-            return scrambled_radical_inverse_specialized(4219_u16, perm, a);
-        }
+        560 => scrambled_radical_inverse_specialized(4073_u16, perm, a),
 
-        578 => {
-            return scrambled_radical_inverse_specialized(4229_u16, perm, a);
-        }
+        561 => scrambled_radical_inverse_specialized(4079_u16, perm, a),
 
-        579 => {
-            return scrambled_radical_inverse_specialized(4231_u16, perm, a);
-        }
+        562 => scrambled_radical_inverse_specialized(4091_u16, perm, a),
 
-        580 => {
-            return scrambled_radical_inverse_specialized(4241_u16, perm, a);
-        }
+        563 => scrambled_radical_inverse_specialized(4093_u16, perm, a),
 
-        581 => {
-            return scrambled_radical_inverse_specialized(4243_u16, perm, a);
-        }
+        564 => scrambled_radical_inverse_specialized(4099_u16, perm, a),
 
-        582 => {
-            return scrambled_radical_inverse_specialized(4253_u16, perm, a);
-        }
+        565 => scrambled_radical_inverse_specialized(4111_u16, perm, a),
 
-        583 => {
-            return scrambled_radical_inverse_specialized(4259_u16, perm, a);
-        }
+        566 => scrambled_radical_inverse_specialized(4127_u16, perm, a),
 
-        584 => {
-            return scrambled_radical_inverse_specialized(4261_u16, perm, a);
-        }
+        567 => scrambled_radical_inverse_specialized(4129_u16, perm, a),
 
-        585 => {
-            return scrambled_radical_inverse_specialized(4271_u16, perm, a);
-        }
+        568 => scrambled_radical_inverse_specialized(4133_u16, perm, a),
 
-        586 => {
-            return scrambled_radical_inverse_specialized(4273_u16, perm, a);
-        }
+        569 => scrambled_radical_inverse_specialized(4139_u16, perm, a),
 
-        587 => {
-            return scrambled_radical_inverse_specialized(4283_u16, perm, a);
-        }
+        570 => scrambled_radical_inverse_specialized(4153_u16, perm, a),
 
-        588 => {
-            return scrambled_radical_inverse_specialized(4289_u16, perm, a);
-        }
+        571 => scrambled_radical_inverse_specialized(4157_u16, perm, a),
 
-        589 => {
-            return scrambled_radical_inverse_specialized(4297_u16, perm, a);
-        }
+        572 => scrambled_radical_inverse_specialized(4159_u16, perm, a),
 
-        590 => {
-            return scrambled_radical_inverse_specialized(4327_u16, perm, a);
-        }
+        573 => scrambled_radical_inverse_specialized(4177_u16, perm, a),
 
-        591 => {
-            return scrambled_radical_inverse_specialized(4337_u16, perm, a);
-        }
+        574 => scrambled_radical_inverse_specialized(4201_u16, perm, a),
 
-        592 => {
-            return scrambled_radical_inverse_specialized(4339_u16, perm, a);
-        }
+        575 => scrambled_radical_inverse_specialized(4211_u16, perm, a),
 
-        593 => {
-            return scrambled_radical_inverse_specialized(4349_u16, perm, a);
-        }
+        576 => scrambled_radical_inverse_specialized(4217_u16, perm, a),
 
-        594 => {
-            return scrambled_radical_inverse_specialized(4357_u16, perm, a);
-        }
+        577 => scrambled_radical_inverse_specialized(4219_u16, perm, a),
 
-        595 => {
-            return scrambled_radical_inverse_specialized(4363_u16, perm, a);
-        }
+        578 => scrambled_radical_inverse_specialized(4229_u16, perm, a),
 
-        596 => {
-            return scrambled_radical_inverse_specialized(4373_u16, perm, a);
-        }
+        579 => scrambled_radical_inverse_specialized(4231_u16, perm, a),
 
-        597 => {
-            return scrambled_radical_inverse_specialized(4391_u16, perm, a);
-        }
+        580 => scrambled_radical_inverse_specialized(4241_u16, perm, a),
 
-        598 => {
-            return scrambled_radical_inverse_specialized(4397_u16, perm, a);
-        }
+        581 => scrambled_radical_inverse_specialized(4243_u16, perm, a),
 
-        599 => {
-            return scrambled_radical_inverse_specialized(4409_u16, perm, a);
-        }
+        582 => scrambled_radical_inverse_specialized(4253_u16, perm, a),
 
-        600 => {
-            return scrambled_radical_inverse_specialized(4421_u16, perm, a);
-        }
+        583 => scrambled_radical_inverse_specialized(4259_u16, perm, a),
 
-        601 => {
-            return scrambled_radical_inverse_specialized(4423_u16, perm, a);
-        }
+        584 => scrambled_radical_inverse_specialized(4261_u16, perm, a),
 
-        602 => {
-            return scrambled_radical_inverse_specialized(4441_u16, perm, a);
-        }
+        585 => scrambled_radical_inverse_specialized(4271_u16, perm, a),
 
-        603 => {
-            return scrambled_radical_inverse_specialized(4447_u16, perm, a);
-        }
+        586 => scrambled_radical_inverse_specialized(4273_u16, perm, a),
 
-        604 => {
-            return scrambled_radical_inverse_specialized(4451_u16, perm, a);
-        }
+        587 => scrambled_radical_inverse_specialized(4283_u16, perm, a),
 
-        605 => {
-            return scrambled_radical_inverse_specialized(4457_u16, perm, a);
-        }
+        588 => scrambled_radical_inverse_specialized(4289_u16, perm, a),
 
-        606 => {
-            return scrambled_radical_inverse_specialized(4463_u16, perm, a);
-        }
+        589 => scrambled_radical_inverse_specialized(4297_u16, perm, a),
 
-        607 => {
-            return scrambled_radical_inverse_specialized(4481_u16, perm, a);
-        }
+        590 => scrambled_radical_inverse_specialized(4327_u16, perm, a),
 
-        608 => {
-            return scrambled_radical_inverse_specialized(4483_u16, perm, a);
-        }
+        591 => scrambled_radical_inverse_specialized(4337_u16, perm, a),
 
-        609 => {
-            return scrambled_radical_inverse_specialized(4493_u16, perm, a);
-        }
+        592 => scrambled_radical_inverse_specialized(4339_u16, perm, a),
 
-        610 => {
-            return scrambled_radical_inverse_specialized(4507_u16, perm, a);
-        }
+        593 => scrambled_radical_inverse_specialized(4349_u16, perm, a),
 
-        611 => {
-            return scrambled_radical_inverse_specialized(4513_u16, perm, a);
-        }
+        594 => scrambled_radical_inverse_specialized(4357_u16, perm, a),
 
-        612 => {
-            return scrambled_radical_inverse_specialized(4517_u16, perm, a);
-        }
+        595 => scrambled_radical_inverse_specialized(4363_u16, perm, a),
 
-        613 => {
-            return scrambled_radical_inverse_specialized(4519_u16, perm, a);
-        }
+        596 => scrambled_radical_inverse_specialized(4373_u16, perm, a),
 
-        614 => {
-            return scrambled_radical_inverse_specialized(4523_u16, perm, a);
-        }
+        597 => scrambled_radical_inverse_specialized(4391_u16, perm, a),
 
-        615 => {
-            return scrambled_radical_inverse_specialized(4547_u16, perm, a);
-        }
+        598 => scrambled_radical_inverse_specialized(4397_u16, perm, a),
 
-        616 => {
-            return scrambled_radical_inverse_specialized(4549_u16, perm, a);
-        }
+        599 => scrambled_radical_inverse_specialized(4409_u16, perm, a),
 
-        617 => {
-            return scrambled_radical_inverse_specialized(4561_u16, perm, a);
-        }
+        600 => scrambled_radical_inverse_specialized(4421_u16, perm, a),
 
-        618 => {
-            return scrambled_radical_inverse_specialized(4567_u16, perm, a);
-        }
+        601 => scrambled_radical_inverse_specialized(4423_u16, perm, a),
 
-        619 => {
-            return scrambled_radical_inverse_specialized(4583_u16, perm, a);
-        }
+        602 => scrambled_radical_inverse_specialized(4441_u16, perm, a),
 
-        620 => {
-            return scrambled_radical_inverse_specialized(4591_u16, perm, a);
-        }
+        603 => scrambled_radical_inverse_specialized(4447_u16, perm, a),
 
-        621 => {
-            return scrambled_radical_inverse_specialized(4597_u16, perm, a);
-        }
+        604 => scrambled_radical_inverse_specialized(4451_u16, perm, a),
 
-        622 => {
-            return scrambled_radical_inverse_specialized(4603_u16, perm, a);
-        }
+        605 => scrambled_radical_inverse_specialized(4457_u16, perm, a),
 
-        623 => {
-            return scrambled_radical_inverse_specialized(4621_u16, perm, a);
-        }
+        606 => scrambled_radical_inverse_specialized(4463_u16, perm, a),
 
-        624 => {
-            return scrambled_radical_inverse_specialized(4637_u16, perm, a);
-        }
+        607 => scrambled_radical_inverse_specialized(4481_u16, perm, a),
 
-        625 => {
-            return scrambled_radical_inverse_specialized(4639_u16, perm, a);
-        }
+        608 => scrambled_radical_inverse_specialized(4483_u16, perm, a),
 
-        626 => {
-            return scrambled_radical_inverse_specialized(4643_u16, perm, a);
-        }
+        609 => scrambled_radical_inverse_specialized(4493_u16, perm, a),
 
-        627 => {
-            return scrambled_radical_inverse_specialized(4649_u16, perm, a);
-        }
+        610 => scrambled_radical_inverse_specialized(4507_u16, perm, a),
 
-        628 => {
-            return scrambled_radical_inverse_specialized(4651_u16, perm, a);
-        }
+        611 => scrambled_radical_inverse_specialized(4513_u16, perm, a),
 
-        629 => {
-            return scrambled_radical_inverse_specialized(4657_u16, perm, a);
-        }
+        612 => scrambled_radical_inverse_specialized(4517_u16, perm, a),
 
-        630 => {
-            return scrambled_radical_inverse_specialized(4663_u16, perm, a);
-        }
+        613 => scrambled_radical_inverse_specialized(4519_u16, perm, a),
 
-        631 => {
-            return scrambled_radical_inverse_specialized(4673_u16, perm, a);
-        }
+        614 => scrambled_radical_inverse_specialized(4523_u16, perm, a),
 
-        632 => {
-            return scrambled_radical_inverse_specialized(4679_u16, perm, a);
-        }
+        615 => scrambled_radical_inverse_specialized(4547_u16, perm, a),
 
-        633 => {
-            return scrambled_radical_inverse_specialized(4691_u16, perm, a);
-        }
+        616 => scrambled_radical_inverse_specialized(4549_u16, perm, a),
 
-        634 => {
-            return scrambled_radical_inverse_specialized(4703_u16, perm, a);
-        }
+        617 => scrambled_radical_inverse_specialized(4561_u16, perm, a),
 
-        635 => {
-            return scrambled_radical_inverse_specialized(4721_u16, perm, a);
-        }
+        618 => scrambled_radical_inverse_specialized(4567_u16, perm, a),
 
-        636 => {
-            return scrambled_radical_inverse_specialized(4723_u16, perm, a);
-        }
+        619 => scrambled_radical_inverse_specialized(4583_u16, perm, a),
 
-        637 => {
-            return scrambled_radical_inverse_specialized(4729_u16, perm, a);
-        }
+        620 => scrambled_radical_inverse_specialized(4591_u16, perm, a),
 
-        638 => {
-            return scrambled_radical_inverse_specialized(4733_u16, perm, a);
-        }
+        621 => scrambled_radical_inverse_specialized(4597_u16, perm, a),
 
-        639 => {
-            return scrambled_radical_inverse_specialized(4751_u16, perm, a);
-        }
+        622 => scrambled_radical_inverse_specialized(4603_u16, perm, a),
 
-        640 => {
-            return scrambled_radical_inverse_specialized(4759_u16, perm, a);
-        }
+        623 => scrambled_radical_inverse_specialized(4621_u16, perm, a),
 
-        641 => {
-            return scrambled_radical_inverse_specialized(4783_u16, perm, a);
-        }
+        624 => scrambled_radical_inverse_specialized(4637_u16, perm, a),
 
-        642 => {
-            return scrambled_radical_inverse_specialized(4787_u16, perm, a);
-        }
+        625 => scrambled_radical_inverse_specialized(4639_u16, perm, a),
 
-        643 => {
-            return scrambled_radical_inverse_specialized(4789_u16, perm, a);
-        }
+        626 => scrambled_radical_inverse_specialized(4643_u16, perm, a),
 
-        644 => {
-            return scrambled_radical_inverse_specialized(4793_u16, perm, a);
-        }
+        627 => scrambled_radical_inverse_specialized(4649_u16, perm, a),
 
-        645 => {
-            return scrambled_radical_inverse_specialized(4799_u16, perm, a);
-        }
+        628 => scrambled_radical_inverse_specialized(4651_u16, perm, a),
 
-        646 => {
-            return scrambled_radical_inverse_specialized(4801_u16, perm, a);
-        }
+        629 => scrambled_radical_inverse_specialized(4657_u16, perm, a),
 
-        647 => {
-            return scrambled_radical_inverse_specialized(4813_u16, perm, a);
-        }
+        630 => scrambled_radical_inverse_specialized(4663_u16, perm, a),
 
-        648 => {
-            return scrambled_radical_inverse_specialized(4817_u16, perm, a);
-        }
+        631 => scrambled_radical_inverse_specialized(4673_u16, perm, a),
 
-        649 => {
-            return scrambled_radical_inverse_specialized(4831_u16, perm, a);
-        }
+        632 => scrambled_radical_inverse_specialized(4679_u16, perm, a),
 
-        650 => {
-            return scrambled_radical_inverse_specialized(4861_u16, perm, a);
-        }
+        633 => scrambled_radical_inverse_specialized(4691_u16, perm, a),
 
-        651 => {
-            return scrambled_radical_inverse_specialized(4871_u16, perm, a);
-        }
+        634 => scrambled_radical_inverse_specialized(4703_u16, perm, a),
 
-        652 => {
-            return scrambled_radical_inverse_specialized(4877_u16, perm, a);
-        }
+        635 => scrambled_radical_inverse_specialized(4721_u16, perm, a),
 
-        653 => {
-            return scrambled_radical_inverse_specialized(4889_u16, perm, a);
-        }
+        636 => scrambled_radical_inverse_specialized(4723_u16, perm, a),
 
-        654 => {
-            return scrambled_radical_inverse_specialized(4903_u16, perm, a);
-        }
+        637 => scrambled_radical_inverse_specialized(4729_u16, perm, a),
 
-        655 => {
-            return scrambled_radical_inverse_specialized(4909_u16, perm, a);
-        }
+        638 => scrambled_radical_inverse_specialized(4733_u16, perm, a),
 
-        656 => {
-            return scrambled_radical_inverse_specialized(4919_u16, perm, a);
-        }
+        639 => scrambled_radical_inverse_specialized(4751_u16, perm, a),
 
-        657 => {
-            return scrambled_radical_inverse_specialized(4931_u16, perm, a);
-        }
+        640 => scrambled_radical_inverse_specialized(4759_u16, perm, a),
 
-        658 => {
-            return scrambled_radical_inverse_specialized(4933_u16, perm, a);
-        }
+        641 => scrambled_radical_inverse_specialized(4783_u16, perm, a),
 
-        659 => {
-            return scrambled_radical_inverse_specialized(4937_u16, perm, a);
-        }
+        642 => scrambled_radical_inverse_specialized(4787_u16, perm, a),
 
-        660 => {
-            return scrambled_radical_inverse_specialized(4943_u16, perm, a);
-        }
+        643 => scrambled_radical_inverse_specialized(4789_u16, perm, a),
 
-        661 => {
-            return scrambled_radical_inverse_specialized(4951_u16, perm, a);
-        }
+        644 => scrambled_radical_inverse_specialized(4793_u16, perm, a),
 
-        662 => {
-            return scrambled_radical_inverse_specialized(4957_u16, perm, a);
-        }
+        645 => scrambled_radical_inverse_specialized(4799_u16, perm, a),
 
-        663 => {
-            return scrambled_radical_inverse_specialized(4967_u16, perm, a);
-        }
+        646 => scrambled_radical_inverse_specialized(4801_u16, perm, a),
 
-        664 => {
-            return scrambled_radical_inverse_specialized(4969_u16, perm, a);
-        }
+        647 => scrambled_radical_inverse_specialized(4813_u16, perm, a),
 
-        665 => {
-            return scrambled_radical_inverse_specialized(4973_u16, perm, a);
-        }
+        648 => scrambled_radical_inverse_specialized(4817_u16, perm, a),
 
-        666 => {
-            return scrambled_radical_inverse_specialized(4987_u16, perm, a);
-        }
+        649 => scrambled_radical_inverse_specialized(4831_u16, perm, a),
 
-        667 => {
-            return scrambled_radical_inverse_specialized(4993_u16, perm, a);
-        }
+        650 => scrambled_radical_inverse_specialized(4861_u16, perm, a),
 
-        668 => {
-            return scrambled_radical_inverse_specialized(4999_u16, perm, a);
-        }
+        651 => scrambled_radical_inverse_specialized(4871_u16, perm, a),
 
-        669 => {
-            return scrambled_radical_inverse_specialized(5003_u16, perm, a);
-        }
+        652 => scrambled_radical_inverse_specialized(4877_u16, perm, a),
 
-        670 => {
-            return scrambled_radical_inverse_specialized(5009_u16, perm, a);
-        }
+        653 => scrambled_radical_inverse_specialized(4889_u16, perm, a),
 
-        671 => {
-            return scrambled_radical_inverse_specialized(5011_u16, perm, a);
-        }
+        654 => scrambled_radical_inverse_specialized(4903_u16, perm, a),
 
-        672 => {
-            return scrambled_radical_inverse_specialized(5021_u16, perm, a);
-        }
+        655 => scrambled_radical_inverse_specialized(4909_u16, perm, a),
 
-        673 => {
-            return scrambled_radical_inverse_specialized(5023_u16, perm, a);
-        }
+        656 => scrambled_radical_inverse_specialized(4919_u16, perm, a),
 
-        674 => {
-            return scrambled_radical_inverse_specialized(5039_u16, perm, a);
-        }
+        657 => scrambled_radical_inverse_specialized(4931_u16, perm, a),
 
-        675 => {
-            return scrambled_radical_inverse_specialized(5051_u16, perm, a);
-        }
+        658 => scrambled_radical_inverse_specialized(4933_u16, perm, a),
 
-        676 => {
-            return scrambled_radical_inverse_specialized(5059_u16, perm, a);
-        }
+        659 => scrambled_radical_inverse_specialized(4937_u16, perm, a),
 
-        677 => {
-            return scrambled_radical_inverse_specialized(5077_u16, perm, a);
-        }
+        660 => scrambled_radical_inverse_specialized(4943_u16, perm, a),
 
-        678 => {
-            return scrambled_radical_inverse_specialized(5081_u16, perm, a);
-        }
+        661 => scrambled_radical_inverse_specialized(4951_u16, perm, a),
 
-        679 => {
-            return scrambled_radical_inverse_specialized(5087_u16, perm, a);
-        }
+        662 => scrambled_radical_inverse_specialized(4957_u16, perm, a),
 
-        680 => {
-            return scrambled_radical_inverse_specialized(5099_u16, perm, a);
-        }
+        663 => scrambled_radical_inverse_specialized(4967_u16, perm, a),
 
-        681 => {
-            return scrambled_radical_inverse_specialized(5101_u16, perm, a);
-        }
+        664 => scrambled_radical_inverse_specialized(4969_u16, perm, a),
 
-        682 => {
-            return scrambled_radical_inverse_specialized(5107_u16, perm, a);
-        }
+        665 => scrambled_radical_inverse_specialized(4973_u16, perm, a),
 
-        683 => {
-            return scrambled_radical_inverse_specialized(5113_u16, perm, a);
-        }
+        666 => scrambled_radical_inverse_specialized(4987_u16, perm, a),
 
-        684 => {
-            return scrambled_radical_inverse_specialized(5119_u16, perm, a);
-        }
+        667 => scrambled_radical_inverse_specialized(4993_u16, perm, a),
 
-        685 => {
-            return scrambled_radical_inverse_specialized(5147_u16, perm, a);
-        }
+        668 => scrambled_radical_inverse_specialized(4999_u16, perm, a),
 
-        686 => {
-            return scrambled_radical_inverse_specialized(5153_u16, perm, a);
-        }
+        669 => scrambled_radical_inverse_specialized(5003_u16, perm, a),
 
-        687 => {
-            return scrambled_radical_inverse_specialized(5167_u16, perm, a);
-        }
+        670 => scrambled_radical_inverse_specialized(5009_u16, perm, a),
 
-        688 => {
-            return scrambled_radical_inverse_specialized(5171_u16, perm, a);
-        }
+        671 => scrambled_radical_inverse_specialized(5011_u16, perm, a),
 
-        689 => {
-            return scrambled_radical_inverse_specialized(5179_u16, perm, a);
-        }
+        672 => scrambled_radical_inverse_specialized(5021_u16, perm, a),
 
-        690 => {
-            return scrambled_radical_inverse_specialized(5189_u16, perm, a);
-        }
+        673 => scrambled_radical_inverse_specialized(5023_u16, perm, a),
 
-        691 => {
-            return scrambled_radical_inverse_specialized(5197_u16, perm, a);
-        }
+        674 => scrambled_radical_inverse_specialized(5039_u16, perm, a),
 
-        692 => {
-            return scrambled_radical_inverse_specialized(5209_u16, perm, a);
-        }
+        675 => scrambled_radical_inverse_specialized(5051_u16, perm, a),
 
-        693 => {
-            return scrambled_radical_inverse_specialized(5227_u16, perm, a);
-        }
+        676 => scrambled_radical_inverse_specialized(5059_u16, perm, a),
 
-        694 => {
-            return scrambled_radical_inverse_specialized(5231_u16, perm, a);
-        }
+        677 => scrambled_radical_inverse_specialized(5077_u16, perm, a),
 
-        695 => {
-            return scrambled_radical_inverse_specialized(5233_u16, perm, a);
-        }
+        678 => scrambled_radical_inverse_specialized(5081_u16, perm, a),
 
-        696 => {
-            return scrambled_radical_inverse_specialized(5237_u16, perm, a);
-        }
+        679 => scrambled_radical_inverse_specialized(5087_u16, perm, a),
 
-        697 => {
-            return scrambled_radical_inverse_specialized(5261_u16, perm, a);
-        }
+        680 => scrambled_radical_inverse_specialized(5099_u16, perm, a),
 
-        698 => {
-            return scrambled_radical_inverse_specialized(5273_u16, perm, a);
-        }
+        681 => scrambled_radical_inverse_specialized(5101_u16, perm, a),
 
-        699 => {
-            return scrambled_radical_inverse_specialized(5279_u16, perm, a);
-        }
+        682 => scrambled_radical_inverse_specialized(5107_u16, perm, a),
 
-        700 => {
-            return scrambled_radical_inverse_specialized(5281_u16, perm, a);
-        }
+        683 => scrambled_radical_inverse_specialized(5113_u16, perm, a),
 
-        701 => {
-            return scrambled_radical_inverse_specialized(5297_u16, perm, a);
-        }
+        684 => scrambled_radical_inverse_specialized(5119_u16, perm, a),
 
-        702 => {
-            return scrambled_radical_inverse_specialized(5303_u16, perm, a);
-        }
+        685 => scrambled_radical_inverse_specialized(5147_u16, perm, a),
 
-        703 => {
-            return scrambled_radical_inverse_specialized(5309_u16, perm, a);
-        }
+        686 => scrambled_radical_inverse_specialized(5153_u16, perm, a),
 
-        704 => {
-            return scrambled_radical_inverse_specialized(5323_u16, perm, a);
-        }
+        687 => scrambled_radical_inverse_specialized(5167_u16, perm, a),
 
-        705 => {
-            return scrambled_radical_inverse_specialized(5333_u16, perm, a);
-        }
+        688 => scrambled_radical_inverse_specialized(5171_u16, perm, a),
 
-        706 => {
-            return scrambled_radical_inverse_specialized(5347_u16, perm, a);
-        }
+        689 => scrambled_radical_inverse_specialized(5179_u16, perm, a),
 
-        707 => {
-            return scrambled_radical_inverse_specialized(5351_u16, perm, a);
-        }
+        690 => scrambled_radical_inverse_specialized(5189_u16, perm, a),
 
-        708 => {
-            return scrambled_radical_inverse_specialized(5381_u16, perm, a);
-        }
+        691 => scrambled_radical_inverse_specialized(5197_u16, perm, a),
 
-        709 => {
-            return scrambled_radical_inverse_specialized(5387_u16, perm, a);
-        }
+        692 => scrambled_radical_inverse_specialized(5209_u16, perm, a),
 
-        710 => {
-            return scrambled_radical_inverse_specialized(5393_u16, perm, a);
-        }
+        693 => scrambled_radical_inverse_specialized(5227_u16, perm, a),
 
-        711 => {
-            return scrambled_radical_inverse_specialized(5399_u16, perm, a);
-        }
+        694 => scrambled_radical_inverse_specialized(5231_u16, perm, a),
 
-        712 => {
-            return scrambled_radical_inverse_specialized(5407_u16, perm, a);
-        }
+        695 => scrambled_radical_inverse_specialized(5233_u16, perm, a),
 
-        713 => {
-            return scrambled_radical_inverse_specialized(5413_u16, perm, a);
-        }
+        696 => scrambled_radical_inverse_specialized(5237_u16, perm, a),
 
-        714 => {
-            return scrambled_radical_inverse_specialized(5417_u16, perm, a);
-        }
+        697 => scrambled_radical_inverse_specialized(5261_u16, perm, a),
 
-        715 => {
-            return scrambled_radical_inverse_specialized(5419_u16, perm, a);
-        }
+        698 => scrambled_radical_inverse_specialized(5273_u16, perm, a),
 
-        716 => {
-            return scrambled_radical_inverse_specialized(5431_u16, perm, a);
-        }
+        699 => scrambled_radical_inverse_specialized(5279_u16, perm, a),
 
-        717 => {
-            return scrambled_radical_inverse_specialized(5437_u16, perm, a);
-        }
+        700 => scrambled_radical_inverse_specialized(5281_u16, perm, a),
 
-        718 => {
-            return scrambled_radical_inverse_specialized(5441_u16, perm, a);
-        }
+        701 => scrambled_radical_inverse_specialized(5297_u16, perm, a),
 
-        719 => {
-            return scrambled_radical_inverse_specialized(5443_u16, perm, a);
-        }
+        702 => scrambled_radical_inverse_specialized(5303_u16, perm, a),
 
-        720 => {
-            return scrambled_radical_inverse_specialized(5449_u16, perm, a);
-        }
+        703 => scrambled_radical_inverse_specialized(5309_u16, perm, a),
 
-        721 => {
-            return scrambled_radical_inverse_specialized(5471_u16, perm, a);
-        }
+        704 => scrambled_radical_inverse_specialized(5323_u16, perm, a),
 
-        722 => {
-            return scrambled_radical_inverse_specialized(5477_u16, perm, a);
-        }
+        705 => scrambled_radical_inverse_specialized(5333_u16, perm, a),
 
-        723 => {
-            return scrambled_radical_inverse_specialized(5479_u16, perm, a);
-        }
+        706 => scrambled_radical_inverse_specialized(5347_u16, perm, a),
 
-        724 => {
-            return scrambled_radical_inverse_specialized(5483_u16, perm, a);
-        }
+        707 => scrambled_radical_inverse_specialized(5351_u16, perm, a),
 
-        725 => {
-            return scrambled_radical_inverse_specialized(5501_u16, perm, a);
-        }
+        708 => scrambled_radical_inverse_specialized(5381_u16, perm, a),
 
-        726 => {
-            return scrambled_radical_inverse_specialized(5503_u16, perm, a);
-        }
+        709 => scrambled_radical_inverse_specialized(5387_u16, perm, a),
 
-        727 => {
-            return scrambled_radical_inverse_specialized(5507_u16, perm, a);
-        }
+        710 => scrambled_radical_inverse_specialized(5393_u16, perm, a),
 
-        728 => {
-            return scrambled_radical_inverse_specialized(5519_u16, perm, a);
-        }
+        711 => scrambled_radical_inverse_specialized(5399_u16, perm, a),
 
-        729 => {
-            return scrambled_radical_inverse_specialized(5521_u16, perm, a);
-        }
+        712 => scrambled_radical_inverse_specialized(5407_u16, perm, a),
 
-        730 => {
-            return scrambled_radical_inverse_specialized(5527_u16, perm, a);
-        }
+        713 => scrambled_radical_inverse_specialized(5413_u16, perm, a),
 
-        731 => {
-            return scrambled_radical_inverse_specialized(5531_u16, perm, a);
-        }
+        714 => scrambled_radical_inverse_specialized(5417_u16, perm, a),
 
-        732 => {
-            return scrambled_radical_inverse_specialized(5557_u16, perm, a);
-        }
+        715 => scrambled_radical_inverse_specialized(5419_u16, perm, a),
 
-        733 => {
-            return scrambled_radical_inverse_specialized(5563_u16, perm, a);
-        }
+        716 => scrambled_radical_inverse_specialized(5431_u16, perm, a),
 
-        734 => {
-            return scrambled_radical_inverse_specialized(5569_u16, perm, a);
-        }
+        717 => scrambled_radical_inverse_specialized(5437_u16, perm, a),
 
-        735 => {
-            return scrambled_radical_inverse_specialized(5573_u16, perm, a);
-        }
+        718 => scrambled_radical_inverse_specialized(5441_u16, perm, a),
 
-        736 => {
-            return scrambled_radical_inverse_specialized(5581_u16, perm, a);
-        }
+        719 => scrambled_radical_inverse_specialized(5443_u16, perm, a),
 
-        737 => {
-            return scrambled_radical_inverse_specialized(5591_u16, perm, a);
-        }
+        720 => scrambled_radical_inverse_specialized(5449_u16, perm, a),
 
-        738 => {
-            return scrambled_radical_inverse_specialized(5623_u16, perm, a);
-        }
+        721 => scrambled_radical_inverse_specialized(5471_u16, perm, a),
 
-        739 => {
-            return scrambled_radical_inverse_specialized(5639_u16, perm, a);
-        }
+        722 => scrambled_radical_inverse_specialized(5477_u16, perm, a),
 
-        740 => {
-            return scrambled_radical_inverse_specialized(5641_u16, perm, a);
-        }
+        723 => scrambled_radical_inverse_specialized(5479_u16, perm, a),
 
-        741 => {
-            return scrambled_radical_inverse_specialized(5647_u16, perm, a);
-        }
+        724 => scrambled_radical_inverse_specialized(5483_u16, perm, a),
 
-        742 => {
-            return scrambled_radical_inverse_specialized(5651_u16, perm, a);
-        }
+        725 => scrambled_radical_inverse_specialized(5501_u16, perm, a),
 
-        743 => {
-            return scrambled_radical_inverse_specialized(5653_u16, perm, a);
-        }
+        726 => scrambled_radical_inverse_specialized(5503_u16, perm, a),
 
-        744 => {
-            return scrambled_radical_inverse_specialized(5657_u16, perm, a);
-        }
+        727 => scrambled_radical_inverse_specialized(5507_u16, perm, a),
 
-        745 => {
-            return scrambled_radical_inverse_specialized(5659_u16, perm, a);
-        }
+        728 => scrambled_radical_inverse_specialized(5519_u16, perm, a),
 
-        746 => {
-            return scrambled_radical_inverse_specialized(5669_u16, perm, a);
-        }
+        729 => scrambled_radical_inverse_specialized(5521_u16, perm, a),
 
-        747 => {
-            return scrambled_radical_inverse_specialized(5683_u16, perm, a);
-        }
+        730 => scrambled_radical_inverse_specialized(5527_u16, perm, a),
 
-        748 => {
-            return scrambled_radical_inverse_specialized(5689_u16, perm, a);
-        }
+        731 => scrambled_radical_inverse_specialized(5531_u16, perm, a),
 
-        749 => {
-            return scrambled_radical_inverse_specialized(5693_u16, perm, a);
-        }
+        732 => scrambled_radical_inverse_specialized(5557_u16, perm, a),
 
-        750 => {
-            return scrambled_radical_inverse_specialized(5701_u16, perm, a);
-        }
+        733 => scrambled_radical_inverse_specialized(5563_u16, perm, a),
 
-        751 => {
-            return scrambled_radical_inverse_specialized(5711_u16, perm, a);
-        }
+        734 => scrambled_radical_inverse_specialized(5569_u16, perm, a),
 
-        752 => {
-            return scrambled_radical_inverse_specialized(5717_u16, perm, a);
-        }
+        735 => scrambled_radical_inverse_specialized(5573_u16, perm, a),
 
-        753 => {
-            return scrambled_radical_inverse_specialized(5737_u16, perm, a);
-        }
+        736 => scrambled_radical_inverse_specialized(5581_u16, perm, a),
 
-        754 => {
-            return scrambled_radical_inverse_specialized(5741_u16, perm, a);
-        }
+        737 => scrambled_radical_inverse_specialized(5591_u16, perm, a),
 
-        755 => {
-            return scrambled_radical_inverse_specialized(5743_u16, perm, a);
-        }
+        738 => scrambled_radical_inverse_specialized(5623_u16, perm, a),
 
-        756 => {
-            return scrambled_radical_inverse_specialized(5749_u16, perm, a);
-        }
+        739 => scrambled_radical_inverse_specialized(5639_u16, perm, a),
 
-        757 => {
-            return scrambled_radical_inverse_specialized(5779_u16, perm, a);
-        }
+        740 => scrambled_radical_inverse_specialized(5641_u16, perm, a),
 
-        758 => {
-            return scrambled_radical_inverse_specialized(5783_u16, perm, a);
-        }
+        741 => scrambled_radical_inverse_specialized(5647_u16, perm, a),
 
-        759 => {
-            return scrambled_radical_inverse_specialized(5791_u16, perm, a);
-        }
+        742 => scrambled_radical_inverse_specialized(5651_u16, perm, a),
 
-        760 => {
-            return scrambled_radical_inverse_specialized(5801_u16, perm, a);
-        }
+        743 => scrambled_radical_inverse_specialized(5653_u16, perm, a),
 
-        761 => {
-            return scrambled_radical_inverse_specialized(5807_u16, perm, a);
-        }
+        744 => scrambled_radical_inverse_specialized(5657_u16, perm, a),
 
-        762 => {
-            return scrambled_radical_inverse_specialized(5813_u16, perm, a);
-        }
+        745 => scrambled_radical_inverse_specialized(5659_u16, perm, a),
 
-        763 => {
-            return scrambled_radical_inverse_specialized(5821_u16, perm, a);
-        }
+        746 => scrambled_radical_inverse_specialized(5669_u16, perm, a),
 
-        764 => {
-            return scrambled_radical_inverse_specialized(5827_u16, perm, a);
-        }
+        747 => scrambled_radical_inverse_specialized(5683_u16, perm, a),
 
-        765 => {
-            return scrambled_radical_inverse_specialized(5839_u16, perm, a);
-        }
+        748 => scrambled_radical_inverse_specialized(5689_u16, perm, a),
 
-        766 => {
-            return scrambled_radical_inverse_specialized(5843_u16, perm, a);
-        }
+        749 => scrambled_radical_inverse_specialized(5693_u16, perm, a),
 
-        767 => {
-            return scrambled_radical_inverse_specialized(5849_u16, perm, a);
-        }
+        750 => scrambled_radical_inverse_specialized(5701_u16, perm, a),
 
-        768 => {
-            return scrambled_radical_inverse_specialized(5851_u16, perm, a);
-        }
+        751 => scrambled_radical_inverse_specialized(5711_u16, perm, a),
 
-        769 => {
-            return scrambled_radical_inverse_specialized(5857_u16, perm, a);
-        }
+        752 => scrambled_radical_inverse_specialized(5717_u16, perm, a),
 
-        770 => {
-            return scrambled_radical_inverse_specialized(5861_u16, perm, a);
-        }
+        753 => scrambled_radical_inverse_specialized(5737_u16, perm, a),
 
-        771 => {
-            return scrambled_radical_inverse_specialized(5867_u16, perm, a);
-        }
+        754 => scrambled_radical_inverse_specialized(5741_u16, perm, a),
 
-        772 => {
-            return scrambled_radical_inverse_specialized(5869_u16, perm, a);
-        }
+        755 => scrambled_radical_inverse_specialized(5743_u16, perm, a),
 
-        773 => {
-            return scrambled_radical_inverse_specialized(5879_u16, perm, a);
-        }
+        756 => scrambled_radical_inverse_specialized(5749_u16, perm, a),
 
-        774 => {
-            return scrambled_radical_inverse_specialized(5881_u16, perm, a);
-        }
+        757 => scrambled_radical_inverse_specialized(5779_u16, perm, a),
 
-        775 => {
-            return scrambled_radical_inverse_specialized(5897_u16, perm, a);
-        }
+        758 => scrambled_radical_inverse_specialized(5783_u16, perm, a),
 
-        776 => {
-            return scrambled_radical_inverse_specialized(5903_u16, perm, a);
-        }
+        759 => scrambled_radical_inverse_specialized(5791_u16, perm, a),
 
-        777 => {
-            return scrambled_radical_inverse_specialized(5923_u16, perm, a);
-        }
+        760 => scrambled_radical_inverse_specialized(5801_u16, perm, a),
 
-        778 => {
-            return scrambled_radical_inverse_specialized(5927_u16, perm, a);
-        }
+        761 => scrambled_radical_inverse_specialized(5807_u16, perm, a),
 
-        779 => {
-            return scrambled_radical_inverse_specialized(5939_u16, perm, a);
-        }
+        762 => scrambled_radical_inverse_specialized(5813_u16, perm, a),
 
-        780 => {
-            return scrambled_radical_inverse_specialized(5953_u16, perm, a);
-        }
+        763 => scrambled_radical_inverse_specialized(5821_u16, perm, a),
 
-        781 => {
-            return scrambled_radical_inverse_specialized(5981_u16, perm, a);
-        }
+        764 => scrambled_radical_inverse_specialized(5827_u16, perm, a),
 
-        782 => {
-            return scrambled_radical_inverse_specialized(5987_u16, perm, a);
-        }
+        765 => scrambled_radical_inverse_specialized(5839_u16, perm, a),
 
-        783 => {
-            return scrambled_radical_inverse_specialized(6007_u16, perm, a);
-        }
+        766 => scrambled_radical_inverse_specialized(5843_u16, perm, a),
 
-        784 => {
-            return scrambled_radical_inverse_specialized(6011_u16, perm, a);
-        }
+        767 => scrambled_radical_inverse_specialized(5849_u16, perm, a),
 
-        785 => {
-            return scrambled_radical_inverse_specialized(6029_u16, perm, a);
-        }
+        768 => scrambled_radical_inverse_specialized(5851_u16, perm, a),
 
-        786 => {
-            return scrambled_radical_inverse_specialized(6037_u16, perm, a);
-        }
+        769 => scrambled_radical_inverse_specialized(5857_u16, perm, a),
 
-        787 => {
-            return scrambled_radical_inverse_specialized(6043_u16, perm, a);
-        }
+        770 => scrambled_radical_inverse_specialized(5861_u16, perm, a),
 
-        788 => {
-            return scrambled_radical_inverse_specialized(6047_u16, perm, a);
-        }
+        771 => scrambled_radical_inverse_specialized(5867_u16, perm, a),
 
-        789 => {
-            return scrambled_radical_inverse_specialized(6053_u16, perm, a);
-        }
+        772 => scrambled_radical_inverse_specialized(5869_u16, perm, a),
 
-        790 => {
-            return scrambled_radical_inverse_specialized(6067_u16, perm, a);
-        }
+        773 => scrambled_radical_inverse_specialized(5879_u16, perm, a),
 
-        791 => {
-            return scrambled_radical_inverse_specialized(6073_u16, perm, a);
-        }
+        774 => scrambled_radical_inverse_specialized(5881_u16, perm, a),
 
-        792 => {
-            return scrambled_radical_inverse_specialized(6079_u16, perm, a);
-        }
+        775 => scrambled_radical_inverse_specialized(5897_u16, perm, a),
 
-        793 => {
-            return scrambled_radical_inverse_specialized(6089_u16, perm, a);
-        }
+        776 => scrambled_radical_inverse_specialized(5903_u16, perm, a),
 
-        794 => {
-            return scrambled_radical_inverse_specialized(6091_u16, perm, a);
-        }
+        777 => scrambled_radical_inverse_specialized(5923_u16, perm, a),
 
-        795 => {
-            return scrambled_radical_inverse_specialized(6101_u16, perm, a);
-        }
+        778 => scrambled_radical_inverse_specialized(5927_u16, perm, a),
 
-        796 => {
-            return scrambled_radical_inverse_specialized(6113_u16, perm, a);
-        }
+        779 => scrambled_radical_inverse_specialized(5939_u16, perm, a),
 
-        797 => {
-            return scrambled_radical_inverse_specialized(6121_u16, perm, a);
-        }
+        780 => scrambled_radical_inverse_specialized(5953_u16, perm, a),
 
-        798 => {
-            return scrambled_radical_inverse_specialized(6131_u16, perm, a);
-        }
+        781 => scrambled_radical_inverse_specialized(5981_u16, perm, a),
 
-        799 => {
-            return scrambled_radical_inverse_specialized(6133_u16, perm, a);
-        }
+        782 => scrambled_radical_inverse_specialized(5987_u16, perm, a),
 
-        800 => {
-            return scrambled_radical_inverse_specialized(6143_u16, perm, a);
-        }
+        783 => scrambled_radical_inverse_specialized(6007_u16, perm, a),
 
-        801 => {
-            return scrambled_radical_inverse_specialized(6151_u16, perm, a);
-        }
+        784 => scrambled_radical_inverse_specialized(6011_u16, perm, a),
 
-        802 => {
-            return scrambled_radical_inverse_specialized(6163_u16, perm, a);
-        }
+        785 => scrambled_radical_inverse_specialized(6029_u16, perm, a),
 
-        803 => {
-            return scrambled_radical_inverse_specialized(6173_u16, perm, a);
-        }
+        786 => scrambled_radical_inverse_specialized(6037_u16, perm, a),
 
-        804 => {
-            return scrambled_radical_inverse_specialized(6197_u16, perm, a);
-        }
+        787 => scrambled_radical_inverse_specialized(6043_u16, perm, a),
 
-        805 => {
-            return scrambled_radical_inverse_specialized(6199_u16, perm, a);
-        }
+        788 => scrambled_radical_inverse_specialized(6047_u16, perm, a),
 
-        806 => {
-            return scrambled_radical_inverse_specialized(6203_u16, perm, a);
-        }
+        789 => scrambled_radical_inverse_specialized(6053_u16, perm, a),
 
-        807 => {
-            return scrambled_radical_inverse_specialized(6211_u16, perm, a);
-        }
+        790 => scrambled_radical_inverse_specialized(6067_u16, perm, a),
 
-        808 => {
-            return scrambled_radical_inverse_specialized(6217_u16, perm, a);
-        }
+        791 => scrambled_radical_inverse_specialized(6073_u16, perm, a),
 
-        809 => {
-            return scrambled_radical_inverse_specialized(6221_u16, perm, a);
-        }
+        792 => scrambled_radical_inverse_specialized(6079_u16, perm, a),
 
-        810 => {
-            return scrambled_radical_inverse_specialized(6229_u16, perm, a);
-        }
+        793 => scrambled_radical_inverse_specialized(6089_u16, perm, a),
 
-        811 => {
-            return scrambled_radical_inverse_specialized(6247_u16, perm, a);
-        }
+        794 => scrambled_radical_inverse_specialized(6091_u16, perm, a),
 
-        812 => {
-            return scrambled_radical_inverse_specialized(6257_u16, perm, a);
-        }
+        795 => scrambled_radical_inverse_specialized(6101_u16, perm, a),
 
-        813 => {
-            return scrambled_radical_inverse_specialized(6263_u16, perm, a);
-        }
+        796 => scrambled_radical_inverse_specialized(6113_u16, perm, a),
 
-        814 => {
-            return scrambled_radical_inverse_specialized(6269_u16, perm, a);
-        }
+        797 => scrambled_radical_inverse_specialized(6121_u16, perm, a),
 
-        815 => {
-            return scrambled_radical_inverse_specialized(6271_u16, perm, a);
-        }
+        798 => scrambled_radical_inverse_specialized(6131_u16, perm, a),
 
-        816 => {
-            return scrambled_radical_inverse_specialized(6277_u16, perm, a);
-        }
+        799 => scrambled_radical_inverse_specialized(6133_u16, perm, a),
 
-        817 => {
-            return scrambled_radical_inverse_specialized(6287_u16, perm, a);
-        }
+        800 => scrambled_radical_inverse_specialized(6143_u16, perm, a),
 
-        818 => {
-            return scrambled_radical_inverse_specialized(6299_u16, perm, a);
-        }
+        801 => scrambled_radical_inverse_specialized(6151_u16, perm, a),
 
-        819 => {
-            return scrambled_radical_inverse_specialized(6301_u16, perm, a);
-        }
+        802 => scrambled_radical_inverse_specialized(6163_u16, perm, a),
 
-        820 => {
-            return scrambled_radical_inverse_specialized(6311_u16, perm, a);
-        }
+        803 => scrambled_radical_inverse_specialized(6173_u16, perm, a),
 
-        821 => {
-            return scrambled_radical_inverse_specialized(6317_u16, perm, a);
-        }
+        804 => scrambled_radical_inverse_specialized(6197_u16, perm, a),
 
-        822 => {
-            return scrambled_radical_inverse_specialized(6323_u16, perm, a);
-        }
+        805 => scrambled_radical_inverse_specialized(6199_u16, perm, a),
 
-        823 => {
-            return scrambled_radical_inverse_specialized(6329_u16, perm, a);
-        }
+        806 => scrambled_radical_inverse_specialized(6203_u16, perm, a),
 
-        824 => {
-            return scrambled_radical_inverse_specialized(6337_u16, perm, a);
-        }
+        807 => scrambled_radical_inverse_specialized(6211_u16, perm, a),
 
-        825 => {
-            return scrambled_radical_inverse_specialized(6343_u16, perm, a);
-        }
+        808 => scrambled_radical_inverse_specialized(6217_u16, perm, a),
 
-        826 => {
-            return scrambled_radical_inverse_specialized(6353_u16, perm, a);
-        }
+        809 => scrambled_radical_inverse_specialized(6221_u16, perm, a),
 
-        827 => {
-            return scrambled_radical_inverse_specialized(6359_u16, perm, a);
-        }
+        810 => scrambled_radical_inverse_specialized(6229_u16, perm, a),
 
-        828 => {
-            return scrambled_radical_inverse_specialized(6361_u16, perm, a);
-        }
+        811 => scrambled_radical_inverse_specialized(6247_u16, perm, a),
 
-        829 => {
-            return scrambled_radical_inverse_specialized(6367_u16, perm, a);
-        }
+        812 => scrambled_radical_inverse_specialized(6257_u16, perm, a),
 
-        830 => {
-            return scrambled_radical_inverse_specialized(6373_u16, perm, a);
-        }
+        813 => scrambled_radical_inverse_specialized(6263_u16, perm, a),
 
-        831 => {
-            return scrambled_radical_inverse_specialized(6379_u16, perm, a);
-        }
+        814 => scrambled_radical_inverse_specialized(6269_u16, perm, a),
 
-        832 => {
-            return scrambled_radical_inverse_specialized(6389_u16, perm, a);
-        }
+        815 => scrambled_radical_inverse_specialized(6271_u16, perm, a),
 
-        833 => {
-            return scrambled_radical_inverse_specialized(6397_u16, perm, a);
-        }
+        816 => scrambled_radical_inverse_specialized(6277_u16, perm, a),
 
-        834 => {
-            return scrambled_radical_inverse_specialized(6421_u16, perm, a);
-        }
+        817 => scrambled_radical_inverse_specialized(6287_u16, perm, a),
 
-        835 => {
-            return scrambled_radical_inverse_specialized(6427_u16, perm, a);
-        }
+        818 => scrambled_radical_inverse_specialized(6299_u16, perm, a),
 
-        836 => {
-            return scrambled_radical_inverse_specialized(6449_u16, perm, a);
-        }
+        819 => scrambled_radical_inverse_specialized(6301_u16, perm, a),
 
-        837 => {
-            return scrambled_radical_inverse_specialized(6451_u16, perm, a);
-        }
+        820 => scrambled_radical_inverse_specialized(6311_u16, perm, a),
 
-        838 => {
-            return scrambled_radical_inverse_specialized(6469_u16, perm, a);
-        }
+        821 => scrambled_radical_inverse_specialized(6317_u16, perm, a),
 
-        839 => {
-            return scrambled_radical_inverse_specialized(6473_u16, perm, a);
-        }
+        822 => scrambled_radical_inverse_specialized(6323_u16, perm, a),
 
-        840 => {
-            return scrambled_radical_inverse_specialized(6481_u16, perm, a);
-        }
+        823 => scrambled_radical_inverse_specialized(6329_u16, perm, a),
 
-        841 => {
-            return scrambled_radical_inverse_specialized(6491_u16, perm, a);
-        }
+        824 => scrambled_radical_inverse_specialized(6337_u16, perm, a),
 
-        842 => {
-            return scrambled_radical_inverse_specialized(6521_u16, perm, a);
-        }
+        825 => scrambled_radical_inverse_specialized(6343_u16, perm, a),
 
-        843 => {
-            return scrambled_radical_inverse_specialized(6529_u16, perm, a);
-        }
+        826 => scrambled_radical_inverse_specialized(6353_u16, perm, a),
 
-        844 => {
-            return scrambled_radical_inverse_specialized(6547_u16, perm, a);
-        }
+        827 => scrambled_radical_inverse_specialized(6359_u16, perm, a),
 
-        845 => {
-            return scrambled_radical_inverse_specialized(6551_u16, perm, a);
-        }
+        828 => scrambled_radical_inverse_specialized(6361_u16, perm, a),
 
-        846 => {
-            return scrambled_radical_inverse_specialized(6553_u16, perm, a);
-        }
+        829 => scrambled_radical_inverse_specialized(6367_u16, perm, a),
 
-        847 => {
-            return scrambled_radical_inverse_specialized(6563_u16, perm, a);
-        }
+        830 => scrambled_radical_inverse_specialized(6373_u16, perm, a),
 
-        848 => {
-            return scrambled_radical_inverse_specialized(6569_u16, perm, a);
-        }
+        831 => scrambled_radical_inverse_specialized(6379_u16, perm, a),
 
-        849 => {
-            return scrambled_radical_inverse_specialized(6571_u16, perm, a);
-        }
+        832 => scrambled_radical_inverse_specialized(6389_u16, perm, a),
 
-        850 => {
-            return scrambled_radical_inverse_specialized(6577_u16, perm, a);
-        }
+        833 => scrambled_radical_inverse_specialized(6397_u16, perm, a),
 
-        851 => {
-            return scrambled_radical_inverse_specialized(6581_u16, perm, a);
-        }
+        834 => scrambled_radical_inverse_specialized(6421_u16, perm, a),
 
-        852 => {
-            return scrambled_radical_inverse_specialized(6599_u16, perm, a);
-        }
+        835 => scrambled_radical_inverse_specialized(6427_u16, perm, a),
 
-        853 => {
-            return scrambled_radical_inverse_specialized(6607_u16, perm, a);
-        }
+        836 => scrambled_radical_inverse_specialized(6449_u16, perm, a),
 
-        854 => {
-            return scrambled_radical_inverse_specialized(6619_u16, perm, a);
-        }
+        837 => scrambled_radical_inverse_specialized(6451_u16, perm, a),
 
-        855 => {
-            return scrambled_radical_inverse_specialized(6637_u16, perm, a);
-        }
+        838 => scrambled_radical_inverse_specialized(6469_u16, perm, a),
 
-        856 => {
-            return scrambled_radical_inverse_specialized(6653_u16, perm, a);
-        }
+        839 => scrambled_radical_inverse_specialized(6473_u16, perm, a),
 
-        857 => {
-            return scrambled_radical_inverse_specialized(6659_u16, perm, a);
-        }
+        840 => scrambled_radical_inverse_specialized(6481_u16, perm, a),
 
-        858 => {
-            return scrambled_radical_inverse_specialized(6661_u16, perm, a);
-        }
+        841 => scrambled_radical_inverse_specialized(6491_u16, perm, a),
 
-        859 => {
-            return scrambled_radical_inverse_specialized(6673_u16, perm, a);
-        }
+        842 => scrambled_radical_inverse_specialized(6521_u16, perm, a),
 
-        860 => {
-            return scrambled_radical_inverse_specialized(6679_u16, perm, a);
-        }
+        843 => scrambled_radical_inverse_specialized(6529_u16, perm, a),
 
-        861 => {
-            return scrambled_radical_inverse_specialized(6689_u16, perm, a);
-        }
+        844 => scrambled_radical_inverse_specialized(6547_u16, perm, a),
 
-        862 => {
-            return scrambled_radical_inverse_specialized(6691_u16, perm, a);
-        }
+        845 => scrambled_radical_inverse_specialized(6551_u16, perm, a),
 
-        863 => {
-            return scrambled_radical_inverse_specialized(6701_u16, perm, a);
-        }
+        846 => scrambled_radical_inverse_specialized(6553_u16, perm, a),
 
-        864 => {
-            return scrambled_radical_inverse_specialized(6703_u16, perm, a);
-        }
+        847 => scrambled_radical_inverse_specialized(6563_u16, perm, a),
 
-        865 => {
-            return scrambled_radical_inverse_specialized(6709_u16, perm, a);
-        }
+        848 => scrambled_radical_inverse_specialized(6569_u16, perm, a),
 
-        866 => {
-            return scrambled_radical_inverse_specialized(6719_u16, perm, a);
-        }
+        849 => scrambled_radical_inverse_specialized(6571_u16, perm, a),
 
-        867 => {
-            return scrambled_radical_inverse_specialized(6733_u16, perm, a);
-        }
+        850 => scrambled_radical_inverse_specialized(6577_u16, perm, a),
 
-        868 => {
-            return scrambled_radical_inverse_specialized(6737_u16, perm, a);
-        }
+        851 => scrambled_radical_inverse_specialized(6581_u16, perm, a),
 
-        869 => {
-            return scrambled_radical_inverse_specialized(6761_u16, perm, a);
-        }
+        852 => scrambled_radical_inverse_specialized(6599_u16, perm, a),
 
-        870 => {
-            return scrambled_radical_inverse_specialized(6763_u16, perm, a);
-        }
+        853 => scrambled_radical_inverse_specialized(6607_u16, perm, a),
 
-        871 => {
-            return scrambled_radical_inverse_specialized(6779_u16, perm, a);
-        }
+        854 => scrambled_radical_inverse_specialized(6619_u16, perm, a),
 
-        872 => {
-            return scrambled_radical_inverse_specialized(6781_u16, perm, a);
-        }
+        855 => scrambled_radical_inverse_specialized(6637_u16, perm, a),
 
-        873 => {
-            return scrambled_radical_inverse_specialized(6791_u16, perm, a);
-        }
+        856 => scrambled_radical_inverse_specialized(6653_u16, perm, a),
 
-        874 => {
-            return scrambled_radical_inverse_specialized(6793_u16, perm, a);
-        }
+        857 => scrambled_radical_inverse_specialized(6659_u16, perm, a),
 
-        875 => {
-            return scrambled_radical_inverse_specialized(6803_u16, perm, a);
-        }
+        858 => scrambled_radical_inverse_specialized(6661_u16, perm, a),
 
-        876 => {
-            return scrambled_radical_inverse_specialized(6823_u16, perm, a);
-        }
+        859 => scrambled_radical_inverse_specialized(6673_u16, perm, a),
 
-        877 => {
-            return scrambled_radical_inverse_specialized(6827_u16, perm, a);
-        }
+        860 => scrambled_radical_inverse_specialized(6679_u16, perm, a),
 
-        878 => {
-            return scrambled_radical_inverse_specialized(6829_u16, perm, a);
-        }
+        861 => scrambled_radical_inverse_specialized(6689_u16, perm, a),
 
-        879 => {
-            return scrambled_radical_inverse_specialized(6833_u16, perm, a);
-        }
+        862 => scrambled_radical_inverse_specialized(6691_u16, perm, a),
 
-        880 => {
-            return scrambled_radical_inverse_specialized(6841_u16, perm, a);
-        }
+        863 => scrambled_radical_inverse_specialized(6701_u16, perm, a),
 
-        881 => {
-            return scrambled_radical_inverse_specialized(6857_u16, perm, a);
-        }
+        864 => scrambled_radical_inverse_specialized(6703_u16, perm, a),
 
-        882 => {
-            return scrambled_radical_inverse_specialized(6863_u16, perm, a);
-        }
+        865 => scrambled_radical_inverse_specialized(6709_u16, perm, a),
 
-        883 => {
-            return scrambled_radical_inverse_specialized(6869_u16, perm, a);
-        }
+        866 => scrambled_radical_inverse_specialized(6719_u16, perm, a),
 
-        884 => {
-            return scrambled_radical_inverse_specialized(6871_u16, perm, a);
-        }
+        867 => scrambled_radical_inverse_specialized(6733_u16, perm, a),
 
-        885 => {
-            return scrambled_radical_inverse_specialized(6883_u16, perm, a);
-        }
+        868 => scrambled_radical_inverse_specialized(6737_u16, perm, a),
 
-        886 => {
-            return scrambled_radical_inverse_specialized(6899_u16, perm, a);
-        }
+        869 => scrambled_radical_inverse_specialized(6761_u16, perm, a),
 
-        887 => {
-            return scrambled_radical_inverse_specialized(6907_u16, perm, a);
-        }
+        870 => scrambled_radical_inverse_specialized(6763_u16, perm, a),
 
-        888 => {
-            return scrambled_radical_inverse_specialized(6911_u16, perm, a);
-        }
+        871 => scrambled_radical_inverse_specialized(6779_u16, perm, a),
 
-        889 => {
-            return scrambled_radical_inverse_specialized(6917_u16, perm, a);
-        }
+        872 => scrambled_radical_inverse_specialized(6781_u16, perm, a),
 
-        890 => {
-            return scrambled_radical_inverse_specialized(6947_u16, perm, a);
-        }
+        873 => scrambled_radical_inverse_specialized(6791_u16, perm, a),
 
-        891 => {
-            return scrambled_radical_inverse_specialized(6949_u16, perm, a);
-        }
+        874 => scrambled_radical_inverse_specialized(6793_u16, perm, a),
 
-        892 => {
-            return scrambled_radical_inverse_specialized(6959_u16, perm, a);
-        }
+        875 => scrambled_radical_inverse_specialized(6803_u16, perm, a),
 
-        893 => {
-            return scrambled_radical_inverse_specialized(6961_u16, perm, a);
-        }
+        876 => scrambled_radical_inverse_specialized(6823_u16, perm, a),
 
-        894 => {
-            return scrambled_radical_inverse_specialized(6967_u16, perm, a);
-        }
+        877 => scrambled_radical_inverse_specialized(6827_u16, perm, a),
 
-        895 => {
-            return scrambled_radical_inverse_specialized(6971_u16, perm, a);
-        }
+        878 => scrambled_radical_inverse_specialized(6829_u16, perm, a),
 
-        896 => {
-            return scrambled_radical_inverse_specialized(6977_u16, perm, a);
-        }
+        879 => scrambled_radical_inverse_specialized(6833_u16, perm, a),
 
-        897 => {
-            return scrambled_radical_inverse_specialized(6983_u16, perm, a);
-        }
+        880 => scrambled_radical_inverse_specialized(6841_u16, perm, a),
 
-        898 => {
-            return scrambled_radical_inverse_specialized(6991_u16, perm, a);
-        }
+        881 => scrambled_radical_inverse_specialized(6857_u16, perm, a),
 
-        899 => {
-            return scrambled_radical_inverse_specialized(6997_u16, perm, a);
-        }
+        882 => scrambled_radical_inverse_specialized(6863_u16, perm, a),
 
-        900 => {
-            return scrambled_radical_inverse_specialized(7001_u16, perm, a);
-        }
+        883 => scrambled_radical_inverse_specialized(6869_u16, perm, a),
 
-        901 => {
-            return scrambled_radical_inverse_specialized(7013_u16, perm, a);
-        }
+        884 => scrambled_radical_inverse_specialized(6871_u16, perm, a),
 
-        902 => {
-            return scrambled_radical_inverse_specialized(7019_u16, perm, a);
-        }
+        885 => scrambled_radical_inverse_specialized(6883_u16, perm, a),
 
-        903 => {
-            return scrambled_radical_inverse_specialized(7027_u16, perm, a);
-        }
+        886 => scrambled_radical_inverse_specialized(6899_u16, perm, a),
 
-        904 => {
-            return scrambled_radical_inverse_specialized(7039_u16, perm, a);
-        }
+        887 => scrambled_radical_inverse_specialized(6907_u16, perm, a),
 
-        905 => {
-            return scrambled_radical_inverse_specialized(7043_u16, perm, a);
-        }
+        888 => scrambled_radical_inverse_specialized(6911_u16, perm, a),
 
-        906 => {
-            return scrambled_radical_inverse_specialized(7057_u16, perm, a);
-        }
+        889 => scrambled_radical_inverse_specialized(6917_u16, perm, a),
 
-        907 => {
-            return scrambled_radical_inverse_specialized(7069_u16, perm, a);
-        }
+        890 => scrambled_radical_inverse_specialized(6947_u16, perm, a),
 
-        908 => {
-            return scrambled_radical_inverse_specialized(7079_u16, perm, a);
-        }
+        891 => scrambled_radical_inverse_specialized(6949_u16, perm, a),
 
-        909 => {
-            return scrambled_radical_inverse_specialized(7103_u16, perm, a);
-        }
+        892 => scrambled_radical_inverse_specialized(6959_u16, perm, a),
 
-        910 => {
-            return scrambled_radical_inverse_specialized(7109_u16, perm, a);
-        }
+        893 => scrambled_radical_inverse_specialized(6961_u16, perm, a),
 
-        911 => {
-            return scrambled_radical_inverse_specialized(7121_u16, perm, a);
-        }
+        894 => scrambled_radical_inverse_specialized(6967_u16, perm, a),
 
-        912 => {
-            return scrambled_radical_inverse_specialized(7127_u16, perm, a);
-        }
+        895 => scrambled_radical_inverse_specialized(6971_u16, perm, a),
 
-        913 => {
-            return scrambled_radical_inverse_specialized(7129_u16, perm, a);
-        }
+        896 => scrambled_radical_inverse_specialized(6977_u16, perm, a),
 
-        914 => {
-            return scrambled_radical_inverse_specialized(7151_u16, perm, a);
-        }
+        897 => scrambled_radical_inverse_specialized(6983_u16, perm, a),
 
-        915 => {
-            return scrambled_radical_inverse_specialized(7159_u16, perm, a);
-        }
+        898 => scrambled_radical_inverse_specialized(6991_u16, perm, a),
 
-        916 => {
-            return scrambled_radical_inverse_specialized(7177_u16, perm, a);
-        }
+        899 => scrambled_radical_inverse_specialized(6997_u16, perm, a),
 
-        917 => {
-            return scrambled_radical_inverse_specialized(7187_u16, perm, a);
-        }
+        900 => scrambled_radical_inverse_specialized(7001_u16, perm, a),
 
-        918 => {
-            return scrambled_radical_inverse_specialized(7193_u16, perm, a);
-        }
+        901 => scrambled_radical_inverse_specialized(7013_u16, perm, a),
 
-        919 => {
-            return scrambled_radical_inverse_specialized(7207_u16, perm, a);
-        }
+        902 => scrambled_radical_inverse_specialized(7019_u16, perm, a),
 
-        920 => {
-            return scrambled_radical_inverse_specialized(7211_u16, perm, a);
-        }
+        903 => scrambled_radical_inverse_specialized(7027_u16, perm, a),
 
-        921 => {
-            return scrambled_radical_inverse_specialized(7213_u16, perm, a);
-        }
+        904 => scrambled_radical_inverse_specialized(7039_u16, perm, a),
 
-        922 => {
-            return scrambled_radical_inverse_specialized(7219_u16, perm, a);
-        }
+        905 => scrambled_radical_inverse_specialized(7043_u16, perm, a),
 
-        923 => {
-            return scrambled_radical_inverse_specialized(7229_u16, perm, a);
-        }
+        906 => scrambled_radical_inverse_specialized(7057_u16, perm, a),
 
-        924 => {
-            return scrambled_radical_inverse_specialized(7237_u16, perm, a);
-        }
+        907 => scrambled_radical_inverse_specialized(7069_u16, perm, a),
 
-        925 => {
-            return scrambled_radical_inverse_specialized(7243_u16, perm, a);
-        }
+        908 => scrambled_radical_inverse_specialized(7079_u16, perm, a),
 
-        926 => {
-            return scrambled_radical_inverse_specialized(7247_u16, perm, a);
-        }
+        909 => scrambled_radical_inverse_specialized(7103_u16, perm, a),
 
-        927 => {
-            return scrambled_radical_inverse_specialized(7253_u16, perm, a);
-        }
+        910 => scrambled_radical_inverse_specialized(7109_u16, perm, a),
 
-        928 => {
-            return scrambled_radical_inverse_specialized(7283_u16, perm, a);
-        }
+        911 => scrambled_radical_inverse_specialized(7121_u16, perm, a),
 
-        929 => {
-            return scrambled_radical_inverse_specialized(7297_u16, perm, a);
-        }
+        912 => scrambled_radical_inverse_specialized(7127_u16, perm, a),
 
-        930 => {
-            return scrambled_radical_inverse_specialized(7307_u16, perm, a);
-        }
+        913 => scrambled_radical_inverse_specialized(7129_u16, perm, a),
 
-        931 => {
-            return scrambled_radical_inverse_specialized(7309_u16, perm, a);
-        }
+        914 => scrambled_radical_inverse_specialized(7151_u16, perm, a),
 
-        932 => {
-            return scrambled_radical_inverse_specialized(7321_u16, perm, a);
-        }
+        915 => scrambled_radical_inverse_specialized(7159_u16, perm, a),
 
-        933 => {
-            return scrambled_radical_inverse_specialized(7331_u16, perm, a);
-        }
+        916 => scrambled_radical_inverse_specialized(7177_u16, perm, a),
 
-        934 => {
-            return scrambled_radical_inverse_specialized(7333_u16, perm, a);
-        }
+        917 => scrambled_radical_inverse_specialized(7187_u16, perm, a),
 
-        935 => {
-            return scrambled_radical_inverse_specialized(7349_u16, perm, a);
-        }
+        918 => scrambled_radical_inverse_specialized(7193_u16, perm, a),
 
-        936 => {
-            return scrambled_radical_inverse_specialized(7351_u16, perm, a);
-        }
+        919 => scrambled_radical_inverse_specialized(7207_u16, perm, a),
 
-        937 => {
-            return scrambled_radical_inverse_specialized(7369_u16, perm, a);
-        }
+        920 => scrambled_radical_inverse_specialized(7211_u16, perm, a),
 
-        938 => {
-            return scrambled_radical_inverse_specialized(7393_u16, perm, a);
-        }
+        921 => scrambled_radical_inverse_specialized(7213_u16, perm, a),
 
-        939 => {
-            return scrambled_radical_inverse_specialized(7411_u16, perm, a);
-        }
+        922 => scrambled_radical_inverse_specialized(7219_u16, perm, a),
 
-        940 => {
-            return scrambled_radical_inverse_specialized(7417_u16, perm, a);
-        }
+        923 => scrambled_radical_inverse_specialized(7229_u16, perm, a),
 
-        941 => {
-            return scrambled_radical_inverse_specialized(7433_u16, perm, a);
-        }
+        924 => scrambled_radical_inverse_specialized(7237_u16, perm, a),
 
-        942 => {
-            return scrambled_radical_inverse_specialized(7451_u16, perm, a);
-        }
+        925 => scrambled_radical_inverse_specialized(7243_u16, perm, a),
 
-        943 => {
-            return scrambled_radical_inverse_specialized(7457_u16, perm, a);
-        }
+        926 => scrambled_radical_inverse_specialized(7247_u16, perm, a),
 
-        944 => {
-            return scrambled_radical_inverse_specialized(7459_u16, perm, a);
-        }
+        927 => scrambled_radical_inverse_specialized(7253_u16, perm, a),
 
-        945 => {
-            return scrambled_radical_inverse_specialized(7477_u16, perm, a);
-        }
+        928 => scrambled_radical_inverse_specialized(7283_u16, perm, a),
 
-        946 => {
-            return scrambled_radical_inverse_specialized(7481_u16, perm, a);
-        }
+        929 => scrambled_radical_inverse_specialized(7297_u16, perm, a),
 
-        947 => {
-            return scrambled_radical_inverse_specialized(7487_u16, perm, a);
-        }
+        930 => scrambled_radical_inverse_specialized(7307_u16, perm, a),
 
-        948 => {
-            return scrambled_radical_inverse_specialized(7489_u16, perm, a);
-        }
+        931 => scrambled_radical_inverse_specialized(7309_u16, perm, a),
 
-        949 => {
-            return scrambled_radical_inverse_specialized(7499_u16, perm, a);
-        }
+        932 => scrambled_radical_inverse_specialized(7321_u16, perm, a),
 
-        950 => {
-            return scrambled_radical_inverse_specialized(7507_u16, perm, a);
-        }
+        933 => scrambled_radical_inverse_specialized(7331_u16, perm, a),
 
-        951 => {
-            return scrambled_radical_inverse_specialized(7517_u16, perm, a);
-        }
+        934 => scrambled_radical_inverse_specialized(7333_u16, perm, a),
 
-        952 => {
-            return scrambled_radical_inverse_specialized(7523_u16, perm, a);
-        }
+        935 => scrambled_radical_inverse_specialized(7349_u16, perm, a),
 
-        953 => {
-            return scrambled_radical_inverse_specialized(7529_u16, perm, a);
-        }
+        936 => scrambled_radical_inverse_specialized(7351_u16, perm, a),
 
-        954 => {
-            return scrambled_radical_inverse_specialized(7537_u16, perm, a);
-        }
+        937 => scrambled_radical_inverse_specialized(7369_u16, perm, a),
 
-        955 => {
-            return scrambled_radical_inverse_specialized(7541_u16, perm, a);
-        }
+        938 => scrambled_radical_inverse_specialized(7393_u16, perm, a),
 
-        956 => {
-            return scrambled_radical_inverse_specialized(7547_u16, perm, a);
-        }
+        939 => scrambled_radical_inverse_specialized(7411_u16, perm, a),
 
-        957 => {
-            return scrambled_radical_inverse_specialized(7549_u16, perm, a);
-        }
+        940 => scrambled_radical_inverse_specialized(7417_u16, perm, a),
 
-        958 => {
-            return scrambled_radical_inverse_specialized(7559_u16, perm, a);
-        }
+        941 => scrambled_radical_inverse_specialized(7433_u16, perm, a),
 
-        959 => {
-            return scrambled_radical_inverse_specialized(7561_u16, perm, a);
-        }
+        942 => scrambled_radical_inverse_specialized(7451_u16, perm, a),
 
-        960 => {
-            return scrambled_radical_inverse_specialized(7573_u16, perm, a);
-        }
+        943 => scrambled_radical_inverse_specialized(7457_u16, perm, a),
 
-        961 => {
-            return scrambled_radical_inverse_specialized(7577_u16, perm, a);
-        }
+        944 => scrambled_radical_inverse_specialized(7459_u16, perm, a),
 
-        962 => {
-            return scrambled_radical_inverse_specialized(7583_u16, perm, a);
-        }
+        945 => scrambled_radical_inverse_specialized(7477_u16, perm, a),
 
-        963 => {
-            return scrambled_radical_inverse_specialized(7589_u16, perm, a);
-        }
+        946 => scrambled_radical_inverse_specialized(7481_u16, perm, a),
 
-        964 => {
-            return scrambled_radical_inverse_specialized(7591_u16, perm, a);
-        }
+        947 => scrambled_radical_inverse_specialized(7487_u16, perm, a),
 
-        965 => {
-            return scrambled_radical_inverse_specialized(7603_u16, perm, a);
-        }
+        948 => scrambled_radical_inverse_specialized(7489_u16, perm, a),
 
-        966 => {
-            return scrambled_radical_inverse_specialized(7607_u16, perm, a);
-        }
+        949 => scrambled_radical_inverse_specialized(7499_u16, perm, a),
 
-        967 => {
-            return scrambled_radical_inverse_specialized(7621_u16, perm, a);
-        }
+        950 => scrambled_radical_inverse_specialized(7507_u16, perm, a),
 
-        968 => {
-            return scrambled_radical_inverse_specialized(7639_u16, perm, a);
-        }
+        951 => scrambled_radical_inverse_specialized(7517_u16, perm, a),
 
-        969 => {
-            return scrambled_radical_inverse_specialized(7643_u16, perm, a);
-        }
+        952 => scrambled_radical_inverse_specialized(7523_u16, perm, a),
 
-        970 => {
-            return scrambled_radical_inverse_specialized(7649_u16, perm, a);
-        }
+        953 => scrambled_radical_inverse_specialized(7529_u16, perm, a),
 
-        971 => {
-            return scrambled_radical_inverse_specialized(7669_u16, perm, a);
-        }
+        954 => scrambled_radical_inverse_specialized(7537_u16, perm, a),
 
-        972 => {
-            return scrambled_radical_inverse_specialized(7673_u16, perm, a);
-        }
+        955 => scrambled_radical_inverse_specialized(7541_u16, perm, a),
 
-        973 => {
-            return scrambled_radical_inverse_specialized(7681_u16, perm, a);
-        }
+        956 => scrambled_radical_inverse_specialized(7547_u16, perm, a),
 
-        974 => {
-            return scrambled_radical_inverse_specialized(7687_u16, perm, a);
-        }
+        957 => scrambled_radical_inverse_specialized(7549_u16, perm, a),
 
-        975 => {
-            return scrambled_radical_inverse_specialized(7691_u16, perm, a);
-        }
+        958 => scrambled_radical_inverse_specialized(7559_u16, perm, a),
 
-        976 => {
-            return scrambled_radical_inverse_specialized(7699_u16, perm, a);
-        }
+        959 => scrambled_radical_inverse_specialized(7561_u16, perm, a),
 
-        977 => {
-            return scrambled_radical_inverse_specialized(7703_u16, perm, a);
-        }
+        960 => scrambled_radical_inverse_specialized(7573_u16, perm, a),
 
-        978 => {
-            return scrambled_radical_inverse_specialized(7717_u16, perm, a);
-        }
+        961 => scrambled_radical_inverse_specialized(7577_u16, perm, a),
 
-        979 => {
-            return scrambled_radical_inverse_specialized(7723_u16, perm, a);
-        }
+        962 => scrambled_radical_inverse_specialized(7583_u16, perm, a),
 
-        980 => {
-            return scrambled_radical_inverse_specialized(7727_u16, perm, a);
-        }
+        963 => scrambled_radical_inverse_specialized(7589_u16, perm, a),
 
-        981 => {
-            return scrambled_radical_inverse_specialized(7741_u16, perm, a);
-        }
+        964 => scrambled_radical_inverse_specialized(7591_u16, perm, a),
 
-        982 => {
-            return scrambled_radical_inverse_specialized(7753_u16, perm, a);
-        }
+        965 => scrambled_radical_inverse_specialized(7603_u16, perm, a),
 
-        983 => {
-            return scrambled_radical_inverse_specialized(7757_u16, perm, a);
-        }
+        966 => scrambled_radical_inverse_specialized(7607_u16, perm, a),
 
-        984 => {
-            return scrambled_radical_inverse_specialized(7759_u16, perm, a);
-        }
+        967 => scrambled_radical_inverse_specialized(7621_u16, perm, a),
 
-        985 => {
-            return scrambled_radical_inverse_specialized(7789_u16, perm, a);
-        }
+        968 => scrambled_radical_inverse_specialized(7639_u16, perm, a),
 
-        986 => {
-            return scrambled_radical_inverse_specialized(7793_u16, perm, a);
-        }
+        969 => scrambled_radical_inverse_specialized(7643_u16, perm, a),
 
-        987 => {
-            return scrambled_radical_inverse_specialized(7817_u16, perm, a);
-        }
+        970 => scrambled_radical_inverse_specialized(7649_u16, perm, a),
 
-        988 => {
-            return scrambled_radical_inverse_specialized(7823_u16, perm, a);
-        }
+        971 => scrambled_radical_inverse_specialized(7669_u16, perm, a),
 
-        989 => {
-            return scrambled_radical_inverse_specialized(7829_u16, perm, a);
-        }
+        972 => scrambled_radical_inverse_specialized(7673_u16, perm, a),
 
-        990 => {
-            return scrambled_radical_inverse_specialized(7841_u16, perm, a);
-        }
+        973 => scrambled_radical_inverse_specialized(7681_u16, perm, a),
 
-        991 => {
-            return scrambled_radical_inverse_specialized(7853_u16, perm, a);
-        }
+        974 => scrambled_radical_inverse_specialized(7687_u16, perm, a),
 
-        992 => {
-            return scrambled_radical_inverse_specialized(7867_u16, perm, a);
-        }
+        975 => scrambled_radical_inverse_specialized(7691_u16, perm, a),
 
-        993 => {
-            return scrambled_radical_inverse_specialized(7873_u16, perm, a);
-        }
+        976 => scrambled_radical_inverse_specialized(7699_u16, perm, a),
 
-        994 => {
-            return scrambled_radical_inverse_specialized(7877_u16, perm, a);
-        }
+        977 => scrambled_radical_inverse_specialized(7703_u16, perm, a),
 
-        995 => {
-            return scrambled_radical_inverse_specialized(7879_u16, perm, a);
-        }
+        978 => scrambled_radical_inverse_specialized(7717_u16, perm, a),
 
-        996 => {
-            return scrambled_radical_inverse_specialized(7883_u16, perm, a);
-        }
+        979 => scrambled_radical_inverse_specialized(7723_u16, perm, a),
 
-        997 => {
-            return scrambled_radical_inverse_specialized(7901_u16, perm, a);
-        }
+        980 => scrambled_radical_inverse_specialized(7727_u16, perm, a),
 
-        998 => {
-            return scrambled_radical_inverse_specialized(7907_u16, perm, a);
-        }
+        981 => scrambled_radical_inverse_specialized(7741_u16, perm, a),
 
-        999 => {
-            return scrambled_radical_inverse_specialized(7919_u16, perm, a);
-        }
+        982 => scrambled_radical_inverse_specialized(7753_u16, perm, a),
 
-        1000 => {
-            return scrambled_radical_inverse_specialized(7927_u16, perm, a);
-        }
+        983 => scrambled_radical_inverse_specialized(7757_u16, perm, a),
 
-        1001 => {
-            return scrambled_radical_inverse_specialized(7933_u16, perm, a);
-        }
+        984 => scrambled_radical_inverse_specialized(7759_u16, perm, a),
 
-        1002 => {
-            return scrambled_radical_inverse_specialized(7937_u16, perm, a);
-        }
+        985 => scrambled_radical_inverse_specialized(7789_u16, perm, a),
 
-        1003 => {
-            return scrambled_radical_inverse_specialized(7949_u16, perm, a);
-        }
+        986 => scrambled_radical_inverse_specialized(7793_u16, perm, a),
 
-        1004 => {
-            return scrambled_radical_inverse_specialized(7951_u16, perm, a);
-        }
+        987 => scrambled_radical_inverse_specialized(7817_u16, perm, a),
 
-        1005 => {
-            return scrambled_radical_inverse_specialized(7963_u16, perm, a);
-        }
+        988 => scrambled_radical_inverse_specialized(7823_u16, perm, a),
 
-        1006 => {
-            return scrambled_radical_inverse_specialized(7993_u16, perm, a);
-        }
+        989 => scrambled_radical_inverse_specialized(7829_u16, perm, a),
 
-        1007 => {
-            return scrambled_radical_inverse_specialized(8009_u16, perm, a);
-        }
+        990 => scrambled_radical_inverse_specialized(7841_u16, perm, a),
 
-        1008 => {
-            return scrambled_radical_inverse_specialized(8011_u16, perm, a);
-        }
+        991 => scrambled_radical_inverse_specialized(7853_u16, perm, a),
 
-        1009 => {
-            return scrambled_radical_inverse_specialized(8017_u16, perm, a);
-        }
+        992 => scrambled_radical_inverse_specialized(7867_u16, perm, a),
 
-        1010 => {
-            return scrambled_radical_inverse_specialized(8039_u16, perm, a);
-        }
+        993 => scrambled_radical_inverse_specialized(7873_u16, perm, a),
 
-        1011 => {
-            return scrambled_radical_inverse_specialized(8053_u16, perm, a);
-        }
+        994 => scrambled_radical_inverse_specialized(7877_u16, perm, a),
 
-        1012 => {
-            return scrambled_radical_inverse_specialized(8059_u16, perm, a);
-        }
+        995 => scrambled_radical_inverse_specialized(7879_u16, perm, a),
 
-        1013 => {
-            return scrambled_radical_inverse_specialized(8069_u16, perm, a);
-        }
+        996 => scrambled_radical_inverse_specialized(7883_u16, perm, a),
 
-        1014 => {
-            return scrambled_radical_inverse_specialized(8081_u16, perm, a);
-        }
+        997 => scrambled_radical_inverse_specialized(7901_u16, perm, a),
 
-        1015 => {
-            return scrambled_radical_inverse_specialized(8087_u16, perm, a);
-        }
+        998 => scrambled_radical_inverse_specialized(7907_u16, perm, a),
 
-        1016 => {
-            return scrambled_radical_inverse_specialized(8089_u16, perm, a);
-        }
+        999 => scrambled_radical_inverse_specialized(7919_u16, perm, a),
 
-        1017 => {
-            return scrambled_radical_inverse_specialized(8093_u16, perm, a);
-        }
+        1000 => scrambled_radical_inverse_specialized(7927_u16, perm, a),
 
-        1018 => {
-            return scrambled_radical_inverse_specialized(8101_u16, perm, a);
-        }
+        1001 => scrambled_radical_inverse_specialized(7933_u16, perm, a),
 
-        1019 => {
-            return scrambled_radical_inverse_specialized(8111_u16, perm, a);
-        }
+        1002 => scrambled_radical_inverse_specialized(7937_u16, perm, a),
 
-        1020 => {
-            return scrambled_radical_inverse_specialized(8117_u16, perm, a);
-        }
+        1003 => scrambled_radical_inverse_specialized(7949_u16, perm, a),
 
-        1021 => {
-            return scrambled_radical_inverse_specialized(8123_u16, perm, a);
-        }
+        1004 => scrambled_radical_inverse_specialized(7951_u16, perm, a),
 
-        1022 => {
-            return scrambled_radical_inverse_specialized(8147_u16, perm, a);
-        }
+        1005 => scrambled_radical_inverse_specialized(7963_u16, perm, a),
 
-        1023 => {
-            return scrambled_radical_inverse_specialized(8161_u16, perm, a);
-        }
+        1006 => scrambled_radical_inverse_specialized(7993_u16, perm, a),
+
+        1007 => scrambled_radical_inverse_specialized(8009_u16, perm, a),
+
+        1008 => scrambled_radical_inverse_specialized(8011_u16, perm, a),
+
+        1009 => scrambled_radical_inverse_specialized(8017_u16, perm, a),
+
+        1010 => scrambled_radical_inverse_specialized(8039_u16, perm, a),
+
+        1011 => scrambled_radical_inverse_specialized(8053_u16, perm, a),
+
+        1012 => scrambled_radical_inverse_specialized(8059_u16, perm, a),
+
+        1013 => scrambled_radical_inverse_specialized(8069_u16, perm, a),
+
+        1014 => scrambled_radical_inverse_specialized(8081_u16, perm, a),
+
+        1015 => scrambled_radical_inverse_specialized(8087_u16, perm, a),
+
+        1016 => scrambled_radical_inverse_specialized(8089_u16, perm, a),
+
+        1017 => scrambled_radical_inverse_specialized(8093_u16, perm, a),
+
+        1018 => scrambled_radical_inverse_specialized(8101_u16, perm, a),
+
+        1019 => scrambled_radical_inverse_specialized(8111_u16, perm, a),
+
+        1020 => scrambled_radical_inverse_specialized(8117_u16, perm, a),
+
+        1021 => scrambled_radical_inverse_specialized(8123_u16, perm, a),
+
+        1022 => scrambled_radical_inverse_specialized(8147_u16, perm, a),
+
+        1023 => scrambled_radical_inverse_specialized(8161_u16, perm, a),
         _ => {
             panic!("TODO: scrambled_radical_inverse({:?}, {:?})", base_index, a);
         }
-    };
+    }
 }

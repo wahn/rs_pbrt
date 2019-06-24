@@ -48,16 +48,16 @@ impl CurveCommon {
                 clamp_t(nrm_dot_nrm(&n0, &n1), 0.0 as Float, 1.0 as Float).acos();
             let inv_sin_normal_angle: Float = 1.0 as Float / normal_angle.sin();
             CurveCommon {
-                curve_type: curve_type,
+                curve_type,
                 cp_obj: [c[0], c[1], c[2], c[3]],
                 width: [width0, width1],
                 n: [n0, n1],
-                normal_angle: normal_angle,
-                inv_sin_normal_angle: inv_sin_normal_angle,
+                normal_angle,
+                inv_sin_normal_angle,
             }
         } else {
             CurveCommon {
-                curve_type: curve_type,
+                curve_type,
                 cp_obj: [c[0], c[1], c[2], c[3]],
                 width: [width0, width1],
                 n: [Normal3f::default(); 2],
@@ -92,13 +92,13 @@ impl Curve {
     ) -> Self {
         Curve {
             // Curve
-            common: common,
-            u_min: u_min,
-            u_max: u_max,
+            common,
+            u_min,
+            u_max,
             // Shape
-            object_to_world: object_to_world,
-            world_to_object: world_to_object,
-            reverse_orientation: reverse_orientation,
+            object_to_world,
+            world_to_object,
+            reverse_orientation,
             transform_swaps_handedness: object_to_world.swaps_handedness(),
             material: None,
         }
