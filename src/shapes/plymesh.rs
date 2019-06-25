@@ -146,9 +146,9 @@ pub fn create_ply_mesh(
                                             let v1 = vertex_indices[0];
                                             let v3 = vertex_indices[2];
                                             let v4 = vertex_indices.pop().unwrap();
+                                            vertex_indices.push(v4);
                                             vertex_indices.push(v1);
                                             vertex_indices.push(v3);
-                                            vertex_indices.push(v4);
                                         } else {
                                             panic!("plymesh: Ignoring face with {} vertices (only triangles and quads are supported!)",
                                                    vertex_indices.len());
@@ -170,9 +170,9 @@ pub fn create_ply_mesh(
                                             let v1 = vertex_indices[0];
                                             let v3 = vertex_indices[2];
                                             let v4 = vertex_indices.pop().unwrap();
+                                            vertex_indices.push(v4);
                                             vertex_indices.push(v1);
                                             vertex_indices.push(v3);
-                                            vertex_indices.push(v4);
                                         } else {
                                             panic!("plymesh: Ignoring face with {} vertices (only triangles and quads are supported!)",
                                                    vertex_indices.len());
