@@ -288,6 +288,45 @@ impl SamplerIntegrator for VolPathIntegrator {
                     assert!(!(beta.y().is_infinite()));
                 }
             } else {
+                // sample the participating medium, if present
+                if let Some(ref medium) = ray.medium {
+                    let (spectrum, option) = medium.sample(&ray, sampler);
+                    beta *= spectrum;
+                    if let Some(mi) = option {
+                        mi_opt = Some(mi);
+                    }
+                }
+                if beta.is_black() {
+                    break;
+                }
+                // handle an interaction with a medium
+                if let Some(mi) = mi_opt {
+                    // terminate path if ray escaped or _maxDepth_ was reached
+                    if bounces >= self.max_depth {
+                        break;
+                    }
+                    let mi_p = mi.p;
+                    // if mi.is_valid() {...}
+                    if let Some(phase) = mi.clone().phase {
+                        // TODO: ++volumeInteractions;
+                        // handle scattering at point in medium for volumetric path tracer
+                        if let Some(ref light_distribution) = self.light_distribution {
+                            let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
+                            l += beta
+                                * uniform_sample_one_light(
+                                    &mi as &Interaction,
+                                    scene,
+                                    sampler,
+                                    true,
+                                    Some(Arc::borrow(&distrib)),
+                                );
+                            let mut wi: Vector3f = Vector3f::default();
+                            phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
+                            ray = mi.spawn_ray(&wi);
+                            specular_bounce = false;
+                        }
+                    }
+                }
                 // add emitted light from the environment
                 if bounces == 0 || specular_bounce {
                     for light in &scene.infinite_lights {
