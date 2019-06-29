@@ -26,7 +26,6 @@ use crate::core::geometry::{
     bnd2_intersect_bnd2, pnt2_ceil, pnt2_floor, pnt2_inside_exclusive, pnt2_max_pnt2, pnt2_min_pnt2,
 };
 use crate::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2f};
-use crate::core::parallel::AtomicFloat;
 use crate::core::pbrt::{clamp_t, gamma_correct};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::spectrum::xyz_to_rgb;
@@ -39,7 +38,7 @@ const FILTER_TABLE_WIDTH: usize = 16;
 pub struct Pixel {
     xyz: [Float; 3],
     filter_weight_sum: Float,
-    splat_xyz: [AtomicFloat; 3],
+    splat_xyz: [Float; 3],
     pad: Float,
 }
 
@@ -49,9 +48,9 @@ impl Default for Pixel {
             xyz: [0.0 as Float; 3],
             filter_weight_sum: 0.0 as Float,
             splat_xyz: [
-                AtomicFloat::default(),
-                AtomicFloat::default(),
-                AtomicFloat::default(),
+                Float::default(),
+                Float::default(),
+                Float::default(),
             ],
             pad: 0.0 as Float,
         }
@@ -346,9 +345,9 @@ impl Film {
                 merge_pixel.xyz[i] = xyz[i];
             }
             merge_pixel.filter_weight_sum = 1.0 as Float;
-            merge_pixel.splat_xyz[0] = AtomicFloat::new(0.0 as Float);
-            merge_pixel.splat_xyz[1] = AtomicFloat::new(0.0 as Float);
-            merge_pixel.splat_xyz[2] = AtomicFloat::new(0.0 as Float);
+            merge_pixel.splat_xyz[0] = 0.0;
+            merge_pixel.splat_xyz[1] = 0.0;
+            merge_pixel.splat_xyz[2] = 0.0;
         }
     }
     pub fn add_splat(&self, p: &Point2f, v: &Spectrum) {
@@ -395,10 +394,10 @@ impl Film {
         let pixel_vec: &mut Vec<Pixel> = pixels_write.deref_mut();
         let pixel: &mut Pixel = &mut pixel_vec[offset as usize];
 
-        let splat_xyz: &mut [AtomicFloat; 3] = &mut pixel.splat_xyz;
-        splat_xyz[0].add(xyz[0]);
-        splat_xyz[1].add(xyz[1]);
-        splat_xyz[2].add(xyz[2]);
+        let splat_xyz: &mut [Float; 3] = &mut pixel.splat_xyz;
+        splat_xyz[0] += xyz[0];
+        splat_xyz[1] += xyz[1];
+        splat_xyz[2] += xyz[2];
     }
     #[cfg(not(feature = "openexr"))]
     pub fn write_image(&self, splat_scale: Float) {
@@ -429,11 +428,11 @@ impl Film {
             }
             // add splat value at pixel
             let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
-            let pixel_splat_xyz: &[AtomicFloat; 3] = &pixel.splat_xyz;
+            let pixel_splat_xyz: &[Float; 3] = &pixel.splat_xyz;
             let splat_xyz: [Float; 3] = [
-                Float::from(pixel_splat_xyz.index(0)),
-                Float::from(pixel_splat_xyz.index(1)),
-                Float::from(pixel_splat_xyz.index(2)),
+                *pixel_splat_xyz.index(0),
+                *pixel_splat_xyz.index(1),
+                *pixel_splat_xyz.index(2),
             ];
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
             rgb[start + 0] += splat_scale * splat_rgb[0];
@@ -521,11 +520,11 @@ impl Film {
             }
             // add splat value at pixel
             let mut splat_rgb: [Float; 3] = [0.0 as Float; 3];
-            let pixel_splat_xyz: &[AtomicFloat; 3] = &pixel.splat_xyz;
+            let pixel_splat_xyz: &[Float; 3] = &pixel.splat_xyz;
             let splat_xyz: [Float; 3] = [
-                Float::from(pixel_splat_xyz.index(0)),
-                Float::from(pixel_splat_xyz.index(1)),
-                Float::from(pixel_splat_xyz.index(2)),
+                *pixel_splat_xyz.index(0),
+                *pixel_splat_xyz.index(1),
+                *pixel_splat_xyz.index(2),
             ];
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
             rgb[start + 0] += splat_scale * splat_rgb[0];
