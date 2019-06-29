@@ -32,12 +32,12 @@ where
     pub fn new(u_res: usize, v_res: usize) -> BlockedArray<T> {
         let data = vec![num::Zero::zero(); round_up(u_res) * round_up(v_res)];
         BlockedArray {
-            u_res: u_res,
-            v_res: v_res,
+            u_res,
+            v_res,
             u_blocks: round_up(u_res) >> LOG_BLOCK_SIZE,
             log_block_size: LOG_BLOCK_SIZE,
             block_size: BLOCK_SIZE,
-            data: data,
+            data,
         }
     }
     pub fn new_from(u_res: usize, v_res: usize, d: &[T]) -> BlockedArray<T> {

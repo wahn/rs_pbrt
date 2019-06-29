@@ -139,9 +139,9 @@ impl SpatialLightDistribution {
         }
         SpatialLightDistribution {
             scene: scene.clone(),
-            n_voxels: n_voxels,
+            n_voxels,
             hash_table: Arc::new(hash_table),
-            hash_table_size: hash_table_size,
+            hash_table_size,
         }
     }
     /// Compute the sampling distribution for the voxel with integer
@@ -181,7 +181,7 @@ impl SpatialLightDistribution {
             let time: Float = 0.0;
             let intr: InteractionCommon = InteractionCommon {
                 p: po,
-                time: time,
+                time,
                 p_error: Vector3f::default(),
                 wo: Vector3f {
                     x: 1.0,

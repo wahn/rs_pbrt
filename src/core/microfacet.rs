@@ -46,9 +46,9 @@ pub struct TrowbridgeReitzDistribution {
 impl TrowbridgeReitzDistribution {
     pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> Self {
         TrowbridgeReitzDistribution {
-            alpha_x: alpha_x,
-            alpha_y: alpha_y,
-            sample_visible_area: sample_visible_area,
+            alpha_x,
+            alpha_y,
+            sample_visible_area,
         }
     }
     /// Microfacet distribution function: In comparison to the

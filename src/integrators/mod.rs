@@ -97,7 +97,7 @@ pub fn render(
     let tile_size: i32 = 16;
     let x: i32 = (sample_extent.x + tile_size - 1) / tile_size;
     let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
-    let n_tiles: Point2i = Point2i { x: x, y: y };
+    let n_tiles: Point2i = Point2i { x, y };
     // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
     let num_cores: usize;
     if num_threads == 0_u8 {

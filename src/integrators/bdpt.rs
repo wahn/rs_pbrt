@@ -148,7 +148,7 @@ impl<'a> Interaction for EndpointInteraction<'a> {
     fn spawn_ray(&self, d: &Vector3f) -> Ray {
         let o: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, d);
         Ray {
-            o: o,
+            o,
             d: *d,
             t_max: std::f32::INFINITY,
             time: self.time,
@@ -208,7 +208,7 @@ pub struct Vertex<'a, 'p, 's> {
 impl<'a, 'p, 's> Vertex<'a, 'p, 's> {
     pub fn new(vertex_type: VertexType, ei: EndpointInteraction<'a>, beta: &Spectrum) -> Self {
         Vertex {
-            vertex_type: vertex_type,
+            vertex_type,
             beta: *beta,
             ei: Some(ei),
             mi: None,
@@ -819,11 +819,11 @@ impl BDPTIntegrator {
         light_sample_strategy: String,
     ) -> Self {
         BDPTIntegrator {
-            max_depth: max_depth,
-            // visualize_strategies: visualize_strategies,
-            // visualize_weights: visualize_weights,
-            pixel_bounds: pixel_bounds,
-            light_sample_strategy: light_sample_strategy,
+            max_depth,
+            // visualize_strategies,
+            // visualize_weights,
+            pixel_bounds,
+            light_sample_strategy,
         }
     }
     pub fn get_light_sample_strategy(&self) -> String {
@@ -1250,7 +1250,7 @@ pub fn g<'a>(
             }
         }
     }
-    let vis: VisibilityTester = VisibilityTester { p0: p0, p1: p1 };
+    let vis: VisibilityTester = VisibilityTester { p0, p1 };
     vis.tr(scene, sampler) * g
 }
 
@@ -1307,9 +1307,9 @@ pub fn mis_weight<'a>(
                 p_error: lv_ei.p_error.clone(),
                 wo: lv_ei.wo.clone(),
                 n: lv_ei.n.clone(),
-                medium_interface: medium_interface,
-                camera: camera,
-                light: light,
+                medium_interface,
+                camera,
+                light,
             };
             ei = Some(new_ei);
         }
@@ -1328,8 +1328,8 @@ pub fn mis_weight<'a>(
                 p_error: lv_mi.p_error.clone(),
                 wo: lv_mi.wo.clone(),
                 n: lv_mi.n.clone(),
-                medium_interface: medium_interface,
-                phase: phase,
+                medium_interface,
+                phase,
             };
             mi = Some(new_mi);
         }
@@ -1344,7 +1344,7 @@ pub fn mis_weight<'a>(
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
-                medium_interface: medium_interface,
+                medium_interface,
                 primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
@@ -1354,9 +1354,9 @@ pub fn mis_weight<'a>(
         qs = Some(Vertex {
             vertex_type: sampled.vertex_type.clone(),
             beta: sampled.beta,
-            ei: ei,
-            mi: mi,
-            si: si,
+            ei,
+            mi,
+            si,
             delta: sampled.delta,
             pdf_fwd: sampled.pdf_fwd,
             pdf_rev: sampled.pdf_rev,
@@ -1385,9 +1385,9 @@ pub fn mis_weight<'a>(
                 p_error: lv_ei.p_error.clone(),
                 wo: lv_ei.wo.clone(),
                 n: lv_ei.n.clone(),
-                medium_interface: medium_interface,
-                camera: camera,
-                light: light,
+                medium_interface,
+                camera,
+                light,
             };
             ei = Some(new_ei);
         }
@@ -1406,8 +1406,8 @@ pub fn mis_weight<'a>(
                 p_error: lv_mi.p_error.clone(),
                 wo: lv_mi.wo.clone(),
                 n: lv_mi.n.clone(),
-                medium_interface: medium_interface,
-                phase: phase,
+                medium_interface,
+                phase,
             };
             mi = Some(new_mi);
         }
@@ -1422,7 +1422,7 @@ pub fn mis_weight<'a>(
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
-                medium_interface: medium_interface,
+                medium_interface,
                 primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
@@ -1432,9 +1432,9 @@ pub fn mis_weight<'a>(
         pt = Some(Vertex {
             vertex_type: sampled.vertex_type.clone(),
             beta: sampled.beta,
-            ei: ei,
-            mi: mi,
-            si: si,
+            ei,
+            mi,
+            si,
             delta: sampled.delta,
             pdf_fwd: sampled.pdf_fwd,
             pdf_rev: sampled.pdf_rev,
@@ -1467,9 +1467,9 @@ pub fn mis_weight<'a>(
                 p_error: cv_ei.p_error.clone(),
                 wo: cv_ei.wo.clone(),
                 n: cv_ei.n.clone(),
-                medium_interface: medium_interface,
-                camera: camera,
-                light: light,
+                medium_interface,
+                camera,
+                light,
             };
             ei = Some(new_ei);
         }
@@ -1488,8 +1488,8 @@ pub fn mis_weight<'a>(
                 p_error: cv_mi.p_error.clone(),
                 wo: cv_mi.wo.clone(),
                 n: cv_mi.n.clone(),
-                medium_interface: medium_interface,
-                phase: phase,
+                medium_interface,
+                phase,
             };
             mi = Some(new_mi);
         }
@@ -1504,7 +1504,7 @@ pub fn mis_weight<'a>(
                 p_error: cv_si.p_error.clone(),
                 wo: cv_si.wo.clone(),
                 n: cv_si.n.clone(),
-                medium_interface: medium_interface,
+                medium_interface,
                 primitive: cv_si.primitive,
                 bsdf: cv_si.bsdf.clone(),
                 ..Default::default()
@@ -1514,9 +1514,9 @@ pub fn mis_weight<'a>(
         pt = Some(Vertex {
             vertex_type: camera_vertices[t - 1].vertex_type.clone(),
             beta: camera_vertices[t - 1].beta,
-            ei: ei,
-            mi: mi,
-            si: si,
+            ei,
+            mi,
+            si,
             delta: false, // overwrite
             pdf_fwd: camera_vertices[t - 1].pdf_fwd,
             pdf_rev: camera_vertices[t - 1].pdf_rev,
@@ -1548,9 +1548,9 @@ pub fn mis_weight<'a>(
                 p_error: lv_ei.p_error.clone(),
                 wo: lv_ei.wo.clone(),
                 n: lv_ei.n.clone(),
-                medium_interface: medium_interface,
-                camera: camera,
-                light: light,
+                medium_interface,
+                camera,
+                light,
             };
             ei = Some(new_ei);
         }
@@ -1569,8 +1569,8 @@ pub fn mis_weight<'a>(
                 p_error: lv_mi.p_error.clone(),
                 wo: lv_mi.wo.clone(),
                 n: lv_mi.n.clone(),
-                medium_interface: medium_interface,
-                phase: phase,
+                medium_interface,
+                phase,
             };
             mi = Some(new_mi);
         }
@@ -1585,7 +1585,7 @@ pub fn mis_weight<'a>(
                 p_error: lv_si.p_error.clone(),
                 wo: lv_si.wo.clone(),
                 n: lv_si.n.clone(),
-                medium_interface: medium_interface,
+                medium_interface,
                 primitive: lv_si.primitive,
                 bsdf: lv_si.bsdf.clone(),
                 ..Default::default()
@@ -1595,9 +1595,9 @@ pub fn mis_weight<'a>(
         qs = Some(Vertex {
             vertex_type: light_vertices[s - 1].vertex_type.clone(),
             beta: light_vertices[s - 1].beta,
-            ei: ei,
-            mi: mi,
-            si: si,
+            ei,
+            mi,
+            si,
             delta: false, // overwrite
             pdf_fwd: light_vertices[s - 1].pdf_fwd,
             pdf_rev: light_vertices[s - 1].pdf_rev,
@@ -1647,9 +1647,9 @@ pub fn mis_weight<'a>(
                     p_error: cv_ei.p_error.clone(),
                     wo: cv_ei.wo.clone(),
                     n: cv_ei.n.clone(),
-                    medium_interface: medium_interface,
-                    camera: camera,
-                    light: light,
+                    medium_interface,
+                    camera,
+                    light,
                 };
                 ei = Some(new_ei);
             }
@@ -1668,8 +1668,8 @@ pub fn mis_weight<'a>(
                     p_error: cv_mi.p_error.clone(),
                     wo: cv_mi.wo.clone(),
                     n: cv_mi.n.clone(),
-                    medium_interface: medium_interface,
-                    phase: phase,
+                    medium_interface,
+                    phase,
                 };
                 mi = Some(new_mi);
             }
@@ -1684,7 +1684,7 @@ pub fn mis_weight<'a>(
                     p_error: cv_si.p_error.clone(),
                     wo: cv_si.wo.clone(),
                     n: cv_si.n.clone(),
-                    medium_interface: medium_interface,
+                    medium_interface,
                     bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
                 };
@@ -1703,12 +1703,12 @@ pub fn mis_weight<'a>(
             pt_minus = Some(Vertex {
                 vertex_type: camera_vertices[t - 2].vertex_type.clone(),
                 beta: camera_vertices[t - 2].beta,
-                ei: ei,
-                mi: mi,
-                si: si,
+                ei,
+                mi,
+                si,
                 delta: camera_vertices[t - 2].delta,
                 pdf_fwd: camera_vertices[t - 2].pdf_fwd,
-                pdf_rev: pdf_rev, //overwrite
+                pdf_rev,
             });
         }
     }
@@ -1747,9 +1747,9 @@ pub fn mis_weight<'a>(
                     p_error: lv_ei.p_error.clone(),
                     wo: lv_ei.wo.clone(),
                     n: lv_ei.n.clone(),
-                    medium_interface: medium_interface,
-                    camera: camera,
-                    light: light,
+                    medium_interface,
+                    camera,
+                    light,
                 };
                 ei = Some(new_ei);
             }
@@ -1768,8 +1768,8 @@ pub fn mis_weight<'a>(
                     p_error: lv_mi.p_error.clone(),
                     wo: lv_mi.wo.clone(),
                     n: lv_mi.n.clone(),
-                    medium_interface: medium_interface,
-                    phase: phase,
+                    medium_interface,
+                    phase,
                 };
                 mi = Some(new_mi);
             }
@@ -1784,7 +1784,7 @@ pub fn mis_weight<'a>(
                     p_error: lv_si.p_error.clone(),
                     wo: lv_si.wo.clone(),
                     n: lv_si.n.clone(),
-                    medium_interface: medium_interface,
+                    medium_interface,
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
@@ -1799,12 +1799,12 @@ pub fn mis_weight<'a>(
             qs_minus = Some(Vertex {
                 vertex_type: light_vertices[s - 2].vertex_type.clone(),
                 beta: light_vertices[s - 2].beta,
-                ei: ei,
-                mi: mi,
-                si: si,
+                ei,
+                mi,
+                si,
                 delta: light_vertices[s - 2].delta,
                 pdf_fwd: light_vertices[s - 2].pdf_fwd,
-                pdf_rev: pdf_rev, //overwrite
+                pdf_rev,
             });
         }
     }

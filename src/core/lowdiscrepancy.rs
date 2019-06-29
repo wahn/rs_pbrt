@@ -281,7 +281,7 @@ pub fn sobol_2d(
 ) {
     let x: i32 = rng.uniform_uint32() as i32;
     let y: i32 = rng.uniform_uint32() as i32;
-    let scramble: Point2i = Point2i { x: x, y: y };
+    let scramble: Point2i = Point2i { x, y };
     // define 2D Sobol$'$ generator matrices _c_sobol[2]_
     let c_sobol: [[u32; 32]; 2] = [
         [

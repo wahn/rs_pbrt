@@ -21,9 +21,9 @@ impl<T: Copy> Checkerboard2DTexture<T> {
         tex2: Arc<Texture<T> + Send + Sync>, // , TODO: aaMethod
     ) -> Self {
         Checkerboard2DTexture {
-            tex1: tex1,
-            tex2: tex2,
-            mapping: mapping,
+            tex1,
+            tex2,
+            mapping,
         }
     }
 }

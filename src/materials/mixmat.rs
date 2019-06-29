@@ -26,9 +26,9 @@ impl MixMaterial {
         scale: Arc<Texture<Spectrum> + Send + Sync>,
     ) -> Self {
         MixMaterial {
-            m1: m1,
-            m2: m2,
-            scale: scale,
+            m1,
+            m2,
+            scale,
         }
     }
 }

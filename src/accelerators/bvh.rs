@@ -34,8 +34,8 @@ pub struct BVHPrimitiveInfo {
 impl BVHPrimitiveInfo {
     pub fn new(primitive_number: usize, bounds: Bounds3f) -> Self {
         BVHPrimitiveInfo {
-            primitive_number: primitive_number,
-            bounds: bounds,
+            primitive_number,
+            bounds,
             centroid: bounds.p_min * 0.5 + bounds.p_max * 0.5,
         }
     }
@@ -172,7 +172,7 @@ impl BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
             split_method: split_method.clone(),
             primitives: ordered_prims,
-            nodes: nodes,
+            nodes,
         });
         let unwrapped = Arc::try_unwrap(bvh_ordered_prims);
         unwrapped.ok().unwrap()

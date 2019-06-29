@@ -50,16 +50,16 @@ impl SubsurfaceMaterial {
         let mut table: BssrdfTable = BssrdfTable::new(100, 64);
         compute_beam_diffusion_bssrdf(g, eta, &mut table);
         SubsurfaceMaterial {
-            scale: scale,
-            kr: kr,
-            kt: kt,
-            sigma_a: sigma_a,
-            sigma_s: sigma_s,
-            u_roughness: u_roughness,
-            v_roughness: v_roughness,
-            bump_map: bump_map,
-            eta: eta,
-            remap_roughness: remap_roughness,
+            scale,
+            kr,
+            kt,
+            sigma_a,
+            sigma_s,
+            u_roughness,
+            v_roughness,
+            bump_map,
+            eta,
+            remap_roughness,
             table: Arc::new(table),
         }
     }

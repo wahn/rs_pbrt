@@ -46,17 +46,18 @@ impl SPPMIntegrator {
         initial_search_radius: Float,
         write_frequency: i32,
     ) -> Self {
-        let mut photons_per_iter: i32 = photons_per_iteration;
-        if !(photons_per_iter > 0_i32) {
+        let photons_per_iteration = if !(photons_per_iteration > 0_i32) {
             let film: Arc<Film> = camera.get_film();
-            photons_per_iter = film.cropped_pixel_bounds.area();
-        }
+            film.cropped_pixel_bounds.area()
+        } else {
+            photons_per_iteration
+        };
         SPPMIntegrator {
-            initial_search_radius: initial_search_radius,
-            n_iterations: n_iterations,
-            max_depth: max_depth,
-            photons_per_iteration: photons_per_iter,
-            write_frequency: write_frequency,
+            initial_search_radius,
+            n_iterations,
+            max_depth,
+            photons_per_iteration,
+            write_frequency,
         }
     }
 }
@@ -88,7 +89,7 @@ pub struct SPPMPixelListNode<'p> {
 impl<'p> SPPMPixelListNode<'p> {
     pub fn new(pixel: &'p SPPMPixel) -> Self {
         SPPMPixelListNode {
-            pixel: pixel,
+            pixel,
             next: AtomSetOnce::empty(),
         }
     }
@@ -456,7 +457,7 @@ pub fn render_sppm(
                                                 for x in p_min.x..(p_max.x + 1) {
                                                     // add visible point to grid cell $(x, y, z)$
                                                     let h: usize = hash(
-                                                        &Point3i { x: x, y: y, z: z },
+                                                        &Point3i { x, y, z },
                                                         hash_size as i32,
                                                     );
                                                     let node_arc =

@@ -57,7 +57,7 @@ impl InteractionCommon {
     pub fn spawn_ray(&self, d: &Vector3f) -> Ray {
         let o: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, d);
         Ray {
-            o: o,
+            o,
             d: *d,
             t_max: std::f32::INFINITY,
             time: self.time,
@@ -70,7 +70,7 @@ impl InteractionCommon {
         let origin: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, &d);
         Ray {
             o: origin,
-            d: d,
+            d,
             t_max: 1.0 - SHADOW_EPSILON,
             time: self.time,
             differential: None,
@@ -84,7 +84,7 @@ impl InteractionCommon {
         let d: Vector3f = target - origin;
         Ray {
             o: origin,
-            d: d,
+            d,
             t_max: 1.0 - SHADOW_EPSILON,
             time: self.time,
             differential: None,
@@ -143,22 +143,22 @@ impl MediumInteraction {
             let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
             MediumInteraction {
                 p: *p,
-                time: time,
+                time,
                 p_error: Vector3f::default(),
                 wo: *wo,
                 n: Normal3f::default(),
                 medium_interface: Some(Arc::new(MediumInterface::new(inside, outside))),
-                phase: phase,
+                phase,
             }
         } else {
             MediumInteraction {
                 p: *p,
-                time: time,
+                time,
                 p_error: Vector3f::default(),
                 wo: *wo,
                 n: Normal3f::default(),
                 medium_interface: None,
-                phase: phase,
+                phase,
             }
         }
     }
@@ -211,7 +211,7 @@ impl Interaction for MediumInteraction {
     fn spawn_ray(&self, d: &Vector3f) -> Ray {
         let o: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, d);
         Ray {
-            o: o,
+            o,
             d: *d,
             t_max: std::f32::INFINITY,
             time: self.time,
@@ -305,7 +305,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
         };
         // initialize shading geometry from true geometry
         let mut shading: Shading = Shading {
-            n: n,
+            n,
             dpdu: Vector3f::from(*dpdu),
             dpdv: Vector3f::from(*dpdv),
             dndu: *dndu,
@@ -320,10 +320,10 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
         }
         SurfaceInteraction {
             p: *p,
-            time: time,
+            time,
             p_error: *p_error,
             wo: wo.normalize(),
-            n: n,
+            n,
             medium_interface: None,
             uv: *uv,
             dpdu: *dpdu,
@@ -337,7 +337,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             dudy: 0.0 as Float,
             dvdy: 0.0 as Float,
             primitive: None,
-            shading: shading,
+            shading,
             bsdf: None,
             bssrdf: None,
             shape: sh,
@@ -517,7 +517,7 @@ impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
     fn spawn_ray(&self, d: &Vector3f) -> Ray {
         let o: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, d);
         Ray {
-            o: o,
+            o,
             d: *d,
             t_max: std::f32::INFINITY,
             time: self.time,

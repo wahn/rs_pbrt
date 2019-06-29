@@ -46,7 +46,7 @@ impl BlockQueue {
             println!("Warning: This block queue is empty!");
         }
         BlockQueue {
-            blocks: blocks,
+            blocks,
             dimensions: dim,
             next: AtomicUsize::new(0),
         }

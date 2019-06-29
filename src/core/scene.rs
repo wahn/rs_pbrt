@@ -31,7 +31,7 @@ impl Scene {
             lights: Vec::new(),
             infinite_lights: Vec::new(),
             aggregate: aggregate.clone(),
-            world_bound: world_bound,
+            world_bound,
         };
         let mut changed_lights = Vec::new();
         let mut infinite_lights = Vec::new();
@@ -45,9 +45,9 @@ impl Scene {
         }
         Scene {
             lights: changed_lights,
-            infinite_lights: infinite_lights,
-            aggregate: aggregate,
-            world_bound: world_bound,
+            infinite_lights,
+            aggregate,
+            world_bound,
         }
     }
     pub fn world_bound(&self) -> Bounds3f {

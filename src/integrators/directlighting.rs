@@ -31,9 +31,9 @@ pub struct DirectLightingIntegrator {
 impl DirectLightingIntegrator {
     pub fn new(strategy: LightStrategy, max_depth: i64, pixel_bounds: Bounds2i) -> Self {
         DirectLightingIntegrator {
-            pixel_bounds: pixel_bounds,
-            strategy: strategy,
-            max_depth: max_depth,
+            pixel_bounds,
+            strategy,
+            max_depth,
             n_light_samples: Vec::new(),
         }
     }

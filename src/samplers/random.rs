@@ -23,7 +23,7 @@ pub struct RandomSampler {
 impl RandomSampler {
     pub fn new(samples_per_pixel: i64) -> Self {
         RandomSampler {
-            samples_per_pixel: samples_per_pixel,
+            samples_per_pixel,
             rng: Rng::default(),
             current_pixel: Point2i::default(),
             current_pixel_sample_index: 0_i64,
@@ -71,7 +71,7 @@ impl Sampler for RandomSampler {
         // C++: call x first
         let x = self.rng.uniform_float();
         let y = self.rng.uniform_float();
-        Point2f { x: x, y: y }
+        Point2f { x, y }
     }
     fn reseed(&mut self, seed: u64) {
         self.rng.set_sequence(seed);

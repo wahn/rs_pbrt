@@ -32,9 +32,9 @@ impl AOIntegrator {
         pixel_bounds: Bounds2i,
     ) -> Self {
         AOIntegrator {
-            pixel_bounds: pixel_bounds,
-            cos_sample: cos_sample,
-            n_samples: n_samples,
+            pixel_bounds,
+            cos_sample,
+            n_samples,
         }
     }
 }

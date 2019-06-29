@@ -204,12 +204,12 @@ impl Bsdf {
     pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Arc<Bxdf + Sync + Send>>) -> Self {
         let ss = si.shading.dpdu.normalize();
         Bsdf {
-            eta: eta,
+            eta,
             ns: si.shading.n,
             ng: si.n,
-            ss: ss,
+            ss,
             ts: nrm_cross_vec3(&si.shading.n, &ss),
-            bxdfs: bxdfs,
+            bxdfs,
         }
     }
     pub fn num_components(&self, flags: u8) -> u8 {
@@ -467,8 +467,8 @@ pub struct ScaledBxDF {
 impl ScaledBxDF {
     pub fn new(bxdf: Arc<Bxdf + Send + Sync>, scale: Spectrum) -> Self {
         ScaledBxDF {
-            bxdf: bxdf,
-            scale: scale,
+            bxdf,
+            scale,
         }
     }
 }
@@ -543,8 +543,8 @@ pub struct SpecularReflection {
 impl SpecularReflection {
     pub fn new(r: Spectrum, fresnel: Arc<Fresnel + Send + Sync>) -> Self {
         SpecularReflection {
-            r: r,
-            fresnel: fresnel,
+            r,
+            fresnel,
         }
     }
 }
@@ -590,14 +590,14 @@ pub struct SpecularTransmission {
 impl SpecularTransmission {
     pub fn new(t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
         SpecularTransmission {
-            t: t,
-            eta_a: eta_a,
-            eta_b: eta_b,
+            t,
+            eta_a,
+            eta_b,
             fresnel: FresnelDielectric {
                 eta_i: eta_a,
                 eta_t: eta_b,
             },
-            mode: mode,
+            mode,
         }
     }
 }
@@ -672,11 +672,11 @@ pub struct FresnelSpecular {
 impl FresnelSpecular {
     pub fn new(r: Spectrum, t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
         FresnelSpecular {
-            r: r,
-            t: t,
-            eta_a: eta_a,
-            eta_b: eta_b,
-            mode: mode,
+            r,
+            t,
+            eta_a,
+            eta_b,
+            mode,
         }
     }
 }
@@ -775,7 +775,7 @@ pub struct LambertianReflection {
 
 impl LambertianReflection {
     pub fn new(r: Spectrum) -> Self {
-        LambertianReflection { r: r }
+        LambertianReflection { r }
     }
 }
 
@@ -863,7 +863,7 @@ impl OrenNayar {
         let sigma = radians(sigma);
         let sigma2: Float = sigma * sigma;
         OrenNayar {
-            r: r,
+            r,
             a: 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33))),
             b: 0.45 * sigma2 / (sigma2 + 0.09),
         }
@@ -936,9 +936,9 @@ impl MicrofacetReflection {
         fresnel: Arc<Fresnel + Send + Sync>,
     ) -> Self {
         MicrofacetReflection {
-            r: r,
-            distribution: distribution,
-            fresnel: fresnel,
+            r,
+            distribution,
+            fresnel,
         }
     }
 }
@@ -1142,9 +1142,9 @@ impl FresnelBlend {
         distribution: Option<TrowbridgeReitzDistribution>,
     ) -> Self {
         FresnelBlend {
-            rd: rd,
-            rs: rs,
-            distribution: distribution,
+            rd,
+            rs,
+            distribution,
         }
     }
     pub fn schlick_fresnel(&self, cos_theta: Float) -> Spectrum {
@@ -1233,8 +1233,8 @@ pub struct FourierBSDF {
 impl FourierBSDF {
     pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> Self {
         FourierBSDF {
-            bsdf_table: bsdf_table,
-            mode: mode,
+            bsdf_table,
+            mode,
         }
     }
 }

@@ -83,17 +83,17 @@ impl<'a> FilmTile<'a> {
         max_sample_luminance: Float,
     ) -> Self {
         FilmTile {
-            pixel_bounds: pixel_bounds,
-            filter_radius: filter_radius,
+            pixel_bounds,
+            filter_radius,
             inv_filter_radius: Vector2f {
                 x: 1.0 / filter_radius.x,
                 y: 1.0 / filter_radius.y,
             },
-            filter_table: filter_table,
-            filter_table_size: filter_table_size,
+            filter_table,
+            filter_table_size,
             // TODO: pixels = std::vector<FilmTilePixel>(std::max(0, pixelBounds.Area()));
             pixels: vec![FilmTilePixel::default(); pixel_bounds.area() as usize],
-            max_sample_luminance: max_sample_luminance,
+            max_sample_luminance,
         }
     }
     pub fn add_sample(&mut self, p_film: &Point2f, l: &mut Spectrum, sample_weight: Float) {
@@ -217,13 +217,13 @@ impl Film {
         Film {
             full_resolution: resolution,
             diagonal: diagonal * 0.001,
-            filter: filter,
-            filename: filename,
-            cropped_pixel_bounds: cropped_pixel_bounds,
+            filter,
+            filename,
+            cropped_pixel_bounds,
             pixels: RwLock::new(vec![Pixel::default(); cropped_pixel_bounds.area() as usize]),
-            filter_table: filter_table,
-            scale: scale,
-            max_sample_luminance: max_sample_luminance,
+            filter_table,
+            scale,
+            max_sample_luminance,
         }
     }
     pub fn get_cropped_pixel_bounds(&self) -> Bounds2i {

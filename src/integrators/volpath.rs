@@ -39,10 +39,10 @@ impl VolPathIntegrator {
         light_sample_strategy: String,
     ) -> Self {
         VolPathIntegrator {
-            pixel_bounds: pixel_bounds,
-            max_depth: max_depth,
-            rr_threshold: rr_threshold,
-            light_sample_strategy: light_sample_strategy,
+            pixel_bounds,
+            max_depth,
+            rr_threshold,
+            light_sample_strategy,
             light_distribution: None,
         }
     }

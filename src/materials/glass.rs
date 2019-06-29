@@ -38,13 +38,13 @@ impl GlassMaterial {
         remap_roughness: bool,
     ) -> Self {
         GlassMaterial {
-            kr: kr,
-            kt: kt,
-            u_roughness: u_roughness,
-            v_roughness: v_roughness,
-            index: index,
-            bump_map: bump_map,
-            remap_roughness: remap_roughness,
+            kr,
+            kt,
+            u_roughness,
+            v_roughness,
+            index,
+            bump_map,
+            remap_roughness,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {

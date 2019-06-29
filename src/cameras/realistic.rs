@@ -76,13 +76,13 @@ impl RealisticCamera {
             // println!("{:?}", element_interfaces[i / 4]);
         }
         let mut camera = RealisticCamera {
-            camera_to_world: camera_to_world,
-            shutter_open: shutter_open,
-            shutter_close: shutter_close,
+            camera_to_world,
+            shutter_open,
+            shutter_close,
             film: film.clone(),
-            medium: medium,
-            simple_weighting: simple_weighting,
-            element_interfaces: element_interfaces,
+            medium,
+            simple_weighting,
+            element_interfaces,
             exit_pupil_bounds: Vec::new(),
         };
         // compute lens--film distance for given focus distance
@@ -445,7 +445,7 @@ impl RealisticCamera {
         // compute cardinal points for film side of lens system
         let mut r_scene: Ray = Ray {
             o: Point3f {
-                x: x,
+                x,
                 y: 0.0 as Float,
                 z: self.lens_front_z() + 1.0 as Float,
             },
@@ -465,7 +465,7 @@ impl RealisticCamera {
         self.compute_cardinal_points(&r_scene, &r_film, 0, pz, fz);
         // compute cardinal points for scene side of lens system
         r_film.o = Point3f {
-            x: x,
+            x,
             y: 0.0 as Float,
             z: self.lens_rear_z() - 1.0 as Float,
         };

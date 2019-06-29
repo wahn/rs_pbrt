@@ -44,17 +44,17 @@ impl UberMaterial {
         remap_roughness: bool,
     ) -> Self {
         UberMaterial {
-            kd: kd,
-            ks: ks,
-            kr: kr,
-            kt: kt,
-            opacity: opacity,
-            roughness: roughness,
-            u_roughness: u_roughness,
-            v_roughness: v_roughness,
-            eta: eta,
-            bump_map: bump_map,
-            remap_roughness: remap_roughness,
+            kd,
+            ks,
+            kr,
+            kt,
+            opacity,
+            roughness,
+            u_roughness,
+            v_roughness,
+            eta,
+            bump_map,
+            remap_roughness,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {

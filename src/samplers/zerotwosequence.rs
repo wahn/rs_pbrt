@@ -62,8 +62,8 @@ impl Default for ZeroTwoSequenceSampler {
 impl ZeroTwoSequenceSampler {
     pub fn new(samples_per_pixel: i64, n_sampled_dimensions: i64) -> Self {
         let mut lds: ZeroTwoSequenceSampler = ZeroTwoSequenceSampler {
-            samples_per_pixel: samples_per_pixel,
-            n_sampled_dimensions: n_sampled_dimensions,
+            samples_per_pixel,
+            n_sampled_dimensions,
             samples_1d: Vec::new(),
             samples_2d: Vec::new(),
             current_1d_dimension: 0_i32,
@@ -162,7 +162,7 @@ impl Sampler for ZeroTwoSequenceSampler {
             // C++ call order for Point2f(rng.UniformFloat(), rng.UniformFloat());
             let y = self.rng.uniform_float();
             let x = self.rng.uniform_float();
-            Point2f { x: x, y: y }
+            Point2f { x, y }
         }
     }
     fn request_2d_array(&mut self, n: i32) {

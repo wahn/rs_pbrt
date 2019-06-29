@@ -559,7 +559,7 @@ fn main() {
                                                             // i % 3 == 2
                                                             z = elems[i];
                                                             // store as Point3f
-                                                            p.push(Point3f { x: x, y: y, z: z });
+                                                            p.push(Point3f { x, y, z });
                                                         }
                                                     }
                                                     // transform mesh vertices to world space

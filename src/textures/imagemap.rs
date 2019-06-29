@@ -90,8 +90,8 @@ where
             wrap_mode,
         ));
         ImageTexture {
-            mapping: mapping,
-            mipmap: mipmap,
+            mapping,
+            mipmap,
         }
     }
 }

@@ -34,11 +34,11 @@ impl EnvironmentCamera {
         medium: Option<Arc<Medium + Send + Sync>>,
     ) -> Self {
         EnvironmentCamera {
-            camera_to_world: camera_to_world,
-            shutter_open: shutter_open,
-            shutter_close: shutter_close,
-            film: film,
-            medium: medium,
+            camera_to_world,
+            shutter_open,
+            shutter_close,
+            film,
+            medium,
         }
     }
     pub fn create(

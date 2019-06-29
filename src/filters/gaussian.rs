@@ -25,9 +25,9 @@ impl GaussianFilter {
         let exp_x: Float = (-alpha * xw * xw).exp();
         let exp_y: Float = (-alpha * yw * yw).exp();
         let gaussian_filter: Box<Filter + Sync + Send> = Box::new(GaussianFilter {
-            alpha: alpha,
-            exp_x: exp_x,
-            exp_y: exp_y,
+            alpha,
+            exp_x,
+            exp_y,
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
                 x: 1.0 / xw,
