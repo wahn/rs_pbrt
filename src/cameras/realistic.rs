@@ -1,7 +1,6 @@
 // std
 use std;
 use std::path::PathBuf;
-use std::sync::mpsc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::{Camera, CameraSample};
@@ -105,7 +104,7 @@ impl RealisticCamera {
             let camera = &camera;
             let film = &film;
             crossbeam::scope(|scope| {
-                let (band_tx, band_rx) = mpsc::channel();
+                let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
                 // spawn worker threads
                 for (b, band) in bands.into_iter().enumerate() {
                     let band_tx = band_tx.clone();

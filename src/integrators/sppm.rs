@@ -1,6 +1,5 @@
 // std
 use std::f32::consts::PI;
-use std::sync::mpsc;
 use std::sync::Arc;
 // others
 use atom::*;
@@ -181,7 +180,7 @@ pub fn render_sppm(
                     let sampler = &sampler;
                     let pixels = &mut pixels;
                     crossbeam::scope(|scope| {
-                        let (pixel_tx, pixel_rx) = mpsc::channel();
+                        let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
                         // spawn worker threads
                         for _ in 0..num_cores {
                             let pixel_tx = pixel_tx.clone();
@@ -416,7 +415,7 @@ pub fn render_sppm(
                     let bands: Vec<&mut [SPPMPixel]> = pixels.chunks_mut(chunk_size).collect();
                     let grid = &grid;
                     crossbeam::scope(|scope| {
-                        let (band_tx, band_rx) = mpsc::channel();
+                        let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
                         // spawn worker threads
                         for (b, band) in bands.into_iter().enumerate() {
                             let band_tx = band_tx.clone();
@@ -508,7 +507,7 @@ pub fn render_sppm(
                     let integrator = &integrator;
                     let light_distr = &light_distr;
                     crossbeam::scope(|scope| {
-                        let (band_tx, band_rx) = mpsc::channel();
+                        let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
                         // spawn worker threads
                         for (b, band) in bands.into_iter().enumerate() {
                             let band_tx = band_tx.clone();
@@ -764,7 +763,7 @@ pub fn render_sppm(
                 {
                     let bands: Vec<&mut [SPPMPixel]> = pixels.chunks_mut(chunk_size).collect();
                     crossbeam::scope(|scope| {
-                        let (band_tx, band_rx) = mpsc::channel();
+                        let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
                         // spawn worker threads
                         for (b, band) in bands.into_iter().enumerate() {
                             let band_tx = band_tx.clone();
