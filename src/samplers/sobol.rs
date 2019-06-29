@@ -9,6 +9,7 @@ use crate::core::sobolmatrices::NUM_SOBOL_DIMENSIONS;
 
 // see sobol.h
 
+#[derive(Clone)]
 pub struct SobolSampler {
     pub samples_per_pixel: i64,
     pub sample_bounds: Bounds2i,
@@ -218,28 +219,5 @@ impl GlobalSampler for SobolSampler {
         self.array_2d_offset = 0_usize;
         self.current_pixel_sample_index = sample_num;
         self.current_pixel_sample_index < self.samples_per_pixel
-    }
-}
-
-impl Clone for SobolSampler {
-    fn clone(&self) -> SobolSampler {
-        SobolSampler {
-            samples_per_pixel: self.samples_per_pixel,
-            sample_bounds: self.sample_bounds,
-            resolution: self.resolution,
-            log_2_resolution: self.log_2_resolution,
-            dimension: self.dimension,
-            interval_sample_index: self.interval_sample_index,
-            array_start_dim: self.array_start_dim,
-            array_end_dim: self.array_end_dim,
-            current_pixel: self.current_pixel,
-            current_pixel_sample_index: self.current_pixel_sample_index,
-            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
-            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
-            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
-            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
-            array_1d_offset: self.array_1d_offset,
-            array_2d_offset: self.array_2d_offset,
-        }
     }
 }

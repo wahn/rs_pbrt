@@ -6,6 +6,7 @@ use crate::core::sampler::Sampler;
 
 // see random.h
 
+#[derive(Clone)]
 pub struct RandomSampler {
     pub samples_per_pixel: i64,
     pub rng: Rng,
@@ -119,22 +120,5 @@ impl Sampler for RandomSampler {
     }
     fn get_samples_per_pixel(&self) -> i64 {
         self.samples_per_pixel
-    }
-}
-
-impl Clone for RandomSampler {
-    fn clone(&self) -> RandomSampler {
-        RandomSampler {
-            samples_per_pixel: self.samples_per_pixel,
-            rng: Rng::default(),
-            current_pixel: self.current_pixel,
-            current_pixel_sample_index: self.current_pixel_sample_index,
-            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
-            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
-            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
-            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
-            array_1d_offset: self.array_1d_offset,
-            array_2d_offset: self.array_2d_offset,
-        }
     }
 }
