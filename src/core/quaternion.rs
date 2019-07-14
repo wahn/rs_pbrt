@@ -47,7 +47,7 @@ impl Quaternion {
                     y: (m.m[0][2] - m.m[2][0]) * s,
                     z: (m.m[1][0] - m.m[0][1]) * s,
                 },
-                w: w,
+                w,
             }
         } else {
             // compute largest of $x$, $y$, or $z$, then remaining components
@@ -76,7 +76,7 @@ impl Quaternion {
                     y: q[1],
                     z: q[2],
                 },
-                w: w,
+                w,
             }
         }
     }

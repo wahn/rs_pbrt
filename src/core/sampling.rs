@@ -42,8 +42,8 @@ impl Distribution1D {
         }
         Distribution1D {
             func: f,
-            cdf: cdf,
-            func_int: func_int,
+            cdf,
+            func_int,
         }
     }
     pub fn count(&self) -> usize {
@@ -166,8 +166,8 @@ impl Distribution2D {
         }
         let p_marginal: Arc<Distribution1D> = Arc::new(Distribution1D::new(marginal_func));
         Distribution2D {
-            p_conditional_v: p_conditional_v,
-            p_marginal: p_marginal,
+            p_conditional_v,
+            p_marginal,
         }
     }
     pub fn sample_continuous(&self, u: &Point2f, pdf: &mut Float) -> Point2f {
@@ -218,7 +218,7 @@ pub fn cosine_sample_hemisphere(u: &Point2f) -> Vector3f {
     Vector3f {
         x: d.x,
         y: d.y,
-        z: z,
+        z,
     }
 }
 
@@ -244,7 +244,7 @@ pub fn uniform_sample_hemisphere(u: &Point2f) -> Vector3f {
     Vector3f {
         x: r * phi.cos(),
         y: r * phi.sin(),
-        z: z,
+        z,
     }
 }
 
@@ -262,7 +262,7 @@ pub fn uniform_sample_sphere(u: &Point2f) -> Vector3f {
     Vector3f {
         x: r * phi.cos(),
         y: r * phi.sin(),
-        z: z,
+        z,
     }
 }
 

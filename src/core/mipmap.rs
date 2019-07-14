@@ -147,10 +147,10 @@ where
             resolution = res_pow_2;
         }
         let mut mipmap = MipMap::<T> {
-            do_trilinear: do_trilinear,
-            max_anisotropy: max_anisotropy,
-            wrap_mode: wrap_mode,
-            resolution: resolution,
+            do_trilinear,
+            max_anisotropy,
+            wrap_mode,
+            resolution,
             pyramid: Vec::new(),
             weight_lut: [0.0 as Float; WEIGHT_LUT_SIZE],
         };

@@ -46,8 +46,8 @@ impl PointLight {
             flags: LightFlags::DeltaPosition as u8,
             n_samples: 1_i32,
             medium_interface: MediumInterface {
-                inside: inside,
-                outside: outside,
+                inside,
+                outside,
             },
         }
     }
@@ -112,7 +112,7 @@ impl Light for PointLight {
             o: self.p_light,
             d: uniform_sample_sphere(u1),
             t_max: std::f32::INFINITY,
-            time: time,
+            time,
             differential: None,
             medium: None,
         };

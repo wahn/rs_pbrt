@@ -37,14 +37,14 @@ impl HairMaterial {
         alpha: Arc<Texture<Float> + Send + Sync>,
     ) -> Self {
         HairMaterial {
-            sigma_a: sigma_a,
-            color: color,
-            eumelanin: eumelanin,
-            pheomelanin: pheomelanin,
-            eta: eta,
-            beta_m: beta_m,
-            beta_n: beta_n,
-            alpha: alpha,
+            sigma_a,
+            color,
+            eumelanin,
+            pheomelanin,
+            eta,
+            beta_m,
+            beta_n,
+            alpha,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
@@ -243,16 +243,16 @@ impl HairBSDF {
                 - (sin_2k_alpha[i - 1] * sin_2k_alpha[i - 1]);
         }
         HairBSDF {
-            h: h,
-            gamma_o: gamma_o,
-            eta: eta,
-            sigma_a: sigma_a,
-            beta_m: beta_m,
-            beta_n: beta_n,
-            v: v,
-            s: s,
-            sin_2k_alpha: sin_2k_alpha,
-            cos_2k_alpha: cos_2k_alpha,
+            h,
+            gamma_o,
+            eta,
+            sigma_a,
+            beta_m,
+            beta_n,
+            v,
+            s,
+            sin_2k_alpha,
+            cos_2k_alpha,
         }
     }
     pub fn compute_ap_pdf(&self, cos_theta_o: Float) -> [Float; (P_MAX + 1) as usize] {

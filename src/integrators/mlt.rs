@@ -78,10 +78,10 @@ impl MLTSampler {
         rng.set_sequence(rng_sequence_index);
         MLTSampler {
             samples_per_pixel: mutations_per_pixel,
-            rng: rng,
-            sigma: sigma,
-            large_step_probability: large_step_probability,
-            stream_count: stream_count,
+            rng,
+            sigma,
+            large_step_probability,
+            stream_count,
             x: Vec::new(),
             current_iteration: 0_i64,
             large_step: true,
@@ -183,7 +183,7 @@ impl Sampler for MLTSampler {
     fn get_2d(&mut self) -> Point2f {
         let x: Float = self.get_1d();
         let y: Float = self.get_1d();
-        Point2f { x: x, y: y }
+        Point2f { x, y }
     }
     fn reseed(&mut self, seed: u64) {
         self.rng.set_sequence(seed);
@@ -256,13 +256,13 @@ impl MLTIntegrator {
         large_step_probability: Float,
     ) -> Self {
         MLTIntegrator {
-            camera: camera,
-            max_depth: max_depth,
-            n_bootstrap: n_bootstrap,
-            n_chains: n_chains,
-            mutations_per_pixel: mutations_per_pixel,
-            sigma: sigma,
-            large_step_probability: large_step_probability,
+            camera,
+            max_depth,
+            n_bootstrap,
+            n_chains,
+            mutations_per_pixel,
+            sigma,
+            large_step_probability,
         }
     }
     pub fn l(

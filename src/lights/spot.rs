@@ -55,8 +55,8 @@ impl SpotLight {
             flags: LightFlags::DeltaPosition as u8,
             n_samples: 1_i32,
             medium_interface: MediumInterface {
-                inside: inside,
-                outside: outside,
+                inside,
+                outside,
             },
             light_to_world: *light_to_world,
             world_to_light: Transform::inverse(light_to_world),
@@ -169,7 +169,7 @@ impl Light for SpotLight {
             o: self.p_light,
             d: self.light_to_world.transform_vector(&w),
             t_max: std::f32::INFINITY,
-            time: time,
+            time,
             differential: None,
             medium: inside,
         };

@@ -33,13 +33,13 @@ impl TranslucentMaterial {
         remap_roughness: bool,
     ) -> Self {
         TranslucentMaterial {
-            kd: kd,
-            ks: ks,
-            roughness: roughness,
-            reflect: reflect,
-            transmit: transmit,
-            bump_map: bump_map,
-            remap_roughness: remap_roughness,
+            kd,
+            ks,
+            roughness,
+            reflect,
+            transmit,
+            bump_map,
+            remap_roughness,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {

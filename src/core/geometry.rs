@@ -850,8 +850,8 @@ where
         y: b.p_max.y.max(p.y),
     };
     Bounds2 {
-        p_min: p_min,
-        p_max: p_max,
+        p_min,
+        p_max,
     }
 }
 
@@ -1473,8 +1473,8 @@ impl<T> Bounds2<T> {
             y: std::cmp::max(p1.y, p2.y),
         };
         Bounds2::<T> {
-            p_min: p_min,
-            p_max: p_max,
+            p_min,
+            p_max,
         }
     }
     pub fn diagonal(&self) -> Vector2<T>
@@ -1603,8 +1603,8 @@ impl<T> Bounds3<T> {
             z: p1.z.max(p2.z),
         };
         Bounds3::<T> {
-            p_min: p_min,
-            p_max: p_max,
+            p_min,
+            p_max,
         }
     }
     pub fn corner(&self, corner: u8) -> Point3<T>
@@ -1631,7 +1631,7 @@ impl<T> Bounds3<T> {
         } else {
             z = self.p_max.z;
         }
-        Point3::<T> { x: x, y: y, z: z }
+        Point3::<T> { x, y, z }
     }
     pub fn diagonal(&self) -> Vector3<T>
     where

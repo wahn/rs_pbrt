@@ -23,7 +23,7 @@ impl HomogeneousMedium {
             sigma_a: *sigma_a,
             sigma_s: *sigma_s,
             sigma_t: *sigma_s + *sigma_a,
-            g: g,
+            g,
         }
     }
 }

@@ -100,15 +100,15 @@ impl TabulatedBssrdf {
                 po_p: po.p,
                 po_time: po.time,
                 po_wo: po.wo,
-                eta: eta,
-                ns: ns,
-                ss: ss,
+                eta,
+                ns,
+                ss,
                 ts: nrm_cross_vec3(&ns, &ss),
-                material: material,
-                mode: mode,
+                material,
+                mode,
                 table: table.clone(),
-                sigma_t: sigma_t,
-                rho: rho,
+                sigma_t,
+                rho,
             }
         } else {
             panic!("TabulatedBssrdf needs Material pointer")
@@ -471,13 +471,13 @@ impl BssrdfTable {
         let profile_cdf: Vec<Float> =
             vec![0.0 as Float; (n_radius_samples * n_rho_samples) as usize];
         BssrdfTable {
-            n_rho_samples: n_rho_samples,
-            n_radius_samples: n_radius_samples,
-            rho_samples: rho_samples,
-            radius_samples: radius_samples,
-            profile: profile,
-            rho_eff: rho_eff,
-            profile_cdf: profile_cdf,
+            n_rho_samples,
+            n_radius_samples,
+            rho_samples,
+            radius_samples,
+            profile,
+            rho_eff,
+            profile_cdf,
         }
     }
     pub fn eval_profile(&self, rho_index: i32, radius_index: i32) -> Float {
@@ -499,8 +499,8 @@ impl SeparableBssrdfAdapter {
         eta: Float,
     ) -> Self {
         SeparableBssrdfAdapter {
-            bssrdf: bssrdf,
-            mode: mode,
+            bssrdf,
+            mode,
             eta2: eta * eta,
         }
     }

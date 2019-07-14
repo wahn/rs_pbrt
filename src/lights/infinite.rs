@@ -149,10 +149,10 @@ impl InfiniteAreaLight {
                     let distribution: Arc<Distribution2D> =
                         Arc::new(Distribution2D::new(img, width, height));
                     InfiniteAreaLight {
-                        lmap: lmap,
+                        lmap,
                         world_center: RwLock::new(Point3f::default()),
                         world_radius: RwLock::new(0.0),
-                        distribution: distribution,
+                        distribution,
                         flags: LightFlags::Infinite as u8,
                         n_samples: std::cmp::max(1_i32, n_samples),
                         medium_interface: MediumInterface::default(),
@@ -228,10 +228,10 @@ impl InfiniteAreaLight {
                         let distribution: Arc<Distribution2D> =
                             Arc::new(Distribution2D::new(img, width, height));
                         return InfiniteAreaLight {
-                            lmap: lmap,
+                            lmap,
                             world_center: RwLock::new(Point3f::default()),
                             world_radius: RwLock::new(0.0),
-                            distribution: distribution,
+                            distribution,
                             flags: LightFlags::Infinite as u8,
                             n_samples: std::cmp::max(1_i32, n_samples),
                             medium_interface: MediumInterface::default(),
@@ -279,10 +279,10 @@ impl InfiniteAreaLight {
         }
         let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
         InfiniteAreaLight {
-            lmap: lmap,
+            lmap,
             world_center: RwLock::new(Point3f::default()),
             world_radius: RwLock::new(0.0),
-            distribution: distribution,
+            distribution,
             flags: LightFlags::Infinite as u8,
             n_samples: std::cmp::max(1_i32, n_samples),
             medium_interface: MediumInterface::default(),
@@ -339,7 +339,7 @@ impl Light for InfiniteAreaLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
-                medium_interface: medium_interface,
+                medium_interface,
             },
             p1: InteractionCommon {
                 p: iref.p + *wi * (2.0 as Float * world_radius),
@@ -445,9 +445,9 @@ impl Light for InfiniteAreaLight {
         let p_disk: Point3f = world_center + (v1 * cd.x + v2 * cd.y) * world_radius;
         *ray = Ray {
             o: p_disk + -d * world_radius,
-            d: d,
+            d,
             t_max: std::f32::INFINITY,
-            time: time,
+            time,
             differential: None,
             medium: None,
         };

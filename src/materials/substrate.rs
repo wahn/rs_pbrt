@@ -31,12 +31,12 @@ impl SubstrateMaterial {
         remap_roughness: bool,
     ) -> Self {
         SubstrateMaterial {
-            kd: kd,
-            ks: ks,
-            nu: nu,
-            nv: nv,
-            bump_map: bump_map,
-            remap_roughness: remap_roughness,
+            kd,
+            ks,
+            nu,
+            nv,
+            bump_map,
+            remap_roughness,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {

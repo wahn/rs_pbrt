@@ -31,11 +31,11 @@ impl PlasticMaterial {
         remap_roughness: bool,
     ) -> Self {
         PlasticMaterial {
-            kd: kd,
-            ks: ks,
-            roughness: roughness,
-            bump_map: bump_map,
-            remap_roughness: remap_roughness,
+            kd,
+            ks,
+            roughness,
+            bump_map,
+            remap_roughness,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {

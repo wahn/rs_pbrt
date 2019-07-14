@@ -132,7 +132,7 @@ impl Light for DistantLight {
             o: p_disk + self.w_light * world_radius,
             d: -self.w_light,
             t_max: std::f32::INFINITY,
-            time: time,
+            time,
             differential: None,
             medium: None,
         };

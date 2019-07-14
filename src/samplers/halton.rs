@@ -106,14 +106,14 @@ impl HaltonSampler {
             multiplicative_inverse(base_scales[0] as i64, base_scales[1] as i64) as i64,
         ];
         HaltonSampler {
-            samples_per_pixel: samples_per_pixel,
-            base_scales: base_scales,
-            base_exponents: base_exponents,
-            sample_stride: sample_stride,
-            mult_inverse: mult_inverse,
+            samples_per_pixel,
+            base_scales,
+            base_exponents,
+            sample_stride,
+            mult_inverse,
             pixel_for_offset: RwLock::new(Point2i::default()),
             offset_for_current_pixel: RwLock::new(0_u64),
-            sample_at_pixel_center: sample_at_pixel_center,
+            sample_at_pixel_center,
             dimension: 0_i64,
             interval_sample_index: 0_u64,
             array_start_dim: 5_i64, // static const int arrayStartDim = 5;
@@ -240,7 +240,7 @@ impl Sampler for HaltonSampler {
         // C++: call y first
         let y = self.sample_dimension(self.interval_sample_index, self.dimension + 1);
         let x = self.sample_dimension(self.interval_sample_index, self.dimension);
-        let p: Point2f = Point2f { x: x, y: y };
+        let p: Point2f = Point2f { x, y };
         self.dimension += 2;
         return p;
     }

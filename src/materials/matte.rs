@@ -26,9 +26,9 @@ impl MatteMaterial {
         bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
     ) -> Self {
         MatteMaterial {
-            kd: kd,
-            sigma: sigma,
-            bump_map: bump_map,
+            kd,
+            sigma,
+            bump_map,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {

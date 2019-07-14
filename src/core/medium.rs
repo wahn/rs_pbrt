@@ -323,8 +323,8 @@ impl MediumInterface {
         outside: Option<Arc<Medium + Send + Sync>>,
     ) -> Self {
         MediumInterface {
-            inside: inside,
-            outside: outside,
+            inside,
+            outside,
         }
     }
     pub fn is_medium_transition(&self) -> bool {

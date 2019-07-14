@@ -23,8 +23,8 @@ impl MirrorMaterial {
         bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
     ) -> Self {
         MirrorMaterial {
-            kr: kr,
-            bump_map: bump_map,
+            kr,
+            bump_map,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {

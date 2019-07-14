@@ -105,13 +105,13 @@ impl MetalMaterial {
         remap_roughness: bool,
     ) -> Self {
         MetalMaterial {
-            eta: eta,
-            k: k,
-            roughness: roughness,
-            u_roughness: u_roughness,
-            v_roughness: v_roughness,
-            bump_map: bump_map,
-            remap_roughness: remap_roughness,
+            eta,
+            k,
+            roughness,
+            u_roughness,
+            v_roughness,
+            bump_map,
+            remap_roughness,
         }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {

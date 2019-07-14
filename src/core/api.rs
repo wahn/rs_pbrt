@@ -287,8 +287,8 @@ impl GraphicsState {
             spectrum_textures: spectrum_textures.clone(),
             material_params: ParamSet::default(),
             material: String::from(""),
-            named_materials: named_materials,
-            current_material: current_material,
+            named_materials,
+            current_material,
             area_light_params: ParamSet::default(),
             area_light: String::from(""),
             reverse_orientation: false,
@@ -307,7 +307,7 @@ fn create_material(
         float_textures: api_state.graphics_state.float_textures.clone(),
         spectrum_textures: api_state.graphics_state.spectrum_textures.clone(),
         geom_params: ParamSet::default(),
-        material_params: material_params,
+        material_params,
     };
     if api_state.graphics_state.current_material != String::new() {
         match api_state
@@ -664,8 +664,8 @@ fn make_texture(api_state: &mut ApiState) {
     let mut tp: TextureParams = TextureParams {
         float_textures: api_state.graphics_state.float_textures.clone(),
         spectrum_textures: api_state.graphics_state.spectrum_textures.clone(),
-        geom_params: geom_params,
-        material_params: material_params,
+        geom_params,
+        material_params,
     };
     if api_state.param_set.tex_type == "float" {
         match api_state
@@ -703,10 +703,10 @@ fn make_texture(api_state: &mut ApiState) {
                 let du: Float = tp.find_float("udelta", 0.0);
                 let dv: Float = tp.find_float("vdelta", 0.0);
                 map = Some(Box::new(UVMapping2D {
-                    su: su,
-                    sv: sv,
-                    du: du,
-                    dv: dv,
+                    su,
+                    sv,
+                    du,
+                    dv,
                 }));
             } else if mapping == "spherical" {
                 println!("TODO: SphericalMapping2D");
@@ -858,10 +858,10 @@ fn make_texture(api_state: &mut ApiState) {
                 let du: Float = tp.find_float("udelta", 0.0);
                 let dv: Float = tp.find_float("vdelta", 0.0);
                 map = Some(Box::new(UVMapping2D {
-                    su: su,
-                    sv: sv,
-                    du: du,
-                    dv: dv,
+                    su,
+                    sv,
+                    du,
+                    dv,
                 }));
             } else if mapping == "spherical" {
                 println!("TODO: SphericalMapping2D");
@@ -952,10 +952,10 @@ fn make_texture(api_state: &mut ApiState) {
                     let du: Float = tp.find_float("udelta", 0.0);
                     let dv: Float = tp.find_float("vdelta", 0.0);
                     map = Some(Box::new(UVMapping2D {
-                        su: su,
-                        sv: sv,
-                        du: du,
-                        dv: dv,
+                        su,
+                        sv,
+                        du,
+                        dv,
                     }));
                 } else if mapping == "spherical" {
                     println!("TODO: SphericalMapping2D");

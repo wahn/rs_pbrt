@@ -48,10 +48,10 @@ impl SobolSampler {
             assert!(1_i32 << log_2_resolution == resolution);
         }
         SobolSampler {
-            samples_per_pixel: samples_per_pixel,
-            sample_bounds: sample_bounds,
-            resolution: resolution,
-            log_2_resolution: log_2_resolution,
+            samples_per_pixel,
+            sample_bounds,
+            resolution,
+            log_2_resolution,
             dimension: 0_i64,
             interval_sample_index: 0_u64,
             array_start_dim: 5_i64, // static const int arrayStartDim = 5;
@@ -152,7 +152,7 @@ impl Sampler for SobolSampler {
         // C++: call y first
         let y = self.sample_dimension(self.interval_sample_index, self.dimension + 1);
         let x = self.sample_dimension(self.interval_sample_index, self.dimension);
-        let p: Point2f = Point2f { x: x, y: y };
+        let p: Point2f = Point2f { x, y };
         self.dimension += 2;
         return p;
     }

@@ -381,7 +381,7 @@ impl Transform {
             0.0, 0.0, 0.0, 1.0,
         );
         Transform {
-            m: m,
+            m,
             m_inv: Matrix4x4::transpose(&m),
         }
     }
@@ -393,7 +393,7 @@ impl Transform {
             0.0, 0.0, 0.0, 1.0,
         );
         Transform {
-            m: m,
+            m,
             m_inv: Matrix4x4::transpose(&m),
         }
     }
@@ -405,7 +405,7 @@ impl Transform {
             0.0, 0.0, 0.0, 1.0,
         );
         Transform {
-            m: m,
+            m,
             m_inv: Matrix4x4::transpose(&m),
         }
     }
@@ -430,7 +430,7 @@ impl Transform {
         m.m[2][2] = a.z * a.z + (1.0 - a.z * a.z) * cos_theta;
         m.m[2][3] = 0.0;
         Transform {
-            m: m,
+            m,
             m_inv: Matrix4x4::transpose(&m),
         }
     }
@@ -579,18 +579,18 @@ impl Transform {
             };
             if let Some(ref medium_arc) = r.medium {
                 Ray {
-                    o: o,
-                    d: d,
-                    t_max: t_max,
+                    o,
+                    d,
+                    t_max,
                     time: r.time,
                     differential: Some(diff),
                     medium: Some(medium_arc.clone()),
                 }
             } else {
                 Ray {
-                    o: o,
-                    d: d,
-                    t_max: t_max,
+                    o,
+                    d,
+                    t_max,
                     time: r.time,
                     differential: Some(diff),
                     medium: None,
@@ -599,18 +599,18 @@ impl Transform {
         } else {
             if let Some(ref medium_arc) = r.medium {
                 Ray {
-                    o: o,
-                    d: d,
-                    t_max: t_max,
+                    o,
+                    d,
+                    t_max,
                     time: r.time,
                     differential: None,
                     medium: Some(medium_arc.clone()),
                 }
             } else {
                 Ray {
-                    o: o,
-                    d: d,
-                    t_max: t_max,
+                    o,
+                    d,
+                    t_max,
                     time: r.time,
                     differential: None,
                     medium: None,
@@ -837,8 +837,8 @@ impl Transform {
             o += d * dt;
         }
         Ray {
-            o: o,
-            d: d,
+            o,
+            d,
             t_max: r.t_max,
             time: r.time,
             differential: None,
@@ -2256,8 +2256,8 @@ impl Mul for Interval {
         let low: Float = min_rhs_low.min(min_rhs_high);
         let high: Float = max_rhs_low.max(max_rhs_high);
         Interval {
-            low: low,
-            high: high,
+            low,
+            high,
         }
     }
 }

@@ -13,7 +13,7 @@ pub struct WindyTexture {
 
 impl WindyTexture {
     pub fn new(mapping: Box<TextureMapping3D + Send + Sync>) -> Self {
-        WindyTexture { mapping: mapping }
+        WindyTexture { mapping }
     }
 }
 

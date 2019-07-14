@@ -63,7 +63,7 @@ impl ParamSet {
     }
     pub fn add_float(&mut self, name: String, value: Float) {
         self.floats.push(ParamSetItem::<Float> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -72,15 +72,15 @@ impl ParamSet {
     pub fn add_floats(&mut self, name: String, values: Vec<Float>) {
         let n_values: usize = values.len();
         self.floats.push(ParamSetItem::<Float> {
-            name: name,
-            values: values,
-            n_values: n_values,
+            name,
+            values,
+            n_values,
             looked_up: false,
         });
     }
     pub fn add_int(&mut self, name: String, value: i32) {
         self.ints.push(ParamSetItem::<i32> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -89,15 +89,15 @@ impl ParamSet {
     pub fn add_ints(&mut self, name: String, values: Vec<i32>) {
         let n_values: usize = values.len();
         self.ints.push(ParamSetItem::<i32> {
-            name: name,
-            values: values,
-            n_values: n_values,
+            name,
+            values,
+            n_values,
             looked_up: false,
         });
     }
     pub fn add_bool(&mut self, name: String, value: bool) {
         self.bools.push(ParamSetItem::<bool> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -105,7 +105,7 @@ impl ParamSet {
     }
     pub fn add_point2f(&mut self, name: String, value: Point2f) {
         self.point2fs.push(ParamSetItem::<Point2f> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -124,10 +124,10 @@ impl ParamSet {
         for i in 0..n_points {
             let x: Float = values[i * 2 + 0];
             let y: Float = values[i * 2 + 1];
-            p_values.push(Point2f { x: x, y: y });
+            p_values.push(Point2f { x, y });
         }
         self.point2fs.push(ParamSetItem::<Point2f> {
-            name: name,
+            name,
             values: p_values,
             n_values: n_points,
             looked_up: false,
@@ -135,7 +135,7 @@ impl ParamSet {
     }
     pub fn add_point3f(&mut self, name: String, value: Point3f) {
         self.point3fs.push(ParamSetItem::<Point3f> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -155,10 +155,10 @@ impl ParamSet {
             let x: Float = values[i * 3 + 0];
             let y: Float = values[i * 3 + 1];
             let z: Float = values[i * 3 + 2];
-            p_values.push(Point3f { x: x, y: y, z: z });
+            p_values.push(Point3f { x, y, z });
         }
         self.point3fs.push(ParamSetItem::<Point3f> {
-            name: name,
+            name,
             values: p_values,
             n_values: n_points,
             looked_up: false,
@@ -209,13 +209,13 @@ impl ParamSet {
         self.spectra.push(ParamSetItem::<Spectrum> {
             name: name.clone(),
             values: s,
-            n_values: n_values,
+            n_values,
             looked_up: false,
         });
     }
     pub fn add_string(&mut self, name: String, value: String) {
         self.strings.push(ParamSetItem::<String> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -223,7 +223,7 @@ impl ParamSet {
     }
     pub fn add_texture(&mut self, name: String, value: String) {
         self.textures.push(ParamSetItem::<String> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -231,7 +231,7 @@ impl ParamSet {
     }
     pub fn add_vector3f(&mut self, name: String, value: Vector3f) {
         self.vector3fs.push(ParamSetItem::<Vector3f> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -246,10 +246,10 @@ impl ParamSet {
             let x: Float = values[i * 3 + 0];
             let y: Float = values[i * 3 + 1];
             let z: Float = values[i * 3 + 2];
-            p_values.push(Vector3f { x: x, y: y, z: z });
+            p_values.push(Vector3f { x, y, z });
         }
         self.vector3fs.push(ParamSetItem::<Vector3f> {
-            name: name,
+            name,
             values: p_values,
             n_values: n_vectors,
             looked_up: false,
@@ -257,7 +257,7 @@ impl ParamSet {
     }
     pub fn add_normal3f(&mut self, name: String, value: Normal3f) {
         self.normals.push(ParamSetItem::<Normal3f> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -272,10 +272,10 @@ impl ParamSet {
             let x: Float = values[i * 3 + 0];
             let y: Float = values[i * 3 + 1];
             let z: Float = values[i * 3 + 2];
-            p_values.push(Normal3f { x: x, y: y, z: z });
+            p_values.push(Normal3f { x, y, z });
         }
         self.normals.push(ParamSetItem::<Normal3f> {
-            name: name,
+            name,
             values: p_values,
             n_values: n_normals,
             looked_up: false,
@@ -283,7 +283,7 @@ impl ParamSet {
     }
     pub fn add_rgb_spectrum(&mut self, name: String, value: Spectrum) {
         self.spectra.push(ParamSetItem::<Spectrum> {
-            name: name,
+            name,
             values: vec![value],
             n_values: 1_usize,
             looked_up: false,
@@ -302,9 +302,9 @@ impl ParamSet {
             );
         }
         self.spectra.push(ParamSetItem::<Spectrum> {
-            name: name,
+            name,
             values: s,
-            n_values: n_values,
+            n_values,
             looked_up: false,
         });
     }
@@ -319,7 +319,7 @@ impl ParamSet {
             }
             self.bools.push(ParamSetItem::<bool> {
                 name: b.name.clone(),
-                values: values,
+                values,
                 n_values: b.n_values,
                 looked_up: false,
             });
@@ -332,7 +332,7 @@ impl ParamSet {
             }
             self.ints.push(ParamSetItem::<i32> {
                 name: i.name.clone(),
-                values: values,
+                values,
                 n_values: i.n_values,
                 looked_up: false,
             });
@@ -345,7 +345,7 @@ impl ParamSet {
             }
             self.floats.push(ParamSetItem::<Float> {
                 name: f.name.clone(),
-                values: values,
+                values,
                 n_values: f.n_values,
                 looked_up: false,
             });
@@ -360,7 +360,7 @@ impl ParamSet {
             }
             self.point3fs.push(ParamSetItem::<Point3f> {
                 name: p.name.clone(),
-                values: values,
+                values,
                 n_values: p.n_values,
                 looked_up: false,
             });
@@ -375,7 +375,7 @@ impl ParamSet {
             }
             self.spectra.push(ParamSetItem::<Spectrum> {
                 name: s.name.clone(),
-                values: values,
+                values,
                 n_values: s.n_values,
                 looked_up: false,
             });
@@ -388,7 +388,7 @@ impl ParamSet {
             }
             self.strings.push(ParamSetItem::<String> {
                 name: s.name.clone(),
-                values: values,
+                values,
                 n_values: s.n_values,
                 looked_up: false,
             });
@@ -401,7 +401,7 @@ impl ParamSet {
             }
             self.textures.push(ParamSetItem::<String> {
                 name: s.name.clone(),
-                values: values,
+                values,
                 n_values: s.n_values,
                 looked_up: false,
             });
@@ -615,8 +615,8 @@ impl TextureParams {
         TextureParams {
             float_textures: f_tex,
             spectrum_textures: s_tex,
-            geom_params: geom_params,
-            material_params: material_params,
+            geom_params,
+            material_params,
         }
     }
     pub fn get_spectrum_texture(

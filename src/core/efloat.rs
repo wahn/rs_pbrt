@@ -55,13 +55,13 @@ impl EFloat {
     pub fn new(v: f32, err: f32) -> Self {
         if err == 0.0 {
             EFloat {
-                v: v,
+                v,
                 low: v,
                 high: v,
             }
         } else {
             EFloat {
-                v: v,
+                v,
                 low: next_float_down(v - err),
                 high: next_float_up(v + err),
             }

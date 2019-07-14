@@ -81,19 +81,19 @@ impl OrthographicCamera {
             z: 0.0,
         });
         OrthographicCamera {
-            camera_to_world: camera_to_world,
-            shutter_open: shutter_open,
-            shutter_close: shutter_close,
-            film: film,
-            medium: medium,
-            camera_to_screen: camera_to_screen,
-            raster_to_camera: raster_to_camera,
-            screen_to_raster: screen_to_raster,
-            raster_to_screen: raster_to_screen,
-            lens_radius: lens_radius,
-            focal_distance: focal_distance,
-            dx_camera: dx_camera,
-            dy_camera: dy_camera,
+            camera_to_world,
+            shutter_open,
+            shutter_close,
+            film,
+            medium,
+            camera_to_screen,
+            raster_to_camera,
+            screen_to_raster,
+            raster_to_screen,
+            lens_radius,
+            focal_distance,
+            dx_camera,
+            dy_camera,
         }
     }
     pub fn create(

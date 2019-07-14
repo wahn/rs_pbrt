@@ -22,8 +22,8 @@ impl FourierMaterial {
         bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
     ) -> Self {
         FourierMaterial {
-            bump_map: bump_map,
-            bsdf_table: bsdf_table,
+            bump_map,
+            bsdf_table,
         }
     }
     pub fn create(

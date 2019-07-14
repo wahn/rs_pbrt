@@ -63,15 +63,15 @@ impl GeometricPrimitive {
         if let Some(area_light) = area_light {
             if let Some(medium_interface) = medium_interface {
                 GeometricPrimitive {
-                    shape: shape,
-                    material: material,
+                    shape,
+                    material,
                     area_light: Some(area_light),
                     medium_interface: Some(medium_interface),
                 }
             } else {
                 GeometricPrimitive {
-                    shape: shape,
-                    material: material,
+                    shape,
+                    material,
                     area_light: Some(area_light),
                     medium_interface: None,
                 }
@@ -79,15 +79,15 @@ impl GeometricPrimitive {
         } else {
             if let Some(medium_interface) = medium_interface {
                 GeometricPrimitive {
-                    shape: shape,
-                    material: material,
+                    shape,
+                    material,
                     area_light: None,
                     medium_interface: Some(medium_interface),
                 }
             } else {
                 GeometricPrimitive {
-                    shape: shape,
-                    material: material,
+                    shape,
+                    material,
                     area_light: None,
                     medium_interface: None,
                 }
@@ -165,8 +165,8 @@ impl TransformedPrimitive {
         primitive_to_world: AnimatedTransform,
     ) -> Self {
         TransformedPrimitive {
-            primitive: primitive,
-            primitive_to_world: primitive_to_world,
+            primitive,
+            primitive_to_world,
         }
     }
 }
