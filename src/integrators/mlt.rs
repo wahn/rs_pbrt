@@ -42,6 +42,7 @@ impl PrimarySample {
     }
 }
 
+#[derive(Clone)]
 pub struct MLTSampler {
     pub samples_per_pixel: i64,
     pub rng: Rng,
@@ -230,32 +231,6 @@ impl Sampler for MLTSampler {
     }
     fn get_samples_per_pixel(&self) -> i64 {
         self.samples_per_pixel
-    }
-}
-
-impl Clone for MLTSampler {
-    fn clone(&self) -> MLTSampler {
-        MLTSampler {
-            samples_per_pixel: self.samples_per_pixel,
-            rng: self.rng.clone(),
-            sigma: self.sigma,
-            large_step_probability: self.large_step_probability,
-            stream_count: self.stream_count,
-            x: self.x.iter().cloned().collect(),
-            current_iteration: self.current_iteration,
-            large_step: self.large_step,
-            last_large_step_iteration: self.last_large_step_iteration,
-            stream_index: self.stream_index,
-            sample_index: self.sample_index,
-            current_pixel: self.current_pixel,
-            current_pixel_sample_index: self.current_pixel_sample_index,
-            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
-            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
-            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
-            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
-            array_1d_offset: self.array_1d_offset,
-            array_2d_offset: self.array_2d_offset,
-        }
     }
 }
 
