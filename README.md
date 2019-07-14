@@ -15,8 +15,8 @@ https://www.janwalter.org/doc/rust/pbrt/index.html
 ## Usage
 
 ```shell
-> ./target/release/examples/rs_pbrt -h
-Usage: ./target/release/examples/rs_pbrt [options]
+> cargo run --release -- -h
+Usage: target/release/rs_pbrt [options]
 
 Options:
     -h, --help          print this help menu

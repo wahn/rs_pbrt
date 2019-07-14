@@ -62,7 +62,7 @@ examples: release
 	./target/release/examples/pbrt_spheres_differentials_texfilt
 	./target/release/examples/pbrt_teapot_area_light
 	./target/release/examples/pest_test
-	./target/release/examples/rs_pbrt
+	./target/release/rs_pbrt
 	./target/release/examples/shapes_cylinder_create_cylinder_shape
 	./target/release/examples/shapes_disk_create_disk_shape
 	./target/release/examples/shapes_sphere_create_sphere_shape

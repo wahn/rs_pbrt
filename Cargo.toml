@@ -29,3 +29,7 @@ rayon = "1.0"
 time = "0.1"
 typed-arena = "1.3.0"
 structopt = "0.2"
+
+[[bin]]
+name = "rs_pbrt"
+path = "src/bin/rs_pbrt.rs"
