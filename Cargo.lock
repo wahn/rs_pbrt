@@ -511,26 +511,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "openexr"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "half 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.44 (registry+https://github.com/rust-lang/crates.io-index)",
- "openexr-sys 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
-name = "openexr-sys"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-dependencies = [
- "cc 1.0.25 (registry+https://github.com/rust-lang/crates.io-index)",
- "libc 0.2.44 (registry+https://github.com/rust-lang/crates.io-index)",
- "pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)",
-]
-
-[[package]]
 name = "pbr"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -550,6 +530,7 @@ dependencies = [
  "atomic 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "byteorder 1.2.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "crossbeam 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "crossbeam-channel 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "getopts 0.2.18 (registry+https://github.com/rust-lang/crates.io-index)",
  "half 1.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "hexf 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -557,7 +538,6 @@ dependencies = [
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "openexr 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "pbr 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "pest 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pest_derive 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -614,11 +594,6 @@ dependencies = [
  "pest 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha-1 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
-
-[[package]]
-name = "pkg-config"
-version = "0.3.14"
-source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "ply-rs"
@@ -1114,15 +1089,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum num-rational 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4e96f040177bb3da242b5b1ecf3f54b5d5af3efbbfb18608977a5d2767b22f10"
 "checksum num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "0b3a5d7cc97d6d30d8b9bc8fa19bf45349ffe46241e8816f50f62f6d6aaabee1"
 "checksum num_cpus 1.8.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c51a3322e4bca9d212ad9a158a02abc6934d005490c054a2778df73a70aa0a30"
-"checksum openexr 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f9e3b9ae4f3eec70bc20117e11b24dd3acd629707a0a96d07f78b02910f0f480"
-"checksum openexr-sys 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "96a68b449953411a919eea06547a3b4a1ee6195b41ada68d432826caeedb75bd"
 "checksum pbr 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "deb73390ab68d81992bd994d145f697451bb0b54fd39738e72eef32458ad6907"
 "checksum peg 0.5.7 (registry+https://github.com/rust-lang/crates.io-index)" = "40df12dde1d836ed2a4c3bfc2799797e3abaf807d97520d28d6e3f3bf41a5f85"
 "checksum pest 2.0.2 (registry+https://github.com/rust-lang/crates.io-index)" = "a677051ad923732bb5c70f2d45f8985a96e3eee2e2bff86697e3b11b0c3fcfde"
 "checksum pest_derive 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)" = "b76f477146419bc539a63f4ef40e902166cb43b3e51cecc71d9136fd12c567e7"
 "checksum pest_generator 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3ebee4e9680be4fd162e6f3394ae4192a6b60b1e4d17d845e631f0c68d1a3386"
 "checksum pest_meta 2.0.3 (registry+https://github.com/rust-lang/crates.io-index)" = "1f6d5f6f0e6082578c86af197d780dc38328e3f768cec06aac9bc46d714e8221"
-"checksum pkg-config 0.3.14 (registry+https://github.com/rust-lang/crates.io-index)" = "676e8eb2b1b4c9043511a9b7bea0915320d7e502b0a079fb03f9635a5252b18c"
 "checksum ply-rs 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d66b979a279fe4de971bf38f8043df5eebb9d4c86c0b97c74ee7bb2e064e394a"
 "checksum png 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f54b9600d584d3b8a739e1662a595fab051329eff43f20e7d8cc22872962145b"
 "checksum proc-macro-hack 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "b773f824ff2a495833f85fcdddcf85e096949971decada2e93249fa2c6c3d32f"

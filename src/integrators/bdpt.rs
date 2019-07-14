@@ -1,6 +1,5 @@
 // std
 use std::f32::consts::PI;
-use std::sync::mpsc;
 use std::sync::Arc;
 // pbrt
 use crate::blockqueue::BlockQueue;
@@ -2239,7 +2238,7 @@ pub fn render_bdpt(
             let film = &film;
             // let pixel_bounds = integrator.get_pixel_bounds().clone();
             crossbeam::scope(|scope| {
-                let (pixel_tx, pixel_rx) = mpsc::channel();
+                let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
                 // spawn worker threads
                 for _ in 0..num_cores {
                     let pixel_tx = pixel_tx.clone();
