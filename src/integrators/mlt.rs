@@ -1,5 +1,4 @@
 // std
-use std::sync::mpsc;
 use std::sync::Arc;
 use std::thread;
 // pbrt
@@ -412,7 +411,7 @@ pub fn render_mlt(
                 let integrator = &integrator;
                 let light_distr = &light_distr;
                 crossbeam::scope(|scope| {
-                    let (band_tx, band_rx) = mpsc::channel();
+                    let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
                     // spawn worker threads
                     for (b, band) in bands.into_iter().enumerate() {
                         let band_tx = band_tx.clone();
@@ -459,7 +458,7 @@ pub fn render_mlt(
             // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
             //                           "Rendering");
             // use parallel iterator (par_iter_with) from rayon crate
-            let (sender, receiver) = mpsc::channel();
+            let (sender, receiver) = crossbeam_channel::bounded(num_cores);
             let n_chains = integrator.n_chains;
             // spawn thread to report progress
             let finish = thread::spawn(move || {
