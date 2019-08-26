@@ -248,6 +248,44 @@ pub fn fbm(p: &Point3f, dpdx: &Vector3f, dpdy: &Vector3f, omega: Float, max_octa
     sum
 }
 
+pub fn turbulence(
+    p: &Point3f,
+    dpdx: &Vector3f,
+    dpdy: &Vector3f,
+    omega: Float,
+    max_octaves: i32,
+) -> Float {
+    // compute number of octaves for antialiased FBm
+    let len2: Float = dpdx.length_squared().max(dpdy.length_squared());
+    let n: Float = clamp_t(
+        -1.0 as Float - 0.5 as Float * log_2(len2),
+        0.0 as Float,
+        max_octaves as Float,
+    );
+    let n_int: usize = n.floor() as usize;
+    // compute sum of octaves of noise for turbulence
+    let mut sum: Float = 0.0;
+    let mut lambda: Float = 1.0;
+    let mut o: Float = 1.0;
+    for _i in 0..n_int {
+        sum += o * noise_pnt3(&(*p * lambda)).abs();
+        lambda *= 1.99 as Float;
+        o *= omega;
+    }
+    // account for contributions of clamped octaves in turbulence
+    let n_partial: Float = n - n_int as Float;
+    sum += o * lerp(
+        smooth_step(0.3 as Float, 0.7 as Float, n_partial),
+        0.2,
+        noise_pnt3(&(*p * lambda)).abs(),
+    );
+    for _i in n_int..max_octaves as usize {
+        sum += o * 0.2 as Float;
+        o *= omega;
+    }
+    sum
+}
+
 pub fn lanczos(x: Float, tau: Float) -> Float {
     let mut x: Float = x;
     x = x.abs();
