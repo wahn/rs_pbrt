@@ -91,6 +91,7 @@ use crate::textures::imagemap::ImageTexture;
 use crate::textures::imagemap::{convert_to_float, convert_to_spectrum};
 use crate::textures::scale::ScaleTexture;
 use crate::textures::windy::WindyTexture;
+use crate::textures::wrinkled::WrinkledTexture;
 
 // see api.cpp
 
@@ -790,7 +791,17 @@ fn make_texture(api_state: &mut ApiState) {
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "wrinkled" {
-            println!("TODO: CreateWrinkledFloatTexture");
+            let tex_2_world: Transform = Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            };
+            let map: Box<dyn TextureMapping3D + Send + Sync> =
+                Box::new(IdentityMapping3D::new(tex_2_world));
+            let octaves: i32 = tp.find_int("octaves", 8_i32);
+            let roughness: Float = tp.find_float("roughness", 0.5 as Float);
+            let ft = Arc::new(WrinkledTexture::new(map, octaves, roughness));
+            Arc::make_mut(&mut api_state.graphics_state.float_textures)
+                .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "marble" {
             println!("TODO: CreateMarbleFloatTexture");
         } else if api_state.param_set.tex_name == "windy" {
