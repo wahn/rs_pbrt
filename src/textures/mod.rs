@@ -22,6 +22,7 @@ pub mod checkerboard;
 pub mod constant;
 pub mod fbm;
 pub mod imagemap;
+pub mod mix;
 pub mod scale;
 pub mod windy;
 pub mod wrinkled;

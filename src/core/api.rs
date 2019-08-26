@@ -89,6 +89,7 @@ use crate::textures::constant::ConstantTexture;
 use crate::textures::fbm::FBmTexture;
 use crate::textures::imagemap::ImageTexture;
 use crate::textures::imagemap::{convert_to_float, convert_to_spectrum};
+use crate::textures::mix::MixTexture;
 use crate::textures::scale::ScaleTexture;
 use crate::textures::windy::WindyTexture;
 use crate::textures::wrinkled::WrinkledTexture;
@@ -682,7 +683,11 @@ fn make_texture(api_state: &mut ApiState) {
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeFloatTexture(texname, curTransform[0], tp);
         if api_state.param_set.tex_name == "constant" {
-            println!("TODO: CreateConstantFloatTexture");
+            let ct = Arc::new(ConstantTexture::<Float>::new(
+                tp.find_float("value", 1.0 as Float),
+            ));
+            Arc::make_mut(&mut api_state.graphics_state.float_textures)
+                .insert(api_state.param_set.name.clone(), ct);
         } else if api_state.param_set.tex_name == "scale" {
             let ft = Arc::new(ScaleTexture::<Float>::new(
                 tp.get_float_texture("tex1", 1.0 as Float),
@@ -691,7 +696,13 @@ fn make_texture(api_state: &mut ApiState) {
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "mix" {
-            println!("TODO: CreateMixFloatTexture");
+            let mt = Arc::new(MixTexture::<Float>::new(
+                tp.get_float_texture("tex1", 0.0 as Float),
+                tp.get_float_texture("tex2", 1.0 as Float),
+                tp.get_float_texture("amount", 0.5 as Float),
+            ));
+            Arc::make_mut(&mut api_state.graphics_state.float_textures)
+                .insert(api_state.param_set.name.clone(), mt);
         } else if api_state.param_set.tex_name == "bilerp" {
             println!("TODO: CreateBilerpFloatTexture");
         } else if api_state.param_set.tex_name == "imagemap" {
@@ -851,7 +862,13 @@ fn make_texture(api_state: &mut ApiState) {
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), st);
         } else if api_state.param_set.tex_name == "mix" {
-            println!("TODO: CreateMixSpectrumTexture");
+            let mt = Arc::new(MixTexture::<Spectrum>::new(
+                tp.get_spectrum_texture("tex1", Spectrum::new(0.0)),
+                tp.get_spectrum_texture("tex2", Spectrum::new(1.0)),
+                tp.get_float_texture("amount", 0.5 as Float),
+            ));
+            Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
+                .insert(api_state.param_set.name.clone(), mt);
         } else if api_state.param_set.tex_name == "bilerp" {
             println!("TODO: CreateBilerpSpectrumTexture");
         } else if api_state.param_set.tex_name == "imagemap" {
