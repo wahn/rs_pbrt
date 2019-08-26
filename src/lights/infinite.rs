@@ -390,7 +390,7 @@ impl Light for InfiniteAreaLight {
         // TODO: SpectrumType::Illuminant
         self.lmap.lookup_pnt_flt(&st, 0.0 as Float)
     }
-    fn pdf_li(&self, _iref: &Interaction, w: Vector3f) -> Float {
+    fn pdf_li(&self, _iref: &dyn Interaction, w: Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
         let wi: Vector3f = self.world_to_light.transform_vector(&w);
         let theta: Float = spherical_theta(&wi);

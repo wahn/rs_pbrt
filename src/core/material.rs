@@ -35,11 +35,11 @@ pub trait Material {
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        material: Option<Arc<Material + Send + Sync>>,
+        material: Option<Arc<dyn Material + Send + Sync>>,
     );
     /// Computing the effect of bump mapping at the point being shaded
     /// given a particular displacement texture.
-    fn bump(d: &Arc<Texture<Float> + Send + Sync>, si: &mut SurfaceInteraction)
+    fn bump(d: &Arc<dyn Texture<Float> + Send + Sync>, si: &mut SurfaceInteraction)
     where
         Self: Sized,
     {

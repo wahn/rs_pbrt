@@ -42,7 +42,7 @@ impl DirectLightingIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
@@ -103,7 +103,7 @@ impl DirectLightingIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
@@ -169,7 +169,7 @@ impl DirectLightingIntegrator {
 }
 
 impl SamplerIntegrator for DirectLightingIntegrator {
-    fn preprocess(&mut self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) {
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>) {
         if self.strategy == LightStrategy::UniformSampleAll {
             // compute number of samples to use for each light
             for li in 0..scene.lights.len() {
@@ -190,7 +190,7 @@ impl SamplerIntegrator for DirectLightingIntegrator {
         &self,
         ray: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {

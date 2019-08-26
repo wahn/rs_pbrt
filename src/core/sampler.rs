@@ -40,20 +40,20 @@ pub trait GlobalSampler: Sampler {
 }
 
 pub trait SamplerClone {
-    fn box_clone(&self) -> Box<Sampler + Send + Sync>;
+    fn box_clone(&self) -> Box<dyn Sampler + Send + Sync>;
 }
 
 impl<T> SamplerClone for T
 where
     T: 'static + Sampler + Clone + Send + Sync,
 {
-    fn box_clone(&self) -> Box<Sampler + Send + Sync> {
+    fn box_clone(&self) -> Box<dyn Sampler + Send + Sync> {
         Box::new(self.clone())
     }
 }
 
-impl Clone for Box<Sampler + Send + Sync> {
-    fn clone(&self) -> Box<Sampler + Send + Sync> {
+impl Clone for Box<dyn Sampler + Send + Sync> {
+    fn clone(&self) -> Box<dyn Sampler + Send + Sync> {
         self.box_clone()
     }
 }

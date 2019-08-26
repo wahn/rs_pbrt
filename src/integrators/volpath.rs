@@ -28,7 +28,7 @@ pub struct VolPathIntegrator {
     pub max_depth: u32,
     rr_threshold: Float,           // 1.0
     light_sample_strategy: String, // "spatial"
-    light_distribution: Option<Arc<LightDistribution + Send + Sync>>,
+    light_distribution: Option<Arc<dyn LightDistribution + Send + Sync>>,
 }
 
 impl VolPathIntegrator {
@@ -49,7 +49,7 @@ impl VolPathIntegrator {
 }
 
 impl SamplerIntegrator for VolPathIntegrator {
-    fn preprocess(&mut self, scene: &Scene, _sampler: &mut Box<Sampler + Send + Sync>) {
+    fn preprocess(&mut self, scene: &Scene, _sampler: &mut Box<dyn Sampler + Send + Sync>) {
         self.light_distribution =
             create_light_sample_distribution(self.light_sample_strategy.clone(), scene);
     }
@@ -57,7 +57,7 @@ impl SamplerIntegrator for VolPathIntegrator {
         &self,
         r: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
         // arena: &mut Arena,
         _depth: i32,
     ) -> Spectrum {
@@ -113,7 +113,7 @@ impl SamplerIntegrator for VolPathIntegrator {
                             let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
                             l += beta
                                 * uniform_sample_one_light(
-                                    &mi as &Interaction,
+                                    &mi as &dyn Interaction,
                                     scene,
                                     sampler,
                                     true,
@@ -314,7 +314,7 @@ impl SamplerIntegrator for VolPathIntegrator {
                             let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
                             l += beta
                                 * uniform_sample_one_light(
-                                    &mi as &Interaction,
+                                    &mi as &dyn Interaction,
                                     scene,
                                     sampler,
                                     true,

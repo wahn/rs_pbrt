@@ -193,10 +193,10 @@ pub struct RenderOptions {
     pub camera_name: String, // "perspective";
     pub camera_params: ParamSet,
     pub camera_to_world: TransformSet,
-    pub named_media: HashMap<String, Arc<Medium + Sync + Send>>,
-    pub lights: Vec<Arc<Light + Sync + Send>>,
-    pub primitives: Vec<Arc<Primitive + Sync + Send>>,
-    pub instances: HashMap<String, Vec<Arc<Primitive + Sync + Send>>>,
+    pub named_media: HashMap<String, Arc<dyn Medium + Sync + Send>>,
+    pub lights: Vec<Arc<dyn Light + Sync + Send>>,
+    pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
+    pub instances: HashMap<String, Vec<Arc<dyn Primitive + Sync + Send>>>,
     pub current_instance: String,
     pub have_scattering_media: bool, // false
 }
@@ -252,11 +252,11 @@ impl Default for RenderOptions {
 pub struct GraphicsState {
     pub current_inside_medium: String,
     pub current_outside_medium: String,
-    pub float_textures: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>>,
-    pub spectrum_textures: Arc<HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>>,
+    pub float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>>,
+    pub spectrum_textures: Arc<HashMap<String, Arc<dyn Texture<Spectrum> + Send + Sync>>>,
     pub material_params: ParamSet,
     pub material: String,
-    pub named_materials: Arc<HashMap<String, Option<Arc<Material + Send + Sync>>>>,
+    pub named_materials: Arc<HashMap<String, Option<Arc<dyn Material + Send + Sync>>>>,
     pub current_material: String,
     pub area_light_params: ParamSet,
     pub area_light: String,
@@ -265,9 +265,9 @@ pub struct GraphicsState {
 
 impl GraphicsState {
     pub fn new() -> Self {
-        let float_textures: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>> =
+        let float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>> =
             Arc::new(HashMap::new());
-        let spectrum_textures: Arc<HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>> =
+        let spectrum_textures: Arc<HashMap<String, Arc<dyn Texture<Spectrum> + Send + Sync>>> =
             Arc::new(HashMap::new());
         let mut tp: TextureParams = TextureParams::new(
             ParamSet::default(),
@@ -275,8 +275,8 @@ impl GraphicsState {
             float_textures.clone(),
             spectrum_textures.clone(),
         );
-        let mtl: Arc<Material + Send + Sync> = MatteMaterial::create(&mut tp);
-        let mut named_materials: Arc<HashMap<String, Option<Arc<Material + Send + Sync>>>> =
+        let mtl: Arc<dyn Material + Send + Sync> = MatteMaterial::create(&mut tp);
+        let mut named_materials: Arc<HashMap<String, Option<Arc<dyn Material + Send + Sync>>>> =
             Arc::new(HashMap::new());
         Arc::make_mut(&mut named_materials).insert(String::from("matte"), Some(mtl));
         let current_material: String = String::from("matte");
@@ -299,7 +299,7 @@ impl GraphicsState {
 fn create_material(
     api_state: &ApiState,
     bsdf_state: &mut BsdfState,
-) -> Option<Arc<Material + Send + Sync>> {
+) -> Option<Arc<dyn Material + Send + Sync>> {
     // CreateMaterial
     let mut material_params = ParamSet::default();
     material_params.copy_from(&api_state.graphics_state.material_params);
@@ -356,7 +356,7 @@ fn create_material(
                     panic!("Material \"{}\" unknown.", m2);
                 }
             };
-            let scale: Arc<Texture<Spectrum> + Send + Sync> =
+            let scale: Arc<dyn Texture<Spectrum> + Send + Sync> =
                 mp.get_spectrum_texture("amount", Spectrum::new(0.5));
             if let Some(m1) = mat1 {
                 if let Some(m2) = mat2 {
@@ -593,7 +593,7 @@ fn make_medium(api_state: &mut ApiState) {
     let g: Float = api_state.param_set.find_one_float("g", 0.0 as Float);
     sig_a = api_state.param_set.find_one_spectrum("sigma_a", sig_a) * scale;
     sig_s = api_state.param_set.find_one_spectrum("sigma_s", sig_s) * scale;
-    let some_medium: Option<Arc<Medium + Sync + Send>>;
+    let some_medium: Option<Arc<dyn Medium + Sync + Send>>;
     if medium_type == "homogeneous" {
         some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
     } else if medium_type == "heterogeneous" {
@@ -695,7 +695,7 @@ fn make_texture(api_state: &mut ApiState) {
             println!("TODO: CreateBilerpFloatTexture");
         } else if api_state.param_set.tex_name == "imagemap" {
             // CreateImageFloatTexture
-            let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+            let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
             let mapping: String = tp.find_string("mapping", String::from("uv"));
             if mapping == "uv" {
                 let su: Float = tp.find_float("uscale", 1.0);
@@ -787,7 +787,7 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<TextureMapping3D + Send + Sync> =
+            let map: Box<dyn TextureMapping3D + Send + Sync> =
                 Box::new(IdentityMapping3D::new(tex_2_world));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
@@ -803,7 +803,7 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<TextureMapping3D + Send + Sync> =
+            let map: Box<dyn TextureMapping3D + Send + Sync> =
                 Box::new(IdentityMapping3D::new(tex_2_world));
             let ft = Arc::new(WindyTexture::new(map));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
@@ -837,9 +837,9 @@ fn make_texture(api_state: &mut ApiState) {
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), ct);
         } else if api_state.param_set.tex_name == "scale" {
-            let tex1: Arc<Texture<Spectrum> + Send + Sync> =
+            let tex1: Arc<dyn Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
-            let tex2: Arc<Texture<Spectrum> + Send + Sync> =
+            let tex2: Arc<dyn Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
             let st = Arc::new(ScaleTexture::<Spectrum>::new(tex1, tex2));
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
@@ -850,7 +850,7 @@ fn make_texture(api_state: &mut ApiState) {
             println!("TODO: CreateBilerpSpectrumTexture");
         } else if api_state.param_set.tex_name == "imagemap" {
             // CreateImageSpectrumTexture
-            let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+            let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
             let mapping: String = tp.find_string("mapping", String::from("uv"));
             if mapping == "uv" {
                 let su: Float = tp.find_float("uscale", 1.0);
@@ -939,12 +939,12 @@ fn make_texture(api_state: &mut ApiState) {
             if dim != 2 && dim != 3 {
                 panic!("{} dimensional checkerboard texture not supported", dim);
             }
-            let tex1: Arc<Texture<Spectrum> + Send + Sync> =
+            let tex1: Arc<dyn Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex1", Spectrum::new(1.0));
-            let tex2: Arc<Texture<Spectrum> + Send + Sync> =
+            let tex2: Arc<dyn Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
             if dim == 2 {
-                let mut map: Option<Box<TextureMapping2D + Send + Sync>> = None;
+                let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
                 let mapping: String = tp.find_string("mapping", String::from("uv"));
                 if mapping == "uv" {
                     let su: Float = tp.find_float("uscale", 1.0);
@@ -1023,11 +1023,11 @@ fn get_shapes_and_materials(
     api_state: &ApiState,
     bsdf_state: &mut BsdfState,
 ) -> (
-    Vec<Arc<Shape + Send + Sync>>,
-    Vec<Option<Arc<Material + Send + Sync>>>,
+    Vec<Arc<dyn Shape + Send + Sync>>,
+    Vec<Option<Arc<dyn Material + Send + Sync>>>,
 ) {
-    let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
-    let mut materials: Vec<Option<Arc<Material + Send + Sync>>> = Vec::new();
+    let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
+    let mut materials: Vec<Option<Arc<dyn Material + Send + Sync>>> = Vec::new();
     // pbrtShape (api.cpp:1153)
     // TODO: if (!curTransform.IsAnimated()) { ... }
     // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
@@ -1064,7 +1064,7 @@ fn get_shapes_and_materials(
             z_max,
             phi_max,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(sphere.clone());
         materials.push(mtl);
     } else if api_state.param_set.name == "cylinder" {
@@ -1081,7 +1081,7 @@ fn get_shapes_and_materials(
             z_max,
             phi_max,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(cylinder.clone());
         materials.push(mtl.clone());
     } else if api_state.param_set.name == "disk" {
@@ -1098,7 +1098,7 @@ fn get_shapes_and_materials(
             inner_radius,
             phi_max,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(disk.clone());
         materials.push(mtl.clone());
     } else if api_state.param_set.name == "cone" {
@@ -1108,8 +1108,8 @@ fn get_shapes_and_materials(
     } else if api_state.param_set.name == "hyperboloid" {
         println!("TODO: CreateHyperboloidShape");
     } else if api_state.param_set.name == "curve" {
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
-        let curve_shapes: Vec<Arc<Shape + Send + Sync>> = create_curve_shape(
+        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let curve_shapes: Vec<Arc<dyn Shape + Send + Sync>> = create_curve_shape(
             &obj_to_world,
             &world_to_obj,
             false, // reverse_orientation
@@ -1205,7 +1205,7 @@ fn get_shapes_and_materials(
             n_ws, // in world space
             uvs,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Triangle::new(
                 mesh.object_to_world,
@@ -1219,8 +1219,8 @@ fn get_shapes_and_materials(
         }
     } else if api_state.param_set.name == "plymesh" {
         if let Some(ref search_directory) = api_state.search_directory {
-            let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
-            let ply_shapes: Vec<Arc<Shape + Send + Sync>> = create_ply_mesh(
+            let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+            let ply_shapes: Vec<Arc<dyn Shape + Send + Sync>> = create_ply_mesh(
                 &obj_to_world,
                 &world_to_obj,
                 false, // reverse_orientation
@@ -1264,7 +1264,7 @@ fn get_shapes_and_materials(
             &vertex_indices,
             &p,
         );
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Triangle::new(
                 mesh.object_to_world,
@@ -1449,7 +1449,7 @@ fn get_shapes_and_materials(
             n_ws,       // in world space
             uvs,
         ));
-        let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Triangle::new(
                 mesh.object_to_world,
@@ -1575,7 +1575,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         "Missing end to pbrtTransformBegin()"
     );
     // MakeFilter
-    let mut some_filter: Option<Box<Filter + Sync + Send>> = None;
+    let mut some_filter: Option<Box<dyn Filter + Sync + Send>> = None;
     if api_state.render_options.filter_name == "box" {
         some_filter = Some(BoxFilter::create(&api_state.render_options.filter_params));
     } else if api_state.render_options.filter_name == "gaussian" {
@@ -1658,7 +1658,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
             ));
             // MakeCamera
             // TODO: let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
-            let mut some_camera: Option<Arc<Camera + Sync + Send>>;
+            let some_camera: Option<Arc<dyn Camera + Sync + Send>>;
             let medium_interface: MediumInterface = create_medium_interface(&api_state);
             let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(
                 &api_state.render_options.camera_to_world.t[0],
@@ -1667,7 +1667,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 api_state.render_options.transform_end_time,
             );
             if api_state.render_options.camera_name == "perspective" {
-                let camera: Arc<Camera + Send + Sync> = PerspectiveCamera::create(
+                let camera: Arc<dyn Camera + Send + Sync> = PerspectiveCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
                     film,
@@ -1675,7 +1675,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 );
                 some_camera = Some(camera);
             } else if api_state.render_options.camera_name == "orthographic" {
-                let camera: Arc<Camera + Send + Sync> = OrthographicCamera::create(
+                let camera: Arc<dyn Camera + Send + Sync> = OrthographicCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
                     film,
@@ -1684,7 +1684,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 some_camera = Some(camera);
             } else if api_state.render_options.camera_name == "realistic" {
                 if let Some(ref search_directory) = api_state.search_directory {
-                    let camera: Arc<Camera + Send + Sync> = RealisticCamera::create(
+                    let camera: Arc<dyn Camera + Send + Sync> = RealisticCamera::create(
                         &api_state.render_options.camera_params,
                         animated_cam_to_world,
                         film,
@@ -1694,7 +1694,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     );
                     some_camera = Some(camera);
                 } else {
-                    let camera: Arc<Camera + Send + Sync> = RealisticCamera::create(
+                    let camera: Arc<dyn Camera + Send + Sync> = RealisticCamera::create(
                         &api_state.render_options.camera_params,
                         animated_cam_to_world,
                         film,
@@ -1705,7 +1705,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     some_camera = Some(camera);
                 }
             } else if api_state.render_options.camera_name == "environment" {
-                let camera: Arc<Camera + Send + Sync> = EnvironmentCamera::create(
+                let camera: Arc<dyn Camera + Send + Sync> = EnvironmentCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
                     film,
@@ -1720,7 +1720,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
             }
             if let Some(camera) = some_camera {
                 // MakeSampler
-                let mut some_sampler: Option<Box<Sampler + Sync + Send>> = None;
+                let mut some_sampler: Option<Box<dyn Sampler + Sync + Send>> = None;
                 if api_state.render_options.sampler_name == "lowdiscrepancy"
                     || api_state.render_options.sampler_name == "02sequence"
                 {
@@ -1780,7 +1780,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
                     // if let Some(mut sampler) = some_sampler {
-                    let mut some_integrator: Option<Box<SamplerIntegrator + Sync + Send>> = None;
+                    let mut some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>> = None;
                     let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
                     let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
                     let mut some_sppm_integrator: Option<Box<SPPMIntegrator>> = None;
@@ -2771,7 +2771,7 @@ pub fn pbrt_make_named_material(
         .material_params
         .copy_from(&api_state.param_set);
     api_state.graphics_state.current_material = String::new();
-    let mtl: Option<Arc<Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+    let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
     match api_state
         .graphics_state
         .named_materials
@@ -2816,8 +2816,8 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
     // print_params(&params);
     api_state.param_set = params;
     // collect area lights
-    let mut prims: Vec<Arc<Primitive + Send + Sync>> = Vec::new();
-    let mut area_lights: Vec<Arc<Light + Send + Sync>> = Vec::new();
+    let mut prims: Vec<Arc<dyn Primitive + Send + Sync>> = Vec::new();
+    let mut area_lights: Vec<Arc<dyn Light + Send + Sync>> = Vec::new();
     // possibly create area light for shape (see pbrtShape())
     if api_state.graphics_state.area_light != String::new() {
         // MakeAreaLight
@@ -2898,7 +2898,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                 api_state.render_options.transform_end_time,
             );
             if prims.len() > 1 {
-                let bvh: Arc<Primitive + Send + Sync> =
+                let bvh: Arc<dyn Primitive + Send + Sync> =
                     Arc::new(BVHAccel::new(prims.clone(), 4, SplitMethod::SAH));
                 prims.clear();
                 prims.push(bvh.clone());
@@ -3011,7 +3011,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
                     .render_options
                     .accelerator_params
                     .find_one_int("maxnodeprims", 4);
-                let accelerator: Arc<Primitive + Sync + Send> = Arc::new(BVHAccel::new(
+                let accelerator: Arc<dyn Primitive + Sync + Send> = Arc::new(BVHAccel::new(
                     instance_vec.clone(),
                     max_prims_in_node as usize,
                     split_method,
@@ -3021,7 +3021,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
             } else if api_state.render_options.accelerator_name == "kdtree" {
                 // println!("TODO: CreateKdTreeAccelerator");
                 // WARNING: Use BVHAccel for now !!!
-                let accelerator: Arc<Primitive + Sync + Send> =
+                let accelerator: Arc<dyn Primitive + Sync + Send> =
                     Arc::new(BVHAccel::new(instance_vec.clone(), 4, SplitMethod::SAH));
                 instance_vec.clear();
                 instance_vec.push(accelerator);
@@ -3039,7 +3039,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
             &api_state.cur_transform.t[1],
             api_state.render_options.transform_end_time,
         );
-        let prim: Arc<Primitive + Send + Sync> = Arc::new(TransformedPrimitive::new(
+        let prim: Arc<dyn Primitive + Send + Sync> = Arc::new(TransformedPrimitive::new(
             instance_vec[0].clone(),
             animated_instance_to_world,
         ));

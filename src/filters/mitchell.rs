@@ -42,7 +42,7 @@ impl MitchellNetravali {
         }
     }
 
-    pub fn create(ps: &ParamSet) -> Box<Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<dyn Filter + Sync + Send> {
         let xw = ps.find_one_float("xwidth", 2.0);
         let yw = ps.find_one_float("ywidth", 2.0);
         let b = ps.find_one_float("B", 1.0 / 3.0);

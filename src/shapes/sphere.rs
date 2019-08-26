@@ -32,7 +32,7 @@ pub struct Sphere {
     world_to_object: Transform,
     reverse_orientation: bool,
     transform_swaps_handedness: bool,
-    pub material: Option<Arc<Material + Send + Sync>>,
+    pub material: Option<Arc<dyn Material + Send + Sync>>,
 }
 
 impl Default for Sphere {
@@ -469,7 +469,7 @@ impl Shape for Sphere {
         *pdf = 1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max));
         it
     }
-    fn pdf_with_ref_point(&self, iref: &Interaction, wi: &Vector3f) -> Float {
+    fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         let p_center: Point3f = self.object_to_world.transform_point(&Point3f::default());
         // return uniform PDF if point is inside sphere
         let p_origin: Point3f = pnt3_offset_ray_origin(

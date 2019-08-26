@@ -85,23 +85,23 @@ pub const COPPER_K: [Float; COPPER_SAMPLES as usize] = [
 ];
 
 pub struct MetalMaterial {
-    pub eta: Arc<Texture<Spectrum> + Sync + Send>, // default: copper
-    pub k: Arc<Texture<Spectrum> + Sync + Send>,   // default: copper
-    pub roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.01
-    pub u_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-    pub v_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
+    pub eta: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: copper
+    pub k: Arc<dyn Texture<Spectrum> + Sync + Send>,   // default: copper
+    pub roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.01
+    pub u_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+    pub v_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
     pub remap_roughness: bool,
 }
 
 impl MetalMaterial {
     pub fn new(
-        eta: Arc<Texture<Spectrum> + Send + Sync>,
-        k: Arc<Texture<Spectrum> + Send + Sync>,
-        roughness: Arc<Texture<Float> + Sync + Send>,
-        u_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-        v_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+        eta: Arc<dyn Texture<Spectrum> + Send + Sync>,
+        k: Arc<dyn Texture<Spectrum> + Send + Sync>,
+        roughness: Arc<dyn Texture<Float> + Sync + Send>,
+        u_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        v_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         MetalMaterial {
@@ -114,18 +114,18 @@ impl MetalMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
         let copper_n: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_N, COPPER_SAMPLES as i32);
-        let eta: Arc<Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("eta", copper_n);
+        let eta: Arc<dyn Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("eta", copper_n);
         let copper_k: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_K, COPPER_SAMPLES as i32);
-        let k: Arc<Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("k", copper_k);
-        let roughness: Arc<Texture<Float> + Send + Sync> =
+        let k: Arc<dyn Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("k", copper_k);
+        let roughness: Arc<dyn Texture<Float> + Send + Sync> =
             mp.get_float_texture("roughness", 0.01 as Float);
-        let u_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
+        let u_roughness: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("uroughness");
-        let v_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
+        let v_roughness: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("vroughness");
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
@@ -148,12 +148,12 @@ impl Material for MetalMaterial {
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         let mut u_rough: Float;
         if let Some(ref u_roughness) = self.u_roughness {
             u_rough = u_roughness.evaluate(si);

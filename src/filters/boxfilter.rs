@@ -14,10 +14,10 @@ pub struct BoxFilter {
 }
 
 impl BoxFilter {
-    pub fn create(ps: &ParamSet) -> Box<Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<dyn Filter + Sync + Send> {
         let xw: Float = ps.find_one_float("xwidth", 0.5);
         let yw: Float = ps.find_one_float("ywidth", 0.5);
-        let box_filter: Box<Filter + Sync + Send> = Box::new(BoxFilter {
+        let box_filter: Box<dyn Filter + Sync + Send> = Box::new(BoxFilter {
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
                 x: 1.0 / xw,

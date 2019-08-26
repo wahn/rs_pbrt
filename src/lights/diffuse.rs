@@ -19,7 +19,7 @@ use crate::core::transform::Transform;
 
 pub struct DiffuseAreaLight {
     pub l_emit: Spectrum,
-    pub shape: Arc<Shape + Send + Sync>,
+    pub shape: Arc<dyn Shape + Send + Sync>,
     pub two_sided: bool,
     pub area: Float,
     // inherited from class Light (see light.h)
@@ -36,12 +36,12 @@ impl DiffuseAreaLight {
         medium_interface: &MediumInterface,
         l_emit: &Spectrum,
         n_samples: i32,
-        shape: Arc<Shape + Send + Sync>,
+        shape: Arc<dyn Shape + Send + Sync>,
         two_sided: bool,
     ) -> Self {
         let area: Float = shape.area();
-        let mut inside: Option<Arc<Medium + Send + Sync>> = None;
-        let mut outside: Option<Arc<Medium + Send + Sync>> = None;
+        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        let mut outside: Option<Arc<dyn Medium + Send + Sync>> = None;
         if let Some(ref mi_inside) = medium_interface.inside {
             inside = Some(mi_inside.clone());
         }
@@ -118,7 +118,7 @@ impl Light for DiffuseAreaLight {
     fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::default()
     }
-    fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float {
+    fn pdf_li(&self, iref: &dyn Interaction, wi: Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
         self.shape.pdf_with_ref_point(iref, &wi)
     }

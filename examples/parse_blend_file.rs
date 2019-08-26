@@ -119,13 +119,13 @@ fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
 struct SceneDescription {
     mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
-    lights: Vec<Arc<Light + Sync + Send>>,
+    lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
     mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
-    lights: Vec<Arc<Light + Sync + Send>>,
+    lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 impl SceneDescriptionBuilder {
@@ -220,11 +220,11 @@ impl SceneDescriptionBuilder {
 
 struct RenderOptions {
     has_emitters: bool,
-    primitives: Vec<Arc<Primitive + Sync + Send>>,
+    primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
     triangles: Vec<Arc<Triangle>>,
-    triangle_materials: Vec<Arc<Material + Sync + Send>>,
-    triangle_lights: Vec<Option<Arc<AreaLight + Sync + Send>>>,
-    lights: Vec<Arc<Light + Sync + Send>>,
+    triangle_materials: Vec<Arc<dyn Material + Sync + Send>>,
+    triangle_lights: Vec<Option<Arc<dyn AreaLight + Sync + Send>>>,
+    lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 impl RenderOptions {
@@ -235,11 +235,11 @@ impl RenderOptions {
         light_scale: Float,
     ) -> RenderOptions {
         let mut has_emitters: bool = false;
-        let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
+        let primitives: Vec<Arc<dyn Primitive + Sync + Send>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
-        let mut triangle_materials: Vec<Arc<Material + Sync + Send>> = Vec::new();
-        let mut triangle_lights: Vec<Option<Arc<AreaLight + Sync + Send>>> = Vec::new();
-        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+        let mut triangle_materials: Vec<Arc<dyn Material + Sync + Send>> = Vec::new();
+        let mut triangle_lights: Vec<Option<Arc<dyn AreaLight + Sync + Send>>> = Vec::new();
+        let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
         // default material
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
@@ -253,7 +253,7 @@ impl RenderOptions {
             let mesh = &scene.meshes[mesh_idx];
             let mesh_name = &scene.mesh_names[mesh_idx];
             // create individual triangles
-            let mut shapes: Vec<Arc<Shape + Send + Sync>> = Vec::new();
+            let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
             for id in 0..mesh.n_triangles {
                 let triangle = Arc::new(Triangle::new(
                     mesh.object_to_world,
@@ -289,7 +289,7 @@ impl RenderOptions {
                         ));
                         lights.push(area_light.clone());
                         triangle_materials.push(default_material.clone());
-                        let triangle_light: Option<Arc<AreaLight + Sync + Send>> =
+                        let triangle_light: Option<Arc<dyn AreaLight + Sync + Send>> =
                             Some(area_light.clone());
                         triangle_lights.push(triangle_light);
                     }
@@ -330,14 +330,14 @@ impl RenderOptions {
                         }
                     } else {
                         // MatteMaterial
-                        let mut kd: Arc<Texture<Spectrum> + Send + Sync> =
+                        let mut kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
                             Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
                         if let Some(tex) = texture_hm.get(mesh_name) {
                             let su: Float = 1.0;
                             let sv: Float = 1.0;
                             let du: Float = 0.0;
                             let dv: Float = 0.0;
-                            let mapping: Box<TextureMapping2D + Send + Sync> =
+                            let mapping: Box<dyn TextureMapping2D + Send + Sync> =
                                 Box::new(UVMapping2D {
                                     su: su,
                                     sv: sv,
@@ -2513,7 +2513,7 @@ fn main() -> std::io::Result<()> {
     };
     let xw: Float = 0.5;
     let yw: Float = 0.5;
-    let filter: Box<Filter + Sync + Send> = Box::new(BoxFilter {
+    let filter: Box<dyn Filter + Sync + Send> = Box::new(BoxFilter {
         radius: Vector2f { x: xw, y: yw },
         inv_radius: Vector2f {
             x: 1.0 / xw,
@@ -2533,7 +2533,7 @@ fn main() -> std::io::Result<()> {
         1.0,
         std::f32::INFINITY,
     ));
-    let camera: Arc<Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(
+    let camera: Arc<dyn Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(
         animated_cam_to_world,
         screen,
         shutteropen,
@@ -2544,10 +2544,10 @@ fn main() -> std::io::Result<()> {
         film.clone(),
         None,
     ));
-    let mut sampler: Box<Sampler + Sync + Send> =
+    let mut sampler: Box<dyn Sampler + Sync + Send> =
         Box::new(ZeroTwoSequenceSampler::new(args.samples as i64, 4));
     let sample_bounds: Bounds2i = film.get_sample_bounds();
-    let mut integrator: Box<SamplerIntegrator + Send + Sync>;
+    let mut integrator: Box<dyn SamplerIntegrator + Send + Sync>;
     if let Some(integrator_str) = args.integrator {
         print!("integrator = {:?} [", integrator_str);
         if integrator_str == String::from("ao") {

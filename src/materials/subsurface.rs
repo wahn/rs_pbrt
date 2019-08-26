@@ -23,13 +23,13 @@ use crate::core::texture::Texture;
 
 pub struct SubsurfaceMaterial {
     pub scale: Float,                             // default: 1.0
-    pub kr: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
-    pub kt: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
-    pub sigma_a: Arc<Texture<Spectrum> + Sync + Send>,
-    pub sigma_s: Arc<Texture<Spectrum> + Sync + Send>,
-    pub u_roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.0
-    pub v_roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.0
-    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
+    pub kr: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
+    pub kt: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
+    pub sigma_a: Arc<dyn Texture<Spectrum> + Sync + Send>,
+    pub sigma_s: Arc<dyn Texture<Spectrum> + Sync + Send>,
+    pub u_roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.0
+    pub v_roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.0
+    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
     pub eta: Float,            // default: 1.33
     pub remap_roughness: bool, // default: true
     pub table: Arc<BssrdfTable>,
@@ -38,15 +38,15 @@ pub struct SubsurfaceMaterial {
 impl SubsurfaceMaterial {
     pub fn new(
         scale: Float,
-        kr: Arc<Texture<Spectrum> + Sync + Send>,
-        kt: Arc<Texture<Spectrum> + Sync + Send>,
-        sigma_a: Arc<Texture<Spectrum> + Sync + Send>,
-        sigma_s: Arc<Texture<Spectrum> + Sync + Send>,
+        kr: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        kt: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        sigma_a: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        sigma_s: Arc<dyn Texture<Spectrum> + Sync + Send>,
         g: Float,
         eta: Float,
-        u_roughness: Arc<Texture<Float> + Sync + Send>,
-        v_roughness: Arc<Texture<Float> + Sync + Send>,
-        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+        u_roughness: Arc<dyn Texture<Float> + Sync + Send>,
+        v_roughness: Arc<dyn Texture<Float> + Sync + Send>,
+        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         let mut table: BssrdfTable = BssrdfTable::new(100, 64);
@@ -65,7 +65,7 @@ impl SubsurfaceMaterial {
             table: Arc::new(table),
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
         let sig_a_rgb: [Float; 3] = [0.0011, 0.0024, 0.014];
         let sig_s_rgb: [Float; 3] = [2.55, 3.21, 3.77];
         let mut sig_a: Spectrum = Spectrum::from_rgb(&sig_a_rgb);
@@ -87,17 +87,17 @@ impl SubsurfaceMaterial {
         }
         let scale: Float = mp.find_float("scale", 1.0 as Float);
         let eta: Float = mp.find_float("eta", 1.33 as Float);
-        let sigma_a: Arc<Texture<Spectrum> + Sync + Send> =
+        let sigma_a: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("sigma_a", sig_a);
-        let sigma_s: Arc<Texture<Spectrum> + Sync + Send> =
+        let sigma_s: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("sigma_s", sig_s);
-        let kr: Arc<Texture<Spectrum> + Sync + Send> =
+        let kr: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kr", Spectrum::new(1.0));
-        let kt: Arc<Texture<Spectrum> + Sync + Send> =
+        let kt: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kr", Spectrum::new(1.0));
-        let roughu: Arc<Texture<Float> + Sync + Send> =
+        let roughu: Arc<dyn Texture<Float> + Sync + Send> =
             mp.get_float_texture("uroughness", 0.0 as Float);
-        let roughv: Arc<Texture<Float> + Sync + Send> =
+        let roughv: Arc<dyn Texture<Float> + Sync + Send> =
             mp.get_float_texture("vroughness", 0.0 as Float);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
@@ -128,12 +128,12 @@ impl Material for SubsurfaceMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        material: Option<Arc<Material + Send + Sync>>,
+        material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         // initialize BSDF for _SubsurfaceMaterial_
         let r: Spectrum = self
             .kr

@@ -16,31 +16,31 @@ use crate::core::texture::Texture;
 // see uber.h
 
 pub struct UberMaterial {
-    pub kd: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub ks: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub kr: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.0
-    pub kt: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.0
-    pub opacity: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
-    pub roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.1
-    pub u_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-    pub v_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-    pub eta: Arc<Texture<Float> + Sync + Send>, // default: 1.5
-    pub bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+    pub kd: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.25
+    pub ks: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.25
+    pub kr: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.0
+    pub kt: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.0
+    pub opacity: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
+    pub roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.1
+    pub u_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+    pub v_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+    pub eta: Arc<dyn Texture<Float> + Sync + Send>, // default: 1.5
+    pub bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
     pub remap_roughness: bool,
 }
 
 impl UberMaterial {
     pub fn new(
-        kd: Arc<Texture<Spectrum> + Sync + Send>,
-        ks: Arc<Texture<Spectrum> + Sync + Send>,
-        kr: Arc<Texture<Spectrum> + Sync + Send>,
-        kt: Arc<Texture<Spectrum> + Sync + Send>,
-        roughness: Arc<Texture<Float> + Sync + Send>,
-        u_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-        v_roughness: Option<Arc<Texture<Float> + Sync + Send>>,
-        opacity: Arc<Texture<Spectrum> + Sync + Send>,
-        eta: Arc<Texture<Float> + Send + Sync>,
-        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+        kd: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        ks: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        kr: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        kt: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        roughness: Arc<dyn Texture<Float> + Sync + Send>,
+        u_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        v_roughness: Option<Arc<dyn Texture<Float> + Sync + Send>>,
+        opacity: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        eta: Arc<dyn Texture<Float> + Send + Sync>,
+        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         UberMaterial {
@@ -57,27 +57,27 @@ impl UberMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
-        let kd: Arc<Texture<Spectrum> + Sync + Send> =
+    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+        let kd: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kd", Spectrum::new(0.25));
-        let ks: Arc<Texture<Spectrum> + Sync + Send> =
+        let ks: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Ks", Spectrum::new(0.25));
-        let kr: Arc<Texture<Spectrum> + Sync + Send> =
+        let kr: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kr", Spectrum::new(0.0));
-        let kt: Arc<Texture<Spectrum> + Sync + Send> =
+        let kt: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kt", Spectrum::new(0.0));
-        let roughness: Arc<Texture<Float> + Send + Sync> =
+        let roughness: Arc<dyn Texture<Float> + Send + Sync> =
             mp.get_float_texture("roughness", 0.1 as Float);
-        let u_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
+        let u_roughness: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("uroughness");
-        let v_roughness: Option<Arc<Texture<Float> + Send + Sync>> =
+        let v_roughness: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("vroughness");
-        let opacity: Arc<Texture<Spectrum> + Send + Sync> =
+        let opacity: Arc<dyn Texture<Spectrum> + Send + Sync> =
             mp.get_spectrum_texture("opacity", Spectrum::new(1.0));
-        let bump_map: Option<Arc<Texture<Float> + Send + Sync>> =
+        let bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        let eta_option: Option<Arc<Texture<Float> + Send + Sync>> =
+        let eta_option: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("eta");
         if let Some(ref eta) = eta_option {
             Arc::new(UberMaterial::new(
@@ -94,7 +94,7 @@ impl UberMaterial {
                 remap_roughness,
             ))
         } else {
-            let eta: Arc<Texture<Float> + Send + Sync> = mp.get_float_texture("index", 1.5 as Float);
+            let eta: Arc<dyn Texture<Float> + Send + Sync> = mp.get_float_texture("index", 1.5 as Float);
             Arc::new(UberMaterial::new(
                 kd,
                 ks,
@@ -119,12 +119,12 @@ impl Material for UberMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         let e: Float = self.eta.evaluate(si);
         let op: Spectrum = self
             .opacity

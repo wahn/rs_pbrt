@@ -13,21 +13,21 @@ use crate::core::texture::Texture;
 
 /// A simple mirror, modeled with perfect specular reflection.
 pub struct MirrorMaterial {
-    pub kr: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.9
-    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
+    pub kr: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.9
+    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
 }
 
 impl MirrorMaterial {
     pub fn new(
-        kr: Arc<Texture<Spectrum> + Send + Sync>,
-        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+        kr: Arc<dyn Texture<Spectrum> + Send + Sync>,
+        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
     ) -> Self {
         MirrorMaterial {
             kr,
             bump_map,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
         let kr = mp.get_spectrum_texture("Kr", Spectrum::new(0.9 as Float));
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         Arc::new(MirrorMaterial::new(
@@ -44,12 +44,12 @@ impl Material for MirrorMaterial {
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         let r: Spectrum = self
             .kr
             .evaluate(si)

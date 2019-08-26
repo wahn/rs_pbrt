@@ -39,7 +39,7 @@ pub trait Interaction {
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>>;
     fn get_bsdf(&self) -> Option<Arc<Bsdf>>;
     fn get_shading_n(&self) -> Option<Normal3f>;
-    fn get_phase(&self) -> Option<Arc<PhaseFunction>>;
+    fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>>;
 }
 
 #[derive(Default, Clone)]
@@ -91,7 +91,7 @@ impl InteractionCommon {
             medium: self.get_medium(&d),
         }
     }
-    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<dyn Medium + Send + Sync>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface_arc) = self.medium_interface {
                 medium_interface_arc.get_outside()
@@ -127,7 +127,7 @@ pub struct MediumInteraction {
     pub n: Normal3f,
     pub medium_interface: Option<Arc<MediumInterface>>,
     // MediumInteraction Public Data
-    pub phase: Option<Arc<PhaseFunction>>,
+    pub phase: Option<Arc<dyn PhaseFunction>>,
 }
 
 impl MediumInteraction {
@@ -135,12 +135,12 @@ impl MediumInteraction {
         p: &Point3f,
         wo: &Vector3f,
         time: Float,
-        medium: Option<Arc<Medium + Send + Sync>>,
-        phase: Option<Arc<PhaseFunction>>,
+        medium: Option<Arc<dyn Medium + Send + Sync>>,
+        phase: Option<Arc<dyn PhaseFunction>>,
     ) -> Self {
         if let Some(medium_arc) = medium {
-            let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
-            let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+            let inside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
+            let outside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
             MediumInteraction {
                 p: *p,
                 time,
@@ -162,7 +162,7 @@ impl MediumInteraction {
             }
         }
     }
-    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<dyn Medium + Send + Sync>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
                 if let Some(ref outside_arc) = medium_interface.outside {
@@ -192,7 +192,7 @@ impl MediumInteraction {
             false
         }
     }
-    pub fn get_phase(&self) -> Option<Arc<PhaseFunction>> {
+    pub fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>> {
         if let Some(ref phase) = self.phase {
             Some(phase.clone())
         } else {
@@ -247,7 +247,7 @@ impl Interaction for MediumInteraction {
     fn get_shading_n(&self) -> Option<Normal3f> {
         None
     }
-    fn get_phase(&self) -> Option<Arc<PhaseFunction>> {
+    fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>> {
         if let Some(ref phase) = self.phase {
             Some(phase.clone())
         } else {
@@ -281,7 +281,7 @@ pub struct SurfaceInteraction<'p, 's> {
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
     pub bssrdf: Option<Arc<TabulatedBssrdf>>,
-    pub shape: Option<&'s Shape>,
+    pub shape: Option<&'s dyn Shape>,
 }
 
 impl<'p, 's> SurfaceInteraction<'p, 's> {
@@ -295,7 +295,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
         dndu: &Normal3f,
         dndv: &Normal3f,
         time: Float,
-        sh: Option<&'s Shape>,
+        sh: Option<&'s dyn Shape>,
     ) -> Self {
         let nv: Vector3f = vec3_cross_vec3(dpdu, dpdv).normalize();
         let mut n: Normal3f = Normal3f {
@@ -343,7 +343,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             shape: sh,
         }
     }
-    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium + Send + Sync>> {
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<dyn Medium + Send + Sync>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
                 if let Some(ref outside_arc) = medium_interface.outside {
@@ -557,7 +557,7 @@ impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
     fn get_shading_n(&self) -> Option<Normal3f> {
         Some(self.shading.n.clone())
     }
-    fn get_phase(&self) -> Option<Arc<PhaseFunction>> {
+    fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>> {
         None
     }
 }

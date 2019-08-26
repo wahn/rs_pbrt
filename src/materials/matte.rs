@@ -14,16 +14,16 @@ use crate::core::texture::Texture;
 
 /// Describes a purely diffuse surface.
 pub struct MatteMaterial {
-    pub kd: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.5
-    pub sigma: Arc<Texture<Float> + Sync + Send>, // default: 0.0
-    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
+    pub kd: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
+    pub sigma: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.0
+    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
 }
 
 impl MatteMaterial {
     pub fn new(
-        kd: Arc<Texture<Spectrum> + Send + Sync>,
-        sigma: Arc<Texture<Float> + Sync + Send>,
-        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+        kd: Arc<dyn Texture<Spectrum> + Send + Sync>,
+        sigma: Arc<dyn Texture<Float> + Sync + Send>,
+        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
     ) -> Self {
         MatteMaterial {
             kd,
@@ -31,10 +31,10 @@ impl MatteMaterial {
             bump_map,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
-        let kd: Arc<Texture<Spectrum> + Sync + Send> =
+    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+        let kd: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kd", Spectrum::new(0.5));
-        let sigma: Arc<Texture<Float> + Sync + Send> = mp.get_float_texture("sigma", 0.0);
+        let sigma: Arc<dyn Texture<Float> + Sync + Send> = mp.get_float_texture("sigma", 0.0);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         Arc::new(MatteMaterial::new(
             kd,
@@ -51,12 +51,12 @@ impl Material for MatteMaterial {
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         let r: Spectrum = self
             .kd
             .evaluate(si)

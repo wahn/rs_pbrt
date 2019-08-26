@@ -104,7 +104,7 @@ impl Light for DistantLight {
     fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn pdf_li(&self, _iref: &Interaction, _wi: Vector3f) -> Float {
+    fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
         0.0 as Float
     }
     fn sample_le(

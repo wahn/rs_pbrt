@@ -14,16 +14,16 @@ use crate::core::texture::Texture;
 /// the value returned by the texture to blend between the two
 /// materials at the point being shaded.
 pub struct MixMaterial {
-    pub m1: Arc<Material + Sync + Send>,
-    pub m2: Arc<Material + Sync + Send>,
-    pub scale: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.5
+    pub m1: Arc<dyn Material + Sync + Send>,
+    pub m2: Arc<dyn Material + Sync + Send>,
+    pub scale: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
 }
 
 impl MixMaterial {
     pub fn new(
-        m1: Arc<Material + Sync + Send>,
-        m2: Arc<Material + Sync + Send>,
-        scale: Arc<Texture<Spectrum> + Send + Sync>,
+        m1: Arc<dyn Material + Sync + Send>,
+        m2: Arc<dyn Material + Sync + Send>,
+        scale: Arc<dyn Texture<Spectrum> + Send + Sync>,
     ) -> Self {
         MixMaterial {
             m1,
@@ -40,9 +40,9 @@ impl Material for MixMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         let s1: Spectrum = self
             .scale
             .evaluate(si)

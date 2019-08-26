@@ -18,14 +18,14 @@ use crate::core::sampler::Sampler;
 
 #[derive(Clone)]
 pub struct Scene {
-    pub lights: Vec<Arc<Light + Sync + Send>>,
-    pub infinite_lights: Vec<Arc<Light + Sync + Send>>,
+    pub lights: Vec<Arc<dyn Light + Sync + Send>>,
+    pub infinite_lights: Vec<Arc<dyn Light + Sync + Send>>,
     pub aggregate: Arc<BVHAccel>, // TODO: Primitive,
     pub world_bound: Bounds3f,
 }
 
 impl Scene {
-    pub fn new(aggregate: Arc<BVHAccel>, lights: Vec<Arc<Light + Sync + Send>>) -> Self {
+    pub fn new(aggregate: Arc<BVHAccel>, lights: Vec<Arc<dyn Light + Sync + Send>>) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
         let scene: Scene = Scene {
             lights: Vec::new(),
@@ -80,7 +80,7 @@ impl Scene {
     pub fn intersect_tr(
         &self,
         ray: &mut Ray,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
     ) -> (Option<SurfaceInteraction>, Spectrum) {
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {

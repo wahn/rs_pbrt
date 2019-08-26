@@ -40,14 +40,14 @@ impl AOIntegrator {
 }
 
 impl SamplerIntegrator for AOIntegrator {
-    fn preprocess(&mut self, _scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) {
+    fn preprocess(&mut self, _scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>) {
         sampler.request_2d_array(self.n_samples);
     }
     fn li(
         &self,
         r: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
         // arena: &mut Arena,
         _depth: i32,
     ) -> Spectrum {

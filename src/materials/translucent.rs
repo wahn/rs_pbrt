@@ -13,23 +13,23 @@ use crate::core::reflection::{
 use crate::core::texture::Texture;
 
 pub struct TranslucentMaterial {
-    pub kd: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub ks: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.25
-    pub roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.1
-    pub reflect: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.5
-    pub transmit: Arc<Texture<Spectrum> + Sync + Send>, // default: 0.5
-    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
+    pub kd: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.25
+    pub ks: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.25
+    pub roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.1
+    pub reflect: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
+    pub transmit: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
+    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
     pub remap_roughness: bool, // default: true
 }
 
 impl TranslucentMaterial {
     pub fn new(
-        kd: Arc<Texture<Spectrum> + Send + Sync>,
-        ks: Arc<Texture<Spectrum> + Send + Sync>,
-        roughness: Arc<Texture<Float> + Sync + Send>,
-        reflect: Arc<Texture<Spectrum> + Send + Sync>,
-        transmit: Arc<Texture<Spectrum> + Send + Sync>,
-        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+        kd: Arc<dyn Texture<Spectrum> + Send + Sync>,
+        ks: Arc<dyn Texture<Spectrum> + Send + Sync>,
+        roughness: Arc<dyn Texture<Float> + Sync + Send>,
+        reflect: Arc<dyn Texture<Spectrum> + Send + Sync>,
+        transmit: Arc<dyn Texture<Spectrum> + Send + Sync>,
+        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         TranslucentMaterial {
@@ -42,7 +42,7 @@ impl TranslucentMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
         let kd = mp.get_spectrum_texture("Kd", Spectrum::new(0.25 as Float));
         let ks = mp.get_spectrum_texture("Ks", Spectrum::new(0.25 as Float));
         let reflect = mp.get_spectrum_texture("reflect", Spectrum::new(0.5 as Float));
@@ -69,12 +69,12 @@ impl Material for TranslucentMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         let eta: Float = 1.5;
         let r: Spectrum = self
             .reflect

@@ -28,7 +28,7 @@ fn main() {
     let radius: Float = 2.0;
     let inner_radius: Float = 0.0;
     let phi_max: Float = 360.0;
-    let shape: Arc<Shape + Send + Sync> = Arc::new(Disk::new(
+    let shape: Arc<dyn Shape + Send + Sync> = Arc::new(Disk::new(
         light_to_world,
         inverse,
         false,

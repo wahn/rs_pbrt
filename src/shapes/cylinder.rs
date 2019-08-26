@@ -26,7 +26,7 @@ pub struct Cylinder {
     world_to_object: Transform,
     reverse_orientation: bool,
     transform_swaps_handedness: bool,
-    pub material: Option<Arc<Material + Send + Sync>>,
+    pub material: Option<Arc<dyn Material + Send + Sync>>,
 }
 
 impl Default for Cylinder {
@@ -397,7 +397,7 @@ impl Shape for Cylinder {
         }
         intr
     }
-    fn pdf_with_ref_point(&self, iref: &Interaction, wi: &Vector3f) -> Float {
+    fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
         let ray: Ray = iref.spawn_ray(wi);
         // ignore any alpha textures used for trimming the shape when

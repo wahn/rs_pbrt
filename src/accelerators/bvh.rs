@@ -115,13 +115,13 @@ pub struct LinearBVHNode {
 pub struct BVHAccel {
     max_prims_in_node: usize,
     split_method: SplitMethod,
-    pub primitives: Vec<Arc<Primitive + Sync + Send>>,
+    pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
     pub nodes: Vec<LinearBVHNode>,
 }
 
 impl BVHAccel {
     pub fn new(
-        p: Vec<Arc<Primitive + Sync + Send>>,
+        p: Vec<Arc<dyn Primitive + Sync + Send>>,
         max_prims_in_node: usize,
         split_method: SplitMethod,
     ) -> Self {
@@ -144,7 +144,7 @@ impl BVHAccel {
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
-        let mut ordered_prims: Vec<Arc<Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
+        let mut ordered_prims: Vec<Arc<dyn Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
         // println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
         // let start = PreciseTime::now();
         let root = BVHAccel::recursive_build(
@@ -177,7 +177,7 @@ impl BVHAccel {
         let unwrapped = Arc::try_unwrap(bvh_ordered_prims);
         unwrapped.ok().unwrap()
     }
-    pub fn create(prims: Vec<Arc<Primitive + Send + Sync>>, ps: &ParamSet) -> Arc<BVHAccel> {
+    pub fn create(prims: Vec<Arc<dyn Primitive + Send + Sync>>, ps: &ParamSet) -> Arc<BVHAccel> {
         let split_method_name: String = ps.find_one_string("splitmethod", String::from("sah"));
         let split_method;
         if split_method_name == "sah" {
@@ -209,7 +209,7 @@ impl BVHAccel {
         start: usize,
         end: usize,
         total_nodes: &mut usize,
-        ordered_prims: &mut Vec<Arc<Primitive + Sync + Send>>,
+        ordered_prims: &mut Vec<Arc<dyn Primitive + Sync + Send>>,
     ) -> &'a mut BVHBuildNode<'a> {
         assert_ne!(start, end);
         let node: &mut BVHBuildNode<'a> = arena.alloc(BVHBuildNode::default());
@@ -544,10 +544,10 @@ impl Primitive for BVHAccel {
         }
         false
     }
-    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
+    fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
         None
     }
-    fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
+    fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
         None
     }
 }

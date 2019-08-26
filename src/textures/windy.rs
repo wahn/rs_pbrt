@@ -8,11 +8,11 @@ use crate::core::texture::{Texture, TextureMapping3D};
 // see windy.h
 
 pub struct WindyTexture {
-    pub mapping: Box<TextureMapping3D + Send + Sync>,
+    pub mapping: Box<dyn TextureMapping3D + Send + Sync>,
 }
 
 impl WindyTexture {
-    pub fn new(mapping: Box<TextureMapping3D + Send + Sync>) -> Self {
+    pub fn new(mapping: Box<dyn TextureMapping3D + Send + Sync>) -> Self {
         WindyTexture { mapping }
     }
 }

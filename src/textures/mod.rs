@@ -24,3 +24,4 @@ pub mod fbm;
 pub mod imagemap;
 pub mod scale;
 pub mod windy;
+pub mod wrinkled;

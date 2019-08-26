@@ -13,13 +13,13 @@ use crate::core::texture::Texture;
 
 pub struct FourierMaterial {
     pub bsdf_table: Arc<FourierBSDFTable>,
-    pub bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+    pub bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
 }
 
 impl FourierMaterial {
     pub fn new(
         bsdf_table: Arc<FourierBSDFTable>,
-        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
     ) -> Self {
         FourierMaterial {
             bump_map,
@@ -29,8 +29,8 @@ impl FourierMaterial {
     pub fn create(
         mp: &mut TextureParams,
         bsdf_state: &mut BsdfState,
-    ) -> Arc<Material + Send + Sync> {
-        let bump_map: Option<Arc<Texture<Float> + Send + Sync>> =
+    ) -> Arc<dyn Material + Send + Sync> {
+        let bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("bumpmap");
         let bsdffile: String = mp.find_filename("bsdffile", String::new());
         if let Some(bsdf_table) = bsdf_state.loaded_bsdfs.get(&bsdffile.clone()) {
@@ -58,12 +58,12 @@ impl Material for FourierMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         bxdfs.push(Arc::new(FourierBSDF::new(self.bsdf_table.clone(), mode)));
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }

@@ -82,9 +82,9 @@ pub mod volpath;
 /// available cores).
 pub fn render(
     scene: &Scene,
-    camera: &Arc<Camera + Send + Sync>,
-    sampler: &mut Box<Sampler + Send + Sync>,
-    integrator: &mut Box<SamplerIntegrator + Send + Sync>,
+    camera: &Arc<dyn Camera + Send + Sync>,
+    sampler: &mut Box<dyn Sampler + Send + Sync>,
+    integrator: &mut Box<dyn SamplerIntegrator + Send + Sync>,
     num_threads: u8,
 ) {
     // SamplerIntegrator::Render (integrator.cpp)
@@ -125,7 +125,7 @@ pub fn render(
             // spawn worker threads
             for _ in 0..num_cores {
                 let pixel_tx = pixel_tx.clone();
-                let mut tile_sampler: Box<Sampler + Send + Sync> = sampler.box_clone();
+                let mut tile_sampler: Box<dyn Sampler + Send + Sync> = sampler.box_clone();
                 scope.spawn(move |_| {
                     while let Some((x, y)) = bq.next() {
                         let tile: Point2i = Point2i {

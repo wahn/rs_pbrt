@@ -27,7 +27,7 @@ pub struct PathIntegrator {
     max_depth: u32,
     rr_threshold: Float,           // 1.0
     light_sample_strategy: String, // "spatial"
-    light_distribution: Option<Arc<LightDistribution + Send + Sync>>,
+    light_distribution: Option<Arc<dyn LightDistribution + Send + Sync>>,
 }
 
 impl PathIntegrator {
@@ -48,7 +48,7 @@ impl PathIntegrator {
 }
 
 impl SamplerIntegrator for PathIntegrator {
-    fn preprocess(&mut self, scene: &Scene, _sampler: &mut Box<Sampler + Send + Sync>) {
+    fn preprocess(&mut self, scene: &Scene, _sampler: &mut Box<dyn Sampler + Send + Sync>) {
         self.light_distribution =
             create_light_sample_distribution(self.light_sample_strategy.clone(), scene);
     }
@@ -56,7 +56,7 @@ impl SamplerIntegrator for PathIntegrator {
         &self,
         r: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
         // arena: &mut Arena,
         _depth: i32,
     ) -> Spectrum {

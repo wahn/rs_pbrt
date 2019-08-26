@@ -20,8 +20,8 @@ pub trait Primitive {
     fn world_bound(&self) -> Bounds3f;
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction>;
     fn intersect_p(&self, r: &Ray) -> bool;
-    fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>>;
-    fn get_material(&self) -> Option<Arc<Material + Send + Sync>>;
+    fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>>;
+    fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>>;
     fn compute_scattering_functions(
         &self,
         isect: &mut SurfaceInteraction,
@@ -47,17 +47,17 @@ pub trait Primitive {
 }
 
 pub struct GeometricPrimitive {
-    pub shape: Arc<Shape + Send + Sync>,
-    pub material: Option<Arc<Material + Send + Sync>>,
-    pub area_light: Option<Arc<AreaLight + Send + Sync>>,
+    pub shape: Arc<dyn Shape + Send + Sync>,
+    pub material: Option<Arc<dyn Material + Send + Sync>>,
+    pub area_light: Option<Arc<dyn AreaLight + Send + Sync>>,
     pub medium_interface: Option<Arc<MediumInterface>>,
 }
 
 impl GeometricPrimitive {
     pub fn new(
-        shape: Arc<Shape + Send + Sync>,
-        material: Option<Arc<Material + Send + Sync>>,
-        area_light: Option<Arc<AreaLight + Send + Sync>>,
+        shape: Arc<dyn Shape + Send + Sync>,
+        material: Option<Arc<dyn Material + Send + Sync>>,
+        area_light: Option<Arc<dyn AreaLight + Send + Sync>>,
         medium_interface: Option<Arc<MediumInterface>>,
     ) -> Self {
         if let Some(area_light) = area_light {
@@ -112,8 +112,8 @@ impl Primitive for GeometricPrimitive {
                     isect.medium_interface = Some(medium_interface.clone());
                 } else {
                     if let Some(ref medium_arc) = ray.medium {
-                        let inside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
-                        let outside: Option<Arc<Medium + Send + Sync>> = Some(medium_arc.clone());
+                        let inside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
+                        let outside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
                         isect.medium_interface =
                             Some(Arc::new(MediumInterface::new(inside, outside)));
                     }
@@ -138,14 +138,14 @@ impl Primitive for GeometricPrimitive {
     fn intersect_p(&self, r: &Ray) -> bool {
         self.shape.intersect_p(r)
     }
-    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
+    fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
         if let Some(ref material) = self.material {
             Some(material.clone())
         } else {
             None
         }
     }
-    fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
+    fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
         if let Some(ref area_light) = self.area_light {
             Some(area_light.clone())
         } else {
@@ -155,13 +155,13 @@ impl Primitive for GeometricPrimitive {
 }
 
 pub struct TransformedPrimitive {
-    pub primitive: Arc<Primitive + Sync + Send>,
+    pub primitive: Arc<dyn Primitive + Sync + Send>,
     pub primitive_to_world: AnimatedTransform,
 }
 
 impl TransformedPrimitive {
     pub fn new(
-        primitive: Arc<Primitive + Sync + Send>,
+        primitive: Arc<dyn Primitive + Sync + Send>,
         primitive_to_world: AnimatedTransform,
     ) -> Self {
         TransformedPrimitive {
@@ -219,10 +219,10 @@ impl Primitive for TransformedPrimitive {
         self.primitive
             .intersect_p(&interpolated_prim_to_world.transform_ray(&*r))
     }
-    fn get_material(&self) -> Option<Arc<Material + Send + Sync>> {
+    fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
         None
     }
-    fn get_area_light(&self) -> Option<Arc<AreaLight + Send + Sync>> {
+    fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
         None
     }
 }

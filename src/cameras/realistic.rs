@@ -35,7 +35,7 @@ pub struct RealisticCamera {
     pub shutter_open: Float,
     pub shutter_close: Float,
     pub film: Arc<Film>,
-    pub medium: Option<Arc<Medium + Send + Sync>>,
+    pub medium: Option<Arc<dyn Medium + Send + Sync>>,
     // private data (see realistic.h)
     pub simple_weighting: bool,
     pub element_interfaces: Vec<LensElementInterface>,
@@ -52,7 +52,7 @@ impl RealisticCamera {
         simple_weighting: bool,
         lens_data: &Vec<Float>,
         film: Arc<Film>,
-        medium: Option<Arc<Medium + Send + Sync>>,
+        medium: Option<Arc<dyn Medium + Send + Sync>>,
     ) -> Self {
         let mut element_interfaces: Vec<LensElementInterface> = Vec::new();
         for i in (0..lens_data.len()).step_by(4) {
@@ -139,9 +139,9 @@ impl RealisticCamera {
         params: &ParamSet,
         cam2world: AnimatedTransform,
         film: Arc<Film>,
-        medium: Option<Arc<Medium + Send + Sync>>,
+        medium: Option<Arc<dyn Medium + Send + Sync>>,
         search_directory: Option<&Box<PathBuf>>,
-    ) -> Arc<Camera + Send + Sync> {
+    ) -> Arc<dyn Camera + Send + Sync> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);

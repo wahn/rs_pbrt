@@ -269,11 +269,11 @@ pub trait PhaseFunction {
 }
 
 pub trait Medium {
-    fn tr(&self, ray: &Ray, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum;
+    fn tr(&self, ray: &Ray, sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum;
     fn sample(
         &self,
         ray: &Ray,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
     ) -> (Spectrum, Option<MediumInteraction>);
 }
 
@@ -313,14 +313,14 @@ impl PhaseFunction for HenyeyGreenstein {
 
 #[derive(Default, Clone)]
 pub struct MediumInterface {
-    pub inside: Option<Arc<Medium + Send + Sync>>,
-    pub outside: Option<Arc<Medium + Send + Sync>>,
+    pub inside: Option<Arc<dyn Medium + Send + Sync>>,
+    pub outside: Option<Arc<dyn Medium + Send + Sync>>,
 }
 
 impl MediumInterface {
     pub fn new(
-        inside: Option<Arc<Medium + Send + Sync>>,
-        outside: Option<Arc<Medium + Send + Sync>>,
+        inside: Option<Arc<dyn Medium + Send + Sync>>,
+        outside: Option<Arc<dyn Medium + Send + Sync>>,
     ) -> Self {
         MediumInterface {
             inside,
@@ -350,14 +350,14 @@ impl MediumInterface {
             }
         }
     }
-    pub fn get_inside(&self) -> Option<Arc<Medium + Send + Sync>> {
+    pub fn get_inside(&self) -> Option<Arc<dyn Medium + Send + Sync>> {
         if let Some(ref inside) = self.inside {
             Some(inside.clone())
         } else {
             None
         }
     }
-    pub fn get_outside(&self) -> Option<Arc<Medium + Send + Sync>> {
+    pub fn get_outside(&self) -> Option<Arc<dyn Medium + Send + Sync>> {
         if let Some(ref outside) = self.outside {
             Some(outside.clone())
         } else {

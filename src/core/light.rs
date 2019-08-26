@@ -38,7 +38,7 @@ pub trait Light {
     fn power(&self) -> Spectrum;
     fn preprocess(&self, scene: &Scene);
     fn le(&self, _ray: &mut Ray) -> Spectrum;
-    fn pdf_li(&self, iref: &Interaction, wi: Vector3f) -> Float;
+    fn pdf_li(&self, iref: &dyn Interaction, wi: Vector3f) -> Float;
     fn sample_le(
         &self,
         u1: &Point2f,
@@ -80,7 +80,7 @@ impl VisibilityTester {
     pub fn unoccluded(&self, scene: &Scene) -> bool {
         !scene.intersect_p(&mut self.p0.spawn_ray_to(&self.p1))
     }
-    pub fn tr(&self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>) -> Spectrum {
+    pub fn tr(&self, scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum {
         let mut ray: Ray = self.p0.spawn_ray_to(&self.p1);
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {

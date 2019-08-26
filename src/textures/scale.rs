@@ -6,12 +6,12 @@ use crate::core::interaction::SurfaceInteraction;
 use crate::core::texture::Texture;
 
 pub struct ScaleTexture<T> {
-    pub tex1: Arc<Texture<T> + Send + Sync>,
-    pub tex2: Arc<Texture<T> + Send + Sync>,
+    pub tex1: Arc<dyn Texture<T> + Send + Sync>,
+    pub tex2: Arc<dyn Texture<T> + Send + Sync>,
 }
 
 impl<T: Copy> ScaleTexture<T> {
-    pub fn new(tex1: Arc<Texture<T> + Send + Sync>, tex2: Arc<Texture<T> + Send + Sync>) -> Self {
+    pub fn new(tex1: Arc<dyn Texture<T> + Send + Sync>, tex2: Arc<dyn Texture<T> + Send + Sync>) -> Self {
         ScaleTexture {
             tex1,
             tex2,

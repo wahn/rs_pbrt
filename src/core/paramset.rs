@@ -599,8 +599,8 @@ impl ParamSet {
 
 #[derive(Default)]
 pub struct TextureParams {
-    pub float_textures: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>>,
-    pub spectrum_textures: Arc<HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>>,
+    pub float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>>,
+    pub spectrum_textures: Arc<HashMap<String, Arc<dyn Texture<Spectrum> + Send + Sync>>>,
     pub geom_params: ParamSet,
     pub material_params: ParamSet,
 }
@@ -609,8 +609,8 @@ impl TextureParams {
     pub fn new(
         geom_params: ParamSet,
         material_params: ParamSet,
-        f_tex: Arc<HashMap<String, Arc<Texture<Float> + Send + Sync>>>,
-        s_tex: Arc<HashMap<String, Arc<Texture<Spectrum> + Send + Sync>>>,
+        f_tex: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>>,
+        s_tex: Arc<HashMap<String, Arc<dyn Texture<Spectrum> + Send + Sync>>>,
     ) -> Self {
         TextureParams {
             float_textures: f_tex,
@@ -623,7 +623,7 @@ impl TextureParams {
         &mut self,
         n: &str,
         def: Spectrum,
-    ) -> Arc<Texture<Spectrum> + Send + Sync> {
+    ) -> Arc<dyn Texture<Spectrum> + Send + Sync> {
         let mut name: String = self.geom_params.find_texture(n);
         if name == "" {
             name = self.material_params.find_texture(n);
@@ -648,7 +648,7 @@ impl TextureParams {
     pub fn get_spectrum_texture_or_null(
         &mut self,
         n: &str,
-    ) -> Option<Arc<Texture<Spectrum> + Send + Sync>> {
+    ) -> Option<Arc<dyn Texture<Spectrum> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n);
         if name == "" {
             name = self.material_params.find_texture(n);
@@ -675,7 +675,7 @@ impl TextureParams {
             Some(Arc::new(ConstantTexture { value: val[0] }))
         }
     }
-    pub fn get_float_texture(&mut self, n: &str, def: Float) -> Arc<Texture<Float> + Send + Sync> {
+    pub fn get_float_texture(&mut self, n: &str, def: Float) -> Arc<dyn Texture<Float> + Send + Sync> {
         let tex_option = self.get_float_texture_or_null(n);
         if let Some(tex) = tex_option {
             tex
@@ -688,7 +688,7 @@ impl TextureParams {
     pub fn get_float_texture_or_null(
         &mut self,
         n: &str,
-    ) -> Option<Arc<Texture<Float> + Send + Sync>> {
+    ) -> Option<Arc<dyn Texture<Float> + Send + Sync>> {
         let mut name: String = self.geom_params.find_texture(n);
         if name == "" {
             let s: Vec<Float> = self.geom_params.find_float(n);

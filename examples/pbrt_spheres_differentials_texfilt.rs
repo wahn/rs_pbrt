@@ -39,13 +39,13 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
     spheres: Vec<Arc<Sphere>>,
-    lights: Vec<Arc<Light + Sync + Send>>,
+    lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<Arc<TriangleMesh>>,
     spheres: Vec<Arc<Sphere>>,
-    lights: Vec<Arc<Light + Sync + Send>>,
+    lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 impl SceneDescriptionBuilder {
@@ -127,18 +127,18 @@ impl SceneDescriptionBuilder {
 }
 
 struct RenderOptions {
-    primitives: Vec<Arc<Primitive + Sync + Send>>,
+    primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
     triangles: Vec<Arc<Triangle>>,
     spheres: Vec<Arc<Sphere>>,
-    lights: Vec<Arc<Light + Sync + Send>>,
+    lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 impl RenderOptions {
     fn new(scene: SceneDescription) -> RenderOptions {
-        let primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
+        let primitives: Vec<Arc<dyn Primitive + Sync + Send>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
         let mut spheres: Vec<Arc<Sphere>> = Vec::new();
-        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
+        let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
         // lights
         for light in &scene.lights {
             lights.push(light.clone());
@@ -591,7 +591,7 @@ fn main() {
     };
     let xw: Float = 0.5;
     let yw: Float = 0.5;
-    let filter: Box<Filter + Sync + Send> = Box::new(BoxFilter {
+    let filter: Box<dyn Filter + Sync + Send> = Box::new(BoxFilter {
         radius: Vector2f { x: xw, y: yw },
         inv_radius: Vector2f {
             x: 1.0 / xw,
@@ -608,7 +608,7 @@ fn main() {
         1.0,
         std::f32::INFINITY,
     ));
-    let camera: Arc<Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(
+    let camera: Arc<dyn Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(
         animated_cam_to_world,
         screen,
         shutteropen,
@@ -619,9 +619,9 @@ fn main() {
         film.clone(),
         None,
     ));
-    let mut sampler: Box<Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::default());
+    let mut sampler: Box<dyn Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::default());
     let sample_bounds: Bounds2i = film.get_sample_bounds();
-    let mut integrator: Box<SamplerIntegrator + Send + Sync> = Box::new(
+    let mut integrator: Box<dyn SamplerIntegrator + Send + Sync> = Box::new(
         DirectLightingIntegrator::new(LightStrategy::UniformSampleAll, 10, sample_bounds),
     );
     render(&scene, &camera, &mut sampler, &mut integrator, 0_u8);

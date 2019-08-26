@@ -32,8 +32,8 @@ impl PointLight {
         medium_interface: &MediumInterface,
         i: &Spectrum,
     ) -> Self {
-        let mut inside: Option<Arc<Medium + Send + Sync>> = None;
-        let mut outside: Option<Arc<Medium + Send + Sync>> = None;
+        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        let mut outside: Option<Arc<dyn Medium + Send + Sync>> = None;
         if let Some(ref mi_inside) = medium_interface.inside {
             inside = Some(mi_inside.clone());
         }
@@ -94,7 +94,7 @@ impl Light for PointLight {
     fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn pdf_li(&self, _iref: &Interaction, _wi: Vector3f) -> Float {
+    fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
         0.0 as Float
     }
     fn sample_le(

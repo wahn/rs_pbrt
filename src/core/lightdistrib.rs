@@ -361,7 +361,7 @@ const INVALID_PACKED_POS: u64 = 0xffffffffffffffff;
 pub fn create_light_sample_distribution(
     name: String,
     scene: &Scene,
-) -> Option<Arc<LightDistribution + Send + Sync>> {
+) -> Option<Arc<dyn LightDistribution + Send + Sync>> {
     if name == "uniform" || scene.lights.len() == 1 {
         return Some(Arc::new(UniformLightDistribution::new(scene)));
     } else if name == "power" {

@@ -17,22 +17,22 @@ use crate::core::reflection::{Bsdf, Bxdf, BxdfType, LambertianTransmission, Spec
 use crate::core::texture::Texture;
 
 pub struct DisneyMaterial {
-    color: Arc<Texture<Spectrum> + Send + Sync>,
+    color: Arc<dyn Texture<Spectrum> + Send + Sync>,
     // base_color: Arc<TextureFloat>,
-    metallic: Arc<Texture<Float> + Send + Sync>,
-    eta: Arc<Texture<Float> + Send + Sync>,
-    roughness: Arc<Texture<Float> + Send + Sync>,
-    specular_tint: Arc<Texture<Float> + Send + Sync>,
-    anisotropic: Arc<Texture<Float> + Send + Sync>,
-    sheen: Arc<Texture<Float> + Send + Sync>,
-    sheen_tint: Arc<Texture<Float> + Send + Sync>,
-    clearcoat: Arc<Texture<Float> + Send + Sync>,
-    clearcoat_gloss: Arc<Texture<Float> + Send + Sync>,
-    spec_trans: Arc<Texture<Float> + Send + Sync>,
-    scatter_distance: Arc<Texture<Spectrum> + Send + Sync>,
-    flatness: Arc<Texture<Float> + Send + Sync>,
-    diff_trans: Arc<Texture<Float> + Send + Sync>,
-    bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
+    metallic: Arc<dyn Texture<Float> + Send + Sync>,
+    eta: Arc<dyn Texture<Float> + Send + Sync>,
+    roughness: Arc<dyn Texture<Float> + Send + Sync>,
+    specular_tint: Arc<dyn Texture<Float> + Send + Sync>,
+    anisotropic: Arc<dyn Texture<Float> + Send + Sync>,
+    sheen: Arc<dyn Texture<Float> + Send + Sync>,
+    sheen_tint: Arc<dyn Texture<Float> + Send + Sync>,
+    clearcoat: Arc<dyn Texture<Float> + Send + Sync>,
+    clearcoat_gloss: Arc<dyn Texture<Float> + Send + Sync>,
+    spec_trans: Arc<dyn Texture<Float> + Send + Sync>,
+    scatter_distance: Arc<dyn Texture<Spectrum> + Send + Sync>,
+    flatness: Arc<dyn Texture<Float> + Send + Sync>,
+    diff_trans: Arc<dyn Texture<Float> + Send + Sync>,
+    bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
     thin: bool,
 }
 
@@ -82,13 +82,13 @@ impl Material for DisneyMaterial {
         si: &mut SurfaceInteraction,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
 
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
 
         // Diffuse
         let c = self.color.evaluate(si).clamp(0.0, f32::INFINITY);

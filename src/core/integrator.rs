@@ -22,7 +22,7 @@ use crate::core::scene::Scene;
 
 pub trait SamplerIntegrator {
     // TODO: use Sampler trait
-    fn preprocess(&mut self, scene: &Scene, sampler: &mut Box<Sampler + Send + Sync>);
+    fn preprocess(&mut self, scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>);
     /// Returns the incident radiance at the origin of a given
     /// ray. Uses the scene's intersect routine to calculate a
     /// **SurfaceInteraction** and spawns rays if necessary.
@@ -30,7 +30,7 @@ pub trait SamplerIntegrator {
         &self,
         ray: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler + Send + Sync>,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum;
@@ -43,7 +43,7 @@ pub trait SamplerIntegrator {
 pub fn uniform_sample_all_lights(
     it: &SurfaceInteraction,
     scene: &Scene,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Box<dyn Sampler + Send + Sync>,
     n_light_samples: &Vec<i32>,
     handle_media: bool,
 ) -> Spectrum {
@@ -93,9 +93,9 @@ pub fn uniform_sample_all_lights(
 /// Estimate direct lighting for only one randomly chosen light and
 /// multiply the result by the number of lights to compensate.
 pub fn uniform_sample_one_light(
-    it: &Interaction,
+    it: &dyn Interaction,
     scene: &Scene,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Box<dyn Sampler + Send + Sync>,
     handle_media: bool,
     light_distrib: Option<&Distribution1D>,
 ) -> Spectrum {
@@ -140,12 +140,12 @@ pub fn uniform_sample_one_light(
 
 /// Computes a direct lighting estimate for a single light source sample.
 pub fn estimate_direct(
-    it: &Interaction,
+    it: &dyn Interaction,
     u_scattering: &Point2f,
-    light: Arc<Light + Send + Sync>,
+    light: Arc<dyn Light + Send + Sync>,
     u_light: &Point2f,
     scene: &Scene,
-    sampler: &mut Box<Sampler + Send + Sync>,
+    sampler: &mut Box<dyn Sampler + Send + Sync>,
     // TODO: arena
     handle_media: bool,
     specular: bool,

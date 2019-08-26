@@ -218,9 +218,9 @@ fn main() {
         let mut p_ws: Vec<Point3f> = Vec::new();
         let mut p_ws_len: usize = 0;
         let mut vi: Vec<u32> = Vec::new();
-        let mut primitives: Vec<Arc<Primitive + Sync + Send>> = Vec::new();
-        let mut lights: Vec<Arc<Light + Sync + Send>> = Vec::new();
-        let mut named_materials: HashMap<String, Arc<Material + Sync + Send>> = HashMap::new();
+        let mut primitives: Vec<Arc<dyn Primitive + Sync + Send>> = Vec::new();
+        let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
+        let mut named_materials: HashMap<String, Arc<dyn Material + Sync + Send>> = HashMap::new();
         let mut named_primitives: HashMap<
             String,
             (Vec<String>, Vec<(u32, Arc<GeometricPrimitive>)>),
@@ -970,7 +970,7 @@ fn main() {
                                                 let n_triangles: usize = vi_tri.len() / 3;
                                                 assert!(shidxs_tri.len() == n_triangles);
                                                 // TriangleMesh
-                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> =
+                                                let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> =
                                                     Vec::new();
                                                 let s_ws: Vec<Vector3f> = Vec::new();
                                                 let n_ws: Vec<Normal3f> = Vec::new();
@@ -1025,7 +1025,7 @@ fn main() {
                                                 );
                                             // println!("}}");
                                             } else if node_type == "disk" {
-                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> =
+                                                let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> =
                                                     Vec::new();
                                                 let disk = Arc::new(Disk::new(
                                                     obj_to_world,
@@ -1059,7 +1059,7 @@ fn main() {
                                                 );
                                             // println!("}}");
                                             } else if node_type == "sphere" {
-                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> =
+                                                let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> =
                                                     Vec::new();
                                                 let sphere = Arc::new(Sphere::new(
                                                     obj_to_world,
@@ -1093,7 +1093,7 @@ fn main() {
                                                 );
                                             // println!("}}");
                                             } else if node_type == "cylinder" {
-                                                let mut shapes: Vec<Arc<Shape + Send + Sync>> =
+                                                let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> =
                                                     Vec::new();
                                                 // TODO: assumption about z_min and z_max
                                                 let cylinder = Arc::new(Cylinder::new(
@@ -1145,7 +1145,7 @@ fn main() {
                                                                 COPPER_SAMPLES as i32,
                                                             );
                                                         let eta: Arc<
-                                                            Texture<Spectrum> + Send + Sync,
+                                                            dyn Texture<Spectrum> + Send + Sync,
                                                         > = Arc::new(ConstantTexture::new(
                                                             copper_n,
                                                         ));
@@ -1156,7 +1156,7 @@ fn main() {
                                                                 COPPER_SAMPLES as i32,
                                                             );
                                                         let k: Arc<
-                                                            Texture<Spectrum> + Send + Sync,
+                                                            dyn Texture<Spectrum> + Send + Sync,
                                                         > = Arc::new(ConstantTexture::new(
                                                             copper_k,
                                                         ));
@@ -1242,7 +1242,7 @@ fn main() {
         println!("number of lights = {:?}", lights.len());
         println!("number of primitives = {:?}", primitives.len());
         // MakeFilter
-        let mut some_filter: Option<Box<Filter + Sync + Send>> = None;
+        let mut some_filter: Option<Box<dyn Filter + Sync + Send>> = None;
         if filter_name == "box" {
             println!("TODO: CreateBoxFilter");
         } else if filter_name == "gaussian" {
@@ -1280,12 +1280,12 @@ fn main() {
                 max_sample_luminance,
             ));
             // MakeCamera
-            let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
+            let mut some_camera: Option<Arc<dyn Camera + Sync + Send>> = None;
             let medium_interface: MediumInterface = MediumInterface::default();
             if camera_name == "perspective" {
                 let mut camera_params: ParamSet = ParamSet::default();
                 camera_params.add_float(String::from("fov"), fov);
-                let camera: Arc<Camera + Send + Sync> = PerspectiveCamera::create(
+                let camera: Arc<dyn Camera + Send + Sync> = PerspectiveCamera::create(
                     &camera_params,
                     animated_cam_to_world,
                     film,
@@ -1303,14 +1303,14 @@ fn main() {
             }
             if let Some(camera) = some_camera {
                 // MakeSampler
-                let mut some_sampler: Option<Box<Sampler + Sync + Send>>;
+                let some_sampler: Option<Box<dyn Sampler + Sync + Send>>;
                 // use SobolSampler for now
                 let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                 let sampler = Box::new(SobolSampler::new(samples_per_pixel as i64, sample_bounds));
                 some_sampler = Some(sampler);
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
-                    let mut some_integrator: Option<Box<SamplerIntegrator + Sync + Send>>;
+                    let some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>>;
                     // CreateAOIntegrator
                     // let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                     // let cos_sample: bool = true;

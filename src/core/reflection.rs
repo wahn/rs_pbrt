@@ -197,11 +197,11 @@ pub struct Bsdf {
     pub ng: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub bxdfs: Vec<Arc<Bxdf + Sync + Send>>,
+    pub bxdfs: Vec<Arc<dyn Bxdf + Sync + Send>>,
 }
 
 impl Bsdf {
-    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Arc<Bxdf + Sync + Send>>) -> Self {
+    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Arc<dyn Bxdf + Sync + Send>>) -> Self {
         let ss = si.shading.dpdu.normalize();
         Bsdf {
             eta,
@@ -282,7 +282,7 @@ impl Bsdf {
             matching_comps - 1_u8,
         );
         // get _BxDF_ pointer for chosen component
-        let mut bxdf: Option<&Arc<Bxdf + Sync + Send>> = None;
+        let mut bxdf: Option<&Arc<dyn Bxdf + Sync + Send>> = None;
         let mut count: i8 = comp as i8;
         let n_bxdfs: usize = self.bxdfs.len();
         let mut bxdf_index: usize = 0_usize;
@@ -460,12 +460,12 @@ pub trait Bxdf {
 }
 
 pub struct ScaledBxDF {
-    pub bxdf: Arc<Bxdf + Sync + Send>,
+    pub bxdf: Arc<dyn Bxdf + Sync + Send>,
     pub scale: Spectrum,
 }
 
 impl ScaledBxDF {
-    pub fn new(bxdf: Arc<Bxdf + Send + Sync>, scale: Spectrum) -> Self {
+    pub fn new(bxdf: Arc<dyn Bxdf + Send + Sync>, scale: Spectrum) -> Self {
         ScaledBxDF {
             bxdf,
             scale,
@@ -537,11 +537,11 @@ impl Fresnel for FresnelNoOp {
 #[derive(Clone)]
 pub struct SpecularReflection {
     pub r: Spectrum,
-    pub fresnel: Arc<Fresnel + Send + Sync>,
+    pub fresnel: Arc<dyn Fresnel + Send + Sync>,
 }
 
 impl SpecularReflection {
-    pub fn new(r: Spectrum, fresnel: Arc<Fresnel + Send + Sync>) -> Self {
+    pub fn new(r: Spectrum, fresnel: Arc<dyn Fresnel + Send + Sync>) -> Self {
         SpecularReflection {
             r,
             fresnel,
@@ -925,15 +925,15 @@ impl Bxdf for OrenNayar {
 
 pub struct MicrofacetReflection {
     pub r: Spectrum,
-    pub distribution: Arc<MicrofacetDistribution + Send + Sync>,
-    pub fresnel: Arc<Fresnel + Send + Sync>,
+    pub distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
+    pub fresnel: Arc<dyn Fresnel + Send + Sync>,
 }
 
 impl MicrofacetReflection {
     pub fn new(
         r: Spectrum,
-        distribution: Arc<MicrofacetDistribution + Send + Sync>,
-        fresnel: Arc<Fresnel + Send + Sync>,
+        distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
+        fresnel: Arc<dyn Fresnel + Send + Sync>,
     ) -> Self {
         MicrofacetReflection {
             r,
@@ -1000,7 +1000,7 @@ impl Bxdf for MicrofacetReflection {
 // MicrofacetTransmission
 pub struct MicrofacetTransmission {
     t: Spectrum,
-    distribution: Arc<MicrofacetDistribution + Send + Sync>,
+    distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
     eta_a: Float,
     eta_b: Float,
     fresnel: FresnelDielectric,
@@ -1010,7 +1010,7 @@ pub struct MicrofacetTransmission {
 impl MicrofacetTransmission {
     pub fn new(
         t: Spectrum,
-        distribution: Arc<MicrofacetDistribution + Send + Sync>,
+        distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,

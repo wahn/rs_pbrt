@@ -22,7 +22,7 @@ pub struct EnvironmentCamera {
     pub shutter_open: Float,
     pub shutter_close: Float,
     pub film: Arc<Film>,
-    pub medium: Option<Arc<Medium + Send + Sync>>,
+    pub medium: Option<Arc<dyn Medium + Send + Sync>>,
 }
 
 impl EnvironmentCamera {
@@ -31,7 +31,7 @@ impl EnvironmentCamera {
         shutter_open: Float,
         shutter_close: Float,
         film: Arc<Film>,
-        medium: Option<Arc<Medium + Send + Sync>>,
+        medium: Option<Arc<dyn Medium + Send + Sync>>,
     ) -> Self {
         EnvironmentCamera {
             camera_to_world,
@@ -45,8 +45,8 @@ impl EnvironmentCamera {
         params: &ParamSet,
         cam2world: AnimatedTransform,
         film: Arc<Film>,
-        medium: Option<Arc<Medium + Send + Sync>>,
-    ) -> Arc<Camera + Send + Sync> {
+        medium: Option<Arc<dyn Medium + Send + Sync>>,
+    ) -> Arc<dyn Camera + Send + Sync> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);

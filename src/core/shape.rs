@@ -31,5 +31,5 @@ pub trait Shape {
         u: &Point2f,
         pdf: &mut Float,
     ) -> InteractionCommon;
-    fn pdf_with_ref_point(&self, iref: &Interaction, wi: &Vector3f) -> Float;
+    fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float;
 }

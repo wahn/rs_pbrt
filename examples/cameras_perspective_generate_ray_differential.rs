@@ -28,7 +28,7 @@ fn main() {
     // PerspectiveCamera
     let xw: Float = 0.5;
     let yw: Float = 0.5;
-    let filter: Box<Filter + Sync + Send> = Box::new(BoxFilter {
+    let filter: Box<dyn Filter + Sync + Send> = Box::new(BoxFilter {
         radius: Vector2f { x: xw, y: yw },
         inv_radius: Vector2f {
             x: 1.0 / xw,

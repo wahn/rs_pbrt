@@ -18,23 +18,23 @@ use crate::core::texture::Texture;
 /// Perfect or glossy specular reflection and transmission, weighted
 /// by Fresnel terms for accurate angular-dependent variation.
 pub struct GlassMaterial {
-    pub kr: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
-    pub kt: Arc<Texture<Spectrum> + Sync + Send>, // default: 1.0
-    pub u_roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.0
-    pub v_roughness: Arc<Texture<Float> + Sync + Send>, // default: 0.0
-    pub index: Arc<Texture<Float> + Sync + Send>,
-    pub bump_map: Option<Arc<Texture<Float> + Send + Sync>>,
+    pub kr: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
+    pub kt: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
+    pub u_roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.0
+    pub v_roughness: Arc<dyn Texture<Float> + Sync + Send>, // default: 0.0
+    pub index: Arc<dyn Texture<Float> + Sync + Send>,
+    pub bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>>,
     pub remap_roughness: bool,
 }
 
 impl GlassMaterial {
     pub fn new(
-        kr: Arc<Texture<Spectrum> + Sync + Send>,
-        kt: Arc<Texture<Spectrum> + Sync + Send>,
-        u_roughness: Arc<Texture<Float> + Sync + Send>,
-        v_roughness: Arc<Texture<Float> + Sync + Send>,
-        index: Arc<Texture<Float> + Send + Sync>,
-        bump_map: Option<Arc<Texture<Float> + Sync + Send>>,
+        kr: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        kt: Arc<dyn Texture<Spectrum> + Sync + Send>,
+        u_roughness: Arc<dyn Texture<Float> + Sync + Send>,
+        v_roughness: Arc<dyn Texture<Float> + Sync + Send>,
+        index: Arc<dyn Texture<Float> + Send + Sync>,
+        bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
         remap_roughness: bool,
     ) -> Self {
         GlassMaterial {
@@ -47,14 +47,14 @@ impl GlassMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
         let kr = mp.get_spectrum_texture("Kr", Spectrum::new(1.0 as Float));
         let kt = mp.get_spectrum_texture("Kt", Spectrum::new(1.0 as Float));
         let roughu = mp.get_float_texture("uroughness", 0.0 as Float);
         let roughv = mp.get_float_texture("vroughness", 0.0 as Float);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        let eta_option: Option<Arc<Texture<Float> + Send + Sync>> =
+        let eta_option: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("eta");
         if let Some(ref eta) = eta_option {
             Arc::new(GlassMaterial::new(
@@ -67,7 +67,7 @@ impl GlassMaterial {
                 remap_roughness,
             ))
         } else {
-            let eta: Arc<Texture<Float> + Send + Sync> = mp.get_float_texture("index", 1.5 as Float);
+            let eta: Arc<dyn Texture<Float> + Send + Sync> = mp.get_float_texture("index", 1.5 as Float);
             Arc::new(GlassMaterial::new(
                 kr,
                 kt,
@@ -88,12 +88,12 @@ impl Material for GlassMaterial {
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        _material: Option<Arc<Material + Send + Sync>>,
+        _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
-        let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
         let eta: Float = self.index.evaluate(si);
         let mut urough: Float = self.u_roughness.evaluate(si);
         let mut vrough: Float = self.v_roughness.evaluate(si);

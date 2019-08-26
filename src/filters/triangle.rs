@@ -14,10 +14,10 @@ pub struct TriangleFilter {
 }
 
 impl TriangleFilter {
-    pub fn create(ps: &ParamSet) -> Box<Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<dyn Filter + Sync + Send> {
         let xw: Float = ps.find_one_float("xwidth", 2.0);
         let yw: Float = ps.find_one_float("ywidth", 2.0);
-        let triangle_filter: Box<Filter + Sync + Send> = Box::new(TriangleFilter {
+        let triangle_filter: Box<dyn Filter + Sync + Send> = Box::new(TriangleFilter {
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
                 x: 1.0 / xw,

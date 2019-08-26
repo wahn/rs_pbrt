@@ -28,7 +28,7 @@ pub trait Bssrdf {
     fn sample_s(
         &self,
         // the next three (extra) parameters are used for SeparableBssrdfAdapter
-        sc: Arc<SeparableBssrdf + Sync + Send>,
+        sc: Arc<dyn SeparableBssrdf + Sync + Send>,
         mode: TransportMode,
         eta: Float,
         // done
@@ -66,7 +66,7 @@ pub struct TabulatedBssrdf {
     pub ns: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub material: Arc<Material + Send + Sync>,
+    pub material: Arc<dyn Material + Send + Sync>,
     pub mode: TransportMode,
     // TabulatedBSSRDF Private Data
     pub table: Arc<BssrdfTable>,
@@ -77,7 +77,7 @@ pub struct TabulatedBssrdf {
 impl TabulatedBssrdf {
     pub fn new(
         po: &SurfaceInteraction,
-        material_opt: Option<Arc<Material + Send + Sync>>,
+        material_opt: Option<Arc<dyn Material + Send + Sync>>,
         mode: TransportMode,
         eta: Float,
         sigma_a: &Spectrum,
@@ -125,7 +125,7 @@ impl Bssrdf for TabulatedBssrdf {
     fn sample_s(
         &self,
         // the next three (extra) parameters are used for SeparableBssrdfAdapter
-        sc: Arc<SeparableBssrdf + Sync + Send>,
+        sc: Arc<dyn SeparableBssrdf + Sync + Send>,
         mode: TransportMode,
         eta: Float,
         // done
@@ -139,7 +139,7 @@ impl Bssrdf for TabulatedBssrdf {
         let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut si, pdf);
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
-            let mut bxdfs: Vec<Arc<Bxdf + Send + Sync>> = Vec::new();
+            let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
             bxdfs.push(Arc::new(SeparableBssrdfAdapter::new(sc, mode, eta)));
             si.bsdf = Some(Arc::new(Bsdf::new(&si, 1.0, bxdfs)));
             si.wo = Vector3f::from(si.shading.n);
@@ -487,14 +487,14 @@ impl BssrdfTable {
 
 pub struct SeparableBssrdfAdapter {
     // pub bssrdf: &'b (SeparableBssrdf + Send + Sync),
-    pub bssrdf: Arc<SeparableBssrdf + Sync + Send>,
+    pub bssrdf: Arc<dyn SeparableBssrdf + Sync + Send>,
     mode: TransportMode,
     eta2: Float,
 }
 
 impl SeparableBssrdfAdapter {
     pub fn new(
-        bssrdf: Arc<SeparableBssrdf + Sync + Send>,
+        bssrdf: Arc<dyn SeparableBssrdf + Sync + Send>,
         mode: TransportMode,
         eta: Float,
     ) -> Self {
