@@ -3,7 +3,7 @@ use std;
 use std::f32::consts::PI;
 use std::sync::RwLock;
 // pbrt
-use crate::core::geometry::{vec3_coordinate_system};
+use crate::core::geometry::vec3_coordinate_system;
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{Light, LightFlags, VisibilityTester};

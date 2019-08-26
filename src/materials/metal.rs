@@ -117,7 +117,8 @@ impl MetalMaterial {
     pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
         let copper_n: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_N, COPPER_SAMPLES as i32);
-        let eta: Arc<dyn Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("eta", copper_n);
+        let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
+            mp.get_spectrum_texture("eta", copper_n);
         let copper_k: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_K, COPPER_SAMPLES as i32);
         let k: Arc<dyn Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("k", copper_k);

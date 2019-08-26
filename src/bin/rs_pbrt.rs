@@ -740,7 +740,12 @@ fn parse_line(
     }
 }
 
-fn parse_file(filename: String, api_state: &mut ApiState, bsdf_state: &mut BsdfState, append: &str) {
+fn parse_file(
+    filename: String,
+    api_state: &mut ApiState,
+    bsdf_state: &mut BsdfState,
+    append: &str,
+) {
     // println!("FILE = {}", x);
     let f = File::open(filename.clone()).unwrap();
     let ip: &Path = Path::new(filename.as_str());

@@ -5,11 +5,9 @@ use crate::core::texture::Texture;
 
 // see wrinkled.h
 
-pub struct WrinkledTexture {
-}
+pub struct WrinkledTexture {}
 
-impl WrinkledTexture {
-}
+impl WrinkledTexture {}
 
 impl<T> Texture<T> for WrinkledTexture
 where

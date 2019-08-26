@@ -14,7 +14,11 @@ pub struct FBmTexture {
 }
 
 impl FBmTexture {
-    pub fn new(mapping: Box<dyn TextureMapping3D + Send + Sync>, octaves: i32, omega: Float) -> Self {
+    pub fn new(
+        mapping: Box<dyn TextureMapping3D + Send + Sync>,
+        octaves: i32,
+        omega: Float,
+    ) -> Self {
         FBmTexture {
             mapping,
             omega,

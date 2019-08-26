@@ -55,10 +55,11 @@ pub trait Material {
             du = 0.0005 as Float;
         }
         si_eval.p = si.p + si.shading.dpdu * du;
-        si_eval.uv = si.uv + Vector2f {
-            x: du,
-            y: 0.0 as Float,
-        };
+        si_eval.uv = si.uv
+            + Vector2f {
+                x: du,
+                y: 0.0 as Float,
+            };
         si_eval.n = (Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv))
             + si.dndu * du)
             .normalize();
@@ -69,10 +70,11 @@ pub trait Material {
             dv = 0.0005 as Float;
         }
         si_eval.p = si.p + si.shading.dpdv * dv;
-        si_eval.uv = si.uv + Vector2f {
-            x: 0.0 as Float,
-            y: dv,
-        };
+        si_eval.uv = si.uv
+            + Vector2f {
+                x: 0.0 as Float,
+                y: dv,
+            };
         si_eval.n = (Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv))
             + si.dndv * dv)
             .normalize();

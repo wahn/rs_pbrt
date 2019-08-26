@@ -315,7 +315,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             // adjust normal based on orientation and handedness
             if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
                 n *= -1.0 as Float;
-                shading.n *=  -1.0 as Float;
+                shading.n *= -1.0 as Float;
             }
         }
         SurfaceInteraction {

@@ -309,7 +309,8 @@ impl Curve {
                     x: -dpdu_plane.y,
                     y: dpdu_plane.x,
                     z: 0.0,
-                }.normalize()
+                }
+                .normalize()
                     * hit_width;
                 if self.common.curve_type == CurveType::Cylinder {
                     // rotate _dpdvPlane_ to give cylindrical appearance

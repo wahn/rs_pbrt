@@ -2,7 +2,9 @@
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 use crate::core::lowdiscrepancy::{sobol_interval_to_index, sobol_sample};
 use crate::core::pbrt::Float;
-use crate::core::pbrt::{clamp_t, is_power_of_2, log_2_int_u32, round_up_pow2_32, round_up_pow2_64};
+use crate::core::pbrt::{
+    clamp_t, is_power_of_2, log_2_int_u32, round_up_pow2_32, round_up_pow2_64,
+};
 use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
 use crate::core::sampler::{GlobalSampler, Sampler};
 use crate::core::sobolmatrices::NUM_SOBOL_DIMENSIONS;

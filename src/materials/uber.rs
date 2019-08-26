@@ -94,7 +94,8 @@ impl UberMaterial {
                 remap_roughness,
             ))
         } else {
-            let eta: Arc<dyn Texture<Float> + Send + Sync> = mp.get_float_texture("index", 1.5 as Float);
+            let eta: Arc<dyn Texture<Float> + Send + Sync> =
+                mp.get_float_texture("index", 1.5 as Float);
             Arc::new(UberMaterial::new(
                 kd,
                 ks,
@@ -140,17 +141,19 @@ impl Material for UberMaterial {
                 mode.clone(),
             )));
         }
-        let kd: Spectrum = op * self
-            .kd
-            .evaluate(si)
-            .clamp(0.0 as Float, std::f32::INFINITY as Float);
+        let kd: Spectrum = op
+            * self
+                .kd
+                .evaluate(si)
+                .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kd.is_black() {
             bxdfs.push(Arc::new(LambertianReflection::new(kd)));
         }
-        let ks: Spectrum = op * self
-            .ks
-            .evaluate(si)
-            .clamp(0.0 as Float, std::f32::INFINITY as Float);
+        let ks: Spectrum = op
+            * self
+                .ks
+                .evaluate(si)
+                .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !ks.is_black() {
             let fresnel = Arc::new(FresnelDielectric {
                 eta_i: 1.0,
@@ -175,10 +178,11 @@ impl Material for UberMaterial {
             let distrib = Arc::new(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
             bxdfs.push(Arc::new(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
-        let kr: Spectrum = op * self
-            .kr
-            .evaluate(si)
-            .clamp(0.0 as Float, std::f32::INFINITY as Float);
+        let kr: Spectrum = op
+            * self
+                .kr
+                .evaluate(si)
+                .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kr.is_black() {
             let fresnel = Arc::new(FresnelDielectric {
                 eta_i: 1.0,
@@ -186,10 +190,11 @@ impl Material for UberMaterial {
             });
             bxdfs.push(Arc::new(SpecularReflection::new(kr, fresnel)));
         }
-        let kt: Spectrum = op * self
-            .kt
-            .evaluate(si)
-            .clamp(0.0 as Float, std::f32::INFINITY as Float);
+        let kt: Spectrum = op
+            * self
+                .kt
+                .evaluate(si)
+                .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kt.is_black() {
             bxdfs.push(Arc::new(SpecularTransmission::new(
                 kt,

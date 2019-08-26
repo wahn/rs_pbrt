@@ -118,9 +118,7 @@ pub struct IdentityMapping3D {
 
 impl IdentityMapping3D {
     pub fn new(world_to_texture: Transform) -> Self {
-        IdentityMapping3D {
-            world_to_texture,
-        }
+        IdentityMapping3D { world_to_texture }
     }
     pub fn get_world_to_texture(&self) -> Transform {
         self.world_to_texture

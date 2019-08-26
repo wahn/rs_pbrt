@@ -112,8 +112,10 @@ impl Primitive for GeometricPrimitive {
                     isect.medium_interface = Some(medium_interface.clone());
                 } else {
                     if let Some(ref medium_arc) = ray.medium {
-                        let inside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
-                        let outside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
+                        let inside: Option<Arc<dyn Medium + Send + Sync>> =
+                            Some(medium_arc.clone());
+                        let outside: Option<Arc<dyn Medium + Send + Sync>> =
+                            Some(medium_arc.clone());
                         isect.medium_interface =
                             Some(Arc::new(MediumInterface::new(inside, outside)));
                     }

@@ -7,7 +7,9 @@ use crate::core::geometry::{
     pnt3_permute, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3, vec3_max_component,
     vec3_max_dimension, vec3_permute,
 };
-use crate::core::geometry::{Bounds3f, Normal3, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
+use crate::core::geometry::{
+    Bounds3f, Normal3, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f,
+};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::material::Material;
 use crate::core::pbrt::gamma;
@@ -145,21 +147,24 @@ impl Shape for Triangle {
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         // translate vertices based on ray origin
-        let mut p0t: Point3f = p0 - Vector3f {
-            x: ray.o.x,
-            y: ray.o.y,
-            z: ray.o.z,
-        };
-        let mut p1t: Point3f = p1 - Vector3f {
-            x: ray.o.x,
-            y: ray.o.y,
-            z: ray.o.z,
-        };
-        let mut p2t: Point3f = p2 - Vector3f {
-            x: ray.o.x,
-            y: ray.o.y,
-            z: ray.o.z,
-        };
+        let mut p0t: Point3f = p0
+            - Vector3f {
+                x: ray.o.x,
+                y: ray.o.y,
+                z: ray.o.z,
+            };
+        let mut p1t: Point3f = p1
+            - Vector3f {
+                x: ray.o.x,
+                y: ray.o.y,
+                z: ray.o.z,
+            };
+        let mut p2t: Point3f = p2
+            - Vector3f {
+                x: ray.o.x,
+                y: ray.o.y,
+                z: ray.o.z,
+            };
         // permute components of triangle vertices and ray direction
         let kz: usize = vec3_max_dimension(&ray.d.abs());
         let mut kx: usize = kz + 1;
@@ -234,7 +239,8 @@ impl Shape for Triangle {
                 x: p0t.z,
                 y: p1t.z,
                 z: p2t.z,
-            }.abs(),
+            }
+            .abs(),
         );
         let delta_z: Float = gamma(3_i32) * max_zt;
         // compute $\delta_x$ and $\delta_y$ terms for triangle $t$ error bounds
@@ -243,14 +249,16 @@ impl Shape for Triangle {
                 x: p0t.x,
                 y: p1t.x,
                 z: p2t.x,
-            }.abs(),
+            }
+            .abs(),
         );
         let max_yt: Float = vec3_max_component(
             &Vector3f {
                 x: p0t.y,
                 y: p1t.y,
                 z: p2t.y,
-            }.abs(),
+            }
+            .abs(),
         );
         let delta_x: Float = gamma(5) * (max_xt + max_zt);
         let delta_y: Float = gamma(5) * (max_yt + max_zt);
@@ -263,7 +271,8 @@ impl Shape for Triangle {
                 x: e0,
                 y: e1,
                 z: e2,
-            }.abs(),
+            }
+            .abs(),
         );
         let delta_t: Float =
             3.0 * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
@@ -421,21 +430,24 @@ impl Shape for Triangle {
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         // translate vertices based on ray origin
-        let mut p0t: Point3f = p0 - Vector3f {
-            x: ray.o.x,
-            y: ray.o.y,
-            z: ray.o.z,
-        };
-        let mut p1t: Point3f = p1 - Vector3f {
-            x: ray.o.x,
-            y: ray.o.y,
-            z: ray.o.z,
-        };
-        let mut p2t: Point3f = p2 - Vector3f {
-            x: ray.o.x,
-            y: ray.o.y,
-            z: ray.o.z,
-        };
+        let mut p0t: Point3f = p0
+            - Vector3f {
+                x: ray.o.x,
+                y: ray.o.y,
+                z: ray.o.z,
+            };
+        let mut p1t: Point3f = p1
+            - Vector3f {
+                x: ray.o.x,
+                y: ray.o.y,
+                z: ray.o.z,
+            };
+        let mut p2t: Point3f = p2
+            - Vector3f {
+                x: ray.o.x,
+                y: ray.o.y,
+                z: ray.o.z,
+            };
         // permute components of triangle vertices and ray direction
         let kz: usize = vec3_max_dimension(&ray.d.abs());
         let mut kx: usize = kz + 1;
@@ -510,7 +522,8 @@ impl Shape for Triangle {
                 x: p0t.z,
                 y: p1t.z,
                 z: p2t.z,
-            }.abs(),
+            }
+            .abs(),
         );
         let delta_z: Float = gamma(3_i32) * max_zt;
         // compute $\delta_x$ and $\delta_y$ terms for triangle $t$ error bounds
@@ -519,14 +532,16 @@ impl Shape for Triangle {
                 x: p0t.x,
                 y: p1t.x,
                 z: p2t.x,
-            }.abs(),
+            }
+            .abs(),
         );
         let max_yt: Float = vec3_max_component(
             &Vector3f {
                 x: p0t.y,
                 y: p1t.y,
                 z: p2t.y,
-            }.abs(),
+            }
+            .abs(),
         );
         let delta_x: Float = gamma(5) * (max_xt + max_zt);
         let delta_y: Float = gamma(5) * (max_yt + max_zt);
@@ -539,7 +554,8 @@ impl Shape for Triangle {
                 x: e0,
                 y: e1,
                 z: e2,
-            }.abs(),
+            }
+            .abs(),
         );
         let delta_t: Float =
             3.0 * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();

@@ -702,12 +702,7 @@ fn make_texture(api_state: &mut ApiState) {
                 let sv: Float = tp.find_float("vscale", 1.0);
                 let du: Float = tp.find_float("udelta", 0.0);
                 let dv: Float = tp.find_float("vdelta", 0.0);
-                map = Some(Box::new(UVMapping2D {
-                    su,
-                    sv,
-                    du,
-                    dv,
-                }));
+                map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
             } else if mapping == "spherical" {
                 println!("TODO: SphericalMapping2D");
             } else if mapping == "cylindrical" {
@@ -857,12 +852,7 @@ fn make_texture(api_state: &mut ApiState) {
                 let sv: Float = tp.find_float("vscale", 1.0);
                 let du: Float = tp.find_float("udelta", 0.0);
                 let dv: Float = tp.find_float("vdelta", 0.0);
-                map = Some(Box::new(UVMapping2D {
-                    su,
-                    sv,
-                    du,
-                    dv,
-                }));
+                map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
             } else if mapping == "spherical" {
                 println!("TODO: SphericalMapping2D");
             } else if mapping == "cylindrical" {
@@ -951,12 +941,7 @@ fn make_texture(api_state: &mut ApiState) {
                     let sv: Float = tp.find_float("vscale", 1.0);
                     let du: Float = tp.find_float("udelta", 0.0);
                     let dv: Float = tp.find_float("vdelta", 0.0);
-                    map = Some(Box::new(UVMapping2D {
-                        su,
-                        sv,
-                        du,
-                        dv,
-                    }));
+                    map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
                 } else if mapping == "spherical" {
                     println!("TODO: SphericalMapping2D");
                 } else if mapping == "cylindrical" {
@@ -1219,7 +1204,8 @@ fn get_shapes_and_materials(
         }
     } else if api_state.param_set.name == "plymesh" {
         if let Some(ref search_directory) = api_state.search_directory {
-            let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+            let mtl: Option<Arc<dyn Material + Send + Sync>> =
+                create_material(&api_state, bsdf_state);
             let ply_shapes: Vec<Arc<dyn Shape + Send + Sync>> = create_ply_mesh(
                 &obj_to_world,
                 &world_to_obj,
@@ -1780,7 +1766,8 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
                     // if let Some(mut sampler) = some_sampler {
-                    let mut some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>> = None;
+                    let mut some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>> =
+                        None;
                     let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
                     let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
                     let mut some_sppm_integrator: Option<Box<SPPMIntegrator>> = None;

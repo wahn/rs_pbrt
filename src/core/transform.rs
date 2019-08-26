@@ -60,7 +60,9 @@ use std::ops::{Add, Mul};
 use crate::core::geometry::{
     bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3,
 };
-use crate::core::geometry::{Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f};
+use crate::core::geometry::{
+    Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f,
+};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, gamma, lerp, radians};
@@ -2255,10 +2257,7 @@ impl Mul for Interval {
         let max_rhs_high: Float = (self.low * rhs.high).max(self.high * rhs.high);
         let low: Float = min_rhs_low.min(min_rhs_high);
         let high: Float = max_rhs_low.max(max_rhs_high);
-        Interval {
-            low,
-            high,
-        }
+        Interval { low, high }
     }
 }
 

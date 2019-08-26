@@ -7,7 +7,9 @@ use crate::core::material::{Material, TransportMode};
 use crate::core::microfacet::TrowbridgeReitzDistribution;
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::reflection::{Bsdf, Bxdf, FresnelDielectric, LambertianReflection, MicrofacetReflection};
+use crate::core::reflection::{
+    Bsdf, Bxdf, FresnelDielectric, LambertianReflection, MicrofacetReflection,
+};
 use crate::core::texture::Texture;
 
 // see plastic.h

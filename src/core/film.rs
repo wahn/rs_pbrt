@@ -47,11 +47,7 @@ impl Default for Pixel {
         Pixel {
             xyz: [0.0 as Float; 3],
             filter_weight_sum: 0.0 as Float,
-            splat_xyz: [
-                Float::default(),
-                Float::default(),
-                Float::default(),
-            ],
+            splat_xyz: [Float::default(), Float::default(), Float::default()],
             pad: 0.0 as Float,
         }
     }
@@ -488,7 +484,8 @@ impl Film {
             width,
             height,
             image::RGB(8),
-        ).unwrap();
+        )
+        .unwrap();
     }
     #[cfg(feature = "openexr")]
     pub fn write_image(&self, splat_scale: Float) {
@@ -567,7 +564,8 @@ impl Film {
                 .add_channel("R", PixelType::FLOAT)
                 .add_channel("G", PixelType::FLOAT)
                 .add_channel("B", PixelType::FLOAT),
-        ).unwrap();
+        )
+        .unwrap();
         let mut fb = FrameBuffer::new(width as u32, height as u32);
         fb.insert_channels(&["R", "G", "B"], &exr);
         output_file.write_pixels(&fb).unwrap();
@@ -605,7 +603,8 @@ impl Film {
             width,
             height,
             image::RGB(8),
-        ).unwrap();
+        )
+        .unwrap();
     }
     // pub fn get_pixel<'a>(&self, p: &Point2i) -> &'a Pixel {
     //     assert!(pnt2_inside_exclusive(p, &self.cropped_pixel_bounds));

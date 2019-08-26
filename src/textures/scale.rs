@@ -11,11 +11,11 @@ pub struct ScaleTexture<T> {
 }
 
 impl<T: Copy> ScaleTexture<T> {
-    pub fn new(tex1: Arc<dyn Texture<T> + Send + Sync>, tex2: Arc<dyn Texture<T> + Send + Sync>) -> Self {
-        ScaleTexture {
-            tex1,
-            tex2,
-        }
+    pub fn new(
+        tex1: Arc<dyn Texture<T> + Send + Sync>,
+        tex2: Arc<dyn Texture<T> + Send + Sync>,
+    ) -> Self {
+        ScaleTexture { tex1, tex2 }
     }
 }
 

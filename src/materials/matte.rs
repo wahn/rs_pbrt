@@ -36,11 +36,7 @@ impl MatteMaterial {
             mp.get_spectrum_texture("Kd", Spectrum::new(0.5));
         let sigma: Arc<dyn Texture<Float> + Sync + Send> = mp.get_float_texture("sigma", 0.0);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
-        Arc::new(MatteMaterial::new(
-            kd,
-            sigma,
-            bump_map,
-        ))
+        Arc::new(MatteMaterial::new(kd, sigma, bump_map))
     }
 }
 

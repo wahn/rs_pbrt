@@ -67,7 +67,8 @@ impl GlassMaterial {
                 remap_roughness,
             ))
         } else {
-            let eta: Arc<dyn Texture<Float> + Send + Sync> = mp.get_float_texture("index", 1.5 as Float);
+            let eta: Arc<dyn Texture<Float> + Send + Sync> =
+                mp.get_float_texture("index", 1.5 as Float);
             Arc::new(GlassMaterial::new(
                 kr,
                 kt,

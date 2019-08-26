@@ -56,10 +56,7 @@ impl DiffuseAreaLight {
             // inherited from class Light (see light.h)
             flags: LightFlags::Area as u8,
             n_samples: std::cmp::max(1_i32, n_samples),
-            medium_interface: MediumInterface {
-                inside,
-                outside,
-            },
+            medium_interface: MediumInterface { inside, outside },
             // light_to_world: *light_to_world,
             // world_to_light: Transform::inverse(*light_to_world),
         }

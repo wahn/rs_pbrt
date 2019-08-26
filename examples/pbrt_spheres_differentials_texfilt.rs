@@ -323,11 +323,12 @@ fn main() {
     // sphere
 
     // Translate 2.6 0 0 (not protected by Attribute[Begin|End])
-    let object_to_world: Transform = object_to_world * Transform::translate(&Vector3f {
-        x: 2.6,
-        y: 0.0,
-        z: 0.0,
-    });
+    let object_to_world: Transform = object_to_world
+        * Transform::translate(&Vector3f {
+            x: 2.6,
+            y: 0.0,
+            z: 0.0,
+        });
     let world_to_object: Transform = Transform::inverse(&object_to_world);
 
     // Shape "sphere"

@@ -25,11 +25,7 @@ impl MixMaterial {
         m2: Arc<dyn Material + Sync + Send>,
         scale: Arc<dyn Texture<Spectrum> + Send + Sync>,
     ) -> Self {
-        MixMaterial {
-            m1,
-            m2,
-            scale,
-        }
+        MixMaterial { m1, m2, scale }
     }
 }
 

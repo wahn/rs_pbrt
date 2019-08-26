@@ -21,7 +21,9 @@ use crate::core::geometry::{
 };
 use crate::core::geometry::{Normal3f, Point2f, Vector3f};
 use crate::core::interaction::SurfaceInteraction;
-use crate::core::interpolation::{catmull_rom_weights, fourier, sample_catmull_rom_2d, sample_fourier};
+use crate::core::interpolation::{
+    catmull_rom_weights, fourier, sample_catmull_rom_2d, sample_fourier,
+};
 use crate::core::material::TransportMode;
 use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use crate::core::pbrt::INV_PI;
@@ -201,7 +203,11 @@ pub struct Bsdf {
 }
 
 impl Bsdf {
-    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Arc<dyn Bxdf + Sync + Send>>) -> Self {
+    pub fn new(
+        si: &SurfaceInteraction,
+        eta: Float,
+        bxdfs: Vec<Arc<dyn Bxdf + Sync + Send>>,
+    ) -> Self {
         let ss = si.shading.dpdu.normalize();
         Bsdf {
             eta,
@@ -466,10 +472,7 @@ pub struct ScaledBxDF {
 
 impl ScaledBxDF {
     pub fn new(bxdf: Arc<dyn Bxdf + Send + Sync>, scale: Spectrum) -> Self {
-        ScaledBxDF {
-            bxdf,
-            scale,
-        }
+        ScaledBxDF { bxdf, scale }
     }
 }
 
@@ -542,10 +545,7 @@ pub struct SpecularReflection {
 
 impl SpecularReflection {
     pub fn new(r: Spectrum, fresnel: Arc<dyn Fresnel + Send + Sync>) -> Self {
-        SpecularReflection {
-            r,
-            fresnel,
-        }
+        SpecularReflection { r, fresnel }
     }
 }
 
@@ -1232,10 +1232,7 @@ pub struct FourierBSDF {
 
 impl FourierBSDF {
     pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> Self {
-        FourierBSDF {
-            bsdf_table,
-            mode,
-        }
+        FourierBSDF { bsdf_table, mode }
     }
 }
 

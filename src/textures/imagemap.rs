@@ -60,7 +60,8 @@ where
                 let g = Float::from(p[1]) / 255.0;
                 let b = Float::from(p[2]) / 255.0;
                 Spectrum::rgb(r, g, b)
-            }).collect();
+            })
+            .collect();
         // flip image in y; texture coordinate space has (0,0) at the
         // lower left corner.
         for y in 0..res.y / 2 {
@@ -80,7 +81,8 @@ where
                     *p * scale
                 };
                 convert(&s)
-            }).collect();
+            })
+            .collect();
         // create _MipMap_ from converted texels (see above)
         let mipmap = Arc::new(MipMap::new(
             &res,
@@ -89,10 +91,7 @@ where
             max_aniso,
             wrap_mode,
         ));
-        ImageTexture {
-            mapping,
-            mipmap,
-        }
+        ImageTexture { mapping, mipmap }
     }
 }
 

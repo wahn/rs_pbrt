@@ -54,11 +54,7 @@ pub struct EFloat {
 impl EFloat {
     pub fn new(v: f32, err: f32) -> Self {
         if err == 0.0 {
-            EFloat {
-                v,
-                low: v,
-                high: v,
-            }
+            EFloat { v, low: v, high: v }
         } else {
             EFloat {
                 v,

@@ -22,18 +22,12 @@ impl MirrorMaterial {
         kr: Arc<dyn Texture<Spectrum> + Send + Sync>,
         bump_map: Option<Arc<dyn Texture<Float> + Sync + Send>>,
     ) -> Self {
-        MirrorMaterial {
-            kr,
-            bump_map,
-        }
+        MirrorMaterial { kr, bump_map }
     }
     pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
         let kr = mp.get_spectrum_texture("Kr", Spectrum::new(0.9 as Float));
         let bump_map = mp.get_float_texture_or_null("bumpmap");
-        Arc::new(MirrorMaterial::new(
-            kr,
-            bump_map,
-        ))
+        Arc::new(MirrorMaterial::new(kr, bump_map))
     }
 }
 

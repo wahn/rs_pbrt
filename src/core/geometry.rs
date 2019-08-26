@@ -849,10 +849,7 @@ where
         x: b.p_max.x.max(p.x),
         y: b.p_max.y.max(p.y),
     };
-    Bounds2 {
-        p_min,
-        p_max,
-    }
+    Bounds2 { p_min, p_max }
 }
 
 /// Determine if a given point is inside the bounding box.
@@ -1472,10 +1469,7 @@ impl<T> Bounds2<T> {
             x: std::cmp::max(p1.x, p2.x),
             y: std::cmp::max(p1.y, p2.y),
         };
-        Bounds2::<T> {
-            p_min,
-            p_max,
-        }
+        Bounds2::<T> { p_min, p_max }
     }
     pub fn diagonal(&self) -> Vector2<T>
     where
@@ -1602,10 +1596,7 @@ impl<T> Bounds3<T> {
             y: p1.y.max(p2.y),
             z: p1.z.max(p2.z),
         };
-        Bounds3::<T> {
-            p_min,
-            p_max,
-        }
+        Bounds3::<T> { p_min, p_max }
     }
     pub fn corner(&self, corner: u8) -> Point3<T>
     where
@@ -1700,12 +1691,7 @@ impl Bounds3<Float> {
             z: lerp(t.z, self.p_min.z as Float, self.p_max.z as Float),
         }
     }
-    pub fn intersect_b(
-        &self,
-        ray: &Ray,
-        hitt0: &mut Float,
-        hitt1: &mut Float,
-    ) -> bool {
+    pub fn intersect_b(&self, ray: &Ray, hitt0: &mut Float, hitt1: &mut Float) -> bool {
         let mut t0: Float = 0.0;
         let mut t1: Float = ray.t_max;
         for i in 0..3 {

@@ -127,7 +127,8 @@ impl RealisticCamera {
                         band_rx.recv().unwrap();
                     }
                 });
-            }).unwrap();
+            })
+            .unwrap();
         }
         camera.exit_pupil_bounds = exit_pupil_bounds;
         if camera.simple_weighting {
@@ -327,11 +328,12 @@ impl RealisticCamera {
         n: &mut Normal3f,
     ) -> bool {
         // compute _t0_ and _t1_ for ray--element intersection
-        let o: Point3f = ray.o - Vector3f {
-            x: 0.0 as Float,
-            y: 0.0 as Float,
-            z: z_center,
-        };
+        let o: Point3f = ray.o
+            - Vector3f {
+                x: 0.0 as Float,
+                y: 0.0 as Float,
+                z: z_center,
+            };
         let a: Float = ray.d.x * ray.d.x + ray.d.y * ray.d.y + ray.d.z * ray.d.z;
         let b: Float = 2.0 as Float * (ray.d.x * o.x + ray.d.y * o.y + ray.d.z * o.z);
         let c: Float = o.x * o.x + o.y * o.y + o.z * o.z - radius * radius;

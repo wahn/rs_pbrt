@@ -12,7 +12,9 @@ use crate::core::geometry::{
 };
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::interaction::{InteractionCommon, SurfaceInteraction};
-use crate::core::interpolation::{catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d};
+use crate::core::interpolation::{
+    catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d,
+};
 use crate::core::material::{Material, TransportMode};
 use crate::core::medium::phase_hg;
 use crate::core::pbrt::clamp_t;

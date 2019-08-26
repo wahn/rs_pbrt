@@ -4,7 +4,9 @@ use std::sync::Arc;
 // pbrt
 use crate::core::efloat::quadratic_efloat;
 use crate::core::efloat::EFloat;
-use crate::core::geometry::{nrm_abs_dot_vec3, pnt3_distance_squared, vec3_cross_vec3, vec3_dot_vec3};
+use crate::core::geometry::{
+    nrm_abs_dot_vec3, pnt3_distance_squared, vec3_cross_vec3, vec3_dot_vec3,
+};
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::material::Material;

@@ -322,10 +322,7 @@ impl MediumInterface {
         inside: Option<Arc<dyn Medium + Send + Sync>>,
         outside: Option<Arc<dyn Medium + Send + Sync>>,
     ) -> Self {
-        MediumInterface {
-            inside,
-            outside,
-        }
+        MediumInterface { inside, outside }
     }
     pub fn is_medium_transition(&self) -> bool {
         if let Some(ref inside) = self.inside {

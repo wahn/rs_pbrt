@@ -144,7 +144,8 @@ impl BVHAccel {
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
-        let mut ordered_prims: Vec<Arc<dyn Primitive + Sync + Send>> = Vec::with_capacity(num_prims);
+        let mut ordered_prims: Vec<Arc<dyn Primitive + Sync + Send>> =
+            Vec::with_capacity(num_prims);
         // println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
         // let start = PreciseTime::now();
         let root = BVHAccel::recursive_build(
@@ -272,8 +273,8 @@ impl BVHAccel {
                             let mut buckets: [BucketInfo; 12] = [BucketInfo::default(); 12];
                             // initialize _BucketInfo_ for SAH partition buckets
                             for i in start..end {
-                                let mut b: usize = (n_buckets as Float * centroid_bounds
-                                    .offset(&primitive_info[i].centroid)[dim])
+                                let mut b: usize = (n_buckets as Float
+                                    * centroid_bounds.offset(&primitive_info[i].centroid)[dim])
                                     as usize;
                                 if b == n_buckets {
                                     b = n_buckets - 1;

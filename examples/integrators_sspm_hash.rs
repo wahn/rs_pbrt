@@ -12,6 +12,11 @@ fn main() {
     };
     let hash_size: usize = 700000;
     let h: usize = hash(&photon_grid_index, hash_size as i32);
-    assert!(h < hash_size, "hash({:?}, {:?})", photon_grid_index, hash_size);
+    assert!(
+        h < hash_size,
+        "hash({:?}, {:?})",
+        photon_grid_index,
+        hash_size
+    );
     println!("hash({:?}, {:?}) = {}", photon_grid_index, hash_size, h);
 }

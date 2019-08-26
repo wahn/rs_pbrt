@@ -215,11 +215,7 @@ pub fn cosine_sample_hemisphere(u: &Point2f) -> Vector3f {
     let z: Float = (0.0 as Float)
         .max(1.0 as Float - d.x * d.x - d.y * d.y)
         .sqrt();
-    Vector3f {
-        x: d.x,
-        y: d.y,
-        z,
-    }
+    Vector3f { x: d.x, y: d.y, z }
 }
 
 /// Returns a weight of cos_theta / PI.

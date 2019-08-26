@@ -3,7 +3,7 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::{pnt3_distance_squared};
+use crate::core::geometry::pnt3_distance_squared;
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{Light, LightFlags, VisibilityTester};
@@ -45,10 +45,7 @@ impl PointLight {
             i: *i,
             flags: LightFlags::DeltaPosition as u8,
             n_samples: 1_i32,
-            medium_interface: MediumInterface {
-                inside,
-                outside,
-            },
+            medium_interface: MediumInterface { inside, outside },
         }
     }
 }

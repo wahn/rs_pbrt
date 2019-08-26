@@ -217,7 +217,8 @@ fn trowbridge_reitz_sample(
         x: alpha_x * wi.x,
         y: alpha_y * wi.y,
         z: wi.z,
-    }.normalize();
+    }
+    .normalize();
 
     // 2. simulate P22_{wi}(x_slope, y_slope, 1, 1)
     let mut slope_x: Float = 0.0;
@@ -238,5 +239,6 @@ fn trowbridge_reitz_sample(
         x: -slope_x,
         y: -slope_y,
         z: 1.0,
-    }.normalize()
+    }
+    .normalize()
 }

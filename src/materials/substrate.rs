@@ -44,8 +44,10 @@ impl SubstrateMaterial {
             mp.get_spectrum_texture("Kd", Spectrum::new(0.5));
         let ks: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Ks", Spectrum::new(0.5));
-        let uroughness: Arc<dyn Texture<Float> + Sync + Send> = mp.get_float_texture("uroughness", 0.1);
-        let vroughness: Arc<dyn Texture<Float> + Sync + Send> = mp.get_float_texture("vroughness", 0.1);
+        let uroughness: Arc<dyn Texture<Float> + Sync + Send> =
+            mp.get_float_texture("uroughness", 0.1);
+        let vroughness: Arc<dyn Texture<Float> + Sync + Send> =
+            mp.get_float_texture("vroughness", 0.1);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
         Arc::new(SubstrateMaterial::new(

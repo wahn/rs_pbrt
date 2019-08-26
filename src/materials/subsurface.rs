@@ -22,7 +22,7 @@ use crate::core::texture::Texture;
 // see subsurface.h
 
 pub struct SubsurfaceMaterial {
-    pub scale: Float,                             // default: 1.0
+    pub scale: Float,                                 // default: 1.0
     pub kr: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
     pub kt: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 1.0
     pub sigma_a: Arc<dyn Texture<Spectrum> + Sync + Send>,
@@ -116,7 +116,10 @@ impl SubsurfaceMaterial {
             remap_roughness,
         ));
         let end = PreciseTime::now();
-        println!("{} seconds for SubsurfaceMaterial::new() ...", start.to(end));
+        println!(
+            "{} seconds for SubsurfaceMaterial::new() ...",
+            start.to(end)
+        );
         tmp
     }
 }

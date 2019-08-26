@@ -194,14 +194,15 @@ fn main() {
     });
     // Rotate -120.000000 1.000000 0.000000 0.000000
     let theta: Float = -120.0;
-    let object_to_world: Transform = object_to_world * Transform::rotate(
-        theta,
-        &Vector3f {
-            x: 1.0,
-            y: 0.0,
-            z: 0.0,
-        },
-    );
+    let object_to_world: Transform = object_to_world
+        * Transform::rotate(
+            theta,
+            &Vector3f {
+                x: 1.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
     let world_to_object: Transform = Transform::inverse(&object_to_world);
 
     // Shape "disk"

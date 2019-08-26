@@ -675,7 +675,11 @@ impl TextureParams {
             Some(Arc::new(ConstantTexture { value: val[0] }))
         }
     }
-    pub fn get_float_texture(&mut self, n: &str, def: Float) -> Arc<dyn Texture<Float> + Send + Sync> {
+    pub fn get_float_texture(
+        &mut self,
+        n: &str,
+        def: Float,
+    ) -> Arc<dyn Texture<Float> + Send + Sync> {
         let tex_option = self.get_float_texture_or_null(n);
         if let Some(tex) = tex_option {
             tex
