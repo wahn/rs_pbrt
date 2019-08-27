@@ -246,7 +246,7 @@ pub fn create_ply_mesh(
             }
         }
     } else {
-        if params.find_one_float("shadow_alpha", 1.0 as Float) == 0.0 as Float {
+        if params.find_one_float("shadowalpha", 1.0 as Float) == 0.0 as Float {
             shadow_alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
         }
     }
