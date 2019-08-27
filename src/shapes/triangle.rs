@@ -322,13 +322,26 @@ impl Shape for Triangle {
         // interpolate $(u,v)$ parametric coordinates and hit point
         let p_hit: Point3f = p0 * b0 + p1 * b1 + p2 * b2;
         let uv_hit: Point2f = uv[0] * b0 + uv[1] * b1 + uv[2] * b2;
-        // TODO: test intersection against alpha texture, if present
-        // if (testAlphaTexture && mesh->alphaMask) {
-        //     SurfaceInteraction isectLocal(p_hit, Vector3f(0, 0, 0), uv_hit, -ray.d,
-        //                                   dpdu, dpdv, Normal3f(0, 0, 0),
-        //                                   Normal3f(0, 0, 0), ray.time, this);
-        //     if (mesh->alphaMask->Evaluate(isectLocal) == 0) return false;
-        // }
+        // test intersection against alpha texture, if present
+        // TODO: testAlphaTexture
+        if let Some(alpha_mask) = &self.mesh.alpha_mask {
+            let wo: Vector3f = -ray.d;
+            let isect_local: SurfaceInteraction = SurfaceInteraction::new(
+                &p_hit,
+                &Vector3f::default(),
+                &uv_hit,
+                &wo,
+                &dpdu,
+                &dpdv,
+                &Normal3f::default(),
+                &Normal3f::default(),
+                ray.time,
+                Some(self),
+            );
+            if alpha_mask.evaluate(&isect_local) == 0.0 as Float {
+                return None;
+            }
+        }
         // fill in _SurfaceInteraction_ from triangle hit
         let dndu: Normal3f = Normal3f::default();
         let dndv: Normal3f = Normal3f::default();
@@ -515,9 +528,9 @@ impl Shape for Triangle {
         }
         // compute barycentric coordinates and $t$ value for triangle intersection
         let inv_det: Float = 1.0 / det;
-        // let b0: Float = e0 * inv_det;
-        // let b1: Float = e1 * inv_det;
-        // let b2: Float = e2 * inv_det;
+        let b0: Float = e0 * inv_det;
+        let b1: Float = e1 * inv_det;
+        let b2: Float = e2 * inv_det;
         let t: Float = t_scaled * inv_det;
 
         // ensure that computed triangle $t$ is conservatively greater than zero
@@ -569,6 +582,64 @@ impl Shape for Triangle {
             return false;
         }
         // TODO: if (testAlphaTexture && (mesh->alphaMask || mesh->shadowAlphaMask)) { ... }
+        if self.mesh.alpha_mask.is_some() || self.mesh.shadow_alpha_mask.is_some() {
+            // compute triangle partial derivatives
+            let mut dpdu: Vector3f = Vector3f::default();
+            let mut dpdv: Vector3f = Vector3f::default();
+            let uv: [Point2f; 3] = self.get_uvs();
+            // compute deltas for triangle partial derivatives
+            let duv02: Vector2f = uv[0] - uv[2];
+            let duv12: Vector2f = uv[1] - uv[2];
+            let dp02: Vector3f = p0 - p2;
+            let dp12: Vector3f = p1 - p2;
+            let determinant: Float = duv02[0] * duv12[1] - duv02[1] * duv12[0];
+            let degenerate_uv: bool = determinant.abs() < 1e-8 as Float;
+            if !degenerate_uv {
+                let invdet: Float = 1.0 as Float / determinant;
+                dpdu = (dp02 * duv12[1] - dp12 * duv02[1]) * invdet;
+                dpdv = (dp02 * -duv12[0] + dp12 * duv02[0]) * invdet;
+            }
+            if degenerate_uv || vec3_cross_vec3(&dpdu, &dpdv).length_squared() == 0.0 {
+                // handle zero determinant for triangle partial derivative matrix
+                let ng = vec3_cross_vec3(&(p2 - p0), &(p1 - p0));
+                if ng.length_squared() == 0.0 as Float {
+                    // the triangle is actually degenerate; the
+                    // intersection is bogus
+                    return false;
+                }
+                vec3_coordinate_system(
+                    &vec3_cross_vec3(&(p2 - p0), &(p1 - p0)).normalize(),
+                    &mut dpdu,
+                    &mut dpdv,
+                );
+            }
+            // interpolate $(u,v)$ parametric coordinates and hit point
+            let p_hit: Point3f = p0 * b0 + p1 * b1 + p2 * b2;
+            let uv_hit: Point2f = uv[0] * b0 + uv[1] * b1 + uv[2] * b2;
+            let wo: Vector3f = -ray.d;
+            let isect_local: SurfaceInteraction = SurfaceInteraction::new(
+                &p_hit,
+                &Vector3f::default(),
+                &uv_hit,
+                &wo,
+                &dpdu,
+                &dpdv,
+                &Normal3f::default(),
+                &Normal3f::default(),
+                ray.time,
+                Some(self),
+            );
+            if let Some(alpha_mask) = &self.mesh.alpha_mask {
+                if alpha_mask.evaluate(&isect_local) == 0.0 as Float {
+                    return false;
+                }
+            }
+            if let Some(shadow_alpha_mask) = &self.mesh.shadow_alpha_mask {
+                if shadow_alpha_mask.evaluate(&isect_local) == 0.0 as Float {
+                    return false;
+                }
+            }
+        }
         // TODO: ++nHits;
         true
     }
