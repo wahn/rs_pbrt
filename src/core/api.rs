@@ -1057,6 +1057,10 @@ fn get_shapes_and_materials(
     Vec<Arc<dyn Shape + Send + Sync>>,
     Vec<Option<Arc<dyn Material + Send + Sync>>>,
 ) {
+    if shape_may_set_material_parameters(&api_state.param_set) {
+        println!("Shape \"{}\"", api_state.param_set.name);
+        print_params(&api_state.param_set);
+    }
     let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
     let mut materials: Vec<Option<Arc<dyn Material + Send + Sync>>> = Vec::new();
     // pbrtShape (api.cpp:1153)
@@ -2845,8 +2849,8 @@ pub fn pbrt_area_light_source(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: ParamSet) {
-    println!("Shape \"{}\"", params.name);
-    print_params(&params);
+    // println!("Shape \"{}\"", params.name);
+    // print_params(&params);
     api_state.param_set = params;
     // collect area lights
     let mut prims: Vec<Arc<dyn Primitive + Send + Sync>> = Vec::new();
@@ -2977,7 +2981,75 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
 // cross-reference with the parameter values available from the shape.
 //
 // Therefore, we'll apply some "heuristics".
-fn shape_may_set_material_parameters() -> bool {
+fn shape_may_set_material_parameters(ps: &ParamSet) -> bool {
+    for p in &ps.textures {
+        // Any texture other than one for an alpha mask is almost
+        // certainly for a Material (or is unused!).
+        if p.name != String::from("alpha") && p.name != String::from("shadowalpha") {
+            return true;
+        }
+    }
+    // Special case spheres, which are the most common non-mesh primitive.
+    for p in &ps.floats {
+        if p.n_values == 1 && p.name != String::from("radius") {
+            return true;
+        }
+    }
+    // Extra special case strings, since plymesh uses "filename",
+    // curve "type", and loopsubdiv "scheme".
+    for p in &ps.strings {
+        if p.n_values == 1
+            && p.name != String::from("filename")
+            && p.name != String::from("type")
+            && p.name != String::from("scheme")
+        {
+            return true;
+        }
+    }
+    // For all other parameter types, if there is a single value of
+    // the parameter, assume it may be for the material. This should
+    // be valid (if conservative), since no materials currently take
+    // array parameters.
+    for p in &ps.bools {
+        if p.n_values == 1 {
+            return true;
+        }
+    }
+    for p in &ps.ints {
+        if p.n_values == 1 {
+            return true;
+        }
+    }
+    for p in &ps.point2fs {
+        if p.n_values == 1 {
+            return true;
+        }
+    }
+    for p in &ps.vector2fs {
+        if p.n_values == 1 {
+            return true;
+        }
+    }
+    for p in &ps.point3fs {
+        if p.n_values == 1 {
+            return true;
+        }
+    }
+    for p in &ps.vector3fs {
+        if p.n_values == 1 {
+            return true;
+        }
+    }
+    for p in &ps.normals {
+        if p.n_values == 1 {
+            return true;
+        }
+    }
+    for p in &ps.spectra {
+        if p.n_values == 1 {
+            return true;
+        }
+    }
     // WORK
     false
 }
