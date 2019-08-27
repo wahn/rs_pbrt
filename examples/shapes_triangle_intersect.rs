@@ -59,6 +59,8 @@ fn main() {
         s,    // empty
         n,    // empty
         uv,
+        None,
+        None,
     ));
     let mut tris: Vec<Arc<Triangle>> = Vec::new();
     for i in 0..n_triangles {

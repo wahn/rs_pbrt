@@ -161,6 +161,8 @@ impl SceneDescriptionBuilder {
             s,    // empty
             n_ws, // in world space
             uv,
+            None,
+            None,
         ));
         self.meshes.push(triangle_mesh);
         self

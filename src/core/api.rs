@@ -1239,6 +1239,8 @@ fn get_shapes_and_materials(
             s_ws, // in world space
             n_ws, // in world space
             uvs,
+            None,
+            None,
         ));
         let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
@@ -1484,6 +1486,8 @@ fn get_shapes_and_materials(
             Vec::new(), // in world space
             n_ws,       // in world space
             uvs,
+            None,
+            None,
         ));
         let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {

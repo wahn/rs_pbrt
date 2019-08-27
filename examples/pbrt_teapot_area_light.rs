@@ -82,6 +82,8 @@ impl SceneDescriptionBuilder {
             s,    // empty
             n,    // empty
             uv,
+            None,
+            None,
         ));
         self.meshes.push(triangle_mesh);
         self

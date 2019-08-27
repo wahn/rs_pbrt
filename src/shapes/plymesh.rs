@@ -17,13 +17,14 @@ use crate::core::shape::Shape;
 use crate::core::texture::Texture;
 use crate::core::transform::Transform;
 use crate::shapes::triangle::{Triangle, TriangleMesh};
+use crate::textures::constant::ConstantTexture;
 
 pub fn create_ply_mesh(
     o2w: &Transform,
     w2o: &Transform,
     reverse_orientation: bool,
     params: &ParamSet,
-    _float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>>,
+    float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>>,
     search_directory: Option<&Box<PathBuf>>,
 ) -> Vec<Arc<dyn Shape + Send + Sync>> {
     let mut filename: String = params.find_one_string("filename", String::new());
@@ -211,7 +212,44 @@ pub fn create_ply_mesh(
     for i in 0..n_vertices {
         p_ws.push(o2w.transform_point(&p[i]));
     }
-    let s_ws: Vec<Vector3f> = Vec::new(); // TODO
+    let s_ws: Vec<Vector3f> = Vec::new();
+    // look up an alpha texture, if applicable
+    let mut alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+    let alpha_tex_name: String = params.find_texture("alpha");
+    if alpha_tex_name != String::from("") {
+        alpha_tex = match float_textures.get(alpha_tex_name.as_str()) {
+            Some(float_texture) => Some(float_texture.clone()),
+            None => {
+                println!(
+                    "Couldn't find float texture {:?} for \"alpha\" parameter",
+                    alpha_tex_name.as_str()
+                );
+                None
+            }
+        }
+    } else {
+        if params.find_one_float("alpha", 1.0 as Float) == 0.0 as Float {
+            alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
+        }
+    }
+    let mut shadow_alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+    let shadow_alpha_tex_name: String = params.find_texture("shadowalpha");
+    if shadow_alpha_tex_name != String::from("") {
+        shadow_alpha_tex = match float_textures.get(shadow_alpha_tex_name.as_str()) {
+            Some(float_texture) => Some(float_texture.clone()),
+            None => {
+                println!(
+                    "Couldn't find float texture {:?} for \"shadowalpha\" parameter",
+                    shadow_alpha_tex_name.as_str()
+                );
+                None
+            }
+        }
+    } else {
+        if params.find_one_float("shadow_alpha", 1.0 as Float) == 0.0 as Float {
+            shadow_alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
+        }
+    }
     let mesh = Arc::new(TriangleMesh::new(
         *o2w,
         *w2o,
@@ -223,6 +261,8 @@ pub fn create_ply_mesh(
         s_ws, // in world space
         n_ws, // in world space
         uvs,
+        alpha_tex,
+        shadow_alpha_tex,
     ));
     let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
     for id in 0..mesh.n_triangles {

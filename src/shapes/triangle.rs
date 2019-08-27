@@ -37,8 +37,8 @@ pub struct TriangleMesh {
     pub s: Vec<Vector3f>,
     /// an optional vector of paramtric (u, v) values (texture coordinates)
     pub uv: Vec<Point2f>,
-    // pub alpha_mask: Arc<dyn Texture<Float> + Send + Sync>,
-    // pub shadow_alpha_mask: Arc<dyn Texture<Float> + Send + Sync>,
+    pub alpha_mask: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+    pub shadow_alpha_mask: Option<Arc<dyn Texture<Float> + Send + Sync>>,
     // inherited from class Shape (see shape.h)
     pub object_to_world: Transform, // TODO: not pub?
     pub world_to_object: Transform, // TODO: not pub?
@@ -58,8 +58,8 @@ impl TriangleMesh {
         s: Vec<Vector3f>,
         n: Vec<Normal3f>,
         uv: Vec<Point2f>,
-        // alpha_mask: Arc<dyn Texture<Float> + Send + Sync>,
-        // shadow_alpha_mask: Arc<dyn Texture<Float> + Send + Sync>,
+        alpha_mask: Option<Arc<dyn Texture<Float> + Send + Sync>>,
+        shadow_alpha_mask: Option<Arc<dyn Texture<Float> + Send + Sync>>,
     ) -> Self {
         TriangleMesh {
             // Shape
@@ -75,6 +75,8 @@ impl TriangleMesh {
             n,
             s,
             uv,
+            alpha_mask,
+            shadow_alpha_mask,
         }
     }
 }

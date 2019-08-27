@@ -89,6 +89,8 @@ impl SceneDescriptionBuilder {
             s,    // empty
             n,    // empty
             uv,
+            None,
+            None,
         ));
         // println!("triangle_mesh = {:?}", triangle_mesh);
         println!("vertex_indices = {:?}", triangle_mesh.vertex_indices);

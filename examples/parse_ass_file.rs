@@ -991,6 +991,8 @@ fn main() {
                                                     s_ws,         // in world space
                                                     n_ws,         // in world space
                                                     uvs,
+                                                    None,
+                                                    None,
                                                 ));
                                                 for id in 0..mesh.n_triangles {
                                                     let triangle = Arc::new(Triangle::new(

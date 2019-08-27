@@ -653,6 +653,8 @@ pub fn loop_subdivide(
         Vec::new(),
         n_ws, // in world space
         Vec::new(),
+        None,
+        None,
     ))
 }
 
