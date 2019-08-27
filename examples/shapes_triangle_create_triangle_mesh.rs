@@ -57,7 +57,7 @@ fn main() {
     );
     println!("translate = {:?}", translate);
     println!("inverse = {:?}", inverse);
-    println!("triangle_mesh = {:?}", triangle_mesh);
+    // println!("triangle_mesh = {:?}", triangle_mesh);
     for id in 0..triangle_mesh.n_triangles {
         let triangle = Triangle::new(
             triangle_mesh.object_to_world,

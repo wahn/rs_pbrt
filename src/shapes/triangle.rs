@@ -16,11 +16,12 @@ use crate::core::pbrt::gamma;
 use crate::core::pbrt::Float;
 use crate::core::sampling::uniform_sample_triangle;
 use crate::core::shape::Shape;
+use crate::core::texture::Texture;
 use crate::core::transform::Transform;
 
 // see triangle.h
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct TriangleMesh {
     /// the total number of triangles in the mesh
     pub n_triangles: usize,
@@ -36,7 +37,8 @@ pub struct TriangleMesh {
     pub s: Vec<Vector3f>,
     /// an optional vector of paramtric (u, v) values (texture coordinates)
     pub uv: Vec<Point2f>,
-    // TODO: std::shared_ptr<Texture<Float>> alphaMask, shadowAlphaMask;
+    // pub alpha_mask: Arc<dyn Texture<Float> + Send + Sync>,
+    // pub shadow_alpha_mask: Arc<dyn Texture<Float> + Send + Sync>,
     // inherited from class Shape (see shape.h)
     pub object_to_world: Transform, // TODO: not pub?
     pub world_to_object: Transform, // TODO: not pub?
@@ -56,6 +58,8 @@ impl TriangleMesh {
         s: Vec<Vector3f>,
         n: Vec<Normal3f>,
         uv: Vec<Point2f>,
+        // alpha_mask: Arc<dyn Texture<Float> + Send + Sync>,
+        // shadow_alpha_mask: Arc<dyn Texture<Float> + Send + Sync>,
     ) -> Self {
         TriangleMesh {
             // Shape

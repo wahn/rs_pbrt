@@ -90,7 +90,7 @@ impl SceneDescriptionBuilder {
             n,    // empty
             uv,
         ));
-        println!("triangle_mesh = {:?}", triangle_mesh);
+        // println!("triangle_mesh = {:?}", triangle_mesh);
         println!("vertex_indices = {:?}", triangle_mesh.vertex_indices);
         self.meshes.push(triangle_mesh);
         self

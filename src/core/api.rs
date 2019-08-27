@@ -296,6 +296,24 @@ impl GraphicsState {
             reverse_orientation: false,
         }
     }
+    // pub fn get_material_for_shape(
+    //     &self,
+    //     geom_params: &ParamSet,
+    // ) -> Arc<dyn Material + Send + Sync> {
+    //     if self.current_material != String::new() {
+    //     } else {
+    //     }
+    //     // CHECK(currentMaterial);
+    //     // if (shapeMaySetMaterialParameters(shapeParams)) {
+    //     //     // Only create a unique material for the shape if the shape's
+    //     //     // parameters are (apparently) going to provide values for some of
+    //     //     // the material parameters.
+    //     //     TextureParams mp(shapeParams, currentMaterial->params, *floatTextures,
+    //     //                      *spectrumTextures);
+    //     //     return MakeMaterial(currentMaterial->name, mp);
+    //     // } else
+    //     //     return currentMaterial->material;
+    // }
 }
 
 fn create_material(
@@ -2827,8 +2845,8 @@ pub fn pbrt_area_light_source(api_state: &mut ApiState, params: ParamSet) {
 }
 
 pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: ParamSet) {
-    // println!("Shape \"{}\"", params.name);
-    // print_params(&params);
+    println!("Shape \"{}\"", params.name);
+    print_params(&params);
     api_state.param_set = params;
     // collect area lights
     let mut prims: Vec<Arc<dyn Primitive + Send + Sync>> = Vec::new();
@@ -2951,6 +2969,17 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
             }
         }
     }
+}
+
+// Attempt to determine if the ParamSet for a shape may provide a value for
+// its material's parameters. Unfortunately, materials don't provide an
+// explicit representation of their parameters that we can query and
+// cross-reference with the parameter values available from the shape.
+//
+// Therefore, we'll apply some "heuristics".
+fn shape_may_set_material_parameters() -> bool {
+    // WORK
+    false
 }
 
 pub fn pbrt_reverse_orientation(api_state: &mut ApiState) {
