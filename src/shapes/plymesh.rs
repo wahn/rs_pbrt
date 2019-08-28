@@ -103,13 +103,13 @@ pub fn create_ply_mesh(
                                     nrm.z = z;
                                 }
                             }
-                            "u" => {
+                            "u" | "s" => {
                                 has_uvs = true;
                                 if let ply::Property::Float(x) = list2 {
                                     pt2.x = x;
                                 }
                             }
-                            "v" => {
+                            "v" | "t" => {
                                 has_uvs = true;
                                 if let ply::Property::Float(y) = list2 {
                                     pt2.y = y;

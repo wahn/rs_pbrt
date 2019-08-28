@@ -89,6 +89,7 @@ use crate::textures::constant::ConstantTexture;
 use crate::textures::fbm::FBmTexture;
 use crate::textures::imagemap::ImageTexture;
 use crate::textures::imagemap::{convert_to_float, convert_to_spectrum};
+use crate::textures::marble::MarbleTexture;
 use crate::textures::mix::MixTexture;
 use crate::textures::scale::ScaleTexture;
 use crate::textures::windy::WindyTexture;
@@ -1033,7 +1034,21 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == "wrinkled" {
             println!("TODO: CreateWrinkledSpectrumTexture");
         } else if api_state.param_set.tex_name == "marble" {
-            println!("TODO: CreateMarbleSpectrumTexture");
+            let tex_2_world: Transform = Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            };
+            let map: Box<dyn TextureMapping3D + Send + Sync> =
+                Box::new(IdentityMapping3D::new(tex_2_world));
+            let octaves: i32 = tp.find_int("octaves", 8_i32);
+            let roughness: Float = tp.find_float("roughness", 0.5 as Float);
+            let scale: Float = tp.find_float("scale", 1.0 as Float);
+            let variation: Float = tp.find_float("variation", 0.2 as Float);
+            let mt = Arc::new(MarbleTexture::new(
+                map, octaves, roughness, scale, variation,
+            ));
+            Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
+                .insert(api_state.param_set.name.clone(), mt);
         } else if api_state.param_set.tex_name == "windy" {
             println!("TODO: CreateWindySpectrumTexture");
         } else {

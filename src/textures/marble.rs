@@ -40,13 +40,14 @@ impl Texture<Spectrum> for MarbleTexture {
         let mut p: Point3f = self.mapping.map(si, &mut dpdx, &mut dpdy);
         p *= self.scale;
         let marble: Float = p.y
-            + fbm(
-                &p,
-                &(dpdx * self.scale),
-                &(dpdy * self.scale),
-                self.omega,
-                self.octaves,
-            );
+            + self.variation
+                * fbm(
+                    &p,
+                    &(dpdx * self.scale),
+                    &(dpdy * self.scale),
+                    self.omega,
+                    self.octaves,
+                );
         let mut t: Float = 0.5 as Float + 0.5 as Float * marble.sin();
         let c: [[Float; 3]; 9] = [
             [0.58 as Float, 0.58 as Float, 0.6 as Float],
@@ -60,7 +61,11 @@ impl Texture<Spectrum> for MarbleTexture {
             [0.58 as Float, 0.58 as Float, 0.6 as Float],
         ];
         let nseg: usize = 6;
-        let first: usize = (t * nseg as Float).floor() as usize;
+        let mut first: usize = (t * nseg as Float).floor() as usize;
+        if first > 5 {
+            // make sure we don't panic with index out of bounds
+            first = 5;
+        }
         t = t * nseg as Float - first as Float;
         let c0: Spectrum = Spectrum::from_rgb(&c[first]);
         let c1: Spectrum = Spectrum::from_rgb(&c[first + 1]);
