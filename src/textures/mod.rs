@@ -20,6 +20,7 @@
 
 pub mod checkerboard;
 pub mod constant;
+pub mod dots;
 pub mod fbm;
 pub mod imagemap;
 pub mod marble;
