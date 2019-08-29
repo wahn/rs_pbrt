@@ -35,7 +35,6 @@ impl<T: Copy> Texture<T> for DotsTexture<T> {
         let mut dpdx: Vector2f = Vector2f::default();
         let mut dpdy: Vector2f = Vector2f::default();
         let st: Point2f = self.mapping.map(si, &mut dpdx, &mut dpdy);
-        // int s_cell = std::floor(st[0] + .5f), t_cell = std::floor(st[1] + .5f);
         let s_cell: i32 = (st.x + 0.5 as Float).floor() as i32;
         let t_cell: i32 = (st.y + 0.5 as Float).floor() as i32;
         // return _insideDot_ result if point is inside dot
@@ -43,7 +42,7 @@ impl<T: Copy> Texture<T> for DotsTexture<T> {
             s_cell as Float + 0.5 as Float,
             t_cell as Float + 0.5 as Float,
             0.5 as Float, // default
-        ) > 0.5 as Float
+        ) > 0.0 as Float
         {
             let radius: Float = 0.35 as Float;
             let max_shift: Float = 0.5 as Float - radius;

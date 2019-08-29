@@ -18,12 +18,15 @@ browse: doc
 
 debug: master.zip
 	cargo test --no-default-features
+	cargo run --no-default-features
 
 release: master.zip
 	cargo test --release
+	cargo run --release
 
 without-exr:
 	cargo test --release --no-default-features
+	cargo run --release --no-default-features
 
 master.zip:
 	wget https://github.com/cessen/openexr-rs/archive/master.zip

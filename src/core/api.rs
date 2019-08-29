@@ -86,6 +86,7 @@ use crate::shapes::sphere::Sphere;
 use crate::shapes::triangle::{Triangle, TriangleMesh};
 use crate::textures::checkerboard::Checkerboard2DTexture;
 use crate::textures::constant::ConstantTexture;
+use crate::textures::dots::DotsTexture;
 use crate::textures::fbm::FBmTexture;
 use crate::textures::imagemap::ImageTexture;
 use crate::textures::imagemap::{convert_to_float, convert_to_spectrum};
@@ -807,8 +808,54 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == "checkerboard" {
             println!("TODO: CreateCheckerboardFloatTexture");
         } else if api_state.param_set.tex_name == "dots" {
-            println!("TODO: CreateDotsFloatTexture");
+            // CreateDotsFloatTexture
+            let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
+            let mapping: String = tp.find_string("mapping", String::from("uv"));
+            if mapping == "uv" {
+                let su: Float = tp.find_float("uscale", 1.0);
+                let sv: Float = tp.find_float("vscale", 1.0);
+                let du: Float = tp.find_float("udelta", 0.0);
+                let dv: Float = tp.find_float("vdelta", 0.0);
+                map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
+            } else if mapping == "spherical" {
+                println!("TODO: SphericalMapping2D");
+            } else if mapping == "cylindrical" {
+                println!("TODO: CylindricalMapping2D");
+            } else if mapping == "planar" {
+                map = Some(Box::new(PlanarMapping2D {
+                    vs: tp.find_vector3f(
+                        "v1",
+                        Vector3f {
+                            x: 1.0,
+                            y: 0.0,
+                            z: 0.0,
+                        },
+                    ),
+                    vt: tp.find_vector3f(
+                        "v2",
+                        Vector3f {
+                            x: 0.0,
+                            y: 1.0,
+                            z: 0.0,
+                        },
+                    ),
+                    ds: tp.find_float("udelta", 0.0),
+                    dt: tp.find_float("vdelta", 0.0),
+                }));
+            } else {
+                panic!("2D texture mapping \"{}\" unknown", mapping);
+            }
+            if let Some(mapping) = map {
+                let dt = Arc::new(DotsTexture::new(
+                    mapping,
+                    tp.get_float_texture("inside", 1.0 as Float),
+                    tp.get_float_texture("outside", 0.0 as Float),
+                ));
+                Arc::make_mut(&mut api_state.graphics_state.float_textures)
+                    .insert(api_state.param_set.name.clone(), dt);
+            }
         } else if api_state.param_set.tex_name == "fbm" {
+            // CreateFBmFloatTexture
             let tex_2_world: Transform = Transform {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
@@ -821,6 +868,7 @@ fn make_texture(api_state: &mut ApiState) {
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "wrinkled" {
+            // CreateWrinkledFloatTexture
             let tex_2_world: Transform = Transform {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
@@ -835,6 +883,7 @@ fn make_texture(api_state: &mut ApiState) {
         } else if api_state.param_set.tex_name == "marble" {
             println!("TODO: CreateMarbleFloatTexture");
         } else if api_state.param_set.tex_name == "windy" {
+            // CreateWindyFloatTexture
             let tex_2_world: Transform = Transform {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
@@ -1028,11 +1077,82 @@ fn make_texture(api_state: &mut ApiState) {
                 println!("TODO: TextureMapping3D");
             }
         } else if api_state.param_set.tex_name == "dots" {
-            println!("TODO: CreateDotsSpectrumTexture");
+            // CreateDotsSpectrumTexture
+            let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
+            let mapping: String = tp.find_string("mapping", String::from("uv"));
+            if mapping == "uv" {
+                let su: Float = tp.find_float("uscale", 1.0);
+                let sv: Float = tp.find_float("vscale", 1.0);
+                let du: Float = tp.find_float("udelta", 0.0);
+                let dv: Float = tp.find_float("vdelta", 0.0);
+                map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
+            } else if mapping == "spherical" {
+                println!("TODO: SphericalMapping2D");
+            } else if mapping == "cylindrical" {
+                println!("TODO: CylindricalMapping2D");
+            } else if mapping == "planar" {
+                map = Some(Box::new(PlanarMapping2D {
+                    vs: tp.find_vector3f(
+                        "v1",
+                        Vector3f {
+                            x: 1.0,
+                            y: 0.0,
+                            z: 0.0,
+                        },
+                    ),
+                    vt: tp.find_vector3f(
+                        "v2",
+                        Vector3f {
+                            x: 0.0,
+                            y: 1.0,
+                            z: 0.0,
+                        },
+                    ),
+                    ds: tp.find_float("udelta", 0.0),
+                    dt: tp.find_float("vdelta", 0.0),
+                }));
+            } else {
+                panic!("2D texture mapping \"{}\" unknown", mapping);
+            }
+            let inside: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                tp.get_spectrum_texture("inside", Spectrum::new(1.0));
+            let outside: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                tp.get_spectrum_texture("outside", Spectrum::new(0.0));
+            if let Some(mapping) = map {
+                let dt = Arc::new(DotsTexture::new(
+                    mapping,
+                    inside,
+                    outside,
+                ));
+                Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
+                    .insert(api_state.param_set.name.clone(), dt);
+            }
         } else if api_state.param_set.tex_name == "fbm" {
-            println!("TODO: CreateFBmSpectrumTexture");
+            // CreateFBmSpectrumTexture
+            let tex_2_world: Transform = Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            };
+            let map: Box<dyn TextureMapping3D + Send + Sync> =
+                Box::new(IdentityMapping3D::new(tex_2_world));
+            let octaves: i32 = tp.find_int("octaves", 8_i32);
+            let roughness: Float = tp.find_float("roughness", 0.5 as Float);
+            let ft = Arc::new(FBmTexture::new(map, octaves, roughness));
+            Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
+                .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "wrinkled" {
-            println!("TODO: CreateWrinkledSpectrumTexture");
+            // CreateWrinkledSpectrumTexture
+            let tex_2_world: Transform = Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            };
+            let map: Box<dyn TextureMapping3D + Send + Sync> =
+                Box::new(IdentityMapping3D::new(tex_2_world));
+            let octaves: i32 = tp.find_int("octaves", 8_i32);
+            let roughness: Float = tp.find_float("roughness", 0.5 as Float);
+            let ft = Arc::new(WrinkledTexture::new(map, octaves, roughness));
+            Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
+                .insert(api_state.param_set.name.clone(), ft);
         } else if api_state.param_set.tex_name == "marble" {
             let tex_2_world: Transform = Transform {
                 m: api_state.cur_transform.t[0].m,
@@ -1050,7 +1170,16 @@ fn make_texture(api_state: &mut ApiState) {
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), mt);
         } else if api_state.param_set.tex_name == "windy" {
-            println!("TODO: CreateWindySpectrumTexture");
+            // CreateWindySpectrumTexture
+            let tex_2_world: Transform = Transform {
+                m: api_state.cur_transform.t[0].m,
+                m_inv: api_state.cur_transform.t[0].m_inv,
+            };
+            let map: Box<dyn TextureMapping3D + Send + Sync> =
+                Box::new(IdentityMapping3D::new(tex_2_world));
+            let ft = Arc::new(WindyTexture::new(map));
+            Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
+                .insert(api_state.param_set.name.clone(), ft);
         } else {
             println!(
                 "Spectrum texture \"{}\" unknown.",
