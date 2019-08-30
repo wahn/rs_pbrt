@@ -32,7 +32,7 @@ master.zip:
 	wget https://github.com/cessen/openexr-rs/archive/master.zip
 	unzip master.zip
 
-examples: release
+examples: without-exr
 	./target/release/examples/api_make_camera
 	./target/release/examples/cameras_perspective_generate_ray_differential
 	./target/release/examples/core_lowdiscrepancy_radical_inverse
@@ -55,17 +55,15 @@ examples: release
 	./target/release/examples/geometry_spherical_direction_vec3
 	./target/release/examples/geometry_vector2_null
 	./target/release/examples/geometry_vector3_null
-	./target/release/examples/integrators_sspm_hash.rs
+	./target/release/examples/integrators_sspm_hash
 	./target/release/examples/lights_diffuse_area_light_new
 	./target/release/examples/lights_distant_light_new
 	./target/release/examples/lights_infinite_area_light_new
 	./target/release/examples/lights_point_light_new
-	./target/release/examples/parse_ass_file.rs
-	./target/release/examples/parse_blend_file.rs
+	./target/release/examples/parse_ass_file -i ./assets/ass/cornell_box.ass
+	./target/release/examples/parse_blend_file ./assets/blend/suzanne_integrator_test_2_79.blend
 	./target/release/examples/pbrt_spheres_differentials_texfilt
 	./target/release/examples/pbrt_teapot_area_light
-	./target/release/examples/pest_test
-	./target/release/rs_pbrt
 	./target/release/examples/shapes_cylinder_create_cylinder_shape
 	./target/release/examples/shapes_disk_create_disk_shape
 	./target/release/examples/shapes_sphere_create_sphere_shape
