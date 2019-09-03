@@ -156,7 +156,17 @@ impl PerspectiveCamera {
             screen.p_min.y = -1.0 / frame;
             screen.p_max.y = 1.0 / frame;
         }
-        // TODO: const Float *sw = params.FindFloat("screenwindow", &swi);
+        let sw: Vec<Float> = params.find_float("screenwindow");
+        if sw.len() > 0_usize {
+            if sw.len() == 4 {
+                screen.p_min.x = sw[0];
+                screen.p_max.x = sw[1];
+                screen.p_min.y = sw[2];
+                screen.p_max.y = sw[3];
+            } else {
+                panic!("\"screenwindow\" should have four values");
+            }
+        }
         let fov: Float = params.find_one_float("fov", 90.0);
         // let halffov: Float =
         //     params.find_one_float(String::from("halffov"), -1.0);
