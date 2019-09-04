@@ -206,6 +206,13 @@ impl Primitive for TransformedPrimitive {
                 if let Some(primitive) = isect.primitive {
                     is.primitive = Some(primitive);
                 }
+                // keep shading (and normal)
+                is.n = new_isect.n;
+                is.shading.n = new_isect.shading.n;
+                is.shading.dpdu = new_isect.shading.dpdu;
+                is.shading.dpdv = new_isect.shading.dpdv;
+                is.shading.dndu = new_isect.shading.dndu;
+                is.shading.dndv = new_isect.shading.dndv;
                 return Some(is);
             }
             None
