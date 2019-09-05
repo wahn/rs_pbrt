@@ -1070,12 +1070,12 @@ pub fn random_walk<'a>(
                 break;
             }
             if let Some(mut isect) = si_opt {
-                let isect_wo: Vector3f = isect.wo.clone();
-                let isect_shading_n: Normal3f = isect.shading.n.clone();
-                let isect_bsdf: Option<Arc<Bsdf>> = isect.bsdf.clone();
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
                 isect.compute_scattering_functions(&ray /*, arena, */, true, mode.clone());
+                let isect_wo: Vector3f = isect.wo.clone();
+                let isect_shading_n: Normal3f = isect.shading.n.clone();
+                let isect_bsdf: Option<Arc<Bsdf>> = isect.bsdf.clone();
                 if let Some(ref _bsdf) = isect_bsdf {
                 } else {
                     let new_ray = isect.spawn_ray(&ray.d);
@@ -1090,7 +1090,7 @@ pub fn random_walk<'a>(
                 si_eval.wo = isect.wo.clone();
                 si_eval.n = isect.n.clone();
                 if let Some(medium_interface) = &isect.medium_interface {
-                    Some(Arc::new(medium_interface.clone()));
+                    si_eval.medium_interface = Some(medium_interface.clone());
                 } else {
                     si_eval.medium_interface = None
                 }
