@@ -56,6 +56,7 @@
 use std;
 use std::f32::consts::PI;
 use std::ops::{Add, Mul};
+use std::sync::RwLock;
 // pbrt
 use crate::core::geometry::{
     bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3,
@@ -866,12 +867,18 @@ impl Transform {
         ret.shading.dpdv = self.transform_vector(&si.shading.dpdv);
         ret.shading.dndu = self.transform_normal(&si.shading.dndu);
         ret.shading.dndv = self.transform_normal(&si.shading.dndv);
-        ret.dudx = si.dudx;
-        ret.dvdx = si.dvdx;
-        ret.dudy = si.dudy;
-        ret.dvdy = si.dvdy;
-        ret.dpdx = self.transform_vector(&si.dpdx);
-        ret.dpdy = self.transform_vector(&si.dpdy);
+        let dudx: Float = *si.dudx.read().unwrap();
+        ret.dudx = RwLock::new(dudx);
+        let dvdx: Float = *si.dvdx.read().unwrap();
+        ret.dvdx = RwLock::new(dvdx);
+        let dudy: Float = *si.dudy.read().unwrap();
+        ret.dudy = RwLock::new(dudy);
+        let dvdy: Float = *si.dvdy.read().unwrap();
+        ret.dvdy = RwLock::new(dvdy);
+        let dpdx: Vector3f = *si.dpdx.read().unwrap();
+        ret.dpdx = RwLock::new(self.transform_vector(&dpdx));
+        let dpdy: Vector3f = *si.dpdy.read().unwrap();
+        ret.dpdy = RwLock::new(self.transform_vector(&dpdy));
         ret.bsdf = si.bsdf.clone();
         ret.bssrdf = si.bssrdf.clone();
         ret.primitive = None; // TODO? si.primitive;

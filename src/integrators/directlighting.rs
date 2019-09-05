@@ -67,18 +67,24 @@ impl DirectLightingIntegrator {
                 // compute ray differential _rd_ for specular reflection
                 let mut rd: Ray = isect.spawn_ray(&wi);
                 if let Some(d) = ray.differential.iter().next() {
+                    let dudx: Float = *isect.dudx.read().unwrap();
+                    let dvdx: Float = *isect.dvdx.read().unwrap();
                     let dndx: Normal3f =
-                        isect.shading.dndu * isect.dudx + isect.shading.dndv * isect.dvdx;
+                        isect.shading.dndu * dudx + isect.shading.dndv * dvdx;
+                    let dudy: Float = *isect.dudy.read().unwrap();
+                    let dvdy: Float = *isect.dvdy.read().unwrap();
                     let dndy: Normal3f =
-                        isect.shading.dndu * isect.dudy + isect.shading.dndv * isect.dvdy;
+                        isect.shading.dndu * dudy + isect.shading.dndv * dvdy;
                     let dwodx: Vector3f = -d.rx_direction - wo;
                     let dwody: Vector3f = -d.ry_direction - wo;
                     let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
                     let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
                     // compute differential reflected directions
+                    let dpdx: Vector3f = *isect.dpdx.read().unwrap();
+                    let dpdy: Vector3f = *isect.dpdy.read().unwrap();
                     let diff: RayDifferential = RayDifferential {
-                        rx_origin: isect.p + isect.dpdx,
-                        ry_origin: isect.p + isect.dpdy,
+                        rx_origin: isect.p + dpdx,
+                        ry_origin: isect.p + dpdy,
                         rx_direction: wi - dwodx
                             + Vector3f::from(dndx * vec3_dot_nrm(&wo, &ns) + ns * ddndx)
                                 * 2.0 as Float,
@@ -133,10 +139,14 @@ impl DirectLightingIntegrator {
                     if vec3_dot_nrm(&wo, &ns) < 0.0 as Float {
                         eta = 1.0 / eta;
                     }
+                    let dudx: Float = *isect.dudx.read().unwrap();
+                    let dvdx: Float = *isect.dvdx.read().unwrap();
                     let dndx: Normal3f =
-                        isect.shading.dndu * isect.dudx + isect.shading.dndv * isect.dvdx;
+                        isect.shading.dndu * dudx + isect.shading.dndv * dvdx;
+                    let dudy: Float = *isect.dudy.read().unwrap();
+                    let dvdy: Float = *isect.dvdy.read().unwrap();
                     let dndy: Normal3f =
-                        isect.shading.dndu * isect.dudy + isect.shading.dndv * isect.dvdy;
+                        isect.shading.dndu * dudy + isect.shading.dndv * dvdy;
                     let dwodx: Vector3f = -d.rx_direction - wo;
                     let dwody: Vector3f = -d.ry_direction - wo;
                     let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
@@ -148,9 +158,11 @@ impl DirectLightingIntegrator {
                     let dmudy: Float = (eta
                         - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns))
                         * ddndy;
+                    let dpdx: Vector3f = *isect.dpdx.read().unwrap();
+                    let dpdy: Vector3f = *isect.dpdy.read().unwrap();
                     let diff: RayDifferential = RayDifferential {
-                        rx_origin: isect.p + isect.dpdx,
-                        ry_origin: isect.p + isect.dpdy,
+                        rx_origin: isect.p + dpdx,
+                        ry_origin: isect.p + dpdy,
                         rx_direction: wi + dwodx * eta - Vector3f::from(dndx * mu + ns * dmudx),
                         ry_direction: wi + dwody * eta - Vector3f::from(dndy * mu + ns * dmudy),
                     };

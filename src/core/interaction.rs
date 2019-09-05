@@ -9,7 +9,7 @@
 
 // std
 use std;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 // pbrt
 use crate::core::bssrdf::TabulatedBssrdf;
 use crate::core::geometry::{
@@ -256,7 +256,7 @@ impl Interaction for MediumInteraction {
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct SurfaceInteraction<'p, 's> {
     // Interaction Public Data
     pub p: Point3f,
@@ -271,12 +271,12 @@ pub struct SurfaceInteraction<'p, 's> {
     pub dpdv: Vector3f,
     pub dndu: Normal3f,
     pub dndv: Normal3f,
-    pub dpdx: Vector3f,
-    pub dpdy: Vector3f,
-    pub dudx: Float,
-    pub dvdx: Float,
-    pub dudy: Float,
-    pub dvdy: Float,
+    pub dpdx: RwLock<Vector3f>,
+    pub dpdy: RwLock<Vector3f>,
+    pub dudx: RwLock<Float>,
+    pub dvdx: RwLock<Float>,
+    pub dudy: RwLock<Float>,
+    pub dvdy: RwLock<Float>,
     pub primitive: Option<&'p GeometricPrimitive>,
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
@@ -330,12 +330,12 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             dpdv: *dpdv,
             dndu: *dndu,
             dndv: *dndv,
-            dpdx: Vector3f::default(),
-            dpdy: Vector3f::default(),
-            dudx: 0.0 as Float,
-            dvdx: 0.0 as Float,
-            dudy: 0.0 as Float,
-            dvdy: 0.0 as Float,
+            dpdx: RwLock::new(Vector3f::default()),
+            dpdy: RwLock::new(Vector3f::default()),
+            dudx: RwLock::new(0.0 as Float),
+            dvdx: RwLock::new(0.0 as Float),
+            dudy: RwLock::new(0.0 as Float),
+            dvdy: RwLock::new(0.0 as Float),
             primitive: None,
             shading,
             bsdf: None,
@@ -425,28 +425,42 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
                 -(vec3_dot_vec3(&Vector3f::from(self.n), &Vector3f::from(diff.rx_origin)) - d)
                     / vec3_dot_vec3(&Vector3f::from(self.n), &diff.rx_direction);
             if tx.is_infinite() || tx.is_nan() {
-                self.dudx = 0.0 as Float;
-                self.dvdx = 0.0 as Float;
-                self.dudy = 0.0 as Float;
-                self.dvdy = 0.0 as Float;
-                self.dpdx = Vector3f::default();
-                self.dpdy = Vector3f::default();
+                let mut dudx = self.dudx.write().unwrap();
+                *dudx = 0.0 as Float;
+                let mut dvdx = self.dvdx.write().unwrap();
+                *dvdx = 0.0 as Float;
+                let mut dudy = self.dudy.write().unwrap();
+                *dudy = 0.0 as Float;
+                let mut dvdy = self.dvdy.write().unwrap();
+                *dvdy = 0.0 as Float;
+                let mut dpdx = self.dpdx.write().unwrap();
+                *dpdx = Vector3f::default();
+                let mut dpdy = self.dpdy.write().unwrap();
+                *dpdy = Vector3f::default();
             } else {
                 let px: Point3f = diff.rx_origin + diff.rx_direction * tx;
                 let ty: Float =
                     -(vec3_dot_vec3(&Vector3f::from(self.n), &Vector3f::from(diff.ry_origin)) - d)
                         / vec3_dot_vec3(&Vector3f::from(self.n), &diff.ry_direction);
                 if ty.is_infinite() || ty.is_nan() {
-                    self.dudx = 0.0 as Float;
-                    self.dvdx = 0.0 as Float;
-                    self.dudy = 0.0 as Float;
-                    self.dvdy = 0.0 as Float;
-                    self.dpdx = Vector3f::default();
-                    self.dpdy = Vector3f::default();
+                    let mut dudx = self.dudx.write().unwrap();
+                    *dudx = 0.0 as Float;
+                    let mut dvdx = self.dvdx.write().unwrap();
+                    *dvdx = 0.0 as Float;
+                    let mut dudy = self.dudy.write().unwrap();
+                    *dudy = 0.0 as Float;
+                    let mut dvdy = self.dvdy.write().unwrap();
+                    *dvdy = 0.0 as Float;
+                    let mut dpdx = self.dpdx.write().unwrap();
+                    *dpdx = Vector3f::default();
+                    let mut dpdy = self.dpdy.write().unwrap();
+                    *dpdy = Vector3f::default();
                 } else {
                     let py: Point3f = diff.ry_origin + diff.ry_direction * ty;
-                    self.dpdx = px - self.p;
-                    self.dpdy = py - self.p;
+                    let mut dpdx = self.dpdx.write().unwrap();
+                    *dpdx = px - self.p;
+                    let mut dpdy = self.dpdy.write().unwrap();
+                    *dpdy = py - self.p;
 
                     // compute $(u,v)$ offsets at auxiliary points
 
@@ -469,23 +483,33 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
                     let a: [[Float; 2]; 2] = [a0, a1];
                     let bx: [Float; 2] = [px[dim[0]] - self.p[dim[0]], px[dim[1]] - self.p[dim[1]]];
                     let by: [Float; 2] = [py[dim[0]] - self.p[dim[0]], py[dim[1]] - self.p[dim[1]]];
-                    if !solve_linear_system_2x2(a, bx, &mut self.dudx, &mut self.dvdx) {
-                        self.dudx = 0.0 as Float;
-                        self.dvdx = 0.0 as Float;
+                    let mut dudx_ref = self.dudx.write().unwrap();
+                    let mut dvdx_ref = self.dvdx.write().unwrap();
+                    if !solve_linear_system_2x2(a, bx, &mut dudx_ref, &mut dvdx_ref) {
+                        *dudx_ref = 0.0 as Float;
+                        *dvdx_ref = 0.0 as Float;
                     }
-                    if !solve_linear_system_2x2(a, by, &mut self.dudy, &mut self.dvdy) {
-                        self.dudy = 0.0 as Float;
-                        self.dvdy = 0.0 as Float;
+                    let mut dudy_ref = self.dudy.write().unwrap();
+                    let mut dvdy_ref = self.dvdy.write().unwrap();
+                    if !solve_linear_system_2x2(a, by, &mut dudy_ref, &mut dvdy_ref) {
+                        *dudy_ref = 0.0 as Float;
+                        *dvdy_ref = 0.0 as Float;
                     }
                 }
             }
         } else {
-            self.dudx = 0.0 as Float;
-            self.dvdx = 0.0 as Float;
-            self.dudy = 0.0 as Float;
-            self.dvdy = 0.0 as Float;
-            self.dpdx = Vector3f::default();
-            self.dpdy = Vector3f::default();
+            let mut dudx = self.dudx.write().unwrap();
+            *dudx = 0.0 as Float;
+            let mut dvdx = self.dvdx.write().unwrap();
+            *dvdx = 0.0 as Float;
+            let mut dudy = self.dudy.write().unwrap();
+            *dudy = 0.0 as Float;
+            let mut dvdy = self.dvdy.write().unwrap();
+            *dvdy = 0.0 as Float;
+            let mut dpdx = self.dpdx.write().unwrap();
+            *dpdx = Vector3f::default();
+            let mut dpdy = self.dpdy.write().unwrap();
+            *dpdy = Vector3f::default();
         }
     }
     pub fn le(&self, w: &Vector3f) -> Spectrum {

@@ -5,7 +5,7 @@
 //std
 use std;
 use std::f32::consts::PI;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 // pbrt
 use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_nrm, nrm_dot_vec3, pnt3_distance, vec3_dot_nrm, vec3_dot_vec3,
@@ -284,7 +284,7 @@ impl SeparableBssrdf for TabulatedBssrdf {
                             //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
                             //         ptr->next = next;
                             //         ptr = next;
-                            chain.push(si.clone());
+                            // chain.push(si.clone());
                             n_found += 1;
                         }
                     }
@@ -321,12 +321,19 @@ impl SeparableBssrdf for TabulatedBssrdf {
         pi.dpdv = selected_si.dpdv;
         pi.dndu = selected_si.dndu;
         pi.dndv = selected_si.dndv;
-        pi.dpdx = selected_si.dpdx;
-        pi.dpdy = selected_si.dpdy;
-        pi.dudx = selected_si.dudx;
-        pi.dvdx = selected_si.dvdx;
-        pi.dudy = selected_si.dudy;
-        pi.dvdy = selected_si.dvdy;
+        let dpdx: Vector3f = *selected_si.dpdx.read().unwrap();
+        pi.dpdx = RwLock::new(dpdx);
+        let dpdy: Vector3f = *selected_si.dpdy.read().unwrap();
+        pi.dpdy = RwLock::new(dpdy);
+        let dudx: Float = *selected_si.dudx.read().unwrap();
+        pi.dudx = RwLock::new(dudx);
+        let dvdx: Float = *selected_si.dvdx.read().unwrap();
+        pi.dvdx = RwLock::new(dvdx);
+        let dudy: Float = *selected_si.dudy.read().unwrap();
+        pi.dudy = RwLock::new(dudy);
+        let dvdy: Float = *selected_si.dvdy.read().unwrap();
+        pi.dvdy = RwLock::new(dvdy);
+
         pi.shading = selected_si.shading;
         // no primitive!
         if let Some(ref bsdf) = selected_si.bsdf {

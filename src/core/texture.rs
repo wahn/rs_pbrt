@@ -66,13 +66,17 @@ pub struct UVMapping2D {
 impl TextureMapping2D for UVMapping2D {
     fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
         // compute texture differentials for 2D identity mapping
+        let dudx: Float = *si.dudx.read().unwrap();
+        let dvdx: Float = *si.dvdx.read().unwrap();
         *dstdx = Vector2f {
-            x: si.dudx * self.su,
-            y: si.dvdx * self.sv,
+            x: dudx * self.su,
+            y: dvdx * self.sv,
         };
+        let dudy: Float = *si.dudy.read().unwrap();
+        let dvdy: Float = *si.dvdy.read().unwrap();
         *dstdy = Vector2f {
-            x: si.dudy * self.su,
-            y: si.dvdy * self.sv,
+            x: dudy * self.su,
+            y: dvdy * self.sv,
         };
         Point2f {
             x: si.uv[0] * self.su + self.du,
@@ -96,13 +100,15 @@ impl TextureMapping2D for PlanarMapping2D {
             y: si.p.y,
             z: si.p.z,
         };
+        let dpdx: Vector3f = *si.dpdx.read().unwrap();
         *dstdx = Vector2f {
-            x: vec3_dot_vec3(&si.dpdx, &self.vs),
-            y: vec3_dot_vec3(&si.dpdx, &self.vt),
+            x: vec3_dot_vec3(&dpdx, &self.vs),
+            y: vec3_dot_vec3(&dpdx, &self.vt),
         };
+        let dpdy: Vector3f = *si.dpdy.read().unwrap();
         *dstdy = Vector2f {
-            x: vec3_dot_vec3(&si.dpdy, &self.vs),
-            y: vec3_dot_vec3(&si.dpdy, &self.vt),
+            x: vec3_dot_vec3(&dpdy, &self.vs),
+            y: vec3_dot_vec3(&dpdy, &self.vt),
         };
         Point2f {
             x: self.ds + vec3_dot_vec3(&vec, &self.vs),
@@ -128,8 +134,10 @@ impl IdentityMapping3D {
 impl TextureMapping3D for IdentityMapping3D {
     fn map(&self, si: &SurfaceInteraction, dpdx: &mut Vector3f, dpdy: &mut Vector3f) -> Point3f {
         let world_to_texture = self.get_world_to_texture();
-        *dpdx = world_to_texture.transform_vector(&si.dpdx);
-        *dpdy = world_to_texture.transform_vector(&si.dpdy);
+        let si_dpdx: Vector3f = *si.dpdx.read().unwrap();
+        *dpdx = world_to_texture.transform_vector(&si_dpdx);
+        let si_dpdy: Vector3f = *si.dpdy.read().unwrap();
+        *dpdy = world_to_texture.transform_vector(&si_dpdy);
         world_to_texture.transform_point(&si.p)
     }
 }
