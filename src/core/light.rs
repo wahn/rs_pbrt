@@ -9,7 +9,6 @@ use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::medium::MediumInterface;
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::primitive::Primitive;
 use crate::core::sampler::Sampler;
 use crate::core::scene::Scene;
 

@@ -20,7 +20,7 @@ use crate::core::material::TransportMode;
 use crate::core::medium::{Medium, MediumInterface, PhaseFunction};
 use crate::core::pbrt::SHADOW_EPSILON;
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::primitive::{GeometricPrimitive, Primitive};
+use crate::core::primitive::Primitive;
 use crate::core::reflection::Bsdf;
 use crate::core::shape::Shape;
 use crate::core::transform::solve_linear_system_2x2;

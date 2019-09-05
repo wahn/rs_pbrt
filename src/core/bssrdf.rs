@@ -20,7 +20,6 @@ use crate::core::medium::phase_hg;
 use crate::core::pbrt::clamp_t;
 use crate::core::pbrt::INV_4_PI;
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::primitive::Primitive;
 use crate::core::reflection::{cos_theta, fr_dielectric};
 use crate::core::reflection::{Bsdf, Bxdf, BxdfType};
 use crate::core::scene::Scene;

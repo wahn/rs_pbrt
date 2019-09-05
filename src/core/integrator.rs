@@ -11,7 +11,6 @@ use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteractio
 use crate::core::light::is_delta_light;
 use crate::core::light::{Light, VisibilityTester};
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::primitive::Primitive;
 use crate::core::reflection::BxdfType;
 use crate::core::sampler::Sampler;
 use crate::core::sampling::power_heuristic;
