@@ -275,9 +275,9 @@ pub fn estimate_direct(
             if handle_media {
                 let (light_isect_opt, tr_spectrum) = scene.intersect_tr(&mut ray, sampler);
                 tr = tr_spectrum; // copy return value
-                if let Some(light_isect) = light_isect_opt {
+                if let Some(ref light_isect) = light_isect_opt {
                     found_surface_interaction = true;
-                    if let Some(primitive) = light_isect.primitive {
+                    if let Some(primitive) = &light_isect.primitive {
                         if let Some(area_light) = primitive.get_area_light() {
                             let pa = &*area_light as *const _ as *const usize;
                             let pl = &*light as *const _ as *const usize;
@@ -288,9 +288,9 @@ pub fn estimate_direct(
                     }
                 }
             } else {
-                if let Some(light_isect) = scene.intersect(&mut ray) {
+                if let Some(ref light_isect) = scene.intersect(&mut ray) {
                     found_surface_interaction = true;
-                    if let Some(primitive) = light_isect.primitive {
+                    if let Some(primitive) = &light_isect.primitive {
                         if let Some(area_light) = primitive.get_area_light() {
                             let pa = &*area_light as *const _ as *const usize;
                             let pl = &*light as *const _ as *const usize;

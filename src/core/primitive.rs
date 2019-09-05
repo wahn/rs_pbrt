@@ -46,6 +46,7 @@ pub trait Primitive {
     }
 }
 
+#[derive(Clone)]
 pub struct GeometricPrimitive {
     pub shape: Arc<dyn Shape + Send + Sync>,
     pub material: Option<Arc<dyn Material + Send + Sync>>,
@@ -102,7 +103,7 @@ impl Primitive for GeometricPrimitive {
     }
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         if let Some((mut isect, t_hit)) = self.shape.intersect(ray) {
-            isect.primitive = Some(self.clone());
+            isect.primitive = Some(Arc::new(self.clone()));
             ray.t_max = t_hit;
             assert!(nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0 as Float);
             // initialize _SurfaceInteraction::mediumInterface_ after

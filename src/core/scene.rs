@@ -91,7 +91,7 @@ impl Scene {
                     tr *= medium_arc.tr(&ray, sampler);
                 }
                 // initialize next ray segment or terminate transmittance computation
-                if let Some(primitive) = isect.primitive {
+                if let Some(ref primitive) = isect.primitive {
                     if let Some(_material) = primitive.get_material() {
                         return (Some(isect), tr);
                     }

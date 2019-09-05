@@ -257,7 +257,7 @@ impl Interaction for MediumInteraction {
 }
 
 #[derive(Default)]
-pub struct SurfaceInteraction<'p> {
+pub struct SurfaceInteraction {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
@@ -277,14 +277,14 @@ pub struct SurfaceInteraction<'p> {
     pub dvdx: RwLock<Float>,
     pub dudy: RwLock<Float>,
     pub dvdy: RwLock<Float>,
-    pub primitive: Option<&'p GeometricPrimitive>,
+    pub primitive: Option<Arc<dyn Primitive + Send + Sync>>,
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
     pub bssrdf: Option<Arc<TabulatedBssrdf>>,
     pub shape: Option<Arc<dyn Shape + Send + Sync>>,
 }
 
-impl<'p> SurfaceInteraction<'p> {
+impl SurfaceInteraction {
     pub fn new(
         p: &Point3f,
         p_error: &Vector3f,
@@ -427,7 +427,7 @@ impl<'p> SurfaceInteraction<'p> {
         mode: TransportMode,
     ) {
         self.compute_differentials(ray);
-        if let Some(primitive) = self.primitive {
+        if let Some(ref primitive) = self.primitive.clone() {
             primitive.compute_scattering_functions(
                 self, // arena,
                 mode,
@@ -540,7 +540,7 @@ impl<'p> SurfaceInteraction<'p> {
         }
     }
     pub fn le(&self, w: &Vector3f) -> Spectrum {
-        if let Some(primitive) = self.primitive {
+        if let Some(ref primitive) = self.primitive.clone() {
             if let Some(area_light) = primitive.get_area_light() {
                 // create InteractionCommon from self
                 let interaction: InteractionCommon = InteractionCommon {
@@ -558,7 +558,7 @@ impl<'p> SurfaceInteraction<'p> {
     }
 }
 
-impl<'p> Interaction for SurfaceInteraction<'p> {
+impl Interaction for SurfaceInteraction {
     fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }

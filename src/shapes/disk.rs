@@ -166,8 +166,8 @@ impl Shape for Disk {
         if let Some(ref shape) = si.shape {
             isect.shape = Some(shape.clone());
         }
-        if let Some(_primitive) = si.primitive {
-            isect.primitive = si.primitive;
+        if let Some(primitive) = si.primitive {
+            isect.primitive = Some(primitive.clone());
         }
         Some((isect, t_shape_hit))
     }
