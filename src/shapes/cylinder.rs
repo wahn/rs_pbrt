@@ -243,11 +243,11 @@ impl Shape for Cylinder {
             &dndu,
             &dndv,
             ray.time,
-            Some(self),
+            Some(Arc::new(self.clone())),
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
-        if let Some(_shape) = si.shape {
-            isect.shape = si.shape;
+        if let Some(ref shape) = si.shape {
+            isect.shape = Some(shape.clone());
         }
         if let Some(_primitive) = si.primitive {
             isect.primitive = si.primitive;

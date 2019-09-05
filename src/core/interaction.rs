@@ -257,7 +257,7 @@ impl Interaction for MediumInteraction {
 }
 
 #[derive(Default)]
-pub struct SurfaceInteraction<'p, 's> {
+pub struct SurfaceInteraction<'p> {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
@@ -281,10 +281,10 @@ pub struct SurfaceInteraction<'p, 's> {
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
     pub bssrdf: Option<Arc<TabulatedBssrdf>>,
-    pub shape: Option<&'s dyn Shape>,
+    pub shape: Option<Arc<dyn Shape + Send + Sync>>,
 }
 
-impl<'p, 's> SurfaceInteraction<'p, 's> {
+impl<'p> SurfaceInteraction<'p> {
     pub fn new(
         p: &Point3f,
         p_error: &Vector3f,
@@ -295,7 +295,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
         dndu: &Normal3f,
         dndv: &Normal3f,
         time: Float,
-        sh: Option<&'s dyn Shape>,
+        sh: Option<Arc<dyn Shape + Send + Sync>>,
     ) -> Self {
         let nv: Vector3f = vec3_cross_vec3(dpdu, dpdv).normalize();
         let mut n: Normal3f = Normal3f {
@@ -311,36 +311,63 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
             dndu: *dndu,
             dndv: *dndv,
         };
-        if let Some(shape) = sh {
+        if let Some(ref shape) = sh {
             // adjust normal based on orientation and handedness
             if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
                 n *= -1.0 as Float;
                 shading.n *= -1.0 as Float;
             }
         }
-        SurfaceInteraction {
-            p: *p,
-            time,
-            p_error: *p_error,
-            wo: wo.normalize(),
-            n,
-            medium_interface: None,
-            uv: *uv,
-            dpdu: *dpdu,
-            dpdv: *dpdv,
-            dndu: *dndu,
-            dndv: *dndv,
-            dpdx: RwLock::new(Vector3f::default()),
-            dpdy: RwLock::new(Vector3f::default()),
-            dudx: RwLock::new(0.0 as Float),
-            dvdx: RwLock::new(0.0 as Float),
-            dudy: RwLock::new(0.0 as Float),
-            dvdy: RwLock::new(0.0 as Float),
-            primitive: None,
-            shading,
-            bsdf: None,
-            bssrdf: None,
-            shape: sh,
+        if let Some(ref shape) = sh {
+            SurfaceInteraction {
+                p: *p,
+                time,
+                p_error: *p_error,
+                wo: wo.normalize(),
+                n,
+                medium_interface: None,
+                uv: *uv,
+                dpdu: *dpdu,
+                dpdv: *dpdv,
+                dndu: *dndu,
+                dndv: *dndv,
+                dpdx: RwLock::new(Vector3f::default()),
+                dpdy: RwLock::new(Vector3f::default()),
+                dudx: RwLock::new(0.0 as Float),
+                dvdx: RwLock::new(0.0 as Float),
+                dudy: RwLock::new(0.0 as Float),
+                dvdy: RwLock::new(0.0 as Float),
+                primitive: None,
+                shading,
+                bsdf: None,
+                bssrdf: None,
+                shape: Some(shape.clone()),
+            }
+        } else {
+            SurfaceInteraction {
+                p: *p,
+                time,
+                p_error: *p_error,
+                wo: wo.normalize(),
+                n,
+                medium_interface: None,
+                uv: *uv,
+                dpdu: *dpdu,
+                dpdv: *dpdv,
+                dndu: *dndu,
+                dndv: *dndv,
+                dpdx: RwLock::new(Vector3f::default()),
+                dpdy: RwLock::new(Vector3f::default()),
+                dudx: RwLock::new(0.0 as Float),
+                dvdx: RwLock::new(0.0 as Float),
+                dudy: RwLock::new(0.0 as Float),
+                dvdy: RwLock::new(0.0 as Float),
+                primitive: None,
+                shading,
+                bsdf: None,
+                bssrdf: None,
+                shape: None,
+            }
         }
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<dyn Medium + Send + Sync>> {
@@ -376,7 +403,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
     ) {
         // compute _shading.n_ for _SurfaceInteraction_
         self.shading.n = Normal3f::from(vec3_cross_vec3(dpdus, dpdvs)).normalize();
-        if let Some(shape) = self.shape {
+        if let Some(ref shape) = self.shape {
             if shape.get_reverse_orientation() ^ shape.get_transform_swaps_handedness() {
                 self.shading.n = -self.shading.n;
             }
@@ -531,7 +558,7 @@ impl<'p, 's> SurfaceInteraction<'p, 's> {
     }
 }
 
-impl<'p, 's> Interaction for SurfaceInteraction<'p, 's> {
+impl<'p> Interaction for SurfaceInteraction<'p> {
     fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }
