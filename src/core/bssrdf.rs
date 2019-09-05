@@ -311,24 +311,24 @@ impl SeparableBssrdf for TabulatedBssrdf {
                             si_eval.dpdx = RwLock::new(dpdx);
                             let dpdy: Vector3f = *si.dpdy.read().unwrap();
                             si_eval.dpdy = RwLock::new(dpdy);
-                            Some(Arc::new(geo_prim.clone()));
+                            si_eval.primitive = Some(geo_prim.clone());
                             si_eval.shading.n = si.shading.n.clone();
                             si_eval.shading.dpdu = si.shading.dpdu.clone();
                             si_eval.shading.dpdv = si.shading.dpdv.clone();
                             si_eval.shading.dndu = si.shading.dndu.clone();
                             si_eval.shading.dndv = si.shading.dndv.clone();
                             if let Some(bsdf) = &si.bsdf {
-                                Some(Arc::new(bsdf.clone()));
+                                si_eval.bsdf = Some(bsdf.clone());
                             } else {
                                 si_eval.bsdf = None
                             }
                             if let Some(bssrdf) = &si.bssrdf {
-                                Some(Arc::new(bssrdf.clone()));
+                                si_eval.bssrdf = Some(bssrdf.clone());
                             } else {
                                 si_eval.bssrdf = None
                             }
                             if let Some(shape) = &si.shape {
-                                Some(Arc::new(shape.clone()));
+                                si_eval.shape = Some(shape.clone());
                             } else {
                                 si_eval.shape = None
                             }

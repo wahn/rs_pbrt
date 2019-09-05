@@ -41,8 +41,8 @@ use crate::filters::gaussian::GaussianFilter;
 use crate::filters::mitchell::MitchellNetravali;
 use crate::filters::triangle::TriangleFilter;
 use crate::integrators::ao::AOIntegrator;
-// use crate::integrators::bdpt::render_bdpt;
-// use crate::integrators::bdpt::BDPTIntegrator;
+use crate::integrators::bdpt::render_bdpt;
+use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 // use crate::integrators::mlt::render_mlt;
 // use crate::integrators::mlt::MLTIntegrator;
@@ -1119,11 +1119,7 @@ fn make_texture(api_state: &mut ApiState) {
             let outside: Arc<dyn Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("outside", Spectrum::new(0.0));
             if let Some(mapping) = map {
-                let dt = Arc::new(DotsTexture::new(
-                    mapping,
-                    inside,
-                    outside,
-                ));
+                let dt = Arc::new(DotsTexture::new(mapping, inside, outside));
                 Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                     .insert(api_state.param_set.name.clone(), dt);
             }
@@ -1966,7 +1962,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     // if let Some(mut sampler) = some_sampler {
                     let mut some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>> =
                         None;
-                    // let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
+                    let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
                     // let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
                     let mut some_sppm_integrator: Option<Box<SPPMIntegrator>> = None;
                     if api_state.render_options.integrator_name == "whitted" {
@@ -2083,36 +2079,36 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         ));
                         some_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == "bdpt" {
-                        // // CreateBDPTIntegrator
-                        // let mut max_depth: i32 = api_state
-                        //     .render_options
-                        //     .integrator_params
-                        //     .find_one_int("maxdepth", 5);
-                        // let visualize_strategies: bool = api_state
-                        //     .render_options
-                        //     .integrator_params
-                        //     .find_one_bool("visualizestrategies", false);
-                        // let visualize_weights: bool = api_state
-                        //     .render_options
-                        //     .integrator_params
-                        //     .find_one_bool("visualizeweights", false);
-                        // if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
-                        //     println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
-                        //     max_depth = 5;
-                        // }
-                        // let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                        // let light_strategy: String = api_state
-                        //     .render_options
-                        //     .integrator_params
-                        //     .find_one_string("lightsamplestrategy", String::from("power"));
-                        // let integrator = Box::new(BDPTIntegrator::new(
-                        //     max_depth as u32,
-                        //     // visualize_strategies,
-                        //     // visualize_weights,
-                        //     pixel_bounds,
-                        //     light_strategy,
-                        // ));
-                        // some_bdpt_integrator = Some(integrator);
+                        // CreateBDPTIntegrator
+                        let mut max_depth: i32 = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_int("maxdepth", 5);
+                        let visualize_strategies: bool = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_bool("visualizestrategies", false);
+                        let visualize_weights: bool = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_bool("visualizeweights", false);
+                        if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
+                            println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
+                            max_depth = 5;
+                        }
+                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                        let light_strategy: String = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_string("lightsamplestrategy", String::from("power"));
+                        let integrator = Box::new(BDPTIntegrator::new(
+                            max_depth as u32,
+                            // visualize_strategies,
+                            // visualize_weights,
+                            pixel_bounds,
+                            light_strategy,
+                        ));
+                        some_bdpt_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == "mlt" {
                         // // CreateMLTIntegrator
                         // let max_depth: i32 = api_state
@@ -2226,8 +2222,8 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     }
                     if api_state.render_options.have_scattering_media
                         && api_state.render_options.integrator_name != String::from("volpath")
-                        // && api_state.render_options.integrator_name != String::from("bdpt")
-                        // && api_state.render_options.integrator_name != String::from("mlt")
+                        && api_state.render_options.integrator_name != String::from("bdpt")
+                    // && api_state.render_options.integrator_name != String::from("mlt")
                     {
                         print!("WARNING: Scene has scattering media but \"{}\" integrator doesn't support ",
                                api_state.render_options.integrator_name);
@@ -2311,172 +2307,172 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 api_state.render_options.accelerator_name
                             );
                         }
-                    // } else if let Some(mut integrator) = some_bdpt_integrator {
-                        // // because we can't call
-                        // // integrator.render() yet,
-                        // // let us repeat some code and
-                        // // call render_bdpt(...)
-                        // // instead:
+                    } else if let Some(mut integrator) = some_bdpt_integrator {
+                        // because we can't call
+                        // integrator.render() yet,
+                        // let us repeat some code and
+                        // call render_bdpt(...)
+                        // instead:
 
-                        // // MakeIntegrator
-                        // // TODO: if (renderOptions->haveScatteringMedia && ...)
-                        // if api_state.render_options.lights.is_empty() {
-                        //     // warn if no light sources are defined
-                        //     println!("WARNING: No light sources defined in scene; rendering a black image.",);
-                        // }
-                        // // MakeAccelerator
-                        // if api_state.render_options.accelerator_name == "bvh" {
-                        //     //  CreateBVHAccelerator
-                        //     let split_method_name: String = api_state
-                        //         .render_options
-                        //         .accelerator_params
-                        //         .find_one_string("splitmethod", String::from("sah"));
-                        //     let split_method;
-                        //     if split_method_name == "sah" {
-                        //         split_method = SplitMethod::SAH;
-                        //     } else if split_method_name == "hlbvh" {
-                        //         split_method = SplitMethod::HLBVH;
-                        //     } else if split_method_name == "middle" {
-                        //         split_method = SplitMethod::Middle;
-                        //     } else if split_method_name == "equal" {
-                        //         split_method = SplitMethod::EqualCounts;
-                        //     } else {
-                        //         println!(
-                        //             "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
-                        //             split_method_name
-                        //         );
-                        //         split_method = SplitMethod::SAH;
-                        //     }
-                        //     let max_prims_in_node: i32 = api_state
-                        //         .render_options
-                        //         .accelerator_params
-                        //         .find_one_int("maxnodeprims", 4);
-                        //     let accelerator = Arc::new(BVHAccel::new(
-                        //         api_state.render_options.primitives.clone(),
-                        //         max_prims_in_node as usize,
-                        //         split_method,
-                        //     ));
-                        //     // MakeScene
-                        //     let scene: Scene = Scene::new(
-                        //         accelerator.clone(),
-                        //         api_state.render_options.lights.clone(),
-                        //     );
-                        //     // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        //     // TODO: lights.erase(lights.begin(), lights.end());
-                        //     let num_threads: u8 = api_state.number_of_threads;
-                        //     render_bdpt(
-                        //         &scene,
-                        //         &camera,
-                        //         &mut sampler,
-                        //         &mut integrator,
-                        //         num_threads,
-                        //     );
-                        // } else if api_state.render_options.accelerator_name == "kdtree" {
-                        //     // println!("TODO: CreateKdTreeAccelerator");
-                        //     // WARNING: Use BVHAccel for now !!!
-                        //     let accelerator = Arc::new(BVHAccel::new(
-                        //         api_state.render_options.primitives.clone(),
-                        //         4,
-                        //         SplitMethod::SAH,
-                        //     ));
-                        //     // MakeScene
-                        //     let scene: Scene = Scene::new(
-                        //         accelerator.clone(),
-                        //         api_state.render_options.lights.clone(),
-                        //     );
-                        //     // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        //     // TODO: lights.erase(lights.begin(), lights.end());
-                        //     let num_threads: u8 = api_state.number_of_threads;
-                        //     render_bdpt(
-                        //         &scene,
-                        //         &camera,
-                        //         &mut sampler,
-                        //         &mut integrator,
-                        //         num_threads,
-                        //     );
-                        // } else {
-                        //     panic!(
-                        //         "Accelerator \"{}\" unknown.",
-                        //         api_state.render_options.accelerator_name
-                        //     );
-                        // }
+                        // MakeIntegrator
+                        // TODO: if (renderOptions->haveScatteringMedia && ...)
+                        if api_state.render_options.lights.is_empty() {
+                            // warn if no light sources are defined
+                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                        }
+                        // MakeAccelerator
+                        if api_state.render_options.accelerator_name == "bvh" {
+                            //  CreateBVHAccelerator
+                            let split_method_name: String = api_state
+                                .render_options
+                                .accelerator_params
+                                .find_one_string("splitmethod", String::from("sah"));
+                            let split_method;
+                            if split_method_name == "sah" {
+                                split_method = SplitMethod::SAH;
+                            } else if split_method_name == "hlbvh" {
+                                split_method = SplitMethod::HLBVH;
+                            } else if split_method_name == "middle" {
+                                split_method = SplitMethod::Middle;
+                            } else if split_method_name == "equal" {
+                                split_method = SplitMethod::EqualCounts;
+                            } else {
+                                println!(
+                                    "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                                    split_method_name
+                                );
+                                split_method = SplitMethod::SAH;
+                            }
+                            let max_prims_in_node: i32 = api_state
+                                .render_options
+                                .accelerator_params
+                                .find_one_int("maxnodeprims", 4);
+                            let accelerator = Arc::new(BVHAccel::new(
+                                api_state.render_options.primitives.clone(),
+                                max_prims_in_node as usize,
+                                split_method,
+                            ));
+                            // MakeScene
+                            let scene: Scene = Scene::new(
+                                accelerator.clone(),
+                                api_state.render_options.lights.clone(),
+                            );
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_bdpt(
+                                &scene,
+                                &camera,
+                                &mut sampler,
+                                &mut integrator,
+                                num_threads,
+                            );
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
+                            // println!("TODO: CreateKdTreeAccelerator");
+                            // WARNING: Use BVHAccel for now !!!
+                            let accelerator = Arc::new(BVHAccel::new(
+                                api_state.render_options.primitives.clone(),
+                                4,
+                                SplitMethod::SAH,
+                            ));
+                            // MakeScene
+                            let scene: Scene = Scene::new(
+                                accelerator.clone(),
+                                api_state.render_options.lights.clone(),
+                            );
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_bdpt(
+                                &scene,
+                                &camera,
+                                &mut sampler,
+                                &mut integrator,
+                                num_threads,
+                            );
+                        } else {
+                            panic!(
+                                "Accelerator \"{}\" unknown.",
+                                api_state.render_options.accelerator_name
+                            );
+                        }
                     // } else if let Some(mut integrator) = some_mlt_integrator {
-                        // // because we can't call
-                        // // integrator.render() yet,
-                        // // let us repeat some code and
-                        // // call render_mlt(...)
-                        // // instead:
+                    // // because we can't call
+                    // // integrator.render() yet,
+                    // // let us repeat some code and
+                    // // call render_mlt(...)
+                    // // instead:
 
-                        // // MakeIntegrator
-                        // // TODO: if (renderOptions->haveScatteringMedia && ...)
-                        // if api_state.render_options.lights.is_empty() {
-                        //     // warn if no light sources are defined
-                        //     println!("WARNING: No light sources defined in scene; rendering a black image.",);
-                        // }
-                        // // MakeAccelerator
-                        // if api_state.render_options.accelerator_name == "bvh" {
-                        //     //  CreateBVHAccelerator
-                        //     let split_method_name: String = api_state
-                        //         .render_options
-                        //         .accelerator_params
-                        //         .find_one_string("splitmethod", String::from("sah"));
-                        //     let split_method;
-                        //     if split_method_name == "sah" {
-                        //         split_method = SplitMethod::SAH;
-                        //     } else if split_method_name == "hlbvh" {
-                        //         split_method = SplitMethod::HLBVH;
-                        //     } else if split_method_name == "middle" {
-                        //         split_method = SplitMethod::Middle;
-                        //     } else if split_method_name == "equal" {
-                        //         split_method = SplitMethod::EqualCounts;
-                        //     } else {
-                        //         println!(
-                        //             "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
-                        //             split_method_name
-                        //         );
-                        //         split_method = SplitMethod::SAH;
-                        //     }
-                        //     let max_prims_in_node: i32 = api_state
-                        //         .render_options
-                        //         .accelerator_params
-                        //         .find_one_int("maxnodeprims", 4);
-                        //     let accelerator = Arc::new(BVHAccel::new(
-                        //         api_state.render_options.primitives.clone(),
-                        //         max_prims_in_node as usize,
-                        //         split_method,
-                        //     ));
-                        //     // MakeScene
-                        //     let scene: Scene = Scene::new(
-                        //         accelerator.clone(),
-                        //         api_state.render_options.lights.clone(),
-                        //     );
-                        //     // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        //     // TODO: lights.erase(lights.begin(), lights.end());
-                        //     let num_threads: u8 = api_state.number_of_threads;
-                        //     render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                        // } else if api_state.render_options.accelerator_name == "kdtree" {
-                        //     // println!("TODO: CreateKdTreeAccelerator");
-                        //     // WARNING: Use BVHAccel for now !!!
-                        //     let accelerator = Arc::new(BVHAccel::new(
-                        //         api_state.render_options.primitives.clone(),
-                        //         4,
-                        //         SplitMethod::SAH,
-                        //     ));
-                        //     // MakeScene
-                        //     let scene: Scene = Scene::new(
-                        //         accelerator.clone(),
-                        //         api_state.render_options.lights.clone(),
-                        //     );
-                        //     // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        //     // TODO: lights.erase(lights.begin(), lights.end());
-                        //     let num_threads: u8 = api_state.number_of_threads;
-                        //     render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                        // } else {
-                        //     panic!(
-                        //         "Accelerator \"{}\" unknown.",
-                        //         api_state.render_options.accelerator_name
-                        //     );
-                        // }
+                    // // MakeIntegrator
+                    // // TODO: if (renderOptions->haveScatteringMedia && ...)
+                    // if api_state.render_options.lights.is_empty() {
+                    //     // warn if no light sources are defined
+                    //     println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                    // }
+                    // // MakeAccelerator
+                    // if api_state.render_options.accelerator_name == "bvh" {
+                    //     //  CreateBVHAccelerator
+                    //     let split_method_name: String = api_state
+                    //         .render_options
+                    //         .accelerator_params
+                    //         .find_one_string("splitmethod", String::from("sah"));
+                    //     let split_method;
+                    //     if split_method_name == "sah" {
+                    //         split_method = SplitMethod::SAH;
+                    //     } else if split_method_name == "hlbvh" {
+                    //         split_method = SplitMethod::HLBVH;
+                    //     } else if split_method_name == "middle" {
+                    //         split_method = SplitMethod::Middle;
+                    //     } else if split_method_name == "equal" {
+                    //         split_method = SplitMethod::EqualCounts;
+                    //     } else {
+                    //         println!(
+                    //             "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                    //             split_method_name
+                    //         );
+                    //         split_method = SplitMethod::SAH;
+                    //     }
+                    //     let max_prims_in_node: i32 = api_state
+                    //         .render_options
+                    //         .accelerator_params
+                    //         .find_one_int("maxnodeprims", 4);
+                    //     let accelerator = Arc::new(BVHAccel::new(
+                    //         api_state.render_options.primitives.clone(),
+                    //         max_prims_in_node as usize,
+                    //         split_method,
+                    //     ));
+                    //     // MakeScene
+                    //     let scene: Scene = Scene::new(
+                    //         accelerator.clone(),
+                    //         api_state.render_options.lights.clone(),
+                    //     );
+                    //     // TODO: primitives.erase(primitives.begin(), primitives.end());
+                    //     // TODO: lights.erase(lights.begin(), lights.end());
+                    //     let num_threads: u8 = api_state.number_of_threads;
+                    //     render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                    // } else if api_state.render_options.accelerator_name == "kdtree" {
+                    //     // println!("TODO: CreateKdTreeAccelerator");
+                    //     // WARNING: Use BVHAccel for now !!!
+                    //     let accelerator = Arc::new(BVHAccel::new(
+                    //         api_state.render_options.primitives.clone(),
+                    //         4,
+                    //         SplitMethod::SAH,
+                    //     ));
+                    //     // MakeScene
+                    //     let scene: Scene = Scene::new(
+                    //         accelerator.clone(),
+                    //         api_state.render_options.lights.clone(),
+                    //     );
+                    //     // TODO: primitives.erase(primitives.begin(), primitives.end());
+                    //     // TODO: lights.erase(lights.begin(), lights.end());
+                    //     let num_threads: u8 = api_state.number_of_threads;
+                    //     render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                    // } else {
+                    //     panic!(
+                    //         "Accelerator \"{}\" unknown.",
+                    //         api_state.render_options.accelerator_name
+                    //     );
+                    // }
                     } else if let Some(mut integrator) = some_sppm_integrator {
                         // because we can't call
                         // integrator.render() yet,
