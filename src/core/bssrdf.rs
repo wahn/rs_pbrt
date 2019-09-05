@@ -283,7 +283,56 @@ impl SeparableBssrdf for TabulatedBssrdf {
                             //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
                             //         ptr->next = next;
                             //         ptr = next;
-                            // chain.push(si.clone());
+                            let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
+                            si_eval.p = si.p.clone();
+                            si_eval.time = si.time;
+                            si_eval.p_error = si.p_error.clone();
+                            si_eval.wo = si.wo.clone();
+                            si_eval.n = si.n.clone();
+                            if let Some(medium_interface) = &si.medium_interface {
+                                Some(Arc::new(medium_interface.clone()));
+                            } else {
+                                si_eval.medium_interface = None
+                            }
+                            si_eval.uv = si.uv.clone();
+                            si_eval.dpdu = si.dpdu.clone();
+                            si_eval.dpdv = si.dpdv.clone();
+                            si_eval.dndu = si.dndu.clone();
+                            si_eval.dndv = si.dndv.clone();
+                            let dudx: Float = *si.dudx.read().unwrap();
+                            si_eval.dudx = RwLock::new(dudx);
+                            let dvdx: Float = *si.dvdx.read().unwrap();
+                            si_eval.dvdx = RwLock::new(dvdx);
+                            let dudy: Float = *si.dudy.read().unwrap();
+                            si_eval.dudy = RwLock::new(dudy);
+                            let dvdy: Float = *si.dvdy.read().unwrap();
+                            si_eval.dvdy = RwLock::new(dvdy);
+                            let dpdx: Vector3f = *si.dpdx.read().unwrap();
+                            si_eval.dpdx = RwLock::new(dpdx);
+                            let dpdy: Vector3f = *si.dpdy.read().unwrap();
+                            si_eval.dpdy = RwLock::new(dpdy);
+                            Some(Arc::new(geo_prim.clone()));
+                            si_eval.shading.n = si.shading.n.clone();
+                            si_eval.shading.dpdu = si.shading.dpdu.clone();
+                            si_eval.shading.dpdv = si.shading.dpdv.clone();
+                            si_eval.shading.dndu = si.shading.dndu.clone();
+                            si_eval.shading.dndv = si.shading.dndv.clone();
+                            if let Some(bsdf) = &si.bsdf {
+                                Some(Arc::new(bsdf.clone()));
+                            } else {
+                                si_eval.bsdf = None
+                            }
+                            if let Some(bssrdf) = &si.bssrdf {
+                                Some(Arc::new(bssrdf.clone()));
+                            } else {
+                                si_eval.bssrdf = None
+                            }
+                            if let Some(shape) = &si.shape {
+                                Some(Arc::new(shape.clone()));
+                            } else {
+                                si_eval.shape = None
+                            }
+                            chain.push(si_eval);
                             n_found += 1;
                         }
                     }
