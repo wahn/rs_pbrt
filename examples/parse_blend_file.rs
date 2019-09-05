@@ -44,11 +44,11 @@ use pbrt::core::texture::{Texture, TextureMapping2D, UVMapping2D};
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::ao::AOIntegrator;
-// use pbrt::integrators::bdpt::render_bdpt;
-// use pbrt::integrators::bdpt::BDPTIntegrator;
+use pbrt::integrators::bdpt::render_bdpt;
+use pbrt::integrators::bdpt::BDPTIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
-// use pbrt::integrators::mlt::render_mlt;
-// use pbrt::integrators::mlt::MLTIntegrator;
+use pbrt::integrators::mlt::render_mlt;
+use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
@@ -2604,51 +2604,51 @@ fn main() -> std::io::Result<()> {
                 &mut integrator,
                 num_threads,
             );
-        // } else if integrator_str == String::from("bdpt") {
-        //     println!("Bidirectional Path Tracing (BDPT)]");
-        //     // BDPTIntegrator
-        //     let max_depth: i32 = 5;
-        //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-        //     let light_strategy: String = String::from("power");
-        //     let mut integrator: Box<BDPTIntegrator> = Box::new(BDPTIntegrator::new(
-        //         max_depth as u32,
-        //         pixel_bounds,
-        //         light_strategy,
-        //     ));
-        //     // in the end we want to call render()
-        //     render_bdpt(
-        //         &scene,
-        //         &camera.clone(),
-        //         &mut sampler,
-        //         &mut integrator,
-        //         num_threads,
-        //     );
-        // } else if integrator_str == String::from("mlt") {
-        //     println!("Metropolis Light Transport (MLT)]");
-        //     // CreateMLTIntegrator
-        //     let max_depth: i32 = 5;
-        //     let n_bootstrap: i32 = 100000;
-        //     let n_chains: i32 = 1000;
-        //     let mutations_per_pixel: i32 = 100;
-        //     let sigma: Float = 0.01;
-        //     let large_step_probability: Float = 0.3;
-        //     let mut integrator: Box<MLTIntegrator> = Box::new(MLTIntegrator::new(
-        //         camera.clone(),
-        //         max_depth as u32,
-        //         n_bootstrap as u32,
-        //         n_chains as u32,
-        //         mutations_per_pixel as u32,
-        //         sigma,
-        //         large_step_probability,
-        //     ));
-        //     // in the end we want to call render()
-        //     render_mlt(
-        //         &scene,
-        //         &camera.clone(),
-        //         &mut sampler,
-        //         &mut integrator,
-        //         num_threads,
-        //     );
+        } else if integrator_str == String::from("bdpt") {
+            println!("Bidirectional Path Tracing (BDPT)]");
+            // BDPTIntegrator
+            let max_depth: i32 = 5;
+            let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+            let light_strategy: String = String::from("power");
+            let mut integrator: Box<BDPTIntegrator> = Box::new(BDPTIntegrator::new(
+                max_depth as u32,
+                pixel_bounds,
+                light_strategy,
+            ));
+            // in the end we want to call render()
+            render_bdpt(
+                &scene,
+                &camera.clone(),
+                &mut sampler,
+                &mut integrator,
+                num_threads,
+            );
+        } else if integrator_str == String::from("mlt") {
+            println!("Metropolis Light Transport (MLT)]");
+            // CreateMLTIntegrator
+            let max_depth: i32 = 5;
+            let n_bootstrap: i32 = 100000;
+            let n_chains: i32 = 1000;
+            let mutations_per_pixel: i32 = 100;
+            let sigma: Float = 0.01;
+            let large_step_probability: Float = 0.3;
+            let mut integrator: Box<MLTIntegrator> = Box::new(MLTIntegrator::new(
+                camera.clone(),
+                max_depth as u32,
+                n_bootstrap as u32,
+                n_chains as u32,
+                mutations_per_pixel as u32,
+                sigma,
+                large_step_probability,
+            ));
+            // in the end we want to call render()
+            render_mlt(
+                &scene,
+                &camera.clone(),
+                &mut sampler,
+                &mut integrator,
+                num_threads,
+            );
         } else {
             println!("unknown]");
         }
