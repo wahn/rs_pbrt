@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/wahn/rs_pbrt.svg?branch=master)](https://travis-ci.org/wahn/rs_pbrt)
 [![dependency status](https://deps.rs/repo/github/wahn/rs_pbrt/status.svg)](https://deps.rs/repo/github/wahn/rs_pbrt)
 [![](https://img.shields.io/github/issues-raw/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/issues)
-<!-- [![](https://tokei.rs/b1/github/wahn/rs_pbrt?category=code)](https://github.com/Aaronepower/tokei) -->
+[![](https://tokei.rs/b1/github/wahn/rs_pbrt?category=code)](https://github.com/Aaronepower/tokei)
 
 **Rust** crate to implement at least parts of the PBRT book's C++ code:
 
