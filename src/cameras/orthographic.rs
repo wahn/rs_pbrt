@@ -159,14 +159,7 @@ impl Camera for OrthographicCamera {
             z: 0.0,
         };
         let p_camera: Point3f = self.raster_to_camera.transform_point(&p_film);
-        let mut diff: RayDifferential = RayDifferential {
-            rx_origin: ray.o + self.dx_camera,
-            ry_origin: ray.o + self.dy_camera,
-            rx_direction: ray.d,
-            ry_direction: ray.d,
-        };
-        // *ray = RayDifferential(pCamera, Vector3f(0, 0, 1));
-        let mut in_ray: Ray = Ray {
+        *ray = Ray {
             o: p_camera,
             d: Vector3f {
                 x: 0.0,
@@ -176,22 +169,22 @@ impl Camera for OrthographicCamera {
             t_max: std::f32::INFINITY,
             time: lerp(sample.time, self.shutter_open, self.shutter_close),
             medium: None,
-            differential: Some(diff),
+            differential: None,
         };
         // modify ray for depth of field
         if self.lens_radius > 0.0 as Float {
             // sample point on lens
             let p_lens: Point2f = concentric_sample_disk(&sample.p_lens) * self.lens_radius;
             // compute point on plane of focus
-            let ft: Float = self.focal_distance / in_ray.d.z;
-            let p_focus: Point3f = in_ray.position(ft);
+            let ft: Float = self.focal_distance / ray.d.z;
+            let p_focus: Point3f = ray.position(ft);
             // update ray for effect of lens
-            in_ray.o = Point3f {
+            ray.o = Point3f {
                 x: p_lens.x,
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            in_ray.d = (p_focus - in_ray.o).normalize();
+            ray.d = (p_focus - ray.o).normalize();
         }
         // compute offset rays for _OrthographicCamera_ ray differentials
         if self.lens_radius > 0.0 as Float {
@@ -207,35 +200,40 @@ impl Camera for OrthographicCamera {
                     y: 0.0 as Float,
                     z: 1.0 as Float,
                 } * ft);
-            diff.rx_origin = Point3f {
+            let rx_origin = Point3f {
                 x: p_lens.x,
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            diff.rx_direction = (p_focus - diff.rx_origin).normalize();
-            let p_focus: Point3f = p_camera
-                + self.dy_camera
-                + (Vector3f {
-                    x: 0.0 as Float,
-                    y: 0.0 as Float,
-                    z: 1.0 as Float,
-                } * ft);
-            diff.ry_origin = Point3f {
+            let ry_origin = Point3f {
                 x: p_lens.x,
                 y: p_lens.y,
                 z: 0.0 as Float,
             };
-            diff.ry_direction = (p_focus - diff.ry_origin).normalize();
+            let diff = RayDifferential {
+                rx_origin: rx_origin,
+                rx_direction: (p_focus - rx_origin).normalize(),
+                ry_origin: ry_origin,
+                ry_direction: (p_focus - ry_origin).normalize(),
+            };
             // replace differential
-            in_ray.differential = Some(diff);
+            ray.differential = Some(diff);
+        } else {
+            let diff: RayDifferential = RayDifferential {
+                rx_origin: ray.o + self.dx_camera,
+                ry_origin: ray.o + self.dy_camera,
+                rx_direction: ray.d,
+                ry_direction: ray.d,
+            };
+            ray.differential = Some(diff);
         }
         // ray->medium = medium;
         if let Some(ref medium_arc) = self.medium {
-            in_ray.medium = Some(medium_arc.clone());
+            ray.medium = Some(medium_arc.clone());
         } else {
-            in_ray.medium = None;
+            ray.medium = None;
         }
-        *ray = self.camera_to_world.transform_ray(&in_ray);
+        *ray = self.camera_to_world.transform_ray(ray);
         1.0
     }
     fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
