@@ -89,6 +89,7 @@ struct Cli {
 
 #[derive(Debug, Default, Copy, Clone)]
 struct BlendCamera {
+    pub lens: f32,
     pub angle_x: f32,
     pub angle_y: f32,
 }
@@ -1736,6 +1737,7 @@ fn main() -> std::io::Result<()> {
                         // println!("  shifty = {}", shifty);
                         // skip_bytes += 4;
                         let cam: BlendCamera = BlendCamera {
+                            lens: lens,
                             angle_x: angle_x,
                             angle_y: angle_y,
                         };
@@ -2486,9 +2488,9 @@ fn main() -> std::io::Result<()> {
     if let Some(cam) = camera_hm.get(&base_name) {
         // overwrite fov
         if aspect > 1.0 {
-            fov = cam.angle_y;
+            fov = 2.0 as Float * degrees((16.0 as Float / (aspect * cam.lens)).atan());
         } else {
-            fov = cam.angle_x;
+            fov = 2.0 as Float * degrees((aspect * 16.0 as Float) / cam.lens).atan();
         }
         // println!("fov[{}] overwritten", fov);
     }
