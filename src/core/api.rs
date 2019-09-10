@@ -525,7 +525,22 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     } else if api_state.param_set.name == "goniometric" {
         println!("TODO: CreateGoniometricLight");
     } else if api_state.param_set.name == "projection" {
-        println!("TODO: CreateProjectionLight");
+        println!("WORK: CreateProjectionLight");
+        // CreateProjectionLight
+        let i: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+        // let projection_light = Arc::new(ProjectionLight::new(
+        //     &api_state.cur_transform.t[0],
+        //     medium_interface,
+        //     &(i * sc),
+        //     coneangle,
+        //     coneangle - conedelta,
+        // ));
+        // api_state.render_options.lights.push(projection_light);
     } else if api_state.param_set.name == "distant" {
         // CreateDistantLight
         let l: Spectrum = api_state
