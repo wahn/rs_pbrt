@@ -1,13 +1,15 @@
 // std
 use std;
 use std::f32::consts::PI;
+use std::io::BufReader;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::pnt3_distance_squared;
-use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{Light, LightFlags, VisibilityTester};
 use crate::core::medium::{Medium, MediumInterface};
+use crate::core::mipmap::{ImageWrap, MipMap};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampling::{uniform_sample_sphere, uniform_sphere_pdf};
 use crate::core::scene::Scene;
@@ -17,6 +19,7 @@ use crate::core::transform::Transform;
 
 pub struct ProjectionLight {
     // private data (see projection.h)
+    pub projection_map: Option<Arc<MipMap<Spectrum>>>,
     pub p_light: Point3f,
     pub i: Spectrum,
     pub light_projection: Transform,
@@ -30,7 +33,124 @@ pub struct ProjectionLight {
     pub medium_interface: MediumInterface,
 }
 
-impl ProjectionLight {}
+impl ProjectionLight {
+    #[cfg(not(feature = "openexr"))]
+    pub fn new(
+        light_to_world: &Transform,
+        medium_interface: &MediumInterface,
+        i: &Spectrum,
+        texname: String,
+        fov: Float,
+    ) -> Self {
+        ProjectionLight::new_hdr(light_to_world, medium_interface, i, texname, fov)
+    }
+    pub fn new_hdr(
+        light_to_world: &Transform,
+        medium_interface: &MediumInterface,
+        i: &Spectrum,
+        texname: String,
+        fov: Float,
+    ) -> Self {
+        if texname != String::from("") {
+            let file = std::fs::File::open(texname.clone()).unwrap();
+            let reader = BufReader::new(file);
+            let img_result = image::hdr::HDRDecoder::with_strictness(reader, false);
+            if img_result.is_ok() {
+                if let Some(hdr) = img_result.ok() {
+                    let meta = hdr.metadata();
+                    let resolution: Point2i = Point2i {
+                        x: meta.width as i32,
+                        y: meta.height as i32,
+                    };
+                    let img_result = hdr.read_image_transform(|p| {
+                        let rgb = p.to_hdr();
+                        Spectrum::rgb(rgb[0], rgb[1], rgb[2]) * *i
+                    });
+                    if img_result.is_ok() {
+                        let texels = img_result.ok().unwrap();
+                        // create _MipMap_ from converted texels (see above)
+                        let do_trilinear: bool = false;
+                        let max_aniso: Float = 8.0 as Float;
+                        let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                        let projection_map = Arc::new(MipMap::new(
+                            &resolution,
+                            &texels[..],
+                            do_trilinear,
+                            max_aniso,
+                            wrap_mode,
+                        ));
+                        let p_light: Point3f = light_to_world.transform_point(&Point3f::default());
+                        let aspect: Float = resolution.x as Float / resolution.y as Float;
+                        let screen_bounds: Bounds2f;
+                        if aspect > 1.0 as Float {
+                            screen_bounds = Bounds2f {
+                                p_min: Point2f {
+                                    x: -aspect,
+                                    y: -1.0 as Float,
+                                },
+                                p_max: Point2f {
+                                    x: aspect,
+                                    y: 1.0 as Float,
+                                },
+                            };
+                        } else {
+                            screen_bounds = Bounds2f {
+                                p_min: Point2f {
+                                    x: -1.0 as Float,
+                                    y: -1.0 as Float / aspect,
+                                },
+                                p_max: Point2f {
+                                    x: 1.0 as Float,
+                                    y: 1.0 as Float / aspect,
+                                },
+                            };
+                        }
+                        let hither: Float = 1e-3 as Float;
+                        let yon: Float = 1e30 as Float;
+                        let light_projection: Transform = Transform::perspective(fov, hither, yon);
+                        let screen_to_light: Transform = Transform::inverse(&light_projection);
+                        let p_corner: Point3f = Point3f {
+                            x: screen_bounds.p_max.x,
+                            y: screen_bounds.p_max.y,
+                            z: 0.0 as Float,
+                        };
+                        let w_corner: Vector3f =
+                            Vector3f::from(screen_to_light.transform_point(&p_corner)).normalize();
+                        let cos_total_width: Float = w_corner.z;
+                        return ProjectionLight {
+                            projection_map: Some(projection_map),
+                            p_light: p_light,
+                            i: *i,
+                            light_projection: light_projection,
+                            hither: hither,
+                            yon: yon,
+                            screen_bounds: screen_bounds,
+                            cos_total_width: cos_total_width,
+                            flags: LightFlags::Infinite as u8,
+                            n_samples: 1_i32,
+                            medium_interface: MediumInterface::default(),
+                        };
+                    }
+                }
+            } else {
+                println!("WARNING: ProjectionLight::new() ... no OpenEXR support !!!");
+            }
+        }
+        ProjectionLight {
+            projection_map: None,
+            p_light: Point3f::default(),
+            i: Spectrum::default(),
+            light_projection: Transform::default(),
+            hither: 0.0 as Float,
+            yon: 0.0 as Float,
+            screen_bounds: Bounds2f::default(),
+            cos_total_width: 0.0 as Float,
+            flags: LightFlags::Infinite as u8,
+            n_samples: 1_i32,
+            medium_interface: MediumInterface::default(),
+        }
+    }
+}
 
 impl Light for ProjectionLight {
     fn sample_li(
