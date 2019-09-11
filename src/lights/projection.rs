@@ -3,6 +3,11 @@ use std;
 use std::f32::consts::PI;
 use std::io::BufReader;
 use std::sync::Arc;
+// others
+#[cfg(feature = "openexr")]
+use half::f16;
+#[cfg(feature = "openexr")]
+use openexr::{FrameBufferMut, InputFile, PixelType};
 // pbrt
 use crate::core::geometry::{pnt2_inside_bnd2, pnt3_distance_squared};
 use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
@@ -15,6 +20,28 @@ use crate::core::reflection::cos_theta;
 use crate::core::sampling::{uniform_cone_pdf, uniform_sample_cone};
 use crate::core::scene::Scene;
 use crate::core::transform::Transform;
+
+// see https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
+#[inline]
+#[cfg(feature = "openexr")]
+fn decode_f16(half: u16) -> f32 {
+    let exp: u16 = half >> 10 & 0x1f;
+    let mant: u16 = half & 0x3ff;
+    let val: f32 = if exp == 0 {
+        (mant as f32) * (2.0f32).powi(-24)
+    } else if exp != 31 {
+        (mant as f32 + 1024f32) * (2.0f32).powi(exp as i32 - 25)
+    } else if mant == 0 {
+        ::std::f32::INFINITY
+    } else {
+        ::std::f32::NAN
+    };
+    if half & 0x8000 != 0 {
+        -val
+    } else {
+        val
+    }
+}
 
 // see projection.h
 
@@ -94,14 +121,14 @@ impl ProjectionLight {
                     }
                     // convert pixel data into Vec<Spectrum> (and on the way multiply by _l_)
                     let mut texels: Vec<Spectrum> = Vec::new();
-                    for i in 0..(resolution.x * resolution.y) {
-                        let (r, g, b) = pixel_data[i as usize];
+                    for idx in 0..(resolution.x * resolution.y) {
+                        let (r, g, b) = pixel_data[idx as usize];
                         texels.push(
                             Spectrum::rgb(
                                 decode_f16(r.to_bits()),
                                 decode_f16(g.to_bits()),
                                 decode_f16(b.to_bits()),
-                            ) * *l,
+                            ) * *i,
                         );
                     }
                     // create _MipMap_ from converted texels (see above)
@@ -170,11 +197,17 @@ impl ProjectionLight {
                     };
                 } else {
                     // try to open an HDR image instead (TODO: check extension upfront)
-                    ProjectionLight::new_hdr(light_to_world, l, n_samples, texname)
+                    return ProjectionLight::new_hdr(
+                        light_to_world,
+                        medium_interface,
+                        i,
+                        texname,
+                        fov,
+                    );
                 }
             } else {
                 // try to open an HDR image instead (TODO: check extension upfront)
-                ProjectionLight::new_hdr(light_to_world, l, n_samples, texname)
+                return ProjectionLight::new_hdr(light_to_world, medium_interface, i, texname, fov);
             }
         }
         ProjectionLight {
