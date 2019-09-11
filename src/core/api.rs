@@ -55,6 +55,7 @@ use crate::lights::diffuse::DiffuseAreaLight;
 use crate::lights::distant::DistantLight;
 use crate::lights::infinite::InfiniteAreaLight;
 use crate::lights::point::PointLight;
+use crate::lights::projection::ProjectionLight;
 use crate::lights::spot::SpotLight;
 use crate::materials::disney::DisneyMaterial;
 use crate::materials::fourier::FourierMaterial;
@@ -533,14 +534,18 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         let sc: Spectrum = api_state
             .param_set
             .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-        // let projection_light = Arc::new(ProjectionLight::new(
-        //     &api_state.cur_transform.t[0],
-        //     medium_interface,
-        //     &(i * sc),
-        //     coneangle,
-        //     coneangle - conedelta,
-        // ));
-        // api_state.render_options.lights.push(projection_light);
+        let fov: Float = api_state.param_set.find_one_float("fov", 45.0 as Float);
+        let texname: String = api_state
+            .param_set
+            .find_one_filename("mapname", String::from(""));
+        let projection_light = Arc::new(ProjectionLight::new(
+            &api_state.cur_transform.t[0],
+            medium_interface,
+            &(i * sc),
+            texname,
+            fov,
+        ));
+        api_state.render_options.lights.push(projection_light);
     } else if api_state.param_set.name == "distant" {
         // CreateDistantLight
         let l: Spectrum = api_state
@@ -2412,82 +2417,82 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             );
                         }
                     } else if let Some(mut integrator) = some_mlt_integrator {
-                    // because we can't call
-                    // integrator.render() yet,
-                    // let us repeat some code and
-                    // call render_mlt(...)
-                    // instead:
+                        // because we can't call
+                        // integrator.render() yet,
+                        // let us repeat some code and
+                        // call render_mlt(...)
+                        // instead:
 
-                    // MakeIntegrator
-                    // TODO: if (renderOptions->haveScatteringMedia && ...)
-                    if api_state.render_options.lights.is_empty() {
-                        // warn if no light sources are defined
-                        println!("WARNING: No light sources defined in scene; rendering a black image.",);
-                    }
-                    // MakeAccelerator
-                    if api_state.render_options.accelerator_name == "bvh" {
-                        //  CreateBVHAccelerator
-                        let split_method_name: String = api_state
-                            .render_options
-                            .accelerator_params
-                            .find_one_string("splitmethod", String::from("sah"));
-                        let split_method;
-                        if split_method_name == "sah" {
-                            split_method = SplitMethod::SAH;
-                        } else if split_method_name == "hlbvh" {
-                            split_method = SplitMethod::HLBVH;
-                        } else if split_method_name == "middle" {
-                            split_method = SplitMethod::Middle;
-                        } else if split_method_name == "equal" {
-                            split_method = SplitMethod::EqualCounts;
-                        } else {
-                            println!(
-                                "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
-                                split_method_name
-                            );
-                            split_method = SplitMethod::SAH;
+                        // MakeIntegrator
+                        // TODO: if (renderOptions->haveScatteringMedia && ...)
+                        if api_state.render_options.lights.is_empty() {
+                            // warn if no light sources are defined
+                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
                         }
-                        let max_prims_in_node: i32 = api_state
-                            .render_options
-                            .accelerator_params
-                            .find_one_int("maxnodeprims", 4);
-                        let accelerator = Arc::new(BVHAccel::new(
-                            api_state.render_options.primitives.clone(),
-                            max_prims_in_node as usize,
-                            split_method,
-                        ));
-                        // MakeScene
-                        let scene: Scene = Scene::new(
-                            accelerator.clone(),
-                            api_state.render_options.lights.clone(),
-                        );
-                        // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        // TODO: lights.erase(lights.begin(), lights.end());
-                        let num_threads: u8 = api_state.number_of_threads;
-                        render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                    } else if api_state.render_options.accelerator_name == "kdtree" {
-                        // println!("TODO: CreateKdTreeAccelerator");
-                        // WARNING: Use BVHAccel for now !!!
-                        let accelerator = Arc::new(BVHAccel::new(
-                            api_state.render_options.primitives.clone(),
-                            4,
-                            SplitMethod::SAH,
-                        ));
-                        // MakeScene
-                        let scene: Scene = Scene::new(
-                            accelerator.clone(),
-                            api_state.render_options.lights.clone(),
-                        );
-                        // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        // TODO: lights.erase(lights.begin(), lights.end());
-                        let num_threads: u8 = api_state.number_of_threads;
-                        render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                    } else {
-                        panic!(
-                            "Accelerator \"{}\" unknown.",
-                            api_state.render_options.accelerator_name
-                        );
-                    }
+                        // MakeAccelerator
+                        if api_state.render_options.accelerator_name == "bvh" {
+                            //  CreateBVHAccelerator
+                            let split_method_name: String = api_state
+                                .render_options
+                                .accelerator_params
+                                .find_one_string("splitmethod", String::from("sah"));
+                            let split_method;
+                            if split_method_name == "sah" {
+                                split_method = SplitMethod::SAH;
+                            } else if split_method_name == "hlbvh" {
+                                split_method = SplitMethod::HLBVH;
+                            } else if split_method_name == "middle" {
+                                split_method = SplitMethod::Middle;
+                            } else if split_method_name == "equal" {
+                                split_method = SplitMethod::EqualCounts;
+                            } else {
+                                println!(
+                                    "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
+                                    split_method_name
+                                );
+                                split_method = SplitMethod::SAH;
+                            }
+                            let max_prims_in_node: i32 = api_state
+                                .render_options
+                                .accelerator_params
+                                .find_one_int("maxnodeprims", 4);
+                            let accelerator = Arc::new(BVHAccel::new(
+                                api_state.render_options.primitives.clone(),
+                                max_prims_in_node as usize,
+                                split_method,
+                            ));
+                            // MakeScene
+                            let scene: Scene = Scene::new(
+                                accelerator.clone(),
+                                api_state.render_options.lights.clone(),
+                            );
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
+                            // println!("TODO: CreateKdTreeAccelerator");
+                            // WARNING: Use BVHAccel for now !!!
+                            let accelerator = Arc::new(BVHAccel::new(
+                                api_state.render_options.primitives.clone(),
+                                4,
+                                SplitMethod::SAH,
+                            ));
+                            // MakeScene
+                            let scene: Scene = Scene::new(
+                                accelerator.clone(),
+                                api_state.render_options.lights.clone(),
+                            );
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                        } else {
+                            panic!(
+                                "Accelerator \"{}\" unknown.",
+                                api_state.render_options.accelerator_name
+                            );
+                        }
                     } else if let Some(mut integrator) = some_sppm_integrator {
                         // because we can't call
                         // integrator.render() yet,
