@@ -514,7 +514,6 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
                 z: from.z,
             })
             * Transform::inverse(&dir_to_z);
-        // return std::make_shared<SpotLight>(light2world, medium, I * sc, coneangle, coneangle - conedelta);
         let spot_light = Arc::new(SpotLight::new(
             &light2world,
             medium_interface,
@@ -526,7 +525,6 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     } else if api_state.param_set.name == "goniometric" {
         println!("TODO: CreateGoniometricLight");
     } else if api_state.param_set.name == "projection" {
-        println!("WORK: CreateProjectionLight");
         // CreateProjectionLight
         let i: Spectrum = api_state
             .param_set
@@ -1218,8 +1216,10 @@ fn get_shapes_and_materials(
     Vec<Option<Arc<dyn Material + Send + Sync>>>,
 ) {
     if shape_may_set_material_parameters(&api_state.param_set) {
-        println!("Shape \"{}\"", api_state.param_set.name);
-        print_params(&api_state.param_set);
+        // TODO: see C++ code and shape_may_set_material_parameters() call
+
+        // println!("Shape \"{}\"", api_state.param_set.name);
+        // print_params(&api_state.param_set);
     }
     let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
     let mut materials: Vec<Option<Arc<dyn Material + Send + Sync>>> = Vec::new();

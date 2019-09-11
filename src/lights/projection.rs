@@ -11,7 +11,8 @@ use crate::core::light::{Light, LightFlags, VisibilityTester};
 use crate::core::medium::{Medium, MediumInterface};
 use crate::core::mipmap::{ImageWrap, MipMap};
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::sampling::{uniform_sample_sphere, uniform_sphere_pdf};
+use crate::core::reflection::cos_theta;
+use crate::core::sampling::{uniform_cone_pdf, uniform_sample_cone};
 use crate::core::scene::Scene;
 use crate::core::transform::Transform;
 
@@ -48,7 +49,7 @@ impl ProjectionLight {
     }
     pub fn new_hdr(
         light_to_world: &Transform,
-        medium_interface: &MediumInterface,
+        _medium_interface: &MediumInterface,
         i: &Spectrum,
         texname: String,
         fov: Float,
@@ -190,7 +191,6 @@ impl Light for ProjectionLight {
         pdf: &mut Float,
         vis: &mut VisibilityTester,
     ) -> Spectrum {
-        // TODO: ProfilePhase _(Prof::LightSample);
         *wi = (self.p_light - iref.p).normalize();
         *pdf = 1.0 as Float;
         *vis = VisibilityTester {
@@ -214,8 +214,21 @@ impl Light for ProjectionLight {
         self.i * self.projection(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     fn power(&self) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        if let Some(projection_map) = &self.projection_map {
+            projection_map.lookup_pnt_flt(
+                &Point2f {
+                    x: 0.5 as Float,
+                    y: 0.5 as Float,
+                },
+                0.5 as Float,
+            )
+        } else {
+            Spectrum::new(1.0 as Float)
+                * self.i
+                * 2.0 as Float
+                * PI
+                * (1.0 as Float - self.cos_total_width)
+        }
     }
     fn preprocess(&self, _scene: &Scene) {}
     /// Default implementation returns no emitted radiance for a ray
@@ -236,8 +249,23 @@ impl Light for ProjectionLight {
         pdf_pos: &mut Float,
         pdf_dir: &mut Float,
     ) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        let v: Vector3f = uniform_sample_cone(u1, self.cos_total_width);
+        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        if let Some(ref mi_inside) = self.medium_interface.inside {
+            inside = Some(mi_inside.clone());
+        }
+        *ray = Ray {
+            o: self.p_light,
+            d: self.light_to_world.transform_vector(&v),
+            t_max: std::f32::INFINITY,
+            time,
+            differential: None,
+            medium: inside,
+        };
+        *n_light = Normal3f::from(ray.d);
+        *pdf_pos = 1.0 as Float;
+        *pdf_dir = uniform_cone_pdf(self.cos_total_width);
+        self.i * self.projection(&ray.d)
     }
     fn get_flags(&self) -> u8 {
         self.flags
@@ -245,8 +273,12 @@ impl Light for ProjectionLight {
     fn get_n_samples(&self) -> i32 {
         self.n_samples
     }
-    fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+    fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         *pdf_pos = 0.0 as Float;
-        *pdf_dir = uniform_sphere_pdf();
+        if cos_theta(&self.world_to_light.transform_vector(&ray.d)) >= self.cos_total_width {
+            *pdf_dir = uniform_cone_pdf(self.cos_total_width);
+        } else {
+            *pdf_dir = 0.0 as Float;
+        }
     }
 }
