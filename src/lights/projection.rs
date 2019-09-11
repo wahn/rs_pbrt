@@ -119,7 +119,7 @@ impl ProjectionLight {
                         fb.insert_channels(&names_and_fills[..], &mut pixel_data);
                         input_file.read_pixels(&mut fb).unwrap();
                     }
-                    // convert pixel data into Vec<Spectrum> (and on the way multiply by _l_)
+                    // convert pixel data into Vec<Spectrum>
                     let mut texels: Vec<Spectrum> = Vec::new();
                     for idx in 0..(resolution.x * resolution.y) {
                         let (r, g, b) = pixel_data[idx as usize];
@@ -128,7 +128,7 @@ impl ProjectionLight {
                                 decode_f16(r.to_bits()),
                                 decode_f16(g.to_bits()),
                                 decode_f16(b.to_bits()),
-                            ) * *i,
+                            ),
                         );
                     }
                     // create _MipMap_ from converted texels (see above)
@@ -246,7 +246,7 @@ impl ProjectionLight {
                     };
                     let img_result = hdr.read_image_transform(|p| {
                         let rgb = p.to_hdr();
-                        Spectrum::rgb(rgb[0], rgb[1], rgb[2]) * *i
+                        Spectrum::rgb(rgb[0], rgb[1], rgb[2])
                     });
                     if img_result.is_ok() {
                         let texels = img_result.ok().unwrap();
