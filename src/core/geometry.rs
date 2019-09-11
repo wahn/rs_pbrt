@@ -1493,6 +1493,16 @@ impl Bounds2<Float> {
             y: lerp(t.y, self.p_min.y, self.p_max.y),
         }
     }
+    pub fn offset(&self, p: &Point2f) -> Vector2f {
+        let mut o: Vector2f = *p - self.p_min;
+        if self.p_max.x > self.p_min.x {
+            o.x /= self.p_max.x - self.p_min.x;
+        }
+        if self.p_max.y > self.p_min.y {
+            o.y /= self.p_max.y - self.p_min.y;
+        }
+        o
+    }
 }
 
 pub struct Bounds2Iterator<'a> {

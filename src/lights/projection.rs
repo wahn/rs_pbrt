@@ -4,7 +4,7 @@ use std::f32::consts::PI;
 use std::io::BufReader;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::pnt3_distance_squared;
+use crate::core::geometry::{pnt2_inside_bnd2, pnt3_distance_squared};
 use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{Light, LightFlags, VisibilityTester};
@@ -31,6 +31,8 @@ pub struct ProjectionLight {
     pub flags: u8,
     pub n_samples: i32,
     pub medium_interface: MediumInterface,
+    pub light_to_world: Transform,
+    pub world_to_light: Transform,
 }
 
 impl ProjectionLight {
@@ -129,6 +131,8 @@ impl ProjectionLight {
                             flags: LightFlags::Infinite as u8,
                             n_samples: 1_i32,
                             medium_interface: MediumInterface::default(),
+                            light_to_world: *light_to_world,
+                            world_to_light: Transform::inverse(&*light_to_world),
                         };
                     }
                 }
@@ -148,6 +152,31 @@ impl ProjectionLight {
             flags: LightFlags::Infinite as u8,
             n_samples: 1_i32,
             medium_interface: MediumInterface::default(),
+            light_to_world: Transform::default(),
+            world_to_light: Transform::default(),
+        }
+    }
+    pub fn projection(&self, w: &Vector3f) -> Spectrum {
+        // Vector3f wl = world_to_light(w);
+        let wl: Vector3f = self.world_to_light.transform_vector(w);
+        // discard directions behind projection light
+        if wl.z < self.hither {
+            return Spectrum::default();
+        }
+        // project point onto projection plane and compute light
+        let p: Point3f = self.light_projection.transform_point(&Point3f {
+            x: wl.x,
+            y: wl.y,
+            z: wl.z,
+        });
+        if !pnt2_inside_bnd2(&Point2f { x: p.x, y: p.y }, &self.screen_bounds) {
+            return Spectrum::default();
+        }
+        if let Some(projection_map) = &self.projection_map {
+            let st: Point2f = Point2f::from(self.screen_bounds.offset(&Point2f { x: p.x, y: p.y }));
+            projection_map.lookup_pnt_flt(&st, 0.0 as Float)
+        } else {
+            Spectrum::new(1.0 as Float)
         }
     }
 }
@@ -161,8 +190,28 @@ impl Light for ProjectionLight {
         pdf: &mut Float,
         vis: &mut VisibilityTester,
     ) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        // TODO: ProfilePhase _(Prof::LightSample);
+        *wi = (self.p_light - iref.p).normalize();
+        *pdf = 1.0 as Float;
+        *vis = VisibilityTester {
+            p0: InteractionCommon {
+                p: iref.p,
+                time: iref.time,
+                p_error: iref.p_error,
+                wo: iref.wo,
+                n: iref.n,
+                medium_interface: None,
+            },
+            p1: InteractionCommon {
+                p: self.p_light,
+                time: iref.time,
+                p_error: Vector3f::default(),
+                wo: Vector3f::default(),
+                n: Normal3f::default(),
+                medium_interface: None,
+            },
+        };
+        self.i * self.projection(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     fn power(&self) -> Spectrum {
         // WORK
