@@ -61,6 +61,10 @@ Glass](https://www.janwalter.org/assets/caustic_glass_pbrt_rust_sppm.png)
 
 [pbrt_ecosys.tar.gz][ecosys_pbrt]
 
+## Landscape (Cover image for the third edition of the PBRT book)
+
+![Landscape](https://www.janwalter.org/assets/landscape_rust_pbrt_view_0.png)
+
 ## Hair
 
 The [hair scattering][hair-scattering] model in action:
