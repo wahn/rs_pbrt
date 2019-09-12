@@ -71,11 +71,39 @@
 //!
 //! ## MitchellFilter
 //!
-//! TODO
+//! ```rust
+//! use pbrt::core::geometry::Vector2f;
+//! use pbrt::core::pbrt::Float;
+//! use pbrt::filters::mitchell::MitchellNetravali;
+//!
+//! fn main() {
+//!     let xwidth: Float = 2.0;
+//!     let ywidth: Float = 2.0;
+//!     let b: Float = 1.0 / 3.0;
+//!     let c: Float = 1.0 / 3.0;
+//!     let mitchell_filter = MitchellNetravali::new(xwidth, ywidth, b, c);
+//!
+//!     println!("mitchell_filter = {:?}", mitchell_filter);
+//! }
+//! ```
 //!
 //! ## LanczosSincFilter
 //!
-//! TODO
+//! ```rust
+//! use pbrt::core::geometry::Vector2f;
+//! use pbrt::core::pbrt::Float;
+//! use pbrt::filters::sinc::LanczosSincFilter;
+//!
+//! fn main() {
+//!     let xw: Float = 4.0;
+//!     let yw: Float = 4.0;
+//!     let radius: Vector2f = Vector2f { x: xw, y: yw };
+//!     let tau: Float = 3.0;
+//!     let sinc_filter = LanczosSincFilter::new(&radius, tau);
+//!
+//!     println!("sinc_filter = {:?}", sinc_filter);
+//! }
+//! ```
 //!
 //! ## TriangleFilter
 //!

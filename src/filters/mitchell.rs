@@ -3,6 +3,7 @@ use crate::core::geometry::{Point2f, Vector2f};
 use crate::core::paramset::ParamSet;
 use crate::core::pbrt::Float;
 
+#[derive(Debug, Default, Copy, Clone)]
 pub struct MitchellNetravali {
     width: Float,
     height: Float,

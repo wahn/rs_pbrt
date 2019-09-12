@@ -43,6 +43,8 @@ examples: without-exr
 	./target/release/examples/core_rng_set_sequence
 	./target/release/examples/filters_create_box_filter
 	./target/release/examples/filters_create_gaussian_filter
+	./target/release/examples/filters_create_mitchell_filter
+	./target/release/examples/filters_create_sinc_filter
 	./target/release/examples/filters_create_triangle_filter
 	./target/release/examples/geometry_bounds2_unit_cube
 	./target/release/examples/geometry_bounds3_unit_cube
