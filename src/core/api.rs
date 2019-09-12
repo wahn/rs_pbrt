@@ -39,6 +39,7 @@ use crate::core::transform::{AnimatedTransform, Matrix4x4, Transform};
 use crate::filters::boxfilter::BoxFilter;
 use crate::filters::gaussian::GaussianFilter;
 use crate::filters::mitchell::MitchellNetravali;
+use crate::filters::sinc::LanczosSincFilter;
 use crate::filters::triangle::TriangleFilter;
 use crate::integrators::ao::AOIntegrator;
 use crate::integrators::bdpt::render_bdpt;
@@ -1787,7 +1788,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
             &api_state.render_options.filter_params,
         ));
     } else if api_state.render_options.filter_name == "sinc" {
-        println!("TODO: CreateSincFilter");
+        some_filter = Some(LanczosSincFilter::create(
+            &api_state.render_options.filter_params,
+        ));
     } else if api_state.render_options.filter_name == "triangle" {
         some_filter = Some(TriangleFilter::create(
             &api_state.render_options.filter_params,

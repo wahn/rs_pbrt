@@ -13,7 +13,7 @@ pub struct MitchellNetravali {
 }
 
 impl MitchellNetravali {
-    pub fn new(w: Float, h: Float, b: Float, c: Float) -> MitchellNetravali {
+    pub fn new(w: Float, h: Float, b: Float, c: Float) -> Self {
         MitchellNetravali {
             width: w,
             height: h,
