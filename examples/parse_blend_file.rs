@@ -268,7 +268,7 @@ impl RenderOptions {
                 triangles.push(triangle.clone());
                 shapes.push(triangle.clone());
             }
-            if let Some(mat) = material_hm.get(mesh_name) {
+            if let Some(mat) = get_material(mesh_name, material_hm) {
                 // println!("{:?}: {:?}", mesh_name, mat);
                 if mat.emit > 0.0 {
                     has_emitters = true;
@@ -374,7 +374,7 @@ impl RenderOptions {
                     }
                 }
             } else {
-                // println!("{:?}: no mat", mesh_name);
+                println!("{:?}: no mat", mesh_name);
                 for _i in 0..shapes.len() {
                     triangle_materials.push(default_material.clone());
                     triangle_lights.push(None);
@@ -498,6 +498,47 @@ fn decode_blender_header(header: &[u8], version: &mut u32, print_it: bool) -> bo
     // convert to u32 and return
     *version = version_str.parse::<u32>().unwrap();
     true
+}
+
+fn get_material<'s, 'h>(
+    mesh_name: &'s String,
+    material_hm: &'h HashMap<String, Blend279Material>,
+) -> Option<&'h Blend279Material> {
+    // first try material with exactly the same name as the mesh
+    if let Some(mat) = material_hm.get(mesh_name) {
+        return Some(mat);
+    } else {
+        // then remove trailing digits from mesh name
+        let mut ntd: String = String::new();
+        let mut chars = mesh_name.chars();
+        let mut digits: String = String::new(); // many digits
+        while let Some(c) = chars.next() {
+            if c.is_digit(10_u32) {
+                // collect digits
+                digits.push(c);
+            } else {
+                // push collected digits (if any)
+                ntd += &digits;
+                // and reset
+                digits = String::new();
+                // push non-digit
+                ntd.push(c);
+            }
+        }
+        // try no trailing digits (ntd)
+        if let Some(mat) = material_hm.get(&ntd) {
+            return Some(mat);
+        } else {
+            // finally try adding a '1' at the end
+            ntd.push('1');
+            if let Some(mat) = material_hm.get(&ntd) {
+                return Some(mat);
+            } else {
+                return None;
+            }
+        }
+    }
+    // material_hm.get(mesh_name)
 }
 
 fn make_id(code: &[u8]) -> String {
