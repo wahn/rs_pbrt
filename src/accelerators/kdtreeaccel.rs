@@ -91,15 +91,21 @@ impl KdTreeAccel {
         //     edges[i].reset(new BoundEdge[2 * primitives.size()]);
         // std::unique_ptr<int[]> prims0(new int[primitives.size()]);
         // std::unique_ptr<int[]> prims1(new int[(maxDepth + 1) * primitives.size()]);
-        // initialize _primNums_ for kd-tree construction
+        // initialize _prim_nums_ for kd-tree construction
+        // std::unique_ptr<int[]> prim_nums(new int[primitives.size()]);
+        // for (size_t i = 0; i < primitives.size(); ++i) prim_nums[i] = i;
         // start recursive construction of kd-tree
-        KdTreeAccel {
+        let mut kd_tree: KdTreeAccel = KdTreeAccel {
             primitives: p,
             nodes: Vec::new(),
             n_alloced_nodes,
             next_free_node,
             bounds,
-        }
+        };
+        // build_tree(0, bounds, primBounds, prim_nums.get(), primitives.size(),
+        //           maxDepth, edges, prims0.get(), prims1.get());
+        KdTreeAccel::build_tree(&mut kd_tree, 0 as i32);
+        kd_tree
     }
     pub fn create(prims: Vec<Arc<dyn Primitive + Send + Sync>>, ps: &ParamSet) -> Arc<KdTreeAccel> {
         let isect_cost: i32 = ps.find_one_int("intersectcost", 80);
@@ -115,6 +121,12 @@ impl KdTreeAccel {
             max_prims,
             max_depth,
         ))
+    }
+    pub fn build_tree(&mut self, node_num: i32) {
+        assert_eq!(node_num, self.next_free_node);
+        if self.next_free_node == self.n_alloced_nodes {
+        }
+        self.next_free_node += 1;
     }
 }
 
