@@ -14,6 +14,44 @@ use crate::core::primitive::Primitive;
 
 pub struct KdAccelNode {}
 
+#[derive(Debug, Clone)]
+pub enum EdgeType {
+    Start,
+    End,
+}
+
+pub struct BoundEdge {
+    pub t: Float,
+    pub prim_num: i32,
+    pub edge_type: EdgeType,
+}
+
+impl BoundEdge {
+    pub fn new(t: Float, prim_num: i32, starting: bool) -> Self {
+        let edge_type: EdgeType;
+        if starting {
+            edge_type = EdgeType::Start;
+        } else {
+            edge_type = EdgeType::End;
+        }
+        BoundEdge {
+            t,
+            prim_num,
+            edge_type,
+        }
+    }
+}
+
+impl Default for BoundEdge {
+    fn default() -> Self {
+        BoundEdge {
+            t: 0.0 as Float,
+            prim_num: 0 as i32,
+            edge_type: EdgeType::Start,
+        }
+    }
+}
+
 pub struct KdTreeAccel {
     pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
     pub nodes: Vec<KdAccelNode>,
@@ -48,6 +86,11 @@ impl KdTreeAccel {
             prim_bounds.push(b);
         }
         // allocate working memory for kd-tree construction
+        // std::unique_ptr<BoundEdge[]> edges[3];
+        // for (int i = 0; i < 3; ++i)
+        //     edges[i].reset(new BoundEdge[2 * primitives.size()]);
+        // std::unique_ptr<int[]> prims0(new int[primitives.size()]);
+        // std::unique_ptr<int[]> prims1(new int[(maxDepth + 1) * primitives.size()]);
         // initialize _primNums_ for kd-tree construction
         // start recursive construction of kd-tree
         KdTreeAccel {
