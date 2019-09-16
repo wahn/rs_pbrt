@@ -6,7 +6,6 @@
 // std
 use std::sync::Arc;
 // pbrt
-use crate::accelerators::bvh::BVHAccel;
 use crate::core::geometry::{Bounds3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, SurfaceInteraction};
 use crate::core::light::{Light, LightFlags};

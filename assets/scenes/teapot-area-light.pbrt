@@ -10,7 +10,7 @@ Integrator "directlighting" "integer maxdepth" [10]
 Sampler "lowdiscrepancy" "integer pixelsamples" [8]
 #Sampler "halton" "integer pixelsamples" [8]
 PixelFilter "gaussian" "float xwidth" [2.000000 ] "float ywidth" [2.000000 ] 
-#Accelerator "kdtree"
+Accelerator "kdtree"
 
 WorldBegin
 
