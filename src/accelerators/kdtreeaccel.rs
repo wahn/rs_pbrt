@@ -20,6 +20,7 @@ pub enum EdgeType {
     End,
 }
 
+#[derive(Debug, Clone)]
 pub struct BoundEdge {
     pub t: Float,
     pub prim_num: usize,
@@ -88,9 +89,11 @@ impl KdTreeAccel {
             prim_bounds.push(b);
         }
         // allocate working memory for kd-tree construction
-        // std::unique_ptr<BoundEdge[]> edges[3];
-        // for (int i = 0; i < 3; ++i)
-        //     edges[i].reset(new BoundEdge[2 * primitives.size()]);
+        let mut edges: [Vec<BoundEdge>; 3] = [
+            Vec::with_capacity(2 * p_len),
+            Vec::with_capacity(2 * p_len),
+            Vec::with_capacity(2 * p_len),
+        ];
         // std::unique_ptr<int[]> prims0(new int[primitives.size()]);
         // std::unique_ptr<int[]> prims1(new int[(maxDepth + 1) * primitives.size()]);
         // initialize _prim_nums_ for kd-tree construction
@@ -116,6 +119,7 @@ impl KdTreeAccel {
             &prim_bounds,
             &prim_nums[..],
             p_len,
+            &mut edges,
         );
         kd_tree
     }
@@ -141,6 +145,7 @@ impl KdTreeAccel {
         all_prim_bounds: &Vec<Bounds3f>,
         prim_nums: &[usize],
         n_primitives: usize,
+        edges: &mut [Vec<BoundEdge>; 3],
     ) {
         assert_eq!(node_num, self.next_free_node);
         if self.next_free_node == self.n_alloced_nodes {}
@@ -163,10 +168,8 @@ impl KdTreeAccel {
             for i in 0..n_primitives {
                 let pn: usize = prim_nums[i];
                 let bounds: &Bounds3f = &all_prim_bounds[pn];
-                // edges[axis][2 * i] = BoundEdge(bounds.p_min[axis], pn, true);
-                let tmp1 = BoundEdge::new(bounds.p_min[axis], pn, true);
-                // edges[axis][2 * i + 1] = BoundEdge(bounds.p_max[axis], pn, false);
-                let tmp2 = BoundEdge::new(bounds.p_max[axis], pn, false);
+                edges[axis as usize][2 * i] = BoundEdge::new(bounds.p_min[axis], pn, true);
+                edges[axis as usize][2 * i + 1] = BoundEdge::new(bounds.p_max[axis], pn, false);
             }
         }
     }
