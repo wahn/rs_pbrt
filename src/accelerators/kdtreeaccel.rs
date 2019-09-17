@@ -31,6 +31,28 @@ pub struct KdAccelNode {
     pub pub_union: PublicUnion,
 }
 
+impl KdAccelNode {
+    pub fn init_leaf(&mut self, prim_nums: &[usize], np: usize, primitive_indices: &mut Vec<i32>) {
+        self.pub_union.flags = 3;
+        let n_prims: i32;
+        unsafe {
+            n_prims = self.pub_union.n_prims;
+        }
+        self.pub_union.n_prims = n_prims | ((np as i32) << 2);
+        // store primitive ids for leaf node
+        match np {
+            0 => self.priv_union.one_primitive = 0_i32,
+            1 => self.priv_union.one_primitive = prim_nums[0] as i32,
+            _ => {
+                self.priv_union.primitive_indices_offset = primitive_indices.len() as i32;
+                for i in 0..np {
+                    primitive_indices.push(prim_nums[i] as i32);
+                }
+            }
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum EdgeType {
     Start = 0,
@@ -76,6 +98,7 @@ pub struct KdTreeAccel {
     pub max_prims: i32,
     pub empty_bonus: Float,
     pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
+    pub primitive_indices: Vec<i32>,
     pub nodes: Vec<KdAccelNode>,
     pub n_alloced_nodes: i32,
     pub next_free_node: i32,
@@ -139,6 +162,7 @@ impl KdTreeAccel {
             max_prims,
             empty_bonus,
             primitives: p,
+            primitive_indices: Vec::new(),
             nodes: Vec::new(),
             n_alloced_nodes,
             next_free_node,
