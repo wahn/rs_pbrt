@@ -12,7 +12,24 @@ use crate::core::pbrt::log_2_int_i32;
 use crate::core::pbrt::Float;
 use crate::core::primitive::Primitive;
 
-pub struct KdAccelNode {}
+#[repr(C)]
+union PrivateUnion {
+    split: Float,
+    one_primitive: i32,
+    primitive_indices_offset: i32,
+}
+
+#[repr(C)]
+pub union PublicUnion {
+    pub flags: i32,
+    pub n_prims: i32,
+    pub above_child: i32,
+}
+
+pub struct KdAccelNode {
+    priv_union: PrivateUnion,
+    pub pub_union: PublicUnion,
+}
 
 #[derive(Debug, PartialEq, PartialOrd)]
 pub enum EdgeType {
@@ -174,7 +191,24 @@ impl KdTreeAccel {
     ) {
         let mut bad_refines: i32 = bad_refines;
         assert_eq!(node_num, self.next_free_node);
-        if self.next_free_node == self.n_alloced_nodes {}
+        if self.next_free_node == self.n_alloced_nodes {
+            let n_new_alloc_nodes: i32 = std::cmp::max(2 * self.n_alloced_nodes, 512);
+            let mut n: Vec<KdAccelNode> = Vec::with_capacity(n_new_alloc_nodes as usize);
+            for i in 0..n_new_alloc_nodes as usize {
+                n.push(KdAccelNode {
+                    priv_union: PrivateUnion {
+                        one_primitive: 0_i32,
+                    },
+                    pub_union: PublicUnion { flags: 0_i32 },
+                });
+            }
+            // if (self.n_alloced_nodes > 0) {
+            //     memcpy(n, nodes, self.n_alloced_nodes * sizeof(KdAccelNode));
+            //     FreeAligned(nodes);
+            // }
+            self.nodes = n;
+            self.n_alloced_nodes = n_new_alloc_nodes;
+        }
         self.next_free_node += 1;
         // initialize leaf node if termination criteria met
         if n_primitives <= self.max_prims as usize || depth == 0 {
