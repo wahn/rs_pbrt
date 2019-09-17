@@ -51,6 +51,15 @@ impl KdAccelNode {
             }
         }
     }
+    pub fn init_interior(&mut self, axis: i32, ac: i32, s: Float) {
+        self.priv_union.split = s;
+        self.pub_union.flags = axis;
+        let above_child: i32;
+        unsafe {
+            above_child = self.pub_union.above_child;
+        }
+        self.pub_union.above_child = above_child | (ac << 2);
+    }
 }
 
 #[derive(Debug, PartialEq, PartialOrd)]
@@ -217,26 +226,36 @@ impl KdTreeAccel {
         assert_eq!(node_num, self.next_free_node);
         if self.next_free_node == self.n_alloced_nodes {
             let n_new_alloc_nodes: i32 = std::cmp::max(2 * self.n_alloced_nodes, 512);
-            let mut n: Vec<KdAccelNode> = Vec::with_capacity(n_new_alloc_nodes as usize);
-            for i in 0..n_new_alloc_nodes as usize {
-                n.push(KdAccelNode {
-                    priv_union: PrivateUnion {
-                        one_primitive: 0_i32,
-                    },
-                    pub_union: PublicUnion { flags: 0_i32 },
-                });
+            if self.n_alloced_nodes > 0 {
+                self.nodes
+                    .resize_with(n_new_alloc_nodes as usize, || KdAccelNode {
+                        priv_union: PrivateUnion {
+                            one_primitive: 0_i32,
+                        },
+                        pub_union: PublicUnion { flags: 0_i32 },
+                    });
+            } else {
+                let mut n: Vec<KdAccelNode> = Vec::with_capacity(n_new_alloc_nodes as usize);
+                for i in 0..n_new_alloc_nodes as usize {
+                    n.push(KdAccelNode {
+                        priv_union: PrivateUnion {
+                            one_primitive: 0_i32,
+                        },
+                        pub_union: PublicUnion { flags: 0_i32 },
+                    });
+                }
+                self.nodes = n;
             }
-            // if (self.n_alloced_nodes > 0) {
-            //     memcpy(n, nodes, self.n_alloced_nodes * sizeof(KdAccelNode));
-            //     FreeAligned(nodes);
-            // }
-            self.nodes = n;
             self.n_alloced_nodes = n_new_alloc_nodes;
         }
         self.next_free_node += 1;
         // initialize leaf node if termination criteria met
         if n_primitives <= self.max_prims as usize || depth == 0 {
-            // TODO: nodes[node_num].init_leaf(prim_nums, n_primitives, &primitive_indices);
+            self.nodes[node_num as usize].init_leaf(
+                prim_nums,
+                n_primitives,
+                &mut self.primitive_indices,
+            );
             return;
         }
         // choose split axis position for interior node
@@ -334,7 +353,11 @@ impl KdTreeAccel {
             || best_axis == -1
             || bad_refines == 3
         {
-            // TODO: nodes[node_num].init_leaf(prim_nums, n_primitives, &primitive_indices);
+            self.nodes[node_num as usize].init_leaf(
+                prim_nums,
+                n_primitives,
+                &mut self.primitive_indices,
+            );
             return;
         }
         // classify primitives with respect to split
@@ -375,7 +398,7 @@ impl KdTreeAccel {
             bad_refines,
         );
         let above_child: i32 = self.next_free_node;
-        // TODO: nodes[node_num].init_interior(best_axis, above_child, t_split);
+        self.nodes[node_num as usize].init_interior(best_axis, above_child, t_split);
         let mut prim_nums: Vec<usize> = Vec::with_capacity(n_primitives);
         for i in 0..n_primitives {
             prim_nums.push(prims1[i]);
