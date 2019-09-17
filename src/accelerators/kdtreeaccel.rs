@@ -55,6 +55,9 @@ impl Default for BoundEdge {
 
 pub struct KdTreeAccel {
     pub isect_cost: i32,
+    pub traversal_cost: i32,
+    pub max_prims: i32,
+    pub empty_bonus: Float,
     pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
     pub nodes: Vec<KdAccelNode>,
     pub n_alloced_nodes: i32,
@@ -66,7 +69,7 @@ impl KdTreeAccel {
     pub fn new(
         p: Vec<Arc<dyn Primitive + Sync + Send>>,
         isect_cost: i32,
-        trav_cost: i32,
+        traversal_cost: i32,
         empty_bonus: Float,
         max_prims: i32,
         max_depth: i32,
@@ -111,6 +114,9 @@ impl KdTreeAccel {
         // start recursive construction of kd-tree
         let mut kd_tree: KdTreeAccel = KdTreeAccel {
             isect_cost,
+            traversal_cost,
+            max_prims,
+            empty_bonus,
             primitives: p,
             nodes: Vec::new(),
             n_alloced_nodes,
@@ -186,9 +192,52 @@ impl KdTreeAccel {
                     e0.t.partial_cmp(&e1.t).unwrap()
                 }
             });
-            for i in 0..n_primitives {
-                println!("{:?}", edges[axis as usize][2 * i]);
-                println!("{:?}", edges[axis as usize][2 * i + 1]);
+            // for i in 0..n_primitives {
+            //     println!("{:?}", edges[axis as usize][2 * i]);
+            //     println!("{:?}", edges[axis as usize][2 * i + 1]);
+            // }
+
+            // compute cost of all splits for _axis_ to find best
+            let mut n_below: usize = 0;
+            let mut n_above: usize = n_primitives;
+            for i in 0..(2 * n_primitives) {
+                if edges[axis as usize][i].edge_type == EdgeType::End {
+                    n_above -= 1;
+                }
+                let edge_t: Float = edges[axis as usize][i].t;
+                if edge_t > node_bounds.p_min[axis] && edge_t < node_bounds.p_max[axis] {
+                    // compute cost for split at _i_th edge
+
+                    // compute child surface areas for split at _edge_t_
+                    let other_axis_0: u8 = (axis + 1) % 3;
+                    let other_axis_1: u8 = (axis + 2) % 3;
+                    let below_sa: Float = 2.0 as Float
+                        * (d[other_axis_0] * d[other_axis_1]
+                            + (edge_t - node_bounds.p_min[axis])
+                                * (d[other_axis_0] + d[other_axis_1]));
+                    let above_sa: Float = 2.0 as Float
+                        * (d[other_axis_0] * d[other_axis_1]
+                            + (node_bounds.p_max[axis] - edge_t)
+                                * (d[other_axis_0] + d[other_axis_1]));
+                    let p_below: Float = below_sa * inv_total_sa;
+                    let p_above: Float = above_sa * inv_total_sa;
+                    let eb: Float;
+                    if n_above == 0 || n_below == 0 {
+                        eb = self.empty_bonus;
+                    } else {
+                        eb = 0.0 as Float;
+                    }
+                    let cost: Float = self.traversal_cost as Float
+                        + self.isect_cost as Float
+                            * (1.0 as Float - eb)
+                            * (p_below * n_below as Float + p_above * n_above as Float);
+                    // update best split if this is lowest cost so far
+                    if cost < best_cost {
+                        best_cost = cost;
+                        best_axis = axis as i32;
+                        best_offset = i as i32;
+                    }
+                }
             }
         }
     }
