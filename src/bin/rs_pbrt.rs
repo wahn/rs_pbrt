@@ -13,14 +13,15 @@ use pest::Parser;
 use getopts::Options;
 // pbrt
 use pbrt::core::api::{
-    pbrt_active_transform_all, pbrt_active_transform_end_time, pbrt_active_transform_start_time,
-    pbrt_area_light_source, pbrt_attribute_begin, pbrt_attribute_end, pbrt_camera, pbrt_cleanup,
-    pbrt_concat_transform, pbrt_coord_sys_transform, pbrt_film, pbrt_init, pbrt_integrator,
-    pbrt_light_source, pbrt_look_at, pbrt_make_named_material, pbrt_make_named_medium,
-    pbrt_material, pbrt_medium_interface, pbrt_named_material, pbrt_object_begin, pbrt_object_end,
-    pbrt_object_instance, pbrt_pixel_filter, pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler,
-    pbrt_scale, pbrt_shape, pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end,
-    pbrt_translate, pbrt_world_begin,
+    pbrt_accelerator, pbrt_active_transform_all, pbrt_active_transform_end_time,
+    pbrt_active_transform_start_time, pbrt_area_light_source, pbrt_attribute_begin,
+    pbrt_attribute_end, pbrt_camera, pbrt_cleanup, pbrt_concat_transform, pbrt_coord_sys_transform,
+    pbrt_film, pbrt_init, pbrt_integrator, pbrt_light_source, pbrt_look_at,
+    pbrt_make_named_material, pbrt_make_named_medium, pbrt_material, pbrt_medium_interface,
+    pbrt_named_material, pbrt_object_begin, pbrt_object_end, pbrt_object_instance,
+    pbrt_pixel_filter, pbrt_reverse_orientation, pbrt_rotate, pbrt_sampler, pbrt_scale, pbrt_shape,
+    pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_translate,
+    pbrt_world_begin,
 };
 use pbrt::core::api::{ApiState, BsdfState};
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
@@ -487,6 +488,10 @@ fn parse_line(
                     // println!("DEBUG: {}", for_printing);
                     let params = extract_params(String::from(identifier), inner_pair);
                     match identifier {
+                        "Accelerator" => {
+                            // Accelerator
+                            pbrt_accelerator(api_state, params);
+                        }
                         "AreaLightSource" => {
                             // AreaLightSource
                             pbrt_area_light_source(api_state, params);

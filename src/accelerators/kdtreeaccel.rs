@@ -14,13 +14,13 @@ use crate::core::primitive::Primitive;
 
 pub struct KdAccelNode {}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, PartialEq, PartialOrd)]
 pub enum EdgeType {
-    Start,
-    End,
+    Start = 0,
+    End = 1,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct BoundEdge {
     pub t: Float,
     pub prim_num: usize,
@@ -100,6 +100,13 @@ impl KdTreeAccel {
         let mut prim_nums: Vec<usize> = Vec::with_capacity(p_len);
         for i in 0..p_len {
             prim_nums.push(i);
+            // init all three edges Vecs
+            edges[0].push(BoundEdge::default());
+            edges[0].push(BoundEdge::default());
+            edges[1].push(BoundEdge::default());
+            edges[1].push(BoundEdge::default());
+            edges[2].push(BoundEdge::default());
+            edges[2].push(BoundEdge::default());
         }
         // start recursive construction of kd-tree
         let mut kd_tree: KdTreeAccel = KdTreeAccel {
@@ -170,6 +177,18 @@ impl KdTreeAccel {
                 let bounds: &Bounds3f = &all_prim_bounds[pn];
                 edges[axis as usize][2 * i] = BoundEdge::new(bounds.p_min[axis], pn, true);
                 edges[axis as usize][2 * i + 1] = BoundEdge::new(bounds.p_max[axis], pn, false);
+            }
+            // sort _edges_ for _axis_
+            edges[axis as usize].sort_unstable_by(|e0, e1| {
+                if e0.t == e1.t {
+                    e0.edge_type.partial_cmp(&e1.edge_type).unwrap()
+                } else {
+                    e0.t.partial_cmp(&e1.t).unwrap()
+                }
+            });
+            for i in 0..n_primitives {
+                println!("{:?}", edges[axis as usize][2 * i]);
+                println!("{:?}", edges[axis as usize][2 * i + 1]);
             }
         }
     }
