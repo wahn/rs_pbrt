@@ -97,11 +97,15 @@ impl KdTreeAccel {
             Vec::with_capacity(2 * p_len),
             Vec::with_capacity(2 * p_len),
         ];
-        // std::unique_ptr<int[]> prims0(new int[primitives.size()]);
-        // std::unique_ptr<int[]> prims1(new int[(maxDepth + 1) * primitives.size()]);
+        let mut prims0: Vec<usize> = Vec::with_capacity(p_len);
+        let mut prims1: Vec<usize> = Vec::with_capacity((max_depth + 1) as usize * p_len);
+        for i in 0..prims1.len() {
+            prims1.push(0_usize);
+        }
         // initialize _prim_nums_ for kd-tree construction
         let mut prim_nums: Vec<usize> = Vec::with_capacity(p_len);
         for i in 0..p_len {
+            prims0.push(0_usize);
             prim_nums.push(i);
             // init all three edges Vecs
             edges[0].push(BoundEdge::default());
@@ -124,7 +128,7 @@ impl KdTreeAccel {
             bounds,
         };
         // build_tree(0, bounds, prim_bounds, prim_nums.get(), primitives.size(),
-        //           maxDepth, edges, prims0.get(), prims1.get());
+        //           max_depth, edges, prims0.get(), prims1.get());
         KdTreeAccel::build_tree(
             &mut kd_tree,
             0 as i32,
@@ -133,6 +137,9 @@ impl KdTreeAccel {
             &prim_nums[..],
             p_len,
             &mut edges,
+            &mut prims0[..],
+            &mut prims1[..],
+            0, // bad_refines
         );
         kd_tree
     }
@@ -159,7 +166,11 @@ impl KdTreeAccel {
         prim_nums: &[usize],
         n_primitives: usize,
         edges: &mut [Vec<BoundEdge>; 3],
+        prims0: &mut [usize],
+        prims1: &mut [usize],
+        bad_refines: i32,
     ) {
+        let mut bad_refines: i32 = bad_refines;
         assert_eq!(node_num, self.next_free_node);
         if self.next_free_node == self.n_alloced_nodes {}
         self.next_free_node += 1;
@@ -176,7 +187,7 @@ impl KdTreeAccel {
         let mut axis: u8 = node_bounds.maximum_extent();
         let mut retries: u8 = 0;
         // avoid 'goto retrySplit;'
-        {
+        loop {
             // initialize edges for _axis_
             for i in 0..n_primitives {
                 let pn: usize = prim_nums[i];
@@ -238,6 +249,40 @@ impl KdTreeAccel {
                         best_offset = i as i32;
                     }
                 }
+            }
+            assert!(n_below == n_primitives && n_above == 0);
+            // create leaf if no good splits were found
+            if best_axis == -1 && retries < 2 {
+                retries += 1;
+                axis = (axis + 1) % 3;
+            // goto retrySplit;
+            } else {
+                break;
+            }
+        }
+        if best_cost > old_cost {
+            bad_refines += 1;
+        }
+        if (best_cost > 4.0 as Float * old_cost && n_primitives < 16)
+            || best_axis == -1
+            || bad_refines == 3
+        {
+            // TODO: nodes[node_num].init_leaf(primNums, n_primitives, &primitiveIndices);
+            return;
+        }
+        // classify primitives with respect to split
+        let mut n0: usize = 0;
+        let mut n1: usize = 0;
+        for i in 0..best_offset as usize {
+            if edges[best_axis as usize][i].edge_type == EdgeType::Start {
+                prims0[n0] = edges[best_axis as usize][i].prim_num;
+                n0 += 1;
+            }
+        }
+        for i in ((best_offset + 1) as usize)..(2 * n_primitives) {
+            if edges[best_axis as usize][i].edge_type == EdgeType::End {
+                prims1[n1] = edges[best_axis as usize][i].prim_num;
+                n1 += 1;
             }
         }
     }
