@@ -512,36 +512,61 @@ impl Primitive for KdTreeAccel {
                 // get node children pointers for ray
                 let below_first: bool = (ray.o[axis] < node.split_pos())
                     || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
-                let first_child: &KdAccelNode;
-                let second_child: &KdAccelNode;
+                let first_child: Option<&KdAccelNode>;
+                let second_child: Option<&KdAccelNode>;
                 let first_idx: usize;
                 let second_idx: usize;
                 if below_first {
                     first_idx = node_idx + 1;
-                    first_child = &self.nodes[first_idx];
+                    if first_idx != self.nodes.len() {
+                        first_child = Some(&self.nodes[first_idx]);
+                    } else {
+                        first_child = None;
+                    }
                     second_idx = node.above_child() as usize;
-                    second_child = &self.nodes[second_idx];
+                    second_child = Some(&self.nodes[second_idx]);
                 } else {
                     first_idx = node.above_child() as usize;
-                    first_child = &self.nodes[first_idx];
+                    first_child = Some(&self.nodes[first_idx]);
                     second_idx = node_idx + 1;
-                    second_child = &self.nodes[second_idx];
+                    if second_idx != self.nodes.len() {
+                        second_child = Some(&self.nodes[second_idx]);
+                    } else {
+                        second_child = None;
+                    }
                 }
                 // advance to next child node, possibly enqueue other child
                 if t_plane > t_max || t_plane <= 0.0 as Float {
-                    node = first_child;
-                    node_idx = first_idx;
+                    if let Some(fc) = first_child {
+                        node = fc;
+                        node_idx = first_idx;
+                    } else {
+                        return None;
+                    }
                 } else if t_plane < t_min {
-                    node = second_child;
-                    node_idx = second_idx;
+                    if let Some(sc) = second_child {
+                        node = sc;
+                        node_idx = second_idx;
+                    } else {
+                        return None;
+                    }
                 } else {
                     // enqueue _second_child_ in todo list
-                    todo[todo_pos].node = Some(second_child);
-                    todo[todo_pos].t_min = t_plane;
-                    todo[todo_pos].t_max = t_max;
-                    todo_pos += 1;
-                    node = first_child;
-                    node_idx = first_idx;
+                    if let Some(sc) = second_child {
+                        todo[todo_pos].node = Some(sc);
+                        todo[todo_pos].t_min = t_plane;
+                        todo[todo_pos].t_max = t_max;
+                        todo_pos += 1;
+                        if todo_pos == MAX_TODO {
+                            break;
+                        }
+                    }
+                    if let Some(fc) = first_child {
+                        node = fc;
+                        node_idx = first_idx;
+                    } else {
+                        return None;
+                    }
                     t_max = t_plane;
                 }
             } else {
@@ -670,36 +695,61 @@ impl Primitive for KdTreeAccel {
                 // get node children pointers for ray
                 let below_first: bool = (ray.o[axis] < node.split_pos())
                     || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
-                let first_child: &KdAccelNode;
-                let second_child: &KdAccelNode;
+                let first_child: Option<&KdAccelNode>;
+                let second_child: Option<&KdAccelNode>;
                 let first_idx: usize;
                 let second_idx: usize;
                 if below_first {
                     first_idx = node_idx + 1;
-                    first_child = &self.nodes[first_idx];
+                    if first_idx != self.nodes.len() {
+                        first_child = Some(&self.nodes[first_idx]);
+                    } else {
+                        first_child = None;
+                    }
                     second_idx = node.above_child() as usize;
-                    second_child = &self.nodes[second_idx];
+                    second_child = Some(&self.nodes[second_idx]);
                 } else {
                     first_idx = node.above_child() as usize;
-                    first_child = &self.nodes[first_idx];
+                    first_child = Some(&self.nodes[first_idx]);
                     second_idx = node_idx + 1;
-                    second_child = &self.nodes[second_idx];
+                    if second_idx != self.nodes.len() {
+                        second_child = Some(&self.nodes[second_idx]);
+                    } else {
+                        second_child = None;
+                    }
                 }
                 // advance to next child node, possibly enqueue other child
                 if t_plane > t_max || t_plane <= 0.0 as Float {
-                    node = first_child;
-                    node_idx = first_idx;
+                    if let Some(fc) = first_child {
+                        node = fc;
+                        node_idx = first_idx;
+                    } else {
+                        return false;
+                    }
                 } else if t_plane < t_min {
-                    node = second_child;
-                    node_idx = second_idx;
+                    if let Some(sc) = second_child {
+                        node = sc;
+                        node_idx = second_idx;
+                    } else {
+                        return false;
+                    }
                 } else {
                     // enqueue _second_child_ in todo list
-                    todo[todo_pos].node = Some(second_child);
-                    todo[todo_pos].t_min = t_plane;
-                    todo[todo_pos].t_max = t_max;
-                    todo_pos += 1;
-                    node = first_child;
-                    node_idx = first_idx;
+                    if let Some(sc) = second_child {
+                        todo[todo_pos].node = Some(sc);
+                        todo[todo_pos].t_min = t_plane;
+                        todo[todo_pos].t_max = t_max;
+                        todo_pos += 1;
+                        if todo_pos == MAX_TODO {
+                            break;
+                        }
+                    }
+                    if let Some(fc) = first_child {
+                        node = fc;
+                        node_idx = first_idx;
+                    } else {
+                        return false;
+                    }
                     t_max = t_plane;
                 }
             }
