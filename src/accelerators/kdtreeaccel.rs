@@ -192,7 +192,7 @@ impl KdTreeAccel {
         ];
         let mut prims0: Vec<usize> = Vec::with_capacity(p_len);
         let mut prims1: Vec<usize> = Vec::with_capacity((max_depth + 1) as usize * p_len);
-        for _i in 0..prims1.len() {
+        for _i in 0..((max_depth + 1) as usize * p_len) {
             prims1.push(0_usize);
         }
         // initialize _prim_nums_ for kd-tree construction
@@ -278,7 +278,7 @@ impl KdTreeAccel {
                     });
             } else {
                 let mut n: Vec<KdAccelNode> = Vec::with_capacity(n_new_alloc_nodes as usize);
-                for i in 0..n_new_alloc_nodes as usize {
+                for _i in 0..n_new_alloc_nodes as usize {
                     n.push(KdAccelNode {
                         priv_union: PrivateUnion {
                             one_primitive: 0_i32,
@@ -378,7 +378,13 @@ impl KdTreeAccel {
                     n_below += 1;
                 }
             }
-            assert!(n_below == n_primitives && n_above == 0);
+            assert!(
+                n_below == n_primitives && n_above == 0,
+                "{} == {}? && {} == 0?",
+                n_below,
+                n_primitives,
+                n_above
+            );
             // create leaf if no good splits were found
             if best_axis == -1 && retries < 2 {
                 retries += 1;
@@ -486,7 +492,6 @@ impl Primitive for KdTreeAccel {
         // traverse kd-tree nodes in order for ray
         let mut hit: bool = false;
         let mut si: SurfaceInteraction = SurfaceInteraction::default();
-        // const KdAccelNode *node = &nodes[0];
         let mut node_idx: usize = 0;
         let mut node: &KdAccelNode = &self.nodes[node_idx];
         loop {
@@ -505,19 +510,26 @@ impl Primitive for KdTreeAccel {
                     || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
                 let first_child: &KdAccelNode;
                 let second_child: &KdAccelNode;
+                let first_idx: usize;
+                let second_idx: usize;
                 if below_first {
-                    first_child = &self.nodes[node_idx + 1];
-                    second_child = &self.nodes[node.above_child() as usize];
+                    first_idx = node_idx + 1;
+                    first_child = &self.nodes[first_idx];
+                    second_idx = node.above_child() as usize;
+                    second_child = &self.nodes[second_idx];
                 } else {
-                    first_child = &self.nodes[node.above_child() as usize];
-                    second_child = &self.nodes[node_idx + 1];
+                    first_idx = node.above_child() as usize;
+                    first_child = &self.nodes[first_idx];
+                    second_idx = node_idx + 1;
+                    second_child = &self.nodes[second_idx];
                 }
-
                 // advance to next child node, possibly enqueue other child
                 if t_plane > t_max || t_plane <= 0.0 as Float {
                     node = first_child;
+                    node_idx = first_idx;
                 } else if t_plane < t_min {
                     node = second_child;
+                    node_idx = second_idx;
                 } else {
                     // enqueue _second_child_ in todo list
                     todo[todo_pos].node = Some(second_child);
@@ -525,6 +537,7 @@ impl Primitive for KdTreeAccel {
                     todo[todo_pos].t_max = t_max;
                     todo_pos += 1;
                     node = first_child;
+                    node_idx = first_idx;
                     t_max = t_plane;
                 }
             } else {
@@ -549,7 +562,7 @@ impl Primitive for KdTreeAccel {
                             primitive_indices_offset = node.priv_union.primitive_indices_offset;
                         }
                         let index: usize = self.primitive_indices
-                            [(primitive_indices_offset + 1) as usize]
+                            [(primitive_indices_offset + i) as usize]
                             as usize;
                         let p: &Arc<dyn Primitive + Send + Sync> = &self.primitives[index];
                         // check one primitive inside leaf node
@@ -581,7 +594,112 @@ impl Primitive for KdTreeAccel {
         }
     }
     fn intersect_p(&self, ray: &Ray) -> bool {
-        // WORK
+        // TODO: ProfilePhase p(Prof::AccelIntersectP);
+        if self.nodes.len() == 0 {
+            return false;
+        }
+        // compute initial parametric range of ray inside kd-tree extent
+        let mut t_min: Float = 0.0;
+        let mut t_max: Float = 0.0;
+        if !self.bounds.intersect_b(&ray, &mut t_min, &mut t_max) {
+            return false;
+        }
+        // prepare to traverse kd-tree for ray
+        let inv_dir: Vector3f = Vector3f {
+            x: 1.0 / ray.d.x,
+            y: 1.0 / ray.d.y,
+            z: 1.0 / ray.d.z,
+        };
+        let mut todo: [KdToDo; MAX_TODO] = [KdToDo::default(); MAX_TODO];
+        let mut todo_pos: usize = 0;
+        let mut node_idx: usize = 0;
+        let mut node: &KdAccelNode = &self.nodes[node_idx];
+        loop {
+            if node.is_leaf() {
+                // check for shadow ray intersections inside leaf node
+                let n_primitives: i32 = node.n_primitives();
+                if n_primitives == 1 {
+                    let one_primitive: i32;
+                    unsafe {
+                        one_primitive = node.priv_union.one_primitive;
+                    }
+                    let p: &Arc<dyn Primitive + Send + Sync> =
+                        &self.primitives[one_primitive as usize];
+                    if p.intersect_p(ray) {
+                        return true;
+                    }
+                } else {
+                    for i in 0..n_primitives {
+                        let primitive_indices_offset: i32;
+                        unsafe {
+                            primitive_indices_offset = node.priv_union.primitive_indices_offset;
+                        }
+                        let primitive_index: usize = self.primitive_indices
+                            [(primitive_indices_offset + i) as usize]
+                            as usize;
+                        let prim: &Arc<dyn Primitive + Send + Sync> =
+                            &self.primitives[primitive_index];
+                        if prim.intersect_p(ray) {
+                            return true;
+                        }
+                    }
+                }
+                // grab next node to process from todo list
+                if todo_pos > 0 {
+                    todo_pos -= 1;
+                    if let Some(n) = todo[todo_pos].node {
+                        node = n;
+                    } else {
+                        panic!("No todo[{}].node", todo_pos);
+                    }
+                    t_min = todo[todo_pos].t_min;
+                    t_max = todo[todo_pos].t_max;
+                } else {
+                    break;
+                }
+            } else {
+                // process kd-tree interior node
+
+                // compute parametric distance along ray to split plane
+                let axis: u8 = node.split_axis() as u8;
+                let t_plane: Float = (node.split_pos() - ray.o[axis]) * inv_dir[axis];
+                // get node children pointers for ray
+                let below_first: bool = (ray.o[axis] < node.split_pos())
+                    || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
+                let first_child: &KdAccelNode;
+                let second_child: &KdAccelNode;
+                let first_idx: usize;
+                let second_idx: usize;
+                if below_first {
+                    first_idx = node_idx + 1;
+                    first_child = &self.nodes[first_idx];
+                    second_idx = node.above_child() as usize;
+                    second_child = &self.nodes[second_idx];
+                } else {
+                    first_idx = node.above_child() as usize;
+                    first_child = &self.nodes[first_idx];
+                    second_idx = node_idx + 1;
+                    second_child = &self.nodes[second_idx];
+                }
+                // advance to next child node, possibly enqueue other child
+                if t_plane > t_max || t_plane <= 0.0 as Float {
+                    node = first_child;
+                    node_idx = first_idx;
+                } else if t_plane < t_min {
+                    node = second_child;
+                    node_idx = second_idx;
+                } else {
+                    // enqueue _second_child_ in todo list
+                    todo[todo_pos].node = Some(second_child);
+                    todo[todo_pos].t_min = t_plane;
+                    todo[todo_pos].t_max = t_max;
+                    todo_pos += 1;
+                    node = first_child;
+                    node_idx = first_idx;
+                    t_max = t_plane;
+                }
+            }
+        }
         false
     }
     fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {

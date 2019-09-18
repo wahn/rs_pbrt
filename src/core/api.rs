@@ -2284,7 +2284,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 num_threads,
                             );
                         } else if api_state.render_options.accelerator_name == "kdtree" {
-                            println!("WORK: CreateKdTreeAccelerator");
+                            // CreateKdTreeAccelerator
                             let accelerator = KdTreeAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
@@ -2320,35 +2320,10 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
-                            let split_method_name: String = api_state
-                                .render_options
-                                .accelerator_params
-                                .find_one_string("splitmethod", String::from("sah"));
-                            let split_method;
-                            if split_method_name == "sah" {
-                                split_method = SplitMethod::SAH;
-                            } else if split_method_name == "hlbvh" {
-                                split_method = SplitMethod::HLBVH;
-                            } else if split_method_name == "middle" {
-                                split_method = SplitMethod::Middle;
-                            } else if split_method_name == "equal" {
-                                split_method = SplitMethod::EqualCounts;
-                            } else {
-                                println!(
-                                    "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
-                                    split_method_name
-                                );
-                                split_method = SplitMethod::SAH;
-                            }
-                            let max_prims_in_node: i32 = api_state
-                                .render_options
-                                .accelerator_params
-                                .find_one_int("maxnodeprims", 4);
-                            let accelerator = Arc::new(BVHAccel::new(
+                            let accelerator = BVHAccel::create(
                                 api_state.render_options.primitives.clone(),
-                                max_prims_in_node as usize,
-                                split_method,
-                            ));
+                                &api_state.render_options.accelerator_params,
+                            );
                             // MakeScene
                             let scene: Scene = Scene::new(
                                 accelerator.clone(),
@@ -2365,13 +2340,11 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 num_threads,
                             );
                         } else if api_state.render_options.accelerator_name == "kdtree" {
-                            // println!("TODO: CreateKdTreeAccelerator");
-                            // WARNING: Use BVHAccel for now !!!
-                            let accelerator = Arc::new(BVHAccel::new(
+                            // CreateKdTreeAccelerator
+                            let accelerator = KdTreeAccel::create(
                                 api_state.render_options.primitives.clone(),
-                                4,
-                                SplitMethod::SAH,
-                            ));
+                                &api_state.render_options.accelerator_params,
+                            );
                             // MakeScene
                             let scene: Scene = Scene::new(
                                 accelerator.clone(),
@@ -2409,35 +2382,10 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
-                            let split_method_name: String = api_state
-                                .render_options
-                                .accelerator_params
-                                .find_one_string("splitmethod", String::from("sah"));
-                            let split_method;
-                            if split_method_name == "sah" {
-                                split_method = SplitMethod::SAH;
-                            } else if split_method_name == "hlbvh" {
-                                split_method = SplitMethod::HLBVH;
-                            } else if split_method_name == "middle" {
-                                split_method = SplitMethod::Middle;
-                            } else if split_method_name == "equal" {
-                                split_method = SplitMethod::EqualCounts;
-                            } else {
-                                println!(
-                                    "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
-                                    split_method_name
-                                );
-                                split_method = SplitMethod::SAH;
-                            }
-                            let max_prims_in_node: i32 = api_state
-                                .render_options
-                                .accelerator_params
-                                .find_one_int("maxnodeprims", 4);
-                            let accelerator = Arc::new(BVHAccel::new(
+                            let accelerator = BVHAccel::create(
                                 api_state.render_options.primitives.clone(),
-                                max_prims_in_node as usize,
-                                split_method,
-                            ));
+                                &api_state.render_options.accelerator_params,
+                            );
                             // MakeScene
                             let scene: Scene = Scene::new(
                                 accelerator.clone(),
@@ -2448,13 +2396,11 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             let num_threads: u8 = api_state.number_of_threads;
                             render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
                         } else if api_state.render_options.accelerator_name == "kdtree" {
-                            // println!("TODO: CreateKdTreeAccelerator");
-                            // WARNING: Use BVHAccel for now !!!
-                            let accelerator = Arc::new(BVHAccel::new(
+                            // CreateKdTreeAccelerator
+                            let accelerator = KdTreeAccel::create(
                                 api_state.render_options.primitives.clone(),
-                                4,
-                                SplitMethod::SAH,
-                            ));
+                                &api_state.render_options.accelerator_params,
+                            );
                             // MakeScene
                             let scene: Scene = Scene::new(
                                 accelerator.clone(),
@@ -2486,35 +2432,10 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
-                            let split_method_name: String = api_state
-                                .render_options
-                                .accelerator_params
-                                .find_one_string("splitmethod", String::from("sah"));
-                            let split_method;
-                            if split_method_name == "sah" {
-                                split_method = SplitMethod::SAH;
-                            } else if split_method_name == "hlbvh" {
-                                split_method = SplitMethod::HLBVH;
-                            } else if split_method_name == "middle" {
-                                split_method = SplitMethod::Middle;
-                            } else if split_method_name == "equal" {
-                                split_method = SplitMethod::EqualCounts;
-                            } else {
-                                println!(
-                                    "WARNING: BVH split method \"{}\" unknown.  Using \"sah\".",
-                                    split_method_name
-                                );
-                                split_method = SplitMethod::SAH;
-                            }
-                            let max_prims_in_node: i32 = api_state
-                                .render_options
-                                .accelerator_params
-                                .find_one_int("maxnodeprims", 4);
-                            let accelerator = Arc::new(BVHAccel::new(
+                            let accelerator = BVHAccel::create(
                                 api_state.render_options.primitives.clone(),
-                                max_prims_in_node as usize,
-                                split_method,
-                            ));
+                                &api_state.render_options.accelerator_params,
+                            );
                             // MakeScene
                             let scene: Scene = Scene::new(
                                 accelerator.clone(),
@@ -2531,13 +2452,11 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 num_threads,
                             );
                         } else if api_state.render_options.accelerator_name == "kdtree" {
-                            // println!("TODO: CreateKdTreeAccelerator");
-                            // WARNING: Use BVHAccel for now !!!
-                            let accelerator = Arc::new(BVHAccel::new(
+                            // CreateKdTreeAccelerator
+                            let accelerator = KdTreeAccel::create(
                                 api_state.render_options.primitives.clone(),
-                                4,
-                                SplitMethod::SAH,
-                            ));
+                                &api_state.render_options.accelerator_params,
+                            );
                             // MakeScene
                             let scene: Scene = Scene::new(
                                 accelerator.clone(),
