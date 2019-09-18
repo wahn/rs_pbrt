@@ -313,6 +313,8 @@ impl KdTreeAccel {
         let mut retries: u8 = 0;
         // avoid 'goto retrySplit;'
         loop {
+            // trim edges to 2 * n_primitives
+            edges[axis as usize].resize_with(2 * n_primitives, BoundEdge::default);
             // initialize edges for _axis_
             for i in 0..n_primitives {
                 let pn: usize = prim_nums[i];
@@ -429,8 +431,9 @@ impl KdTreeAccel {
         let mut bounds1: Bounds3f = *node_bounds;
         bounds0.p_max[best_axis as u8] = t_split;
         bounds1.p_min[best_axis as u8] = t_split;
-        let mut prim_nums: Vec<usize> = Vec::with_capacity(n_primitives);
-        for i in 0..n_primitives {
+        // copy prims0
+        let mut prim_nums: Vec<usize> = Vec::with_capacity(prims0.len());
+        for i in 0..prims0.len() {
             prim_nums.push(prims0[i]);
         }
         self.build_tree(
@@ -447,8 +450,9 @@ impl KdTreeAccel {
         );
         let above_child: i32 = self.next_free_node;
         self.nodes[node_num as usize].init_interior(best_axis, above_child, t_split);
-        let mut prim_nums: Vec<usize> = Vec::with_capacity(n_primitives);
-        for i in 0..n_primitives {
+        // copy prims1
+        let mut prim_nums: Vec<usize> = Vec::with_capacity(prims1.len());
+        for i in 0..prims1.len() {
             prim_nums.push(prims1[i]);
         }
         self.build_tree(
