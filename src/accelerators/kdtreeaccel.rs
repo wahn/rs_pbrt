@@ -12,6 +12,8 @@ use crate::core::pbrt::log_2_int_i32;
 use crate::core::pbrt::Float;
 use crate::core::primitive::Primitive;
 
+pub const MAX_TODO: usize = 64;
+
 #[repr(C)]
 union PrivateUnion {
     split: Float,
@@ -24,6 +26,12 @@ pub union PublicUnion {
     pub flags: i32,
     pub n_prims: i32,
     pub above_child: i32,
+}
+
+pub struct KdToDo {
+    pub node: Option<Arc<KdAccelNode>>,
+    pub t_min: Float,
+    pub t_max: Float,
 }
 
 pub struct KdAccelNode {
@@ -59,6 +67,13 @@ impl KdAccelNode {
             above_child = self.pub_union.above_child;
         }
         self.pub_union.above_child = above_child | (ac << 2);
+    }
+    pub fn is_leaf(&self) -> bool {
+        let flags: i32;
+        unsafe {
+            flags = self.pub_union.flags;
+        }
+        (flags & 3) == 3
     }
 }
 
@@ -420,12 +435,107 @@ impl KdTreeAccel {
 
 impl Primitive for KdTreeAccel {
     fn world_bound(&self) -> Bounds3f {
-        // WORK
-        Bounds3f::default()
+        self.bounds
     }
     fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
-        // WORK
-        None
+        // TODO: ProfilePhase p(Prof::AccelIntersect);
+        if self.nodes.len() == 0 {
+            return None;
+        }
+        // compute initial parametric range of ray inside kd-tree extent
+        let mut t_min: Float = 0.0;
+        let mut t_max: Float = 0.0;
+        if !self.bounds.intersect_b(&ray, &mut t_min, &mut t_max) {
+            return None;
+        }
+        // prepare to traverse kd-tree for ray
+        let inv_dir: Vector3f = Vector3f {
+            x: 1.0 / ray.d.x,
+            y: 1.0 / ray.d.y,
+            z: 1.0 / ray.d.z,
+        };
+        let mut todo: [KdToDo; MAX_TODO];
+        let mut todo_pos: usize = 0;
+        // traverse kd-tree nodes in order for ray
+        let mut hit: bool = false;
+        let mut si: SurfaceInteraction = SurfaceInteraction::default();
+        // const KdAccelNode *node = &nodes[0];
+        let mut node: &KdAccelNode = &self.nodes[0];
+        loop {
+            // bail out if we found a hit closer than the current node
+            if ray.t_max < t_min {
+                break;
+            }
+            if !node.is_leaf() {
+                // Check for shadow ray intersections inside leaf node
+                // int nPrimitives = node->nPrimitives();
+                // if (nPrimitives == 1) {
+                //     const std::shared_ptr<Primitive> &p =
+                //         primitives[node->onePrimitive];
+                //     if (p->IntersectP(ray)) {
+                //         return true;
+                //     }
+                // } else {
+                //     for (int i = 0; i < nPrimitives; ++i) {
+                //         int primitiveIndex =
+                //             primitiveIndices[node->primitiveIndicesOffset + i];
+                //         const std::shared_ptr<Primitive> &prim =
+                //             primitives[primitiveIndex];
+                //         if (prim->IntersectP(ray)) {
+                //             return true;
+                //         }
+                //     }
+                // }
+
+                // // Grab next node to process from todo list
+                // if (todoPos > 0) {
+                //     --todoPos;
+                //     node = todo[todoPos].node;
+                //     tMin = todo[todoPos].tMin;
+                //     tMax = todo[todoPos].tMax;
+                // } else
+                //     break;
+            } else {
+                // process kd-tree interior node
+
+                // compute parametric distance along ray to split plane
+                // int axis = node->SplitAxis();
+                // Float tPlane = (node->SplitPos() - ray.o[axis]) * invDir[axis];
+
+                // // Get node children pointers for ray
+                // const KdAccelNode *firstChild, *secondChild;
+                // int belowFirst =
+                //     (ray.o[axis] < node->SplitPos()) ||
+                //     (ray.o[axis] == node->SplitPos() && ray.d[axis] <= 0);
+                // if (belowFirst) {
+                //     firstChild = node + 1;
+                //     secondChild = &nodes[node->AboveChild()];
+                // } else {
+                //     firstChild = &nodes[node->AboveChild()];
+                //     secondChild = node + 1;
+                // }
+
+                // // Advance to next child node, possibly enqueue other child
+                // if (tPlane > tMax || tPlane <= 0)
+                //     node = firstChild;
+                // else if (tPlane < tMin)
+                //     node = secondChild;
+                // else {
+                //     // Enqueue _secondChild_ in todo list
+                //     todo[todoPos].node = secondChild;
+                //     todo[todoPos].tMin = tPlane;
+                //     todo[todoPos].tMax = tMax;
+                //     ++todoPos;
+                //     node = firstChild;
+                //     tMax = tPlane;
+                // }
+            }
+        }
+        if hit {
+            Some(si)
+        } else {
+            None
+        }
     }
     fn intersect_p(&self, ray: &Ray) -> bool {
         // WORK
