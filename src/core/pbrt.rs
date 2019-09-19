@@ -302,3 +302,24 @@ pub fn erf_inv(x: Float) -> Float {
     }
     p * clamped_x
 }
+
+pub fn erf(x: Float) -> Float {
+    // constants
+    let a1: Float = 0.254829592;
+    let a2: Float = -0.284496736;
+    let a3: Float = 1.421413741;
+    let a4: Float = -1.453152027;
+    let a5: Float = 1.061405429;
+    let p: Float = 0.3275911;
+    // save the sign of x
+    let mut sign: Float = 1.0;
+    if x < 0.0 as Float {
+        sign = -1.0;
+    }
+    let x: Float = x.abs();
+    // A&S formula 7.1.26
+    let t: Float = 1.0 as Float / (1.0 as Float + p * x);
+    let y: Float =
+        1.0 as Float - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * (-x * x).exp();
+    sign * y
+}

@@ -9,6 +9,7 @@ use std::f32::consts::PI;
 use crate::core::geometry::{spherical_direction, vec3_abs_dot_vec3};
 use crate::core::geometry::{Point2f, Vector3f};
 use crate::core::pbrt::Float;
+use crate::core::pbrt::{erf, erf_inv};
 use crate::core::reflection::{
     abs_cos_theta, cos_2_phi, cos_2_theta, cos_phi, cos_theta, sin_2_phi, sin_phi, tan_2_theta,
     tan_theta, vec3_same_hemisphere_vec3,
@@ -34,6 +35,127 @@ pub trait MicrofacetDistribution {
     }
     fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f;
     fn get_sample_visible_area(&self) -> bool;
+}
+
+pub struct BeckmannDistribution {
+    pub alpha_x: Float,
+    pub alpha_y: Float,
+    // inherited from class MicrofacetDistribution (see microfacet.h)
+    pub sample_visible_area: bool,
+}
+
+impl BeckmannDistribution {
+    pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> Self {
+        BeckmannDistribution {
+            alpha_x,
+            alpha_y,
+            sample_visible_area,
+        }
+    }
+    pub fn roughness_to_alpha(roughness: Float) -> Float {
+        let mut roughness = roughness;
+        let limit: Float = 1e-3 as Float;
+        if limit > roughness {
+            roughness = limit;
+        }
+        let x: Float = roughness.ln(); // natural (base e) logarithm
+        1.62142
+            + 0.819955 * x
+            + 0.1734 * x * x
+            + 0.0171201 * x * x * x
+            + 0.000640711 * x * x * x * x
+    }
+}
+
+impl MicrofacetDistribution for BeckmannDistribution {
+    fn d(&self, wh: &Vector3f) -> Float {
+        let tan_2_theta: Float = tan_2_theta(wh);
+        if tan_2_theta.is_infinite() {
+            return 0.0 as Float;
+        }
+        let cos_4_theta: Float = cos_2_theta(wh) * cos_2_theta(wh);
+        (-tan_2_theta
+            * (cos_2_phi(wh) / (self.alpha_x * self.alpha_x)
+                + sin_2_phi(wh) / (self.alpha_y * self.alpha_y)))
+            .exp()
+            / (PI * self.alpha_x * self.alpha_y * cos_4_theta)
+    }
+
+    fn lambda(&self, w: &Vector3f) -> Float {
+        let abs_tan_theta: Float = tan_theta(w).abs();
+        if abs_tan_theta.is_infinite() {
+            return 0.0;
+        }
+        // compute _alpha_ for direction _w_
+        let alpha: Float = (cos_2_phi(w) * self.alpha_x * self.alpha_x
+            + sin_2_phi(w) * self.alpha_y * self.alpha_y)
+            .sqrt();
+        let a: Float = 1.0 as Float / (alpha * abs_tan_theta);
+        if a >= 1.6 as Float {
+            return 0.0 as Float;
+        }
+        (1.0 as Float - 1.259 * a + 0.396 * a * a) / (3.535 * a + 2.181 * a * a)
+    }
+
+    fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+        if !self.sample_visible_area {
+            // sample full distribution of normals for Beckmann
+            // distribution
+
+            // compute $\tan^2 \theta$ and $\phi$ for Beckmann
+            // distribution sample
+            let tan_2_theta: Float;
+            let mut phi: Float;
+            if self.alpha_x == self.alpha_y {
+                let log_sample: Float = (1.0 as Float - u[0]).ln();
+                assert!(!log_sample.is_infinite());
+                tan_2_theta = -self.alpha_x * self.alpha_x * log_sample;
+                phi = u[1] * 2.0 as Float * PI;
+            } else {
+                // compute _tan_2_theta_ and _phi_ for anisotropic
+                // Beckmann distribution
+                let log_sample: Float = (1.0 as Float - u[0]).ln();
+                assert!(!log_sample.is_infinite());
+                phi = (self.alpha_y / self.alpha_x * (2.0 as Float * PI * u[1] + 0.5 * PI).tan())
+                    .atan();
+                if u[1] > 0.5 as Float {
+                    phi += PI;
+                }
+                let sin_phi: Float = phi.sin();
+                let cos_phi: Float = phi.cos();
+                let alpha_x2: Float = self.alpha_x * self.alpha_x;
+                let alpha_y2: Float = self.alpha_y * self.alpha_y;
+                tan_2_theta =
+                    -log_sample / (cos_phi * cos_phi / alpha_x2 + sin_phi * sin_phi / alpha_y2);
+            }
+            // map sampled Beckmann angles to normal direction _wh_
+            let cos_theta: Float = 1.0 as Float / (1.0 as Float + tan_2_theta).sqrt();
+            let sin_theta: Float =
+                ((0.0 as Float).max(1.0 as Float - cos_theta * cos_theta)).sqrt();
+            let mut wh: Vector3f = spherical_direction(sin_theta, cos_theta, phi);
+            if !vec3_same_hemisphere_vec3(wo, &wh) {
+                wh = -wh;
+            }
+            wh
+        } else {
+            // sample visible area of normals for Beckmann distribution
+            let mut wh: Vector3f;
+            let flip: bool = wo.z < 0.0 as Float;
+            if flip {
+                wh = beckmann_sample(&-(*wo), self.alpha_x, self.alpha_y, u[0], u[1]);
+            } else {
+                wh = beckmann_sample(wo, self.alpha_x, self.alpha_y, u[0], u[1]);
+            }
+            if flip {
+                wh = -wh;
+            }
+            wh
+        }
+    }
+
+    fn get_sample_visible_area(&self) -> bool {
+        self.sample_visible_area
+    }
 }
 
 pub struct TrowbridgeReitzDistribution {
@@ -144,6 +266,126 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
     fn get_sample_visible_area(&self) -> bool {
         self.sample_visible_area
     }
+}
+
+fn beckmann_sample_11(
+    cos_theta_i: Float,
+    u1: Float,
+    u2: Float,
+    slope_x: &mut Float,
+    slope_y: &mut Float,
+) {
+    // special case (normal incidence)
+    if cos_theta_i > 0.9999 {
+        let r: Float = (-((1.0 - u1).ln())).sqrt();
+        let phi: Float = 2.0 as Float * PI * u2;
+        *slope_x = r * phi.cos();
+        *slope_y = r * phi.sin();
+        return;
+    }
+
+    // The original inversion routine from the paper contained
+    // discontinuities, which causes issues for QMC integration and
+    // techniques like Kelemen-style MLT. The following code performs
+    // a numerical inversion with better behavior
+    let sin_theta_i: Float = (0.0 as Float)
+        .max(1.0 as Float - cos_theta_i * cos_theta_i)
+        .sqrt();
+    let tan_theta_i: Float = sin_theta_i / cos_theta_i;
+    let cot_theta_i: Float = 1.0 as Float / tan_theta_i;
+
+    // Search interval -- everything is parameterized in the Erf() domain
+
+    let mut a: Float = -1.0;
+    let mut c: Float = erf(cot_theta_i);
+    let sample_x: Float = u1.max(1e-6 as Float);
+
+    // We can do better (inverse of an approximation computed in
+    // Mathematica)
+    let theta_i: Float = cos_theta_i.acos();
+    let fit: Float = 1.0 as Float + theta_i * (-0.876 + theta_i * (0.4265 - 0.0594 * theta_i));
+    let mut b: Float = c - (1.0 as Float + c) * Float::powf(1.0 as Float - sample_x, fit);
+
+    // normalization factor for the CDF
+    let sqrt_pi_inv: Float = 1.0 as Float / PI.sqrt();
+    let normalization: Float = 1.0 as Float
+        / (1.0 as Float + c + sqrt_pi_inv * tan_theta_i * (-cot_theta_i * cot_theta_i).exp());
+
+    for _it in 0..10 {
+        // bisection criterion -- the oddly-looking Boolean expression
+        // are intentional to check for NaNs at little additional cost
+        if !(b >= a && b <= c) {
+            b = 0.5 as Float * (a + c);
+        }
+        // evaluate the CDF and its derivative (i.e. the density
+        // function)
+        let inv_erf: Float = erf_inv(b);
+        let value: Float = normalization
+            * (1.0 as Float + b + sqrt_pi_inv * tan_theta_i * (-inv_erf * inv_erf).exp())
+            - sample_x;
+        let derivative: Float = normalization * (1.0 as Float - inv_erf * tan_theta_i);
+
+        if value.abs() < 1e-5 as Float {
+            break;
+        }
+
+        // update bisection intervals
+        if value > 0.0 as Float {
+            c = b;
+        } else {
+            a = b;
+        }
+        b -= value / derivative;
+    }
+
+    // now convert back into a slope value
+    *slope_x = erf_inv(b);
+
+    // simulate Y component
+    *slope_y = erf_inv(2.0 as Float * u2.max(1e-6 as Float) - 1.0 as Float);
+
+    assert!(!(*slope_x).is_infinite());
+    assert!(!(*slope_x).is_nan());
+    assert!(!(*slope_y).is_infinite());
+    assert!(!(*slope_y).is_nan());
+}
+
+fn beckmann_sample(
+    wi: &Vector3f,
+    alpha_x: Float,
+    alpha_y: Float,
+    u1: Float,
+    u2: Float,
+) -> Vector3f {
+    // 1. stretch wi
+    let wi_stretched: Vector3f = Vector3f {
+        x: alpha_x * wi.x,
+        y: alpha_y * wi.y,
+        z: wi.z,
+    }
+    .normalize();
+
+    // 2. simulate P22_{wi}(x_slope, y_slope, 1, 1)
+    let mut slope_x: Float = 0.0;
+    let mut slope_y: Float = 0.0;
+    beckmann_sample_11(cos_theta(&wi_stretched), u1, u2, &mut slope_x, &mut slope_y);
+
+    // 3. rotate
+    let tmp: Float = cos_phi(&wi_stretched) * slope_x - sin_phi(&wi_stretched) * slope_y;
+    slope_y = sin_phi(&wi_stretched) * slope_x + cos_phi(&wi_stretched) * slope_y;
+    slope_x = tmp;
+
+    // 4. unstretch
+    slope_x = alpha_x * slope_x;
+    slope_y = alpha_y * slope_y;
+
+    // 5. compute normal
+    Vector3f {
+        x: -slope_x,
+        y: -slope_y,
+        z: 1.0,
+    }
+    .normalize()
 }
 
 fn trowbridge_reitz_sample_11(
