@@ -642,6 +642,7 @@ fn main() -> std::io::Result<()> {
     let mut p: Vec<Point3f> = Vec::new();
     let mut n: Vec<Normal3f> = Vec::new();
     let mut uvs: Vec<Point2f> = Vec::new();
+    let mut loops: Vec<u8> = Vec::new();
     let mut vertex_indices: Vec<usize> = Vec::new();
     let mut hdr_path: OsString = OsString::new();
     // first get the DNA
@@ -988,6 +989,33 @@ fn main() -> std::io::Result<()> {
                                     }
                                     n_ws = n_ws_vi;
                                 }
+                                let mut new_uvs: Vec<Point2f> = Vec::new();
+                                let mut loop_idx: usize = 0;
+                                for poly in &loops {
+                                    // triangle
+                                    if *poly == 3_u8 {
+                                        for _i in 0..3 {
+                                            new_uvs.push(uvs[loop_idx]);
+                                            loop_idx += 1;
+                                        }
+                                    }
+                                    // quad
+                                    else if *poly == 4_u8 {
+                                        new_uvs.push(uvs[loop_idx + 0]);
+                                        new_uvs.push(uvs[loop_idx + 1]);
+                                        new_uvs.push(uvs[loop_idx + 2]);
+                                        new_uvs.push(uvs[loop_idx + 0]);
+                                        new_uvs.push(uvs[loop_idx + 2]);
+                                        new_uvs.push(uvs[loop_idx + 3]);
+                                        loop_idx += 4;
+                                    } else {
+                                        println!(
+                                            "WARNING: quads or triangles expected (poly = {})",
+                                            poly
+                                        )
+                                    }
+                                }
+                                uvs = new_uvs;
                                 assert!(
                                     uvs.len() == p_ws_vi.len(),
                                     "{} != {}",
@@ -1344,6 +1372,8 @@ fn main() -> std::io::Result<()> {
                             let mut uv: Vec<Point2f> = Vec::new();
                             if !uvs.is_empty() {
                                 if uvs.len() != p.len() {
+                                    println!("WARNING: uvs[{}] != p[{}]", uvs.len(), p.len());
+                                    println!("{:?}", loops);
                                     let mut p_ws_vi: Vec<Point3f> = Vec::new();
                                     let mut new_vertex_indices: Vec<usize> = Vec::new();
                                     let mut vertex_counter: usize = 0;
@@ -1359,6 +1389,33 @@ fn main() -> std::io::Result<()> {
                                         }
                                         n_ws = n_ws_vi;
                                     }
+                                    let mut new_uvs: Vec<Point2f> = Vec::new();
+                                    let mut loop_idx: usize = 0;
+                                    for poly in &loops {
+                                        // triangle
+                                        if *poly == 3_u8 {
+                                            for _i in 0..3 {
+                                                new_uvs.push(uvs[loop_idx]);
+                                                loop_idx += 1;
+                                            }
+                                        }
+                                        // quad
+                                        else if *poly == 4_u8 {
+                                            new_uvs.push(uvs[loop_idx + 0]);
+                                            new_uvs.push(uvs[loop_idx + 1]);
+                                            new_uvs.push(uvs[loop_idx + 2]);
+                                            new_uvs.push(uvs[loop_idx + 0]);
+                                            new_uvs.push(uvs[loop_idx + 2]);
+                                            new_uvs.push(uvs[loop_idx + 3]);
+                                            loop_idx += 4;
+                                        } else {
+                                            println!(
+                                                "WARNING: quads or triangles expected (poly = {})",
+                                                poly
+                                            )
+                                        }
+                                    }
+                                    uvs = new_uvs;
                                     assert!(
                                         uvs.len() == p_ws_vi.len(),
                                         "{} != {}",
@@ -1478,6 +1535,7 @@ fn main() -> std::io::Result<()> {
                         p.clear();
                         n.clear();
                         uvs.clear();
+                        loops.clear();
                         vertex_indices.clear();
                         loop_indices.clear();
                     } else if code == String::from("SC") {
@@ -1883,6 +1941,33 @@ fn main() -> std::io::Result<()> {
                                         }
                                         n_ws = n_ws_vi;
                                     }
+                                    let mut new_uvs: Vec<Point2f> = Vec::new();
+                                    let mut loop_idx: usize = 0;
+                                    for poly in &loops {
+                                        // triangle
+                                        if *poly == 3_u8 {
+                                            for _i in 0..3 {
+                                                new_uvs.push(uvs[loop_idx]);
+                                                loop_idx += 1;
+                                            }
+                                        }
+                                        // quad
+                                        else if *poly == 4_u8 {
+                                            new_uvs.push(uvs[loop_idx + 0]);
+                                            new_uvs.push(uvs[loop_idx + 1]);
+                                            new_uvs.push(uvs[loop_idx + 2]);
+                                            new_uvs.push(uvs[loop_idx + 0]);
+                                            new_uvs.push(uvs[loop_idx + 2]);
+                                            new_uvs.push(uvs[loop_idx + 3]);
+                                            loop_idx += 4;
+                                        } else {
+                                            println!(
+                                                "WARNING: quads or triangles expected (poly = {})",
+                                                poly
+                                            )
+                                        }
+                                    }
+                                    uvs = new_uvs;
                                     assert!(
                                         uvs.len() == p_ws_vi.len(),
                                         "{} != {}",
@@ -2296,6 +2381,7 @@ fn main() -> std::io::Result<()> {
                                     skip_bytes += 1;
                                     // PBRT
                                     if totloop == 3_u32 {
+                                        loops.push(totloop as u8);
                                         // triangle
                                         for i in 0..3 {
                                             vertex_indices.push(
@@ -2303,6 +2389,7 @@ fn main() -> std::io::Result<()> {
                                             );
                                         }
                                     } else if totloop == 4_u32 {
+                                        loops.push(totloop as u8);
                                         // quads
                                         vertex_indices
                                             .push(loop_indices[(loopstart + 0) as usize] as usize);
@@ -2481,6 +2568,33 @@ fn main() -> std::io::Result<()> {
                                         }
                                         n_ws = n_ws_vi;
                                     }
+                                    let mut new_uvs: Vec<Point2f> = Vec::new();
+                                    let mut loop_idx: usize = 0;
+                                    for poly in &loops {
+                                        // triangle
+                                        if *poly == 3_u8 {
+                                            for _i in 0..3 {
+                                                new_uvs.push(uvs[loop_idx]);
+                                                loop_idx += 1;
+                                            }
+                                        }
+                                        // quad
+                                        else if *poly == 4_u8 {
+                                            new_uvs.push(uvs[loop_idx + 0]);
+                                            new_uvs.push(uvs[loop_idx + 1]);
+                                            new_uvs.push(uvs[loop_idx + 2]);
+                                            new_uvs.push(uvs[loop_idx + 0]);
+                                            new_uvs.push(uvs[loop_idx + 2]);
+                                            new_uvs.push(uvs[loop_idx + 3]);
+                                            loop_idx += 4;
+                                        } else {
+                                            println!(
+                                                "WARNING: quads or triangles expected (poly = {})",
+                                                poly
+                                            )
+                                        }
+                                    }
+                                    uvs = new_uvs;
                                     assert!(
                                         uvs.len() == p_ws_vi.len(),
                                         "{} != {}",
