@@ -347,7 +347,7 @@ impl RenderOptions {
                                     du: du,
                                     dv: dv,
                                 });
-                            // println!("Kd texture: {:?}", tex);
+                            println!("Kd texture: {:?}", tex);
                             let filename: String = String::from(tex.to_str().unwrap());
                             let do_trilinear: bool = false;
                             let max_aniso: Float = 8.0;
@@ -955,7 +955,7 @@ fn main() -> std::io::Result<()> {
                         let n_triangles: usize = vertex_indices.len() / 3;
                         // transform mesh vertices to world space
                         let mut p_ws: Vec<Point3f> = Vec::new();
-                        let n_vertices: usize = p.len();
+                        let mut n_vertices: usize = p.len();
                         for i in 0..n_vertices {
                             p_ws.push(object_to_world.transform_point(&p[i]));
                         }
@@ -972,7 +972,32 @@ fn main() -> std::io::Result<()> {
                         let s: Vec<Vector3f> = Vec::new();
                         let mut uv: Vec<Point2f> = Vec::new();
                         if !uvs.is_empty() {
-                            assert!(uvs.len() == p.len());
+                            if uvs.len() != p.len() {
+                                let mut p_ws_vi: Vec<Point3f> = Vec::new();
+                                let mut new_vertex_indices: Vec<usize> = Vec::new();
+                                let mut vertex_counter: usize = 0;
+                                for vi in &vertex_indices {
+                                    p_ws_vi.push(p_ws[*vi]);
+                                    new_vertex_indices.push(vertex_counter);
+                                    vertex_counter += 1;
+                                }
+                                if is_smooth {
+                                    let mut n_ws_vi: Vec<Normal3f> = Vec::new();
+                                    for vi in &vertex_indices {
+                                        n_ws_vi.push(n_ws[*vi]);
+                                    }
+                                    n_ws = n_ws_vi;
+                                }
+                                assert!(
+                                    uvs.len() == p_ws_vi.len(),
+                                    "{} != {}",
+                                    uvs.len(),
+                                    p_ws_vi.len()
+                                );
+                                p_ws = p_ws_vi;
+                                n_vertices = p_ws.len();
+                                vertex_indices = new_vertex_indices;
+                            }
                             for i in 0..n_vertices {
                                 uv.push(uvs[i]);
                             }
@@ -1046,7 +1071,7 @@ fn main() -> std::io::Result<()> {
                                                 .join(relative.clone())
                                                 .canonicalize()
                                                 .unwrap();
-                                            // println!("{:?}", canonicalized);
+                                            println!("{:?}", canonicalized);
                                             hdr_path = canonicalized.into_os_string();
                                         }
                                     }
@@ -1057,7 +1082,7 @@ fn main() -> std::io::Result<()> {
                                                 .join(relative.clone())
                                                 .canonicalize()
                                                 .unwrap();
-                                            // println!("{:?}", canonicalized);
+                                            println!("{:?}", canonicalized);
                                             texture_hm.insert(
                                                 base_name.clone(),
                                                 canonicalized.into_os_string(),
@@ -1301,7 +1326,7 @@ fn main() -> std::io::Result<()> {
                             let n_triangles: usize = vertex_indices.len() / 3;
                             // transform mesh vertices to world space
                             let mut p_ws: Vec<Point3f> = Vec::new();
-                            let n_vertices: usize = p.len();
+                            let mut n_vertices: usize = p.len();
                             for i in 0..n_vertices {
                                 p_ws.push(object_to_world.transform_point(&p[i]));
                             }
@@ -1318,7 +1343,32 @@ fn main() -> std::io::Result<()> {
                             let s: Vec<Vector3f> = Vec::new();
                             let mut uv: Vec<Point2f> = Vec::new();
                             if !uvs.is_empty() {
-                                assert!(uvs.len() == p.len());
+                                if uvs.len() != p.len() {
+                                    let mut p_ws_vi: Vec<Point3f> = Vec::new();
+                                    let mut new_vertex_indices: Vec<usize> = Vec::new();
+                                    let mut vertex_counter: usize = 0;
+                                    for vi in &vertex_indices {
+                                        p_ws_vi.push(p_ws[*vi]);
+                                        new_vertex_indices.push(vertex_counter);
+                                        vertex_counter += 1;
+                                    }
+                                    if is_smooth {
+                                        let mut n_ws_vi: Vec<Normal3f> = Vec::new();
+                                        for vi in &vertex_indices {
+                                            n_ws_vi.push(n_ws[*vi]);
+                                        }
+                                        n_ws = n_ws_vi;
+                                    }
+                                    assert!(
+                                        uvs.len() == p_ws_vi.len(),
+                                        "{} != {}",
+                                        uvs.len(),
+                                        p_ws_vi.len()
+                                    );
+                                    p_ws = p_ws_vi;
+                                    n_vertices = p_ws.len();
+                                    vertex_indices = new_vertex_indices;
+                                }
                                 for i in 0..n_vertices {
                                     uv.push(uvs[i]);
                                 }
@@ -1800,7 +1850,7 @@ fn main() -> std::io::Result<()> {
                             let n_triangles: usize = vertex_indices.len() / 3;
                             // transform mesh vertices to world space
                             let mut p_ws: Vec<Point3f> = Vec::new();
-                            let n_vertices: usize = p.len();
+                            let mut n_vertices: usize = p.len();
                             for i in 0..n_vertices {
                                 p_ws.push(object_to_world.transform_point(&p[i]));
                             }
@@ -1817,7 +1867,32 @@ fn main() -> std::io::Result<()> {
                             let s: Vec<Vector3f> = Vec::new();
                             let mut uv: Vec<Point2f> = Vec::new();
                             if !uvs.is_empty() {
-                                assert!(uvs.len() == p.len());
+                                if uvs.len() != p.len() {
+                                    let mut p_ws_vi: Vec<Point3f> = Vec::new();
+                                    let mut new_vertex_indices: Vec<usize> = Vec::new();
+                                    let mut vertex_counter: usize = 0;
+                                    for vi in &vertex_indices {
+                                        p_ws_vi.push(p_ws[*vi]);
+                                        new_vertex_indices.push(vertex_counter);
+                                        vertex_counter += 1;
+                                    }
+                                    if is_smooth {
+                                        let mut n_ws_vi: Vec<Normal3f> = Vec::new();
+                                        for vi in &vertex_indices {
+                                            n_ws_vi.push(n_ws[*vi]);
+                                        }
+                                        n_ws = n_ws_vi;
+                                    }
+                                    assert!(
+                                        uvs.len() == p_ws_vi.len(),
+                                        "{} != {}",
+                                        uvs.len(),
+                                        p_ws_vi.len()
+                                    );
+                                    p_ws = p_ws_vi;
+                                    n_vertices = p_ws.len();
+                                    vertex_indices = new_vertex_indices;
+                                }
                                 for i in 0..n_vertices {
                                     uv.push(uvs[i]);
                                 }
@@ -1984,7 +2059,7 @@ fn main() -> std::io::Result<()> {
                                 ang: ang,
                                 ray_mirror: ray_mirror,
                             };
-                            // println!("  mat[{:?}] = {:?}", base_name, mat);
+                            println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         } else {
                             // flag
@@ -2078,7 +2153,7 @@ fn main() -> std::io::Result<()> {
                                 ang: 1.0,
                                 ray_mirror: ray_mirror,
                             };
-                            // println!("  mat[{:?}] = {:?}", base_name, mat);
+                            println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         }
                         // reset booleans
@@ -2373,7 +2448,7 @@ fn main() -> std::io::Result<()> {
                             let n_triangles: usize = vertex_indices.len() / 3;
                             // transform mesh vertices to world space
                             let mut p_ws: Vec<Point3f> = Vec::new();
-                            let n_vertices: usize = p.len();
+                            let mut n_vertices: usize = p.len();
                             for i in 0..n_vertices {
                                 p_ws.push(object_to_world.transform_point(&p[i]));
                             }
@@ -2390,7 +2465,32 @@ fn main() -> std::io::Result<()> {
                             let s: Vec<Vector3f> = Vec::new();
                             let mut uv: Vec<Point2f> = Vec::new();
                             if !uvs.is_empty() {
-                                assert!(uvs.len() == p.len());
+                                if uvs.len() != p.len() {
+                                    let mut p_ws_vi: Vec<Point3f> = Vec::new();
+                                    let mut new_vertex_indices: Vec<usize> = Vec::new();
+                                    let mut vertex_counter: usize = 0;
+                                    for vi in &vertex_indices {
+                                        p_ws_vi.push(p_ws[*vi]);
+                                        new_vertex_indices.push(vertex_counter);
+                                        vertex_counter += 1;
+                                    }
+                                    if is_smooth {
+                                        let mut n_ws_vi: Vec<Normal3f> = Vec::new();
+                                        for vi in &vertex_indices {
+                                            n_ws_vi.push(n_ws[*vi]);
+                                        }
+                                        n_ws = n_ws_vi;
+                                    }
+                                    assert!(
+                                        uvs.len() == p_ws_vi.len(),
+                                        "{} != {}",
+                                        uvs.len(),
+                                        p_ws_vi.len()
+                                    );
+                                    p_ws = p_ws_vi;
+                                    n_vertices = p_ws.len();
+                                    vertex_indices = new_vertex_indices;
+                                }
                                 for i in 0..n_vertices {
                                     uv.push(uvs[i]);
                                 }
