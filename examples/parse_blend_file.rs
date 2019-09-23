@@ -56,6 +56,8 @@ use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
 use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::matte::MatteMaterial;
+use pbrt::materials::metal::MetalMaterial;
+use pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
 use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
@@ -109,6 +111,7 @@ struct Blend279Material {
     pub emit: f32,
     pub ang: f32, // IOR
     pub ray_mirror: f32,
+    pub roughness: f32,
 }
 
 fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
@@ -320,16 +323,48 @@ impl RenderOptions {
                             triangle_lights.push(None);
                         }
                     } else if mat.ray_mirror > 0.0 {
-                        // MirrorMaterial
-                        let kr = Arc::new(ConstantTexture::new(Spectrum::rgb(
-                            mat.mirr * mat.ray_mirror,
-                            mat.mirg * mat.ray_mirror,
-                            mat.mirb * mat.ray_mirror,
-                        )));
-                        let mirror = Arc::new(MirrorMaterial::new(kr, None));
-                        for _i in 0..shapes.len() {
-                            triangle_materials.push(mirror.clone());
-                            triangle_lights.push(None);
+                        if mat.roughness > 0.0 {
+                            // MetalMaterial
+                            let copper_n: Spectrum = Spectrum::from_sampled(
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_N,
+                                COPPER_SAMPLES as i32,
+                            );
+                            let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                                Arc::new(ConstantTexture::new(copper_n));
+                            let copper_k: Spectrum = Spectrum::from_sampled(
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_K,
+                                COPPER_SAMPLES as i32,
+                            );
+                            let k: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                                Arc::new(ConstantTexture::new(copper_k));
+                            let remap_roughness: bool = true;
+                            let metal = Arc::new(MetalMaterial::new(
+                                eta,
+                                k,
+                                Arc::new(ConstantTexture::new(mat.roughness as Float)),
+                                None,
+                                None,
+                                None,
+                                remap_roughness,
+                            ));
+                            for _i in 0..shapes.len() {
+                                triangle_materials.push(metal.clone());
+                                triangle_lights.push(None);
+                            }
+                        } else {
+                            // MirrorMaterial
+                            let kr = Arc::new(ConstantTexture::new(Spectrum::rgb(
+                                mat.mirr * mat.ray_mirror,
+                                mat.mirg * mat.ray_mirror,
+                                mat.mirb * mat.ray_mirror,
+                            )));
+                            let mirror = Arc::new(MirrorMaterial::new(kr, None));
+                            for _i in 0..shapes.len() {
+                                triangle_materials.push(mirror.clone());
+                                triangle_lights.push(None);
+                            }
                         }
                     } else {
                         // MatteMaterial
@@ -2174,6 +2209,54 @@ fn main() -> std::io::Result<()> {
                             }
                             let ray_mirror: f32 = unsafe { mem::transmute(ray_mirror_buf) };
                             // println!("  ray_mirror = {}", ray_mirror);
+                            skip_bytes += 4;
+                            // alpha, ref, spec, zoffs, add, translucency
+                            skip_bytes += 4 * 6;
+                            // VolumeSettings (len=88)
+                            skip_bytes += 88;
+                            // GameSettings (len=16)
+                            skip_bytes += 16;
+                            // 7 floats
+                            skip_bytes += 4 * 7;
+                            // 3 shorts
+                            skip_bytes += 2 * 3;
+                            // 2 chars
+                            skip_bytes += 2;
+                            // 2 floats
+                            skip_bytes += 4 * 2;
+                            // 2 shorts
+                            skip_bytes += 2 * 2;
+                            // 4 floats
+                            skip_bytes += 4 * 4;
+                            // 2 shorts
+                            skip_bytes += 2 * 2;
+                            // 4 ints
+                            skip_bytes += 4 * 4;
+                            // 4 shorts
+                            skip_bytes += 2 * 4;
+                            // 10 floats
+                            skip_bytes += 4 * 10;
+                            // 64 chars
+                            skip_bytes += 64;
+                            // 3 floats
+                            skip_bytes += 4 * 3;
+                            // 1 int
+                            skip_bytes += 4;
+                            // 4 chars
+                            skip_bytes += 4;
+                            // 3 shorts
+                            skip_bytes += 2 * 3;
+                            // 2 chars
+                            skip_bytes += 2;
+                            // 2 shorts
+                            skip_bytes += 2 * 2;
+                            // roughness
+                            let mut roughness_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                roughness_buf[i] = buffer[skip_bytes + i];
+                            }
+                            let roughness: f32 = unsafe { mem::transmute(roughness_buf) };
+                            // println!("  roughness = {}", roughness);
                             // skip_bytes += 4;
                             // Blend279Material
                             let mat: Blend279Material = Blend279Material {
@@ -2190,6 +2273,7 @@ fn main() -> std::io::Result<()> {
                                 emit: emit,
                                 ang: ang,
                                 ray_mirror: ray_mirror,
+                                roughness: roughness,
                             };
                             // println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
@@ -2284,6 +2368,7 @@ fn main() -> std::io::Result<()> {
                                 emit: 0.0,
                                 ang: 1.0,
                                 ray_mirror: ray_mirror,
+                                roughness: 0.0,
                             };
                             // println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
