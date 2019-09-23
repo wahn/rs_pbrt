@@ -336,6 +336,7 @@ impl RenderOptions {
                         let mut kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
                             Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
                         if let Some(tex) = texture_hm.get(mesh_name) {
+                            // first try texture with exactly the same name as the mesh
                             let su: Float = 1.0;
                             let sv: Float = 1.0;
                             let du: Float = 0.0;
@@ -347,7 +348,6 @@ impl RenderOptions {
                                     du: du,
                                     dv: dv,
                                 });
-                            println!("Kd texture: {:?}", tex);
                             let filename: String = String::from(tex.to_str().unwrap());
                             let do_trilinear: bool = false;
                             let max_aniso: Float = 8.0;
@@ -364,6 +364,54 @@ impl RenderOptions {
                                 gamma,
                                 convert_to_spectrum,
                             ));
+                        } else {
+                            // then remove trailing digits from mesh name
+                            let mut ntd: String = String::new();
+                            let mut chars = mesh_name.chars();
+                            let mut digits: String = String::new(); // many digits
+                            while let Some(c) = chars.next() {
+                                if c.is_digit(10_u32) {
+                                    // collect digits
+                                    digits.push(c);
+                                } else {
+                                    // push collected digits (if any)
+                                    ntd += &digits;
+                                    // and reset
+                                    digits = String::new();
+                                    // push non-digit
+                                    ntd.push(c);
+                                }
+                            }
+                            // try no trailing digits (ntd)
+                            if let Some(tex) = texture_hm.get(&ntd) {
+                                let su: Float = 1.0;
+                                let sv: Float = 1.0;
+                                let du: Float = 0.0;
+                                let dv: Float = 0.0;
+                                let mapping: Box<dyn TextureMapping2D + Send + Sync> =
+                                    Box::new(UVMapping2D {
+                                        su: su,
+                                        sv: sv,
+                                        du: du,
+                                        dv: dv,
+                                    });
+                                let filename: String = String::from(tex.to_str().unwrap());
+                                let do_trilinear: bool = false;
+                                let max_aniso: Float = 8.0;
+                                let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                                let scale: Float = 1.0;
+                                let gamma: bool = true;
+                                kd = Arc::new(ImageTexture::new(
+                                    mapping,
+                                    filename,
+                                    do_trilinear,
+                                    max_aniso,
+                                    wrap_mode,
+                                    scale,
+                                    gamma,
+                                    convert_to_spectrum,
+                                ));
+                            }
                         }
                         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
                         let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
@@ -534,6 +582,7 @@ fn get_material<'s, 'h>(
             if let Some(mat) = material_hm.get(&ntd) {
                 return Some(mat);
             } else {
+                println!("WARNING: No material found for {:?}", mesh_name);
                 return None;
             }
         }
@@ -1372,8 +1421,6 @@ fn main() -> std::io::Result<()> {
                             let mut uv: Vec<Point2f> = Vec::new();
                             if !uvs.is_empty() {
                                 if uvs.len() != p.len() {
-                                    println!("WARNING: uvs[{}] != p[{}]", uvs.len(), p.len());
-                                    println!("{:?}", loops);
                                     let mut p_ws_vi: Vec<Point3f> = Vec::new();
                                     let mut new_vertex_indices: Vec<usize> = Vec::new();
                                     let mut vertex_counter: usize = 0;
@@ -2144,7 +2191,7 @@ fn main() -> std::io::Result<()> {
                                 ang: ang,
                                 ray_mirror: ray_mirror,
                             };
-                            println!("  mat[{:?}] = {:?}", base_name, mat);
+                            // println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         } else {
                             // flag
@@ -2238,7 +2285,7 @@ fn main() -> std::io::Result<()> {
                                 ang: 1.0,
                                 ray_mirror: ray_mirror,
                             };
-                            println!("  mat[{:?}] = {:?}", base_name, mat);
+                            // println!("  mat[{:?}] = {:?}", base_name, mat);
                             material_hm.insert(base_name.clone(), mat);
                         }
                         // reset booleans
