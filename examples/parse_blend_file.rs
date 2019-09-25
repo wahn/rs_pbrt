@@ -731,6 +731,7 @@ fn main() -> std::io::Result<()> {
     let mut scale_length: f32 = 1.0;
     let mut resolution_x: u32 = 640;
     let mut resolution_y: u32 = 480;
+    let mut resolution_percentage: u16 = 100;
     let mut angle_x: f32 = 45.0;
     let mut angle_y: f32 = 45.0;
     let mut base_name = String::new();
@@ -1786,7 +1787,11 @@ fn main() -> std::io::Result<()> {
                         } else {
                             // nothing there
                         }
-                        // size
+                        // size in %
+                        resolution_percentage = 0;
+                        resolution_percentage += (buffer[skip_bytes] as u16) << 0;
+                        resolution_percentage += (buffer[skip_bytes + 1] as u16) << 8;
+                        println!("resolution_percentage: {}", resolution_percentage);
                         skip_bytes += 2;
                         render_data_bytes += 2;
                         if blender_version < 280 {
@@ -2930,10 +2935,16 @@ fn main() -> std::io::Result<()> {
         },
     });
     let filename: String = String::from("spheres-differentials-texfilt.exr");
+    let render_x: u32 = resolution_x * resolution_percentage as u32 / 100_u32;
+    let render_y: u32 = resolution_y * resolution_percentage as u32 / 100_u32;
+    println!(
+        "{}x{} [{}%] = {}x{}",
+        resolution_x, resolution_y, resolution_percentage, render_x, render_y
+    );
     let film: Arc<Film> = Arc::new(Film::new(
         Point2i {
-            x: resolution_x as i32,
-            y: resolution_y as i32,
+            x: render_x as i32,
+            y: render_y as i32,
         },
         crop,
         filter,
