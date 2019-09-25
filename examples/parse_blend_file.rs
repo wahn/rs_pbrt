@@ -82,6 +82,24 @@ struct Cli {
     /// ao, directlighting, path, bdpt, mlt
     #[structopt(short = "i", long = "integrator")]
     integrator: Option<String>,
+    /// max length of a light-carrying path
+    #[structopt(short = "m", long = "max_depth", default_value = "5")]
+    max_depth: u32,
+    /// bootstrap samples [MLT]
+    #[structopt(long = "bootstrap_samples", default_value = "100000")]
+    bootstrap_samples: u32,
+    /// number of Markov chains [MLT]
+    #[structopt(long = "chains", default_value = "1000")]
+    chains: u32,
+    /// number of path mutations [MLT]
+    #[structopt(long = "mutations_per_pixel", default_value = "100")]
+    mutations_per_pixel: u32,
+    /// prob of discarding path [MLT]
+    #[structopt(long = "step_probability", default_value = "0.3")]
+    step_probability: f32,
+    /// deviation of the perturbation [MLT]
+    #[structopt(long = "sigma", default_value = "0.01")]
+    sigma: f32,
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
@@ -2956,7 +2974,8 @@ fn main() -> std::io::Result<()> {
         } else if integrator_str == String::from("directlighting") {
             println!("Direct Lighting]");
             // DirectLightingIntegrator
-            let max_depth: i32 = 5;
+            let max_depth: i32 = args.max_depth as i32;
+            println!("  max_depth = {}", max_depth);
             let strategy: LightStrategy = LightStrategy::UniformSampleAll;
             let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
             integrator = Box::new(DirectLightingIntegrator::new(
@@ -2975,7 +2994,8 @@ fn main() -> std::io::Result<()> {
         } else if integrator_str == String::from("path") {
             println!("(Unidirectional) Path Tracing]");
             // PathIntegrator
-            let max_depth: i32 = 5;
+            let max_depth: i32 = args.max_depth as i32;
+            println!("  max_depth = {}", max_depth);
             let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
             let rr_threshold: Float = 1.0;
             let light_strategy: String = String::from("spatial");
@@ -2996,7 +3016,8 @@ fn main() -> std::io::Result<()> {
         } else if integrator_str == String::from("bdpt") {
             println!("Bidirectional Path Tracing (BDPT)]");
             // BDPTIntegrator
-            let max_depth: i32 = 5;
+            let max_depth: i32 = args.max_depth as i32;
+            println!("  max_depth = {}", max_depth);
             let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
             let light_strategy: String = String::from("power");
             let mut integrator: Box<BDPTIntegrator> = Box::new(BDPTIntegrator::new(
@@ -3015,12 +3036,18 @@ fn main() -> std::io::Result<()> {
         } else if integrator_str == String::from("mlt") {
             println!("Metropolis Light Transport (MLT)]");
             // CreateMLTIntegrator
-            let max_depth: i32 = 5;
-            let n_bootstrap: i32 = 100000;
-            let n_chains: i32 = 1000;
-            let mutations_per_pixel: i32 = 100;
-            let sigma: Float = 0.01;
-            let large_step_probability: Float = 0.3;
+            let max_depth: i32 = args.max_depth as i32;
+            println!("  max_depth = {}", max_depth);
+            let n_bootstrap: i32 = args.bootstrap_samples as i32;
+            println!("  bootstrap_samples = {}", n_bootstrap);
+            let n_chains: i32 = args.chains as i32;
+            println!("  chains = {}", n_chains);
+            let mutations_per_pixel: i32 = args.mutations_per_pixel as i32;
+            println!("  mutations_per_pixel = {}", mutations_per_pixel);
+            let sigma: Float = args.sigma as Float;
+            println!("  sigma = {}", sigma);
+            let large_step_probability: Float = args.step_probability as Float;
+            println!("  step_probability = {}", large_step_probability);
             let mut integrator: Box<MLTIntegrator> = Box::new(MLTIntegrator::new(
                 camera.clone(),
                 max_depth as u32,
@@ -3047,7 +3074,8 @@ fn main() -> std::io::Result<()> {
             let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
             let rr_threshold: Float = 1.0;
             let light_strategy: String = String::from("spatial");
-            let max_depth: i32 = 5;
+            let max_depth: i32 = args.max_depth as i32;
+            println!("  max_depth = {}", max_depth);
             integrator = Box::new(PathIntegrator::new(
                 max_depth as u32,
                 pixel_bounds,
