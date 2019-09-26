@@ -2991,7 +2991,7 @@ fn main() -> std::io::Result<()> {
             let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
             integrator = Box::new(DirectLightingIntegrator::new(
                 strategy,
-                max_depth as i64,
+                max_depth as u32,
                 pixel_bounds,
             ));
             // in the end we want to call render()

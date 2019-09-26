@@ -53,6 +53,7 @@ use crate::integrators::render;
 use crate::integrators::sppm::render_sppm;
 use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
+use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
 use crate::lights::distant::DistantLight;
 use crate::lights::infinite::InfiniteAreaLight;
@@ -1990,7 +1991,14 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
                     let mut some_sppm_integrator: Option<Box<SPPMIntegrator>> = None;
                     if api_state.render_options.integrator_name == "whitted" {
-                        println!("TODO: CreateWhittedIntegrator");
+                        let max_depth: i32 = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_int("maxdepth", 5);
+                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                        let integrator =
+                            Box::new(WhittedIntegrator::new(max_depth as u32, pixel_bounds));
+                        some_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == "directlighting" {
                         // CreateDirectLightingIntegrator
                         let max_depth: i32 = api_state
@@ -2016,7 +2024,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         };
                         let integrator = Box::new(DirectLightingIntegrator::new(
                             strategy,
-                            max_depth as i64,
+                            max_depth as u32,
                             pixel_bounds,
                         ));
                         some_integrator = Some(integrator);
