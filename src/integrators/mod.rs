@@ -77,6 +77,7 @@ pub mod mlt;
 pub mod path;
 pub mod sppm;
 pub mod volpath;
+pub mod whitted;
 
 /// **Main function** to **render** a scene mutli-threaded (using all
 /// available cores).
