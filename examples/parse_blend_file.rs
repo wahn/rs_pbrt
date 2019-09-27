@@ -653,6 +653,128 @@ fn make_id(code: &[u8]) -> String {
     id
 }
 
+fn read_mesh(
+    base_name: &String,
+    object_to_world_hm: &HashMap<String, Transform>,
+    object_to_world: &mut Transform,
+    p: &Vec<Point3f>,
+    n: &Vec<Normal3f>,
+    uvs: &mut Vec<Point2f>,
+    loops: &Vec<u8>,
+    vertex_indices: Vec<usize>,
+    is_smooth: bool,
+    builder: &mut SceneDescriptionBuilder,
+) {
+    if let Some(o2w) = object_to_world_hm.get(base_name) {
+        *object_to_world = *o2w;
+    } else {
+        println!(
+            "WARNING: looking up object_to_world by
+    name ({:?}) failed",
+            base_name
+        );
+    }
+    let world_to_object: Transform = Transform::inverse(&object_to_world);
+    let n_triangles: usize = vertex_indices.len() / 3;
+    // transform mesh vertices to world space
+    let mut p_ws: Vec<Point3f> = Vec::new();
+    let mut n_vertices: usize = p.len();
+    for i in 0..n_vertices {
+        p_ws.push(object_to_world.transform_point(&p[i]));
+    }
+    let mut n_ws: Vec<Normal3f> = Vec::new();
+    if is_smooth {
+        // println!("  is_smooth = {}", is_smooth);
+        assert!(n.len() == p.len());
+        if !n.is_empty() {
+            for i in 0..n_vertices {
+                n_ws.push(object_to_world.transform_normal(&n[i]));
+            }
+        }
+    }
+    let s: Vec<Vector3f> = Vec::new();
+    let mut uv: Vec<Point2f> = Vec::new();
+    let mut new_vertex_indices: Vec<usize> = Vec::new();
+    if !uvs.is_empty() {
+        let mut p_ws_vi: Vec<Point3f> = Vec::new();
+        let mut vertex_counter: usize = 0;
+        for vi in &vertex_indices {
+            p_ws_vi.push(p_ws[*vi]);
+            new_vertex_indices.push(vertex_counter);
+            vertex_counter += 1;
+        }
+        if is_smooth {
+            let mut n_ws_vi: Vec<Normal3f> = Vec::new();
+            for vi in &vertex_indices {
+                n_ws_vi.push(n_ws[*vi]);
+            }
+            n_ws = n_ws_vi;
+        }
+        let mut new_uvs: Vec<Point2f> = Vec::new();
+        let mut loop_idx: usize = 0;
+        for poly in loops {
+            // triangle
+            if *poly == 3_u8 {
+                for _i in 0..3 {
+                    new_uvs.push(uvs[loop_idx]);
+                    loop_idx += 1;
+                }
+            }
+            // quad
+            else if *poly == 4_u8 {
+                new_uvs.push(uvs[loop_idx + 0]);
+                new_uvs.push(uvs[loop_idx + 1]);
+                new_uvs.push(uvs[loop_idx + 2]);
+                new_uvs.push(uvs[loop_idx + 0]);
+                new_uvs.push(uvs[loop_idx + 2]);
+                new_uvs.push(uvs[loop_idx + 3]);
+                loop_idx += 4;
+            } else {
+                println!("WARNING: quads or triangles expected (poly = {})", poly)
+            }
+        }
+        *uvs = new_uvs;
+        assert!(
+            uvs.len() == p_ws_vi.len(),
+            "{} != {}",
+            uvs.len(),
+            p_ws_vi.len()
+        );
+        p_ws = p_ws_vi;
+        n_vertices = p_ws.len();
+        for i in 0..n_vertices {
+            uv.push(uvs[i]);
+        }
+    }
+    if new_vertex_indices.len() != 0 {
+        builder.add_mesh(
+            base_name.clone(),
+            *object_to_world,
+            world_to_object,
+            n_triangles,
+            new_vertex_indices.clone(),
+            n_vertices,
+            p_ws, // in world space
+            s,    // empty
+            n_ws, // in world space
+            uv,
+        );
+    } else {
+        builder.add_mesh(
+            base_name.clone(),
+            *object_to_world,
+            world_to_object,
+            n_triangles,
+            vertex_indices.clone(),
+            n_vertices,
+            p_ws, // in world space
+            s,    // empty
+            n_ws, // in world space
+            uv,
+        );
+    }
+}
+
 fn read_names(
     f: &mut File,
     nr_names: usize,
@@ -1047,104 +1169,19 @@ fn main() -> std::io::Result<()> {
                     f.read(&mut buffer)?;
                     counter += len as usize;
                     if data_following_mesh {
-                        if let Some(o2w) = object_to_world_hm.get(&base_name) {
-                            object_to_world = *o2w;
-                        } else {
-                            println!(
-                                "WARNING: looking up object_to_world by name ({:?}) failed",
-                                base_name
-                            );
-                        }
-                        let world_to_object: Transform = Transform::inverse(&object_to_world);
-                        let n_triangles: usize = vertex_indices.len() / 3;
-                        // transform mesh vertices to world space
-                        let mut p_ws: Vec<Point3f> = Vec::new();
-                        let mut n_vertices: usize = p.len();
-                        for i in 0..n_vertices {
-                            p_ws.push(object_to_world.transform_point(&p[i]));
-                        }
-                        let mut n_ws: Vec<Normal3f> = Vec::new();
-                        if is_smooth {
-                            // println!("  is_smooth = {}", is_smooth);
-                            assert!(n.len() == p.len());
-                            if !n.is_empty() {
-                                for i in 0..n_vertices {
-                                    n_ws.push(object_to_world.transform_normal(&n[i]));
-                                }
-                            }
-                        }
-                        let s: Vec<Vector3f> = Vec::new();
-                        let mut uv: Vec<Point2f> = Vec::new();
-                        if !uvs.is_empty() {
-                            if uvs.len() != p.len() {
-                                let mut p_ws_vi: Vec<Point3f> = Vec::new();
-                                let mut new_vertex_indices: Vec<usize> = Vec::new();
-                                let mut vertex_counter: usize = 0;
-                                for vi in &vertex_indices {
-                                    p_ws_vi.push(p_ws[*vi]);
-                                    new_vertex_indices.push(vertex_counter);
-                                    vertex_counter += 1;
-                                }
-                                if is_smooth {
-                                    let mut n_ws_vi: Vec<Normal3f> = Vec::new();
-                                    for vi in &vertex_indices {
-                                        n_ws_vi.push(n_ws[*vi]);
-                                    }
-                                    n_ws = n_ws_vi;
-                                }
-                                let mut new_uvs: Vec<Point2f> = Vec::new();
-                                let mut loop_idx: usize = 0;
-                                for poly in &loops {
-                                    // triangle
-                                    if *poly == 3_u8 {
-                                        for _i in 0..3 {
-                                            new_uvs.push(uvs[loop_idx]);
-                                            loop_idx += 1;
-                                        }
-                                    }
-                                    // quad
-                                    else if *poly == 4_u8 {
-                                        new_uvs.push(uvs[loop_idx + 0]);
-                                        new_uvs.push(uvs[loop_idx + 1]);
-                                        new_uvs.push(uvs[loop_idx + 2]);
-                                        new_uvs.push(uvs[loop_idx + 0]);
-                                        new_uvs.push(uvs[loop_idx + 2]);
-                                        new_uvs.push(uvs[loop_idx + 3]);
-                                        loop_idx += 4;
-                                    } else {
-                                        println!(
-                                            "WARNING: quads or triangles expected (poly = {})",
-                                            poly
-                                        )
-                                    }
-                                }
-                                uvs = new_uvs;
-                                assert!(
-                                    uvs.len() == p_ws_vi.len(),
-                                    "{} != {}",
-                                    uvs.len(),
-                                    p_ws_vi.len()
-                                );
-                                p_ws = p_ws_vi;
-                                n_vertices = p_ws.len();
-                                vertex_indices = new_vertex_indices;
-                            }
-                            for i in 0..n_vertices {
-                                uv.push(uvs[i]);
-                            }
-                        }
-                        builder.add_mesh(
-                            base_name.clone(),
-                            object_to_world,
-                            world_to_object,
-                            n_triangles,
-                            vertex_indices.clone(),
-                            n_vertices,
-                            p_ws, // in world space
-                            s,    // empty
-                            n_ws, // in world space
-                            uv,
+                        read_mesh(
+                            &base_name,
+                            &object_to_world_hm,
+                            &mut object_to_world,
+                            &p,
+                            &n,
+                            &mut uvs,
+                            &loops,
+                            vertex_indices,
+                            is_smooth,
+                            &mut builder,
                         );
+                        vertex_indices = Vec::new();
                     }
                     // reset booleans
                     data_following_mesh = false;
@@ -1445,104 +1482,19 @@ fn main() -> std::io::Result<()> {
                         is_smooth = false;
                     } else if code == String::from("ME") {
                         if data_following_mesh {
-                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
-                                object_to_world = *o2w;
-                            } else {
-                                println!(
-                                    "WARNING: looking up object_to_world by name ({:?}) failed",
-                                    base_name
-                                );
-                            }
-                            let world_to_object: Transform = Transform::inverse(&object_to_world);
-                            let n_triangles: usize = vertex_indices.len() / 3;
-                            // transform mesh vertices to world space
-                            let mut p_ws: Vec<Point3f> = Vec::new();
-                            let mut n_vertices: usize = p.len();
-                            for i in 0..n_vertices {
-                                p_ws.push(object_to_world.transform_point(&p[i]));
-                            }
-                            let mut n_ws: Vec<Normal3f> = Vec::new();
-                            if is_smooth {
-                                // println!("  is_smooth = {}", is_smooth);
-                                assert!(n.len() == p.len());
-                                if !n.is_empty() {
-                                    for i in 0..n_vertices {
-                                        n_ws.push(object_to_world.transform_normal(&n[i]));
-                                    }
-                                }
-                            }
-                            let s: Vec<Vector3f> = Vec::new();
-                            let mut uv: Vec<Point2f> = Vec::new();
-                            if !uvs.is_empty() {
-                                if uvs.len() != p.len() {
-                                    let mut p_ws_vi: Vec<Point3f> = Vec::new();
-                                    let mut new_vertex_indices: Vec<usize> = Vec::new();
-                                    let mut vertex_counter: usize = 0;
-                                    for vi in &vertex_indices {
-                                        p_ws_vi.push(p_ws[*vi]);
-                                        new_vertex_indices.push(vertex_counter);
-                                        vertex_counter += 1;
-                                    }
-                                    if is_smooth {
-                                        let mut n_ws_vi: Vec<Normal3f> = Vec::new();
-                                        for vi in &vertex_indices {
-                                            n_ws_vi.push(n_ws[*vi]);
-                                        }
-                                        n_ws = n_ws_vi;
-                                    }
-                                    let mut new_uvs: Vec<Point2f> = Vec::new();
-                                    let mut loop_idx: usize = 0;
-                                    for poly in &loops {
-                                        // triangle
-                                        if *poly == 3_u8 {
-                                            for _i in 0..3 {
-                                                new_uvs.push(uvs[loop_idx]);
-                                                loop_idx += 1;
-                                            }
-                                        }
-                                        // quad
-                                        else if *poly == 4_u8 {
-                                            new_uvs.push(uvs[loop_idx + 0]);
-                                            new_uvs.push(uvs[loop_idx + 1]);
-                                            new_uvs.push(uvs[loop_idx + 2]);
-                                            new_uvs.push(uvs[loop_idx + 0]);
-                                            new_uvs.push(uvs[loop_idx + 2]);
-                                            new_uvs.push(uvs[loop_idx + 3]);
-                                            loop_idx += 4;
-                                        } else {
-                                            println!(
-                                                "WARNING: quads or triangles expected (poly = {})",
-                                                poly
-                                            )
-                                        }
-                                    }
-                                    uvs = new_uvs;
-                                    assert!(
-                                        uvs.len() == p_ws_vi.len(),
-                                        "{} != {}",
-                                        uvs.len(),
-                                        p_ws_vi.len()
-                                    );
-                                    p_ws = p_ws_vi;
-                                    n_vertices = p_ws.len();
-                                    vertex_indices = new_vertex_indices;
-                                }
-                                for i in 0..n_vertices {
-                                    uv.push(uvs[i]);
-                                }
-                            }
-                            builder.add_mesh(
-                                base_name.clone(),
-                                object_to_world,
-                                world_to_object,
-                                n_triangles,
-                                vertex_indices.clone(),
-                                n_vertices,
-                                p_ws, // in world space
-                                s,    // empty
-                                n_ws, // in world space
-                                uv,
+                            read_mesh(
+                                &base_name,
+                                &object_to_world_hm,
+                                &mut object_to_world,
+                                &p,
+                                &n,
+                                &mut uvs,
+                                &loops,
+                                vertex_indices,
+                                is_smooth,
+                                &mut builder,
                             );
+                            vertex_indices = Vec::new();
                         }
                         // ME
                         // println!("{} ({})", code, len);
@@ -1791,7 +1743,7 @@ fn main() -> std::io::Result<()> {
                         resolution_percentage = 0;
                         resolution_percentage += (buffer[skip_bytes] as u16) << 0;
                         resolution_percentage += (buffer[skip_bytes + 1] as u16) << 8;
-                        println!("resolution_percentage: {}", resolution_percentage);
+                        // println!("resolution_percentage: {}", resolution_percentage);
                         skip_bytes += 2;
                         render_data_bytes += 2;
                         if blender_version < 280 {
@@ -2001,104 +1953,19 @@ fn main() -> std::io::Result<()> {
                         is_smooth = false;
                     } else if code == String::from("MA") {
                         if data_following_mesh {
-                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
-                                object_to_world = *o2w;
-                            } else {
-                                println!(
-                                    "WARNING: looking up object_to_world by name ({:?}) failed",
-                                    base_name
-                                );
-                            }
-                            let world_to_object: Transform = Transform::inverse(&object_to_world);
-                            let n_triangles: usize = vertex_indices.len() / 3;
-                            // transform mesh vertices to world space
-                            let mut p_ws: Vec<Point3f> = Vec::new();
-                            let mut n_vertices: usize = p.len();
-                            for i in 0..n_vertices {
-                                p_ws.push(object_to_world.transform_point(&p[i]));
-                            }
-                            let mut n_ws: Vec<Normal3f> = Vec::new();
-                            if is_smooth {
-                                // println!("  is_smooth = {}", is_smooth);
-                                assert!(n.len() == p.len());
-                                if !n.is_empty() {
-                                    for i in 0..n_vertices {
-                                        n_ws.push(object_to_world.transform_normal(&n[i]));
-                                    }
-                                }
-                            }
-                            let s: Vec<Vector3f> = Vec::new();
-                            let mut uv: Vec<Point2f> = Vec::new();
-                            if !uvs.is_empty() {
-                                if uvs.len() != p.len() {
-                                    let mut p_ws_vi: Vec<Point3f> = Vec::new();
-                                    let mut new_vertex_indices: Vec<usize> = Vec::new();
-                                    let mut vertex_counter: usize = 0;
-                                    for vi in &vertex_indices {
-                                        p_ws_vi.push(p_ws[*vi]);
-                                        new_vertex_indices.push(vertex_counter);
-                                        vertex_counter += 1;
-                                    }
-                                    if is_smooth {
-                                        let mut n_ws_vi: Vec<Normal3f> = Vec::new();
-                                        for vi in &vertex_indices {
-                                            n_ws_vi.push(n_ws[*vi]);
-                                        }
-                                        n_ws = n_ws_vi;
-                                    }
-                                    let mut new_uvs: Vec<Point2f> = Vec::new();
-                                    let mut loop_idx: usize = 0;
-                                    for poly in &loops {
-                                        // triangle
-                                        if *poly == 3_u8 {
-                                            for _i in 0..3 {
-                                                new_uvs.push(uvs[loop_idx]);
-                                                loop_idx += 1;
-                                            }
-                                        }
-                                        // quad
-                                        else if *poly == 4_u8 {
-                                            new_uvs.push(uvs[loop_idx + 0]);
-                                            new_uvs.push(uvs[loop_idx + 1]);
-                                            new_uvs.push(uvs[loop_idx + 2]);
-                                            new_uvs.push(uvs[loop_idx + 0]);
-                                            new_uvs.push(uvs[loop_idx + 2]);
-                                            new_uvs.push(uvs[loop_idx + 3]);
-                                            loop_idx += 4;
-                                        } else {
-                                            println!(
-                                                "WARNING: quads or triangles expected (poly = {})",
-                                                poly
-                                            )
-                                        }
-                                    }
-                                    uvs = new_uvs;
-                                    assert!(
-                                        uvs.len() == p_ws_vi.len(),
-                                        "{} != {}",
-                                        uvs.len(),
-                                        p_ws_vi.len()
-                                    );
-                                    p_ws = p_ws_vi;
-                                    n_vertices = p_ws.len();
-                                    vertex_indices = new_vertex_indices;
-                                }
-                                for i in 0..n_vertices {
-                                    uv.push(uvs[i]);
-                                }
-                            }
-                            builder.add_mesh(
-                                base_name.clone(),
-                                object_to_world,
-                                world_to_object,
-                                n_triangles,
-                                vertex_indices.clone(),
-                                n_vertices,
-                                p_ws, // in world space
-                                s,    // empty
-                                n_ws, // in world space
-                                uv,
+                            read_mesh(
+                                &base_name,
+                                &object_to_world_hm,
+                                &mut object_to_world,
+                                &p,
+                                &n,
+                                &mut uvs,
+                                &loops,
+                                vertex_indices,
+                                is_smooth,
+                                &mut builder,
                             );
+                            vertex_indices = Vec::new();
                         }
                         // MA
                         // println!("{} ({})", code, len);
@@ -2678,104 +2545,19 @@ fn main() -> std::io::Result<()> {
                         }
                     } else {
                         if data_following_mesh {
-                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
-                                object_to_world = *o2w;
-                            } else {
-                                println!(
-                                    "WARNING: looking up object_to_world by name ({:?}) failed",
-                                    base_name
-                                );
-                            }
-                            let world_to_object: Transform = Transform::inverse(&object_to_world);
-                            let n_triangles: usize = vertex_indices.len() / 3;
-                            // transform mesh vertices to world space
-                            let mut p_ws: Vec<Point3f> = Vec::new();
-                            let mut n_vertices: usize = p.len();
-                            for i in 0..n_vertices {
-                                p_ws.push(object_to_world.transform_point(&p[i]));
-                            }
-                            let mut n_ws: Vec<Normal3f> = Vec::new();
-                            if is_smooth {
-                                // println!("  is_smooth = {}", is_smooth);
-                                assert!(n.len() == p.len());
-                                if !n.is_empty() {
-                                    for i in 0..n_vertices {
-                                        n_ws.push(object_to_world.transform_normal(&n[i]));
-                                    }
-                                }
-                            }
-                            let s: Vec<Vector3f> = Vec::new();
-                            let mut uv: Vec<Point2f> = Vec::new();
-                            if !uvs.is_empty() {
-                                if uvs.len() != p.len() {
-                                    let mut p_ws_vi: Vec<Point3f> = Vec::new();
-                                    let mut new_vertex_indices: Vec<usize> = Vec::new();
-                                    let mut vertex_counter: usize = 0;
-                                    for vi in &vertex_indices {
-                                        p_ws_vi.push(p_ws[*vi]);
-                                        new_vertex_indices.push(vertex_counter);
-                                        vertex_counter += 1;
-                                    }
-                                    if is_smooth {
-                                        let mut n_ws_vi: Vec<Normal3f> = Vec::new();
-                                        for vi in &vertex_indices {
-                                            n_ws_vi.push(n_ws[*vi]);
-                                        }
-                                        n_ws = n_ws_vi;
-                                    }
-                                    let mut new_uvs: Vec<Point2f> = Vec::new();
-                                    let mut loop_idx: usize = 0;
-                                    for poly in &loops {
-                                        // triangle
-                                        if *poly == 3_u8 {
-                                            for _i in 0..3 {
-                                                new_uvs.push(uvs[loop_idx]);
-                                                loop_idx += 1;
-                                            }
-                                        }
-                                        // quad
-                                        else if *poly == 4_u8 {
-                                            new_uvs.push(uvs[loop_idx + 0]);
-                                            new_uvs.push(uvs[loop_idx + 1]);
-                                            new_uvs.push(uvs[loop_idx + 2]);
-                                            new_uvs.push(uvs[loop_idx + 0]);
-                                            new_uvs.push(uvs[loop_idx + 2]);
-                                            new_uvs.push(uvs[loop_idx + 3]);
-                                            loop_idx += 4;
-                                        } else {
-                                            println!(
-                                                "WARNING: quads or triangles expected (poly = {})",
-                                                poly
-                                            )
-                                        }
-                                    }
-                                    uvs = new_uvs;
-                                    assert!(
-                                        uvs.len() == p_ws_vi.len(),
-                                        "{} != {}",
-                                        uvs.len(),
-                                        p_ws_vi.len()
-                                    );
-                                    p_ws = p_ws_vi;
-                                    n_vertices = p_ws.len();
-                                    vertex_indices = new_vertex_indices;
-                                }
-                                for i in 0..n_vertices {
-                                    uv.push(uvs[i]);
-                                }
-                            }
-                            builder.add_mesh(
-                                base_name.clone(),
-                                object_to_world,
-                                world_to_object,
-                                n_triangles,
-                                vertex_indices.clone(),
-                                n_vertices,
-                                p_ws, // in world space
-                                s,    // empty
-                                n_ws, // in world space
-                                uv,
+                            read_mesh(
+                                &base_name,
+                                &object_to_world_hm,
+                                &mut object_to_world,
+                                &p,
+                                &n,
+                                &mut uvs,
+                                &loops,
+                                vertex_indices,
+                                is_smooth,
+                                &mut builder,
                             );
+                            vertex_indices = Vec::new();
                         }
                         // reset booleans
                         data_following_mesh = false;
