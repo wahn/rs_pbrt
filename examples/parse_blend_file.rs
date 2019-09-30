@@ -54,6 +54,7 @@ use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
+use pbrt::lights::point::PointLight;
 use pbrt::materials::glass::GlassMaterial;
 use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::metal::MetalMaterial;
@@ -231,6 +232,22 @@ impl SceneDescriptionBuilder {
         );
         let distant_light = Arc::new(DistantLight::new(&object_to_world, &(l * sc), &dir));
         self.lights.push(distant_light);
+        self
+    }
+    fn add_point_light(
+        &mut self,
+        light_to_world: Transform,
+        l: Spectrum,
+        light_scale: f32,
+    ) -> &mut SceneDescriptionBuilder {
+        let sc: Spectrum = Spectrum::new(light_scale as Float);
+        let medium_interface: MediumInterface = MediumInterface::default();
+        let point_light = Arc::new(PointLight::new(
+            &light_to_world,
+            &medium_interface,
+            &(l * sc),
+        ));
+        self.lights.push(point_light);
         self
     }
     fn finalize(self) -> SceneDescription {
@@ -2341,7 +2358,20 @@ fn main() -> std::io::Result<()> {
                         // println!("  energy = {}", energy);
                         // skip_bytes += 4;
                         // check light type
-                        if la_type == 1 {
+                        if la_type == 0 {
+                            // LA_LOCAL
+                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                object_to_world = *o2w;
+                            } else {
+                                println!(
+                                    "WARNING: looking up object_to_world by name ({:?}) failed",
+                                    base_name
+                                );
+                            }
+                            let l: Spectrum = Spectrum::rgb(r, g, b);
+                            // point light
+                            builder.add_point_light(object_to_world, l, args.light_scale * energy);
+                        } else if la_type == 1 {
                             // LA_SUN
                             if let Some(o2w) = object_to_world_hm.get(&base_name) {
                                 object_to_world = *o2w;
@@ -2352,11 +2382,14 @@ fn main() -> std::io::Result<()> {
                                 );
                             }
                             let l: Spectrum = Spectrum::rgb(r, g, b);
+                            // distant light
                             builder.add_distant_light(
                                 object_to_world,
                                 l,
                                 args.light_scale * energy,
                             );
+                        } else {
+                            println!("WARNING: la_type = {} not supported (yet)", la_type);
                         }
                     } else if code == String::from("DATA") {
                         // DATA
