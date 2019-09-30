@@ -686,8 +686,7 @@ fn read_mesh(
         *object_to_world = *o2w;
     } else {
         println!(
-            "WARNING: looking up object_to_world by
-    name ({:?}) failed",
+            "WARNING: looking up object_to_world by name ({:?}) failed",
             base_name
         );
     }
@@ -886,6 +885,7 @@ fn main() -> std::io::Result<()> {
     let mut uvs: Vec<Point2f> = Vec::new();
     let mut loops: Vec<u8> = Vec::new();
     let mut vertex_indices: Vec<usize> = Vec::new();
+    let mut vertex_colors: Vec<u8> = Vec::new();
     let mut hdr_path: OsString = OsString::new();
     // first get the DNA
     let mut names: Vec<String> = Vec::new();
@@ -1607,6 +1607,7 @@ fn main() -> std::io::Result<()> {
                         uvs.clear();
                         loops.clear();
                         vertex_indices.clear();
+                        vertex_colors.clear();
                         loop_indices.clear();
                     } else if code == String::from("SC") {
                         // SC
@@ -2570,10 +2571,40 @@ fn main() -> std::io::Result<()> {
                                     // int flag
                                     skip_bytes += 4;
                                 }
-                                // for l in 0..data_len as usize {
-                                //     println!("  {}:", l + 1);
-                                //     println!("    uv: {:?}", uvs[l]);
-                                // }
+                            // for l in 0..data_len as usize {
+                            //     println!("  {}:", l + 1);
+                            //     println!("    uv: {:?}", uvs[l]);
+                            // }
+                            } else if types[type_id] == "MLoopCol" {
+                                // println!("{}[{}] ({})", code, data_len, len);
+                                // println!("  SDNAnr = {}", sdna_nr);
+                                // println!("  {} ({})", types[type_id], tlen[type_id]);
+                                // println!("  base_name = {}", base_name);
+                                let mut skip_bytes: usize = 0;
+                                for _l in 0..data_len {
+                                    // r
+                                    let mut red: u8 = 0;
+                                    red += buffer[skip_bytes];
+                                    skip_bytes += 1;
+                                    // g
+                                    let mut green: u8 = 0;
+                                    green += buffer[skip_bytes];
+                                    skip_bytes += 1;
+                                    // b
+                                    let mut blue: u8 = 0;
+                                    blue += buffer[skip_bytes];
+                                    skip_bytes += 1;
+                                    // a
+                                    let mut alpha: u8 = 0;
+                                    alpha += buffer[skip_bytes];
+                                    skip_bytes += 1;
+                                    // println!("{}: {}, {}, {}, {}", l, red, green, blue, alpha);
+                                    vertex_colors.push(red);
+                                    vertex_colors.push(green);
+                                    vertex_colors.push(blue);
+                                    vertex_colors.push(alpha);
+                                }
+                                // println!("vertex_colors: {:?}", vertex_colors);
                             }
                         }
                     } else {
