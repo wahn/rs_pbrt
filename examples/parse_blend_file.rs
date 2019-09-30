@@ -142,12 +142,14 @@ fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
 struct SceneDescription {
     mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
+    triangle_colors: Vec<Vec<Spectrum>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
     mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
+    triangle_colors: Vec<Vec<Spectrum>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
@@ -156,6 +158,7 @@ impl SceneDescriptionBuilder {
         SceneDescriptionBuilder {
             mesh_names: Vec::new(),
             meshes: Vec::new(),
+            triangle_colors: Vec::new(),
             lights: Vec::new(),
         }
     }
@@ -171,6 +174,7 @@ impl SceneDescriptionBuilder {
         s: Vec<Vector3f>,
         n_ws: Vec<Normal3f>,
         uv: Vec<Point2f>,
+        triangle_colors: Vec<Spectrum>,
     ) -> &mut SceneDescriptionBuilder {
         self.mesh_names.push(base_name);
         let triangle_mesh = Arc::new(TriangleMesh::new(
@@ -188,6 +192,7 @@ impl SceneDescriptionBuilder {
             None,
         ));
         self.meshes.push(triangle_mesh);
+        self.triangle_colors.push(triangle_colors);
         self
     }
     fn add_hdr_light(
@@ -254,6 +259,7 @@ impl SceneDescriptionBuilder {
         SceneDescription {
             mesh_names: self.mesh_names,
             meshes: self.meshes,
+            triangle_colors: self.triangle_colors,
             lights: self.lights,
         }
     }
@@ -293,6 +299,7 @@ impl RenderOptions {
         for mesh_idx in 0..scene.meshes.len() {
             let mesh = &scene.meshes[mesh_idx];
             let mesh_name = &scene.mesh_names[mesh_idx];
+            let triangle_colors = &scene.triangle_colors[mesh_idx];
             // create individual triangles
             let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
             for id in 0..mesh.n_triangles {
@@ -484,10 +491,22 @@ impl RenderOptions {
                             }
                         }
                         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-                        let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
-                        for _i in 0..shapes.len() {
-                            triangle_materials.push(matte.clone());
-                            triangle_lights.push(None);
+                        let mut matte = Arc::new(MatteMaterial::new(kd, sigma.clone(), None));
+                        if triangle_colors.len() != 0_usize {
+                            assert!(triangle_colors.len() == shapes.len());
+                            // ignore textures, use triangle colors
+                            for i in 0..shapes.len() {
+                                // overwrite kd
+                                kd = Arc::new(ConstantTexture::new(triangle_colors[i]));
+                                matte = Arc::new(MatteMaterial::new(kd, sigma.clone(), None));
+                                triangle_materials.push(matte.clone());
+                                triangle_lights.push(None);
+                            }
+                        } else {
+                            for _i in 0..shapes.len() {
+                                triangle_materials.push(matte.clone());
+                                triangle_lights.push(None);
+                            }
                         }
                     }
                 }
@@ -679,9 +698,37 @@ fn read_mesh(
     uvs: &mut Vec<Point2f>,
     loops: &Vec<u8>,
     vertex_indices: Vec<usize>,
+    vertex_colors: Vec<u8>,
     is_smooth: bool,
     builder: &mut SceneDescriptionBuilder,
 ) {
+    let mut triangle_colors: Vec<Spectrum> = Vec::new();
+    if vertex_colors.len() != 0_usize {
+        // let n_vertex_colors: usize = vertex_colors.len() / 4;
+        // println!("{:?}: {} vertex colors found", base_name, n_vertex_colors);
+        // println!("{:?}: {} loops found", base_name, loops.len());
+        // println!("{:?}: {} vertices", base_name, vertex_indices.len());
+        let mut rgba: usize = 0;
+        for l in loops {
+            for i in 0..*l {
+                let r: Float = vertex_colors[rgba * 4 + 0] as Float / 255.0 as Float;
+                let g: Float = vertex_colors[rgba * 4 + 1] as Float / 255.0 as Float;
+                let b: Float = vertex_colors[rgba * 4 + 2] as Float / 255.0 as Float;
+                // let a: Float = vertex_colors[rgba*4 + 3] as Float / 255.0 as Float;
+                let s: Spectrum = Spectrum::rgb(r, g, b);
+                // println!("{}: {:?}", rgba, s);
+                if i == 0 {
+                    // only store first color in loop (triangle or quad)
+                    triangle_colors.push(s);
+                    if *l == 4 {
+                        // store it twice for quads (two triangles)
+                        triangle_colors.push(s);
+                    }
+                }
+                rgba += 1;
+            }
+        }
+    }
     if let Some(o2w) = object_to_world_hm.get(base_name) {
         *object_to_world = *o2w;
     } else {
@@ -774,6 +821,7 @@ fn read_mesh(
             s,    // empty
             n_ws, // in world space
             uv,
+            triangle_colors,
         );
     } else {
         builder.add_mesh(
@@ -787,6 +835,7 @@ fn read_mesh(
             s,    // empty
             n_ws, // in world space
             uv,
+            triangle_colors,
         );
     }
 }
@@ -1195,10 +1244,12 @@ fn main() -> std::io::Result<()> {
                             &mut uvs,
                             &loops,
                             vertex_indices,
+                            vertex_colors,
                             is_smooth,
                             &mut builder,
                         );
                         vertex_indices = Vec::new();
+                        vertex_colors = Vec::new();
                     }
                     // reset booleans
                     data_following_mesh = false;
@@ -1508,10 +1559,12 @@ fn main() -> std::io::Result<()> {
                                 &mut uvs,
                                 &loops,
                                 vertex_indices,
+                                vertex_colors,
                                 is_smooth,
                                 &mut builder,
                             );
                             vertex_indices = Vec::new();
+                            vertex_colors = Vec::new();
                         }
                         // ME
                         // println!("{} ({})", code, len);
@@ -1980,10 +2033,12 @@ fn main() -> std::io::Result<()> {
                                 &mut uvs,
                                 &loops,
                                 vertex_indices,
+                                vertex_colors,
                                 is_smooth,
                                 &mut builder,
                             );
                             vertex_indices = Vec::new();
+                            vertex_colors = Vec::new();
                         }
                         // MA
                         // println!("{} ({})", code, len);
@@ -2618,10 +2673,12 @@ fn main() -> std::io::Result<()> {
                                 &mut uvs,
                                 &loops,
                                 vertex_indices,
+                                vertex_colors,
                                 is_smooth,
                                 &mut builder,
                             );
                             vertex_indices = Vec::new();
+                            vertex_colors = Vec::new();
                         }
                         // reset booleans
                         data_following_mesh = false;
