@@ -2516,8 +2516,8 @@ fn main() -> std::io::Result<()> {
                                             .push(loop_indices[(loopstart + 3) as usize] as usize);
                                     } else {
                                         println!(
-                                            "WARNING: quads or triangles expected (totloop = {})",
-                                            totloop
+                                            "WARNING: quads or triangles expected (totloop = {}): {:?}",
+                                            totloop, base_name
                                         )
                                     }
                                 }
