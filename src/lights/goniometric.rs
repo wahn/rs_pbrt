@@ -4,12 +4,16 @@ use std::f32::consts::PI;
 use std::io::BufReader;
 use std::sync::Arc;
 // pbrt
+use crate::core::geometry::{
+    pnt2_inside_bnd2, pnt3_distance_squared, spherical_phi, spherical_theta,
+};
 use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{Light, LightFlags, VisibilityTester};
 use crate::core::medium::{Medium, MediumInterface};
 use crate::core::mipmap::{ImageWrap, MipMap};
 use crate::core::pbrt::{Float, Spectrum};
+use crate::core::pbrt::{INV_2_PI, INV_PI};
 use crate::core::scene::Scene;
 use crate::core::transform::Transform;
 
@@ -24,6 +28,8 @@ pub struct GonioPhotometricLight {
     pub flags: u8,
     pub n_samples: i32,
     pub medium_interface: MediumInterface,
+    pub light_to_world: Transform,
+    pub world_to_light: Transform,
 }
 
 impl GonioPhotometricLight {
@@ -103,6 +109,8 @@ impl GonioPhotometricLight {
                             flags: LightFlags::DeltaPosition as u8,
                             n_samples: 1_i32,
                             medium_interface: MediumInterface::default(),
+                            light_to_world: *light_to_world,
+                            world_to_light: Transform::inverse(&*light_to_world),
                         };
                     }
                 }
@@ -117,6 +125,23 @@ impl GonioPhotometricLight {
             flags: LightFlags::DeltaPosition as u8,
             n_samples: 1_i32,
             medium_interface: MediumInterface::default(),
+            light_to_world: Transform::default(),
+            world_to_light: Transform::default(),
+        }
+    }
+    pub fn scale(&self, w: &Vector3f) -> Spectrum {
+        let mut wp: Vector3f = self.world_to_light.transform_vector(w).normalize();
+        std::mem::swap(&mut wp.y, &mut wp.z);
+        let theta: Float = spherical_theta(&wp);
+        let phi: Float = spherical_phi(&wp);
+        if let Some(mipmap) = &self.mipmap {
+            let st: Point2f = Point2f {
+                x: phi * INV_2_PI,
+                y: theta * INV_PI,
+            };
+            mipmap.lookup_pnt_flt(&st, 0.0 as Float)
+        } else {
+            Spectrum::new(1.0 as Float)
         }
     }
 }
@@ -130,8 +155,27 @@ impl Light for GonioPhotometricLight {
         pdf: &mut Float,
         vis: &mut VisibilityTester,
     ) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        *wi = (self.p_light - iref.p).normalize();
+        *pdf = 1.0 as Float;
+        *vis = VisibilityTester {
+            p0: InteractionCommon {
+                p: iref.p,
+                time: iref.time,
+                p_error: iref.p_error,
+                wo: iref.wo,
+                n: iref.n,
+                medium_interface: None,
+            },
+            p1: InteractionCommon {
+                p: self.p_light,
+                time: iref.time,
+                p_error: Vector3f::default(),
+                wo: Vector3f::default(),
+                n: Normal3f::default(),
+                medium_interface: None,
+            },
+        };
+        self.i * self.scale(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     fn power(&self) -> Spectrum {
         // WORK

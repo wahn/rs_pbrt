@@ -337,7 +337,6 @@ impl ProjectionLight {
         }
     }
     pub fn projection(&self, w: &Vector3f) -> Spectrum {
-        // Vector3f wl = world_to_light(w);
         let wl: Vector3f = self.world_to_light.transform_vector(w);
         // discard directions behind projection light
         if wl.z < self.hither {
