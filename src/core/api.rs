@@ -528,7 +528,6 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         api_state.render_options.lights.push(spot_light);
     } else if api_state.param_set.name == "goniometric" {
         // CreateGoniometricLight
-        println!("WORK: CreateGoniometricLight");
         let i: Spectrum = api_state
             .param_set
             .find_one_spectrum("I", Spectrum::new(1.0 as Float));

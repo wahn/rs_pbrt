@@ -4,16 +4,15 @@ use std::f32::consts::PI;
 use std::io::BufReader;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::{
-    pnt2_inside_bnd2, pnt3_distance_squared, spherical_phi, spherical_theta,
-};
-use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
+use crate::core::geometry::{pnt3_distance_squared, spherical_phi, spherical_theta};
+use crate::core::geometry::{Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{Light, LightFlags, VisibilityTester};
-use crate::core::medium::{Medium, MediumInterface};
+use crate::core::medium::MediumInterface;
 use crate::core::mipmap::{ImageWrap, MipMap};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::pbrt::{INV_2_PI, INV_PI};
+use crate::core::sampling::{uniform_sample_sphere, uniform_sphere_pdf};
 use crate::core::scene::Scene;
 use crate::core::transform::Transform;
 
@@ -77,31 +76,6 @@ impl GonioPhotometricLight {
                             wrap_mode,
                         ));
                         let p_light: Point3f = light_to_world.transform_point(&Point3f::default());
-                        let aspect: Float = resolution.x as Float / resolution.y as Float;
-                        let screen_bounds: Bounds2f;
-                        if aspect > 1.0 as Float {
-                            screen_bounds = Bounds2f {
-                                p_min: Point2f {
-                                    x: -aspect,
-                                    y: -1.0 as Float,
-                                },
-                                p_max: Point2f {
-                                    x: aspect,
-                                    y: 1.0 as Float,
-                                },
-                            };
-                        } else {
-                            screen_bounds = Bounds2f {
-                                p_min: Point2f {
-                                    x: -1.0 as Float,
-                                    y: -1.0 as Float / aspect,
-                                },
-                                p_max: Point2f {
-                                    x: 1.0 as Float,
-                                    y: 1.0 as Float / aspect,
-                                },
-                            };
-                        }
                         return GonioPhotometricLight {
                             p_light: p_light,
                             i: *i,
@@ -178,16 +152,27 @@ impl Light for GonioPhotometricLight {
         self.i * self.scale(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     fn power(&self) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        if let Some(mipmap) = &self.mipmap {
+            mipmap.lookup_pnt_flt(
+                &Point2f {
+                    x: 0.5 as Float,
+                    y: 0.5 as Float,
+                },
+                0.5 as Float,
+            ) * self.i
+                * 4.0 as Float
+                * PI
+        } else {
+            Spectrum::new(1.0 as Float) * self.i * 4.0 as Float * PI
+        }
     }
     fn preprocess(&self, _scene: &Scene) {}
+    /// Default implementation returns no emitted radiance for a ray
+    /// that escapes the scene bounds.
     fn le(&self, _ray: &mut Ray) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        Spectrum::new(0.0 as Float)
     }
     fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
-        // WORK
         0.0 as Float
     }
     fn sample_le(
@@ -200,8 +185,18 @@ impl Light for GonioPhotometricLight {
         pdf_pos: &mut Float,
         pdf_dir: &mut Float,
     ) -> Spectrum {
-        // WORK
-        Spectrum::default()
+        *ray = Ray {
+            o: self.p_light,
+            d: uniform_sample_sphere(u1),
+            t_max: std::f32::INFINITY,
+            time,
+            differential: None,
+            medium: None,
+        };
+        *n_light = Normal3f::from(ray.d);
+        *pdf_pos = 1.0 as Float;
+        *pdf_dir = uniform_sphere_pdf();
+        self.i * self.scale(&ray.d)
     }
     fn get_flags(&self) -> u8 {
         self.flags
@@ -210,6 +205,7 @@ impl Light for GonioPhotometricLight {
         self.n_samples
     }
     fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
-        // WORK
+        *pdf_pos = 0.0 as Float;
+        *pdf_dir = uniform_sphere_pdf();
     }
 }

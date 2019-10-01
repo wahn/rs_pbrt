@@ -123,13 +123,11 @@ impl ProjectionLight {
                     let mut texels: Vec<Spectrum> = Vec::new();
                     for idx in 0..(resolution.x * resolution.y) {
                         let (r, g, b) = pixel_data[idx as usize];
-                        texels.push(
-                            Spectrum::rgb(
-                                decode_f16(r.to_bits()),
-                                decode_f16(g.to_bits()),
-                                decode_f16(b.to_bits()),
-                            ),
-                        );
+                        texels.push(Spectrum::rgb(
+                            decode_f16(r.to_bits()),
+                            decode_f16(g.to_bits()),
+                            decode_f16(b.to_bits()),
+                        ));
                     }
                     // create _MipMap_ from converted texels (see above)
                     let do_trilinear: bool = false;
@@ -399,7 +397,10 @@ impl Light for ProjectionLight {
                     y: 0.5 as Float,
                 },
                 0.5 as Float,
-            )
+            ) * self.i
+                * 2.0 as Float
+                * PI
+                * (1.0 as Float - self.cos_total_width)
         } else {
             Spectrum::new(1.0 as Float)
                 * self.i
