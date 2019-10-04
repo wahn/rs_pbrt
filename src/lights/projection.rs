@@ -242,12 +242,16 @@ impl ProjectionLight {
                         x: meta.width as i32,
                         y: meta.height as i32,
                     };
-                    let img_result = hdr.read_image_transform(|p| {
-                        let rgb = p.to_hdr();
-                        Spectrum::rgb(rgb[0], rgb[1], rgb[2])
-                    });
+                    let mut texels: Vec<Spectrum> =
+                        vec![Spectrum::default(); (resolution.x * resolution.y) as usize];
+                    let img_result = hdr.read_image_transform(
+                        |p| {
+                            let rgb = p.to_hdr();
+                            Spectrum::rgb(rgb[0], rgb[1], rgb[2])
+                        },
+                        &mut texels,
+                    );
                     if img_result.is_ok() {
-                        let texels = img_result.ok().unwrap();
                         // create _MipMap_ from converted texels (see above)
                         let do_trilinear: bool = false;
                         let max_aniso: Float = 8.0 as Float;
