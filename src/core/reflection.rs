@@ -530,7 +530,7 @@ pub enum Fresnel {
 }
 
 impl Fresnel {
-    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
+    pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         match self {
             Fresnel::NoOp(fresnel) => fresnel.evaluate(cos_theta_i),
             Fresnel::Conductor(fresnel) => fresnel.evaluate(cos_theta_i),
@@ -553,7 +553,7 @@ impl DisneyFresnel {
     pub fn new(r0: Spectrum, metallic: Float, eta: Float) -> DisneyFresnel {
         DisneyFresnel { r0, metallic, eta }
     }
-    fn evaluate(&self, cos_i: Float) -> Spectrum {
+    pub fn evaluate(&self, cos_i: Float) -> Spectrum {
         lerp(
             self.metallic,
             Spectrum::from(fr_dielectric(cos_i, 1.0, self.eta)),
@@ -570,7 +570,7 @@ pub struct FresnelConductor {
 }
 
 impl FresnelConductor {
-    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
+    pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         fr_conductor(cos_theta_i, self.eta_i, self.eta_t, self.k)
     }
 }
@@ -582,7 +582,7 @@ pub struct FresnelDielectric {
 }
 
 impl FresnelDielectric {
-    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
+    pub fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
     }
 }
@@ -591,7 +591,7 @@ impl FresnelDielectric {
 pub struct FresnelNoOp {}
 
 impl FresnelNoOp {
-    fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
+    pub fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
         Spectrum::new(1.0 as Float)
     }
 }
