@@ -10,9 +10,10 @@ use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistributio
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{clamp_t, lerp, Float, Spectrum};
 use crate::core::reflection::{
-    abs_cos_theta, vec3_same_hemisphere_vec3, MicrofacetReflection, MicrofacetTransmission,
+    abs_cos_theta, fr_schlick, vec3_same_hemisphere_vec3, MicrofacetReflection,
+    MicrofacetTransmission,
 };
-use crate::core::reflection::{fr_dielectric, reflect, Fresnel};
+use crate::core::reflection::{reflect, DisneyFresnel, Fresnel};
 use crate::core::reflection::{Bsdf, Bxdf, BxdfType, LambertianTransmission, SpecularTransmission};
 use crate::core::texture::Texture;
 
@@ -167,7 +168,7 @@ impl Material for DisneyMaterial {
             schlick_r0_from_eta(e) * lerp(spec_tint, Spectrum::new(1.0), c_tint),
             c,
         );
-        let fresnel = Arc::new(DisneyFresnel::new(cspec0, metallic_weight, e));
+        let fresnel = Fresnel::Disney(DisneyFresnel::new(cspec0, metallic_weight, e));
         bxdfs.push(Arc::new(MicrofacetReflection::new(
             c,
             distrib.clone(),
@@ -439,33 +440,6 @@ impl Bxdf for DisneyClearCoat {
     }
 }
 
-// DisneyFresnel
-
-/// Specialized Fresnel function used for the specular component, based on
-/// a mixture between dielectric and the Schlick Fresnel approximation.
-#[derive(Debug, Clone, Copy)]
-struct DisneyFresnel {
-    r0: Spectrum,
-    metallic: Float,
-    eta: Float,
-}
-
-impl DisneyFresnel {
-    pub fn new(r0: Spectrum, metallic: Float, eta: Float) -> DisneyFresnel {
-        DisneyFresnel { r0, metallic, eta }
-    }
-}
-
-impl Fresnel for DisneyFresnel {
-    fn evaluate(&self, cos_i: Float) -> Spectrum {
-        lerp(
-            self.metallic,
-            Spectrum::from(fr_dielectric(cos_i, 1.0, self.eta)),
-            fr_schlick_spectrum(self.r0, cos_i),
-        )
-    }
-}
-
 struct DisneyMicrofacetDistribution {
     inner: TrowbridgeReitzDistribution,
 }
@@ -512,16 +486,6 @@ impl MicrofacetDistribution for DisneyMicrofacetDistribution {
 fn schlick_weight(cos_theta: Float) -> Float {
     let m = clamp_t(1.0 - cos_theta, 0.0, 1.0);
     (m * m) * (m * m) * m
-}
-
-#[inline]
-fn fr_schlick(r0: Float, cos_theta: Float) -> Float {
-    lerp(schlick_weight(cos_theta), r0, 1.0)
-}
-
-#[inline]
-fn fr_schlick_spectrum(r0: Spectrum, cos_theta: Float) -> Spectrum {
-    lerp(schlick_weight(cos_theta), r0, Spectrum::from(1.0))
 }
 
 #[inline]

@@ -6,7 +6,7 @@ use crate::core::material::{Material, TransportMode};
 use crate::core::microfacet::TrowbridgeReitzDistribution;
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::reflection::{Bsdf, Bxdf, FresnelConductor, MicrofacetReflection};
+use crate::core::reflection::{Bsdf, Bxdf, Fresnel, FresnelConductor, MicrofacetReflection};
 use crate::core::texture::Texture;
 
 pub const COPPER_SAMPLES: u8 = 56_u8;
@@ -171,7 +171,7 @@ impl Material for MetalMaterial {
             u_rough = TrowbridgeReitzDistribution::roughness_to_alpha(u_rough);
             v_rough = TrowbridgeReitzDistribution::roughness_to_alpha(v_rough);
         }
-        let fr_mf = Arc::new(FresnelConductor {
+        let fr_mf = Fresnel::Conductor(FresnelConductor {
             eta_i: Spectrum::new(1.0 as Float),
             eta_t: self.eta.evaluate(si),
             k: self.k.evaluate(si),

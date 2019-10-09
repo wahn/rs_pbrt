@@ -8,7 +8,7 @@ use crate::core::microfacet::TrowbridgeReitzDistribution;
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
-    Bsdf, Bxdf, FresnelDielectric, LambertianReflection, MicrofacetReflection,
+    Bsdf, Bxdf, Fresnel, FresnelDielectric, LambertianReflection, MicrofacetReflection,
 };
 use crate::core::texture::Texture;
 
@@ -83,7 +83,7 @@ impl Material for PlasticMaterial {
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !ks.is_black() {
-            let fresnel = Arc::new(FresnelDielectric {
+            let fresnel = Fresnel::Dielectric(FresnelDielectric {
                 eta_i: 1.5 as Float,
                 eta_t: 1.0 as Float,
             });

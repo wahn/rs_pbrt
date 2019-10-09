@@ -14,8 +14,8 @@ use crate::core::microfacet::TrowbridgeReitzDistribution;
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
-    Bsdf, Bxdf, FresnelDielectric, FresnelSpecular, MicrofacetReflection, MicrofacetTransmission,
-    SpecularReflection, SpecularTransmission,
+    Bsdf, Bxdf, Fresnel, FresnelDielectric, FresnelSpecular, MicrofacetReflection,
+    MicrofacetTransmission, SpecularReflection, SpecularTransmission,
 };
 use crate::core::texture::Texture;
 
@@ -167,7 +167,7 @@ impl Material for SubsurfaceMaterial {
                 vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
             }
             if !r.is_black() {
-                let fresnel = Arc::new(FresnelDielectric {
+                let fresnel = Fresnel::Dielectric(FresnelDielectric {
                     eta_i: 1.0 as Float,
                     eta_t: self.eta,
                 });

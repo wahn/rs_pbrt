@@ -27,10 +27,33 @@ use crate::core::interpolation::{
 use crate::core::material::TransportMode;
 use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use crate::core::pbrt::INV_PI;
-use crate::core::pbrt::{clamp_t, radians};
+use crate::core::pbrt::{clamp_t, lerp, radians};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
 use crate::core::sampling::cosine_sample_hemisphere;
+
+/// https://seblagarde.wordpress.com/2013/04/29/memo-on-fresnel-equations/
+///
+/// The Schlick Fresnel approximation is:
+///
+/// R = R(0) + (1 - R(0)) (1 - cos theta)^5,
+///
+/// where R(0) is the reflectance at normal indicence.
+#[inline]
+fn schlick_weight(cos_theta: Float) -> Float {
+    let m = clamp_t(1.0 - cos_theta, 0.0, 1.0);
+    (m * m) * (m * m) * m
+}
+
+#[inline]
+pub fn fr_schlick(r0: Float, cos_theta: Float) -> Float {
+    lerp(schlick_weight(cos_theta), r0, 1.0)
+}
+
+#[inline]
+fn fr_schlick_spectrum(r0: Spectrum, cos_theta: Float) -> Spectrum {
+    lerp(schlick_weight(cos_theta), r0, Spectrum::from(1.0))
+}
 
 // see reflection.h
 
@@ -499,8 +522,33 @@ impl Bxdf for ScaledBxDF {
     }
 }
 
-pub trait Fresnel {
-    fn evaluate(&self, cos_theta_i: Float) -> Spectrum;
+pub enum Fresnel {
+    NoOp(FresnelNoOp),
+    Conductor(FresnelConductor),
+    Dielectric(FresnelDielectric),
+    Disney(DisneyFresnel),
+}
+
+/// Specialized Fresnel function used for the specular component, based on
+/// a mixture between dielectric and the Schlick Fresnel approximation.
+#[derive(Debug, Clone, Copy)]
+pub struct DisneyFresnel {
+    r0: Spectrum,
+    metallic: Float,
+    eta: Float,
+}
+
+impl DisneyFresnel {
+    pub fn new(r0: Spectrum, metallic: Float, eta: Float) -> DisneyFresnel {
+        DisneyFresnel { r0, metallic, eta }
+    }
+    fn evaluate(&self, cos_i: Float) -> Spectrum {
+        lerp(
+            self.metallic,
+            Spectrum::from(fr_dielectric(cos_i, 1.0, self.eta)),
+            fr_schlick_spectrum(self.r0, cos_i),
+        )
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -510,7 +558,7 @@ pub struct FresnelConductor {
     pub k: Spectrum,
 }
 
-impl Fresnel for FresnelConductor {
+impl FresnelConductor {
     fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         fr_conductor(cos_theta_i, self.eta_i, self.eta_t, self.k)
     }
@@ -522,7 +570,7 @@ pub struct FresnelDielectric {
     pub eta_t: Float,
 }
 
-impl Fresnel for FresnelDielectric {
+impl FresnelDielectric {
     fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
         Spectrum::new(fr_dielectric(cos_theta_i, self.eta_i, self.eta_t))
     }
@@ -531,20 +579,19 @@ impl Fresnel for FresnelDielectric {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct FresnelNoOp {}
 
-impl Fresnel for FresnelNoOp {
+impl FresnelNoOp {
     fn evaluate(&self, _cos_theta_i: Float) -> Spectrum {
         Spectrum::new(1.0 as Float)
     }
 }
 
-#[derive(Clone)]
 pub struct SpecularReflection {
     pub r: Spectrum,
-    pub fresnel: Arc<dyn Fresnel + Send + Sync>,
+    pub fresnel: Fresnel,
 }
 
 impl SpecularReflection {
-    pub fn new(r: Spectrum, fresnel: Arc<dyn Fresnel + Send + Sync>) -> Self {
+    pub fn new(r: Spectrum, fresnel: Fresnel) -> Self {
         SpecularReflection { r, fresnel }
     }
 }
@@ -569,7 +616,19 @@ impl Bxdf for SpecularReflection {
         };
         *pdf = 1.0 as Float;
         let cos_theta_i: Float = cos_theta(&*wi);
-        self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
+        // self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
+        match self.fresnel {
+            Fresnel::NoOp(fresnel) => fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi),
+            Fresnel::Conductor(fresnel) => {
+                fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
+            }
+            Fresnel::Dielectric(fresnel) => {
+                fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
+            }
+            Fresnel::Disney(fresnel) => {
+                fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
+            }
+        }
     }
     fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0 as Float
@@ -926,14 +985,14 @@ impl Bxdf for OrenNayar {
 pub struct MicrofacetReflection {
     pub r: Spectrum,
     pub distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
-    pub fresnel: Arc<dyn Fresnel + Send + Sync>,
+    pub fresnel: Fresnel,
 }
 
 impl MicrofacetReflection {
     pub fn new(
         r: Spectrum,
         distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
-        fresnel: Arc<dyn Fresnel + Send + Sync>,
+        fresnel: Fresnel,
     ) -> Self {
         MicrofacetReflection {
             r,
@@ -957,7 +1016,13 @@ impl Bxdf for MicrofacetReflection {
         }
         wh = wh.normalize();
         let dot: Float = vec3_dot_vec3(wi, &wh);
-        let f: Spectrum = self.fresnel.evaluate(dot);
+        // let f: Spectrum = self.fresnel.evaluate(dot);
+        let f: Spectrum = match self.fresnel {
+            Fresnel::NoOp(fresnel) => fresnel.evaluate(dot),
+            Fresnel::Conductor(fresnel) => fresnel.evaluate(dot),
+            Fresnel::Dielectric(fresnel) => fresnel.evaluate(dot),
+            Fresnel::Disney(fresnel) => fresnel.evaluate(dot),
+        };
         self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f
             / (4.0 as Float * cos_theta_i * cos_theta_o)
     }

@@ -6,7 +6,7 @@ use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::reflection::{Bsdf, Bxdf, FresnelNoOp, SpecularReflection};
+use crate::core::reflection::{Bsdf, Bxdf, Fresnel, FresnelNoOp, SpecularReflection};
 use crate::core::texture::Texture;
 
 // see mirror.h
@@ -48,7 +48,7 @@ impl Material for MirrorMaterial {
             .kr
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let fresnel = Arc::new(FresnelNoOp {});
+        let fresnel = Fresnel::NoOp(FresnelNoOp {});
         bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
