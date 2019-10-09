@@ -529,6 +529,17 @@ pub enum Fresnel {
     Disney(DisneyFresnel),
 }
 
+impl Fresnel {
+    fn evaluate(&self, cos_theta_i: Float) -> Spectrum {
+        match self {
+            Fresnel::NoOp(fresnel) => fresnel.evaluate(cos_theta_i),
+            Fresnel::Conductor(fresnel) => fresnel.evaluate(cos_theta_i),
+            Fresnel::Dielectric(fresnel) => fresnel.evaluate(cos_theta_i),
+            Fresnel::Disney(fresnel) => fresnel.evaluate(cos_theta_i),
+        }
+    }
+}
+
 /// Specialized Fresnel function used for the specular component, based on
 /// a mixture between dielectric and the Schlick Fresnel approximation.
 #[derive(Debug, Clone, Copy)]
@@ -616,19 +627,7 @@ impl Bxdf for SpecularReflection {
         };
         *pdf = 1.0 as Float;
         let cos_theta_i: Float = cos_theta(&*wi);
-        // self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
-        match self.fresnel {
-            Fresnel::NoOp(fresnel) => fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi),
-            Fresnel::Conductor(fresnel) => {
-                fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
-            }
-            Fresnel::Dielectric(fresnel) => {
-                fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
-            }
-            Fresnel::Disney(fresnel) => {
-                fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
-            }
-        }
+        self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
     }
     fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0 as Float
@@ -1016,13 +1015,7 @@ impl Bxdf for MicrofacetReflection {
         }
         wh = wh.normalize();
         let dot: Float = vec3_dot_vec3(wi, &wh);
-        // let f: Spectrum = self.fresnel.evaluate(dot);
-        let f: Spectrum = match self.fresnel {
-            Fresnel::NoOp(fresnel) => fresnel.evaluate(dot),
-            Fresnel::Conductor(fresnel) => fresnel.evaluate(dot),
-            Fresnel::Dielectric(fresnel) => fresnel.evaluate(dot),
-            Fresnel::Disney(fresnel) => fresnel.evaluate(dot),
-        };
+        let f: Spectrum = self.fresnel.evaluate(dot);
         self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f
             / (4.0 as Float * cos_theta_i * cos_theta_o)
     }
