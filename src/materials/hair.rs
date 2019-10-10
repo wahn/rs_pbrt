@@ -134,7 +134,7 @@ impl Material for HairMaterial {
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
     ) {
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let bm: Float = self.beta_m.evaluate(si);
         let bn: Float = self.beta_n.evaluate(si);
         let a: Float = radians(self.alpha.evaluate(si));
@@ -163,7 +163,7 @@ impl Material for HairMaterial {
             sig_a = HairBSDF::sigma_a_from_concentration(ce, cp);
         }
         let h: Float = -1.0 as Float + 2.0 as Float * si.uv[1];
-        bxdfs.push(Arc::new(HairBSDF::new(h, e, sig_a, bm, bn, a)));
+        bxdfs.push(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a)));
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }
@@ -310,10 +310,8 @@ impl HairBSDF {
         }
         sigma_a
     }
-}
-
-impl Bxdf for HairBSDF {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    // Bxdf
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         // compute hair coordinate system terms related to _wo_
         let sin_theta_o: Float = wo.x;
         // Float cosThetaO = SafeSqrt(1 - Sqr(sinThetaO));
@@ -402,7 +400,7 @@ impl Bxdf for HairBSDF {
         assert!(!fsum.y().is_infinite() && !fsum.y().is_nan());
         fsum
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -527,7 +525,7 @@ impl Bxdf for HairBSDF {
             * (1.0 as Float / (2.0 as Float * PI));
         self.f(wo, &*wi)
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // compute hair coordinate system terms related to _wo_
         let sin_theta_o: Float = wo.x;
         let x: Float = 1.0 as Float - (sin_theta_o * sin_theta_o);
@@ -597,7 +595,7 @@ impl Bxdf for HairBSDF {
             * (1.0 as Float / (2.0 as Float * PI));
         pdf
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfGlossy as u8
             | BxdfType::BsdfReflection as u8
             | BxdfType::BsdfTransmission as u8

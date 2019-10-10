@@ -154,7 +154,7 @@ impl Material for MetalMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let mut u_rough: Float;
         if let Some(ref u_roughness) = self.u_roughness {
             u_rough = u_roughness.evaluate(si);
@@ -177,7 +177,7 @@ impl Material for MetalMaterial {
             k: self.k.evaluate(si),
         });
         let distrib = Arc::new(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
-        bxdfs.push(Arc::new(MicrofacetReflection::new(
+        bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
             Spectrum::new(1.0 as Float),
             distrib,
             fr_mf,

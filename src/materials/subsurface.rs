@@ -136,7 +136,7 @@ impl Material for SubsurfaceMaterial {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         // initialize BSDF for _SubsurfaceMaterial_
         let r: Spectrum = self
             .kr
@@ -154,7 +154,7 @@ impl Material for SubsurfaceMaterial {
         }
         let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;
         if is_specular && allow_multiple_lobes {
-            bxdfs.push(Arc::new(FresnelSpecular::new(
+            bxdfs.push(Bxdf::FresnelSpec(FresnelSpecular::new(
                 r,
                 t,
                 1.0 as Float,
@@ -172,18 +172,18 @@ impl Material for SubsurfaceMaterial {
                     eta_t: self.eta,
                 });
                 if is_specular {
-                    bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
+                    bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(r, fresnel)));
                 } else {
                     let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
-                    bxdfs.push(Arc::new(MicrofacetReflection::new(r, distrib, fresnel)));
+                    bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(r, distrib, fresnel)));
                 }
             }
             if !t.is_black() {
                 if is_specular {
-                    bxdfs.push(Arc::new(SpecularTransmission::new(t, 1.0, self.eta, mode)));
+                    bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(t, 1.0, self.eta, mode)));
                 } else {
                     let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
-                    bxdfs.push(Arc::new(MicrofacetTransmission::new(
+                    bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                         t, distrib, 1.0, self.eta, mode,
                     )));
                 }

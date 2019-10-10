@@ -73,7 +73,7 @@ impl Material for SubstrateMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let d: Spectrum = self
             .kd
             .evaluate(si)
@@ -91,7 +91,7 @@ impl Material for SubstrateMaterial {
             }
             let distrib: Option<TrowbridgeReitzDistribution> =
                 Some(TrowbridgeReitzDistribution::new(roughu, roughv, true));
-            bxdfs.push(Arc::new(FresnelBlend::new(d, s, distrib)));
+            bxdfs.push(Bxdf::FresnelBlnd(FresnelBlend::new(d, s, distrib)));
         }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }

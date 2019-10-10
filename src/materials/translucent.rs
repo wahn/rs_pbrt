@@ -74,7 +74,7 @@ impl Material for TranslucentMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let eta: Float = 1.5;
         let r: Spectrum = self
             .reflect
@@ -94,10 +94,10 @@ impl Material for TranslucentMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kd.is_black() {
             if !r.is_black() {
-                bxdfs.push(Arc::new(LambertianReflection::new(r * kd)));
+                bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(r * kd)));
             }
             if !t.is_black() {
-                bxdfs.push(Arc::new(LambertianTransmission::new(t * kd)));
+                bxdfs.push(Bxdf::LambertianTrans(LambertianTransmission::new(t * kd)));
             }
         }
         let ks: Spectrum = self
@@ -115,14 +115,14 @@ impl Material for TranslucentMaterial {
                     eta_i: 1.0 as Float,
                     eta_t: eta,
                 });
-                bxdfs.push(Arc::new(MicrofacetReflection::new(
+                bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
                     r * ks,
                     distrib.clone(),
                     fresnel,
                 )));
             }
             if !t.is_black() {
-                bxdfs.push(Arc::new(MicrofacetTransmission::new(
+                bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                     t * ks,
                     distrib.clone(),
                     1.0,

@@ -125,7 +125,7 @@ impl Material for UberMaterial {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let e: Float = self.eta.evaluate(si);
         let op: Spectrum = self
             .opacity
@@ -134,7 +134,7 @@ impl Material for UberMaterial {
         let t: Spectrum =
             (Spectrum::new(1.0) - op).clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !t.is_black() {
-            bxdfs.push(Arc::new(SpecularTransmission::new(
+            bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
                 t,
                 1.0,
                 1.0,
@@ -147,7 +147,7 @@ impl Material for UberMaterial {
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kd.is_black() {
-            bxdfs.push(Arc::new(LambertianReflection::new(kd)));
+            bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(kd)));
         }
         let ks: Spectrum = op
             * self
@@ -176,7 +176,7 @@ impl Material for UberMaterial {
                 v_rough = TrowbridgeReitzDistribution::roughness_to_alpha(v_rough);
             }
             let distrib = Arc::new(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
-            bxdfs.push(Arc::new(MicrofacetReflection::new(ks, distrib, fresnel)));
+            bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
         let kr: Spectrum = op
             * self
@@ -188,7 +188,7 @@ impl Material for UberMaterial {
                 eta_i: 1.0,
                 eta_t: e,
             });
-            bxdfs.push(Arc::new(SpecularReflection::new(kr, fresnel)));
+            bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(kr, fresnel)));
         }
         let kt: Spectrum = op
             * self
@@ -196,7 +196,7 @@ impl Material for UberMaterial {
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kt.is_black() {
-            bxdfs.push(Arc::new(SpecularTransmission::new(
+            bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
                 kt,
                 1.0,
                 e,

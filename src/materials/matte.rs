@@ -52,7 +52,7 @@ impl Material for MatteMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let r: Spectrum = self
             .kd
             .evaluate(si)
@@ -64,9 +64,9 @@ impl Material for MatteMaterial {
         );
         if !r.is_black() {
             if sig == 0.0 {
-                bxdfs.push(Arc::new(LambertianReflection::new(r)));
+                bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(r)));
             } else {
-                bxdfs.push(Arc::new(OrenNayar::new(r, sig)));
+                bxdfs.push(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig)));
             }
         }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));

@@ -68,14 +68,14 @@ impl Material for PlasticMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         // initialize diffuse component of plastic material
         let kd: Spectrum = self
             .kd
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kd.is_black() {
-            bxdfs.push(Arc::new(LambertianReflection::new(kd)));
+            bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(kd)));
         }
         // initialize specular component of plastic material
         let ks: Spectrum = self
@@ -93,7 +93,7 @@ impl Material for PlasticMaterial {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
             let distrib = Arc::new(TrowbridgeReitzDistribution::new(rough, rough, true));
-            bxdfs.push(Arc::new(MicrofacetReflection::new(ks, distrib, fresnel)));
+            bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(ks, distrib, fresnel)));
         }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }

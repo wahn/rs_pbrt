@@ -63,8 +63,8 @@ impl Material for FourierMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
-        bxdfs.push(Arc::new(FourierBSDF::new(self.bsdf_table.clone(), mode)));
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
+        bxdfs.push(Bxdf::Fourier(FourierBSDF::new(self.bsdf_table.clone(), mode)));
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }

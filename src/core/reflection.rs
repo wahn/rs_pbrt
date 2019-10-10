@@ -15,6 +15,7 @@ use std::sync::Arc;
 use byteorder::{LittleEndian, ReadBytesExt};
 use num::Zero;
 // pbrt
+use crate::core::bssrdf::SeparableBssrdfAdapter;
 use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_abs_dot_vec3, vec3_dot_nrm,
     vec3_dot_vec3,
@@ -31,6 +32,10 @@ use crate::core::pbrt::{clamp_t, lerp, radians};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
 use crate::core::sampling::cosine_sample_hemisphere;
+use crate::materials::disney::{
+    DisneyClearCoat, DisneyDiffuse, DisneyFakeSS, DisneyRetro, DisneySheen,
+};
+use crate::materials::hair::HairBSDF;
 
 /// https://seblagarde.wordpress.com/2013/04/29/memo-on-fresnel-equations/
 ///
@@ -222,15 +227,11 @@ pub struct Bsdf {
     pub ng: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub bxdfs: Vec<Arc<dyn Bxdf + Sync + Send>>,
+    pub bxdfs: Vec<Bxdf>,
 }
 
 impl Bsdf {
-    pub fn new(
-        si: &SurfaceInteraction,
-        eta: Float,
-        bxdfs: Vec<Arc<dyn Bxdf + Sync + Send>>,
-    ) -> Self {
+    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Bxdf>) -> Self {
         let ss = si.shading.dpdu.normalize();
         Bsdf {
             eta,
@@ -311,7 +312,7 @@ impl Bsdf {
             matching_comps - 1_u8,
         );
         // get _BxDF_ pointer for chosen component
-        let mut bxdf: Option<&Arc<dyn Bxdf + Sync + Send>> = None;
+        let mut bxdf: Option<&Bxdf> = None;
         let mut count: i8 = comp as i8;
         let n_bxdfs: usize = self.bxdfs.len();
         let mut bxdf_index: usize = 0_usize;
@@ -448,79 +449,187 @@ pub enum BxdfType {
     BsdfAll = 31,
 }
 
-pub trait Bxdf {
-    fn matches_flags(&self, t: u8) -> bool {
-        self.get_type() & t == self.get_type()
-    }
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum;
+pub enum Bxdf {
+    // Scaled(ScaledBxDF),
+    SpecRefl(SpecularReflection),
+    SpecTrans(SpecularTransmission),
+    FresnelSpec(FresnelSpecular),
+    LambertianRefl(LambertianReflection),
+    LambertianTrans(LambertianTransmission),
+    OrenNayarRefl(OrenNayar),
+    MicrofacetRefl(MicrofacetReflection),
+    MicrofacetTrans(MicrofacetTransmission),
+    FresnelBlnd(FresnelBlend),
+    Fourier(FourierBSDF),
+    // bssrdf.rs
+    Bssrdf(SeparableBssrdfAdapter),
+    // disney.rs
+    DisDiff(DisneyDiffuse),
+    DisSS(DisneyFakeSS),
+    DisRetro(DisneyRetro),
+    DisSheen(DisneySheen),
+    DisClearCoat(DisneyClearCoat),
+    // hair.rs
+    Hair(HairBSDF),
+}
 
+impl Bxdf {
+    pub fn matches_flags(&self, t: u8) -> bool {
+        match self {
+            // Bxdf::Scaled(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::SpecRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::SpecTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::FresnelSpec(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::LambertianRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::LambertianTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::OrenNayarRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::MicrofacetRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::FresnelBlnd(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::Fourier(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::Bssrdf(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::DisDiff(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::DisSS(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::DisRetro(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::DisSheen(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::DisClearCoat(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::Hair(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+        }
+    }
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+        match self {
+            // Bxdf::Scaled(bxdf) => bxdf.f(wo, wi),
+            Bxdf::SpecRefl(bxdf) => bxdf.f(wo, wi),
+            Bxdf::SpecTrans(bxdf) => bxdf.f(wo, wi),
+            Bxdf::FresnelSpec(bxdf) => bxdf.f(wo, wi),
+            Bxdf::LambertianRefl(bxdf) => bxdf.f(wo, wi),
+            Bxdf::LambertianTrans(bxdf) => bxdf.f(wo, wi),
+            Bxdf::OrenNayarRefl(bxdf) => bxdf.f(wo, wi),
+            Bxdf::MicrofacetRefl(bxdf) => bxdf.f(wo, wi),
+            Bxdf::MicrofacetTrans(bxdf) => bxdf.f(wo, wi),
+            Bxdf::FresnelBlnd(bxdf) => bxdf.f(wo, wi),
+            Bxdf::Fourier(bxdf) => bxdf.f(wo, wi),
+            Bxdf::Bssrdf(bxdf) => bxdf.f(wo, wi),
+            Bxdf::DisDiff(bxdf) => bxdf.f(wo, wi),
+            Bxdf::DisSS(bxdf) => bxdf.f(wo, wi),
+            Bxdf::DisRetro(bxdf) => bxdf.f(wo, wi),
+            Bxdf::DisSheen(bxdf) => bxdf.f(wo, wi),
+            Bxdf::DisClearCoat(bxdf) => bxdf.f(wo, wi),
+            Bxdf::Hair(bxdf) => bxdf.f(wo, wi),
+        }
+    }
     /// Sample the BxDF for the given outgoing direction, using the given pair of uniform samples.
     ///
     /// The default implementation uses importance sampling by using a cosine-weighted
     /// distribution.
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
         u: &Point2f,
         pdf: &mut Float,
-        _sampled_type: &mut u8,
+        sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(u);
-        if wo.z < 0.0 {
-            wi.z *= -1.0;
+        match self {
+            // Bxdf::Scaled(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::SpecRefl(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::SpecTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::FresnelSpec(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::LambertianRefl(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::LambertianTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::OrenNayarRefl(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::MicrofacetRefl(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::MicrofacetTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::FresnelBlnd(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::Fourier(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::Bssrdf(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisDiff(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisSS(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisRetro(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisSheen(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisClearCoat(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::Hair(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
         }
-        *pdf = self.pdf(wo, &wi);
-        self.f(wo, &wi)
     }
-
     /// Evaluate the PDF for the given outgoing and incoming directions.
     ///
     /// Note: this method needs to be consistent with ```Bxdf::sample_f()```.
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
-        if vec3_same_hemisphere_vec3(wo, wi) {
-            abs_cos_theta(wi) * INV_PI
-        } else {
-            0.0
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        match self {
+            // Bxdf::Scaled(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::SpecRefl(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::SpecTrans(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::FresnelSpec(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::LambertianRefl(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::LambertianTrans(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::OrenNayarRefl(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::MicrofacetRefl(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::MicrofacetTrans(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::FresnelBlnd(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::Fourier(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::Bssrdf(_bxdf) => self.pdf(wo, wi),
+            Bxdf::DisDiff(_bxdf) => self.pdf(wo, wi),
+            Bxdf::DisSS(_bxdf) => self.pdf(wo, wi),
+            Bxdf::DisRetro(_bxdf) => self.pdf(wo, wi),
+            Bxdf::DisSheen(_bxdf) => self.pdf(wo, wi),
+            Bxdf::DisClearCoat(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::Hair(bxdf) => bxdf.pdf(wo, wi),
         }
     }
-
-    fn get_type(&self) -> u8;
-}
-
-pub struct ScaledBxDF {
-    pub bxdf: Arc<dyn Bxdf + Sync + Send>,
-    pub scale: Spectrum,
-}
-
-impl ScaledBxDF {
-    pub fn new(bxdf: Arc<dyn Bxdf + Send + Sync>, scale: Spectrum) -> Self {
-        ScaledBxDF { bxdf, scale }
+    pub fn get_type(&self) -> u8 {
+        match self {
+            // Bxdf::Scaled(bxdf) => bxdf.get_type(),
+            Bxdf::SpecRefl(bxdf) => bxdf.get_type(),
+            Bxdf::SpecTrans(bxdf) => bxdf.get_type(),
+            Bxdf::FresnelSpec(bxdf) => bxdf.get_type(),
+            Bxdf::LambertianRefl(bxdf) => bxdf.get_type(),
+            Bxdf::LambertianTrans(bxdf) => bxdf.get_type(),
+            Bxdf::OrenNayarRefl(bxdf) => bxdf.get_type(),
+            Bxdf::MicrofacetRefl(bxdf) => bxdf.get_type(),
+            Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type(),
+            Bxdf::FresnelBlnd(bxdf) => bxdf.get_type(),
+            Bxdf::Fourier(bxdf) => bxdf.get_type(),
+            Bxdf::Bssrdf(bxdf) => bxdf.get_type(),
+            Bxdf::DisDiff(bxdf) => bxdf.get_type(),
+            Bxdf::DisSS(bxdf) => bxdf.get_type(),
+            Bxdf::DisRetro(bxdf) => bxdf.get_type(),
+            Bxdf::DisSheen(bxdf) => bxdf.get_type(),
+            Bxdf::DisClearCoat(bxdf) => bxdf.get_type(),
+            Bxdf::Hair(bxdf) => bxdf.get_type(),
+        }
     }
 }
 
-impl Bxdf for ScaledBxDF {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
-        self.scale * self.bxdf.f(wo, wi)
-    }
-    fn sample_f(
-        &self,
-        wo: &Vector3f,
-        wi: &mut Vector3f,
-        sample: &Point2f,
-        pdf: &mut Float,
-        sampled_type: &mut u8,
-    ) -> Spectrum {
-        let f: Spectrum = self.bxdf.sample_f(wo, wi, sample, pdf, sampled_type);
-        self.scale * f
-    }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
-        self.bxdf.pdf(wo, wi)
-    }
-    fn get_type(&self) -> u8 {
-        self.bxdf.get_type()
-    }
-}
+// pub struct ScaledBxDF {
+//     pub bxdf: Bxdf,
+//     pub scale: Spectrum,
+// }
+
+// impl ScaledBxDF {
+//     pub fn new(bxdf: Bxdf, scale: Spectrum) -> Self {
+//         ScaledBxDF { bxdf, scale }
+//     }
+//     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+//         self.scale * self.bxdf.f(wo, wi)
+//     }
+//     pub fn sample_f(
+//         &self,
+//         wo: &Vector3f,
+//         wi: &mut Vector3f,
+//         sample: &Point2f,
+//         pdf: &mut Float,
+//         sampled_type: &mut u8,
+//     ) -> Spectrum {
+//         let f: Spectrum = self.bxdf.sample_f(wo, wi, sample, pdf, sampled_type);
+//         self.scale * f
+//     }
+//     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+//         self.bxdf.pdf(wo, wi)
+//     }
+//     pub fn get_type(&self) -> u8 {
+//         self.bxdf.get_type()
+//     }
+// }
 
 pub enum Fresnel {
     NoOp(FresnelNoOp),
@@ -605,13 +714,10 @@ impl SpecularReflection {
     pub fn new(r: Spectrum, fresnel: Fresnel) -> Self {
         SpecularReflection { r, fresnel }
     }
-}
-
-impl Bxdf for SpecularReflection {
-    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -629,10 +735,10 @@ impl Bxdf for SpecularReflection {
         let cos_theta_i: Float = cos_theta(&*wi);
         self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
     }
-    fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
+    pub fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0 as Float
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
     }
 }
@@ -658,13 +764,10 @@ impl SpecularTransmission {
             mode,
         }
     }
-}
-
-impl Bxdf for SpecularTransmission {
-    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -707,14 +810,14 @@ impl Bxdf for SpecularTransmission {
         }
         ft / abs_cos_theta(&*wi)
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
             abs_cos_theta(wi) * INV_PI
         } else {
             0.0 as Float
         }
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8
     }
 }
@@ -737,13 +840,10 @@ impl FresnelSpecular {
             mode,
         }
     }
-}
-
-impl Bxdf for FresnelSpecular {
-    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -812,14 +912,14 @@ impl Bxdf for FresnelSpecular {
             return ft / abs_cos_theta(&*wi);
         }
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
             abs_cos_theta(wi) * INV_PI
         } else {
             0.0 as Float
         }
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8
             | BxdfType::BsdfTransmission as u8
             | BxdfType::BsdfSpecular as u8
@@ -835,13 +935,10 @@ impl LambertianReflection {
     pub fn new(r: Spectrum) -> Self {
         LambertianReflection { r }
     }
-}
-
-impl Bxdf for LambertianReflection {
-    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         self.r * Spectrum::new(INV_PI)
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -856,14 +953,14 @@ impl Bxdf for LambertianReflection {
         *pdf = self.pdf(wo, &*wi);
         self.f(wo, &*wi)
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
             abs_cos_theta(wi) * INV_PI
         } else {
             0.0 as Float
         }
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
     }
 }
@@ -877,13 +974,10 @@ impl LambertianTransmission {
     pub fn new(t: Spectrum) -> LambertianTransmission {
         LambertianTransmission { t }
     }
-}
-
-impl Bxdf for LambertianTransmission {
-    fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         self.t * INV_PI
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -898,14 +992,14 @@ impl Bxdf for LambertianTransmission {
         *pdf = self.pdf(wo, &*wi);
         self.f(wo, &*wi)
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if !vec3_same_hemisphere_vec3(wo, wi) {
             abs_cos_theta(wi) * INV_PI
         } else {
             0.0 as Float
         }
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfTransmission as u8
     }
 }
@@ -926,10 +1020,7 @@ impl OrenNayar {
             b: 0.45 * sigma2 / (sigma2 + 0.09),
         }
     }
-}
-
-impl Bxdf for OrenNayar {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let sin_theta_i: Float = sin_theta(wi);
         let sin_theta_o: Float = sin_theta(wo);
         // compute cosine term of Oren-Nayar model
@@ -954,7 +1045,7 @@ impl Bxdf for OrenNayar {
         }
         self.r * Spectrum::new(INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta))
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -969,14 +1060,14 @@ impl Bxdf for OrenNayar {
         *pdf = self.pdf(wo, &*wi);
         self.f(wo, &*wi)
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
             abs_cos_theta(wi) * INV_PI
         } else {
             0.0 as Float
         }
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
     }
 }
@@ -999,10 +1090,7 @@ impl MicrofacetReflection {
             fresnel,
         }
     }
-}
-
-impl Bxdf for MicrofacetReflection {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let cos_theta_o: Float = abs_cos_theta(wo);
         let cos_theta_i: Float = abs_cos_theta(wi);
         let mut wh: Vector3f = *wi + *wo;
@@ -1020,7 +1108,7 @@ impl Bxdf for MicrofacetReflection {
             / (4.0 as Float * cos_theta_i * cos_theta_o)
     }
 
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -1042,7 +1130,7 @@ impl Bxdf for MicrofacetReflection {
         self.f(wo, &*wi)
     }
 
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if !vec3_same_hemisphere_vec3(wo, wi) {
             return 0.0 as Float;
         }
@@ -1050,7 +1138,7 @@ impl Bxdf for MicrofacetReflection {
         self.distribution.pdf(wo, &wh) / (4.0 * vec3_dot_vec3(wo, &wh))
     }
 
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfGlossy as u8
     }
 }
@@ -1085,10 +1173,7 @@ impl MicrofacetTransmission {
             mode,
         }
     }
-}
-
-impl Bxdf for MicrofacetTransmission {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         if vec3_same_hemisphere_vec3(wo, wi) {
             // transmission only
             return Spectrum::zero();
@@ -1134,14 +1219,12 @@ impl Bxdf for MicrofacetTransmission {
                     / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom),
             )
     }
-
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfTransmission as u8 | BxdfType::BsdfGlossy as u8
     }
-
     /// Override sample_f() to use a better importance sampling method than weighted cosine based
     /// on the microface distribution
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -1167,8 +1250,7 @@ impl Bxdf for MicrofacetTransmission {
             Spectrum::zero()
         }
     }
-
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
             return 0.0;
         }
@@ -1208,10 +1290,7 @@ impl FresnelBlend {
     pub fn schlick_fresnel(&self, cos_theta: Float) -> Spectrum {
         self.rs + (Spectrum::new(1.0) - self.rs) * pow5(1.0 - cos_theta)
     }
-}
-
-impl Bxdf for FresnelBlend {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let diffuse: Spectrum = self.rd
             * (Spectrum::new(1.0 as Float) - self.rs)
             * (28.0 as Float / (23.0 as Float * PI))
@@ -1235,7 +1314,7 @@ impl Bxdf for FresnelBlend {
             diffuse
         }
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -1265,7 +1344,7 @@ impl Bxdf for FresnelBlend {
         *pdf = self.pdf(wo, &*wi);
         self.f(wo, &*wi)
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // if (!SameHemisphere(wo, wi)) return 0;
         if !vec3_same_hemisphere_vec3(wo, wi) {
             return 0.0 as Float;
@@ -1278,7 +1357,7 @@ impl Bxdf for FresnelBlend {
             0.0 as Float
         }
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfGlossy as u8
     }
 }
@@ -1292,10 +1371,7 @@ impl FourierBSDF {
     pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> Self {
         FourierBSDF { bsdf_table, mode }
     }
-}
-
-impl Bxdf for FourierBSDF {
-    fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         // find the zenith angle cosines and azimuth difference angle
         let mu_i: Float = cos_theta(&-(*wi));
         let mu_o: Float = cos_theta(wo);
@@ -1380,7 +1456,7 @@ impl Bxdf for FourierBSDF {
             Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
         }
     }
-    fn sample_f(
+    pub fn sample_f(
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
@@ -1516,7 +1592,7 @@ impl Bxdf for FourierBSDF {
             Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
         }
     }
-    fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // find the zenith angle cosines and azimuth difference angle
         let mu_i: Float = cos_theta(&-(*wi));
         let mu_o: Float = cos_theta(wo);
@@ -1575,7 +1651,7 @@ impl Bxdf for FourierBSDF {
             0.0 as Float
         }
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8
             | BxdfType::BsdfTransmission as u8
             | BxdfType::BsdfGlossy as u8

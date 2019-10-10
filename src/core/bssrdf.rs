@@ -140,8 +140,8 @@ impl Bssrdf for TabulatedBssrdf {
         let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut si, pdf);
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
-            let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
-            bxdfs.push(Arc::new(SeparableBssrdfAdapter::new(sc, mode, eta)));
+            let mut bxdfs: Vec<Bxdf> = Vec::new();
+            bxdfs.push(Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta)));
             si.bsdf = Some(Arc::new(Bsdf::new(&si, 1.0, bxdfs)));
             si.wo = Vector3f::from(si.shading.n);
             (sp, Some(si))
@@ -561,10 +561,7 @@ impl SeparableBssrdfAdapter {
             eta2: eta * eta,
         }
     }
-}
-
-impl Bxdf for SeparableBssrdfAdapter {
-    fn f(&self, _wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+    pub fn f(&self, _wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let mut f: Spectrum = self.bssrdf.sw(wi);
         // update BSSRDF transmission term to account for adjoint light transport
         if self.mode == TransportMode::Radiance {
@@ -572,7 +569,7 @@ impl Bxdf for SeparableBssrdfAdapter {
         }
         f
     }
-    fn get_type(&self) -> u8 {
+    pub fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
     }
 }

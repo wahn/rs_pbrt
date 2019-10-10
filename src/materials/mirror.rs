@@ -43,13 +43,13 @@ impl Material for MirrorMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Arc<dyn Bxdf + Send + Sync>> = Vec::new();
+        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let r: Spectrum = self
             .kr
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let fresnel = Fresnel::NoOp(FresnelNoOp {});
-        bxdfs.push(Arc::new(SpecularReflection::new(r, fresnel)));
+        bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(r, fresnel)));
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
     }
 }
