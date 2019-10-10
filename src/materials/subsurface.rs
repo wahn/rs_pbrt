@@ -132,7 +132,7 @@ impl Material for SubsurfaceMaterial {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
@@ -150,7 +150,7 @@ impl Material for SubsurfaceMaterial {
         let mut vrough: Float = self.v_roughness.evaluate(si);
         // initialize _bsdf_ for smooth or rough dielectric
         if r.is_black() && t.is_black() {
-            return;
+            return bxdfs;
         }
         let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;
         if is_specular && allow_multiple_lobes {
@@ -199,7 +199,7 @@ impl Material for SubsurfaceMaterial {
                 .sigma_s
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        si.bsdf = Some(Arc::new(Bsdf::new(si, self.eta, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, self.eta, Vec::new())));
         si.bssrdf = Some(Arc::new(TabulatedBssrdf::new(
             si,
             material,
@@ -209,5 +209,6 @@ impl Material for SubsurfaceMaterial {
             &sig_s,
             self.table.clone(),
         )));
+        bxdfs
     }
 }

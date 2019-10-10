@@ -133,7 +133,7 @@ impl Material for HairMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         let mut bxdfs: Vec<Bxdf> = Vec::new();
         let bm: Float = self.beta_m.evaluate(si);
         let bn: Float = self.beta_n.evaluate(si);
@@ -164,7 +164,8 @@ impl Material for HairMaterial {
         }
         let h: Float = -1.0 as Float + 2.0 as Float * si.uv[1];
         bxdfs.push(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a)));
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
+        bxdfs
     }
 }
 

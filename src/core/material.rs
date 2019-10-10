@@ -8,6 +8,7 @@ use crate::core::geometry::vec3_cross_vec3;
 use crate::core::geometry::{Normal3f, Vector2f, Vector3f};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::pbrt::Float;
+use crate::core::reflection::Bxdf;
 use crate::core::texture::Texture;
 
 // see material.h
@@ -36,7 +37,7 @@ pub trait Material {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         material: Option<Arc<dyn Material + Send + Sync>>,
-    );
+    ) -> Vec<Bxdf>;
     /// Computing the effect of bump mapping at the point being shaded
     /// given a particular displacement texture.
     fn bump(d: &Arc<dyn Texture<Float> + Send + Sync>, si: &mut SurfaceInteraction)

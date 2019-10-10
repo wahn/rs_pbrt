@@ -21,7 +21,7 @@ use crate::core::medium::{Medium, MediumInterface, PhaseFunction};
 use crate::core::pbrt::SHADOW_EPSILON;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::primitive::Primitive;
-use crate::core::reflection::Bsdf;
+use crate::core::reflection::{Bsdf, Bxdf};
 use crate::core::shape::Shape;
 use crate::core::transform::solve_linear_system_2x2;
 
@@ -391,6 +391,17 @@ impl SurfaceInteraction {
             } else {
                 None
             }
+        }
+    }
+    pub fn set_bxdfs(&mut self, bxdfs: Vec<Bxdf>) {
+        if let Some(bsdf_arc) = &mut self.bsdf {
+            if let Some(bsdf) = Arc::get_mut(bsdf_arc) {
+                bsdf.bxdfs = bxdfs;
+            } else {
+                panic!("no bsdf");
+            }
+        } else {
+            panic!("no bsdf_arc");
         }
     }
     pub fn set_shading_geometry(

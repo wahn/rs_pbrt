@@ -70,7 +70,7 @@ impl Material for TranslucentMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -85,8 +85,8 @@ impl Material for TranslucentMaterial {
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if r.is_black() && t.is_black() {
-            si.bsdf = Some(Arc::new(Bsdf::new(si, eta, bxdfs)));
-            return;
+            si.bsdf = Some(Arc::new(Bsdf::new(si, eta, Vec::new())));
+            return bxdfs;
         }
         let kd: Spectrum = self
             .kd
@@ -131,6 +131,7 @@ impl Material for TranslucentMaterial {
                 )));
             }
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, eta, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, eta, Vec::new())));
+        bxdfs
     }
 }

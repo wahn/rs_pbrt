@@ -121,7 +121,7 @@ impl Material for UberMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
@@ -204,9 +204,11 @@ impl Material for UberMaterial {
             )));
         }
         if !t.is_black() {
-            si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
+            si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
+            bxdfs
         } else {
-            si.bsdf = Some(Arc::new(Bsdf::new(si, e, bxdfs)));
+            si.bsdf = Some(Arc::new(Bsdf::new(si, e, Vec::new())));
+            bxdfs
         }
     }
 }

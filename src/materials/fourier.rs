@@ -59,12 +59,13 @@ impl Material for FourierMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
         let mut bxdfs: Vec<Bxdf> = Vec::new();
         bxdfs.push(Bxdf::Fourier(FourierBSDF::new(self.bsdf_table.clone(), mode)));
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
+        bxdfs
     }
 }

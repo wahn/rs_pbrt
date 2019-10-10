@@ -48,7 +48,7 @@ impl Material for MatteMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -69,6 +69,7 @@ impl Material for MatteMaterial {
                 bxdfs.push(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig)));
             }
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
+        bxdfs
     }
 }

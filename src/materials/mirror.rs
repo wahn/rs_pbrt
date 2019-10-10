@@ -39,7 +39,7 @@ impl Material for MirrorMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -50,6 +50,7 @@ impl Material for MirrorMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let fresnel = Fresnel::NoOp(FresnelNoOp {});
         bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(r, fresnel)));
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
+        bxdfs
     }
 }

@@ -69,7 +69,7 @@ impl Material for SubstrateMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -93,6 +93,7 @@ impl Material for SubstrateMaterial {
                 Some(TrowbridgeReitzDistribution::new(roughu, roughv, true));
             bxdfs.push(Bxdf::FresnelBlnd(FresnelBlend::new(d, s, distrib)));
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
+        bxdfs
     }
 }

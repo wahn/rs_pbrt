@@ -90,7 +90,7 @@ impl Material for GlassMaterial {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-    ) {
+    ) -> Vec<Bxdf> {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
@@ -143,6 +143,7 @@ impl Material for GlassMaterial {
                 }
             }
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, eta, bxdfs)));
+        si.bsdf = Some(Arc::new(Bsdf::new(si, eta, Vec::new())));
+        bxdfs
     }
 }
