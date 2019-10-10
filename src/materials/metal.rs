@@ -150,8 +150,14 @@ impl Material for MetalMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        scale_opt: Option<Spectrum>,
     ) -> Vec<Bxdf> {
+        let mut use_scale: bool = false;
+        let mut sc: Spectrum = Spectrum::default();
+        if let Some(scale) = scale_opt {
+            use_scale = true;
+            sc = scale;
+        }
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -178,11 +184,21 @@ impl Material for MetalMaterial {
             k: self.k.evaluate(si),
         });
         let distrib = Arc::new(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
-        bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
-            Spectrum::new(1.0 as Float),
-            distrib,
-            fr_mf,
-        )));
+        if use_scale {
+            bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                Spectrum::new(1.0 as Float),
+                distrib,
+                fr_mf,
+                Some(sc),
+            )));
+        } else {
+            bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                Spectrum::new(1.0 as Float),
+                distrib,
+                fr_mf,
+                None,
+            )));
+        }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
         bxdfs
     }

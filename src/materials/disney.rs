@@ -84,8 +84,14 @@ impl Material for DisneyMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        scale_opt: Option<Spectrum>,
     ) -> Vec<Bxdf> {
+        let mut use_scale: bool = false;
+        let mut sc: Spectrum = Spectrum::default();
+        if let Some(scale) = scale_opt {
+            use_scale = true;
+            sc = scale;
+        }
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -121,38 +127,89 @@ impl Material for DisneyMaterial {
                 let flat = self.flatness.evaluate(si);
                 // Blend between DisneyDiffuse and fake subsurface based on flatness. Additionally,
                 // weight using diff_trans.
-                bxdfs.push(Bxdf::DisDiff(DisneyDiffuse::new(
-                    diffuse_weight * (1.0 - flat) * (1.0 - dt) * c,
-                )));
-                bxdfs.push(Bxdf::DisSS(DisneyFakeSS::new(
-                    diffuse_weight * flat * (1.0 - dt) * c,
-                    rough,
-                )));
+                if use_scale {
+                    bxdfs.push(Bxdf::DisDiff(DisneyDiffuse::new(
+                        diffuse_weight * (1.0 - flat) * (1.0 - dt) * c,
+                        Some(sc),
+                    )));
+                    bxdfs.push(Bxdf::DisSS(DisneyFakeSS::new(
+                        diffuse_weight * flat * (1.0 - dt) * c,
+                        rough,
+                        Some(sc),
+                    )));
+                } else {
+                    bxdfs.push(Bxdf::DisDiff(DisneyDiffuse::new(
+                        diffuse_weight * (1.0 - flat) * (1.0 - dt) * c,
+                        None,
+                    )));
+                    bxdfs.push(Bxdf::DisSS(DisneyFakeSS::new(
+                        diffuse_weight * flat * (1.0 - dt) * c,
+                        rough,
+                        None,
+                    )));
+                }
             } else {
                 let sd = self.scatter_distance.evaluate(si);
                 if sd.is_black() {
                     // No subsurface scattering; use regular (Fresnel modified) diffuse.
-                    bxdfs.push(Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c)));
+                    if use_scale {
+                        bxdfs.push(Bxdf::DisDiff(DisneyDiffuse::new(
+                            diffuse_weight * c,
+                            Some(sc),
+                        )));
+                    } else {
+                        bxdfs.push(Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c, None)));
+                    }
                 } else {
                     // Use a BSSRDF instead.
-                    bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
-                        Spectrum::from(1.0),
-                        1.0,
-                        e,
-                        mode,
-                    )));
+                    if use_scale {
+                        bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
+                            Spectrum::from(1.0),
+                            1.0,
+                            e,
+                            mode,
+                            Some(sc),
+                        )));
+                    } else {
+                        bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
+                            Spectrum::from(1.0),
+                            1.0,
+                            e,
+                            mode,
+                            None,
+                        )));
+                    }
                     // TODO: BSSRDF
                 }
             }
 
             // Retro-reflection.
-            bxdfs.push(Bxdf::DisRetro(DisneyRetro::new(diffuse_weight * c, rough)));
-
+            if use_scale {
+                bxdfs.push(Bxdf::DisRetro(DisneyRetro::new(
+                    diffuse_weight * c,
+                    rough,
+                    Some(sc),
+                )));
+            } else {
+                bxdfs.push(Bxdf::DisRetro(DisneyRetro::new(
+                    diffuse_weight * c,
+                    rough,
+                    None,
+                )));
+            }
             // Sheen (if enabled).
             if sheen_weight > 0.0 {
-                bxdfs.push(Bxdf::DisSheen(DisneySheen::new(
-                    diffuse_weight * sheen_weight * c_sheen,
-                )));
+                if use_scale {
+                    bxdfs.push(Bxdf::DisSheen(DisneySheen::new(
+                        diffuse_weight * sheen_weight * c_sheen,
+                        Some(sc),
+                    )));
+                } else {
+                    bxdfs.push(Bxdf::DisSheen(DisneySheen::new(
+                        diffuse_weight * sheen_weight * c_sheen,
+                        None,
+                    )));
+                }
             }
         }
 
@@ -170,19 +227,37 @@ impl Material for DisneyMaterial {
             c,
         );
         let fresnel = Fresnel::Disney(DisneyFresnel::new(cspec0, metallic_weight, e));
-        bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
-            c,
-            distrib.clone(),
-            fresnel,
-        )));
-
+        if use_scale {
+            bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                c,
+                distrib.clone(),
+                fresnel,
+                Some(sc),
+            )));
+        } else {
+            bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                c,
+                distrib.clone(),
+                fresnel,
+                None,
+            )));
+        }
         // Clearcoat
         let cc = self.clearcoat.evaluate(si);
         if cc > 0.0 {
-            bxdfs.push(Bxdf::DisClearCoat(DisneyClearCoat::new(
-                cc,
-                lerp(self.clearcoat_gloss.evaluate(si), 0.1, 0.001),
-            )));
+            if use_scale {
+                bxdfs.push(Bxdf::DisClearCoat(DisneyClearCoat::new(
+                    cc,
+                    lerp(self.clearcoat_gloss.evaluate(si), 0.1, 0.001),
+                    Some(sc),
+                )));
+            } else {
+                bxdfs.push(Bxdf::DisClearCoat(DisneyClearCoat::new(
+                    cc,
+                    lerp(self.clearcoat_gloss.evaluate(si), 0.1, 0.001),
+                    None,
+                )));
+            }
         }
 
         // BTDF
@@ -196,27 +271,61 @@ impl Material for DisneyMaterial {
                 let ax = Float::max(0.001, sqr(rscaled) / aspect);
                 let ay = Float::max(0.001, sqr(rscaled) * aspect);
                 let scaled_distrib = Arc::new(TrowbridgeReitzDistribution::new(ax, ay, true));
-                bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
-                    t,
-                    scaled_distrib,
-                    1.0,
-                    e,
-                    mode,
-                )));
+                if use_scale {
+                    bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        t,
+                        scaled_distrib,
+                        1.0,
+                        e,
+                        mode,
+                        Some(sc),
+                    )));
+                } else {
+                    bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        t,
+                        scaled_distrib,
+                        1.0,
+                        e,
+                        mode,
+                        None,
+                    )));
+                }
             } else {
-                bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
-                    t,
-                    distrib.clone(),
-                    1.0,
-                    e,
-                    mode,
-                )));
+                if use_scale {
+                    bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        t,
+                        distrib.clone(),
+                        1.0,
+                        e,
+                        mode,
+                        Some(sc),
+                    )));
+                } else {
+                    bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        t,
+                        distrib.clone(),
+                        1.0,
+                        e,
+                        mode,
+                        None,
+                    )));
+                }
             }
         }
 
         if self.thin {
             // Lambertian, weighted by (1.0 - diff_trans}
-            bxdfs.push(Bxdf::LambertianTrans(LambertianTransmission::new(dt * c)));
+            if use_scale {
+                bxdfs.push(Bxdf::LambertianTrans(LambertianTransmission::new(
+                    dt * c,
+                    Some(sc),
+                )));
+            } else {
+                bxdfs.push(Bxdf::LambertianTrans(LambertianTransmission::new(
+                    dt * c,
+                    None,
+                )));
+            }
         }
 
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
@@ -228,11 +337,12 @@ impl Material for DisneyMaterial {
 #[derive(Debug, Clone, Copy)]
 pub struct DisneyDiffuse {
     r: Spectrum,
+    sc_opt: Option<Spectrum>,
 }
 
 impl DisneyDiffuse {
-    pub fn new(r: Spectrum) -> DisneyDiffuse {
-        DisneyDiffuse { r }
+    pub fn new(r: Spectrum, sc_opt: Option<Spectrum>) -> Self {
+        DisneyDiffuse { r, sc_opt }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let fo = schlick_weight(abs_cos_theta(wo));
@@ -240,7 +350,11 @@ impl DisneyDiffuse {
 
         // Diffuse fresnel - go from 1 at normal incidence to .5 at grazing.
         // Burley 2015, eq (4).
-        self.r * f32::consts::FRAC_1_PI * (1.0 - fo / 2.0) * (1.0 - fi / 2.0)
+        if let Some(sc) = self.sc_opt {
+            sc * self.r * f32::consts::FRAC_1_PI * (1.0 - fo / 2.0) * (1.0 - fi / 2.0)
+        } else {
+            self.r * f32::consts::FRAC_1_PI * (1.0 - fo / 2.0) * (1.0 - fi / 2.0)
+        }
     }
     pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfDiffuse as u8
@@ -252,11 +366,16 @@ impl DisneyDiffuse {
 pub struct DisneyFakeSS {
     r: Spectrum,
     roughness: Float,
+    sc_opt: Option<Spectrum>,
 }
 
 impl DisneyFakeSS {
-    pub fn new(r: Spectrum, roughness: Float) -> DisneyFakeSS {
-        DisneyFakeSS { r, roughness }
+    pub fn new(r: Spectrum, roughness: Float, sc_opt: Option<Spectrum>) -> Self {
+        DisneyFakeSS {
+            r,
+            roughness,
+            sc_opt,
+        }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let mut wh = *wi + *wo;
@@ -274,7 +393,11 @@ impl DisneyFakeSS {
         // 1.25 scale is used to (roughly) preserve albedo
         let ss = 1.25 * (fss * (1.0 / (abs_cos_theta(wo) + abs_cos_theta(wi)) - 0.5) + 0.5);
 
-        self.r * f32::consts::FRAC_1_PI * ss
+        if let Some(sc) = self.sc_opt {
+            sc * self.r * f32::consts::FRAC_1_PI * ss
+        } else {
+            self.r * f32::consts::FRAC_1_PI * ss
+        }
     }
     pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfDiffuse as u8
@@ -286,11 +409,16 @@ impl DisneyFakeSS {
 pub struct DisneyRetro {
     r: Spectrum,
     roughness: Float,
+    sc_opt: Option<Spectrum>,
 }
 
 impl DisneyRetro {
-    pub fn new(r: Spectrum, roughness: Float) -> DisneyRetro {
-        DisneyRetro { r, roughness }
+    pub fn new(r: Spectrum, roughness: Float, sc_opt: Option<Spectrum>) -> Self {
+        DisneyRetro {
+            r,
+            roughness,
+            sc_opt,
+        }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let mut wh = *wi + *wo;
@@ -304,7 +432,11 @@ impl DisneyRetro {
         let rr = 2.0 * self.roughness * cos_theta_d * cos_theta_d;
 
         // Burley 2015, eq (4).
-        self.r * f32::consts::FRAC_1_PI * rr * (fo + fi + fo * fi * (rr - 1.0))
+        if let Some(sc) = self.sc_opt {
+            sc * self.r * f32::consts::FRAC_1_PI * rr * (fo + fi + fo * fi * (rr - 1.0))
+        } else {
+            self.r * f32::consts::FRAC_1_PI * rr * (fo + fi + fo * fi * (rr - 1.0))
+        }
     }
     pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfDiffuse as u8
@@ -315,11 +447,12 @@ impl DisneyRetro {
 #[derive(Debug, Clone, Copy)]
 pub struct DisneySheen {
     r: Spectrum,
+    sc_opt: Option<Spectrum>,
 }
 
 impl DisneySheen {
-    pub fn new(r: Spectrum) -> DisneySheen {
-        DisneySheen { r }
+    pub fn new(r: Spectrum, sc_opt: Option<Spectrum>) -> Self {
+        DisneySheen { r, sc_opt }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let mut wh = *wi + *wo;
@@ -329,7 +462,11 @@ impl DisneySheen {
         wh = wh.normalize();
         let cos_theta_d = vec3_dot_vec3(wi, &wh);
 
-        self.r * schlick_weight(cos_theta_d)
+        if let Some(sc) = self.sc_opt {
+            sc * self.r * schlick_weight(cos_theta_d)
+        } else {
+            self.r * schlick_weight(cos_theta_d)
+        }
     }
     pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfDiffuse as u8
@@ -341,11 +478,16 @@ impl DisneySheen {
 pub struct DisneyClearCoat {
     weight: Float,
     gloss: Float,
+    sc_opt: Option<Spectrum>,
 }
 
 impl DisneyClearCoat {
-    pub fn new(weight: Float, gloss: Float) -> DisneyClearCoat {
-        DisneyClearCoat { weight, gloss }
+    pub fn new(weight: Float, gloss: Float, sc_opt: Option<Spectrum>) -> Self {
+        DisneyClearCoat {
+            weight,
+            gloss,
+            sc_opt,
+        }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         let mut wh = *wi + *wo;
@@ -362,7 +504,11 @@ impl DisneyClearCoat {
         // The geometric term always based on alpha = 0.25.
         let gr = smith_g_ggx(abs_cos_theta(wo), 0.25) * smith_g_ggx(abs_cos_theta(wi), 0.25);
 
-        Spectrum::from(self.weight * gr * fr * dr / 4.0)
+        if let Some(sc) = self.sc_opt {
+            sc * Spectrum::from(self.weight * gr * fr * dr / 4.0)
+        } else {
+            Spectrum::from(self.weight * gr * fr * dr / 4.0)
+        }
     }
     pub fn sample_f(
         &self,
@@ -395,7 +541,11 @@ impl DisneyClearCoat {
 
         *pdf = self.pdf(wo, &wi);
 
-        self.f(wo, wi)
+        if let Some(sc) = self.sc_opt {
+            sc * self.f(wo, wi)
+        } else {
+            self.f(wo, wi)
+        }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if !vec3_same_hemisphere_vec3(wo, wi) {

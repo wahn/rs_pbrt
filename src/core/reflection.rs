@@ -450,7 +450,6 @@ pub enum BxdfType {
 }
 
 pub enum Bxdf {
-    Scaled(ScaledBxDF),
     SpecRefl(SpecularReflection),
     SpecTrans(SpecularTransmission),
     FresnelSpec(FresnelSpecular),
@@ -476,7 +475,6 @@ pub enum Bxdf {
 impl Bxdf {
     pub fn matches_flags(&self, t: u8) -> bool {
         match self {
-            Bxdf::Scaled(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::SpecRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::SpecTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::FresnelSpec(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
@@ -498,7 +496,6 @@ impl Bxdf {
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         match self {
-            Bxdf::Scaled(bxdf) => bxdf.f(wo, wi),
             Bxdf::SpecRefl(bxdf) => bxdf.f(wo, wi),
             Bxdf::SpecTrans(bxdf) => bxdf.f(wo, wi),
             Bxdf::FresnelSpec(bxdf) => bxdf.f(wo, wi),
@@ -531,7 +528,6 @@ impl Bxdf {
         sampled_type: &mut u8,
     ) -> Spectrum {
         match self {
-            Bxdf::Scaled(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::SpecRefl(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::SpecTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::FresnelSpec(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
@@ -542,21 +538,35 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::FresnelBlnd(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::Fourier(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
-            Bxdf::Bssrdf(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
-            Bxdf::DisDiff(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
-            Bxdf::DisSS(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
-            Bxdf::DisRetro(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
-            Bxdf::DisSheen(_bxdf) => self.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::Bssrdf(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisDiff(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisSS(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisRetro(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::DisSheen(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisClearCoat(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::Hair(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
         }
+    }
+    fn default_sample_f(
+        &self,
+        wo: &Vector3f,
+        wi: &mut Vector3f,
+        u: &Point2f,
+        pdf: &mut Float,
+        _sampled_type: &mut u8,
+    ) -> Spectrum {
+        *wi = cosine_sample_hemisphere(u);
+        if wo.z < 0.0 {
+            wi.z *= -1.0;
+        }
+        *pdf = self.pdf(wo, &wi);
+        self.f(wo, &wi)
     }
     /// Evaluate the PDF for the given outgoing and incoming directions.
     ///
     /// Note: this method needs to be consistent with ```Bxdf::sample_f()```.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         match self {
-            Bxdf::Scaled(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::SpecRefl(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::SpecTrans(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::FresnelSpec(bxdf) => bxdf.pdf(wo, wi),
@@ -567,18 +577,24 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::FresnelBlnd(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::Fourier(bxdf) => bxdf.pdf(wo, wi),
-            Bxdf::Bssrdf(_bxdf) => self.pdf(wo, wi),
-            Bxdf::DisDiff(_bxdf) => self.pdf(wo, wi),
-            Bxdf::DisSS(_bxdf) => self.pdf(wo, wi),
-            Bxdf::DisRetro(_bxdf) => self.pdf(wo, wi),
-            Bxdf::DisSheen(_bxdf) => self.pdf(wo, wi),
+            Bxdf::Bssrdf(_bxdf) => self.default_pdf(wo, wi),
+            Bxdf::DisDiff(_bxdf) => self.default_pdf(wo, wi),
+            Bxdf::DisSS(_bxdf) => self.default_pdf(wo, wi),
+            Bxdf::DisRetro(_bxdf) => self.default_pdf(wo, wi),
+            Bxdf::DisSheen(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisClearCoat(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::Hair(bxdf) => bxdf.pdf(wo, wi),
         }
     }
+    fn default_pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        if vec3_same_hemisphere_vec3(wo, wi) {
+            abs_cos_theta(wi) * INV_PI
+        } else {
+            0.0
+        }
+    }
     pub fn get_type(&self) -> u8 {
         match self {
-            Bxdf::Scaled(bxdf) => bxdf.get_type(),
             Bxdf::SpecRefl(bxdf) => bxdf.get_type(),
             Bxdf::SpecTrans(bxdf) => bxdf.get_type(),
             Bxdf::FresnelSpec(bxdf) => bxdf.get_type(),
@@ -597,37 +613,6 @@ impl Bxdf {
             Bxdf::DisClearCoat(bxdf) => bxdf.get_type(),
             Bxdf::Hair(bxdf) => bxdf.get_type(),
         }
-    }
-}
-
-pub struct ScaledBxDF {
-    pub bxdf: Box<Bxdf>,
-    pub scale: Spectrum,
-}
-
-impl ScaledBxDF {
-    pub fn new(bxdf: Box<Bxdf>, scale: Spectrum) -> Self {
-        ScaledBxDF { bxdf, scale }
-    }
-    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
-        self.scale * self.bxdf.f(wo, wi)
-    }
-    pub fn sample_f(
-        &self,
-        wo: &Vector3f,
-        wi: &mut Vector3f,
-        sample: &Point2f,
-        pdf: &mut Float,
-        sampled_type: &mut u8,
-    ) -> Spectrum {
-        let f: Spectrum = self.bxdf.sample_f(wo, wi, sample, pdf, sampled_type);
-        self.scale * f
-    }
-    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
-        self.bxdf.pdf(wo, wi)
-    }
-    pub fn get_type(&self) -> u8 {
-        self.bxdf.get_type()
     }
 }
 
@@ -708,11 +693,12 @@ impl FresnelNoOp {
 pub struct SpecularReflection {
     pub r: Spectrum,
     pub fresnel: Fresnel,
+    sc_opt: Option<Spectrum>,
 }
 
 impl SpecularReflection {
-    pub fn new(r: Spectrum, fresnel: Fresnel) -> Self {
-        SpecularReflection { r, fresnel }
+    pub fn new(r: Spectrum, fresnel: Fresnel, sc_opt: Option<Spectrum>) -> Self {
+        SpecularReflection { r, fresnel, sc_opt }
     }
     pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
         Spectrum::new(0.0 as Float)
@@ -733,7 +719,11 @@ impl SpecularReflection {
         };
         *pdf = 1.0 as Float;
         let cos_theta_i: Float = cos_theta(&*wi);
-        self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
+        if let Some(sc) = self.sc_opt {
+            sc * self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
+        } else {
+            self.fresnel.evaluate(cos_theta_i) * self.r / abs_cos_theta(&*wi)
+        }
     }
     pub fn pdf(&self, _wo: &Vector3f, _wi: &Vector3f) -> Float {
         0.0 as Float
@@ -749,10 +739,17 @@ pub struct SpecularTransmission {
     pub eta_b: Float,
     pub fresnel: FresnelDielectric,
     pub mode: TransportMode,
+    sc_opt: Option<Spectrum>,
 }
 
 impl SpecularTransmission {
-    pub fn new(t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
+    pub fn new(
+        t: Spectrum,
+        eta_a: Float,
+        eta_b: Float,
+        mode: TransportMode,
+        sc_opt: Option<Spectrum>,
+    ) -> Self {
         SpecularTransmission {
             t,
             eta_a,
@@ -762,6 +759,7 @@ impl SpecularTransmission {
                 eta_t: eta_b,
             },
             mode,
+            sc_opt,
         }
     }
     pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
@@ -808,7 +806,11 @@ impl SpecularTransmission {
         if self.mode == TransportMode::Radiance {
             ft *= Spectrum::new((eta_i * eta_i) / (eta_t * eta_t));
         }
-        ft / abs_cos_theta(&*wi)
+        if let Some(sc) = self.sc_opt {
+            sc * ft / abs_cos_theta(&*wi)
+        } else {
+            ft / abs_cos_theta(&*wi)
+        }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
@@ -828,16 +830,25 @@ pub struct FresnelSpecular {
     pub eta_a: Float,
     pub eta_b: Float,
     pub mode: TransportMode,
+    sc_opt: Option<Spectrum>,
 }
 
 impl FresnelSpecular {
-    pub fn new(r: Spectrum, t: Spectrum, eta_a: Float, eta_b: Float, mode: TransportMode) -> Self {
+    pub fn new(
+        r: Spectrum,
+        t: Spectrum,
+        eta_a: Float,
+        eta_b: Float,
+        mode: TransportMode,
+        sc_opt: Option<Spectrum>,
+    ) -> Self {
         FresnelSpecular {
             r,
             t,
             eta_a,
             eta_b,
             mode,
+            sc_opt,
         }
     }
     pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
@@ -866,7 +877,11 @@ impl FresnelSpecular {
                 *sampled_type = BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8
             }
             *pdf = f;
-            return self.r * f / abs_cos_theta(&*wi);
+            if let Some(sc) = self.sc_opt {
+                return sc * self.r * f / abs_cos_theta(&*wi);
+            } else {
+                return self.r * f / abs_cos_theta(&*wi);
+            }
         } else {
             // compute specular transmission for _FresnelSpecular_
 
@@ -909,7 +924,11 @@ impl FresnelSpecular {
                 *sampled_type = BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8
             }
             *pdf = 1.0 as Float - f;
-            return ft / abs_cos_theta(&*wi);
+            if let Some(sc) = self.sc_opt {
+                return sc * ft / abs_cos_theta(&*wi);
+            } else {
+                return ft / abs_cos_theta(&*wi);
+            }
         }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
@@ -929,14 +948,19 @@ impl FresnelSpecular {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct LambertianReflection {
     pub r: Spectrum,
+    sc_opt: Option<Spectrum>,
 }
 
 impl LambertianReflection {
-    pub fn new(r: Spectrum) -> Self {
-        LambertianReflection { r }
+    pub fn new(r: Spectrum, sc_opt: Option<Spectrum>) -> Self {
+        LambertianReflection { r, sc_opt }
     }
     pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
-        self.r * Spectrum::new(INV_PI)
+        if let Some(sc) = self.sc_opt {
+            sc * self.r * Spectrum::new(INV_PI)
+        } else {
+            self.r * Spectrum::new(INV_PI)
+        }
     }
     pub fn sample_f(
         &self,
@@ -951,7 +975,11 @@ impl LambertianReflection {
             wi.z *= -1.0 as Float;
         }
         *pdf = self.pdf(wo, &*wi);
-        self.f(wo, &*wi)
+        if let Some(sc) = self.sc_opt {
+            sc * self.f(wo, &*wi)
+        } else {
+            self.f(wo, &*wi)
+        }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
@@ -968,14 +996,19 @@ impl LambertianReflection {
 #[derive(Copy, Clone, Debug)]
 pub struct LambertianTransmission {
     t: Spectrum,
+    sc_opt: Option<Spectrum>,
 }
 
 impl LambertianTransmission {
-    pub fn new(t: Spectrum) -> LambertianTransmission {
-        LambertianTransmission { t }
+    pub fn new(t: Spectrum, sc_opt: Option<Spectrum>) -> Self {
+        LambertianTransmission { t, sc_opt }
     }
     pub fn f(&self, _wo: &Vector3f, _wi: &Vector3f) -> Spectrum {
-        self.t * INV_PI
+        if let Some(sc) = self.sc_opt {
+            sc * self.t * INV_PI
+        } else {
+            self.t * INV_PI
+        }
     }
     pub fn sample_f(
         &self,
@@ -990,7 +1023,11 @@ impl LambertianTransmission {
             wi.z *= -1.0 as Float;
         }
         *pdf = self.pdf(wo, &*wi);
-        self.f(wo, &*wi)
+        if let Some(sc) = self.sc_opt {
+            sc * self.f(wo, &*wi)
+        } else {
+            self.f(wo, &*wi)
+        }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if !vec3_same_hemisphere_vec3(wo, wi) {
@@ -1008,16 +1045,18 @@ pub struct OrenNayar {
     pub r: Spectrum,
     pub a: Float,
     pub b: Float,
+    sc_opt: Option<Spectrum>,
 }
 
 impl OrenNayar {
-    pub fn new(r: Spectrum, sigma: Float) -> Self {
+    pub fn new(r: Spectrum, sigma: Float, sc_opt: Option<Spectrum>) -> Self {
         let sigma = radians(sigma);
         let sigma2: Float = sigma * sigma;
         OrenNayar {
             r,
             a: 1.0 - (sigma2 / (2.0 * (sigma2 + 0.33))),
             b: 0.45 * sigma2 / (sigma2 + 0.09),
+            sc_opt,
         }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
@@ -1043,7 +1082,11 @@ impl OrenNayar {
             sin_alpha = sin_theta_i;
             tan_beta = sin_theta_o / abs_cos_theta(wo);
         }
-        self.r * Spectrum::new(INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta))
+        if let Some(sc) = self.sc_opt {
+            sc * self.r * Spectrum::new(INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta))
+        } else {
+            self.r * Spectrum::new(INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta))
+        }
     }
     pub fn sample_f(
         &self,
@@ -1058,7 +1101,11 @@ impl OrenNayar {
             wi.z *= -1.0 as Float;
         }
         *pdf = self.pdf(wo, &*wi);
-        self.f(wo, &*wi)
+        if let Some(sc) = self.sc_opt {
+            sc * self.f(wo, &*wi)
+        } else {
+            self.f(wo, &*wi)
+        }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         if vec3_same_hemisphere_vec3(wo, wi) {
@@ -1076,6 +1123,7 @@ pub struct MicrofacetReflection {
     pub r: Spectrum,
     pub distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
     pub fresnel: Fresnel,
+    sc_opt: Option<Spectrum>,
 }
 
 impl MicrofacetReflection {
@@ -1083,11 +1131,13 @@ impl MicrofacetReflection {
         r: Spectrum,
         distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
         fresnel: Fresnel,
+        sc_opt: Option<Spectrum>,
     ) -> Self {
         MicrofacetReflection {
             r,
             distribution,
             fresnel,
+            sc_opt,
         }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
@@ -1104,8 +1154,13 @@ impl MicrofacetReflection {
         wh = wh.normalize();
         let dot: Float = vec3_dot_vec3(wi, &wh);
         let f: Spectrum = self.fresnel.evaluate(dot);
-        self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f
-            / (4.0 as Float * cos_theta_i * cos_theta_o)
+        if let Some(sc) = self.sc_opt {
+            sc * self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f
+                / (4.0 as Float * cos_theta_i * cos_theta_o)
+        } else {
+            self.r * self.distribution.d(&wh) * self.distribution.g(wo, wi) * f
+                / (4.0 as Float * cos_theta_i * cos_theta_o)
+        }
     }
 
     pub fn sample_f(
@@ -1127,7 +1182,11 @@ impl MicrofacetReflection {
         }
         // compute PDF of _wi_ for microfacet reflection
         *pdf = self.distribution.pdf(wo, &wh) / (4.0 * vec3_dot_vec3(wo, &wh));
-        self.f(wo, &*wi)
+        if let Some(sc) = self.sc_opt {
+            sc * self.f(wo, &*wi)
+        } else {
+            self.f(wo, &*wi)
+        }
     }
 
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
@@ -1151,6 +1210,7 @@ pub struct MicrofacetTransmission {
     eta_b: Float,
     fresnel: FresnelDielectric,
     mode: TransportMode,
+    sc_opt: Option<Spectrum>,
 }
 
 impl MicrofacetTransmission {
@@ -1160,7 +1220,8 @@ impl MicrofacetTransmission {
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,
-    ) -> MicrofacetTransmission {
+        sc_opt: Option<Spectrum>,
+    ) -> Self {
         MicrofacetTransmission {
             t,
             distribution,
@@ -1171,6 +1232,7 @@ impl MicrofacetTransmission {
                 eta_t: eta_b,
             },
             mode,
+            sc_opt,
         }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
@@ -1205,19 +1267,35 @@ impl MicrofacetTransmission {
             _ => 1.0,
         };
 
-        (Spectrum::new(1.0) - f)
-            * self.t
-            * Float::abs(
-                self.distribution.d(&wh)
-                    * self.distribution.g(wo, wi)
-                    * eta
-                    * eta
-                    * vec3_abs_dot_vec3(wi, &wh)
-                    * vec3_abs_dot_vec3(wo, &wh)
-                    * factor
-                    * factor
-                    / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom),
-            )
+        if let Some(sc) = self.sc_opt {
+            sc * (Spectrum::new(1.0) - f)
+                * self.t
+                * Float::abs(
+                    self.distribution.d(&wh)
+                        * self.distribution.g(wo, wi)
+                        * eta
+                        * eta
+                        * vec3_abs_dot_vec3(wi, &wh)
+                        * vec3_abs_dot_vec3(wo, &wh)
+                        * factor
+                        * factor
+                        / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom),
+                )
+        } else {
+            (Spectrum::new(1.0) - f)
+                * self.t
+                * Float::abs(
+                    self.distribution.d(&wh)
+                        * self.distribution.g(wo, wi)
+                        * eta
+                        * eta
+                        * vec3_abs_dot_vec3(wi, &wh)
+                        * vec3_abs_dot_vec3(wo, &wh)
+                        * factor
+                        * factor
+                        / (cos_theta_i * cos_theta_o * sqrt_denom * sqrt_denom),
+                )
+        }
     }
     pub fn get_type(&self) -> u8 {
         BxdfType::BsdfTransmission as u8 | BxdfType::BsdfGlossy as u8
@@ -1245,7 +1323,11 @@ impl MicrofacetTransmission {
 
         if refract(wo, &wh.into(), eta, wi) {
             *pdf = self.pdf(wo, &wi);
-            self.f(wo, wi)
+            if let Some(sc) = self.sc_opt {
+                sc * self.f(wo, wi)
+            } else {
+                self.f(wo, wi)
+            }
         } else {
             Spectrum::zero()
         }
@@ -1273,6 +1355,7 @@ pub struct FresnelBlend {
     pub rd: Spectrum,
     pub rs: Spectrum,
     pub distribution: Option<TrowbridgeReitzDistribution>, // TODO: MicrofacetDistribution,
+    sc_opt: Option<Spectrum>,
 }
 
 impl FresnelBlend {
@@ -1280,11 +1363,13 @@ impl FresnelBlend {
         rd: Spectrum,
         rs: Spectrum,
         distribution: Option<TrowbridgeReitzDistribution>,
+        sc_opt: Option<Spectrum>,
     ) -> Self {
         FresnelBlend {
             rd,
             rs,
             distribution,
+            sc_opt,
         }
     }
     pub fn schlick_fresnel(&self, cos_theta: Float) -> Spectrum {
@@ -1309,9 +1394,17 @@ impl FresnelBlend {
                     / (4.0
                         * vec3_dot_vec3(wi, &wh).abs()
                         * f32::max(abs_cos_theta(wi), abs_cos_theta(wo))));
-            diffuse + specular
+            if let Some(sc) = self.sc_opt {
+                sc * (diffuse + specular)
+            } else {
+                diffuse + specular
+            }
         } else {
-            diffuse
+            if let Some(sc) = self.sc_opt {
+                sc * diffuse
+            } else {
+                diffuse
+            }
         }
     }
     pub fn sample_f(
@@ -1342,7 +1435,11 @@ impl FresnelBlend {
             }
         }
         *pdf = self.pdf(wo, &*wi);
-        self.f(wo, &*wi)
+        if let Some(sc) = self.sc_opt {
+            sc * self.f(wo, &*wi)
+        } else {
+            self.f(wo, &*wi)
+        }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // if (!SameHemisphere(wo, wi)) return 0;
@@ -1365,11 +1462,20 @@ impl FresnelBlend {
 pub struct FourierBSDF {
     pub bsdf_table: Arc<FourierBSDFTable>,
     pub mode: TransportMode,
+    sc_opt: Option<Spectrum>,
 }
 
 impl FourierBSDF {
-    pub fn new(bsdf_table: Arc<FourierBSDFTable>, mode: TransportMode) -> Self {
-        FourierBSDF { bsdf_table, mode }
+    pub fn new(
+        bsdf_table: Arc<FourierBSDFTable>,
+        mode: TransportMode,
+        sc_opt: Option<Spectrum>,
+    ) -> Self {
+        FourierBSDF {
+            bsdf_table,
+            mode,
+            sc_opt,
+        }
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         // find the zenith angle cosines and azimuth difference angle
@@ -1436,7 +1542,11 @@ impl FourierBSDF {
             scale *= eta * eta;
         }
         if self.bsdf_table.n_channels == 1_i32 {
-            Spectrum::new(y * scale)
+            if let Some(sc) = self.sc_opt {
+                sc * Spectrum::new(y * scale)
+            } else {
+                Spectrum::new(y * scale)
+            }
         } else {
             // compute and return RGB colors for tabulated BSDF
             let r: Float = fourier(
@@ -1453,7 +1563,11 @@ impl FourierBSDF {
             );
             let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
             let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
-            Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+            if let Some(sc) = self.sc_opt {
+                sc * Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+            } else {
+                Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+            }
         }
     }
     pub fn sample_f(
@@ -1572,7 +1686,11 @@ impl FourierBSDF {
             scale *= eta * eta;
         }
         if self.bsdf_table.n_channels == 1_i32 {
-            Spectrum::new(y * scale)
+            if let Some(sc) = self.sc_opt {
+                sc * Spectrum::new(y * scale)
+            } else {
+                Spectrum::new(y * scale)
+            }
         } else {
             // compute and return RGB colors for tabulated BSDF
             let r: Float = fourier(
@@ -1589,7 +1707,11 @@ impl FourierBSDF {
             );
             let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
             let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
-            Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+            if let Some(sc) = self.sc_opt {
+                sc * Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+            } else {
+                Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+            }
         }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {

@@ -59,16 +59,31 @@ impl Material for FourierMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        scale_opt: Option<Spectrum>,
     ) -> Vec<Bxdf> {
+        let mut use_scale: bool = false;
+        let mut sc: Spectrum = Spectrum::default();
+        if let Some(scale) = scale_opt {
+            use_scale = true;
+            sc = scale;
+        }
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
         let mut bxdfs: Vec<Bxdf> = Vec::new();
-        bxdfs.push(Bxdf::Fourier(FourierBSDF::new(
-            self.bsdf_table.clone(),
-            mode,
-        )));
+        if use_scale {
+            bxdfs.push(Bxdf::Fourier(FourierBSDF::new(
+                self.bsdf_table.clone(),
+                mode,
+                Some(sc),
+            )));
+        } else {
+            bxdfs.push(Bxdf::Fourier(FourierBSDF::new(
+                self.bsdf_table.clone(),
+                mode,
+                None,
+            )));
+        }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
         bxdfs
     }

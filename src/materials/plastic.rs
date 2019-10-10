@@ -64,8 +64,14 @@ impl Material for PlasticMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        scale_opt: Option<Spectrum>,
     ) -> Vec<Bxdf> {
+        let mut use_scale: bool = false;
+        let mut sc: Spectrum = Spectrum::default();
+        if let Some(scale) = scale_opt {
+            use_scale = true;
+            sc = scale;
+        }
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -76,7 +82,14 @@ impl Material for PlasticMaterial {
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kd.is_black() {
-            bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(kd)));
+            if use_scale {
+                bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(
+                    kd,
+                    Some(sc),
+                )));
+            } else {
+                bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(kd, None)));
+            }
         }
         // initialize specular component of plastic material
         let ks: Spectrum = self
@@ -94,7 +107,18 @@ impl Material for PlasticMaterial {
                 rough = TrowbridgeReitzDistribution::roughness_to_alpha(rough);
             }
             let distrib = Arc::new(TrowbridgeReitzDistribution::new(rough, rough, true));
-            bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(ks, distrib, fresnel)));
+            if use_scale {
+                bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                    ks,
+                    distrib,
+                    fresnel,
+                    Some(sc),
+                )));
+            } else {
+                bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                    ks, distrib, fresnel, None,
+                )));
+            }
         }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
         bxdfs

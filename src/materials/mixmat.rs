@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::reflection::{Bsdf, Bxdf, BxdfType, ScaledBxDF};
+use crate::core::reflection::{Bsdf, Bxdf};
 use crate::core::shape::Shape;
 use crate::core::texture::Texture;
 
@@ -38,7 +38,7 @@ impl Material for MixMaterial {
         mode: TransportMode,
         allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        _scale: Option<Spectrum>,
     ) -> Vec<Bxdf> {
         let s1: Spectrum = self
             .scale
@@ -77,21 +77,6 @@ impl Material for MixMaterial {
             Some(s2),
         );
         bxdfs1.append(&mut bxdfs2);
-        // let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-        // if let Some(ref bsdf1) = si.bsdf {
-        //     let n1: u8 = bsdf1.num_components(bsdf_flags);
-        //     if let Some(ref bsdf2) = si2.bsdf {
-        //         let n2: u8 = bsdf2.num_components(bsdf_flags);
-        //         for i in 0..n1 {
-        //             let bxdf = &bsdf1.bxdfs[i as usize];
-        //             bxdfs.push(Arc::new(ScaledBxDF::new(bxdf.clone(), s1)));
-        //         }
-        //         for i in 0..n2 {
-        //             let bxdf = &bsdf2.bxdfs[i as usize];
-        //             bxdfs.push(Arc::new(ScaledBxDF::new(bxdf.clone(), s2)));
-        //         }
-        //     }
-        // }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
         bxdfs1
     }

@@ -133,8 +133,14 @@ impl Material for HairMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        scale_opt: Option<Spectrum>,
     ) -> Vec<Bxdf> {
+        let mut use_scale: bool = false;
+        let mut sc: Spectrum = Spectrum::default();
+        if let Some(scale) = scale_opt {
+            use_scale = true;
+            sc = scale;
+        }
         let mut bxdfs: Vec<Bxdf> = Vec::new();
         let bm: Float = self.beta_m.evaluate(si);
         let bn: Float = self.beta_n.evaluate(si);
@@ -164,7 +170,11 @@ impl Material for HairMaterial {
             sig_a = HairBSDF::sigma_a_from_concentration(ce, cp);
         }
         let h: Float = -1.0 as Float + 2.0 as Float * si.uv[1];
-        bxdfs.push(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a)));
+        if use_scale {
+            bxdfs.push(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, Some(sc))));
+        } else {
+            bxdfs.push(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, None)));
+        }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
         bxdfs
     }
@@ -184,6 +194,7 @@ pub struct HairBSDF {
     pub s: Float,
     pub sin_2k_alpha: [Float; 3],
     pub cos_2k_alpha: [Float; 3],
+    sc_opt: Option<Spectrum>,
 }
 
 impl HairBSDF {
@@ -194,6 +205,7 @@ impl HairBSDF {
         beta_m: Float,
         beta_n: Float,
         alpha: Float,
+        sc_opt: Option<Spectrum>,
     ) -> Self {
         assert!(h >= -1.0 as Float && h <= 1.0 as Float);
         assert!(beta_m >= 0.0 as Float && beta_m <= 1.0 as Float);
@@ -255,6 +267,7 @@ impl HairBSDF {
             s,
             sin_2k_alpha,
             cos_2k_alpha,
+            sc_opt,
         }
     }
     pub fn compute_ap_pdf(&self, cos_theta_o: Float) -> [Float; (P_MAX + 1) as usize] {
@@ -400,7 +413,11 @@ impl HairBSDF {
             fsum = fsum / abs_cos_theta(wi);
         }
         assert!(!fsum.y().is_infinite() && !fsum.y().is_nan());
-        fsum
+        if let Some(sc) = self.sc_opt {
+            sc * fsum
+        } else {
+            fsum
+        }
     }
     pub fn sample_f(
         &self,
@@ -525,7 +542,11 @@ impl HairBSDF {
                 self.v[P_MAX as usize],
             )
             * (1.0 as Float / (2.0 as Float * PI));
-        self.f(wo, &*wi)
+        if let Some(sc) = self.sc_opt {
+            sc * self.f(wo, &*wi)
+        } else {
+            self.f(wo, &*wi)
+        }
     }
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // compute hair coordinate system terms related to _wo_

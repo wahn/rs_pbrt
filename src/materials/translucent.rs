@@ -70,8 +70,14 @@ impl Material for TranslucentMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        scale_opt: Option<Spectrum>,
     ) -> Vec<Bxdf> {
+        let mut use_scale: bool = false;
+        let mut sc: Spectrum = Spectrum::default();
+        if let Some(scale) = scale_opt {
+            use_scale = true;
+            sc = scale;
+        }
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -95,10 +101,30 @@ impl Material for TranslucentMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         if !kd.is_black() {
             if !r.is_black() {
-                bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(r * kd)));
+                if use_scale {
+                    bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(
+                        r * kd,
+                        Some(sc),
+                    )));
+                } else {
+                    bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(
+                        r * kd,
+                        None,
+                    )));
+                }
             }
             if !t.is_black() {
-                bxdfs.push(Bxdf::LambertianTrans(LambertianTransmission::new(t * kd)));
+                if use_scale {
+                    bxdfs.push(Bxdf::LambertianTrans(LambertianTransmission::new(
+                        t * kd,
+                        Some(sc),
+                    )));
+                } else {
+                    bxdfs.push(Bxdf::LambertianTrans(LambertianTransmission::new(
+                        t * kd,
+                        None,
+                    )));
+                }
             }
         }
         let ks: Spectrum = self
@@ -116,20 +142,42 @@ impl Material for TranslucentMaterial {
                     eta_i: 1.0 as Float,
                     eta_t: eta,
                 });
-                bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
-                    r * ks,
-                    distrib.clone(),
-                    fresnel,
-                )));
+                if use_scale {
+                    bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                        r * ks,
+                        distrib.clone(),
+                        fresnel,
+                        Some(sc),
+                    )));
+                } else {
+                    bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                        r * ks,
+                        distrib.clone(),
+                        fresnel,
+                        None,
+                    )));
+                }
             }
             if !t.is_black() {
-                bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
-                    t * ks,
-                    distrib.clone(),
-                    1.0,
-                    eta,
-                    mode,
-                )));
+                if use_scale {
+                    bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        t * ks,
+                        distrib.clone(),
+                        1.0,
+                        eta,
+                        mode,
+                        Some(sc),
+                    )));
+                } else {
+                    bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        t * ks,
+                        distrib.clone(),
+                        1.0,
+                        eta,
+                        mode,
+                        None,
+                    )));
+                }
             }
         }
         si.bsdf = Some(Arc::new(Bsdf::new(si, eta, Vec::new())));

@@ -69,8 +69,14 @@ impl Material for SubstrateMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        scale_opt: Option<Spectrum>,
     ) -> Vec<Bxdf> {
+        let mut use_scale: bool = false;
+        let mut sc: Spectrum = Spectrum::default();
+        if let Some(scale) = scale_opt {
+            use_scale = true;
+            sc = scale;
+        }
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -92,7 +98,16 @@ impl Material for SubstrateMaterial {
             }
             let distrib: Option<TrowbridgeReitzDistribution> =
                 Some(TrowbridgeReitzDistribution::new(roughu, roughv, true));
-            bxdfs.push(Bxdf::FresnelBlnd(FresnelBlend::new(d, s, distrib)));
+            if use_scale {
+                bxdfs.push(Bxdf::FresnelBlnd(FresnelBlend::new(
+                    d,
+                    s,
+                    distrib,
+                    Some(sc),
+                )));
+            } else {
+                bxdfs.push(Bxdf::FresnelBlnd(FresnelBlend::new(d, s, distrib, None)));
+            }
         }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
         bxdfs

@@ -48,8 +48,14 @@ impl Material for MatteMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
-        scale: Option<Spectrum>,
+        scale_opt: Option<Spectrum>,
     ) -> Vec<Bxdf> {
+        let mut use_scale: bool = false;
+        let mut sc: Spectrum = Spectrum::default();
+        if let Some(scale) = scale_opt {
+            use_scale = true;
+            sc = scale;
+        }
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
@@ -65,9 +71,17 @@ impl Material for MatteMaterial {
         );
         if !r.is_black() {
             if sig == 0.0 {
-                bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(r)));
+                if use_scale {
+                    bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(r, Some(sc))));
+                } else {
+                    bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(r, None)));
+                }
             } else {
-                bxdfs.push(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig)));
+                if use_scale {
+                    bxdfs.push(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, Some(sc))));
+                } else {
+                    bxdfs.push(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, None)));
+                }
             }
         }
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
