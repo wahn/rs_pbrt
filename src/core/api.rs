@@ -68,7 +68,7 @@ use crate::materials::hair::HairMaterial;
 use crate::materials::matte::MatteMaterial;
 use crate::materials::metal::MetalMaterial;
 use crate::materials::mirror::MirrorMaterial;
-// use crate::materials::mixmat::MixMaterial;
+use crate::materials::mixmat::MixMaterial;
 use crate::materials::plastic::PlasticMaterial;
 use crate::materials::substrate::SubstrateMaterial;
 use crate::materials::subsurface::SubsurfaceMaterial;
@@ -368,30 +368,30 @@ fn create_material(
             return Some(MirrorMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "hair" {
             return Some(HairMaterial::create(&mut mp));
-        // } else if api_state.graphics_state.material == "mix" {
-        //     let m1: String = mp.find_string("namedmaterial1", String::from(""));
-        //     let m2: String = mp.find_string("namedmaterial2", String::from(""));
-        //     let mat1 = match api_state.graphics_state.named_materials.get(&m1) {
-        //         Some(named_material) => named_material,
-        //         None => {
-        //             panic!("Material \"{}\" unknown.", m1);
-        //         }
-        //     };
-        //     let mat2 = match api_state.graphics_state.named_materials.get(&m2) {
-        //         Some(named_material) => named_material,
-        //         None => {
-        //             panic!("Material \"{}\" unknown.", m2);
-        //         }
-        //     };
-        //     let scale: Arc<dyn Texture<Spectrum> + Send + Sync> =
-        //         mp.get_spectrum_texture("amount", Spectrum::new(0.5));
-        //     if let Some(m1) = mat1 {
-        //         if let Some(m2) = mat2 {
-        //             let mix = Arc::new(MixMaterial::new(m1.clone(), m2.clone(), scale));
-        //             return Some(mix);
-        //         }
-        //     }
-        //     return None;
+        } else if api_state.graphics_state.material == "mix" {
+            let m1: String = mp.find_string("namedmaterial1", String::from(""));
+            let m2: String = mp.find_string("namedmaterial2", String::from(""));
+            let mat1 = match api_state.graphics_state.named_materials.get(&m1) {
+                Some(named_material) => named_material,
+                None => {
+                    panic!("Material \"{}\" unknown.", m1);
+                }
+            };
+            let mat2 = match api_state.graphics_state.named_materials.get(&m2) {
+                Some(named_material) => named_material,
+                None => {
+                    panic!("Material \"{}\" unknown.", m2);
+                }
+            };
+            let scale: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                mp.get_spectrum_texture("amount", Spectrum::new(0.5));
+            if let Some(m1) = mat1 {
+                if let Some(m2) = mat2 {
+                    let mix = Arc::new(MixMaterial::new(m1.clone(), m2.clone(), scale));
+                    return Some(mix);
+                }
+            }
+            return None;
         } else if api_state.graphics_state.material == "metal" {
             return Some(MetalMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "substrate" {

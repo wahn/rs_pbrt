@@ -450,7 +450,7 @@ pub enum BxdfType {
 }
 
 pub enum Bxdf {
-    // Scaled(ScaledBxDF),
+    Scaled(ScaledBxDF),
     SpecRefl(SpecularReflection),
     SpecTrans(SpecularTransmission),
     FresnelSpec(FresnelSpecular),
@@ -476,7 +476,7 @@ pub enum Bxdf {
 impl Bxdf {
     pub fn matches_flags(&self, t: u8) -> bool {
         match self {
-            // Bxdf::Scaled(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::Scaled(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::SpecRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::SpecTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::FresnelSpec(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
@@ -498,7 +498,7 @@ impl Bxdf {
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         match self {
-            // Bxdf::Scaled(bxdf) => bxdf.f(wo, wi),
+            Bxdf::Scaled(bxdf) => bxdf.f(wo, wi),
             Bxdf::SpecRefl(bxdf) => bxdf.f(wo, wi),
             Bxdf::SpecTrans(bxdf) => bxdf.f(wo, wi),
             Bxdf::FresnelSpec(bxdf) => bxdf.f(wo, wi),
@@ -531,7 +531,7 @@ impl Bxdf {
         sampled_type: &mut u8,
     ) -> Spectrum {
         match self {
-            // Bxdf::Scaled(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::Scaled(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::SpecRefl(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::SpecTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::FresnelSpec(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
@@ -556,7 +556,7 @@ impl Bxdf {
     /// Note: this method needs to be consistent with ```Bxdf::sample_f()```.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         match self {
-            // Bxdf::Scaled(bxdf) => bxdf.pdf(wo, wi),
+            Bxdf::Scaled(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::SpecRefl(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::SpecTrans(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::FresnelSpec(bxdf) => bxdf.pdf(wo, wi),
@@ -578,7 +578,7 @@ impl Bxdf {
     }
     pub fn get_type(&self) -> u8 {
         match self {
-            // Bxdf::Scaled(bxdf) => bxdf.get_type(),
+            Bxdf::Scaled(bxdf) => bxdf.get_type(),
             Bxdf::SpecRefl(bxdf) => bxdf.get_type(),
             Bxdf::SpecTrans(bxdf) => bxdf.get_type(),
             Bxdf::FresnelSpec(bxdf) => bxdf.get_type(),
@@ -600,36 +600,36 @@ impl Bxdf {
     }
 }
 
-// pub struct ScaledBxDF {
-//     pub bxdf: Bxdf,
-//     pub scale: Spectrum,
-// }
+pub struct ScaledBxDF {
+    pub bxdf: Box<Bxdf>,
+    pub scale: Spectrum,
+}
 
-// impl ScaledBxDF {
-//     pub fn new(bxdf: Bxdf, scale: Spectrum) -> Self {
-//         ScaledBxDF { bxdf, scale }
-//     }
-//     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
-//         self.scale * self.bxdf.f(wo, wi)
-//     }
-//     pub fn sample_f(
-//         &self,
-//         wo: &Vector3f,
-//         wi: &mut Vector3f,
-//         sample: &Point2f,
-//         pdf: &mut Float,
-//         sampled_type: &mut u8,
-//     ) -> Spectrum {
-//         let f: Spectrum = self.bxdf.sample_f(wo, wi, sample, pdf, sampled_type);
-//         self.scale * f
-//     }
-//     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
-//         self.bxdf.pdf(wo, wi)
-//     }
-//     pub fn get_type(&self) -> u8 {
-//         self.bxdf.get_type()
-//     }
-// }
+impl ScaledBxDF {
+    pub fn new(bxdf: Box<Bxdf>, scale: Spectrum) -> Self {
+        ScaledBxDF { bxdf, scale }
+    }
+    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+        self.scale * self.bxdf.f(wo, wi)
+    }
+    pub fn sample_f(
+        &self,
+        wo: &Vector3f,
+        wi: &mut Vector3f,
+        sample: &Point2f,
+        pdf: &mut Float,
+        sampled_type: &mut u8,
+    ) -> Spectrum {
+        let f: Spectrum = self.bxdf.sample_f(wo, wi, sample, pdf, sampled_type);
+        self.scale * f
+    }
+    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        self.bxdf.pdf(wo, wi)
+    }
+    pub fn get_type(&self) -> u8 {
+        self.bxdf.get_type()
+    }
+}
 
 pub enum Fresnel {
     NoOp(FresnelNoOp),

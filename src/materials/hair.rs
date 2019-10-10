@@ -133,6 +133,7 @@ impl Material for HairMaterial {
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
+        scale: Option<Spectrum>,
     ) -> Vec<Bxdf> {
         let mut bxdfs: Vec<Bxdf> = Vec::new();
         let bm: Float = self.beta_m.evaluate(si);

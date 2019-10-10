@@ -36,6 +36,7 @@ pub trait Primitive {
                 mode,
                 allow_multiple_lobes,
                 self.get_material(),
+                None,
             );
             isect.set_bxdfs(bxdfs);
         }

@@ -5,7 +5,7 @@ use crate::core::api::BsdfState;
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::paramset::TextureParams;
-use crate::core::pbrt::Float;
+use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{Bsdf, Bxdf, FourierBSDF, FourierBSDFTable};
 use crate::core::texture::Texture;
 
@@ -59,12 +59,16 @@ impl Material for FourierMaterial {
         mode: TransportMode,
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
+        scale: Option<Spectrum>,
     ) -> Vec<Bxdf> {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
         let mut bxdfs: Vec<Bxdf> = Vec::new();
-        bxdfs.push(Bxdf::Fourier(FourierBSDF::new(self.bsdf_table.clone(), mode)));
+        bxdfs.push(Bxdf::Fourier(FourierBSDF::new(
+            self.bsdf_table.clone(),
+            mode,
+        )));
         si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
         bxdfs
     }
