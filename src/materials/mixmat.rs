@@ -6,7 +6,6 @@ use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{Bsdf, Bxdf};
-use crate::core::shape::Shape;
 use crate::core::texture::Texture;
 
 // see mixmat.h
@@ -46,10 +45,6 @@ impl Material for MixMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let s2: Spectrum =
             (Spectrum::new(1.0 as Float) - s1).clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let mut shape_opt: Option<Arc<dyn Shape + Send + Sync>> = None;
-        if let Some(shape) = &si.shape {
-            shape_opt = Some(shape.clone());
-        }
         let mut si2: SurfaceInteraction = SurfaceInteraction::new(
             &si.p,
             &si.p_error,
@@ -60,7 +55,7 @@ impl Material for MixMaterial {
             &si.dndu,
             &si.dndv,
             si.time,
-            shape_opt,
+            si.shape,
         );
         let mut bxdfs1: Vec<Bxdf> = self.m1.compute_scattering_functions(
             si,

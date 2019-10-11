@@ -257,7 +257,7 @@ impl Interaction for MediumInteraction {
 }
 
 #[derive(Default)]
-pub struct SurfaceInteraction {
+pub struct SurfaceInteraction<'a> {
     // Interaction Public Data
     pub p: Point3f,
     pub time: Float,
@@ -281,10 +281,10 @@ pub struct SurfaceInteraction {
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
     pub bssrdf: Option<Arc<TabulatedBssrdf>>,
-    pub shape: Option<Arc<dyn Shape + Send + Sync>>,
+    pub shape: Option<&'a (dyn Shape + Send + Sync)>,
 }
 
-impl SurfaceInteraction {
+impl<'a> SurfaceInteraction<'a> {
     pub fn new(
         p: &Point3f,
         p_error: &Vector3f,
@@ -295,7 +295,7 @@ impl SurfaceInteraction {
         dndu: &Normal3f,
         dndv: &Normal3f,
         time: Float,
-        sh: Option<Arc<dyn Shape + Send + Sync>>,
+        sh: Option<&'a (dyn Shape + Send + Sync)>,
     ) -> Self {
         let nv: Vector3f = vec3_cross_vec3(dpdu, dpdv).normalize();
         let mut n: Normal3f = Normal3f {
@@ -569,7 +569,7 @@ impl SurfaceInteraction {
     }
 }
 
-impl Interaction for SurfaceInteraction {
+impl<'a> Interaction for SurfaceInteraction<'a> {
     fn is_surface_interaction(&self) -> bool {
         self.n != Normal3f::default()
     }

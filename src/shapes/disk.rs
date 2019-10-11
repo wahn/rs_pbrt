@@ -160,7 +160,7 @@ impl Shape for Disk {
             &dndu,
             &dndv,
             ray.time,
-            Some(Arc::new(self.clone())),
+            Some(self),
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(ref shape) = si.shape {

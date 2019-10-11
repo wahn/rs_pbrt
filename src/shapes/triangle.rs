@@ -336,7 +336,7 @@ impl Shape for Triangle {
                 &Normal3f::default(),
                 &Normal3f::default(),
                 ray.time,
-                Some(Arc::new(self.clone())),
+                Some(self),
             );
             if alpha_mask.evaluate(&isect_local) == 0.0 as Float {
                 return None;
@@ -356,7 +356,7 @@ impl Shape for Triangle {
             &dndu,
             &dndv,
             ray.time,
-            Some(Arc::new(self.clone())),
+            Some(self),
         );
         // override surface normal in _isect_ for triangle
         let surface_normal: Normal3f = Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
@@ -627,7 +627,7 @@ impl Shape for Triangle {
                 &Normal3f::default(),
                 &Normal3f::default(),
                 ray.time,
-                Some(Arc::new(self.clone())),
+                Some(self),
             );
             if let Some(alpha_mask) = &self.mesh.alpha_mask {
                 if alpha_mask.evaluate(&isect_local) == 0.0 as Float {
