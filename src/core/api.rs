@@ -43,11 +43,11 @@ use crate::filters::mitchell::MitchellNetravali;
 use crate::filters::sinc::LanczosSincFilter;
 use crate::filters::triangle::TriangleFilter;
 use crate::integrators::ao::AOIntegrator;
-// use crate::integrators::bdpt::render_bdpt;
-// use crate::integrators::bdpt::BDPTIntegrator;
+use crate::integrators::bdpt::render_bdpt;
+use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
-// use crate::integrators::mlt::render_mlt;
-// use crate::integrators::mlt::MLTIntegrator;
+use crate::integrators::mlt::render_mlt;
+use crate::integrators::mlt::MLTIntegrator;
 use crate::integrators::path::PathIntegrator;
 use crate::integrators::render;
 use crate::integrators::sppm::render_sppm;
@@ -2004,8 +2004,8 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     // if let Some(mut sampler) = some_sampler {
                     let mut some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>> =
                         None;
-                    // let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
-                    // let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
+                    let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
+                    let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
                     let mut some_sppm_integrator: Option<Box<SPPMIntegrator>> = None;
                     if api_state.render_options.integrator_name == "whitted" {
                         let max_depth: i32 = api_state
@@ -2127,73 +2127,73 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             light_strategy,
                         ));
                         some_integrator = Some(integrator);
-                    // } else if api_state.render_options.integrator_name == "bdpt" {
-                    //     // CreateBDPTIntegrator
-                    //     let mut max_depth: i32 = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_int("maxdepth", 5);
-                    //     let visualize_strategies: bool = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_bool("visualizestrategies", false);
-                    //     let visualize_weights: bool = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_bool("visualizeweights", false);
-                    //     if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
-                    //         println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
-                    //         max_depth = 5;
-                    //     }
-                    //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    //     let light_strategy: String = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_string("lightsamplestrategy", String::from("power"));
-                    //     let integrator = Box::new(BDPTIntegrator::new(
-                    //         max_depth as u32,
-                    //         // visualize_strategies,
-                    //         // visualize_weights,
-                    //         pixel_bounds,
-                    //         light_strategy,
-                    //     ));
-                    //     some_bdpt_integrator = Some(integrator);
-                    // } else if api_state.render_options.integrator_name == "mlt" {
-                    //     // CreateMLTIntegrator
-                    //     let max_depth: i32 = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_int("maxdepth", 5);
-                    //     let n_bootstrap: i32 = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_int("bootstrapsamples", 100000);
-                    //     let n_chains: i32 = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_int("chains", 1000);
-                    //     let mutations_per_pixel: i32 = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_int("mutationsperpixel", 100);
-                    //     let large_step_probability: Float = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_float("largestepprobability", 0.3 as Float);
-                    //     let sigma: Float = api_state
-                    //         .render_options
-                    //         .integrator_params
-                    //         .find_one_float("sigma", 0.01 as Float);
-                    //     let integrator = Box::new(MLTIntegrator::new(
-                    //         camera.clone(),
-                    //         max_depth as u32,
-                    //         n_bootstrap as u32,
-                    //         n_chains as u32,
-                    //         mutations_per_pixel as u32,
-                    //         sigma,
-                    //         large_step_probability,
-                    //     ));
-                    //     some_mlt_integrator = Some(integrator);
+                    } else if api_state.render_options.integrator_name == "bdpt" {
+                        // CreateBDPTIntegrator
+                        let mut max_depth: i32 = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_int("maxdepth", 5);
+                        let visualize_strategies: bool = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_bool("visualizestrategies", false);
+                        let visualize_weights: bool = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_bool("visualizeweights", false);
+                        if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
+                            println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
+                            max_depth = 5;
+                        }
+                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                        let light_strategy: String = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_string("lightsamplestrategy", String::from("power"));
+                        let integrator = Box::new(BDPTIntegrator::new(
+                            max_depth as u32,
+                            // visualize_strategies,
+                            // visualize_weights,
+                            pixel_bounds,
+                            light_strategy,
+                        ));
+                        some_bdpt_integrator = Some(integrator);
+                    } else if api_state.render_options.integrator_name == "mlt" {
+                        // CreateMLTIntegrator
+                        let max_depth: i32 = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_int("maxdepth", 5);
+                        let n_bootstrap: i32 = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_int("bootstrapsamples", 100000);
+                        let n_chains: i32 = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_int("chains", 1000);
+                        let mutations_per_pixel: i32 = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_int("mutationsperpixel", 100);
+                        let large_step_probability: Float = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_float("largestepprobability", 0.3 as Float);
+                        let sigma: Float = api_state
+                            .render_options
+                            .integrator_params
+                            .find_one_float("sigma", 0.01 as Float);
+                        let integrator = Box::new(MLTIntegrator::new(
+                            camera.clone(),
+                            max_depth as u32,
+                            n_bootstrap as u32,
+                            n_chains as u32,
+                            mutations_per_pixel as u32,
+                            sigma,
+                            large_step_probability,
+                        ));
+                        some_mlt_integrator = Some(integrator);
                     } else if api_state.render_options.integrator_name == "ambientocclusion" {
                         // CreateAOIntegrator
                         let pb: Vec<i32> = api_state
@@ -2329,118 +2329,118 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 api_state.render_options.accelerator_name
                             );
                         }
-                    // } else if let Some(mut integrator) = some_bdpt_integrator {
-                    //     // because we can't call
-                    //     // integrator.render() yet,
-                    //     // let us repeat some code and
-                    //     // call render_bdpt(...)
-                    //     // instead:
+                    } else if let Some(mut integrator) = some_bdpt_integrator {
+                        // because we can't call
+                        // integrator.render() yet,
+                        // let us repeat some code and
+                        // call render_bdpt(...)
+                        // instead:
 
-                    //     // MakeIntegrator
-                    //     // TODO: if (renderOptions->haveScatteringMedia && ...)
-                    //     if api_state.render_options.lights.is_empty() {
-                    //         // warn if no light sources are defined
-                    //         println!("WARNING: No light sources defined in scene; rendering a black image.",);
-                    //     }
-                    //     // MakeAccelerator
-                    //     if api_state.render_options.accelerator_name == "bvh" {
-                    //         //  CreateBVHAccelerator
-                    //         let accelerator = BVHAccel::create(
-                    //             api_state.render_options.primitives.clone(),
-                    //             &api_state.render_options.accelerator_params,
-                    //         );
-                    //         // MakeScene
-                    //         let scene: Scene = Scene::new(
-                    //             accelerator.clone(),
-                    //             api_state.render_options.lights.clone(),
-                    //         );
-                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
-                    //         // TODO: lights.erase(lights.begin(), lights.end());
-                    //         let num_threads: u8 = api_state.number_of_threads;
-                    //         render_bdpt(
-                    //             &scene,
-                    //             &camera,
-                    //             &mut sampler,
-                    //             &mut integrator,
-                    //             num_threads,
-                    //         );
-                    //     } else if api_state.render_options.accelerator_name == "kdtree" {
-                    //         // CreateKdTreeAccelerator
-                    //         let accelerator = KdTreeAccel::create(
-                    //             api_state.render_options.primitives.clone(),
-                    //             &api_state.render_options.accelerator_params,
-                    //         );
-                    //         // MakeScene
-                    //         let scene: Scene = Scene::new(
-                    //             accelerator.clone(),
-                    //             api_state.render_options.lights.clone(),
-                    //         );
-                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
-                    //         // TODO: lights.erase(lights.begin(), lights.end());
-                    //         let num_threads: u8 = api_state.number_of_threads;
-                    //         render_bdpt(
-                    //             &scene,
-                    //             &camera,
-                    //             &mut sampler,
-                    //             &mut integrator,
-                    //             num_threads,
-                    //         );
-                    //     } else {
-                    //         panic!(
-                    //             "Accelerator \"{}\" unknown.",
-                    //             api_state.render_options.accelerator_name
-                    //         );
-                    //     }
-                    // } else if let Some(mut integrator) = some_mlt_integrator {
-                    //     // because we can't call
-                    //     // integrator.render() yet,
-                    //     // let us repeat some code and
-                    //     // call render_mlt(...)
-                    //     // instead:
+                        // MakeIntegrator
+                        // TODO: if (renderOptions->haveScatteringMedia && ...)
+                        if api_state.render_options.lights.is_empty() {
+                            // warn if no light sources are defined
+                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                        }
+                        // MakeAccelerator
+                        if api_state.render_options.accelerator_name == "bvh" {
+                            //  CreateBVHAccelerator
+                            let accelerator = BVHAccel::create(
+                                api_state.render_options.primitives.clone(),
+                                &api_state.render_options.accelerator_params,
+                            );
+                            // MakeScene
+                            let scene: Scene = Scene::new(
+                                accelerator.clone(),
+                                api_state.render_options.lights.clone(),
+                            );
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_bdpt(
+                                &scene,
+                                &camera,
+                                &mut sampler,
+                                &mut integrator,
+                                num_threads,
+                            );
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
+                            // CreateKdTreeAccelerator
+                            let accelerator = KdTreeAccel::create(
+                                api_state.render_options.primitives.clone(),
+                                &api_state.render_options.accelerator_params,
+                            );
+                            // MakeScene
+                            let scene: Scene = Scene::new(
+                                accelerator.clone(),
+                                api_state.render_options.lights.clone(),
+                            );
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_bdpt(
+                                &scene,
+                                &camera,
+                                &mut sampler,
+                                &mut integrator,
+                                num_threads,
+                            );
+                        } else {
+                            panic!(
+                                "Accelerator \"{}\" unknown.",
+                                api_state.render_options.accelerator_name
+                            );
+                        }
+                    } else if let Some(mut integrator) = some_mlt_integrator {
+                        // because we can't call
+                        // integrator.render() yet,
+                        // let us repeat some code and
+                        // call render_mlt(...)
+                        // instead:
 
-                    //     // MakeIntegrator
-                    //     // TODO: if (renderOptions->haveScatteringMedia && ...)
-                    //     if api_state.render_options.lights.is_empty() {
-                    //         // warn if no light sources are defined
-                    //         println!("WARNING: No light sources defined in scene; rendering a black image.",);
-                    //     }
-                    //     // MakeAccelerator
-                    //     if api_state.render_options.accelerator_name == "bvh" {
-                    //         //  CreateBVHAccelerator
-                    //         let accelerator = BVHAccel::create(
-                    //             api_state.render_options.primitives.clone(),
-                    //             &api_state.render_options.accelerator_params,
-                    //         );
-                    //         // MakeScene
-                    //         let scene: Scene = Scene::new(
-                    //             accelerator.clone(),
-                    //             api_state.render_options.lights.clone(),
-                    //         );
-                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
-                    //         // TODO: lights.erase(lights.begin(), lights.end());
-                    //         let num_threads: u8 = api_state.number_of_threads;
-                    //         render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                    //     } else if api_state.render_options.accelerator_name == "kdtree" {
-                    //         // CreateKdTreeAccelerator
-                    //         let accelerator = KdTreeAccel::create(
-                    //             api_state.render_options.primitives.clone(),
-                    //             &api_state.render_options.accelerator_params,
-                    //         );
-                    //         // MakeScene
-                    //         let scene: Scene = Scene::new(
-                    //             accelerator.clone(),
-                    //             api_state.render_options.lights.clone(),
-                    //         );
-                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
-                    //         // TODO: lights.erase(lights.begin(), lights.end());
-                    //         let num_threads: u8 = api_state.number_of_threads;
-                    //         render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                    //     } else {
-                    //         panic!(
-                    //             "Accelerator \"{}\" unknown.",
-                    //             api_state.render_options.accelerator_name
-                    //         );
-                    //     }
+                        // MakeIntegrator
+                        // TODO: if (renderOptions->haveScatteringMedia && ...)
+                        if api_state.render_options.lights.is_empty() {
+                            // warn if no light sources are defined
+                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                        }
+                        // MakeAccelerator
+                        if api_state.render_options.accelerator_name == "bvh" {
+                            //  CreateBVHAccelerator
+                            let accelerator = BVHAccel::create(
+                                api_state.render_options.primitives.clone(),
+                                &api_state.render_options.accelerator_params,
+                            );
+                            // MakeScene
+                            let scene: Scene = Scene::new(
+                                accelerator.clone(),
+                                api_state.render_options.lights.clone(),
+                            );
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
+                            // CreateKdTreeAccelerator
+                            let accelerator = KdTreeAccel::create(
+                                api_state.render_options.primitives.clone(),
+                                &api_state.render_options.accelerator_params,
+                            );
+                            // MakeScene
+                            let scene: Scene = Scene::new(
+                                accelerator.clone(),
+                                api_state.render_options.lights.clone(),
+                            );
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                        } else {
+                            panic!(
+                                "Accelerator \"{}\" unknown.",
+                                api_state.render_options.accelerator_name
+                            );
+                        }
                     } else if let Some(mut integrator) = some_sppm_integrator {
                         // because we can't call
                         // integrator.render() yet,
