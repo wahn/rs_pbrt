@@ -277,7 +277,7 @@ pub struct SurfaceInteraction<'a> {
     pub dvdx: RwLock<Float>,
     pub dudy: RwLock<Float>,
     pub dvdy: RwLock<Float>,
-    pub primitive: Option<Arc<dyn Primitive + Send + Sync>>,
+    pub primitive: Option<&'a (dyn Primitive + Send + Sync)>,
     pub shading: Shading,
     pub bsdf: Option<Arc<Bsdf>>,
     pub bssrdf: Option<Arc<TabulatedBssrdf>>,
