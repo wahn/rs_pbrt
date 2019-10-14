@@ -4,7 +4,7 @@ use std::sync::Arc;
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
-use crate::core::microfacet::TrowbridgeReitzDistribution;
+use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
@@ -91,7 +91,7 @@ impl Material for GlassMaterial {
         allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
         scale_opt: Option<Spectrum>,
-    ) -> Vec<Bxdf> {
+    ) {
         let mut use_scale: bool = false;
         let mut sc: Spectrum = Spectrum::default();
         if let Some(scale) = scale_opt {
@@ -101,8 +101,6 @@ impl Material for GlassMaterial {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
-        let mut bxdfs: Vec<Bxdf> = Vec::new();
-        let eta: Float = self.index.evaluate(si);
         let mut urough: Float = self.u_roughness.evaluate(si);
         let mut vrough: Float = self.v_roughness.evaluate(si);
         let r: Spectrum = self
@@ -114,97 +112,106 @@ impl Material for GlassMaterial {
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;
-        if is_specular && allow_multiple_lobes {
-            if use_scale {
-                bxdfs.push(Bxdf::FresnelSpec(FresnelSpecular::new(
-                    r,
-                    t,
-                    1.0 as Float,
-                    eta,
-                    mode,
-                    Some(sc),
-                )));
-            } else {
-                bxdfs.push(Bxdf::FresnelSpec(FresnelSpecular::new(
-                    r,
-                    t,
-                    1.0 as Float,
-                    eta,
-                    mode,
-                    None,
-                )));
-            }
-        } else {
-            if self.remap_roughness {
-                urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
-                vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
-            }
-            if !r.is_black() {
-                let fresnel = Fresnel::Dielectric(FresnelDielectric {
-                    eta_i: 1.0 as Float,
-                    eta_t: eta,
-                });
-                if is_specular {
-                    if use_scale {
-                        bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(
-                            r,
-                            fresnel,
-                            Some(sc),
-                        )));
-                    } else {
-                        bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, None)));
-                    }
+        let eta: Float = self.index.evaluate(si);
+        si.bsdf = Some(Bsdf::new(si, eta));
+        if let Some(bsdf) = &mut si.bsdf {
+            let mut bxdf_idx: usize = 0;
+            if is_specular && allow_multiple_lobes {
+                if use_scale {
+                    bsdf.bxdfs[bxdf_idx] = Bxdf::FresnelSpec(FresnelSpecular::new(
+                        r,
+                        t,
+                        1.0 as Float,
+                        eta,
+                        mode,
+                        Some(sc),
+                    ));
+                // bxdf_idx += 1;
                 } else {
-                    let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
-                    if use_scale {
-                        bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
-                            r,
-                            distrib,
-                            fresnel,
-                            Some(sc),
-                        )));
+                    bsdf.bxdfs[bxdf_idx] = Bxdf::FresnelSpec(FresnelSpecular::new(
+                        r,
+                        t,
+                        1.0 as Float,
+                        eta,
+                        mode,
+                        None,
+                    ));
+                    // bxdf_idx += 1;
+                }
+            } else {
+                if self.remap_roughness {
+                    urough = TrowbridgeReitzDistribution::roughness_to_alpha(urough);
+                    vrough = TrowbridgeReitzDistribution::roughness_to_alpha(vrough);
+                }
+                if !r.is_black() {
+                    let fresnel = Fresnel::Dielectric(FresnelDielectric {
+                        eta_i: 1.0 as Float,
+                        eta_t: eta,
+                    });
+                    if is_specular {
+                        if use_scale {
+                            bsdf.bxdfs[bxdf_idx] =
+                                Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, Some(sc)));
+                            bxdf_idx += 1;
+                        } else {
+                            bsdf.bxdfs[bxdf_idx] =
+                                Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, None));
+                            bxdf_idx += 1;
+                        }
                     } else {
-                        bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
-                            r, distrib, fresnel, None,
-                        )));
+                        let distrib = MicrofacetDistribution::TrowbridgeReitz(
+                            TrowbridgeReitzDistribution::new(urough, vrough, true),
+                        );
+                        if use_scale {
+                            bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                                r,
+                                distrib,
+                                fresnel,
+                                Some(sc),
+                            ));
+                            bxdf_idx += 1;
+                        } else {
+                            bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                                r, distrib, fresnel, None,
+                            ));
+                            bxdf_idx += 1;
+                        }
                     }
                 }
-            }
-            if !t.is_black() {
-                if is_specular {
-                    if use_scale {
-                        bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
-                            t,
-                            1.0,
-                            eta,
-                            mode,
-                            Some(sc),
-                        )));
+                if !t.is_black() {
+                    if is_specular {
+                        if use_scale {
+                            bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
+                                t,
+                                1.0,
+                                eta,
+                                mode,
+                                Some(sc),
+                            ));
+                        // bxdf_idx += 1;
+                        } else {
+                            bsdf.bxdfs[bxdf_idx] =
+                                Bxdf::SpecTrans(SpecularTransmission::new(t, 1.0, eta, mode, None));
+                            // bxdf_idx += 1;
+                        }
                     } else {
-                        bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
-                            t, 1.0, eta, mode, None,
-                        )));
-                    }
-                } else {
-                    let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
-                    if use_scale {
-                        bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
-                            t,
-                            distrib,
-                            1.0,
-                            eta,
-                            mode,
-                            Some(sc),
-                        )));
-                    } else {
-                        bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
-                            t, distrib, 1.0, eta, mode, None,
-                        )));
+                        let distrib = MicrofacetDistribution::TrowbridgeReitz(
+                            TrowbridgeReitzDistribution::new(urough, vrough, true),
+                        );
+                        if use_scale {
+                            bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(
+                                MicrofacetTransmission::new(t, distrib, 1.0, eta, mode, Some(sc)),
+                            );
+                        // bxdf_idx += 1;
+                        } else {
+                            bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(
+                                MicrofacetTransmission::new(t, distrib, 1.0, eta, mode, None),
+                            );
+                            // bxdf_idx += 1;
+                        }
                     }
                 }
             }
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, eta, Vec::new())));
-        bxdfs
     }
 }

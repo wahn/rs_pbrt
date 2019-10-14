@@ -140,9 +140,10 @@ impl Bssrdf for TabulatedBssrdf {
         let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut si, pdf);
         if !sp.is_black() {
             // initialize material model at sampled surface interaction
-            let mut bxdfs: Vec<Bxdf> = Vec::new();
-            bxdfs.push(Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta)));
-            si.bsdf = Some(Arc::new(Bsdf::new(&si, 1.0, bxdfs)));
+            si.bsdf = Some(Bsdf::new(&si, 1.0));
+            if let Some(bsdf) = &mut si.bsdf {
+                bsdf.bxdfs[0] = Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta));
+            }
             si.wo = Vector3f::from(si.shading.n);
             (sp, Some(si))
         } else {
@@ -317,8 +318,8 @@ impl SeparableBssrdf for TabulatedBssrdf {
                             si_eval.shading.dpdv = si.shading.dpdv.clone();
                             si_eval.shading.dndu = si.shading.dndu.clone();
                             si_eval.shading.dndv = si.shading.dndv.clone();
-                            if let Some(bsdf) = &si.bsdf {
-                                si_eval.bsdf = Some(bsdf.clone());
+                            if let Some(bsdf) = si.bsdf {
+                                si_eval.bsdf = Some(bsdf);
                             } else {
                                 si_eval.bsdf = None
                             }
@@ -384,8 +385,8 @@ impl SeparableBssrdf for TabulatedBssrdf {
 
         pi.shading = selected_si.shading;
         // no primitive!
-        if let Some(ref bsdf) = selected_si.bsdf {
-            pi.bsdf = Some(bsdf.clone());
+        if let Some(bsdf) = selected_si.bsdf {
+            pi.bsdf = Some(bsdf);
         } else {
             pi.bsdf = None;
         }
@@ -543,7 +544,7 @@ impl BssrdfTable {
 }
 
 pub struct SeparableBssrdfAdapter {
-    // pub bssrdf: &'b (SeparableBssrdf + Send + Sync),
+    // pub bssrdf: &'a (SeparableBssrdf + Send + Sync),
     pub bssrdf: Arc<dyn SeparableBssrdf + Sync + Send>,
     mode: TransportMode,
     eta2: Float,

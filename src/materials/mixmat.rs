@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::reflection::{Bsdf, Bxdf};
+use crate::core::reflection::Bxdf;
 use crate::core::texture::Texture;
 
 // see mixmat.h
@@ -38,7 +38,7 @@ impl Material for MixMaterial {
         allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
         _scale: Option<Spectrum>,
-    ) -> Vec<Bxdf> {
+    ) {
         let s1: Spectrum = self
             .scale
             .evaluate(si)
@@ -57,22 +57,41 @@ impl Material for MixMaterial {
             si.time,
             si.shape,
         );
-        let mut bxdfs1: Vec<Bxdf> = self.m1.compute_scattering_functions(
+        self.m1.compute_scattering_functions(
             si,
             mode.clone(),
             allow_multiple_lobes,
             None,
             Some(s1),
         );
-        let mut bxdfs2: Vec<Bxdf> = self.m2.compute_scattering_functions(
+        self.m2.compute_scattering_functions(
             &mut si2,
             mode.clone(),
             allow_multiple_lobes,
             None,
             Some(s2),
         );
-        bxdfs1.append(&mut bxdfs2);
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
-        bxdfs1
+        let mut last_idx: usize = 0;
+        if let Some(bsdf) = &mut si.bsdf {
+            for bxdf_idx in 0..8 {
+                bsdf.bxdfs[bxdf_idx] = match bsdf.bxdfs[bxdf_idx] {
+                    Bxdf::Empty(_bxdf) => {
+                        last_idx = bxdf_idx;
+                        break;
+                    },
+                    _ => bsdf.bxdfs[bxdf_idx],
+                };
+            }
+            if let Some(bsdf2) = si2.bsdf {
+                for bxdf_idx in 0..8 {
+                    bsdf.bxdfs[bxdf_idx + last_idx] = match bsdf2.bxdfs[bxdf_idx] {
+                        Bxdf::Empty(_bxdf) => {
+                            break;
+                        },
+                        _ => bsdf2.bxdfs[bxdf_idx],
+                    };
+                }
+            }
+        }
     }
 }

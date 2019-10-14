@@ -40,7 +40,7 @@ impl Material for MirrorMaterial {
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
         scale_opt: Option<Spectrum>,
-    ) -> Vec<Bxdf> {
+    ) {
         let mut use_scale: bool = false;
         let mut sc: Spectrum = Spectrum::default();
         if let Some(scale) = scale_opt {
@@ -50,22 +50,20 @@ impl Material for MirrorMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let r: Spectrum = self
             .kr
             .evaluate(si)
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        let fresnel = Fresnel::NoOp(FresnelNoOp {});
-        if use_scale {
-            bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(
-                r,
-                fresnel,
-                Some(sc),
-            )));
-        } else {
-            bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, None)));
+        si.bsdf = Some(Bsdf::new(si, 1.0));
+        if let Some(bsdf) = &mut si.bsdf {
+            let bxdf_idx: usize = 0;
+            let fresnel = Fresnel::NoOp(FresnelNoOp {});
+            if use_scale {
+                bsdf.bxdfs[bxdf_idx] =
+                    Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, Some(sc)));
+            } else {
+                bsdf.bxdfs[bxdf_idx] = Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, None));
+            }
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
-        bxdfs
     }
 }

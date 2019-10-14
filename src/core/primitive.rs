@@ -11,7 +11,6 @@ use crate::core::light::AreaLight;
 use crate::core::material::{Material, TransportMode};
 use crate::core::medium::{Medium, MediumInterface};
 use crate::core::pbrt::Float;
-use crate::core::reflection::Bxdf;
 use crate::core::shape::Shape;
 use crate::core::transform::{AnimatedTransform, Transform};
 
@@ -26,19 +25,17 @@ pub trait Primitive {
     fn compute_scattering_functions(
         &self,
         isect: &mut SurfaceInteraction,
-        // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
     ) {
         if let Some(ref material) = self.get_material() {
-            let bxdfs: Vec<Bxdf> = material.compute_scattering_functions(
-                isect, // arena,
+            material.compute_scattering_functions(
+                isect,
                 mode,
                 allow_multiple_lobes,
                 self.get_material(),
                 None,
             );
-            isect.set_bxdfs(bxdfs);
         }
         assert!(
             nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0,

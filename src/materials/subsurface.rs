@@ -15,7 +15,7 @@ use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
     Bsdf, Bxdf, Fresnel, FresnelDielectric, FresnelSpecular, MicrofacetReflection,
-    MicrofacetTransmission, SpecularReflection, SpecularTransmission,
+    MicrofacetTransmission, NoBxdf, SpecularReflection, SpecularTransmission,
 };
 use crate::core::texture::Texture;
 
@@ -133,7 +133,7 @@ impl Material for SubsurfaceMaterial {
         allow_multiple_lobes: bool,
         material: Option<Arc<dyn Material + Send + Sync>>,
         scale_opt: Option<Spectrum>,
-    ) -> Vec<Bxdf> {
+    ) {
         let mut use_scale: bool = false;
         let mut sc: Spectrum = Spectrum::default();
         if let Some(scale) = scale_opt {
@@ -143,7 +143,8 @@ impl Material for SubsurfaceMaterial {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
-        let mut bxdfs: Vec<Bxdf> = Vec::new();
+        let mut bxdf_idx: usize = 0;
+        let mut bxdfs: [Bxdf; 8] = [Bxdf::Empty(NoBxdf::default()); 8];
         // initialize BSDF for _SubsurfaceMaterial_
         let r: Spectrum = self
             .kr
@@ -162,23 +163,25 @@ impl Material for SubsurfaceMaterial {
         let is_specular: bool = urough == 0.0 as Float && vrough == 0.0 as Float;
         if is_specular && allow_multiple_lobes {
             if use_scale {
-                bxdfs.push(Bxdf::FresnelSpec(FresnelSpecular::new(
+                bxdfs[bxdf_idx] = Bxdf::FresnelSpec(FresnelSpecular::new(
                     r,
                     t,
                     1.0 as Float,
                     self.eta,
                     mode,
                     Some(sc),
-                )));
+                ));
+                // bxdf_idx += 1;
             } else {
-                bxdfs.push(Bxdf::FresnelSpec(FresnelSpecular::new(
+                bxdfs[bxdf_idx] = Bxdf::FresnelSpec(FresnelSpecular::new(
                     r,
                     t,
                     1.0 as Float,
                     self.eta,
                     mode,
                     None,
-                )));
+                ));
+                // bxdf_idx += 1;
             }
         } else {
             if self.remap_roughness {
@@ -192,60 +195,65 @@ impl Material for SubsurfaceMaterial {
                 });
                 if is_specular {
                     if use_scale {
-                        bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(
-                            r,
-                            fresnel,
-                            Some(sc),
-                        )));
+                        bxdfs[bxdf_idx] =
+                            Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, Some(sc)));
+                        bxdf_idx += 1;
                     } else {
-                        bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, None)));
+                        bxdfs[bxdf_idx] = Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, None));
+                        bxdf_idx += 1;
                     }
                 } else {
                     let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
                     if use_scale {
-                        bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                        bxdfs[bxdf_idx] = Bxdf::MicrofacetRefl(MicrofacetReflection::new(
                             r,
                             distrib,
                             fresnel,
                             Some(sc),
-                        )));
+                        ));
+                        bxdf_idx += 1;
                     } else {
-                        bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                        bxdfs[bxdf_idx] = Bxdf::MicrofacetRefl(MicrofacetReflection::new(
                             r, distrib, fresnel, None,
-                        )));
+                        ));
+                        bxdf_idx += 1;
                     }
                 }
             }
             if !t.is_black() {
                 if is_specular {
                     if use_scale {
-                        bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
+                        bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
                             t,
                             1.0,
                             self.eta,
                             mode,
                             Some(sc),
-                        )));
+                        ));
+                        // bxdf_idx += 1;
                     } else {
-                        bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
+                        bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
                             t, 1.0, self.eta, mode, None,
-                        )));
+                        ));
+                        // bxdf_idx += 1;
                     }
                 } else {
                     let distrib = Arc::new(TrowbridgeReitzDistribution::new(urough, vrough, true));
                     if use_scale {
-                        bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                             t,
                             distrib,
                             1.0,
                             self.eta,
                             mode,
                             Some(sc),
-                        )));
+                        ));
+                        // bxdf_idx += 1;
                     } else {
-                        bxdfs.push(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                             t, distrib, 1.0, self.eta, mode, None,
-                        )));
+                        ));
+                        // bxdf_idx += 1;
                     }
                 }
             }
@@ -260,7 +268,7 @@ impl Material for SubsurfaceMaterial {
                 .sigma_s
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        si.bsdf = Some(Arc::new(Bsdf::new(si, self.eta, Vec::new())));
+        si.bsdf = Some(Bsdf::new(si, self.eta));
         si.bssrdf = Some(Arc::new(TabulatedBssrdf::new(
             si,
             material,

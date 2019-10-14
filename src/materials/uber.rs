@@ -4,7 +4,7 @@ use std::sync::Arc;
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
-use crate::core::microfacet::TrowbridgeReitzDistribution;
+use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
@@ -122,7 +122,7 @@ impl Material for UberMaterial {
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
         scale_opt: Option<Spectrum>,
-    ) -> Vec<Bxdf> {
+    ) {
         let mut use_scale: bool = false;
         let mut sc: Spectrum = Spectrum::default();
         if let Some(scale) = scale_opt {
@@ -132,7 +132,6 @@ impl Material for UberMaterial {
         if let Some(ref bump_map) = self.bump_map {
             Self::bump(bump_map, si);
         }
-        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let e: Float = self.eta.evaluate(si);
         let op: Spectrum = self
             .opacity
@@ -140,130 +139,127 @@ impl Material for UberMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         let t: Spectrum =
             (Spectrum::new(1.0) - op).clamp(0.0 as Float, std::f32::INFINITY as Float);
-        if !t.is_black() {
-            if use_scale {
-                bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
-                    t,
-                    1.0,
-                    1.0,
-                    mode.clone(),
-                    Some(sc),
-                )));
-            } else {
-                bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
-                    t,
-                    1.0,
-                    1.0,
-                    mode.clone(),
-                    None,
-                )));
-            }
-        }
         let kd: Spectrum = op
             * self
                 .kd
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        if !kd.is_black() {
-            if use_scale {
-                bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(
-                    kd,
-                    Some(sc),
-                )));
-            } else {
-                bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(kd, None)));
-            }
-        }
         let ks: Spectrum = op
             * self
                 .ks
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        if !ks.is_black() {
-            let fresnel = Fresnel::Dielectric(FresnelDielectric {
-                eta_i: 1.0,
-                eta_t: e,
-            });
-            let mut u_rough: Float;
-            if let Some(ref u_roughness) = self.u_roughness {
-                u_rough = u_roughness.evaluate(si);
-            } else {
-                u_rough = self.roughness.evaluate(si);
-            }
-            let mut v_rough: Float;
-            if let Some(ref v_roughness) = self.v_roughness {
-                v_rough = v_roughness.evaluate(si);
-            } else {
-                v_rough = self.roughness.evaluate(si);
-            }
-            if self.remap_roughness {
-                u_rough = TrowbridgeReitzDistribution::roughness_to_alpha(u_rough);
-                v_rough = TrowbridgeReitzDistribution::roughness_to_alpha(v_rough);
-            }
-            let distrib = Arc::new(TrowbridgeReitzDistribution::new(u_rough, v_rough, true));
-            if use_scale {
-                bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
-                    ks,
-                    distrib,
-                    fresnel,
-                    Some(sc),
-                )));
-            } else {
-                bxdfs.push(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
-                    ks, distrib, fresnel, None,
-                )));
-            }
+        let mut u_rough: Float;
+        if let Some(ref u_roughness) = self.u_roughness {
+            u_rough = u_roughness.evaluate(si);
+        } else {
+            u_rough = self.roughness.evaluate(si);
+        }
+        let mut v_rough: Float;
+        if let Some(ref v_roughness) = self.v_roughness {
+            v_rough = v_roughness.evaluate(si);
+        } else {
+            v_rough = self.roughness.evaluate(si);
         }
         let kr: Spectrum = op
             * self
                 .kr
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        if !kr.is_black() {
-            let fresnel = Fresnel::Dielectric(FresnelDielectric {
-                eta_i: 1.0,
-                eta_t: e,
-            });
-            if use_scale {
-                bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(
-                    kr,
-                    fresnel,
-                    Some(sc),
-                )));
-            } else {
-                bxdfs.push(Bxdf::SpecRefl(SpecularReflection::new(kr, fresnel, None)));
-            }
-        }
         let kt: Spectrum = op
             * self
                 .kt
                 .evaluate(si)
                 .clamp(0.0 as Float, std::f32::INFINITY as Float);
-        if !kt.is_black() {
-            if use_scale {
-                bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
-                    kt,
-                    1.0,
-                    e,
-                    mode.clone(),
-                    Some(sc),
-                )));
-            } else {
-                bxdfs.push(Bxdf::SpecTrans(SpecularTransmission::new(
-                    kt,
-                    1.0,
-                    e,
-                    mode.clone(),
-                    None,
-                )));
-            }
-        }
         if !t.is_black() {
-            si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
-            bxdfs
+            si.bsdf = Some(Bsdf::new(si, 1.0));
         } else {
-            si.bsdf = Some(Arc::new(Bsdf::new(si, e, Vec::new())));
-            bxdfs
+            si.bsdf = Some(Bsdf::new(si, e));
+        }
+        if let Some(bsdf) = &mut si.bsdf {
+            let mut bxdf_idx: usize = 0;
+            if !t.is_black() {
+                if use_scale {
+                    bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
+                        t,
+                        1.0,
+                        1.0,
+                        mode.clone(),
+                        Some(sc),
+                    ));
+                    bxdf_idx += 1;
+                } else {
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::SpecTrans(SpecularTransmission::new(t, 1.0, 1.0, mode.clone(), None));
+                    bxdf_idx += 1;
+                }
+            }
+            if !kd.is_black() {
+                if use_scale {
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::LambertianRefl(LambertianReflection::new(kd, Some(sc)));
+                    bxdf_idx += 1;
+                } else {
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::LambertianRefl(LambertianReflection::new(kd, None));
+                    bxdf_idx += 1;
+                }
+            }
+            if !ks.is_black() {
+                let fresnel = Fresnel::Dielectric(FresnelDielectric {
+                    eta_i: 1.0,
+                    eta_t: e,
+                });
+                if self.remap_roughness {
+                    u_rough = TrowbridgeReitzDistribution::roughness_to_alpha(u_rough);
+                    v_rough = TrowbridgeReitzDistribution::roughness_to_alpha(v_rough);
+                }
+                let distrib = MicrofacetDistribution::TrowbridgeReitz(
+                    TrowbridgeReitzDistribution::new(u_rough, v_rough, true),
+                );
+                if use_scale {
+                    bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                        ks,
+                        distrib,
+                        fresnel,
+                        Some(sc),
+                    ));
+                    bxdf_idx += 1;
+                } else {
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::MicrofacetRefl(MicrofacetReflection::new(ks, distrib, fresnel, None));
+                    bxdf_idx += 1;
+                }
+            }
+            if !kr.is_black() {
+                let fresnel = Fresnel::Dielectric(FresnelDielectric {
+                    eta_i: 1.0,
+                    eta_t: e,
+                });
+                if use_scale {
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::SpecRefl(SpecularReflection::new(kr, fresnel, Some(sc)));
+                    bxdf_idx += 1;
+                } else {
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::SpecRefl(SpecularReflection::new(kr, fresnel, None));
+                    bxdf_idx += 1;
+                }
+            }
+            if !kt.is_black() {
+                if use_scale {
+                    bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
+                        kt,
+                        1.0,
+                        e,
+                        mode.clone(),
+                        Some(sc),
+                    ));
+                } else {
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::SpecTrans(SpecularTransmission::new(kt, 1.0, e, mode.clone(), None));
+                }
+            }
         }
     }
 }

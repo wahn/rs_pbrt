@@ -60,7 +60,7 @@ impl Material for FourierMaterial {
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
         scale_opt: Option<Spectrum>,
-    ) -> Vec<Bxdf> {
+    ) {
         let mut use_scale: bool = false;
         let mut sc: Spectrum = Spectrum::default();
         if let Some(scale) = scale_opt {
@@ -70,21 +70,16 @@ impl Material for FourierMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Bxdf> = Vec::new();
-        if use_scale {
-            bxdfs.push(Bxdf::Fourier(FourierBSDF::new(
-                self.bsdf_table.clone(),
-                mode,
-                Some(sc),
-            )));
-        } else {
-            bxdfs.push(Bxdf::Fourier(FourierBSDF::new(
-                self.bsdf_table.clone(),
-                mode,
-                None,
-            )));
+        si.bsdf = Some(Bsdf::new(si, 1.0));
+        if let Some(bsdf) = &mut si.bsdf {
+            let bxdf_idx: usize = 0;
+            if use_scale {
+                bsdf.bxdfs[bxdf_idx] =
+                    Bxdf::Fourier(FourierBSDF::new(self.bsdf_table.clone(), mode, Some(sc)));
+            } else {
+                bsdf.bxdfs[bxdf_idx] =
+                    Bxdf::Fourier(FourierBSDF::new(self.bsdf_table.clone(), mode, None));
+            }
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
-        bxdfs
     }
 }

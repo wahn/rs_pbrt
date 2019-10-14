@@ -11,7 +11,7 @@
 use std;
 use std::sync::{Arc, RwLock};
 // pbrt
-use crate::core::bssrdf::TabulatedBssrdf;
+// use crate::core::bssrdf::TabulatedBssrdf;
 use crate::core::geometry::{
     nrm_faceforward_nrm, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm, vec3_dot_vec3,
 };
@@ -21,7 +21,7 @@ use crate::core::medium::{Medium, MediumInterface, PhaseFunction};
 use crate::core::pbrt::SHADOW_EPSILON;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::primitive::Primitive;
-use crate::core::reflection::{Bsdf, Bxdf};
+use crate::core::reflection::Bsdf;
 use crate::core::shape::Shape;
 use crate::core::transform::solve_linear_system_2x2;
 
@@ -37,7 +37,7 @@ pub trait Interaction {
     fn get_wo(&self) -> Vector3f;
     fn get_n(&self) -> Normal3f;
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>>;
-    fn get_bsdf(&self) -> Option<Arc<Bsdf>>;
+    fn get_bsdf(&self) -> Option<&Bsdf>;
     fn get_shading_n(&self) -> Option<Normal3f>;
     fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>>;
 }
@@ -241,7 +241,7 @@ impl Interaction for MediumInteraction {
             None
         }
     }
-    fn get_bsdf(&self) -> Option<Arc<Bsdf>> {
+    fn get_bsdf(&self) -> Option<&Bsdf> {
         None
     }
     fn get_shading_n(&self) -> Option<Normal3f> {
@@ -279,8 +279,8 @@ pub struct SurfaceInteraction<'a> {
     pub dvdy: RwLock<Float>,
     pub primitive: Option<&'a (dyn Primitive + Send + Sync)>,
     pub shading: Shading,
-    pub bsdf: Option<Arc<Bsdf>>,
-    pub bssrdf: Option<Arc<TabulatedBssrdf>>,
+    pub bsdf: Option<Bsdf>,
+    // pub bssrdf: Option<Arc<TabulatedBssrdf>>,
     pub shape: Option<&'a (dyn Shape + Send + Sync)>,
 }
 
@@ -340,7 +340,7 @@ impl<'a> SurfaceInteraction<'a> {
                 primitive: None,
                 shading,
                 bsdf: None,
-                bssrdf: None,
+                // bssrdf: None,
                 shape: Some(shape.clone()),
             }
         } else {
@@ -365,7 +365,7 @@ impl<'a> SurfaceInteraction<'a> {
                 primitive: None,
                 shading,
                 bsdf: None,
-                bssrdf: None,
+                // bssrdf: None,
                 shape: None,
             }
         }
@@ -391,17 +391,6 @@ impl<'a> SurfaceInteraction<'a> {
             } else {
                 None
             }
-        }
-    }
-    pub fn set_bxdfs(&mut self, bxdfs: Vec<Bxdf>) {
-        if let Some(bsdf_arc) = &mut self.bsdf {
-            if let Some(bsdf) = Arc::get_mut(bsdf_arc) {
-                bsdf.bxdfs = bxdfs;
-            } else {
-                panic!("no bsdf");
-            }
-        } else {
-            panic!("no bsdf_arc");
         }
     }
     pub fn set_shading_geometry(
@@ -609,9 +598,9 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
             None
         }
     }
-    fn get_bsdf(&self) -> Option<Arc<Bsdf>> {
+    fn get_bsdf(&self) -> Option<&Bsdf> {
         if let Some(ref bsdf) = self.bsdf {
-            Some(bsdf.clone())
+            Some(bsdf)
         } else {
             None
         }

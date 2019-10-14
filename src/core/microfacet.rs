@@ -14,29 +14,76 @@ use crate::core::reflection::{
     abs_cos_theta, cos_2_phi, cos_2_theta, cos_phi, cos_theta, sin_2_phi, sin_phi, tan_2_theta,
     tan_theta, vec3_same_hemisphere_vec3,
 };
+use crate::materials::disney::DisneyMicrofacetDistribution;
 
 // see microfacet.h
 
-pub trait MicrofacetDistribution {
-    fn d(&self, wh: &Vector3f) -> Float;
-    fn lambda(&self, w: &Vector3f) -> Float;
-    fn g1(&self, w: &Vector3f) -> Float {
-        1.0 as Float / (1.0 as Float + self.lambda(w))
-    }
-    fn g(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
-        1.0 as Float / (1.0 as Float + self.lambda(wo) + self.lambda(wi))
-    }
-    fn pdf(&self, wo: &Vector3f, wh: &Vector3f) -> Float {
-        if self.get_sample_visible_area() {
-            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3(wo, wh) / abs_cos_theta(wo)
-        } else {
-            self.d(wh) * abs_cos_theta(wh)
-        }
-    }
-    fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f;
-    fn get_sample_visible_area(&self) -> bool;
+pub enum MicrofacetDistribution {
+    Beckmann(BeckmannDistribution),
+    TrowbridgeReitz(TrowbridgeReitzDistribution),
+    // see disney.rs
+    DisneyMicrofacet(DisneyMicrofacetDistribution),
 }
 
+impl MicrofacetDistribution {
+    pub fn d(&self, wh: &Vector3f) -> Float {
+        match self {
+            MicrofacetDistribution::Beckmann(distribution) => distribution.d(wh),
+            MicrofacetDistribution::TrowbridgeReitz(distribution) => distribution.d(wh),
+            MicrofacetDistribution::DisneyMicrofacet(distribution) => distribution.d(wh),
+        }
+    }
+    pub fn lambda(&self, w: &Vector3f) -> Float {
+        match self {
+            MicrofacetDistribution::Beckmann(distribution) => distribution.lambda(w),
+            MicrofacetDistribution::TrowbridgeReitz(distribution) => distribution.lambda(w),
+            MicrofacetDistribution::DisneyMicrofacet(distribution) => distribution.lambda(w),
+        }
+    }
+    pub fn g1(&self, w: &Vector3f) -> Float {
+        match self {
+            MicrofacetDistribution::Beckmann(distribution) => distribution.g1(w),
+            MicrofacetDistribution::TrowbridgeReitz(distribution) => distribution.g1(w),
+            MicrofacetDistribution::DisneyMicrofacet(distribution) => distribution.g1(w),
+        }
+    }
+    pub fn g(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        match self {
+            MicrofacetDistribution::Beckmann(distribution) => distribution.g(wo, wi),
+            MicrofacetDistribution::TrowbridgeReitz(distribution) => distribution.g(wo, wi),
+            MicrofacetDistribution::DisneyMicrofacet(distribution) => distribution.g(wo, wi),
+        }
+    }
+    pub fn pdf(&self, wo: &Vector3f, wh: &Vector3f) -> Float {
+        match self {
+            MicrofacetDistribution::Beckmann(distribution) => distribution.pdf(wo, wh),
+            MicrofacetDistribution::TrowbridgeReitz(distribution) => distribution.pdf(wo, wh),
+            MicrofacetDistribution::DisneyMicrofacet(distribution) => distribution.pdf(wo, wh),
+        }
+    }
+    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+        match self {
+            MicrofacetDistribution::Beckmann(distribution) => distribution.sample_wh(wo, u),
+            MicrofacetDistribution::TrowbridgeReitz(distribution) => distribution.sample_wh(wo, u),
+            MicrofacetDistribution::DisneyMicrofacet(distribution) => distribution.sample_wh(wo, u),
+        }
+    }
+    pub fn get_sample_visible_area(&self) -> bool {
+        match self {
+            MicrofacetDistribution::Beckmann(distribution) => {
+                distribution.get_sample_visible_area()
+            }
+            MicrofacetDistribution::TrowbridgeReitz(distribution) => {
+                distribution.get_sample_visible_area()
+            }
+            MicrofacetDistribution::DisneyMicrofacet(distribution) => {
+                distribution.get_sample_visible_area()
+            }
+        }
+    }
+}
+
+#[derive(Default)]
 pub struct BeckmannDistribution {
     pub alpha_x: Float,
     pub alpha_y: Float,
@@ -65,10 +112,7 @@ impl BeckmannDistribution {
             + 0.0171201 * x * x * x
             + 0.000640711 * x * x * x * x
     }
-}
-
-impl MicrofacetDistribution for BeckmannDistribution {
-    fn d(&self, wh: &Vector3f) -> Float {
+    pub fn d(&self, wh: &Vector3f) -> Float {
         let tan_2_theta: Float = tan_2_theta(wh);
         if tan_2_theta.is_infinite() {
             return 0.0 as Float;
@@ -80,8 +124,7 @@ impl MicrofacetDistribution for BeckmannDistribution {
             .exp()
             / (PI * self.alpha_x * self.alpha_y * cos_4_theta)
     }
-
-    fn lambda(&self, w: &Vector3f) -> Float {
+    pub fn lambda(&self, w: &Vector3f) -> Float {
         let abs_tan_theta: Float = tan_theta(w).abs();
         if abs_tan_theta.is_infinite() {
             return 0.0;
@@ -96,8 +139,20 @@ impl MicrofacetDistribution for BeckmannDistribution {
         }
         (1.0 as Float - 1.259 * a + 0.396 * a * a) / (3.535 * a + 2.181 * a * a)
     }
-
-    fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+    pub fn g1(&self, w: &Vector3f) -> Float {
+        1.0 as Float / (1.0 as Float + self.lambda(w))
+    }
+    pub fn g(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        1.0 as Float / (1.0 as Float + self.lambda(wo) + self.lambda(wi))
+    }
+    pub fn pdf(&self, wo: &Vector3f, wh: &Vector3f) -> Float {
+        if self.get_sample_visible_area() {
+            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3(wo, wh) / abs_cos_theta(wo)
+        } else {
+            self.d(wh) * abs_cos_theta(wh)
+        }
+    }
+    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
         if !self.sample_visible_area {
             // sample full distribution of normals for Beckmann
             // distribution
@@ -152,12 +207,12 @@ impl MicrofacetDistribution for BeckmannDistribution {
             wh
         }
     }
-
-    fn get_sample_visible_area(&self) -> bool {
+    pub fn get_sample_visible_area(&self) -> bool {
         self.sample_visible_area
     }
 }
 
+#[derive(Default)]
 pub struct TrowbridgeReitzDistribution {
     pub alpha_x: Float,
     pub alpha_y: Float,
@@ -190,10 +245,7 @@ impl TrowbridgeReitzDistribution {
             + 0.0171201 * x * x * x
             + 0.000640711 * x * x * x * x
     }
-}
-
-impl MicrofacetDistribution for TrowbridgeReitzDistribution {
-    fn d(&self, wh: &Vector3f) -> Float {
+    pub fn d(&self, wh: &Vector3f) -> Float {
         let tan_2_theta: Float = tan_2_theta(wh);
         if tan_2_theta.is_infinite() {
             return 0.0 as Float;
@@ -210,8 +262,7 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
                 * (1.0 as Float + e)
                 * (1.0 as Float + e))
     }
-
-    fn lambda(&self, w: &Vector3f) -> Float {
+    pub fn lambda(&self, w: &Vector3f) -> Float {
         let abs_tan_theta: Float = tan_theta(w).abs();
         if abs_tan_theta.is_infinite() {
             return 0.0;
@@ -223,8 +274,20 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
         let alpha_2_tan_2_theta: Float = (alpha * abs_tan_theta) * (alpha * abs_tan_theta);
         (-1.0 as Float + (1.0 as Float + alpha_2_tan_2_theta).sqrt()) / 2.0 as Float
     }
-
-    fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+    pub fn g1(&self, w: &Vector3f) -> Float {
+        1.0 as Float / (1.0 as Float + self.lambda(w))
+    }
+    pub fn g(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+        1.0 as Float / (1.0 as Float + self.lambda(wo) + self.lambda(wi))
+    }
+    pub fn pdf(&self, wo: &Vector3f, wh: &Vector3f) -> Float {
+        if self.get_sample_visible_area() {
+            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3(wo, wh) / abs_cos_theta(wo)
+        } else {
+            self.d(wh) * abs_cos_theta(wh)
+        }
+    }
+    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
         let mut wh: Vector3f;
         if !self.sample_visible_area {
             let cos_theta;
@@ -262,8 +325,7 @@ impl MicrofacetDistribution for TrowbridgeReitzDistribution {
         }
         wh
     }
-
-    fn get_sample_visible_area(&self) -> bool {
+    pub fn get_sample_visible_area(&self) -> bool {
         self.sample_visible_area
     }
 }

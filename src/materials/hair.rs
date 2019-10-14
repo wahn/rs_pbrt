@@ -134,14 +134,13 @@ impl Material for HairMaterial {
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
         scale_opt: Option<Spectrum>,
-    ) -> Vec<Bxdf> {
+    ) {
         let mut use_scale: bool = false;
         let mut sc: Spectrum = Spectrum::default();
         if let Some(scale) = scale_opt {
             use_scale = true;
             sc = scale;
         }
-        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let bm: Float = self.beta_m.evaluate(si);
         let bn: Float = self.beta_n.evaluate(si);
         let a: Float = radians(self.alpha.evaluate(si));
@@ -170,19 +169,22 @@ impl Material for HairMaterial {
             sig_a = HairBSDF::sigma_a_from_concentration(ce, cp);
         }
         let h: Float = -1.0 as Float + 2.0 as Float * si.uv[1];
-        if use_scale {
-            bxdfs.push(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, Some(sc))));
-        } else {
-            bxdfs.push(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, None)));
+        si.bsdf = Some(Bsdf::new(si, 1.0));
+        if let Some(bsdf) = &mut si.bsdf {
+            let bxdf_idx: usize = 0;
+            if use_scale {
+                bsdf.bxdfs[bxdf_idx] = Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, Some(sc)));
+            } else {
+                bsdf.bxdfs[bxdf_idx] = Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, None));
+            }
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
-        bxdfs
     }
 }
 
 pub const P_MAX: u8 = 3_u8;
 pub const SQRT_PI_OVER_8: Float = 0.626657069 as Float;
 
+#[derive(Default)]
 pub struct HairBSDF {
     pub h: Float,
     pub gamma_o: Float,

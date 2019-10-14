@@ -49,7 +49,7 @@ impl Material for MatteMaterial {
         _allow_multiple_lobes: bool,
         _material: Option<Arc<dyn Material + Send + Sync>>,
         scale_opt: Option<Spectrum>,
-    ) -> Vec<Bxdf> {
+    ) {
         let mut use_scale: bool = false;
         let mut sc: Spectrum = Spectrum::default();
         if let Some(scale) = scale_opt {
@@ -59,7 +59,6 @@ impl Material for MatteMaterial {
         if let Some(ref bump) = self.bump_map {
             Self::bump(bump, si);
         }
-        let mut bxdfs: Vec<Bxdf> = Vec::new();
         let r: Spectrum = self
             .kd
             .evaluate(si)
@@ -69,22 +68,27 @@ impl Material for MatteMaterial {
             0.0 as Float,
             90.0 as Float,
         );
-        if !r.is_black() {
-            if sig == 0.0 {
-                if use_scale {
-                    bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(r, Some(sc))));
+        si.bsdf = Some(Bsdf::new(si, 1.0));
+        if let Some(bsdf) = &mut si.bsdf {
+            let bxdf_idx: usize = 0;
+            if !r.is_black() {
+                if sig == 0.0 {
+                    if use_scale {
+                        bsdf.bxdfs[bxdf_idx] =
+                            Bxdf::LambertianRefl(LambertianReflection::new(r, Some(sc)));
+                    } else {
+                        bsdf.bxdfs[bxdf_idx] =
+                            Bxdf::LambertianRefl(LambertianReflection::new(r, None));
+                    }
                 } else {
-                    bxdfs.push(Bxdf::LambertianRefl(LambertianReflection::new(r, None)));
-                }
-            } else {
-                if use_scale {
-                    bxdfs.push(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, Some(sc))));
-                } else {
-                    bxdfs.push(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, None)));
+                    if use_scale {
+                        bsdf.bxdfs[bxdf_idx] =
+                            Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, Some(sc)));
+                    } else {
+                        bsdf.bxdfs[bxdf_idx] = Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, None));
+                    }
                 }
             }
         }
-        si.bsdf = Some(Arc::new(Bsdf::new(si, 1.0, Vec::new())));
-        bxdfs
     }
 }

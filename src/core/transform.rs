@@ -879,8 +879,16 @@ impl Transform {
         ret.dpdx = RwLock::new(self.transform_vector(&dpdx));
         let dpdy: Vector3f = *si.dpdy.read().unwrap();
         ret.dpdy = RwLock::new(self.transform_vector(&dpdy));
-        ret.bsdf = si.bsdf.clone();
-        ret.bssrdf = si.bssrdf.clone();
+        // if let Some(bsdf) = &si.bsdf {
+        //     if let Some(mut bsdf2) = ret.bsdf {
+        //         for bxdf_idx in 0..8 {
+        //             bsdf2.bxdfs[bxdf_idx] = match bsdf.bxdfs[bxdf_idx] {
+        //                 _ => bsdf.bxdfs[bxdf_idx],
+        //             };
+        //         }
+        //     }
+        // }
+        // ret.bssrdf = si.bssrdf.clone();
         ret.primitive = None; // TODO? si.primitive;
         ret.shading.n = nrm_faceforward_nrm(&ret.shading.n, &ret.n);
         // TODO: ret.faceIndex = si.faceIndex;

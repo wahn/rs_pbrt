@@ -416,15 +416,12 @@ impl RealisticCamera {
         true
     }
     pub fn draw_lens_system(&self) {
-        // WORK
         println!("TODO: RealisticCamera::draw_lens_system()");
     }
     pub fn draw_ray_path_from_film(&self, _r: &Ray, _arrow: bool, _to_optical_intercept: bool) {
-        // WORK
         println!("TODO: RealisticCamera::draw_ray_path_from_film()");
     }
     pub fn draw_ray_path_from_scene(&self, _r: &Ray, _arrow: bool, _to_optical_intercept: bool) {
-        // WORK
         println!("TODO: RealisticCamera::draw_ray_path_from_scene()");
     }
     pub fn compute_cardinal_points(
@@ -650,7 +647,6 @@ impl RealisticCamera {
         pupil_bounds
     }
     pub fn render_exit_pupil(&self, _sx: Float, _sy: Float, _filename: String) {
-        // WORK
         println!("TODO: RealisticCamera::render_exit_pupil()");
     }
     pub fn sample_exit_pupil(
@@ -685,7 +681,6 @@ impl RealisticCamera {
         }
     }
     pub fn test_exit_pupil_bounds(&self) {
-        // WORK
         println!("TODO: RealisticCamera::test_exit_pupil_bounds()");
     }
 }

@@ -15,7 +15,7 @@ use std::sync::Arc;
 use byteorder::{LittleEndian, ReadBytesExt};
 use num::Zero;
 // pbrt
-use crate::core::bssrdf::SeparableBssrdfAdapter;
+// use crate::core::bssrdf::SeparableBssrdfAdapter;
 use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_abs_dot_vec3, vec3_dot_nrm,
     vec3_dot_vec3,
@@ -227,11 +227,11 @@ pub struct Bsdf {
     pub ng: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub bxdfs: Vec<Bxdf>,
+    pub bxdfs: [Bxdf; 8],
 }
 
 impl Bsdf {
-    pub fn new(si: &SurfaceInteraction, eta: Float, bxdfs: Vec<Bxdf>) -> Self {
+    pub fn new(si: &SurfaceInteraction, eta: Float) -> Self {
         let ss = si.shading.dpdu.normalize();
         Bsdf {
             eta,
@@ -239,7 +239,16 @@ impl Bsdf {
             ng: si.n,
             ss,
             ts: nrm_cross_vec3(&si.shading.n, &ss),
-            bxdfs,
+            bxdfs: [
+                Bxdf::Empty(NoBxdf::default()),
+                Bxdf::Empty(NoBxdf::default()),
+                Bxdf::Empty(NoBxdf::default()),
+                Bxdf::Empty(NoBxdf::default()),
+                Bxdf::Empty(NoBxdf::default()),
+                Bxdf::Empty(NoBxdf::default()),
+                Bxdf::Empty(NoBxdf::default()),
+                Bxdf::Empty(NoBxdf::default()),
+            ],
         }
     }
     pub fn num_components(&self, flags: u8) -> u8 {
@@ -449,7 +458,11 @@ pub enum BxdfType {
     BsdfAll = 31,
 }
 
+#[derive(Default)]
+pub struct NoBxdf {}
+
 pub enum Bxdf {
+    Empty(NoBxdf),
     SpecRefl(SpecularReflection),
     SpecTrans(SpecularTransmission),
     FresnelSpec(FresnelSpecular),
@@ -461,7 +474,7 @@ pub enum Bxdf {
     FresnelBlnd(FresnelBlend),
     Fourier(FourierBSDF),
     // bssrdf.rs
-    Bssrdf(SeparableBssrdfAdapter),
+    // Bssrdf(SeparableBssrdfAdapter),
     // disney.rs
     DisDiff(DisneyDiffuse),
     DisSS(DisneyFakeSS),
@@ -475,6 +488,7 @@ pub enum Bxdf {
 impl Bxdf {
     pub fn matches_flags(&self, t: u8) -> bool {
         match self {
+            Bxdf::Empty(_bxdf) => false,
             Bxdf::SpecRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::SpecTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::FresnelSpec(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
@@ -485,7 +499,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::FresnelBlnd(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::Fourier(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-            Bxdf::Bssrdf(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            // Bxdf::Bssrdf(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::DisDiff(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::DisSS(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::DisRetro(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
@@ -496,6 +510,7 @@ impl Bxdf {
     }
     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
         match self {
+            Bxdf::Empty(_bxdf) => Spectrum::default(),
             Bxdf::SpecRefl(bxdf) => bxdf.f(wo, wi),
             Bxdf::SpecTrans(bxdf) => bxdf.f(wo, wi),
             Bxdf::FresnelSpec(bxdf) => bxdf.f(wo, wi),
@@ -506,7 +521,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.f(wo, wi),
             Bxdf::FresnelBlnd(bxdf) => bxdf.f(wo, wi),
             Bxdf::Fourier(bxdf) => bxdf.f(wo, wi),
-            Bxdf::Bssrdf(bxdf) => bxdf.f(wo, wi),
+            // Bxdf::Bssrdf(bxdf) => bxdf.f(wo, wi),
             Bxdf::DisDiff(bxdf) => bxdf.f(wo, wi),
             Bxdf::DisSS(bxdf) => bxdf.f(wo, wi),
             Bxdf::DisRetro(bxdf) => bxdf.f(wo, wi),
@@ -528,6 +543,7 @@ impl Bxdf {
         sampled_type: &mut u8,
     ) -> Spectrum {
         match self {
+            Bxdf::Empty(_bxdf) => Spectrum::default(),
             Bxdf::SpecRefl(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::SpecTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::FresnelSpec(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
@@ -538,7 +554,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::FresnelBlnd(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::Fourier(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
-            Bxdf::Bssrdf(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
+            // Bxdf::Bssrdf(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisDiff(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisSS(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisRetro(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
@@ -567,6 +583,7 @@ impl Bxdf {
     /// Note: this method needs to be consistent with ```Bxdf::sample_f()```.
     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         match self {
+            Bxdf::Empty(_bxdf) => 0.0 as Float,
             Bxdf::SpecRefl(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::SpecTrans(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::FresnelSpec(bxdf) => bxdf.pdf(wo, wi),
@@ -577,7 +594,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::FresnelBlnd(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::Fourier(bxdf) => bxdf.pdf(wo, wi),
-            Bxdf::Bssrdf(_bxdf) => self.default_pdf(wo, wi),
+            // Bxdf::Bssrdf(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisDiff(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisSS(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisRetro(_bxdf) => self.default_pdf(wo, wi),
@@ -595,6 +612,7 @@ impl Bxdf {
     }
     pub fn get_type(&self) -> u8 {
         match self {
+            Bxdf::Empty(_bxdf) => 0_u8,
             Bxdf::SpecRefl(bxdf) => bxdf.get_type(),
             Bxdf::SpecTrans(bxdf) => bxdf.get_type(),
             Bxdf::FresnelSpec(bxdf) => bxdf.get_type(),
@@ -605,7 +623,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type(),
             Bxdf::FresnelBlnd(bxdf) => bxdf.get_type(),
             Bxdf::Fourier(bxdf) => bxdf.get_type(),
-            Bxdf::Bssrdf(bxdf) => bxdf.get_type(),
+            // Bxdf::Bssrdf(bxdf) => bxdf.get_type(),
             Bxdf::DisDiff(bxdf) => bxdf.get_type(),
             Bxdf::DisSS(bxdf) => bxdf.get_type(),
             Bxdf::DisRetro(bxdf) => bxdf.get_type(),
@@ -1121,7 +1139,7 @@ impl OrenNayar {
 
 pub struct MicrofacetReflection {
     pub r: Spectrum,
-    pub distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
+    pub distribution: MicrofacetDistribution,
     pub fresnel: Fresnel,
     sc_opt: Option<Spectrum>,
 }
@@ -1129,7 +1147,7 @@ pub struct MicrofacetReflection {
 impl MicrofacetReflection {
     pub fn new(
         r: Spectrum,
-        distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
+        distribution: MicrofacetDistribution,
         fresnel: Fresnel,
         sc_opt: Option<Spectrum>,
     ) -> Self {
@@ -1203,9 +1221,10 @@ impl MicrofacetReflection {
 }
 
 // MicrofacetTransmission
+
 pub struct MicrofacetTransmission {
     t: Spectrum,
-    distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
+    distribution: MicrofacetDistribution,
     eta_a: Float,
     eta_b: Float,
     fresnel: FresnelDielectric,
@@ -1216,7 +1235,7 @@ pub struct MicrofacetTransmission {
 impl MicrofacetTransmission {
     pub fn new(
         t: Spectrum,
-        distribution: Arc<dyn MicrofacetDistribution + Send + Sync>,
+        distribution: MicrofacetDistribution,
         eta_a: Float,
         eta_b: Float,
         mode: TransportMode,
