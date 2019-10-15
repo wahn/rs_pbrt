@@ -574,7 +574,7 @@ impl DisneyClearCoat {
 
 #[derive(Default)]
 pub struct DisneyMicrofacetDistribution {
-    inner: TrowbridgeReitzDistribution,
+    pub inner: TrowbridgeReitzDistribution,
 }
 
 impl DisneyMicrofacetDistribution {

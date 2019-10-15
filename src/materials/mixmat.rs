@@ -4,11 +4,17 @@ use std::sync::Arc;
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
+use crate::core::microfacet::{
+    BeckmannDistribution, MicrofacetDistribution, TrowbridgeReitzDistribution,
+};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
-    Bxdf, Fresnel, FresnelConductor, FresnelDielectric, FresnelNoOp, NoBxdf, SpecularReflection,
+    Bxdf, Fresnel, FresnelConductor, FresnelDielectric, FresnelNoOp, FresnelSpecular,
+    LambertianReflection, LambertianTransmission, MicrofacetReflection, NoBxdf, OrenNayar,
+    SpecularReflection, SpecularTransmission,
 };
 use crate::core::texture::Texture;
+use crate::materials::disney::DisneyMicrofacetDistribution;
 
 // see mixmat.h
 
@@ -93,41 +99,112 @@ impl Material for MixMaterial {
                 for bxdf_idx in 0..8 {
                     bsdf.bxdfs[bxdf_idx + last_idx] = match &bxdfs[bxdf_idx] {
                         Bxdf::Empty(_bxdf) => break,
-                        Bxdf::SpecRefl(bxdf) =>  {
+                        Bxdf::SpecRefl(bxdf) => {
                             let fresnel = match &bxdf.fresnel {
-                                Fresnel::Conductor(fresnel) => Fresnel::Conductor(FresnelConductor {
-                                    eta_i: fresnel.eta_i,
-                                    eta_t: fresnel.eta_t,
-                                    k: fresnel.k,
-                                }),
-                                Fresnel::Dielectric(fresnel) => Fresnel::Dielectric(FresnelDielectric {
-                                    eta_i: fresnel.eta_i,
-                                    eta_t: fresnel.eta_t,
-                                }),
-                                _ => Fresnel::NoOp(FresnelNoOp {})
+                                Fresnel::Conductor(fresnel) => {
+                                    Fresnel::Conductor(FresnelConductor {
+                                        eta_i: fresnel.eta_i,
+                                        eta_t: fresnel.eta_t,
+                                        k: fresnel.k,
+                                    })
+                                }
+                                Fresnel::Dielectric(fresnel) => {
+                                    Fresnel::Dielectric(FresnelDielectric {
+                                        eta_i: fresnel.eta_i,
+                                        eta_t: fresnel.eta_t,
+                                    })
+                                }
+                                _ => Fresnel::NoOp(FresnelNoOp {}),
                             };
-                            Bxdf::SpecRefl(SpecularReflection::new(
-                            bxdf.r,
-                            fresnel,
+                            Bxdf::SpecRefl(SpecularReflection::new(bxdf.r, fresnel, bxdf.sc_opt))
+                        }
+                        Bxdf::SpecTrans(bxdf) => Bxdf::SpecTrans(SpecularTransmission::new(
+                            bxdf.t,
+                            bxdf.eta_a,
+                            bxdf.eta_b,
+                            bxdf.mode,
                             bxdf.sc_opt,
-                        ))}
-                        ,
-                        // Bxdf::SpecTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::FresnelSpec(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::LambertianRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::LambertianTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::OrenNayarRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::MicrofacetRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::FresnelBlnd(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::Fourier(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // // Bxdf::Bssrdf(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::DisDiff(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::DisSS(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::DisRetro(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::DisSheen(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::DisClearCoat(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-                        // Bxdf::Hair(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        )),
+                        Bxdf::FresnelSpec(bxdf) => Bxdf::FresnelSpec(FresnelSpecular::new(
+                            bxdf.r,
+                            bxdf.t,
+                            bxdf.eta_a,
+                            bxdf.eta_b,
+                            bxdf.mode,
+                            bxdf.sc_opt,
+                        )),
+                        Bxdf::LambertianRefl(bxdf) => {
+                            Bxdf::LambertianRefl(LambertianReflection::new(bxdf.r, bxdf.sc_opt))
+                        }
+                        Bxdf::LambertianTrans(bxdf) => {
+                            Bxdf::LambertianTrans(LambertianTransmission::new(bxdf.t, bxdf.sc_opt))
+                        }
+                        Bxdf::OrenNayarRefl(bxdf) => Bxdf::OrenNayarRefl(OrenNayar {
+                            r: bxdf.r,
+                            a: bxdf.a,
+                            b: bxdf.b,
+                            sc_opt: bxdf.sc_opt,
+                        }),
+                        Bxdf::MicrofacetRefl(bxdf) => {
+                            let distribution = match &bxdf.distribution {
+                                MicrofacetDistribution::Beckmann(distribution) => {
+                                    MicrofacetDistribution::Beckmann(BeckmannDistribution {
+                                        alpha_x: distribution.alpha_x,
+                                        alpha_y: distribution.alpha_y,
+                                        sample_visible_area: distribution.sample_visible_area,
+                                    })
+                                }
+                                MicrofacetDistribution::TrowbridgeReitz(distribution) => {
+                                    MicrofacetDistribution::TrowbridgeReitz(
+                                        TrowbridgeReitzDistribution {
+                                            alpha_x: distribution.alpha_x,
+                                            alpha_y: distribution.alpha_y,
+                                            sample_visible_area: distribution.sample_visible_area,
+                                        },
+                                    )
+                                }
+                                MicrofacetDistribution::DisneyMicrofacet(distribution) => {
+                                    MicrofacetDistribution::DisneyMicrofacet(
+                                        DisneyMicrofacetDistribution::new(
+                                            distribution.inner.alpha_x,
+                                            distribution.inner.alpha_y,
+                                        ),
+                                    )
+                                }
+                            };
+                            let fresnel = match &bxdf.fresnel {
+                                Fresnel::Conductor(fresnel) => {
+                                    Fresnel::Conductor(FresnelConductor {
+                                        eta_i: fresnel.eta_i,
+                                        eta_t: fresnel.eta_t,
+                                        k: fresnel.k,
+                                    })
+                                }
+                                Fresnel::Dielectric(fresnel) => {
+                                    Fresnel::Dielectric(FresnelDielectric {
+                                        eta_i: fresnel.eta_i,
+                                        eta_t: fresnel.eta_t,
+                                    })
+                                }
+                                _ => Fresnel::NoOp(FresnelNoOp {}),
+                            };
+                            Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                                bxdf.r,
+                                distribution,
+                                fresnel,
+                                bxdf.sc_opt,
+                            ))
+                        }
+                        // Bxdf::MicrofacetTrans(bxdf) => {},
+                        // Bxdf::FresnelBlnd(bxdf) => {},
+                        // Bxdf::Fourier(bxdf) => {},
+                        // // Bxdf::Bssrdf(bxdf) => {},
+                        // Bxdf::DisDiff(bxdf) => {},
+                        // Bxdf::DisSS(bxdf) => {},
+                        // Bxdf::DisRetro(bxdf) => {},
+                        // Bxdf::DisSheen(bxdf) => {},
+                        // Bxdf::DisClearCoat(bxdf) => {},
+                        // Bxdf::Hair(bxdf) => {},
                         _ => Bxdf::Empty(NoBxdf::default()),
                     };
                 }

@@ -757,7 +757,7 @@ pub struct SpecularTransmission {
     pub eta_b: Float,
     pub fresnel: FresnelDielectric,
     pub mode: TransportMode,
-    sc_opt: Option<Spectrum>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl SpecularTransmission {
@@ -848,7 +848,7 @@ pub struct FresnelSpecular {
     pub eta_a: Float,
     pub eta_b: Float,
     pub mode: TransportMode,
-    sc_opt: Option<Spectrum>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl FresnelSpecular {
@@ -966,7 +966,7 @@ impl FresnelSpecular {
 #[derive(Debug, Default, Copy, Clone)]
 pub struct LambertianReflection {
     pub r: Spectrum,
-    sc_opt: Option<Spectrum>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl LambertianReflection {
@@ -1013,8 +1013,8 @@ impl LambertianReflection {
 
 #[derive(Copy, Clone, Debug)]
 pub struct LambertianTransmission {
-    t: Spectrum,
-    sc_opt: Option<Spectrum>,
+    pub t: Spectrum,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl LambertianTransmission {
@@ -1063,7 +1063,7 @@ pub struct OrenNayar {
     pub r: Spectrum,
     pub a: Float,
     pub b: Float,
-    sc_opt: Option<Spectrum>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl OrenNayar {
@@ -1141,7 +1141,7 @@ pub struct MicrofacetReflection {
     pub r: Spectrum,
     pub distribution: MicrofacetDistribution,
     pub fresnel: Fresnel,
-    sc_opt: Option<Spectrum>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl MicrofacetReflection {
