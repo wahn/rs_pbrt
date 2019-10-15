@@ -196,7 +196,7 @@ pub struct HairBSDF {
     pub s: Float,
     pub sin_2k_alpha: [Float; 3],
     pub cos_2k_alpha: [Float; 3],
-    sc_opt: Option<Spectrum>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl HairBSDF {

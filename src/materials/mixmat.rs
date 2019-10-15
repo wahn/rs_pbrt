@@ -9,12 +9,16 @@ use crate::core::microfacet::{
 };
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
-    Bxdf, Fresnel, FresnelBlend, FresnelConductor, FresnelDielectric, FresnelNoOp, FresnelSpecular,
-    LambertianReflection, LambertianTransmission, MicrofacetReflection, MicrofacetTransmission,
-    NoBxdf, OrenNayar, SpecularReflection, SpecularTransmission,
+    Bxdf, FourierBSDF, Fresnel, FresnelBlend, FresnelConductor, FresnelDielectric, FresnelNoOp,
+    FresnelSpecular, LambertianReflection, LambertianTransmission, MicrofacetReflection,
+    MicrofacetTransmission, NoBxdf, OrenNayar, SpecularReflection, SpecularTransmission,
 };
 use crate::core::texture::Texture;
-use crate::materials::disney::DisneyMicrofacetDistribution;
+use crate::materials::disney::{
+    DisneyClearCoat, DisneyDiffuse, DisneyFakeSS, DisneyMicrofacetDistribution, DisneyRetro,
+    DisneySheen,
+};
+use crate::materials::hair::HairBSDF;
 
 // see mixmat.h
 
@@ -269,14 +273,42 @@ impl Material for MixMaterial {
                                 bxdf.sc_opt,
                             ))
                         }
-                        // Bxdf::Fourier(bxdf) => {},
-                        // // Bxdf::Bssrdf(bxdf) => {},
-                        // Bxdf::DisDiff(bxdf) => {},
-                        // Bxdf::DisSS(bxdf) => {},
-                        // Bxdf::DisRetro(bxdf) => {},
-                        // Bxdf::DisSheen(bxdf) => {},
-                        // Bxdf::DisClearCoat(bxdf) => {},
-                        // Bxdf::Hair(bxdf) => {},
+                        Bxdf::Fourier(bxdf) => Bxdf::Fourier(FourierBSDF::new(
+                            bxdf.bsdf_table.clone(),
+                            bxdf.mode,
+                            bxdf.sc_opt,
+                        )),
+                        // Bxdf::Bssrdf(bxdf) => {},
+                        Bxdf::DisDiff(bxdf) => {
+                            Bxdf::DisDiff(DisneyDiffuse::new(bxdf.r, bxdf.sc_opt))
+                        }
+                        Bxdf::DisSS(bxdf) => {
+                            Bxdf::DisSS(DisneyFakeSS::new(bxdf.r, bxdf.roughness, bxdf.sc_opt))
+                        }
+                        Bxdf::DisRetro(bxdf) => {
+                            Bxdf::DisRetro(DisneyRetro::new(bxdf.r, bxdf.roughness, bxdf.sc_opt))
+                        }
+                        Bxdf::DisSheen(bxdf) => {
+                            Bxdf::DisSheen(DisneySheen::new(bxdf.r, bxdf.sc_opt))
+                        }
+                        Bxdf::DisClearCoat(bxdf) => Bxdf::DisClearCoat(DisneyClearCoat::new(
+                            bxdf.weight,
+                            bxdf.gloss,
+                            bxdf.sc_opt,
+                        )),
+                        Bxdf::Hair(bxdf) => Bxdf::Hair(HairBSDF {
+                            h: bxdf.h,
+                            gamma_o: bxdf.gamma_o,
+                            eta: bxdf.eta,
+                            sigma_a: bxdf.sigma_a,
+                            beta_m: bxdf.beta_m,
+                            beta_n: bxdf.beta_n,
+                            v: bxdf.v,
+                            s: bxdf.s,
+                            sin_2k_alpha: bxdf.sin_2k_alpha,
+                            cos_2k_alpha: bxdf.cos_2k_alpha,
+                            sc_opt: bxdf.sc_opt,
+                        }),
                         _ => Bxdf::Empty(NoBxdf::default()),
                     };
                 }

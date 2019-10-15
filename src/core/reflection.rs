@@ -1481,7 +1481,7 @@ impl FresnelBlend {
 pub struct FourierBSDF {
     pub bsdf_table: Arc<FourierBSDFTable>,
     pub mode: TransportMode,
-    sc_opt: Option<Spectrum>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl FourierBSDF {

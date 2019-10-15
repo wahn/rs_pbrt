@@ -334,8 +334,8 @@ impl Material for DisneyMaterial {
 
 #[derive(Debug, Clone, Copy)]
 pub struct DisneyDiffuse {
-    r: Spectrum,
-    sc_opt: Option<Spectrum>,
+    pub r: Spectrum,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl DisneyDiffuse {
@@ -363,9 +363,9 @@ impl DisneyDiffuse {
 
 #[derive(Debug, Clone, Copy)]
 pub struct DisneyFakeSS {
-    r: Spectrum,
-    roughness: Float,
-    sc_opt: Option<Spectrum>,
+    pub r: Spectrum,
+    pub roughness: Float,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl DisneyFakeSS {
@@ -407,9 +407,9 @@ impl DisneyFakeSS {
 
 #[derive(Debug, Clone, Copy)]
 pub struct DisneyRetro {
-    r: Spectrum,
-    roughness: Float,
-    sc_opt: Option<Spectrum>,
+    pub r: Spectrum,
+    pub roughness: Float,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl DisneyRetro {
@@ -447,8 +447,8 @@ impl DisneyRetro {
 
 #[derive(Debug, Clone, Copy)]
 pub struct DisneySheen {
-    r: Spectrum,
-    sc_opt: Option<Spectrum>,
+    pub r: Spectrum,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl DisneySheen {
@@ -478,9 +478,9 @@ impl DisneySheen {
 
 #[derive(Debug, Clone, Copy)]
 pub struct DisneyClearCoat {
-    weight: Float,
-    gloss: Float,
-    sc_opt: Option<Spectrum>,
+    pub weight: Float,
+    pub gloss: Float,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl DisneyClearCoat {
