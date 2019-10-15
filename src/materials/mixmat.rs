@@ -9,7 +9,8 @@ use crate::core::microfacet::{
 };
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
-    Bxdf, FourierBSDF, Fresnel, FresnelBlend, FresnelConductor, FresnelDielectric, FresnelNoOp,
+    Bxdf, // FourierBSDF, 
+    Fresnel, FresnelBlend, FresnelConductor, FresnelDielectric, FresnelNoOp,
     FresnelSpecular, LambertianReflection, LambertianTransmission, MicrofacetReflection,
     MicrofacetTransmission, NoBxdf, OrenNayar, SpecularReflection, SpecularTransmission,
 };
@@ -273,11 +274,11 @@ impl Material for MixMaterial {
                                 bxdf.sc_opt,
                             ))
                         }
-                        Bxdf::Fourier(bxdf) => Bxdf::Fourier(FourierBSDF::new(
-                            bxdf.bsdf_table.clone(),
-                            bxdf.mode,
-                            bxdf.sc_opt,
-                        )),
+                        // Bxdf::Fourier(bxdf) => Bxdf::Fourier(FourierBSDF::new(
+                        //     bxdf.bsdf_table.clone(),
+                        //     bxdf.mode,
+                        //     bxdf.sc_opt,
+                        // )),
                         // Bxdf::Bssrdf(bxdf) => {},
                         Bxdf::DisDiff(bxdf) => {
                             Bxdf::DisDiff(DisneyDiffuse::new(bxdf.r, bxdf.sc_opt))

@@ -18,6 +18,7 @@ use crate::materials::disney::DisneyMicrofacetDistribution;
 
 // see microfacet.h
 
+#[derive(Copy, Clone)]
 pub enum MicrofacetDistribution {
     Beckmann(BeckmannDistribution),
     TrowbridgeReitz(TrowbridgeReitzDistribution),
@@ -83,7 +84,7 @@ impl MicrofacetDistribution {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct BeckmannDistribution {
     pub alpha_x: Float,
     pub alpha_y: Float,
@@ -212,7 +213,7 @@ impl BeckmannDistribution {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct TrowbridgeReitzDistribution {
     pub alpha_x: Float,
     pub alpha_y: Float,

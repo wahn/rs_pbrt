@@ -219,6 +219,7 @@ impl FourierBSDFTable {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Bsdf {
     pub eta: Float,
     /// shading normal
@@ -458,9 +459,10 @@ pub enum BxdfType {
     BsdfAll = 31,
 }
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct NoBxdf {}
 
+#[derive(Copy, Clone)]
 pub enum Bxdf {
     Empty(NoBxdf),
     SpecRefl(SpecularReflection),
@@ -472,7 +474,7 @@ pub enum Bxdf {
     MicrofacetRefl(MicrofacetReflection),
     MicrofacetTrans(MicrofacetTransmission),
     FresnelBlnd(FresnelBlend),
-    Fourier(FourierBSDF),
+    // Fourier(FourierBSDF),
     // bssrdf.rs
     // Bssrdf(SeparableBssrdfAdapter),
     // disney.rs
@@ -498,7 +500,7 @@ impl Bxdf {
             Bxdf::MicrofacetRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::FresnelBlnd(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-            Bxdf::Fourier(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            // Bxdf::Fourier(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             // Bxdf::Bssrdf(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::DisDiff(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::DisSS(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
@@ -520,7 +522,7 @@ impl Bxdf {
             Bxdf::MicrofacetRefl(bxdf) => bxdf.f(wo, wi),
             Bxdf::MicrofacetTrans(bxdf) => bxdf.f(wo, wi),
             Bxdf::FresnelBlnd(bxdf) => bxdf.f(wo, wi),
-            Bxdf::Fourier(bxdf) => bxdf.f(wo, wi),
+            // Bxdf::Fourier(bxdf) => bxdf.f(wo, wi),
             // Bxdf::Bssrdf(bxdf) => bxdf.f(wo, wi),
             Bxdf::DisDiff(bxdf) => bxdf.f(wo, wi),
             Bxdf::DisSS(bxdf) => bxdf.f(wo, wi),
@@ -553,7 +555,7 @@ impl Bxdf {
             Bxdf::MicrofacetRefl(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::MicrofacetTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::FresnelBlnd(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
-            Bxdf::Fourier(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
+            // Bxdf::Fourier(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             // Bxdf::Bssrdf(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisDiff(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisSS(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
@@ -593,7 +595,7 @@ impl Bxdf {
             Bxdf::MicrofacetRefl(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::MicrofacetTrans(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::FresnelBlnd(bxdf) => bxdf.pdf(wo, wi),
-            Bxdf::Fourier(bxdf) => bxdf.pdf(wo, wi),
+            // Bxdf::Fourier(bxdf) => bxdf.pdf(wo, wi),
             // Bxdf::Bssrdf(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisDiff(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisSS(_bxdf) => self.default_pdf(wo, wi),
@@ -622,7 +624,7 @@ impl Bxdf {
             Bxdf::MicrofacetRefl(bxdf) => bxdf.get_type(),
             Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type(),
             Bxdf::FresnelBlnd(bxdf) => bxdf.get_type(),
-            Bxdf::Fourier(bxdf) => bxdf.get_type(),
+            // Bxdf::Fourier(bxdf) => bxdf.get_type(),
             // Bxdf::Bssrdf(bxdf) => bxdf.get_type(),
             Bxdf::DisDiff(bxdf) => bxdf.get_type(),
             Bxdf::DisSS(bxdf) => bxdf.get_type(),
@@ -634,6 +636,7 @@ impl Bxdf {
     }
 }
 
+#[derive(Copy, Clone)]
 pub enum Fresnel {
     NoOp(FresnelNoOp),
     Conductor(FresnelConductor),
@@ -708,6 +711,7 @@ impl FresnelNoOp {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct SpecularReflection {
     pub r: Spectrum,
     pub fresnel: Fresnel,
@@ -751,6 +755,7 @@ impl SpecularReflection {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct SpecularTransmission {
     pub t: Spectrum,
     pub eta_a: Float,
@@ -842,6 +847,7 @@ impl SpecularTransmission {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct FresnelSpecular {
     pub r: Spectrum,
     pub t: Spectrum,
@@ -1059,6 +1065,7 @@ impl LambertianTransmission {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct OrenNayar {
     pub r: Spectrum,
     pub a: Float,
@@ -1137,6 +1144,7 @@ impl OrenNayar {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct MicrofacetReflection {
     pub r: Spectrum,
     pub distribution: MicrofacetDistribution,
@@ -1222,6 +1230,7 @@ impl MicrofacetReflection {
 
 // MicrofacetTransmission
 
+#[derive(Copy, Clone)]
 pub struct MicrofacetTransmission {
     pub t: Spectrum,
     pub distribution: MicrofacetDistribution,
@@ -1370,6 +1379,7 @@ impl MicrofacetTransmission {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct FresnelBlend {
     pub rd: Spectrum,
     pub rs: Spectrum,
@@ -1478,326 +1488,334 @@ impl FresnelBlend {
     }
 }
 
-pub struct FourierBSDF {
-    pub bsdf_table: Arc<FourierBSDFTable>,
-    pub mode: TransportMode,
-    pub sc_opt: Option<Spectrum>,
-}
+// pub struct FourierBSDF {
+//     pub bsdf_table: Arc<FourierBSDFTable>,
+//     pub mode: TransportMode,
+//     pub sc_opt: Option<Spectrum>,
+// }
 
-impl FourierBSDF {
-    pub fn new(
-        bsdf_table: Arc<FourierBSDFTable>,
-        mode: TransportMode,
-        sc_opt: Option<Spectrum>,
-    ) -> Self {
-        FourierBSDF {
-            bsdf_table,
-            mode,
-            sc_opt,
-        }
-    }
-    pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
-        // find the zenith angle cosines and azimuth difference angle
-        let mu_i: Float = cos_theta(&-(*wi));
-        let mu_o: Float = cos_theta(wo);
-        let cos_phi: Float = cos_d_phi(&-(*wi), wo);
-        // compute Fourier coefficients
+// impl FourierBSDF {
+//     pub fn new(
+//         bsdf_table: Arc<FourierBSDFTable>,
+//         mode: TransportMode,
+//         sc_opt: Option<Spectrum>,
+//     ) -> Self {
+//         FourierBSDF {
+//             bsdf_table,
+//             mode,
+//             sc_opt,
+//         }
+//     }
+//     pub fn f(&self, wo: &Vector3f, wi: &Vector3f) -> Spectrum {
+//         // find the zenith angle cosines and azimuth difference angle
+//         let mu_i: Float = cos_theta(&-(*wi));
+//         let mu_o: Float = cos_theta(wo);
+//         let cos_phi: Float = cos_d_phi(&-(*wi), wo);
+//         // compute Fourier coefficients
 
-        // determine offsets and weights
-        let mut offset_i: i32 = 0;
-        let mut offset_o: i32 = 0;
-        let mut weights_i: [Float; 4] = [0.0 as Float; 4];
-        let mut weights_o: [Float; 4] = [0.0 as Float; 4];
-        if !self
-            .bsdf_table
-            .get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i)
-            || !self
-                .bsdf_table
-                .get_weights_and_offset(mu_o, &mut offset_o, &mut weights_o)
-        {
-            return Spectrum::default();
-        }
-        // allocate storage to accumulate _ak_ coefficients
-        let mut ak: Vec<Float> =
-            Vec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
-        for _i in 0..(self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize {
-            ak.push(0.0 as Float); // initialize with 0
-        }
-        // accumulate weighted sums of nearby $a_k$ coefficients
-        let mut m_max: i32 = 0;
-        for b in 0..4 {
-            for a in 0..4 {
-                // add contribution of _(a, b)_ to $a_k$ values
-                let weight: Float = weights_i[a] * weights_o[b];
-                if weight != 0.0 as Float {
-                    let mut m: i32 = 0;
-                    let a_idx: i32 =
-                        self.bsdf_table
-                            .get_ak(offset_i + a as i32, offset_o + b as i32, &mut m);
-                    m_max = std::cmp::max(m_max, m);
-                    for c in 0..self.bsdf_table.n_channels as usize {
-                        for k in 0..m as usize {
-                            ak[c * self.bsdf_table.m_max as usize + k] += weight
-                                * self.bsdf_table.a[(a_idx + c as i32 * m + k as i32) as usize];
-                        }
-                    }
-                }
-            }
-        }
-        // evaluate Fourier expansion for angle $\phi$
-        let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));
-        let mut scale: Float = 0.0 as Float;
-        if mu_i != 0.0 as Float {
-            scale = 1.0 as Float / mu_i.abs();
-        }
-        // update _scale_ to account for adjoint light transport
-        if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
-            let eta: Float;
-            if mu_i > 0.0 as Float {
-                eta = 1.0 as Float / self.bsdf_table.eta;
-            } else {
-                eta = self.bsdf_table.eta;
-            }
-            scale *= eta * eta;
-        }
-        if self.bsdf_table.n_channels == 1_i32 {
-            if let Some(sc) = self.sc_opt {
-                sc * Spectrum::new(y * scale)
-            } else {
-                Spectrum::new(y * scale)
-            }
-        } else {
-            // compute and return RGB colors for tabulated BSDF
-            let r: Float = fourier(
-                &ak,
-                (1_i32 * self.bsdf_table.m_max) as usize,
-                m_max,
-                cos_phi as f64,
-            );
-            let b: Float = fourier(
-                &ak,
-                (2_i32 * self.bsdf_table.m_max) as usize,
-                m_max,
-                cos_phi as f64,
-            );
-            let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
-            let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
-            if let Some(sc) = self.sc_opt {
-                sc * Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
-            } else {
-                Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
-            }
-        }
-    }
-    pub fn sample_f(
-        &self,
-        wo: &Vector3f,
-        wi: &mut Vector3f,
-        sample: &Point2f,
-        pdf: &mut Float,
-        _sampled_type: &mut u8,
-    ) -> Spectrum {
-        // sample zenith angle component for _FourierBSDF_
-        let mu_o: Float = cos_theta(wo);
-        let mut pdf_mu: Float = 0.0;
-        let mu_i: Float = sample_catmull_rom_2d(
-            &self.bsdf_table.mu,
-            &self.bsdf_table.mu,
-            &self.bsdf_table.a0,
-            &self.bsdf_table.cdf,
-            mu_o,
-            sample[1],
-            None,
-            Some(&mut pdf_mu),
-        );
-        // compute Fourier coefficients $a_k$ for $(\mui, \muo)$
+//         // determine offsets and weights
+//         let mut offset_i: i32 = 0;
+//         let mut offset_o: i32 = 0;
+//         let mut weights_i: [Float; 4] = [0.0 as Float; 4];
+//         let mut weights_o: [Float; 4] = [0.0 as Float; 4];
+//         if !self
+//             .bsdf_table
+//             .get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i)
+//             || !self
+//                 .bsdf_table
+//                 .get_weights_and_offset(mu_o, &mut offset_o, &mut weights_o)
+//         {
+//             return Spectrum::default();
+//         }
+//         // allocate storage to accumulate _ak_ coefficients
+//         let mut ak: Vec<Float> =
+//             Vec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
+//         for _i in 0..(self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize {
+//             ak.push(0.0 as Float); // initialize with 0
+//         }
+//         // accumulate weighted sums of nearby $a_k$ coefficients
+//         let mut m_max: i32 = 0;
+//         for b in 0..4 {
+//             for a in 0..4 {
+//                 // add contribution of _(a, b)_ to $a_k$ values
+//                 let weight: Float = weights_i[a] * weights_o[b];
+//                 if weight != 0.0 as Float {
+//                     let mut m: i32 = 0;
+//                     let a_idx: i32 =
+//                         self.bsdf_table
+//                             .get_ak(offset_i + a as i32, offset_o + b as i32, &mut m);
+//                     m_max = std::cmp::max(m_max, m);
+//                     for c in 0..self.bsdf_table.n_channels as usize {
+//                         for k in 0..m as usize {
+//                             ak[c * self.bsdf_table.m_max as usize + k] += weight
+//                                 * self.bsdf_table.a[(a_idx + c as i32 * m + k as i32) as usize];
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//         // evaluate Fourier expansion for angle $\phi$
+//         let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));
+//         let mut scale: Float = 0.0 as Float;
+//         if mu_i != 0.0 as Float {
+//             scale = 1.0 as Float / mu_i.abs();
+//         }
+//         // update _scale_ to account for adjoint light transport
+//         if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
+//             let eta: Float;
+//             if mu_i > 0.0 as Float {
+//                 eta = 1.0 as Float / self.bsdf_table.eta;
+//             } else {
+//                 eta = self.bsdf_table.eta;
+//             }
+//             scale *= eta * eta;
+//         }
+//         if self.bsdf_table.n_channels == 1_i32 {
+//             if let Some(sc) = self.sc_opt {
+//                 sc * Spectrum::new(y * scale)
+//             } else {
+//                 Spectrum::new(y * scale)
+//             }
+//         } else {
+//             // compute and return RGB colors for tabulated BSDF
+//             let r: Float = fourier(
+//                 &ak,
+//                 (1_i32 * self.bsdf_table.m_max) as usize,
+//                 m_max,
+//                 cos_phi as f64,
+//             );
+//             let b: Float = fourier(
+//                 &ak,
+//                 (2_i32 * self.bsdf_table.m_max) as usize,
+//                 m_max,
+//                 cos_phi as f64,
+//             );
+//             let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
+//             let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
+//             if let Some(sc) = self.sc_opt {
+//                 sc * Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+//             } else {
+//                 Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+//             }
+//         }
+//     }
+//     pub fn sample_f(
+//         &self,
+//         wo: &Vector3f,
+//         wi: &mut Vector3f,
+//         sample: &Point2f,
+//         pdf: &mut Float,
+//         _sampled_type: &mut u8,
+//     ) -> Spectrum {
+//         // sample zenith angle component for _FourierBSDF_
+//         let mu_o: Float = cos_theta(wo);
+//         let mut pdf_mu: Float = 0.0;
+//         let mu_i: Float = sample_catmull_rom_2d(
+//             &self.bsdf_table.mu,
+//             &self.bsdf_table.mu,
+//             &self.bsdf_table.a0,
+//             &self.bsdf_table.cdf,
+//             mu_o,
+//             sample[1],
+//             None,
+//             Some(&mut pdf_mu),
+//         );
+//         // compute Fourier coefficients $a_k$ for $(\mui, \muo)$
 
-        // determine offsets and weights for $\mui$ and $\muo$
-        let mut offset_i: i32 = 0;
-        let mut offset_o: i32 = 0;
-        let mut weights_i: [Float; 4] = [0.0 as Float; 4];
-        let mut weights_o: [Float; 4] = [0.0 as Float; 4];
-        if !self
-            .bsdf_table
-            .get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i)
-            || !self
-                .bsdf_table
-                .get_weights_and_offset(mu_o, &mut offset_o, &mut weights_o)
-        {
-            return Spectrum::default();
-        }
-        // allocate storage to accumulate _ak_ coefficients
-        let mut ak: Vec<Float> =
-            Vec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
-        for _i in 0..(self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize {
-            ak.push(0.0 as Float); // initialize with 0
-        }
-        // accumulate weighted sums of nearby $a_k$ coefficients
-        let mut m_max: i32 = 0;
-        for b in 0..4 {
-            for a in 0..4 {
-                // add contribution of _(a, b)_ to $a_k$ values
-                let weight: Float = weights_i[a] * weights_o[b];
-                if weight != 0.0 as Float {
-                    let mut m: i32 = 0;
-                    let a_idx =
-                        self.bsdf_table
-                            .get_ak(offset_i + a as i32, offset_o + b as i32, &mut m);
-                    m_max = std::cmp::max(m_max, m);
-                    for c in 0..self.bsdf_table.n_channels as usize {
-                        for k in 0..m as usize {
-                            ak[c * self.bsdf_table.m_max as usize + k] += weight
-                                * self.bsdf_table.a[(a_idx + c as i32 * m + k as i32) as usize];
-                        }
-                    }
-                }
-            }
-        }
-        // importance sample the luminance Fourier expansion
-        let mut phi: Float = 0.0;
-        let mut pdf_phi: Float = 0.0;
-        let y: Float = sample_fourier(
-            &ak,
-            &self.bsdf_table.recip,
-            m_max,
-            sample[0],
-            &mut pdf_phi,
-            &mut phi,
-        );
-        *pdf = (0.0 as Float).max(pdf_phi * pdf_mu);
-        // compute the scattered direction for _FourierBSDF_
-        let sin_2_theta_i: Float = (0.0 as Float).max(1.0 as Float - mu_i * mu_i);
-        let mut norm: Float = (sin_2_theta_i / sin_2_theta(wo)).sqrt();
-        if norm.is_infinite() {
-            norm = 0.0;
-        }
-        let sin_phi: Float = phi.sin();
-        let cos_phi: Float = phi.cos();
-        *wi = -Vector3f {
-            x: norm * (cos_phi * wo.x - sin_phi * wo.y),
-            y: norm * (sin_phi * wo.x + cos_phi * wo.y),
-            z: mu_i,
-        };
-        // Mathematically, wi will be normalized (if wo was). However,
-        // in practice, floating-point rounding error can cause some
-        // error to accumulate in the computed value of wi here. This
-        // can be catastrophic: if the ray intersects an object with
-        // the FourierBSDF again and the wo (based on such a wi) is
-        // nearly perpendicular to the surface, then the wi computed
-        // at the next intersection can end up being substantially
-        // (like 4x) longer than normalized, which leads to all sorts
-        // of errors, including negative spectral values. Therefore,
-        // we normalize again here.
-        *wi = wi.normalize();
-        // evaluate remaining Fourier expansions for angle $\phi$
-        let mut scale: Float = 0.0 as Float;
-        if mu_i != 0.0 as Float {
-            scale = 1.0 as Float / mu_i.abs();
-        }
-        // update _scale_ to account for adjoint light transport
-        if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
-            let eta: Float;
-            if mu_i > 0.0 as Float {
-                eta = 1.0 as Float / self.bsdf_table.eta;
-            } else {
-                eta = self.bsdf_table.eta;
-            }
-            scale *= eta * eta;
-        }
-        if self.bsdf_table.n_channels == 1_i32 {
-            if let Some(sc) = self.sc_opt {
-                sc * Spectrum::new(y * scale)
-            } else {
-                Spectrum::new(y * scale)
-            }
-        } else {
-            // compute and return RGB colors for tabulated BSDF
-            let r: Float = fourier(
-                &ak,
-                (1_i32 * self.bsdf_table.m_max) as usize,
-                m_max,
-                cos_phi as f64,
-            );
-            let b: Float = fourier(
-                &ak,
-                (2_i32 * self.bsdf_table.m_max) as usize,
-                m_max,
-                cos_phi as f64,
-            );
-            let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
-            let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
-            if let Some(sc) = self.sc_opt {
-                sc * Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
-            } else {
-                Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
-            }
-        }
-    }
-    pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
-        // find the zenith angle cosines and azimuth difference angle
-        let mu_i: Float = cos_theta(&-(*wi));
-        let mu_o: Float = cos_theta(wo);
-        let cos_phi: Float = cos_d_phi(&-(*wi), wo);
-        // compute luminance Fourier coefficients
-        let mut offset_i: i32 = 0;
-        let mut offset_o: i32 = 0;
-        let mut weights_i: [Float; 4] = [0.0 as Float; 4];
-        let mut weights_o: [Float; 4] = [0.0 as Float; 4];
-        if !self
-            .bsdf_table
-            .get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i)
-            || !self
-                .bsdf_table
-                .get_weights_and_offset(mu_o, &mut offset_o, &mut weights_o)
-        {
-            return 0.0 as Float;
-        }
-        let mut ak: Vec<Float> = Vec::with_capacity(self.bsdf_table.m_max as usize);
-        for _i in 0..self.bsdf_table.m_max as usize {
-            ak.push(0.0 as Float); // initialize with 0
-        }
-        let mut m_max: i32 = 0;
-        for o in 0..4 {
-            for i in 0..4 {
-                let weight: Float = weights_i[i] * weights_o[o];
-                if weight == 0.0 as Float {
-                    continue;
-                }
-                let mut order: i32 = 0;
-                let a_idx: i32 =
-                    self.bsdf_table
-                        .get_ak(offset_i + i as i32, offset_o + o as i32, &mut order);
-                m_max = std::cmp::max(m_max, order);
-                for k in 0..order as usize {
-                    ak[k] += weight * self.bsdf_table.a[(a_idx + k as i32) as usize];
-                }
-            }
-        }
-        // evaluate probability of sampling _wi_
-        let mut rho: Float = 0.0;
-        for o in 0..4 {
-            if weights_o[o] == 0.0 as Float {
-                continue;
-            }
-            rho += weights_o[o]
-                * self.bsdf_table.cdf[(offset_o as usize + o) * self.bsdf_table.n_mu as usize
-                    + self.bsdf_table.n_mu as usize
-                    - 1 as usize]
-                * (2.0 as Float * PI);
-        }
-        let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));
-        if rho > 0.0 as Float && y > 0.0 as Float {
-            y / rho
-        } else {
-            0.0 as Float
-        }
-    }
-    pub fn get_type(&self) -> u8 {
-        BxdfType::BsdfReflection as u8
-            | BxdfType::BsdfTransmission as u8
-            | BxdfType::BsdfGlossy as u8
-    }
-}
+//         // determine offsets and weights for $\mui$ and $\muo$
+//         let mut offset_i: i32 = 0;
+//         let mut offset_o: i32 = 0;
+//         let mut weights_i: [Float; 4] = [0.0 as Float; 4];
+//         let mut weights_o: [Float; 4] = [0.0 as Float; 4];
+//         if !self
+//             .bsdf_table
+//             .get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i)
+//             || !self
+//                 .bsdf_table
+//                 .get_weights_and_offset(mu_o, &mut offset_o, &mut weights_o)
+//         {
+//             return Spectrum::default();
+//         }
+//         // allocate storage to accumulate _ak_ coefficients
+//         let mut ak: Vec<Float> =
+//             Vec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
+//         for _i in 0..(self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize {
+//             ak.push(0.0 as Float); // initialize with 0
+//         }
+//         // accumulate weighted sums of nearby $a_k$ coefficients
+//         let mut m_max: i32 = 0;
+//         for b in 0..4 {
+//             for a in 0..4 {
+//                 // add contribution of _(a, b)_ to $a_k$ values
+//                 let weight: Float = weights_i[a] * weights_o[b];
+//                 if weight != 0.0 as Float {
+//                     let mut m: i32 = 0;
+//                     let a_idx =
+//                         self.bsdf_table
+//                             .get_ak(offset_i + a as i32, offset_o + b as i32, &mut m);
+//                     m_max = std::cmp::max(m_max, m);
+//                     for c in 0..self.bsdf_table.n_channels as usize {
+//                         for k in 0..m as usize {
+//                             ak[c * self.bsdf_table.m_max as usize + k] += weight
+//                                 * self.bsdf_table.a[(a_idx + c as i32 * m + k as i32) as usize];
+//                         }
+//                     }
+//                 }
+//             }
+//         }
+//         // importance sample the luminance Fourier expansion
+//         let mut phi: Float = 0.0;
+//         let mut pdf_phi: Float = 0.0;
+//         let y: Float = sample_fourier(
+//             &ak,
+//             &self.bsdf_table.recip,
+//             m_max,
+//             sample[0],
+//             &mut pdf_phi,
+//             &mut phi,
+//         );
+//         *pdf = (0.0 as Float).max(pdf_phi * pdf_mu);
+//         // compute the scattered direction for _FourierBSDF_
+//         let sin_2_theta_i: Float = (0.0 as Float).max(1.0 as Float - mu_i * mu_i);
+//         let mut norm: Float = (sin_2_theta_i / sin_2_theta(wo)).sqrt();
+//         if norm.is_infinite() {
+//             norm = 0.0;
+//         }
+//         let sin_phi: Float = phi.sin();
+//         let cos_phi: Float = phi.cos();
+//         *wi = -Vector3f {
+//             x: norm * (cos_phi * wo.x - sin_phi * wo.y),
+//             y: norm * (sin_phi * wo.x + cos_phi * wo.y),
+//             z: mu_i,
+//         };
+//         // Mathematically, wi will be normalized (if wo was). However,
+//         // in practice, floating-point rounding error can cause some
+//         // error to accumulate in the computed value of wi here. This
+//         // can be catastrophic: if the ray intersects an object with
+//         // the FourierBSDF again and the wo (based on such a wi) is
+//         // nearly perpendicular to the surface, then the wi computed
+//         // at the next intersection can end up being substantially
+//         // (like 4x) longer than normalized, which leads to all sorts
+//         // of errors, including negative spectral values. Therefore,
+//         // we normalize again here.
+//         *wi = wi.normalize();
+//         // evaluate remaining Fourier expansions for angle $\phi$
+//         let mut scale: Float = 0.0 as Float;
+//         if mu_i != 0.0 as Float {
+//             scale = 1.0 as Float / mu_i.abs();
+//         }
+//         // update _scale_ to account for adjoint light transport
+//         if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
+//             let eta: Float;
+//             if mu_i > 0.0 as Float {
+//                 eta = 1.0 as Float / self.bsdf_table.eta;
+//             } else {
+//                 eta = self.bsdf_table.eta;
+//             }
+//             scale *= eta * eta;
+//         }
+//         if self.bsdf_table.n_channels == 1_i32 {
+//             if let Some(sc) = self.sc_opt {
+//                 sc * Spectrum::new(y * scale)
+//             } else {
+//                 Spectrum::new(y * scale)
+//             }
+//         } else {
+//             // compute and return RGB colors for tabulated BSDF
+//             let r: Float = fourier(
+//                 &ak,
+//                 (1_i32 * self.bsdf_table.m_max) as usize,
+//                 m_max,
+//                 cos_phi as f64,
+//             );
+//             let b: Float = fourier(
+//                 &ak,
+//                 (2_i32 * self.bsdf_table.m_max) as usize,
+//                 m_max,
+//                 cos_phi as f64,
+//             );
+//             let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
+//             let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
+//             if let Some(sc) = self.sc_opt {
+//                 sc * Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+//             } else {
+//                 Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
+//             }
+//         }
+//     }
+//     pub fn pdf(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+//         // find the zenith angle cosines and azimuth difference angle
+//         let mu_i: Float = cos_theta(&-(*wi));
+//         let mu_o: Float = cos_theta(wo);
+//         let cos_phi: Float = cos_d_phi(&-(*wi), wo);
+//         // compute luminance Fourier coefficients
+//         let mut offset_i: i32 = 0;
+//         let mut offset_o: i32 = 0;
+//         let mut weights_i: [Float; 4] = [0.0 as Float; 4];
+//         let mut weights_o: [Float; 4] = [0.0 as Float; 4];
+//         if !self
+//             .bsdf_table
+//             .get_weights_and_offset(mu_i, &mut offset_i, &mut weights_i)
+//             || !self
+//                 .bsdf_table
+//                 .get_weights_and_offset(mu_o, &mut offset_o, &mut weights_o)
+//         {
+//             return 0.0 as Float;
+//         }
+//         let mut ak: Vec<Float> = Vec::with_capacity(self.bsdf_table.m_max as usize);
+//         for _i in 0..self.bsdf_table.m_max as usize {
+//             ak.push(0.0 as Float); // initialize with 0
+//         }
+//         let mut m_max: i32 = 0;
+//         for o in 0..4 {
+//             for i in 0..4 {
+//                 let weight: Float = weights_i[i] * weights_o[o];
+//                 if weight == 0.0 as Float {
+//                     continue;
+//                 }
+//                 let mut order: i32 = 0;
+//                 let a_idx: i32 =
+//                     self.bsdf_table
+//                         .get_ak(offset_i + i as i32, offset_o + o as i32, &mut order);
+//                 m_max = std::cmp::max(m_max, order);
+//                 for k in 0..order as usize {
+//                     ak[k] += weight * self.bsdf_table.a[(a_idx + k as i32) as usize];
+//                 }
+//             }
+//         }
+//         // evaluate probability of sampling _wi_
+//         let mut rho: Float = 0.0;
+//         for o in 0..4 {
+//             if weights_o[o] == 0.0 as Float {
+//                 continue;
+//             }
+//             rho += weights_o[o]
+//                 * self.bsdf_table.cdf[(offset_o as usize + o) * self.bsdf_table.n_mu as usize
+//                     + self.bsdf_table.n_mu as usize
+//                     - 1 as usize]
+//                 * (2.0 as Float * PI);
+//         }
+//         let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));
+//         if rho > 0.0 as Float && y > 0.0 as Float {
+//             y / rho
+//         } else {
+//             0.0 as Float
+//         }
+//     }
+//     pub fn get_type(&self) -> u8 {
+//         BxdfType::BsdfReflection as u8
+//             | BxdfType::BsdfTransmission as u8
+//             | BxdfType::BsdfGlossy as u8
+//     }
+// }
+
+// impl Copy for FourierBSDF {}
+
+// impl Clone for FourierBSDF {
+//     fn clone(&self) -> FourierBSDF {
+//         *self
+//     }
+// }
 
 /// Utility function to calculate cosine via spherical coordinates.
 pub fn cos_theta(w: &Vector3f) -> Float {

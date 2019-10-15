@@ -572,7 +572,7 @@ impl DisneyClearCoat {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct DisneyMicrofacetDistribution {
     pub inner: TrowbridgeReitzDistribution,
 }

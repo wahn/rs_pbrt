@@ -385,8 +385,8 @@ impl SeparableBssrdf for TabulatedBssrdf {
 
         pi.shading = selected_si.shading;
         // no primitive!
-        if let Some(bsdf) = selected_si.bsdf {
-            pi.bsdf = Some(bsdf);
+        if let Some(bsdf) = &selected_si.bsdf {
+            pi.bsdf = Some(*bsdf);
         } else {
             pi.bsdf = None;
         }
@@ -506,6 +506,14 @@ impl SeparableBssrdf for TabulatedBssrdf {
             None,
             None,
         ) / self.sigma_t[ch]
+    }
+}
+
+impl Copy for SeparableBssrdf {}
+
+impl Clone for SeparableBssrdf {
+    fn clone(&self) -> SeparableBssrdf {
+        *self
     }
 }
 

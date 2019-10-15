@@ -184,7 +184,7 @@ impl Material for HairMaterial {
 pub const P_MAX: u8 = 3_u8;
 pub const SQRT_PI_OVER_8: Float = 0.626657069 as Float;
 
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct HairBSDF {
     pub h: Float,
     pub gamma_o: Float,

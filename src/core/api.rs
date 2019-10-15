@@ -29,7 +29,7 @@ use crate::core::paramset::{ParamSet, TextureParams};
 use crate::core::pbrt::{clamp_t, lerp};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
-use crate::core::reflection::FourierBSDFTable;
+// use crate::core::reflection::FourierBSDFTable;
 use crate::core::sampler::Sampler;
 use crate::core::scene::Scene;
 use crate::core::shape::Shape;
@@ -62,7 +62,7 @@ use crate::lights::point::PointLight;
 use crate::lights::projection::ProjectionLight;
 use crate::lights::spot::SpotLight;
 use crate::materials::disney::DisneyMaterial;
-use crate::materials::fourier::FourierMaterial;
+// use crate::materials::fourier::FourierMaterial;
 use crate::materials::glass::GlassMaterial;
 use crate::materials::hair::HairMaterial;
 use crate::materials::matte::MatteMaterial;
@@ -104,13 +104,13 @@ use crate::textures::wrinkled::WrinkledTexture;
 // see api.cpp
 
 pub struct BsdfState {
-    pub loaded_bsdfs: HashMap<String, Arc<FourierBSDFTable>>,
+    // pub loaded_bsdfs: HashMap<String, Arc<FourierBSDFTable>>,
 }
 
 impl Default for BsdfState {
     fn default() -> Self {
         BsdfState {
-            loaded_bsdfs: HashMap::new(),
+            // loaded_bsdfs: HashMap::new(),
         }
     }
 }
@@ -402,8 +402,8 @@ fn create_material(
         //     return Some(SubsurfaceMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "kdsubsurface" {
             println!("TODO: CreateKdsubsurfaceMaterial");
-        } else if api_state.graphics_state.material == "fourier" {
-            return Some(FourierMaterial::create(&mut mp, bsdf_state));
+        // } else if api_state.graphics_state.material == "fourier" {
+        //     return Some(FourierMaterial::create(&mut mp, bsdf_state));
         } else if api_state.graphics_state.material == "disney" {
             return Some(DisneyMaterial::create(&mut mp));
         } else {

@@ -6,7 +6,8 @@ use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::reflection::{Bsdf, Bxdf, FourierBSDF, FourierBSDFTable};
+use crate::core::reflection::{Bsdf, Bxdf, // FourierBSDF, 
+                              FourierBSDFTable};
 use crate::core::texture::Texture;
 
 // see fourier.h
