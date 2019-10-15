@@ -5,7 +5,9 @@ use std::sync::Arc;
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::reflection::Bxdf;
+use crate::core::reflection::{
+    Bxdf, Fresnel, FresnelConductor, FresnelDielectric, FresnelNoOp, NoBxdf, SpecularReflection,
+};
 use crate::core::texture::Texture;
 
 // see mixmat.h
@@ -72,23 +74,61 @@ impl Material for MixMaterial {
             Some(s2),
         );
         let mut last_idx: usize = 0;
-        if let Some(bsdf) = &mut si.bsdf {
+        // find next empty slot
+        if let Some(bsdf) = &si.bsdf {
             for bxdf_idx in 0..8 {
-                bsdf.bxdfs[bxdf_idx] = match bsdf.bxdfs[bxdf_idx] {
+                match &bsdf.bxdfs[bxdf_idx] {
                     Bxdf::Empty(_bxdf) => {
                         last_idx = bxdf_idx;
                         break;
-                    },
-                    _ => bsdf.bxdfs[bxdf_idx],
-                };
+                    }
+                    _ => {}
+                }
             }
-            if let Some(bsdf2) = si2.bsdf {
+        }
+        // get Bxdfs from si2 before it gets out of scope
+        if si2.bsdf.is_some() {
+            let bxdfs: [Bxdf; 8] = si2.bsdf.unwrap().bxdfs;
+            if let Some(bsdf) = &mut si.bsdf {
                 for bxdf_idx in 0..8 {
-                    bsdf.bxdfs[bxdf_idx + last_idx] = match bsdf2.bxdfs[bxdf_idx] {
-                        Bxdf::Empty(_bxdf) => {
-                            break;
-                        },
-                        _ => bsdf2.bxdfs[bxdf_idx],
+                    bsdf.bxdfs[bxdf_idx + last_idx] = match &bxdfs[bxdf_idx] {
+                        Bxdf::Empty(_bxdf) => break,
+                        Bxdf::SpecRefl(bxdf) =>  {
+                            let fresnel = match &bxdf.fresnel {
+                                Fresnel::Conductor(fresnel) => Fresnel::Conductor(FresnelConductor {
+                                    eta_i: fresnel.eta_i,
+                                    eta_t: fresnel.eta_t,
+                                    k: fresnel.k,
+                                }),
+                                Fresnel::Dielectric(fresnel) => Fresnel::Dielectric(FresnelDielectric {
+                                    eta_i: fresnel.eta_i,
+                                    eta_t: fresnel.eta_t,
+                                }),
+                                _ => Fresnel::NoOp(FresnelNoOp {})
+                            };
+                            Bxdf::SpecRefl(SpecularReflection::new(
+                            bxdf.r,
+                            fresnel,
+                            bxdf.sc_opt,
+                        ))}
+                        ,
+                        // Bxdf::SpecTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::FresnelSpec(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::LambertianRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::LambertianTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::OrenNayarRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::MicrofacetRefl(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::FresnelBlnd(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::Fourier(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // // Bxdf::Bssrdf(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::DisDiff(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::DisSS(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::DisRetro(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::DisSheen(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::DisClearCoat(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        // Bxdf::Hair(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+                        _ => Bxdf::Empty(NoBxdf::default()),
                     };
                 }
             }

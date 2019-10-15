@@ -711,7 +711,7 @@ impl FresnelNoOp {
 pub struct SpecularReflection {
     pub r: Spectrum,
     pub fresnel: Fresnel,
-    sc_opt: Option<Spectrum>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl SpecularReflection {
