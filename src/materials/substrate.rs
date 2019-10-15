@@ -4,7 +4,7 @@ use std::sync::Arc;
 // pbrt
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
-use crate::core::microfacet::TrowbridgeReitzDistribution;
+use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
 use crate::core::paramset::TextureParams;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{Bsdf, Bxdf, FresnelBlend};
@@ -98,8 +98,10 @@ impl Material for SubstrateMaterial {
                     roughu = TrowbridgeReitzDistribution::roughness_to_alpha(roughu);
                     roughv = TrowbridgeReitzDistribution::roughness_to_alpha(roughv);
                 }
-                let distrib: Option<TrowbridgeReitzDistribution> =
-                    Some(TrowbridgeReitzDistribution::new(roughu, roughv, true));
+                let distrib: Option<MicrofacetDistribution> =
+                    Some(MicrofacetDistribution::TrowbridgeReitz(
+                        TrowbridgeReitzDistribution::new(roughu, roughv, true),
+                    ));
                 if use_scale {
                     bsdf.bxdfs[bxdf_idx] =
                         Bxdf::FresnelBlnd(FresnelBlend::new(d, s, distrib, Some(sc)));

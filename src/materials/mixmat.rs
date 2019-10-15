@@ -9,9 +9,9 @@ use crate::core::microfacet::{
 };
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
-    Bxdf, Fresnel, FresnelConductor, FresnelDielectric, FresnelNoOp, FresnelSpecular,
-    LambertianReflection, LambertianTransmission, MicrofacetReflection, NoBxdf, OrenNayar,
-    SpecularReflection, SpecularTransmission,
+    Bxdf, Fresnel, FresnelBlend, FresnelConductor, FresnelDielectric, FresnelNoOp, FresnelSpecular,
+    LambertianReflection, LambertianTransmission, MicrofacetReflection, MicrofacetTransmission,
+    NoBxdf, OrenNayar, SpecularReflection, SpecularTransmission,
 };
 use crate::core::texture::Texture;
 use crate::materials::disney::DisneyMicrofacetDistribution;
@@ -195,8 +195,80 @@ impl Material for MixMaterial {
                                 bxdf.sc_opt,
                             ))
                         }
-                        // Bxdf::MicrofacetTrans(bxdf) => {},
-                        // Bxdf::FresnelBlnd(bxdf) => {},
+                        Bxdf::MicrofacetTrans(bxdf) => {
+                            let distribution = match &bxdf.distribution {
+                                MicrofacetDistribution::Beckmann(distribution) => {
+                                    MicrofacetDistribution::Beckmann(BeckmannDistribution {
+                                        alpha_x: distribution.alpha_x,
+                                        alpha_y: distribution.alpha_y,
+                                        sample_visible_area: distribution.sample_visible_area,
+                                    })
+                                }
+                                MicrofacetDistribution::TrowbridgeReitz(distribution) => {
+                                    MicrofacetDistribution::TrowbridgeReitz(
+                                        TrowbridgeReitzDistribution {
+                                            alpha_x: distribution.alpha_x,
+                                            alpha_y: distribution.alpha_y,
+                                            sample_visible_area: distribution.sample_visible_area,
+                                        },
+                                    )
+                                }
+                                MicrofacetDistribution::DisneyMicrofacet(distribution) => {
+                                    MicrofacetDistribution::DisneyMicrofacet(
+                                        DisneyMicrofacetDistribution::new(
+                                            distribution.inner.alpha_x,
+                                            distribution.inner.alpha_y,
+                                        ),
+                                    )
+                                }
+                            };
+                            Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                                bxdf.t,
+                                distribution,
+                                bxdf.eta_a,
+                                bxdf.eta_b,
+                                bxdf.mode,
+                                bxdf.sc_opt,
+                            ))
+                        }
+                        Bxdf::FresnelBlnd(bxdf) => {
+                            let mut distrib: Option<MicrofacetDistribution> = None;
+                            if let Some(distribution) = &bxdf.distribution {
+                                distrib = match &distribution {
+                                    MicrofacetDistribution::Beckmann(distribution) => Some(
+                                        MicrofacetDistribution::Beckmann(BeckmannDistribution {
+                                            alpha_x: distribution.alpha_x,
+                                            alpha_y: distribution.alpha_y,
+                                            sample_visible_area: distribution.sample_visible_area,
+                                        }),
+                                    ),
+                                    MicrofacetDistribution::TrowbridgeReitz(distribution) => {
+                                        Some(MicrofacetDistribution::TrowbridgeReitz(
+                                            TrowbridgeReitzDistribution {
+                                                alpha_x: distribution.alpha_x,
+                                                alpha_y: distribution.alpha_y,
+                                                sample_visible_area: distribution
+                                                    .sample_visible_area,
+                                            },
+                                        ))
+                                    }
+                                    MicrofacetDistribution::DisneyMicrofacet(distribution) => {
+                                        Some(MicrofacetDistribution::DisneyMicrofacet(
+                                            DisneyMicrofacetDistribution::new(
+                                                distribution.inner.alpha_x,
+                                                distribution.inner.alpha_y,
+                                            ),
+                                        ))
+                                    }
+                                }
+                            }
+                            Bxdf::FresnelBlnd(FresnelBlend::new(
+                                bxdf.rd,
+                                bxdf.rs,
+                                distrib,
+                                bxdf.sc_opt,
+                            ))
+                        }
                         // Bxdf::Fourier(bxdf) => {},
                         // // Bxdf::Bssrdf(bxdf) => {},
                         // Bxdf::DisDiff(bxdf) => {},

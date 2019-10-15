@@ -26,7 +26,7 @@ use crate::core::interpolation::{
     catmull_rom_weights, fourier, sample_catmull_rom_2d, sample_fourier,
 };
 use crate::core::material::TransportMode;
-use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
+use crate::core::microfacet::MicrofacetDistribution;
 use crate::core::pbrt::INV_PI;
 use crate::core::pbrt::{clamp_t, lerp, radians};
 use crate::core::pbrt::{Float, Spectrum};
@@ -1223,13 +1223,13 @@ impl MicrofacetReflection {
 // MicrofacetTransmission
 
 pub struct MicrofacetTransmission {
-    t: Spectrum,
-    distribution: MicrofacetDistribution,
-    eta_a: Float,
-    eta_b: Float,
-    fresnel: FresnelDielectric,
-    mode: TransportMode,
-    sc_opt: Option<Spectrum>,
+    pub t: Spectrum,
+    pub distribution: MicrofacetDistribution,
+    pub eta_a: Float,
+    pub eta_b: Float,
+    pub fresnel: FresnelDielectric,
+    pub mode: TransportMode,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl MicrofacetTransmission {
@@ -1373,15 +1373,15 @@ impl MicrofacetTransmission {
 pub struct FresnelBlend {
     pub rd: Spectrum,
     pub rs: Spectrum,
-    pub distribution: Option<TrowbridgeReitzDistribution>, // TODO: MicrofacetDistribution,
-    sc_opt: Option<Spectrum>,
+    pub distribution: Option<MicrofacetDistribution>,
+    pub sc_opt: Option<Spectrum>,
 }
 
 impl FresnelBlend {
     pub fn new(
         rd: Spectrum,
         rs: Spectrum,
-        distribution: Option<TrowbridgeReitzDistribution>,
+        distribution: Option<MicrofacetDistribution>,
         sc_opt: Option<Spectrum>,
     ) -> Self {
         FresnelBlend {
