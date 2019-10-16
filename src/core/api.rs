@@ -62,7 +62,7 @@ use crate::lights::point::PointLight;
 use crate::lights::projection::ProjectionLight;
 use crate::lights::spot::SpotLight;
 use crate::materials::disney::DisneyMaterial;
-// use crate::materials::fourier::FourierMaterial;
+use crate::materials::fourier::FourierMaterial;
 use crate::materials::glass::GlassMaterial;
 use crate::materials::hair::HairMaterial;
 use crate::materials::matte::MatteMaterial;
@@ -402,8 +402,8 @@ fn create_material(
         //     return Some(SubsurfaceMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "kdsubsurface" {
             println!("TODO: CreateKdsubsurfaceMaterial");
-        // } else if api_state.graphics_state.material == "fourier" {
-        //     return Some(FourierMaterial::create(&mut mp, bsdf_state));
+        } else if api_state.graphics_state.material == "fourier" {
+            return Some(FourierMaterial::create(&mut mp, bsdf_state));
         } else if api_state.graphics_state.material == "disney" {
             return Some(DisneyMaterial::create(&mut mp));
         } else {

@@ -9,10 +9,9 @@ use crate::core::microfacet::{
 };
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{
-    Bxdf, // FourierBSDF, 
-    Fresnel, FresnelBlend, FresnelConductor, FresnelDielectric, FresnelNoOp,
+    Bxdf, FourierBSDF, Fresnel, FresnelBlend, FresnelConductor, FresnelDielectric, FresnelNoOp,
     FresnelSpecular, LambertianReflection, LambertianTransmission, MicrofacetReflection,
-    MicrofacetTransmission, NoBxdf, OrenNayar, SpecularReflection, SpecularTransmission,
+    MicrofacetTransmission, OrenNayar, SpecularReflection, SpecularTransmission,
 };
 use crate::core::texture::Texture;
 use crate::materials::disney::{
@@ -274,11 +273,11 @@ impl Material for MixMaterial {
                                 bxdf.sc_opt,
                             ))
                         }
-                        // Bxdf::Fourier(bxdf) => Bxdf::Fourier(FourierBSDF::new(
-                        //     bxdf.bsdf_table.clone(),
-                        //     bxdf.mode,
-                        //     bxdf.sc_opt,
-                        // )),
+                        Bxdf::Fourier(bxdf) => Bxdf::Fourier(FourierBSDF::new(
+                            bxdf.bsdf_table.clone(),
+                            bxdf.mode,
+                            bxdf.sc_opt,
+                        )),
                         // Bxdf::Bssrdf(bxdf) => {},
                         Bxdf::DisDiff(bxdf) => {
                             Bxdf::DisDiff(DisneyDiffuse::new(bxdf.r, bxdf.sc_opt))
@@ -310,7 +309,6 @@ impl Material for MixMaterial {
                             cos_2k_alpha: bxdf.cos_2k_alpha,
                             sc_opt: bxdf.sc_opt,
                         }),
-                        _ => Bxdf::Empty(NoBxdf::default()),
                     };
                 }
             }
