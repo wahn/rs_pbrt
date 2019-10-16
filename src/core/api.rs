@@ -71,7 +71,7 @@ use crate::materials::mirror::MirrorMaterial;
 use crate::materials::mixmat::MixMaterial;
 use crate::materials::plastic::PlasticMaterial;
 use crate::materials::substrate::SubstrateMaterial;
-// use crate::materials::subsurface::SubsurfaceMaterial;
+use crate::materials::subsurface::SubsurfaceMaterial;
 use crate::materials::translucent::TranslucentMaterial;
 use crate::materials::uber::UberMaterial;
 use crate::media::grid::GridDensityMedium;
@@ -398,8 +398,8 @@ fn create_material(
             return Some(SubstrateMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "uber" {
             return Some(UberMaterial::create(&mut mp));
-        // } else if api_state.graphics_state.material == "subsurface" {
-        //     return Some(SubsurfaceMaterial::create(&mut mp));
+        } else if api_state.graphics_state.material == "subsurface" {
+            return Some(SubsurfaceMaterial::create(&mut mp));
         } else if api_state.graphics_state.material == "kdsubsurface" {
             println!("TODO: CreateKdsubsurfaceMaterial");
         } else if api_state.graphics_state.material == "fourier" {
