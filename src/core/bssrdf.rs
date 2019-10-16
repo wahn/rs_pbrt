@@ -20,8 +20,8 @@ use crate::core::medium::phase_hg;
 use crate::core::pbrt::clamp_t;
 use crate::core::pbrt::INV_4_PI;
 use crate::core::pbrt::{Float, Spectrum};
-use crate::core::reflection::BxdfType;
 use crate::core::reflection::{cos_theta, fr_dielectric};
+use crate::core::reflection::{Bsdf, Bxdf, BxdfType};
 use crate::core::scene::Scene;
 
 pub struct TabulatedBssrdf {
@@ -82,16 +82,16 @@ impl TabulatedBssrdf {
             panic!("TabulatedBssrdf needs Material pointer")
         }
     }
-    fn sw(&self, w: &Vector3f) -> Spectrum {
+    pub fn sw(&self, w: &Vector3f) -> Spectrum {
         let c: Float = 1.0 as Float - 2.0 as Float * fresnel_moment1(1.0 as Float / self.eta);
         Spectrum::new(
             (1.0 as Float - fr_dielectric(cos_theta(w), 1.0 as Float, self.eta)) / (c * PI),
         )
     }
-    fn sp(&self, pi: &SurfaceInteraction) -> Spectrum {
+    pub fn sp(&self, pi: &SurfaceInteraction) -> Spectrum {
         self.sr(pnt3_distance(&self.po_p, &pi.p))
     }
-    fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float {
+    pub fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float {
         // express $\pti-\pto$ and $\bold{n}_i$ with respect to local coordinates at $\pto$
         let d: Vector3f = self.po_p - pi.p;
         let d_local: Vector3f = Vector3f {
@@ -124,7 +124,7 @@ impl TabulatedBssrdf {
         }
         pdf
     }
-    fn sample_sp(
+    pub fn sample_sp(
         &self,
         scene: &Scene,
         u1: Float,
@@ -329,7 +329,7 @@ impl TabulatedBssrdf {
         *pdf = self.pdf_sp(selected_si) / n_found as Float;
         self.sp(selected_si)
     }
-    fn sr(&self, r: Float) -> Spectrum {
+    pub fn sr(&self, r: Float) -> Spectrum {
         let mut sr: Spectrum = Spectrum::default();
         for ch in 0..3_usize {
             // convert $r$ into unitless optical radius $r_{\roman{optical}}$
@@ -375,7 +375,7 @@ impl TabulatedBssrdf {
         sr *= self.sigma_t * self.sigma_t;
         sr.clamp(0.0 as Float, std::f32::INFINITY as Float)
     }
-    fn pdf_sr(&self, ch: usize, r: Float) -> Float {
+    pub fn pdf_sr(&self, ch: usize, r: Float) -> Float {
         // convert $r$ into unitless optical radius $r_{\roman{optical}}$
         let r_optical: Float = r * self.sigma_t[ch];
         // compute spline weights to interpolate BSSRDF density on channel _ch_
@@ -421,7 +421,7 @@ impl TabulatedBssrdf {
         }
         (0.0 as Float).max(sr * self.sigma_t[ch] * self.sigma_t[ch] / rho_eff)
     }
-    fn sample_sr(&self, ch: usize, u: Float) -> Float {
+    pub fn sample_sr(&self, ch: usize, u: Float) -> Float {
         if self.sigma_t[ch] == 0.0 as Float {
             return -1.0 as Float;
         }
@@ -437,38 +437,38 @@ impl TabulatedBssrdf {
         ) / self.sigma_t[ch]
     }
     // Bssrdf
-    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum {
+    pub fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum {
         // ProfilePhase pp(Prof::BSSRDFEvaluation);
         let ft: Float = fr_dielectric(cos_theta(&self.po_wo), 1.0 as Float, self.eta);
         self.sp(pi) * self.sw(wi) * (1.0 as Float - ft)
     }
-    // fn sample_s(
-    //     &self,
-    //     // the next three (extra) parameters are used for SeparableBssrdfAdapter
-    //     sc: Arc<dyn SeparableBssrdf + Sync + Send>,
-    //     mode: TransportMode,
-    //     eta: Float,
-    //     // done
-    //     scene: &Scene,
-    //     u1: Float,
-    //     u2: &Point2f,
-    //     pdf: &mut Float,
-    // ) -> (Spectrum, Option<SurfaceInteraction>) {
-    //     // ProfilePhase pp(Prof::BSSRDFSampling);
-    //     let mut si: SurfaceInteraction = SurfaceInteraction::default();
-    //     let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut si, pdf);
-    //     if !sp.is_black() {
-    //         // initialize material model at sampled surface interaction
-    //         si.bsdf = Some(Bsdf::new(&si, 1.0));
-    //         if let Some(bsdf) = &mut si.bsdf {
-    //             bsdf.bxdfs[0] = Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta));
-    //         }
-    //         si.wo = Vector3f::from(si.shading.n);
-    //         (sp, Some(si))
-    //     } else {
-    //         (sp, None)
-    //     }
-    // }
+    pub fn sample_s(
+        &self,
+        // the next three (extra) parameters are used for SeparableBssrdfAdapter
+        sc: TabulatedBssrdf,
+        mode: TransportMode,
+        eta: Float,
+        // done
+        scene: &Scene,
+        u1: Float,
+        u2: &Point2f,
+        pdf: &mut Float,
+    ) -> (Spectrum, Option<SurfaceInteraction>) {
+        // ProfilePhase pp(Prof::BSSRDFSampling);
+        let mut si: SurfaceInteraction = SurfaceInteraction::default();
+        let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut si, pdf);
+        if !sp.is_black() {
+            // initialize material model at sampled surface interaction
+            si.bsdf = Some(Bsdf::new(&si, 1.0));
+            if let Some(bsdf) = &mut si.bsdf {
+                bsdf.bxdfs[0] = Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta));
+            }
+            si.wo = Vector3f::from(si.shading.n);
+            (sp, Some(si))
+        } else {
+            (sp, None)
+        }
+    }
 }
 
 impl Clone for TabulatedBssrdf {
