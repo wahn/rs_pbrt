@@ -29,7 +29,7 @@ use crate::core::paramset::{ParamSet, TextureParams};
 use crate::core::pbrt::{clamp_t, lerp};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
-// use crate::core::reflection::FourierBSDFTable;
+use crate::core::reflection::FourierBSDFTable;
 use crate::core::sampler::Sampler;
 use crate::core::scene::Scene;
 use crate::core::shape::Shape;
@@ -104,13 +104,13 @@ use crate::textures::wrinkled::WrinkledTexture;
 // see api.cpp
 
 pub struct BsdfState {
-    // pub loaded_bsdfs: HashMap<String, Arc<FourierBSDFTable>>,
+    pub loaded_bsdfs: HashMap<String, Arc<FourierBSDFTable>>,
 }
 
 impl Default for BsdfState {
     fn default() -> Self {
         BsdfState {
-            // loaded_bsdfs: HashMap::new(),
+            loaded_bsdfs: HashMap::new(),
         }
     }
 }
