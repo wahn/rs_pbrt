@@ -1074,9 +1074,10 @@ pub fn random_walk<'a>(
                 isect.compute_scattering_functions(&ray /*, arena, */, true, mode.clone());
                 let isect_wo: Vector3f = isect.wo.clone();
                 let isect_shading_n: Normal3f = isect.shading.n.clone();
-                let isect_bsdf: Option<Bsdf> = isect.bsdf;
-                if let Some(ref _bsdf) = isect_bsdf {
-                } else {
+                // let isect_bsdf: Option<Bsdf> = isect.bsdf;
+                // if let Some(ref _bsdf) = isect_bsdf {
+                // } else {
+                if !isect.bsdf.is_some() {
                     let new_ray = isect.spawn_ray(&ray.d);
                     ray = new_ray;
                     continue;
@@ -1120,8 +1121,8 @@ pub fn random_walk<'a>(
                 si_eval.shading.dpdv = isect.shading.dpdv.clone();
                 si_eval.shading.dndu = isect.shading.dndu.clone();
                 si_eval.shading.dndv = isect.shading.dndv.clone();
-                if let Some(bsdf) = isect.bsdf {
-                    si_eval.bsdf = Some(bsdf);
+                if let Some(bsdf) = &isect.bsdf {
+                    si_eval.bsdf = Some(bsdf.clone());
                 } else {
                     si_eval.bsdf = None
                 }
@@ -1147,7 +1148,7 @@ pub fn random_walk<'a>(
                     path.push(vertex);
                     break;
                 }
-                if let Some(ref bsdf) = isect_bsdf {
+                if let Some(ref bsdf) = isect.bsdf {
                     // sample BSDF at current vertex and compute reverse probability
                     let mut wi: Vector3f = Vector3f::default();
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
@@ -1400,7 +1401,7 @@ pub fn mis_weight<'a>(
                     n: lv_si.n.clone(),
                     medium_interface,
                     primitive: Some(primitive.clone()),
-                    bsdf: lv_si.bsdf,
+                    bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1413,7 +1414,7 @@ pub fn mis_weight<'a>(
                     n: lv_si.n.clone(),
                     medium_interface,
                     primitive: None,
-                    bsdf: lv_si.bsdf,
+                    bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1493,7 +1494,7 @@ pub fn mis_weight<'a>(
                     n: lv_si.n.clone(),
                     medium_interface,
                     primitive: Some(primitive.clone()),
-                    bsdf: lv_si.bsdf,
+                    bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1506,7 +1507,7 @@ pub fn mis_weight<'a>(
                     n: lv_si.n.clone(),
                     medium_interface,
                     primitive: None,
-                    bsdf: lv_si.bsdf,
+                    bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1590,7 +1591,7 @@ pub fn mis_weight<'a>(
                     n: cv_si.n.clone(),
                     medium_interface,
                     primitive: Some(primitive.clone()),
-                    bsdf: cv_si.bsdf,
+                    bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1603,7 +1604,7 @@ pub fn mis_weight<'a>(
                     n: cv_si.n.clone(),
                     medium_interface,
                     primitive: None,
-                    bsdf: cv_si.bsdf,
+                    bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1686,7 +1687,7 @@ pub fn mis_weight<'a>(
                     n: lv_si.n.clone(),
                     medium_interface,
                     primitive: Some(primitive.clone()),
-                    bsdf: lv_si.bsdf,
+                    bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1699,7 +1700,7 @@ pub fn mis_weight<'a>(
                     n: lv_si.n.clone(),
                     medium_interface,
                     primitive: None,
-                    bsdf: lv_si.bsdf,
+                    bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1798,7 +1799,7 @@ pub fn mis_weight<'a>(
                     wo: cv_si.wo.clone(),
                     n: cv_si.n.clone(),
                     medium_interface,
-                    bsdf: cv_si.bsdf,
+                    bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
@@ -1898,7 +1899,7 @@ pub fn mis_weight<'a>(
                     wo: lv_si.wo.clone(),
                     n: lv_si.n.clone(),
                     medium_interface,
-                    bsdf: lv_si.bsdf,
+                    bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);

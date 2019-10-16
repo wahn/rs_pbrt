@@ -253,7 +253,7 @@ pub fn render_sppm(
                                                     &mut ray, // arena,
                                                     true, mode,
                                                 );
-                                                if let Some(bsdf) = isect.bsdf {
+                                                if let Some(bsdf) = &isect.bsdf {
                                                     // accumulate direct illumination
                                                     // at SPPM camera ray intersection
                                                     let wo: Vector3f = -ray.d;
@@ -286,7 +286,7 @@ pub fn render_sppm(
                                                     {
                                                         pixel.2.p = isect.p;
                                                         pixel.2.wo = wo;
-                                                        pixel.2.bsdf = Some(bsdf);
+                                                        pixel.2.bsdf = Some(bsdf.clone());
                                                         pixel.2.beta = beta;
                                                         break;
                                                     }
