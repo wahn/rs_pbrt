@@ -15,7 +15,7 @@ use std::sync::Arc;
 use byteorder::{LittleEndian, ReadBytesExt};
 use num::Zero;
 // pbrt
-// use crate::core::bssrdf::SeparableBssrdfAdapter;
+use crate::core::bssrdf::SeparableBssrdfAdapter;
 use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_abs_dot_vec3, vec3_dot_nrm,
     vec3_dot_vec3,
@@ -476,7 +476,7 @@ pub enum Bxdf {
     FresnelBlnd(FresnelBlend),
     Fourier(FourierBSDF),
     // bssrdf.rs
-    // Bssrdf(SeparableBssrdfAdapter),
+    Bssrdf(SeparableBssrdfAdapter),
     // disney.rs
     DisDiff(DisneyDiffuse),
     DisSS(DisneyFakeSS),
@@ -501,7 +501,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::FresnelBlnd(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::Fourier(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
-            // Bxdf::Bssrdf(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
+            Bxdf::Bssrdf(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::DisDiff(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::DisSS(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
             Bxdf::DisRetro(bxdf) => bxdf.get_type() & t == bxdf.get_type(),
@@ -523,7 +523,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.f(wo, wi),
             Bxdf::FresnelBlnd(bxdf) => bxdf.f(wo, wi),
             Bxdf::Fourier(bxdf) => bxdf.f(wo, wi),
-            // Bxdf::Bssrdf(bxdf) => bxdf.f(wo, wi),
+            Bxdf::Bssrdf(bxdf) => bxdf.f(wo, wi),
             Bxdf::DisDiff(bxdf) => bxdf.f(wo, wi),
             Bxdf::DisSS(bxdf) => bxdf.f(wo, wi),
             Bxdf::DisRetro(bxdf) => bxdf.f(wo, wi),
@@ -556,7 +556,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::FresnelBlnd(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::Fourier(bxdf) => bxdf.sample_f(wo, wi, u, pdf, sampled_type),
-            // Bxdf::Bssrdf(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
+            Bxdf::Bssrdf(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisDiff(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisSS(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
             Bxdf::DisRetro(_bxdf) => self.default_sample_f(wo, wi, u, pdf, sampled_type),
@@ -596,7 +596,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::FresnelBlnd(bxdf) => bxdf.pdf(wo, wi),
             Bxdf::Fourier(bxdf) => bxdf.pdf(wo, wi),
-            // Bxdf::Bssrdf(_bxdf) => self.default_pdf(wo, wi),
+            Bxdf::Bssrdf(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisDiff(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisSS(_bxdf) => self.default_pdf(wo, wi),
             Bxdf::DisRetro(_bxdf) => self.default_pdf(wo, wi),
@@ -625,7 +625,7 @@ impl Bxdf {
             Bxdf::MicrofacetTrans(bxdf) => bxdf.get_type(),
             Bxdf::FresnelBlnd(bxdf) => bxdf.get_type(),
             Bxdf::Fourier(bxdf) => bxdf.get_type(),
-            // Bxdf::Bssrdf(bxdf) => bxdf.get_type(),
+            Bxdf::Bssrdf(bxdf) => bxdf.get_type(),
             Bxdf::DisDiff(bxdf) => bxdf.get_type(),
             Bxdf::DisSS(bxdf) => bxdf.get_type(),
             Bxdf::DisRetro(bxdf) => bxdf.get_type(),

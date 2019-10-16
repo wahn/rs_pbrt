@@ -20,42 +20,9 @@ use crate::core::medium::phase_hg;
 use crate::core::pbrt::clamp_t;
 use crate::core::pbrt::INV_4_PI;
 use crate::core::pbrt::{Float, Spectrum};
+use crate::core::reflection::BxdfType;
 use crate::core::reflection::{cos_theta, fr_dielectric};
-use crate::core::reflection::{Bsdf, Bxdf, BxdfType};
 use crate::core::scene::Scene;
-
-pub trait Bssrdf {
-    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum;
-    fn sample_s(
-        &self,
-        // the next three (extra) parameters are used for SeparableBssrdfAdapter
-        sc: Arc<dyn SeparableBssrdf + Sync + Send>,
-        mode: TransportMode,
-        eta: Float,
-        // done
-        scene: &Scene,
-        u1: Float,
-        u2: &Point2f,
-        pdf: &mut Float,
-    ) -> (Spectrum, Option<SurfaceInteraction>);
-}
-
-pub trait SeparableBssrdf {
-    fn sw(&self, w: &Vector3f) -> Spectrum;
-    fn sp(&self, pi: &SurfaceInteraction) -> Spectrum;
-    fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float;
-    fn sample_sp(
-        &self,
-        scene: &Scene,
-        u1: Float,
-        u2: &Point2f,
-        pi: &mut SurfaceInteraction,
-        pdf: &mut Float,
-    ) -> Spectrum;
-    fn sr(&self, r: Float) -> Spectrum;
-    fn pdf_sr(&self, ch: usize, r: Float) -> Float;
-    fn sample_sr(&self, ch: usize, u: Float) -> Float;
-}
 
 pub struct TabulatedBssrdf {
     // BSSRDF Protected Data
@@ -115,44 +82,6 @@ impl TabulatedBssrdf {
             panic!("TabulatedBssrdf needs Material pointer")
         }
     }
-}
-
-impl Bssrdf for TabulatedBssrdf {
-    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum {
-        // ProfilePhase pp(Prof::BSSRDFEvaluation);
-        let ft: Float = fr_dielectric(cos_theta(&self.po_wo), 1.0 as Float, self.eta);
-        self.sp(pi) * self.sw(wi) * (1.0 as Float - ft)
-    }
-    fn sample_s(
-        &self,
-        // the next three (extra) parameters are used for SeparableBssrdfAdapter
-        sc: Arc<dyn SeparableBssrdf + Sync + Send>,
-        mode: TransportMode,
-        eta: Float,
-        // done
-        scene: &Scene,
-        u1: Float,
-        u2: &Point2f,
-        pdf: &mut Float,
-    ) -> (Spectrum, Option<SurfaceInteraction>) {
-        // ProfilePhase pp(Prof::BSSRDFSampling);
-        let mut si: SurfaceInteraction = SurfaceInteraction::default();
-        let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut si, pdf);
-        if !sp.is_black() {
-            // initialize material model at sampled surface interaction
-            si.bsdf = Some(Bsdf::new(&si, 1.0));
-            if let Some(bsdf) = &mut si.bsdf {
-                bsdf.bxdfs[0] = Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta));
-            }
-            si.wo = Vector3f::from(si.shading.n);
-            (sp, Some(si))
-        } else {
-            (sp, None)
-        }
-    }
-}
-
-impl SeparableBssrdf for TabulatedBssrdf {
     fn sw(&self, w: &Vector3f) -> Spectrum {
         let c: Float = 1.0 as Float - 2.0 as Float * fresnel_moment1(1.0 as Float / self.eta);
         Spectrum::new(
@@ -323,8 +252,8 @@ impl SeparableBssrdf for TabulatedBssrdf {
                             } else {
                                 si_eval.bsdf = None
                             }
-                            if let Some(bssrdf) = &si.bssrdf {
-                                si_eval.bssrdf = Some(bssrdf.clone());
+                            if let Some(bssrdf) = si.bssrdf {
+                                si_eval.bssrdf = Some(bssrdf);
                             } else {
                                 si_eval.bssrdf = None
                             }
@@ -386,11 +315,11 @@ impl SeparableBssrdf for TabulatedBssrdf {
         pi.shading = selected_si.shading;
         // no primitive!
         if let Some(bsdf) = &selected_si.bsdf {
-            pi.bsdf = Some(*bsdf);
+            pi.bsdf = Some(bsdf.clone());
         } else {
             pi.bsdf = None;
         }
-        if let Some(ref bssrdf) = selected_si.bssrdf {
+        if let Some(bssrdf) = &selected_si.bssrdf {
             pi.bssrdf = Some(bssrdf.clone());
         } else {
             pi.bssrdf = None;
@@ -507,16 +436,59 @@ impl SeparableBssrdf for TabulatedBssrdf {
             None,
         ) / self.sigma_t[ch]
     }
+    // Bssrdf
+    fn s(&self, pi: &SurfaceInteraction, wi: &Vector3f) -> Spectrum {
+        // ProfilePhase pp(Prof::BSSRDFEvaluation);
+        let ft: Float = fr_dielectric(cos_theta(&self.po_wo), 1.0 as Float, self.eta);
+        self.sp(pi) * self.sw(wi) * (1.0 as Float - ft)
+    }
+    // fn sample_s(
+    //     &self,
+    //     // the next three (extra) parameters are used for SeparableBssrdfAdapter
+    //     sc: Arc<dyn SeparableBssrdf + Sync + Send>,
+    //     mode: TransportMode,
+    //     eta: Float,
+    //     // done
+    //     scene: &Scene,
+    //     u1: Float,
+    //     u2: &Point2f,
+    //     pdf: &mut Float,
+    // ) -> (Spectrum, Option<SurfaceInteraction>) {
+    //     // ProfilePhase pp(Prof::BSSRDFSampling);
+    //     let mut si: SurfaceInteraction = SurfaceInteraction::default();
+    //     let sp: Spectrum = self.sample_sp(scene, u1, u2, &mut si, pdf);
+    //     if !sp.is_black() {
+    //         // initialize material model at sampled surface interaction
+    //         si.bsdf = Some(Bsdf::new(&si, 1.0));
+    //         if let Some(bsdf) = &mut si.bsdf {
+    //             bsdf.bxdfs[0] = Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta));
+    //         }
+    //         si.wo = Vector3f::from(si.shading.n);
+    //         (sp, Some(si))
+    //     } else {
+    //         (sp, None)
+    //     }
+    // }
 }
 
-impl Copy for SeparableBssrdf {}
-
-impl Clone for SeparableBssrdf {
-    fn clone(&self) -> SeparableBssrdf {
-        *self
+impl Clone for TabulatedBssrdf {
+    fn clone(&self) -> TabulatedBssrdf {
+        TabulatedBssrdf {
+            po_p: self.po_p,
+            po_time: self.po_time,
+            po_wo: self.po_wo,
+            eta: self.eta,
+            ns: self.ns,
+            ss: self.ss,
+            ts: self.ts,
+            material: self.material.clone(),
+            mode: self.mode,
+            table: self.table.clone(),
+            sigma_t: self.sigma_t,
+            rho: self.rho,
+        }
     }
 }
-
 pub struct BssrdfTable {
     pub n_rho_samples: i32,
     pub n_radius_samples: i32,
@@ -552,18 +524,13 @@ impl BssrdfTable {
 }
 
 pub struct SeparableBssrdfAdapter {
-    // pub bssrdf: &'a (SeparableBssrdf + Send + Sync),
-    pub bssrdf: Arc<dyn SeparableBssrdf + Sync + Send>,
-    mode: TransportMode,
-    eta2: Float,
+    pub bssrdf: TabulatedBssrdf,
+    pub mode: TransportMode,
+    pub eta2: Float,
 }
 
 impl SeparableBssrdfAdapter {
-    pub fn new(
-        bssrdf: Arc<dyn SeparableBssrdf + Sync + Send>,
-        mode: TransportMode,
-        eta: Float,
-    ) -> Self {
+    pub fn new(bssrdf: TabulatedBssrdf, mode: TransportMode, eta: Float) -> Self {
         SeparableBssrdfAdapter {
             bssrdf,
             mode,
@@ -580,6 +547,18 @@ impl SeparableBssrdfAdapter {
     }
     pub fn get_type(&self) -> u8 {
         BxdfType::BsdfDiffuse as u8 | BxdfType::BsdfReflection as u8
+    }
+}
+
+// impl Copy for SeparableBssrdfAdapter {}
+
+impl Clone for SeparableBssrdfAdapter {
+    fn clone(&self) -> SeparableBssrdfAdapter {
+        SeparableBssrdfAdapter {
+            bssrdf: self.bssrdf.clone(),
+            mode: self.mode,
+            eta2: self.eta2,
+        }
     }
 }
 

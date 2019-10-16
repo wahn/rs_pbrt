@@ -2,6 +2,7 @@
 use std;
 use std::sync::Arc;
 // pbrt
+use crate::core::bssrdf::SeparableBssrdfAdapter;
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::microfacet::{
@@ -278,7 +279,11 @@ impl Material for MixMaterial {
                             bxdf.mode,
                             bxdf.sc_opt,
                         )),
-                        // Bxdf::Bssrdf(bxdf) => {},
+                        Bxdf::Bssrdf(bxdf) => Bxdf::Bssrdf(SeparableBssrdfAdapter {
+                            bssrdf: bxdf.bssrdf.clone(),
+                            mode: bxdf.mode,
+                            eta2: bxdf.eta2,
+                        }),
                         Bxdf::DisDiff(bxdf) => {
                             Bxdf::DisDiff(DisneyDiffuse::new(bxdf.r, bxdf.sc_opt))
                         }

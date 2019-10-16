@@ -11,7 +11,7 @@
 use std;
 use std::sync::{Arc, RwLock};
 // pbrt
-// use crate::core::bssrdf::TabulatedBssrdf;
+use crate::core::bssrdf::TabulatedBssrdf;
 use crate::core::geometry::{
     nrm_faceforward_nrm, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm, vec3_dot_vec3,
 };
@@ -280,7 +280,7 @@ pub struct SurfaceInteraction<'a> {
     pub primitive: Option<&'a (dyn Primitive + Send + Sync)>,
     pub shading: Shading,
     pub bsdf: Option<Bsdf>,
-    // pub bssrdf: Option<Arc<TabulatedBssrdf>>,
+    pub bssrdf: Option<TabulatedBssrdf>,
     pub shape: Option<&'a (dyn Shape + Send + Sync)>,
 }
 
@@ -340,7 +340,7 @@ impl<'a> SurfaceInteraction<'a> {
                 primitive: None,
                 shading,
                 bsdf: None,
-                // bssrdf: None,
+                bssrdf: None,
                 shape: Some(shape.clone()),
             }
         } else {
@@ -365,7 +365,7 @@ impl<'a> SurfaceInteraction<'a> {
                 primitive: None,
                 shading,
                 bsdf: None,
-                // bssrdf: None,
+                bssrdf: None,
                 shape: None,
             }
         }
