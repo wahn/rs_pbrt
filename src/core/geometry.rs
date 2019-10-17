@@ -1889,7 +1889,7 @@ pub struct Ray {
     pub t_max: Float,
     /// used for animations
     pub time: Float,
-    pub medium: Option<Arc<dyn Medium + Send + Sync>>,
+    pub medium: Option<Arc<Medium>>,
     /// in C++: 'class RayDifferential : public Ray'
     pub differential: Option<RayDifferential>,
 }

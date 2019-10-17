@@ -202,7 +202,7 @@ pub struct RenderOptions {
     pub camera_name: String, // "perspective";
     pub camera_params: ParamSet,
     pub camera_to_world: TransformSet,
-    pub named_media: HashMap<String, Arc<dyn Medium + Sync + Send>>,
+    pub named_media: HashMap<String, Arc<Medium>>,
     pub lights: Vec<Arc<dyn Light + Sync + Send>>,
     pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
     pub instances: HashMap<String, Vec<Arc<dyn Primitive + Sync + Send>>>,
@@ -653,9 +653,11 @@ fn make_medium(api_state: &mut ApiState) {
     let g: Float = api_state.param_set.find_one_float("g", 0.0 as Float);
     sig_a = api_state.param_set.find_one_spectrum("sigma_a", sig_a) * scale;
     sig_s = api_state.param_set.find_one_spectrum("sigma_s", sig_s) * scale;
-    let some_medium: Option<Arc<dyn Medium + Sync + Send>>;
+    let some_medium: Option<Arc<Medium>>;
     if medium_type == "homogeneous" {
-        some_medium = Some(Arc::new(HomogeneousMedium::new(&sig_a, &sig_s, g)));
+        some_medium = Some(Arc::new(Medium::Homogeneous(HomogeneousMedium::new(
+            &sig_a, &sig_s, g,
+        ))));
     } else if medium_type == "heterogeneous" {
         let data: Arc<Vec<Float>> = Arc::new(api_state.param_set.find_float("density"));
         if data.is_empty() {
@@ -692,7 +694,7 @@ fn make_medium(api_state: &mut ApiState) {
                 let data_2_medium: Transform = Transform::translate(&Vector3f::from(p0))
                     * Transform::scale(p1.x - p0.x, p1.y - p0.y, p1.z - p0.z);
                 let medium_2_world = api_state.cur_transform.t[0];
-                some_medium = Some(Arc::new(GridDensityMedium::new(
+                some_medium = Some(Arc::new(Medium::GridDensity(GridDensityMedium::new(
                     &sig_a,
                     &sig_s,
                     g,
@@ -701,7 +703,7 @@ fn make_medium(api_state: &mut ApiState) {
                     nz,
                     &(medium_2_world * data_2_medium),
                     data,
-                )));
+                ))));
             }
         }
     } else {

@@ -26,7 +26,7 @@ pub struct PerspectiveCamera {
     pub shutter_open: Float,
     pub shutter_close: Float,
     pub film: Arc<Film>,
-    pub medium: Option<Arc<dyn Medium + Send + Sync>>,
+    pub medium: Option<Arc<Medium>>,
     // inherited from ProjectiveCamera (see camera.h)
     // camera_to_screen: Transform,
     pub raster_to_camera: Transform,
@@ -50,7 +50,7 @@ impl PerspectiveCamera {
         focal_distance: Float,
         fov: Float,
         film: Arc<Film>,
-        medium: Option<Arc<dyn Medium + Send + Sync>>,
+        medium: Option<Arc<Medium>>,
     ) -> Self {
         // see perspective.cpp
         let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
@@ -132,7 +132,7 @@ impl PerspectiveCamera {
         params: &ParamSet,
         cam2world: AnimatedTransform,
         film: Arc<Film>,
-        medium: Option<Arc<dyn Medium + Send + Sync>>,
+        medium: Option<Arc<Medium>>,
     ) -> Arc<dyn Camera + Send + Sync> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);

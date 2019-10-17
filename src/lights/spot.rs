@@ -40,8 +40,8 @@ impl SpotLight {
         total_width: Float,
         falloff_start: Float,
     ) -> Self {
-        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
-        let mut outside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        let mut inside: Option<Arc<Medium>> = None;
+        let mut outside: Option<Arc<Medium>> = None;
         if let Some(ref mi_outside) = medium_interface.outside {
             // in C++: MediumInterface(const Medium *medium) : inside(medium), outside(medium)
             inside = Some(mi_outside.clone());
@@ -88,8 +88,8 @@ impl Light for SpotLight {
         *wi = (self.p_light - iref.p).normalize();
         *pdf = 1.0 as Float;
         // medium_interface1
-        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
-        let mut outside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        let mut inside: Option<Arc<Medium>> = None;
+        let mut outside: Option<Arc<Medium>> = None;
         if let Some(ref mi_arc) = iref.medium_interface {
             if let Some(ref mi_inside_arc) = mi_arc.get_inside() {
                 inside = Some(mi_inside_arc.clone());
@@ -101,8 +101,8 @@ impl Light for SpotLight {
         let medium_interface1_arc: Arc<MediumInterface> =
             Arc::new(MediumInterface::new(inside, outside));
         // medium_interface2
-        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
-        let mut outside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        let mut inside: Option<Arc<Medium>> = None;
+        let mut outside: Option<Arc<Medium>> = None;
         if let Some(ref mi_inside_arc) = self.medium_interface.inside {
             inside = Some(mi_inside_arc.clone());
         }
@@ -158,7 +158,7 @@ impl Light for SpotLight {
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
         let w: Vector3f = uniform_sample_cone(u1, self.cos_total_width);
-        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        let mut inside: Option<Arc<Medium>> = None;
         if let Some(ref mi_inside) = self.medium_interface.inside {
             inside = Some(mi_inside.clone());
         }

@@ -68,8 +68,8 @@ impl<'a> EndpointInteraction<'a> {
             ..Default::default()
         };
         if let Some(ref medium_arc) = ray.medium {
-            let inside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
-            let outside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
+            let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
             ei.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
         }
         ei
@@ -82,8 +82,8 @@ impl<'a> EndpointInteraction<'a> {
             ..Default::default()
         };
         if let Some(ref medium_arc) = ray.medium {
-            let inside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
-            let outside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
+            let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
             ei.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
         }
         ei.n = *nl;
@@ -113,13 +113,13 @@ impl<'a> EndpointInteraction<'a> {
         };
         ei.n = Normal3f::from(-ray.d);
         if let Some(ref medium_arc) = ray.medium {
-            let inside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
-            let outside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
+            let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
             ei.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
         }
         ei
     }
-    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<dyn Medium + Send + Sync>> {
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
                 medium_interface.outside.clone()
@@ -1074,9 +1074,6 @@ pub fn random_walk<'a>(
                 isect.compute_scattering_functions(&ray /*, arena, */, true, mode.clone());
                 let isect_wo: Vector3f = isect.wo.clone();
                 let isect_shading_n: Normal3f = isect.shading.n.clone();
-                // let isect_bsdf: Option<Bsdf> = isect.bsdf;
-                // if let Some(ref _bsdf) = isect_bsdf {
-                // } else {
                 if !isect.bsdf.is_some() {
                     let new_ray = isect.spawn_ray(&ray.d);
                     ray = new_ray;

@@ -91,7 +91,7 @@ impl InteractionCommon {
             medium: self.get_medium(&d),
         }
     }
-    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<dyn Medium + Send + Sync>> {
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface_arc) = self.medium_interface {
                 medium_interface_arc.get_outside()
@@ -135,12 +135,12 @@ impl MediumInteraction {
         p: &Point3f,
         wo: &Vector3f,
         time: Float,
-        medium: Option<Arc<dyn Medium + Send + Sync>>,
+        medium: Option<Arc<Medium>>,
         phase: Option<Arc<dyn PhaseFunction>>,
     ) -> Self {
         if let Some(medium_arc) = medium {
-            let inside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
-            let outside: Option<Arc<dyn Medium + Send + Sync>> = Some(medium_arc.clone());
+            let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
             MediumInteraction {
                 p: *p,
                 time,
@@ -162,7 +162,7 @@ impl MediumInteraction {
             }
         }
     }
-    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<dyn Medium + Send + Sync>> {
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
                 if let Some(ref outside_arc) = medium_interface.outside {
@@ -370,7 +370,7 @@ impl<'a> SurfaceInteraction<'a> {
             }
         }
     }
-    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<dyn Medium + Send + Sync>> {
+    pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
         if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.medium_interface {
                 if let Some(ref outside_arc) = medium_interface.outside {

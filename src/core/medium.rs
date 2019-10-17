@@ -11,6 +11,8 @@ use crate::core::interaction::MediumInteraction;
 use crate::core::pbrt::INV_4_PI;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampler::Sampler;
+use crate::media::grid::GridDensityMedium;
+use crate::media::homogeneous::HomogeneousMedium;
 
 pub const SUBSURFACE_PARAMETER_TABLE: [MeasuredSS; 47] = [
     // From "A Practical Model for Subsurface Light Transport"
@@ -268,13 +270,33 @@ pub trait PhaseFunction {
     fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: &Point2f) -> Float;
 }
 
-pub trait Medium {
-    fn tr(&self, ray: &Ray, sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum;
-    fn sample(
+pub struct NoMedium {}
+
+pub enum Medium {
+    Empty(NoMedium),
+    GridDensity(GridDensityMedium),
+    Homogeneous(HomogeneousMedium),
+}
+
+impl Medium {
+    pub fn tr(&self, r_world: &Ray, sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum {
+        match self {
+            Medium::Empty(_medium) => Spectrum::default(),
+            Medium::GridDensity(medium) => medium.tr(r_world, sampler),
+            Medium::Homogeneous(medium) => medium.tr(r_world, sampler),
+        }
+    }
+    pub fn sample(
         &self,
-        ray: &Ray,
+        r_world: &Ray,
         sampler: &mut Box<dyn Sampler + Send + Sync>,
-    ) -> (Spectrum, Option<MediumInteraction>);
+    ) -> (Spectrum, Option<MediumInteraction>) {
+        match self {
+            Medium::Empty(_medium) => (Spectrum::default(), None),
+            Medium::GridDensity(medium) => medium.sample(r_world, sampler),
+            Medium::Homogeneous(medium) => medium.sample(r_world, sampler),
+        }
+    }
 }
 
 pub struct HenyeyGreenstein {
@@ -313,15 +335,12 @@ impl PhaseFunction for HenyeyGreenstein {
 
 #[derive(Default, Clone)]
 pub struct MediumInterface {
-    pub inside: Option<Arc<dyn Medium + Send + Sync>>,
-    pub outside: Option<Arc<dyn Medium + Send + Sync>>,
+    pub inside: Option<Arc<Medium>>,
+    pub outside: Option<Arc<Medium>>,
 }
 
 impl MediumInterface {
-    pub fn new(
-        inside: Option<Arc<dyn Medium + Send + Sync>>,
-        outside: Option<Arc<dyn Medium + Send + Sync>>,
-    ) -> Self {
+    pub fn new(inside: Option<Arc<Medium>>, outside: Option<Arc<Medium>>) -> Self {
         MediumInterface { inside, outside }
     }
     pub fn is_medium_transition(&self) -> bool {
@@ -347,14 +366,14 @@ impl MediumInterface {
             }
         }
     }
-    pub fn get_inside(&self) -> Option<Arc<dyn Medium + Send + Sync>> {
+    pub fn get_inside(&self) -> Option<Arc<Medium>> {
         if let Some(ref inside) = self.inside {
             Some(inside.clone())
         } else {
             None
         }
     }
-    pub fn get_outside(&self) -> Option<Arc<dyn Medium + Send + Sync>> {
+    pub fn get_outside(&self) -> Option<Arc<Medium>> {
         if let Some(ref outside) = self.outside {
             Some(outside.clone())
         } else {

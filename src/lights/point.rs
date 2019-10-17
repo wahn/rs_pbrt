@@ -32,8 +32,8 @@ impl PointLight {
         medium_interface: &MediumInterface,
         i: &Spectrum,
     ) -> Self {
-        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
-        let mut outside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        let mut inside: Option<Arc<Medium>> = None;
+        let mut outside: Option<Arc<Medium>> = None;
         if let Some(ref mi_inside) = medium_interface.inside {
             inside = Some(mi_inside.clone());
         }

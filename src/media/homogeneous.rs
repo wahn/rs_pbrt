@@ -26,14 +26,12 @@ impl HomogeneousMedium {
             g,
         }
     }
-}
-
-impl Medium for HomogeneousMedium {
-    fn tr(&self, ray: &Ray, _sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum {
+    // Medium
+    pub fn tr(&self, ray: &Ray, _sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum {
         // TODO: ProfilePhase _(Prof::MediumTr);
         (-self.sigma_t * (ray.t_max * ray.d.length()).min(f32::MAX)).exp()
     }
-    fn sample(
+    pub fn sample(
         &self,
         ray: &Ray,
         sampler: &mut Box<dyn Sampler + Send + Sync>,
@@ -50,11 +48,11 @@ impl Medium for HomogeneousMedium {
                 &ray.position(t),
                 &(-ray.d),
                 ray.time,
-                Some(Arc::new(HomogeneousMedium::new(
+                Some(Arc::new(Medium::Homogeneous(HomogeneousMedium::new(
                     &self.sigma_a,
                     &self.sigma_s,
                     self.g,
-                ))),
+                )))),
                 Some(Arc::new(HenyeyGreenstein { g: self.g })),
             );
             mi_opt = Some(mi);

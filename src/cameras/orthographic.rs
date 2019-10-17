@@ -22,7 +22,7 @@ pub struct OrthographicCamera {
     pub shutter_open: Float,
     pub shutter_close: Float,
     pub film: Arc<Film>,
-    pub medium: Option<Arc<dyn Medium + Send + Sync>>,
+    pub medium: Option<Arc<Medium>>,
     // inherited from ProjectiveCamera (see camera.h)
     pub camera_to_screen: Transform,
     pub raster_to_camera: Transform,
@@ -44,7 +44,7 @@ impl OrthographicCamera {
         lens_radius: Float,
         focal_distance: Float,
         film: Arc<Film>,
-        medium: Option<Arc<dyn Medium + Send + Sync>>,
+        medium: Option<Arc<Medium>>,
     ) -> Self {
         // see orthographic.cpp
         let camera_to_screen: Transform = Transform::orthographic(0.0 as Float, 1.0 as Float);
@@ -100,7 +100,7 @@ impl OrthographicCamera {
         params: &ParamSet,
         cam2world: AnimatedTransform,
         film: Arc<Film>,
-        medium: Option<Arc<dyn Medium + Send + Sync>>,
+        medium: Option<Arc<Medium>>,
     ) -> Arc<dyn Camera + Send + Sync> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);

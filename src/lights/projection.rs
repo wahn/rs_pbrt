@@ -433,7 +433,7 @@ impl Light for ProjectionLight {
         pdf_dir: &mut Float,
     ) -> Spectrum {
         let v: Vector3f = uniform_sample_cone(u1, self.cos_total_width);
-        let mut inside: Option<Arc<dyn Medium + Send + Sync>> = None;
+        let mut inside: Option<Arc<Medium>> = None;
         if let Some(ref mi_inside) = self.medium_interface.inside {
             inside = Some(mi_inside.clone());
         }

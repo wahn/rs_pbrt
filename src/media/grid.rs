@@ -150,10 +150,8 @@ impl GridDensityMedium {
         let d1: Float = lerp(d.y, d01, d11);
         lerp(d.z, d0, d1)
     }
-}
-
-impl Medium for GridDensityMedium {
-    fn tr(&self, r_world: &Ray, sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum {
+    // Medium
+    pub fn tr(&self, r_world: &Ray, sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum {
         // TODO: ProfilePhase _(Prof::MediumTr);
         // TODO: ++nTrCalls;
         let mut in_ray: Ray = Ray::default();
@@ -205,7 +203,7 @@ impl Medium for GridDensityMedium {
         }
         Spectrum::new(tr)
     }
-    fn sample(
+    pub fn sample(
         &self,
         r_world: &Ray,
         sampler: &mut Box<dyn Sampler + Send + Sync>,
@@ -248,7 +246,7 @@ impl Medium for GridDensityMedium {
                     &r_world.position(t),
                     &(-r_world.d),
                     r_world.time,
-                    Some(Arc::new(GridDensityMedium {
+                    Some(Arc::new(Medium::GridDensity(GridDensityMedium {
                         sigma_a: self.sigma_a,
                         sigma_s: self.sigma_s,
                         g: self.g,
@@ -259,7 +257,7 @@ impl Medium for GridDensityMedium {
                         density: self.density.clone(),
                         sigma_t: self.sigma_t,
                         inv_max_density: self.inv_max_density,
-                    })),
+                    }))),
                     Some(Arc::new(HenyeyGreenstein { g: self.g })),
                 );
                 mi_opt = Some(mi);
