@@ -120,7 +120,7 @@ impl SceneDescriptionBuilder {
 }
 
 struct RenderOptions {
-    primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
+    primitives: Vec<Arc<Primitive>>,
     triangles: Vec<Arc<Triangle>>,
     disks: Vec<Arc<Disk>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
@@ -128,7 +128,7 @@ struct RenderOptions {
 
 impl RenderOptions {
     fn new(scene: SceneDescription) -> RenderOptions {
-        let primitives: Vec<Arc<dyn Primitive + Sync + Send>> = Vec::new();
+        let primitives: Vec<Arc<Primitive>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
         let mut disks: Vec<Arc<Disk>> = Vec::new();
         let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
@@ -1945,20 +1945,20 @@ fn main() {
     let mut triangle_count: usize = 0;
     for triangle in render_options.triangles {
         if triangle_count < 72 {
-            let geo_prim = Arc::new(GeometricPrimitive::new(
+            let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                 triangle,
                 Some(plastic1.clone()),
                 None,
                 None,
-            ));
+            )));
             render_options.primitives.push(geo_prim.clone());
         } else {
-            let geo_prim = Arc::new(GeometricPrimitive::new(
+            let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                 triangle,
                 Some(plastic2.clone()),
                 None,
                 None,
-            ));
+            )));
             render_options.primitives.push(geo_prim.clone());
         }
         triangle_count += 1;
@@ -1968,21 +1968,21 @@ fn main() {
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
     let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
     for disk in render_options.disks {
-        let geo_prim = Arc::new(GeometricPrimitive::new(
+        let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
             disk,
             Some(matte.clone()),
             None,
             None,
-        ));
+        )));
         render_options.primitives.push(geo_prim.clone());
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
-    let accelerator = Arc::new(BVHAccel::new(
+    let accelerator = Arc::new(Primitive::BVH(BVHAccel::new(
         render_options.primitives,
         4,
         SplitMethod::SAH,
-    ));
+    )));
     // SamplerIntegrator::Render (integrator.cpp)
     let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
     // create camera

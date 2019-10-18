@@ -129,7 +129,7 @@ impl SceneDescriptionBuilder {
 }
 
 struct RenderOptions {
-    primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
+    primitives: Vec<Arc<Primitive>>,
     triangles: Vec<Arc<Triangle>>,
     spheres: Vec<Arc<Sphere>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
@@ -137,7 +137,7 @@ struct RenderOptions {
 
 impl RenderOptions {
     fn new(scene: SceneDescription) -> RenderOptions {
-        let primitives: Vec<Arc<dyn Primitive + Sync + Send>> = Vec::new();
+        let primitives: Vec<Arc<Primitive>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
         let mut spheres: Vec<Arc<Sphere>> = Vec::new();
         let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
@@ -375,23 +375,23 @@ fn main() {
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(
+            let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                 triangle,
                 Some(matte.clone()),
                 None,
                 None,
-            ));
+            )));
             render_options.primitives.push(geo_prim.clone());
         }
         if matches.opt_present("m") {
             // use only matte materials
             for sphere in render_options.spheres {
-                let geo_prim = Arc::new(GeometricPrimitive::new(
+                let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                     sphere,
                     Some(matte.clone()),
                     None,
                     None,
-                ));
+                )));
                 render_options.primitives.push(geo_prim.clone());
             }
         } else {
@@ -399,20 +399,20 @@ fn main() {
             let mut sphere_counter: u8 = 0;
             for sphere in render_options.spheres {
                 if sphere_counter == 0 {
-                    let geo_prim = Arc::new(GeometricPrimitive::new(
+                    let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                         sphere,
                         Some(mirror.clone()),
                         None,
                         None,
-                    ));
+                    )));
                     render_options.primitives.push(geo_prim.clone());
                 } else {
-                    let geo_prim = Arc::new(GeometricPrimitive::new(
+                    let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                         sphere,
                         Some(glass.clone()),
                         None,
                         None,
-                    ));
+                    )));
                     render_options.primitives.push(geo_prim.clone());
                 }
                 sphere_counter += 1;
@@ -444,31 +444,31 @@ fn main() {
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(checker, sigma, None));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(
+            let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                 triangle,
                 Some(matte.clone()),
                 None,
                 None,
-            ));
+            )));
             render_options.primitives.push(geo_prim.clone());
         }
         let mut sphere_counter: u8 = 0;
         for sphere in render_options.spheres {
             if sphere_counter == 0 {
-                let geo_prim = Arc::new(GeometricPrimitive::new(
+                let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                     sphere,
                     Some(mirror.clone()),
                     None,
                     None,
-                ));
+                )));
                 render_options.primitives.push(geo_prim.clone());
             } else {
-                let geo_prim = Arc::new(GeometricPrimitive::new(
+                let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                     sphere,
                     Some(glass.clone()),
                     None,
                     None,
-                ));
+                )));
                 render_options.primitives.push(geo_prim.clone());
             }
             sphere_counter += 1;
@@ -504,31 +504,31 @@ fn main() {
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(MatteMaterial::new(lines_tex, sigma, None));
         for triangle in render_options.triangles {
-            let geo_prim = Arc::new(GeometricPrimitive::new(
+            let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                 triangle,
                 Some(matte.clone()),
                 None,
                 None,
-            ));
+            )));
             render_options.primitives.push(geo_prim.clone());
         }
         let mut sphere_counter: u8 = 0;
         for sphere in render_options.spheres {
             if sphere_counter == 0 {
-                let geo_prim = Arc::new(GeometricPrimitive::new(
+                let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                     sphere,
                     Some(mirror.clone()),
                     None,
                     None,
-                ));
+                )));
                 render_options.primitives.push(geo_prim.clone());
             } else {
-                let geo_prim = Arc::new(GeometricPrimitive::new(
+                let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                     sphere,
                     Some(glass.clone()),
                     None,
                     None,
-                ));
+                )));
                 render_options.primitives.push(geo_prim.clone());
             }
             sphere_counter += 1;
@@ -536,11 +536,11 @@ fn main() {
     }
     // TMP: process SceneDescription before handing primitives to BVHAccel
     // pbrt::RenderOptions::MakeScene
-    let accelerator = Arc::new(BVHAccel::new(
+    let accelerator = Arc::new(Primitive::BVH(BVHAccel::new(
         render_options.primitives,
         4,
         SplitMethod::SAH,
-    ));
+    )));
     println!("###############");
     println!("# accelerator #");
     println!("###############");

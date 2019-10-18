@@ -19,13 +19,13 @@ use crate::core::sampler::Sampler;
 pub struct Scene {
     pub lights: Vec<Arc<dyn Light + Sync + Send>>,
     pub infinite_lights: Vec<Arc<dyn Light + Sync + Send>>,
-    pub aggregate: Arc<dyn Primitive + Sync + Send>,
+    pub aggregate: Arc<Primitive>,
     pub world_bound: Bounds3f,
 }
 
 impl Scene {
     pub fn new(
-        aggregate: Arc<dyn Primitive + Sync + Send>,
+        aggregate: Arc<Primitive>,
         lights: Vec<Arc<dyn Light + Sync + Send>>,
     ) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();

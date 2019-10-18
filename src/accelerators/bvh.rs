@@ -115,13 +115,13 @@ pub struct LinearBVHNode {
 pub struct BVHAccel {
     max_prims_in_node: usize,
     split_method: SplitMethod,
-    pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
+    pub primitives: Vec<Arc<Primitive>>,
     pub nodes: Vec<LinearBVHNode>,
 }
 
 impl BVHAccel {
     pub fn new(
-        p: Vec<Arc<dyn Primitive + Sync + Send>>,
+        p: Vec<Arc<Primitive>>,
         max_prims_in_node: usize,
         split_method: SplitMethod,
     ) -> Self {
@@ -144,7 +144,7 @@ impl BVHAccel {
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
-        let mut ordered_prims: Vec<Arc<dyn Primitive + Sync + Send>> =
+        let mut ordered_prims: Vec<Arc<Primitive>> =
             Vec::with_capacity(num_prims);
         // println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
         // let start = PreciseTime::now();
@@ -178,7 +178,7 @@ impl BVHAccel {
         let unwrapped = Arc::try_unwrap(bvh_ordered_prims);
         unwrapped.ok().unwrap()
     }
-    pub fn create(prims: Vec<Arc<dyn Primitive + Send + Sync>>, ps: &ParamSet) -> Arc<BVHAccel> {
+    pub fn create(prims: Vec<Arc<Primitive>>, ps: &ParamSet) -> Primitive {
         let split_method_name: String = ps.find_one_string("splitmethod", String::from("sah"));
         let split_method;
         if split_method_name == "sah" {
@@ -197,7 +197,7 @@ impl BVHAccel {
             split_method = SplitMethod::SAH;
         }
         let max_prims_in_node: i32 = ps.find_one_int("maxnodeprims", 4);
-        Arc::new(BVHAccel::new(
+        Primitive::BVH(BVHAccel::new(
             prims.clone(),
             max_prims_in_node as usize,
             split_method,
@@ -210,7 +210,7 @@ impl BVHAccel {
         start: usize,
         end: usize,
         total_nodes: &mut usize,
-        ordered_prims: &mut Vec<Arc<dyn Primitive + Sync + Send>>,
+        ordered_prims: &mut Vec<Arc<Primitive>>,
     ) -> &'a mut BVHBuildNode<'a> {
         assert_ne!(start, end);
         let node: &mut BVHBuildNode<'a> = arena.alloc(BVHBuildNode::default());
@@ -379,7 +379,7 @@ impl BVHAccel {
         }
         return node;
     }
-    fn flatten_bvh_tree<'a>(
+    pub fn flatten_bvh_tree<'a>(
         node: &mut BVHBuildNode<'a>,
         nodes: &mut Vec<LinearBVHNode>,
         offset: &mut usize,
@@ -412,17 +412,15 @@ impl BVHAccel {
         }
         my_offset
     }
-}
-
-impl Primitive for BVHAccel {
-    fn world_bound(&self) -> Bounds3f {
+    // Primitive
+    pub fn world_bound(&self) -> Bounds3f {
         if self.nodes.len() > 0 {
             self.nodes[0].bounds
         } else {
             Bounds3f::default()
         }
     }
-    fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         if self.nodes.len() == 0 {
             return None;
         }
@@ -490,7 +488,7 @@ impl Primitive for BVHAccel {
             None
         }
     }
-    fn intersect_p(&self, ray: &Ray) -> bool {
+    pub fn intersect_p(&self, ray: &Ray) -> bool {
         if self.nodes.len() == 0 {
             return false;
         }
@@ -545,10 +543,10 @@ impl Primitive for BVHAccel {
         }
         false
     }
-    fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
+    pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
         None
     }
-    fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
+    pub fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
         None
     }
 }

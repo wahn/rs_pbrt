@@ -204,8 +204,8 @@ pub struct RenderOptions {
     pub camera_to_world: TransformSet,
     pub named_media: HashMap<String, Arc<Medium>>,
     pub lights: Vec<Arc<dyn Light + Sync + Send>>,
-    pub primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
-    pub instances: HashMap<String, Vec<Arc<dyn Primitive + Sync + Send>>>,
+    pub primitives: Vec<Arc<Primitive>>,
+    pub instances: HashMap<String, Vec<Arc<Primitive>>>,
     pub current_instance: String,
     pub have_scattering_media: bool, // false
 }
@@ -2290,15 +2290,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
-                            let accelerator = BVHAccel::create(
+                            let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
-                            );
+                            ));
                             // MakeScene
-                            let scene: Scene = Scene::new(
-                                accelerator.clone(),
-                                api_state.render_options.lights.clone(),
-                            );
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
@@ -2311,15 +2309,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             );
                         } else if api_state.render_options.accelerator_name == "kdtree" {
                             // CreateKdTreeAccelerator
-                            let accelerator = KdTreeAccel::create(
+                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
-                            );
+                            ));
                             // MakeScene
-                            let scene: Scene = Scene::new(
-                                accelerator.clone(),
-                                api_state.render_options.lights.clone(),
-                            );
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
@@ -2346,15 +2342,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
-                            let accelerator = BVHAccel::create(
+                            let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
-                            );
+                            ));
                             // MakeScene
-                            let scene: Scene = Scene::new(
-                                accelerator.clone(),
-                                api_state.render_options.lights.clone(),
-                            );
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
@@ -2367,15 +2361,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             );
                         } else if api_state.render_options.accelerator_name == "kdtree" {
                             // CreateKdTreeAccelerator
-                            let accelerator = KdTreeAccel::create(
+                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
-                            );
+                            ));
                             // MakeScene
-                            let scene: Scene = Scene::new(
-                                accelerator.clone(),
-                                api_state.render_options.lights.clone(),
-                            );
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
@@ -2408,30 +2400,26 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
-                            let accelerator = BVHAccel::create(
+                            let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
-                            );
+                            ));
                             // MakeScene
-                            let scene: Scene = Scene::new(
-                                accelerator.clone(),
-                                api_state.render_options.lights.clone(),
-                            );
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
                             render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
                         } else if api_state.render_options.accelerator_name == "kdtree" {
                             // CreateKdTreeAccelerator
-                            let accelerator = KdTreeAccel::create(
+                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
-                            );
+                            ));
                             // MakeScene
-                            let scene: Scene = Scene::new(
-                                accelerator.clone(),
-                                api_state.render_options.lights.clone(),
-                            );
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
@@ -2458,15 +2446,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
                             //  CreateBVHAccelerator
-                            let accelerator = BVHAccel::create(
+                            let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
-                            );
+                            ));
                             // MakeScene
-                            let scene: Scene = Scene::new(
-                                accelerator.clone(),
-                                api_state.render_options.lights.clone(),
-                            );
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
@@ -2479,15 +2465,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             );
                         } else if api_state.render_options.accelerator_name == "kdtree" {
                             // CreateKdTreeAccelerator
-                            let accelerator = KdTreeAccel::create(
+                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
                                 api_state.render_options.primitives.clone(),
                                 &api_state.render_options.accelerator_params,
-                            );
+                            ));
                             // MakeScene
-                            let scene: Scene = Scene::new(
-                                accelerator.clone(),
-                                api_state.render_options.lights.clone(),
-                            );
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
                             // TODO: primitives.erase(primitives.begin(), primitives.end());
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
@@ -2950,7 +2934,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
     // print_params(&params);
     api_state.param_set = params;
     // collect area lights
-    let mut prims: Vec<Arc<dyn Primitive + Send + Sync>> = Vec::new();
+    let mut prims: Vec<Arc<Primitive>> = Vec::new();
     let mut area_lights: Vec<Arc<dyn Light + Send + Sync>> = Vec::new();
     // possibly create area light for shape (see pbrtShape())
     if api_state.graphics_state.area_light != String::new() {
@@ -2997,12 +2981,12 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                     two_sided,
                 ));
                 area_lights.push(area_light.clone());
-                let geo_prim = Arc::new(GeometricPrimitive::new(
+                let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                     shape.clone(),
                     material.clone(),
                     Some(area_light.clone()),
                     Some(Arc::new(mi.clone())),
-                ));
+                )));
                 prims.push(geo_prim.clone());
             }
         }
@@ -3015,12 +2999,12 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
         for i in 0..shapes.len() {
             let shape = &shapes[i];
             let material = &materials[i];
-            let geo_prim = Arc::new(GeometricPrimitive::new(
+            let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                 shape.clone(),
                 material.clone(),
                 None,
                 Some(Arc::new(mi.clone())),
-            ));
+            )));
             prims.push(geo_prim.clone());
         }
         // animated?
@@ -3032,16 +3016,19 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                 api_state.render_options.transform_end_time,
             );
             if prims.len() > 1 {
-                let bvh: Arc<dyn Primitive + Send + Sync> =
-                    Arc::new(BVHAccel::new(prims.clone(), 4, SplitMethod::SAH));
+                let bvh: Arc<Primitive> = Arc::new(Primitive::BVH(BVHAccel::new(
+                    prims.clone(),
+                    4,
+                    SplitMethod::SAH,
+                )));
                 prims.clear();
                 prims.push(bvh.clone());
             }
             if let Some(primitive) = prims.pop() {
-                let geo_prim = Arc::new(TransformedPrimitive::new(
+                let geo_prim = Arc::new(Primitive::Transformed(TransformedPrimitive::new(
                     primitive,
                     animated_object_to_world,
-                ));
+                )));
                 prims.push(geo_prim.clone());
             }
         }
@@ -3223,18 +3210,21 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
                     .render_options
                     .accelerator_params
                     .find_one_int("maxnodeprims", 4);
-                let accelerator: Arc<dyn Primitive + Sync + Send> = Arc::new(BVHAccel::new(
+                let accelerator: Arc<Primitive> = Arc::new(Primitive::BVH(BVHAccel::new(
                     instance_vec.clone(),
                     max_prims_in_node as usize,
                     split_method,
-                ));
+                )));
                 instance_vec.clear();
                 instance_vec.push(accelerator);
             } else if api_state.render_options.accelerator_name == "kdtree" {
                 // println!("TODO: CreateKdTreeAccelerator");
                 // WARNING: Use BVHAccel for now !!!
-                let accelerator: Arc<dyn Primitive + Sync + Send> =
-                    Arc::new(BVHAccel::new(instance_vec.clone(), 4, SplitMethod::SAH));
+                let accelerator: Arc<Primitive> = Arc::new(Primitive::BVH(BVHAccel::new(
+                    instance_vec.clone(),
+                    4,
+                    SplitMethod::SAH,
+                )));
                 instance_vec.clear();
                 instance_vec.push(accelerator);
             } else {
@@ -3251,10 +3241,10 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
             &api_state.cur_transform.t[1],
             api_state.render_options.transform_end_time,
         );
-        let prim: Arc<dyn Primitive + Send + Sync> = Arc::new(TransformedPrimitive::new(
+        let prim: Arc<Primitive> = Arc::new(Primitive::Transformed(TransformedPrimitive::new(
             instance_vec[0].clone(),
             animated_instance_to_world,
-        ));
+        )));
         api_state.render_options.primitives.push(prim.clone());
     } else {
         println!(

@@ -267,7 +267,7 @@ impl SceneDescriptionBuilder {
 
 struct RenderOptions {
     has_emitters: bool,
-    primitives: Vec<Arc<dyn Primitive + Sync + Send>>,
+    primitives: Vec<Arc<Primitive>>,
     triangles: Vec<Arc<Triangle>>,
     triangle_materials: Vec<Arc<dyn Material + Sync + Send>>,
     triangle_lights: Vec<Option<Arc<dyn AreaLight + Sync + Send>>>,
@@ -282,7 +282,7 @@ impl RenderOptions {
         light_scale: Float,
     ) -> RenderOptions {
         let mut has_emitters: bool = false;
-        let primitives: Vec<Arc<dyn Primitive + Sync + Send>> = Vec::new();
+        let primitives: Vec<Arc<Primitive>> = Vec::new();
         let mut triangles: Vec<Arc<Triangle>> = Vec::new();
         let mut triangle_materials: Vec<Arc<dyn Material + Sync + Send>> = Vec::new();
         let mut triangle_lights: Vec<Option<Arc<dyn AreaLight + Sync + Send>>> = Vec::new();
@@ -2724,12 +2724,12 @@ fn main() -> std::io::Result<()> {
         let triangle = &render_options.triangles[triangle_idx];
         let triangle_material = &render_options.triangle_materials[triangle_idx];
         let triangle_light = &render_options.triangle_lights[triangle_idx];
-        let geo_prim = Arc::new(GeometricPrimitive::new(
+        let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
             triangle.clone(),
             Some(triangle_material.clone()),
             triangle_light.clone(),
             None,
-        ));
+        )));
         render_options.primitives.push(geo_prim.clone());
     }
     println!("number of lights = {:?}", render_options.lights.len());
@@ -2737,11 +2737,11 @@ fn main() -> std::io::Result<()> {
         "number of primitives = {:?}",
         render_options.primitives.len()
     );
-    let accelerator = Arc::new(BVHAccel::new(
+    let accelerator = Arc::new(Primitive::BVH(BVHAccel::new(
         render_options.primitives,
         4,
         SplitMethod::SAH,
-    ));
+    )));
     let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
     let mut pos = Point3f {
         x: 0.0,

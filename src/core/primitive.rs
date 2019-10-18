@@ -4,6 +4,8 @@
 // std
 use std::sync::Arc;
 // pbrt
+use crate::accelerators::bvh::BVHAccel;
+use crate::accelerators::kdtreeaccel::KdTreeAccel;
 use crate::core::geometry::nrm_dot_nrm;
 use crate::core::geometry::{Bounds3f, Ray};
 use crate::core::interaction::SurfaceInteraction;
@@ -16,33 +18,87 @@ use crate::core::transform::{AnimatedTransform, Transform};
 
 // see primitive.h
 
-pub trait Primitive {
-    fn world_bound(&self) -> Bounds3f;
-    fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction>;
-    fn intersect_p(&self, r: &Ray) -> bool;
-    fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>>;
-    fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>>;
-    fn compute_scattering_functions(
+pub enum Primitive {
+    Geometric(GeometricPrimitive),
+    Transformed(TransformedPrimitive),
+    BVH(BVHAccel),
+    KdTree(KdTreeAccel),
+}
+
+impl Primitive {
+    pub fn world_bound(&self) -> Bounds3f {
+        match self {
+            Primitive::Geometric(primitive) => primitive.world_bound(),
+            Primitive::Transformed(primitive) => primitive.world_bound(),
+            Primitive::BVH(primitive) => primitive.world_bound(),
+            Primitive::KdTree(primitive) => primitive.world_bound(),
+        }
+    }
+    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+        match self {
+            Primitive::Geometric(primitive) => {
+                let isect_opt = primitive.intersect(ray);
+                if let Some(mut isect) = isect_opt {
+                    isect.primitive = Some(self);
+                    Some(isect)
+                } else {
+                    isect_opt
+                }
+            },
+            Primitive::Transformed(primitive) => primitive.intersect(ray),
+            Primitive::BVH(primitive) => primitive.intersect(ray),
+            Primitive::KdTree(primitive) => primitive.intersect(ray),
+        }
+    }
+    pub fn intersect_p(&self, ray: &Ray) -> bool {
+        match self {
+            Primitive::Geometric(primitive) => primitive.intersect_p(ray),
+            Primitive::Transformed(primitive) => primitive.intersect_p(ray),
+            Primitive::BVH(primitive) => primitive.intersect_p(ray),
+            Primitive::KdTree(primitive) => primitive.intersect_p(ray),
+        }
+    }
+    pub fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
+        match self {
+            Primitive::Geometric(primitive) => primitive.get_area_light(),
+            Primitive::Transformed(primitive) => primitive.get_area_light(),
+            Primitive::BVH(primitive) => primitive.get_area_light(),
+            Primitive::KdTree(primitive) => primitive.get_area_light(),
+        }
+    }
+    pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
+        match self {
+            Primitive::Geometric(primitive) => primitive.get_material(),
+            Primitive::Transformed(primitive) => primitive.get_material(),
+            Primitive::BVH(primitive) => primitive.get_material(),
+            Primitive::KdTree(primitive) => primitive.get_material(),
+        }
+    }
+    pub fn compute_scattering_functions(
         &self,
         isect: &mut SurfaceInteraction,
         mode: TransportMode,
         allow_multiple_lobes: bool,
     ) {
-        if let Some(ref material) = self.get_material() {
-            material.compute_scattering_functions(
-                isect,
-                mode,
-                allow_multiple_lobes,
-                self.get_material(),
-                None,
-            );
+        match self {
+            _ => {
+                if let Some(ref material) = self.get_material() {
+                    material.compute_scattering_functions(
+                        isect,
+                        mode,
+                        allow_multiple_lobes,
+                        self.get_material(),
+                        None,
+                    );
+                }
+                assert!(
+                    nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0,
+                    "n: {:?} dot shading.n: {:?}",
+                    isect.n,
+                    isect.shading.n
+                );
+            }
         }
-        assert!(
-            nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0,
-            "n: {:?} dot shading.n: {:?}",
-            isect.n,
-            isect.shading.n
-        );
     }
 }
 
@@ -95,15 +151,13 @@ impl GeometricPrimitive {
             }
         }
     }
-}
-
-impl Primitive for GeometricPrimitive {
-    fn world_bound(&self) -> Bounds3f {
+    // Primitive
+    pub fn world_bound(&self) -> Bounds3f {
         self.shape.world_bound()
     }
-    fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         if let Some((mut isect, t_hit)) = self.shape.intersect(ray) {
-            isect.primitive = Some(self);
+            // isect.primitive = Some(self);
             ray.t_max = t_hit;
             assert!(nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0 as Float);
             // initialize _SurfaceInteraction::mediumInterface_ after
@@ -138,17 +192,17 @@ impl Primitive for GeometricPrimitive {
             None
         }
     }
-    fn intersect_p(&self, r: &Ray) -> bool {
+    pub fn intersect_p(&self, r: &Ray) -> bool {
         self.shape.intersect_p(r)
     }
-    fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
+    pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
         if let Some(ref material) = self.material {
             Some(material.clone())
         } else {
             None
         }
     }
-    fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
+    pub fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
         if let Some(ref area_light) = self.area_light {
             Some(area_light.clone())
         } else {
@@ -158,28 +212,23 @@ impl Primitive for GeometricPrimitive {
 }
 
 pub struct TransformedPrimitive {
-    pub primitive: Arc<dyn Primitive + Sync + Send>,
+    pub primitive: Arc<Primitive>,
     pub primitive_to_world: AnimatedTransform,
 }
 
 impl TransformedPrimitive {
-    pub fn new(
-        primitive: Arc<dyn Primitive + Sync + Send>,
-        primitive_to_world: AnimatedTransform,
-    ) -> Self {
+    pub fn new(primitive: Arc<Primitive>, primitive_to_world: AnimatedTransform) -> Self {
         TransformedPrimitive {
             primitive,
             primitive_to_world,
         }
     }
-}
-
-impl Primitive for TransformedPrimitive {
-    fn world_bound(&self) -> Bounds3f {
+    // Primitive
+    pub fn world_bound(&self) -> Bounds3f {
         self.primitive_to_world
             .motion_bounds(&self.primitive.world_bound())
     }
-    fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, r: &mut Ray) -> Option<SurfaceInteraction> {
         // compute _ray_ after transformation by _self.primitive_to_world_
         let mut interpolated_prim_to_world: Transform = Transform::default();
         self.primitive_to_world
@@ -221,7 +270,7 @@ impl Primitive for TransformedPrimitive {
             None
         }
     }
-    fn intersect_p(&self, r: &Ray) -> bool {
+    pub fn intersect_p(&self, r: &Ray) -> bool {
         let mut interpolated_prim_to_world: Transform = Transform::default();
         self.primitive_to_world
             .interpolate(r.time, &mut interpolated_prim_to_world);
@@ -229,10 +278,10 @@ impl Primitive for TransformedPrimitive {
         self.primitive
             .intersect_p(&interpolated_prim_to_world.transform_ray(&*r))
     }
-    fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
+    pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
         None
     }
-    fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
+    pub fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
         None
     }
 }
