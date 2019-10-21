@@ -9,7 +9,7 @@ use std::path::PathBuf;
 use std::sync::Arc;
 // pbrt
 use crate::accelerators::bvh::{BVHAccel, SplitMethod};
-// use crate::accelerators::kdtreeaccel::KdTreeAccel;
+use crate::accelerators::kdtreeaccel::KdTreeAccel;
 use crate::cameras::environment::EnvironmentCamera;
 use crate::cameras::orthographic::OrthographicCamera;
 use crate::cameras::perspective::PerspectiveCamera;
@@ -2307,19 +2307,19 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 &mut integrator,
                                 num_threads,
                             );
-                        // } else if api_state.render_options.accelerator_name == "kdtree" {
-                        //     // CreateKdTreeAccelerator
-                        //     let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
-                        //         api_state.render_options.primitives.clone(),
-                        //         &api_state.render_options.accelerator_params,
-                        //     ));
-                        //     // MakeScene
-                        //     let scene: Scene =
-                        //         Scene::new(accelerator, api_state.render_options.lights.clone());
-                        //     // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        //     // TODO: lights.erase(lights.begin(), lights.end());
-                        //     let num_threads: u8 = api_state.number_of_threads;
-                        //     render(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
+                            // CreateKdTreeAccelerator
+                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
+                                api_state.render_options.primitives.clone(),
+                                &api_state.render_options.accelerator_params,
+                            ));
+                            // MakeScene
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render(&scene, &camera, &mut sampler, &mut integrator, num_threads);
                         } else {
                             panic!(
                                 "Accelerator \"{}\" unknown.",
@@ -2359,25 +2359,25 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 &mut integrator,
                                 num_threads,
                             );
-                        // } else if api_state.render_options.accelerator_name == "kdtree" {
-                        //     // CreateKdTreeAccelerator
-                        //     let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
-                        //         api_state.render_options.primitives.clone(),
-                        //         &api_state.render_options.accelerator_params,
-                        //     ));
-                        //     // MakeScene
-                        //     let scene: Scene =
-                        //         Scene::new(accelerator, api_state.render_options.lights.clone());
-                        //     // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        //     // TODO: lights.erase(lights.begin(), lights.end());
-                        //     let num_threads: u8 = api_state.number_of_threads;
-                        //     render_bdpt(
-                        //         &scene,
-                        //         &camera,
-                        //         &mut sampler,
-                        //         &mut integrator,
-                        //         num_threads,
-                        //     );
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
+                            // CreateKdTreeAccelerator
+                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
+                                api_state.render_options.primitives.clone(),
+                                &api_state.render_options.accelerator_params,
+                            ));
+                            // MakeScene
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_bdpt(
+                                &scene,
+                                &camera,
+                                &mut sampler,
+                                &mut integrator,
+                                num_threads,
+                            );
                         } else {
                             panic!(
                                 "Accelerator \"{}\" unknown.",
@@ -2411,19 +2411,19 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             // TODO: lights.erase(lights.begin(), lights.end());
                             let num_threads: u8 = api_state.number_of_threads;
                             render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                        // } else if api_state.render_options.accelerator_name == "kdtree" {
-                        //     // CreateKdTreeAccelerator
-                        //     let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
-                        //         api_state.render_options.primitives.clone(),
-                        //         &api_state.render_options.accelerator_params,
-                        //     ));
-                        //     // MakeScene
-                        //     let scene: Scene =
-                        //         Scene::new(accelerator, api_state.render_options.lights.clone());
-                        //     // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        //     // TODO: lights.erase(lights.begin(), lights.end());
-                        //     let num_threads: u8 = api_state.number_of_threads;
-                        //     render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
+                            // CreateKdTreeAccelerator
+                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
+                                api_state.render_options.primitives.clone(),
+                                &api_state.render_options.accelerator_params,
+                            ));
+                            // MakeScene
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
                         } else {
                             panic!(
                                 "Accelerator \"{}\" unknown.",
@@ -2463,25 +2463,25 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 &mut integrator,
                                 num_threads,
                             );
-                        // } else if api_state.render_options.accelerator_name == "kdtree" {
-                        //     // CreateKdTreeAccelerator
-                        //     let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
-                        //         api_state.render_options.primitives.clone(),
-                        //         &api_state.render_options.accelerator_params,
-                        //     ));
-                        //     // MakeScene
-                        //     let scene: Scene =
-                        //         Scene::new(accelerator, api_state.render_options.lights.clone());
-                        //     // TODO: primitives.erase(primitives.begin(), primitives.end());
-                        //     // TODO: lights.erase(lights.begin(), lights.end());
-                        //     let num_threads: u8 = api_state.number_of_threads;
-                        //     render_sppm(
-                        //         &scene,
-                        //         &camera,
-                        //         &mut sampler,
-                        //         &mut integrator,
-                        //         num_threads,
-                        //     );
+                        } else if api_state.render_options.accelerator_name == "kdtree" {
+                            // CreateKdTreeAccelerator
+                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
+                                api_state.render_options.primitives.clone(),
+                                &api_state.render_options.accelerator_params,
+                            ));
+                            // MakeScene
+                            let scene: Scene =
+                                Scene::new(accelerator, api_state.render_options.lights.clone());
+                            // TODO: primitives.erase(primitives.begin(), primitives.end());
+                            // TODO: lights.erase(lights.begin(), lights.end());
+                            let num_threads: u8 = api_state.number_of_threads;
+                            render_sppm(
+                                &scene,
+                                &camera,
+                                &mut sampler,
+                                &mut integrator,
+                                num_threads,
+                            );
                         } else {
                             panic!(
                                 "Accelerator \"{}\" unknown.",
@@ -3217,16 +3217,16 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
                 )));
                 instance_vec.clear();
                 instance_vec.push(accelerator);
-            // } else if api_state.render_options.accelerator_name == "kdtree" {
-            //     // println!("TODO: CreateKdTreeAccelerator");
-            //     // WARNING: Use BVHAccel for now !!!
-            //     let accelerator: Arc<Primitive> = Arc::new(Primitive::BVH(BVHAccel::new(
-            //         instance_vec.clone(),
-            //         4,
-            //         SplitMethod::SAH,
-            //     )));
-            //     instance_vec.clear();
-            //     instance_vec.push(accelerator);
+            } else if api_state.render_options.accelerator_name == "kdtree" {
+                // println!("TODO: CreateKdTreeAccelerator");
+                // WARNING: Use BVHAccel for now !!!
+                let accelerator: Arc<Primitive> = Arc::new(Primitive::BVH(BVHAccel::new(
+                    instance_vec.clone(),
+                    4,
+                    SplitMethod::SAH,
+                )));
+                instance_vec.clear();
+                instance_vec.push(accelerator);
             } else {
                 panic!(
                     "Accelerator \"{}\" unknown.",

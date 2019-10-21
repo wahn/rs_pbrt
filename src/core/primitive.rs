@@ -5,7 +5,7 @@
 use std::sync::Arc;
 // pbrt
 use crate::accelerators::bvh::BVHAccel;
-// use crate::accelerators::kdtreeaccel::KdTreeAccel;
+use crate::accelerators::kdtreeaccel::KdTreeAccel;
 use crate::core::geometry::nrm_dot_nrm;
 use crate::core::geometry::{Bounds3f, Ray};
 use crate::core::interaction::SurfaceInteraction;
@@ -22,7 +22,7 @@ pub enum Primitive {
     Geometric(GeometricPrimitive),
     Transformed(TransformedPrimitive),
     BVH(BVHAccel),
-    // KdTree(KdTreeAccel),
+    KdTree(KdTreeAccel),
 }
 
 impl Primitive {
@@ -31,7 +31,7 @@ impl Primitive {
             Primitive::Geometric(primitive) => primitive.world_bound(),
             Primitive::Transformed(primitive) => primitive.world_bound(),
             Primitive::BVH(primitive) => primitive.world_bound(),
-            // Primitive::KdTree(primitive) => primitive.world_bound(),
+            Primitive::KdTree(primitive) => primitive.world_bound(),
         }
     }
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
@@ -47,7 +47,7 @@ impl Primitive {
             },
             Primitive::Transformed(primitive) => primitive.intersect(ray),
             Primitive::BVH(primitive) => primitive.intersect(ray),
-            // Primitive::KdTree(primitive) => primitive.intersect(ray),
+            Primitive::KdTree(primitive) => primitive.intersect(ray),
         }
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
@@ -55,7 +55,7 @@ impl Primitive {
             Primitive::Geometric(primitive) => primitive.intersect_p(ray),
             Primitive::Transformed(primitive) => primitive.intersect_p(ray),
             Primitive::BVH(primitive) => primitive.intersect_p(ray),
-            // Primitive::KdTree(primitive) => primitive.intersect_p(ray),
+            Primitive::KdTree(primitive) => primitive.intersect_p(ray),
         }
     }
     pub fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
@@ -63,7 +63,7 @@ impl Primitive {
             Primitive::Geometric(primitive) => primitive.get_area_light(),
             Primitive::Transformed(primitive) => primitive.get_area_light(),
             Primitive::BVH(primitive) => primitive.get_area_light(),
-            // Primitive::KdTree(primitive) => primitive.get_area_light(),
+            Primitive::KdTree(primitive) => primitive.get_area_light(),
         }
     }
     pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
@@ -71,7 +71,7 @@ impl Primitive {
             Primitive::Geometric(primitive) => primitive.get_material(),
             Primitive::Transformed(primitive) => primitive.get_material(),
             Primitive::BVH(primitive) => primitive.get_material(),
-            // Primitive::KdTree(primitive) => primitive.get_material(),
+            Primitive::KdTree(primitive) => primitive.get_material(),
         }
     }
     pub fn compute_scattering_functions(

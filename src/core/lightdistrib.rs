@@ -21,11 +21,20 @@ use crate::core::scene::Scene;
 /// LightDistribution defines a general interface for classes that
 /// provide probability distributions for sampling light sources at a
 /// given point in space.
-pub trait LightDistribution {
-    /// Given a point |p| in space, this method returns a (hopefully
-    /// effective) sampling distribution for light sources at that
-    /// point.
-    fn lookup(&self, p: &Point3f) -> Arc<Distribution1D>;
+pub enum LightDistribution {
+    Uniform(UniformLightDistribution),
+    Power(PowerLightDistribution),
+    Spatial(SpatialLightDistribution),
+}
+
+impl LightDistribution {
+    pub fn lookup(&self, p: &Point3f) -> Arc<Distribution1D> {
+        match self {
+            LightDistribution::Uniform(distribution) => distribution.lookup(p),
+            LightDistribution::Power(distribution) => distribution.lookup(p),
+            LightDistribution::Spatial(distribution) => distribution.lookup(p),
+        }
+    }
 }
 
 #[derive(Debug, Default)]
@@ -52,10 +61,13 @@ impl UniformLightDistribution {
             distrib: Arc::new(Distribution1D::new(prob)),
         }
     }
-}
 
-impl LightDistribution for UniformLightDistribution {
-    fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
+    // LightDistribution
+
+    /// Given a point |p| in space, this method returns a (hopefully
+    /// effective) sampling distribution for light sources at that
+    /// point.
+    pub fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
         self.distrib.clone()
     }
 }
@@ -80,10 +92,13 @@ impl PowerLightDistribution {
             distrib: compute_light_power_distribution(scene),
         }
     }
-}
 
-impl LightDistribution for PowerLightDistribution {
-    fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
+    // LightDistribution
+
+    /// Given a point |p| in space, this method returns a (hopefully
+    /// effective) sampling distribution for light sources at that
+    /// point.
+    pub fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
         if let Some(ref distrib) = self.distrib {
             distrib.clone()
         } else {
@@ -237,10 +252,13 @@ impl SpatialLightDistribution {
         // Compute a sampling distribution from the accumulated contributions.
         Distribution1D::new(light_contrib)
     }
-}
 
-impl LightDistribution for SpatialLightDistribution {
-    fn lookup(&self, p: &Point3f) -> Arc<Distribution1D> {
+    // LightDistribution
+
+    /// Given a point |p| in space, this method returns a (hopefully
+    /// effective) sampling distribution for light sources at that
+    /// point.
+    pub fn lookup(&self, p: &Point3f) -> Arc<Distribution1D> {
         // TODO: ProfilePhase _(Prof::LightDistribLookup);
         // TODO: ++nLookups;
 
@@ -361,18 +379,26 @@ const INVALID_PACKED_POS: u64 = 0xffffffffffffffff;
 pub fn create_light_sample_distribution(
     name: String,
     scene: &Scene,
-) -> Option<Arc<dyn LightDistribution + Send + Sync>> {
+) -> Option<Arc<LightDistribution>> {
     if name == "uniform" || scene.lights.len() == 1 {
-        return Some(Arc::new(UniformLightDistribution::new(scene)));
+        return Some(Arc::new(LightDistribution::Uniform(
+            UniformLightDistribution::new(scene),
+        )));
     } else if name == "power" {
-        return Some(Arc::new(PowerLightDistribution::new(scene)));
+        return Some(Arc::new(LightDistribution::Power(
+            PowerLightDistribution::new(scene),
+        )));
     } else if name == "spatial" {
-        return Some(Arc::new(SpatialLightDistribution::new(scene, 64)));
+        return Some(Arc::new(LightDistribution::Spatial(
+            SpatialLightDistribution::new(scene, 64),
+        )));
     } else {
         println!(
             "Light sample distribution type \"{:?}\" unknown. Using \"spatial\".",
             name
         );
-        return Some(Arc::new(SpatialLightDistribution::new(scene, 64)));
+        return Some(Arc::new(LightDistribution::Spatial(
+            SpatialLightDistribution::new(scene, 64),
+        )));
     }
 }

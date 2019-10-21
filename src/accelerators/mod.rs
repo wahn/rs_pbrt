@@ -9,4 +9,4 @@
 //! - KdTreeAccel
 
 pub mod bvh;
-// pub mod kdtreeaccel;
+pub mod kdtreeaccel;

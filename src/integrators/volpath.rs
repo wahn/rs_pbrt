@@ -28,7 +28,7 @@ pub struct VolPathIntegrator {
     pub max_depth: u32,
     rr_threshold: Float,           // 1.0
     light_sample_strategy: String, // "spatial"
-    light_distribution: Option<Arc<dyn LightDistribution + Send + Sync>>,
+    light_distribution: Option<Arc<LightDistribution>>,
 }
 
 impl VolPathIntegrator {
