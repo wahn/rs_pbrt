@@ -26,7 +26,7 @@ pub fn create_ply_mesh(
     params: &ParamSet,
     float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>>,
     search_directory: Option<&Box<PathBuf>>,
-) -> Vec<Arc<dyn Shape + Send + Sync>> {
+) -> Vec<Arc<Shape>> {
     let mut filename: String = params.find_one_string("filename", String::new());
     if let Some(ref search_directory) = search_directory {
         let mut path_buf: PathBuf = PathBuf::from("/");
@@ -264,15 +264,15 @@ pub fn create_ply_mesh(
         alpha_tex,
         shadow_alpha_tex,
     ));
-    let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
+    let mut shapes: Vec<Arc<Shape>> = Vec::new();
     for id in 0..mesh.n_triangles {
-        let triangle = Arc::new(Triangle::new(
+        let triangle = Arc::new(Shape::Trngl(Triangle::new(
             mesh.object_to_world,
             mesh.world_to_object,
             mesh.transform_swaps_handedness,
             mesh.clone(),
             id,
-        ));
+        )));
         shapes.push(triangle.clone());
     }
     shapes

@@ -9,7 +9,6 @@ use crate::core::material::Material;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, radians};
 use crate::core::sampling::concentric_sample_disk;
-use crate::core::shape::Shape;
 use crate::core::transform::Transform;
 
 // see disk.h
@@ -71,10 +70,8 @@ impl Disk {
             material: None,
         }
     }
-}
-
-impl Shape for Disk {
-    fn object_bound(&self) -> Bounds3f {
+    // Shape
+    pub fn object_bound(&self) -> Bounds3f {
         Bounds3f {
             p_min: Point3f {
                 x: -self.radius,
@@ -88,11 +85,11 @@ impl Shape for Disk {
             },
         }
     }
-    fn world_bound(&self) -> Bounds3f {
+    pub fn world_bound(&self) -> Bounds3f {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(&self.object_bound())
     }
-    fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // TODO: ProfilePhase p(Prof::ShapeIntersect);
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
@@ -160,7 +157,7 @@ impl Shape for Disk {
             &dndu,
             &dndv,
             ray.time,
-            Some(self),
+            None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(ref shape) = si.shape {
@@ -171,7 +168,7 @@ impl Shape for Disk {
         }
         Some((isect, t_shape_hit))
     }
-    fn intersect_p(&self, r: &Ray) -> bool {
+    pub fn intersect_p(&self, r: &Ray) -> bool {
         // TODO: ProfilePhase p(Prof::ShapeIntersectP);
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
@@ -206,18 +203,18 @@ impl Shape for Disk {
         }
         true
     }
-    fn get_reverse_orientation(&self) -> bool {
+    pub fn get_reverse_orientation(&self) -> bool {
         self.reverse_orientation
     }
-    fn get_transform_swaps_handedness(&self) -> bool {
+    pub fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
     }
-    fn area(&self) -> Float {
+    pub fn area(&self) -> Float {
         self.phi_max
             * 0.5 as Float
             * (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
-    fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
         let pd: Point2f = concentric_sample_disk(u);
         let p_obj: Point3f = Point3f {
             x: pd.x * self.radius,
@@ -243,7 +240,7 @@ impl Shape for Disk {
         *pdf = 1.0 as Float / self.area();
         it
     }
-    fn sample_with_ref_point(
+    pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
         u: &Point2f,
@@ -264,7 +261,7 @@ impl Shape for Disk {
         }
         intr
     }
-    fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
+    pub fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
         let ray: Ray = iref.spawn_ray(wi);
         // ignore any alpha textures used for trimming the shape when

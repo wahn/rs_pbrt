@@ -14,7 +14,6 @@ use crate::core::material::Material;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, gamma, radians};
 use crate::core::sampling::{uniform_cone_pdf, uniform_sample_sphere};
-use crate::core::shape::Shape;
 use crate::core::transform::Transform;
 
 // see sphere.h
@@ -82,10 +81,8 @@ impl Sphere {
             material: None,
         }
     }
-}
-
-impl Shape for Sphere {
-    fn object_bound(&self) -> Bounds3f {
+    // Shape
+    pub fn object_bound(&self) -> Bounds3f {
         Bounds3f {
             p_min: Point3f {
                 x: -self.radius,
@@ -99,11 +96,11 @@ impl Shape for Sphere {
             },
         }
     }
-    fn world_bound(&self) -> Bounds3f {
+    pub fn world_bound(&self) -> Bounds3f {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(&self.object_bound())
     }
-    fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
@@ -266,7 +263,7 @@ impl Shape for Sphere {
             &dndu,
             &dndv,
             ray.time,
-            Some(self),
+            None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(ref shape) = si.shape {
@@ -277,7 +274,7 @@ impl Shape for Sphere {
         }
         Some((isect, t_shape_hit.v as Float))
     }
-    fn intersect_p(&self, r: &Ray) -> bool {
+    pub fn intersect_p(&self, r: &Ray) -> bool {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
@@ -360,16 +357,16 @@ impl Shape for Sphere {
         }
         true
     }
-    fn get_reverse_orientation(&self) -> bool {
+    pub fn get_reverse_orientation(&self) -> bool {
         self.reverse_orientation
     }
-    fn get_transform_swaps_handedness(&self) -> bool {
+    pub fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
     }
-    fn area(&self) -> Float {
+    pub fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
-    fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
         let mut p_obj: Point3f = Point3f::default() + uniform_sample_sphere(u) * self.radius;
         let mut it: InteractionCommon = InteractionCommon::default();
         it.n = self
@@ -394,7 +391,7 @@ impl Shape for Sphere {
         *pdf = 1.0 as Float / self.area();
         it
     }
-    fn sample_with_ref_point(
+    pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
         u: &Point2f,
@@ -469,7 +466,7 @@ impl Shape for Sphere {
         *pdf = 1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max));
         it
     }
-    fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
+    pub fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         let p_center: Point3f = self.object_to_world.transform_point(&Point3f::default());
         // return uniform PDF if point is inside sphere
         let p_origin: Point3f = pnt3_offset_ray_origin(

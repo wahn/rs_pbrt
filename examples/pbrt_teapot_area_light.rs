@@ -13,6 +13,7 @@ use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
+use pbrt::core::shape::Shape;
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
@@ -28,13 +29,13 @@ use std::sync::Arc;
 
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
-    disks: Vec<Arc<Disk>>,
+    disks: Vec<Arc<Shape>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<Arc<TriangleMesh>>,
-    disks: Vec<Arc<Disk>>,
+    disks: Vec<Arc<Shape>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
@@ -97,7 +98,7 @@ impl SceneDescriptionBuilder {
         inner_radius: Float,
         phi_max: Float,
     ) -> &mut SceneDescriptionBuilder {
-        let disk = Arc::new(Disk::new(
+        let disk = Arc::new(Shape::Dsk(Disk::new(
             object_to_world,
             world_to_object,
             false,
@@ -105,7 +106,7 @@ impl SceneDescriptionBuilder {
             radius,
             inner_radius,
             phi_max,
-        ));
+        )));
         // println!("disk = {:?}", disk);
         self.disks.push(disk);
         self
@@ -121,16 +122,16 @@ impl SceneDescriptionBuilder {
 
 struct RenderOptions {
     primitives: Vec<Arc<Primitive>>,
-    triangles: Vec<Arc<Triangle>>,
-    disks: Vec<Arc<Disk>>,
+    triangles: Vec<Arc<Shape>>,
+    disks: Vec<Arc<Shape>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 impl RenderOptions {
     fn new(scene: SceneDescription) -> RenderOptions {
         let primitives: Vec<Arc<Primitive>> = Vec::new();
-        let mut triangles: Vec<Arc<Triangle>> = Vec::new();
-        let mut disks: Vec<Arc<Disk>> = Vec::new();
+        let mut triangles: Vec<Arc<Shape>> = Vec::new();
+        let mut disks: Vec<Arc<Shape>> = Vec::new();
         let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
         // lights
         for light in &scene.lights {
@@ -144,13 +145,13 @@ impl RenderOptions {
         for mesh in scene.meshes {
             // create individual triangles
             for id in 0..mesh.n_triangles {
-                let triangle = Arc::new(Triangle::new(
+                let triangle = Arc::new(Shape::Trngl(Triangle::new(
                     mesh.object_to_world,
                     mesh.world_to_object,
                     mesh.transform_swaps_handedness,
                     mesh.clone(),
                     id,
-                ));
+                )));
                 triangles.push(triangle);
             }
         }

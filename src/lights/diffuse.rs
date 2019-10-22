@@ -19,7 +19,7 @@ use crate::core::transform::Transform;
 
 pub struct DiffuseAreaLight {
     pub l_emit: Spectrum,
-    pub shape: Arc<dyn Shape + Send + Sync>,
+    pub shape: Arc<Shape>,
     pub two_sided: bool,
     pub area: Float,
     // inherited from class Light (see light.h)
@@ -36,7 +36,7 @@ impl DiffuseAreaLight {
         medium_interface: &MediumInterface,
         l_emit: &Spectrum,
         n_samples: i32,
-        shape: Arc<dyn Shape + Send + Sync>,
+        shape: Arc<Shape>,
         two_sided: bool,
     ) -> Self {
         let area: Float = shape.area();

@@ -1,5 +1,4 @@
 use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
-use pbrt::core::shape::Shape;
 use pbrt::core::transform::Transform;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use std::sync::Arc;
@@ -93,7 +92,7 @@ fn main() {
         medium: None,
         differential: None,
     };
-    if let Some((_isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
+    if let Some((_isect, t_hit)) = triangle.intersect(&r) {
         println!("triangle.intersect(r) = (isect, {:?})", t_hit);
     }
 
@@ -111,7 +110,7 @@ fn main() {
         medium: None,
         differential: None,
     };
-    if let Some((_isect, t_hit)) = <Triangle as Shape>::intersect(&triangle, &r) {
+    if let Some((_isect, t_hit)) = triangle.intersect(&r) {
         println!("triangle.intersect(r) = (isect, {:?})", t_hit);
     }
 }

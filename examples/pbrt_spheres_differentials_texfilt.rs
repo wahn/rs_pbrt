@@ -14,6 +14,7 @@ use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
+use pbrt::core::shape::Shape;
 use pbrt::core::texture::{PlanarMapping2D, UVMapping2D};
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
@@ -38,13 +39,13 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
-    spheres: Vec<Arc<Sphere>>,
+    spheres: Vec<Arc<Shape>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<Arc<TriangleMesh>>,
-    spheres: Vec<Arc<Sphere>>,
+    spheres: Vec<Arc<Shape>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
@@ -106,7 +107,7 @@ impl SceneDescriptionBuilder {
         z_max: Float,
         phi_max: Float,
     ) -> &mut SceneDescriptionBuilder {
-        let sphere = Arc::new(Sphere::new(
+        let sphere = Arc::new(Shape::Sphr(Sphere::new(
             object_to_world,
             world_to_object,
             false,
@@ -114,7 +115,7 @@ impl SceneDescriptionBuilder {
             z_min,
             z_max,
             phi_max,
-        ));
+        )));
         // println!("sphere = {:?}", sphere);
         self.spheres.push(sphere);
         self
@@ -130,16 +131,16 @@ impl SceneDescriptionBuilder {
 
 struct RenderOptions {
     primitives: Vec<Arc<Primitive>>,
-    triangles: Vec<Arc<Triangle>>,
-    spheres: Vec<Arc<Sphere>>,
+    triangles: Vec<Arc<Shape>>,
+    spheres: Vec<Arc<Shape>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
 }
 
 impl RenderOptions {
     fn new(scene: SceneDescription) -> RenderOptions {
         let primitives: Vec<Arc<Primitive>> = Vec::new();
-        let mut triangles: Vec<Arc<Triangle>> = Vec::new();
-        let mut spheres: Vec<Arc<Sphere>> = Vec::new();
+        let mut triangles: Vec<Arc<Shape>> = Vec::new();
+        let mut spheres: Vec<Arc<Shape>> = Vec::new();
         let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
         // lights
         for light in &scene.lights {
@@ -153,13 +154,13 @@ impl RenderOptions {
         for mesh in scene.meshes {
             // create individual triangles
             for id in 0..mesh.n_triangles {
-                let triangle = Arc::new(Triangle::new(
+                let triangle = Arc::new(Shape::Trngl(Triangle::new(
                     mesh.object_to_world,
                     mesh.world_to_object,
                     mesh.transform_swaps_handedness,
                     mesh.clone(),
                     id,
-                ));
+                )));
                 triangles.push(triangle);
             }
         }

@@ -104,7 +104,7 @@ impl Primitive {
 
 #[derive(Clone)]
 pub struct GeometricPrimitive {
-    pub shape: Arc<dyn Shape + Send + Sync>,
+    pub shape: Arc<Shape>,
     pub material: Option<Arc<dyn Material + Send + Sync>>,
     pub area_light: Option<Arc<dyn AreaLight + Send + Sync>>,
     pub medium_interface: Option<Arc<MediumInterface>>,
@@ -112,7 +112,7 @@ pub struct GeometricPrimitive {
 
 impl GeometricPrimitive {
     pub fn new(
-        shape: Arc<dyn Shape + Send + Sync>,
+        shape: Arc<Shape>,
         material: Option<Arc<dyn Material + Send + Sync>>,
         area_light: Option<Arc<dyn AreaLight + Send + Sync>>,
         medium_interface: Option<Arc<MediumInterface>>,

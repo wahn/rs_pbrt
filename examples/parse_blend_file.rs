@@ -268,7 +268,7 @@ impl SceneDescriptionBuilder {
 struct RenderOptions {
     has_emitters: bool,
     primitives: Vec<Arc<Primitive>>,
-    triangles: Vec<Arc<Triangle>>,
+    triangles: Vec<Arc<Shape>>,
     triangle_materials: Vec<Arc<dyn Material + Sync + Send>>,
     triangle_lights: Vec<Option<Arc<dyn AreaLight + Sync + Send>>>,
     lights: Vec<Arc<dyn Light + Sync + Send>>,
@@ -283,7 +283,7 @@ impl RenderOptions {
     ) -> RenderOptions {
         let mut has_emitters: bool = false;
         let primitives: Vec<Arc<Primitive>> = Vec::new();
-        let mut triangles: Vec<Arc<Triangle>> = Vec::new();
+        let mut triangles: Vec<Arc<Shape>> = Vec::new();
         let mut triangle_materials: Vec<Arc<dyn Material + Sync + Send>> = Vec::new();
         let mut triangle_lights: Vec<Option<Arc<dyn AreaLight + Sync + Send>>> = Vec::new();
         let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
@@ -301,15 +301,15 @@ impl RenderOptions {
             let mesh_name = &scene.mesh_names[mesh_idx];
             let triangle_colors = &scene.triangle_colors[mesh_idx];
             // create individual triangles
-            let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
+            let mut shapes: Vec<Arc<Shape>> = Vec::new();
             for id in 0..mesh.n_triangles {
-                let triangle = Arc::new(Triangle::new(
+                let triangle = Arc::new(Shape::Trngl(Triangle::new(
                     mesh.object_to_world,
                     mesh.world_to_object,
                     mesh.transform_swaps_handedness,
                     mesh.clone(),
                     id,
-                ));
+                )));
                 triangles.push(triangle.clone());
                 shapes.push(triangle.clone());
             }

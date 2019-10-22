@@ -12,7 +12,6 @@ use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteractio
 use crate::core::material::Material;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, gamma, lerp, radians};
-use crate::core::shape::Shape;
 use crate::core::transform::Transform;
 
 // see cylinder.h
@@ -74,10 +73,8 @@ impl Cylinder {
             material: None,
         }
     }
-}
-
-impl Shape for Cylinder {
-    fn object_bound(&self) -> Bounds3f {
+    // Shape
+    pub fn object_bound(&self) -> Bounds3f {
         Bounds3f {
             p_min: Point3f {
                 x: -self.radius,
@@ -91,11 +88,11 @@ impl Shape for Cylinder {
             },
         }
     }
-    fn world_bound(&self) -> Bounds3f {
+    pub fn world_bound(&self) -> Bounds3f {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(&self.object_bound())
     }
-    fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // TODO: ProfilePhase p(Prof::ShapeIntersect);
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
@@ -243,7 +240,7 @@ impl Shape for Cylinder {
             &dndu,
             &dndv,
             ray.time,
-            Some(self),
+            None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(ref shape) = si.shape {
@@ -254,7 +251,7 @@ impl Shape for Cylinder {
         }
         Some((isect, t_shape_hit.v as Float))
     }
-    fn intersect_p(&self, r: &Ray) -> bool {
+    pub fn intersect_p(&self, r: &Ray) -> bool {
         // TODO: ProfilePhase p(Prof::ShapeIntersect);
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
@@ -330,16 +327,16 @@ impl Shape for Cylinder {
         }
         true
     }
-    fn get_reverse_orientation(&self) -> bool {
+    pub fn get_reverse_orientation(&self) -> bool {
         self.reverse_orientation
     }
-    fn get_transform_swaps_handedness(&self) -> bool {
+    pub fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
     }
-    fn area(&self) -> Float {
+    pub fn area(&self) -> Float {
         (self.z_max - self.z_min) * self.radius * self.phi_max
     }
-    fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
         let z: Float = lerp(u[0], self.z_min, self.z_max);
         let phi: Float = u[1] * self.phi_max;
         let mut p_obj: Point3f = Point3f {
@@ -378,7 +375,7 @@ impl Shape for Cylinder {
         *pdf = 1.0 as Float / self.area();
         it
     }
-    fn sample_with_ref_point(
+    pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
         u: &Point2f,
@@ -399,7 +396,7 @@ impl Shape for Cylinder {
         }
         intr
     }
-    fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
+    pub fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
         let ray: Ray = iref.spawn_ray(wi);
         // ignore any alpha textures used for trimming the shape when

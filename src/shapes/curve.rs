@@ -113,30 +113,30 @@ impl Curve {
         curve_type: CurveType,
         norm: Option<[Normal3f; 2]>,
         split_depth: i32,
-    ) -> Vec<Arc<dyn Shape + Send + Sync>> {
+    ) -> Vec<Arc<Shape>> {
         let common: Arc<CurveCommon> = Arc::new(CurveCommon::new(c, w0, w1, curve_type, norm));
         let n_segments: usize = 1_usize << split_depth;
-        let mut segments: Vec<Arc<dyn Shape + Send + Sync>> = Vec::with_capacity(n_segments);
+        let mut segments: Vec<Arc<Shape>> = Vec::with_capacity(n_segments);
         for i in 0..n_segments {
             let u_min: Float = i as Float / n_segments as Float;
             let u_max: Float = (i + 1) as Float / n_segments as Float;
             // segments.push_back(std::make_shared<Curve>(o2w, w2o, reverseOrientation,
             //                                            common, u_min, u_max));
-            let curve: Arc<Curve> = Arc::new(Curve::new(
+            let curve: Arc<Shape> = Arc::new(Shape::Crv(Curve::new(
                 o2w,
                 w2o,
                 reverse_orientation,
                 common.clone(),
                 u_min,
                 u_max,
-            ));
+            )));
             segments.push(curve.clone());
             // TODO: ++nSplitCurves;
         }
         // TODO: curveBytes += sizeof(CurveCommon) + n_segments * sizeof(Curve);
         segments
     }
-    fn recursive_intersect(
+    pub fn recursive_intersect(
         &self,
         ray: &Ray,
         cp: &[Point3f; 4],
@@ -330,7 +330,7 @@ impl Curve {
                 &Normal3f::default(),
                 &Normal3f::default(),
                 ray.time,
-                Some(self),
+                None,
             );
             let mut isect: SurfaceInteraction =
                 self.object_to_world.transform_surface_interaction(&si);
@@ -344,10 +344,8 @@ impl Curve {
         }
         return hit;
     }
-}
-
-impl Shape for Curve {
-    fn object_bound(&self) -> Bounds3f {
+    // Shape
+    pub fn object_bound(&self) -> Bounds3f {
         // compute object-space control points for curve segment, _cp_obj_
         let mut cp_obj: [Point3f; 4] = [Point3f::default(); 4];
         cp_obj[0] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_min);
@@ -364,11 +362,11 @@ impl Shape for Curve {
         ];
         bnd3_expand(&b, width[0].max(width[1]) * 0.5 as Float)
     }
-    fn world_bound(&self) -> Bounds3f {
+    pub fn world_bound(&self) -> Bounds3f {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(&self.object_bound())
     }
-    fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // TODO: ProfilePhase p(isect ? Prof::CurveIntersect : Prof::CurveIntersectP);
         // TODO: ++nTests;
         // transform _Ray_ to object space
@@ -477,20 +475,20 @@ impl Shape for Curve {
             max_depth,
         )
     }
-    fn intersect_p(&self, r: &Ray) -> bool {
+    pub fn intersect_p(&self, r: &Ray) -> bool {
         if let Some((_isect, _t_hit)) = self.intersect(r) {
             true
         } else {
             false
         }
     }
-    fn get_reverse_orientation(&self) -> bool {
+    pub fn get_reverse_orientation(&self) -> bool {
         self.reverse_orientation
     }
-    fn get_transform_swaps_handedness(&self) -> bool {
+    pub fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
     }
-    fn area(&self) -> Float {
+    pub fn area(&self) -> Float {
         // compute object-space control points for curve segment, _cp_obj_
         let mut cp_obj: [Point3f; 4] = [Point3f::default(); 4];
         cp_obj[0] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_min);
@@ -506,11 +504,11 @@ impl Shape for Curve {
         }
         approx_length * avg_width
     }
-    fn sample(&self, _u: &Point2f, _pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, _u: &Point2f, _pdf: &mut Float) -> InteractionCommon {
         println!("FATAL: Curve::sample not implemented.");
         InteractionCommon::default()
     }
-    fn sample_with_ref_point(
+    pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
         u: &Point2f,
@@ -531,7 +529,7 @@ impl Shape for Curve {
         }
         intr
     }
-    fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
+    pub fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
         let ray: Ray = iref.spawn_ray(&wi);
         // ignore any alpha textures used for trimming the shape when
@@ -556,7 +554,7 @@ pub fn create_curve_shape(
     w2o: &Transform,
     reverse_orientation: bool,
     params: &ParamSet,
-) -> Vec<Arc<dyn Shape + Send + Sync>> {
+) -> Vec<Arc<Shape>> {
     let width: Float = params.find_one_float("width", 1.0 as Float);
     let width0: Float = params.find_one_float("width0", width);
     let width1: Float = params.find_one_float("width1", width);

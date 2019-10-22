@@ -28,7 +28,7 @@ fn main() {
     let radius: Float = 2.0;
     let inner_radius: Float = 0.0;
     let phi_max: Float = 360.0;
-    let shape: Arc<dyn Shape + Send + Sync> = Arc::new(Disk::new(
+    let shape: Arc<Shape> = Arc::new(Shape::Dsk(Disk::new(
         light_to_world,
         inverse,
         false,
@@ -36,7 +36,7 @@ fn main() {
         radius,
         inner_radius,
         phi_max,
-    ));
+    )));
     let two_sided: bool = false;
     let diffuse_area_light: DiffuseAreaLight = DiffuseAreaLight::new(
         &light_to_world,

@@ -1,6 +1,5 @@
 use pbrt::core::geometry::{Bounds3f, Vector3f};
 use pbrt::core::pbrt::Float;
-use pbrt::core::shape::Shape;
 use pbrt::core::transform::Transform;
 use pbrt::shapes::sphere::Sphere;
 

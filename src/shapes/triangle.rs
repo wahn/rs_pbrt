@@ -15,7 +15,6 @@ use crate::core::material::Material;
 use crate::core::pbrt::gamma;
 use crate::core::pbrt::Float;
 use crate::core::sampling::uniform_sample_triangle;
-use crate::core::shape::Shape;
 use crate::core::texture::Texture;
 use crate::core::transform::Transform;
 
@@ -126,10 +125,8 @@ impl Triangle {
             ]
         }
     }
-}
-
-impl Shape for Triangle {
-    fn object_bound(&self) -> Bounds3f {
+    // Shape
+    pub fn object_bound(&self) -> Bounds3f {
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
@@ -141,13 +138,13 @@ impl Shape for Triangle {
             &self.world_to_object.transform_point(&p2),
         )
     }
-    fn world_bound(&self) -> Bounds3f {
+    pub fn world_bound(&self) -> Bounds3f {
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         bnd3_union_pnt3(&Bounds3f::new(p0, p1), &p2)
     }
-    fn intersect(&self, ray: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, ray: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
@@ -336,7 +333,7 @@ impl Shape for Triangle {
                 &Normal3f::default(),
                 &Normal3f::default(),
                 ray.time,
-                Some(self),
+                None,
             );
             if alpha_mask.evaluate(&isect_local) == 0.0 as Float {
                 return None;
@@ -356,7 +353,7 @@ impl Shape for Triangle {
             &dndu,
             &dndv,
             ray.time,
-            Some(self),
+            None,
         );
         // override surface normal in _isect_ for triangle
         let surface_normal: Normal3f = Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
@@ -441,7 +438,7 @@ impl Shape for Triangle {
         }
         Some((si, t as Float))
     }
-    fn intersect_p(&self, ray: &Ray) -> bool {
+    pub fn intersect_p(&self, ray: &Ray) -> bool {
         // TODO: ProfilePhase p(Prof::TriIntersectP);
         // TODO: ++nTests;
         // get triangle vertices in _p0_, _p1_, and _p2_
@@ -627,7 +624,7 @@ impl Shape for Triangle {
                 &Normal3f::default(),
                 &Normal3f::default(),
                 ray.time,
-                Some(self),
+                None,
             );
             if let Some(alpha_mask) = &self.mesh.alpha_mask {
                 if alpha_mask.evaluate(&isect_local) == 0.0 as Float {
@@ -643,20 +640,20 @@ impl Shape for Triangle {
         // TODO: ++nHits;
         true
     }
-    fn get_reverse_orientation(&self) -> bool {
+    pub fn get_reverse_orientation(&self) -> bool {
         self.reverse_orientation
     }
-    fn get_transform_swaps_handedness(&self) -> bool {
+    pub fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
     }
-    fn area(&self) -> Float {
+    pub fn area(&self) -> Float {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
         let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 1]];
         let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 2]];
         0.5 as Float * vec3_cross_vec3(&(p1 - p0), &(p2 - p0)).length()
     }
-    fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
         let b: Point2f = uniform_sample_triangle(u);
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[self.id * 3 + 0]];
@@ -691,7 +688,7 @@ impl Shape for Triangle {
         *pdf = 1.0 as Float / self.area();
         it
     }
-    fn sample_with_ref_point(
+    pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
         u: &Point2f,
@@ -712,7 +709,7 @@ impl Shape for Triangle {
         }
         intr
     }
-    fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
+    pub fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         // intersect sample ray with area light geometry
         let ray: Ray = iref.spawn_ray(wi);
         // ignore any alpha textures used for trimming the shape when

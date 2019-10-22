@@ -80,7 +80,7 @@ use crate::samplers::halton::HaltonSampler;
 use crate::samplers::random::RandomSampler;
 use crate::samplers::sobol::SobolSampler;
 use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
-use crate::shapes::curve::create_curve_shape;
+// use crate::shapes::curve::create_curve_shape;
 use crate::shapes::cylinder::Cylinder;
 use crate::shapes::disk::Disk;
 use crate::shapes::loopsubdiv::loop_subdivide;
@@ -1234,7 +1234,7 @@ fn get_shapes_and_materials(
     api_state: &ApiState,
     bsdf_state: &mut BsdfState,
 ) -> (
-    Vec<Arc<dyn Shape + Send + Sync>>,
+    Vec<Arc<Shape>>,
     Vec<Option<Arc<dyn Material + Send + Sync>>>,
 ) {
     if shape_may_set_material_parameters(&api_state.param_set) {
@@ -1243,7 +1243,7 @@ fn get_shapes_and_materials(
         // println!("Shape \"{}\"", api_state.param_set.name);
         // print_params(&api_state.param_set);
     }
-    let mut shapes: Vec<Arc<dyn Shape + Send + Sync>> = Vec::new();
+    let mut shapes: Vec<Arc<Shape>> = Vec::new();
     let mut materials: Vec<Option<Arc<dyn Material + Send + Sync>>> = Vec::new();
     // pbrtShape (api.cpp:1153)
     // TODO: if (!curTransform.IsAnimated()) { ... }
@@ -1271,7 +1271,7 @@ fn get_shapes_and_materials(
         let z_min: Float = api_state.param_set.find_one_float("zmin", -radius);
         let z_max: Float = api_state.param_set.find_one_float("zmax", radius);
         let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0 as Float);
-        let sphere = Arc::new(Sphere::new(
+        let sphere = Arc::new(Shape::Sphr(Sphere::new(
             obj_to_world,
             world_to_obj,
             false,
@@ -1279,7 +1279,7 @@ fn get_shapes_and_materials(
             z_min,
             z_max,
             phi_max,
-        ));
+        )));
         let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(sphere.clone());
         materials.push(mtl);
@@ -1288,7 +1288,7 @@ fn get_shapes_and_materials(
         let z_min: Float = api_state.param_set.find_one_float("zmin", -radius);
         let z_max: Float = api_state.param_set.find_one_float("zmax", radius);
         let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0 as Float);
-        let cylinder = Arc::new(Cylinder::new(
+        let cylinder = Arc::new(Shape::Clndr(Cylinder::new(
             obj_to_world,
             world_to_obj,
             false,
@@ -1296,7 +1296,7 @@ fn get_shapes_and_materials(
             z_min,
             z_max,
             phi_max,
-        ));
+        )));
         let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(cylinder.clone());
         materials.push(mtl.clone());
@@ -1305,7 +1305,7 @@ fn get_shapes_and_materials(
         let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
         let inner_radius: Float = api_state.param_set.find_one_float("innerradius", 0.0);
         let phi_max: Float = api_state.param_set.find_one_float("phimax", 360.0);
-        let disk = Arc::new(Disk::new(
+        let disk = Arc::new(Shape::Dsk(Disk::new(
             obj_to_world,
             world_to_obj,
             false,
@@ -1313,7 +1313,7 @@ fn get_shapes_and_materials(
             radius,
             inner_radius,
             phi_max,
-        ));
+        )));
         let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         shapes.push(disk.clone());
         materials.push(mtl.clone());
@@ -1323,18 +1323,18 @@ fn get_shapes_and_materials(
         println!("TODO: CreateParaboloidShape");
     } else if api_state.param_set.name == "hyperboloid" {
         println!("TODO: CreateHyperboloidShape");
-    } else if api_state.param_set.name == "curve" {
-        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
-        let curve_shapes: Vec<Arc<dyn Shape + Send + Sync>> = create_curve_shape(
-            &obj_to_world,
-            &world_to_obj,
-            false, // reverse_orientation
-            &api_state.param_set,
-        );
-        for shape in curve_shapes {
-            shapes.push(shape.clone());
-            materials.push(mtl.clone());
-        }
+    // } else if api_state.param_set.name == "curve" {
+    //     let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+    //     let curve_shapes: Vec<Arc<Shape>> = create_curve_shape(
+    //         &obj_to_world,
+    //         &world_to_obj,
+    //         false, // reverse_orientation
+    //         &api_state.param_set,
+    //     );
+    //     for shape in curve_shapes {
+    //         shapes.push(shape.clone());
+    //         materials.push(mtl.clone());
+    //     }
     } else if api_state.param_set.name == "trianglemesh" {
         let vi = api_state.param_set.find_int("indices");
         let p = api_state.param_set.find_point3f("P");
@@ -1425,13 +1425,13 @@ fn get_shapes_and_materials(
         ));
         let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
-            let triangle = Arc::new(Triangle::new(
+            let triangle = Arc::new(Shape::Trngl(Triangle::new(
                 mesh.object_to_world,
                 mesh.world_to_object,
                 mesh.reverse_orientation,
                 mesh.clone(),
                 id,
-            ));
+            )));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
         }
@@ -1439,7 +1439,7 @@ fn get_shapes_and_materials(
         if let Some(ref search_directory) = api_state.search_directory {
             let mtl: Option<Arc<dyn Material + Send + Sync>> =
                 create_material(&api_state, bsdf_state);
-            let ply_shapes: Vec<Arc<dyn Shape + Send + Sync>> = create_ply_mesh(
+            let ply_shapes: Vec<Arc<Shape>> = create_ply_mesh(
                 &obj_to_world,
                 &world_to_obj,
                 false, // reverse_orientation
@@ -1485,13 +1485,13 @@ fn get_shapes_and_materials(
         );
         let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
-            let triangle = Arc::new(Triangle::new(
+            let triangle = Arc::new(Shape::Trngl(Triangle::new(
                 mesh.object_to_world,
                 mesh.world_to_object,
                 mesh.reverse_orientation,
                 mesh.clone(),
                 id,
-            ));
+            )));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
         }
@@ -1672,13 +1672,13 @@ fn get_shapes_and_materials(
         ));
         let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
-            let triangle = Arc::new(Triangle::new(
+            let triangle = Arc::new(Shape::Trngl(Triangle::new(
                 mesh.object_to_world,
                 mesh.world_to_object,
                 mesh.reverse_orientation,
                 mesh.clone(),
                 id,
-            ));
+            )));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
         }
