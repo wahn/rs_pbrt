@@ -17,14 +17,14 @@ pub struct GaussianFilter {
 }
 
 impl GaussianFilter {
-    pub fn create(ps: &ParamSet) -> Box<dyn Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<Filter> {
         let xw: Float = ps.find_one_float("xwidth", 2.0);
         let yw: Float = ps.find_one_float("ywidth", 2.0);
         let alpha: Float = ps.find_one_float("alpha", 2.0);
         // see gaussian.h (GaussianFilter constructor)
         let exp_x: Float = (-alpha * xw * xw).exp();
         let exp_y: Float = (-alpha * yw * yw).exp();
-        let gaussian_filter: Box<dyn Filter + Sync + Send> = Box::new(GaussianFilter {
+        let gaussian_filter: Box<Filter> = Box::new(Filter::Gaussian(GaussianFilter {
             alpha,
             exp_x,
             exp_y,
@@ -33,19 +33,17 @@ impl GaussianFilter {
                 x: 1.0 / xw,
                 y: 1.0 / yw,
             },
-        });
+        }));
         gaussian_filter
     }
     pub fn gaussian(&self, d: Float, expv: Float) -> Float {
         (0.0 as Float).max((-self.alpha * d * d).exp() - expv)
     }
-}
-
-impl Filter for GaussianFilter {
-    fn evaluate(&self, p: Point2f) -> Float {
+    // Filter
+    pub fn evaluate(&self, p: Point2f) -> Float {
         self.gaussian(p.x, self.exp_x) * self.gaussian(p.y, self.exp_y)
     }
-    fn get_radius(&self) -> Vector2f {
+    pub fn get_radius(&self) -> Vector2f {
         Vector2f {
             x: self.radius.x,
             y: self.radius.y,

@@ -25,12 +25,14 @@ impl LanczosSincFilter {
             },
         }
     }
-    pub fn create(ps: &ParamSet) -> Box<dyn Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<Filter> {
         let xw: Float = ps.find_one_float("xwidth", 4.0);
         let yw: Float = ps.find_one_float("ywidth", 4.0);
         let tau: Float = ps.find_one_float("tau", 3.0);
-        let sinc_filter: Box<dyn Filter + Sync + Send> =
-            Box::new(LanczosSincFilter::new(&Vector2f { x: xw, y: yw }, tau));
+        let sinc_filter: Box<Filter> = Box::new(Filter::LanczosSinc(LanczosSincFilter::new(
+            &Vector2f { x: xw, y: yw },
+            tau,
+        )));
         sinc_filter
     }
     pub fn sinc(&self, x: Float) -> Float {
@@ -48,14 +50,11 @@ impl LanczosSincFilter {
         let lanczos: Float = self.sinc(x / self.tau);
         self.sinc(x) * lanczos
     }
-}
-
-impl Filter for LanczosSincFilter {
-    fn evaluate(&self, p: Point2f) -> Float {
+    // Filter
+    pub fn evaluate(&self, p: Point2f) -> Float {
         self.windowed_sinc(p.x, self.radius.x) * self.windowed_sinc(p.y, self.radius.y)
     }
-
-    fn get_radius(&self) -> Vector2f {
+    pub fn get_radius(&self) -> Vector2f {
         Vector2f {
             x: self.radius.x,
             y: self.radius.y,

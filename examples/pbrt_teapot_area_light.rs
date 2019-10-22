@@ -2018,13 +2018,13 @@ fn main() {
     };
     let xw: Float = 0.5;
     let yw: Float = 0.5;
-    let filter: Box<dyn Filter + Sync + Send> = Box::new(BoxFilter {
+    let filter: Box<Filter> = Box::new(Filter::Bx(BoxFilter {
         radius: Vector2f { x: xw, y: yw },
         inv_radius: Vector2f {
             x: 1.0 / xw,
             y: 1.0 / yw,
         },
-    });
+    }));
     let filename: String = String::from("teapot_area_light.exr");
     let film: Arc<Film> = Arc::new(Film::new(
         Point2i { x: xres, y: yres },

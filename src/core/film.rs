@@ -159,7 +159,7 @@ pub struct Film {
     /// The length of the diagonal of the film's physical area (specified in mm, stored in meters)
     pub diagonal: Float,
     /// A filter function
-    pub filter: Box<dyn Filter + Sync + Send>,
+    pub filter: Box<Filter>,
     /// The filename of the output image
     pub filename: String,
     /// A crop window that may specify a subset of the image to render
@@ -176,7 +176,7 @@ impl Film {
     pub fn new(
         resolution: Point2i,
         crop_window: Bounds2f,
-        filter: Box<dyn Filter + Sync + Send>,
+        filter: Box<Filter>,
         diagonal: Float,
         filename: String,
         scale: Float,

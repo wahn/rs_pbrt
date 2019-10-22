@@ -24,8 +24,7 @@ impl MitchellNetravali {
             c,
         }
     }
-
-    fn mitchell_1d(&self, x: Float) -> Float {
+    pub fn mitchell_1d(&self, x: Float) -> Float {
         let fx = x.abs() * 2.0;
         if fx < 1.0 {
             ((12.0 - 9.0 * self.b - 6.0 * self.c) * fx * fx * fx
@@ -42,23 +41,19 @@ impl MitchellNetravali {
             0.0
         }
     }
-
-    pub fn create(ps: &ParamSet) -> Box<dyn Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<Filter> {
         let xw = ps.find_one_float("xwidth", 2.0);
         let yw = ps.find_one_float("ywidth", 2.0);
         let b = ps.find_one_float("B", 1.0 / 3.0);
         let c = ps.find_one_float("C", 1.0 / 3.0);
 
-        Box::new(Self::new(xw, yw, b, c))
+        Box::new(Filter::MitchellNetravali(Self::new(xw, yw, b, c)))
     }
-}
-
-impl Filter for MitchellNetravali {
-    fn evaluate(&self, p: Point2f) -> Float {
+    // Filter
+    pub fn evaluate(&self, p: Point2f) -> Float {
         self.mitchell_1d(p.x * self.inv_width) * self.mitchell_1d(p.y * self.inv_height)
     }
-
-    fn get_radius(&self) -> Vector2f {
+    pub fn get_radius(&self) -> Vector2f {
         Vector2f {
             x: self.width,
             y: self.height,

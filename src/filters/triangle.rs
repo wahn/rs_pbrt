@@ -14,26 +14,24 @@ pub struct TriangleFilter {
 }
 
 impl TriangleFilter {
-    pub fn create(ps: &ParamSet) -> Box<dyn Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<Filter> {
         let xw: Float = ps.find_one_float("xwidth", 2.0);
         let yw: Float = ps.find_one_float("ywidth", 2.0);
-        let triangle_filter: Box<dyn Filter + Sync + Send> = Box::new(TriangleFilter {
+        let triangle_filter: Box<Filter> = Box::new(Filter::Triangle(TriangleFilter {
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
                 x: 1.0 / xw,
                 y: 1.0 / yw,
             },
-        });
+        }));
         triangle_filter
     }
-}
-
-impl Filter for TriangleFilter {
-    fn evaluate(&self, p: Point2f) -> Float {
+    // Filter
+    pub fn evaluate(&self, p: Point2f) -> Float {
         (0.0 as Float).max((self.radius.x - p.x.abs()) as Float)
             * (0.0 as Float).max((self.radius.y - p.y.abs()) as Float)
     }
-    fn get_radius(&self) -> Vector2f {
+    pub fn get_radius(&self) -> Vector2f {
         Vector2f {
             x: self.radius.x,
             y: self.radius.y,

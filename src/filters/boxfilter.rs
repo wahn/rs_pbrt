@@ -14,25 +14,23 @@ pub struct BoxFilter {
 }
 
 impl BoxFilter {
-    pub fn create(ps: &ParamSet) -> Box<dyn Filter + Sync + Send> {
+    pub fn create(ps: &ParamSet) -> Box<Filter> {
         let xw: Float = ps.find_one_float("xwidth", 0.5);
         let yw: Float = ps.find_one_float("ywidth", 0.5);
-        let box_filter: Box<dyn Filter + Sync + Send> = Box::new(BoxFilter {
+        let box_filter: Box<Filter> = Box::new(Filter::Bx(BoxFilter {
             radius: Vector2f { x: xw, y: yw },
             inv_radius: Vector2f {
                 x: 1.0 / xw,
                 y: 1.0 / yw,
             },
-        });
+        }));
         box_filter
     }
-}
-
-impl Filter for BoxFilter {
-    fn evaluate(&self, _p: Point2f) -> Float {
+    // Filter
+    pub fn evaluate(&self, _p: Point2f) -> Float {
         1.0
     }
-    fn get_radius(&self) -> Vector2f {
+    pub fn get_radius(&self) -> Vector2f {
         Vector2f {
             x: self.radius.x,
             y: self.radius.y,
