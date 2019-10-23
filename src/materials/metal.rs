@@ -114,7 +114,7 @@ impl MetalMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let copper_n: Spectrum =
             Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_N, COPPER_SAMPLES as i32);
         let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
@@ -130,7 +130,7 @@ impl MetalMaterial {
             mp.get_float_texture_or_null("vroughness");
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        Arc::new(MetalMaterial::new(
+        Arc::new(Material::Metal(MetalMaterial::new(
             eta,
             k,
             roughness,
@@ -138,18 +138,16 @@ impl MetalMaterial {
             v_roughness,
             bump_map,
             remap_roughness,
-        ))
+        )))
     }
-}
-
-impl Material for MetalMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -159,7 +157,7 @@ impl Material for MetalMaterial {
             sc = scale;
         }
         if let Some(ref bump) = self.bump_map {
-            Self::bump(bump, si);
+            Material::bump(bump, si);
         }
         let mut u_rough: Float;
         if let Some(ref u_roughness) = self.u_roughness {

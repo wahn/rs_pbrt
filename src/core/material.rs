@@ -9,6 +9,19 @@ use crate::core::geometry::{Normal3f, Vector2f, Vector3f};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::texture::Texture;
+use crate::materials::disney::DisneyMaterial;
+use crate::materials::fourier::FourierMaterial;
+use crate::materials::glass::GlassMaterial;
+use crate::materials::hair::HairMaterial;
+use crate::materials::matte::MatteMaterial;
+use crate::materials::metal::MetalMaterial;
+use crate::materials::mirror::MirrorMaterial;
+use crate::materials::mixmat::MixMaterial;
+use crate::materials::plastic::PlasticMaterial;
+use crate::materials::substrate::SubstrateMaterial;
+use crate::materials::subsurface::SubsurfaceMaterial;
+use crate::materials::translucent::TranslucentMaterial;
+use crate::materials::uber::UberMaterial;
 
 // see material.h
 
@@ -21,27 +34,87 @@ pub enum TransportMode {
     Importance,
 }
 
+pub enum Material {
+    Disney(DisneyMaterial),
+    Fourier(FourierMaterial),
+    Glass(GlassMaterial),
+    Hair(HairMaterial),
+    Matte(MatteMaterial),
+    Metal(MetalMaterial),
+    Mirror(MirrorMaterial),
+    Mix(MixMaterial),
+    Plastic(PlasticMaterial),
+    Substrate(SubstrateMaterial),
+    Subsurface(SubsurfaceMaterial),
+    Translucent(TranslucentMaterial),
+    Uber(UberMaterial),
+}
+
 /// **Material** defines the interface that material implementations
 /// must provide.
-pub trait Material {
+impl Material {
     /// The method is given a **SurfaceInteraction** object that
     /// contains geometric properties at an intersection point on the
     /// surface of a shape and is responsible for determining the
     /// reflective properties at the point and initializing some
     /// member variables.
-    fn compute_scattering_functions(
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        material: Option<Arc<dyn Material + Send + Sync>>,
+        mat: Option<Arc<Material>>,
         scale: Option<Spectrum>,
-    );
+    ) {
+        match self {
+            Material::Disney(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Fourier(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Glass(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Hair(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Matte(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Metal(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Mirror(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Mix(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Plastic(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Substrate(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Subsurface(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Translucent(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+            Material::Uber(material) => {
+                material.compute_scattering_functions(si, mode, allow_multiple_lobes, mat, scale)
+            }
+        }
+    }
     /// Computing the effect of bump mapping at the point being shaded
     /// given a particular displacement texture.
-    fn bump(d: &Arc<dyn Texture<Float> + Send + Sync>, si: &mut SurfaceInteraction)
-    where
+    pub fn bump(
+        d: &Arc<dyn Texture<Float> + Send + Sync>,
+        si: &mut SurfaceInteraction,
+    ) where
         Self: Sized,
     {
         // compute offset positions and evaluate displacement texture

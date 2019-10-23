@@ -26,16 +26,16 @@ impl FourierMaterial {
             bsdf_table,
         }
     }
-    pub fn create(
-        mp: &mut TextureParams,
-        bsdf_state: &mut BsdfState,
-    ) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams, bsdf_state: &mut BsdfState) -> Arc<Material> {
         let bump_map: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("bumpmap");
         let bsdffile: String = mp.find_filename("bsdffile", String::new());
         if let Some(bsdf_table) = bsdf_state.loaded_bsdfs.get(&bsdffile.clone()) {
             // use the BSDF table found
-            Arc::new(FourierMaterial::new(bsdf_table.clone(), bump_map))
+            Arc::new(Material::Fourier(FourierMaterial::new(
+                bsdf_table.clone(),
+                bump_map,
+            )))
         } else {
             // read BSDF table from file
             let mut bsdf_table: FourierBSDFTable = FourierBSDFTable::default();
@@ -46,19 +46,20 @@ impl FourierMaterial {
             );
             let bsdf_table_arc: Arc<FourierBSDFTable> = Arc::new(bsdf_table);
             // TODO: bsdf_state.loaded_bsdfs.insert(bsdffile.clone(), bsdf_table_arc.clone());
-            Arc::new(FourierMaterial::new(bsdf_table_arc.clone(), bump_map))
+            Arc::new(Material::Fourier(FourierMaterial::new(
+                bsdf_table_arc.clone(),
+                bump_map,
+            )))
         }
     }
-}
-
-impl Material for FourierMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -68,7 +69,7 @@ impl Material for FourierMaterial {
             sc = scale;
         }
         if let Some(ref bump) = self.bump_map {
-            Self::bump(bump, si);
+            Material::bump(bump, si);
         }
         si.bsdf = Some(Bsdf::new(si, 1.0));
         if let Some(bsdf) = &mut si.bsdf {

@@ -66,7 +66,7 @@ impl Primitive {
             Primitive::KdTree(primitive) => primitive.get_area_light(),
         }
     }
-    pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
+    pub fn get_material(&self) -> Option<Arc<Material>> {
         match self {
             Primitive::Geometric(primitive) => primitive.get_material(),
             Primitive::Transformed(primitive) => primitive.get_material(),
@@ -105,7 +105,7 @@ impl Primitive {
 #[derive(Clone)]
 pub struct GeometricPrimitive {
     pub shape: Arc<Shape>,
-    pub material: Option<Arc<dyn Material + Send + Sync>>,
+    pub material: Option<Arc<Material>>,
     pub area_light: Option<Arc<Light>>,
     pub medium_interface: Option<Arc<MediumInterface>>,
 }
@@ -113,7 +113,7 @@ pub struct GeometricPrimitive {
 impl GeometricPrimitive {
     pub fn new(
         shape: Arc<Shape>,
-        material: Option<Arc<dyn Material + Send + Sync>>,
+        material: Option<Arc<Material>>,
         area_light: Option<Arc<Light>>,
         medium_interface: Option<Arc<MediumInterface>>,
     ) -> Self {
@@ -193,7 +193,7 @@ impl GeometricPrimitive {
     pub fn intersect_p(&self, r: &Ray) -> bool {
         self.shape.intersect_p(r)
     }
-    pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
+    pub fn get_material(&self) -> Option<Arc<Material>> {
         if let Some(ref material) = self.material {
             Some(material.clone())
         } else {
@@ -276,7 +276,7 @@ impl TransformedPrimitive {
         self.primitive
             .intersect_p(&interpolated_prim_to_world.transform_ray(&*r))
     }
-    pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
+    pub fn get_material(&self) -> Option<Arc<Material>> {
         None
     }
     pub fn get_area_light(&self) -> Option<Arc<Light>> {

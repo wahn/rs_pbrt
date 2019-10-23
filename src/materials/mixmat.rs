@@ -27,29 +27,27 @@ use crate::materials::hair::HairBSDF;
 /// the value returned by the texture to blend between the two
 /// materials at the point being shaded.
 pub struct MixMaterial {
-    pub m1: Arc<dyn Material + Sync + Send>,
-    pub m2: Arc<dyn Material + Sync + Send>,
+    pub m1: Arc<Material>,
+    pub m2: Arc<Material>,
     pub scale: Arc<dyn Texture<Spectrum> + Sync + Send>, // default: 0.5
 }
 
 impl MixMaterial {
     pub fn new(
-        m1: Arc<dyn Material + Sync + Send>,
-        m2: Arc<dyn Material + Sync + Send>,
+        m1: Arc<Material>,
+        m2: Arc<Material>,
         scale: Arc<dyn Texture<Spectrum> + Send + Sync>,
     ) -> Self {
         MixMaterial { m1, m2, scale }
     }
-}
-
-impl Material for MixMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         _scale: Option<Spectrum>,
     ) {
         let s1: Spectrum = self

@@ -34,7 +34,7 @@ pub struct TabulatedBssrdf {
     pub ns: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub material: Arc<dyn Material + Send + Sync>,
+    pub material: Arc<Material>,
     pub mode: TransportMode,
     // TabulatedBSSRDF Private Data
     pub table: Arc<BssrdfTable>,
@@ -45,7 +45,7 @@ pub struct TabulatedBssrdf {
 impl TabulatedBssrdf {
     pub fn new(
         po: &SurfaceInteraction,
-        material_opt: Option<Arc<dyn Material + Send + Sync>>,
+        material_opt: Option<Arc<Material>>,
         mode: TransportMode,
         eta: Float,
         sigma_a: &Spectrum,

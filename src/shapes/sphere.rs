@@ -31,7 +31,7 @@ pub struct Sphere {
     world_to_object: Transform,
     reverse_orientation: bool,
     transform_swaps_handedness: bool,
-    pub material: Option<Arc<dyn Material + Send + Sync>>,
+    pub material: Option<Arc<Material>>,
 }
 
 impl Default for Sphere {

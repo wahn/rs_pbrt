@@ -40,7 +40,7 @@ pub struct DisneyMaterial {
 }
 
 impl DisneyMaterial {
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let color = mp.get_spectrum_texture("color", Spectrum::from(0.5));
         let metallic = mp.get_float_texture("metallic", 0.0);
         let eta = mp.get_float_texture("eta", 1.5);
@@ -58,7 +58,7 @@ impl DisneyMaterial {
         let diff_trans = mp.get_float_texture("difftrans", 1.0);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
 
-        Arc::new(DisneyMaterial {
+        Arc::new(Material::Disney(DisneyMaterial {
             color,
             metallic,
             eta,
@@ -75,17 +75,15 @@ impl DisneyMaterial {
             diff_trans,
             bump_map,
             thin,
-        })
+        }))
     }
-}
-
-impl Material for DisneyMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -95,7 +93,7 @@ impl Material for DisneyMaterial {
             sc = scale;
         }
         if let Some(ref bump) = self.bump_map {
-            Self::bump(bump, si);
+            Material::bump(bump, si);
         }
         // diffuse
         let c = self.color.evaluate(si).clamp(0.0, f32::INFINITY);
@@ -329,7 +327,6 @@ impl Material for DisneyMaterial {
         }
     }
 }
-
 // DisneyDiffuse
 
 #[derive(Debug, Clone, Copy)]

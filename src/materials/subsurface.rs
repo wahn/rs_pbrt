@@ -65,7 +65,7 @@ impl SubsurfaceMaterial {
             table: Arc::new(table),
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let sig_a_rgb: [Float; 3] = [0.0011, 0.0024, 0.014];
         let sig_s_rgb: [Float; 3] = [2.55, 3.21, 3.77];
         let mut sig_a: Spectrum = Spectrum::from_rgb(&sig_a_rgb);
@@ -102,7 +102,7 @@ impl SubsurfaceMaterial {
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
         let start = PreciseTime::now();
-        let tmp = Arc::new(SubsurfaceMaterial::new(
+        let tmp = Arc::new(Material::Subsurface(SubsurfaceMaterial::new(
             scale,
             kr,
             kt,
@@ -114,7 +114,7 @@ impl SubsurfaceMaterial {
             roughv,
             bump_map,
             remap_roughness,
-        ));
+        )));
         let end = PreciseTime::now();
         println!(
             "{} seconds for SubsurfaceMaterial::new() ...",
@@ -122,16 +122,14 @@ impl SubsurfaceMaterial {
         );
         tmp
     }
-}
-
-impl Material for SubsurfaceMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        material: Option<Arc<dyn Material + Send + Sync>>,
+        material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -140,8 +138,8 @@ impl Material for SubsurfaceMaterial {
             use_scale = true;
             sc = scale;
         }
-        if let Some(ref bump_map) = self.bump_map {
-            Self::bump(bump_map, si);
+        if let Some(ref bump) = self.bump_map {
+            Material::bump(bump, si);
         }
         let mut bxdf_idx: usize = 0;
         // initialize BSDF for _SubsurfaceMaterial_

@@ -39,7 +39,7 @@ impl SubstrateMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let kd: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kd", Spectrum::new(0.5));
         let ks: Arc<dyn Texture<Spectrum> + Sync + Send> =
@@ -50,25 +50,23 @@ impl SubstrateMaterial {
             mp.get_float_texture("vroughness", 0.1);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        Arc::new(SubstrateMaterial::new(
+        Arc::new(Material::Substrate(SubstrateMaterial::new(
             kd,
             ks,
             uroughness,
             vroughness,
             bump_map,
             remap_roughness,
-        ))
+        )))
     }
-}
-
-impl Material for SubstrateMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -78,7 +76,7 @@ impl Material for SubstrateMaterial {
             sc = scale;
         }
         if let Some(ref bump) = self.bump_map {
-            Self::bump(bump, si);
+            Material::bump(bump, si);
         }
         let d: Spectrum = self
             .kd

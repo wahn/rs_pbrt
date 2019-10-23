@@ -265,7 +265,7 @@ pub struct GraphicsState {
     pub spectrum_textures: Arc<HashMap<String, Arc<dyn Texture<Spectrum> + Send + Sync>>>,
     pub material_params: ParamSet,
     pub material: String,
-    pub named_materials: Arc<HashMap<String, Option<Arc<dyn Material + Send + Sync>>>>,
+    pub named_materials: Arc<HashMap<String, Option<Arc<Material>>>>,
     pub current_material: String,
     pub area_light_params: ParamSet,
     pub area_light: String,
@@ -284,8 +284,8 @@ impl GraphicsState {
             float_textures.clone(),
             spectrum_textures.clone(),
         );
-        let mtl: Arc<dyn Material + Send + Sync> = MatteMaterial::create(&mut tp);
-        let mut named_materials: Arc<HashMap<String, Option<Arc<dyn Material + Send + Sync>>>> =
+        let mtl: Arc<Material> = MatteMaterial::create(&mut tp);
+        let mut named_materials: Arc<HashMap<String, Option<Arc<Material>>>> =
             Arc::new(HashMap::new());
         Arc::make_mut(&mut named_materials).insert(String::from("matte"), Some(mtl));
         let current_material: String = String::from("matte");
@@ -306,7 +306,7 @@ impl GraphicsState {
     // pub fn get_material_for_shape(
     //     &self,
     //     geom_params: &ParamSet,
-    // ) -> Arc<dyn Material + Send + Sync> {
+    // ) -> Arc<Material> {
     //     if self.current_material != String::new() {
     //     } else {
     //     }
@@ -323,10 +323,7 @@ impl GraphicsState {
     // }
 }
 
-fn create_material(
-    api_state: &ApiState,
-    bsdf_state: &mut BsdfState,
-) -> Option<Arc<dyn Material + Send + Sync>> {
+fn create_material(api_state: &ApiState, bsdf_state: &mut BsdfState) -> Option<Arc<Material>> {
     // CreateMaterial
     let mut material_params = ParamSet::default();
     material_params.copy_from(&api_state.graphics_state.material_params);
@@ -387,7 +384,11 @@ fn create_material(
                 mp.get_spectrum_texture("amount", Spectrum::new(0.5));
             if let Some(m1) = mat1 {
                 if let Some(m2) = mat2 {
-                    let mix = Arc::new(MixMaterial::new(m1.clone(), m2.clone(), scale));
+                    let mix = Arc::new(Material::Mix(MixMaterial::new(
+                        m1.clone(),
+                        m2.clone(),
+                        scale,
+                    )));
                     return Some(mix);
                 }
             }
@@ -415,7 +416,9 @@ fn create_material(
     }
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-    Some(Arc::new(MatteMaterial::new(kd, sigma, None)))
+    Some(Arc::new(Material::Matte(MatteMaterial::new(
+        kd, sigma, None,
+    ))))
 }
 
 fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
@@ -1237,10 +1240,7 @@ fn make_texture(api_state: &mut ApiState) {
 fn get_shapes_and_materials(
     api_state: &ApiState,
     bsdf_state: &mut BsdfState,
-) -> (
-    Vec<Arc<Shape>>,
-    Vec<Option<Arc<dyn Material + Send + Sync>>>,
-) {
+) -> (Vec<Arc<Shape>>, Vec<Option<Arc<Material>>>) {
     if shape_may_set_material_parameters(&api_state.param_set) {
         // TODO: see C++ code and shape_may_set_material_parameters() call
 
@@ -1248,7 +1248,7 @@ fn get_shapes_and_materials(
         // print_params(&api_state.param_set);
     }
     let mut shapes: Vec<Arc<Shape>> = Vec::new();
-    let mut materials: Vec<Option<Arc<dyn Material + Send + Sync>>> = Vec::new();
+    let mut materials: Vec<Option<Arc<Material>>> = Vec::new();
     // pbrtShape (api.cpp:1153)
     // TODO: if (!curTransform.IsAnimated()) { ... }
     // TODO: transformCache.Lookup(curTransform[0], &ObjToWorld, &WorldToObj);
@@ -1284,7 +1284,7 @@ fn get_shapes_and_materials(
             z_max,
             phi_max,
         )));
-        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         shapes.push(sphere.clone());
         materials.push(mtl);
     } else if api_state.param_set.name == "cylinder" {
@@ -1301,7 +1301,7 @@ fn get_shapes_and_materials(
             z_max,
             phi_max,
         )));
-        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         shapes.push(cylinder.clone());
         materials.push(mtl.clone());
     } else if api_state.param_set.name == "disk" {
@@ -1318,7 +1318,7 @@ fn get_shapes_and_materials(
             inner_radius,
             phi_max,
         )));
-        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         shapes.push(disk.clone());
         materials.push(mtl.clone());
     } else if api_state.param_set.name == "cone" {
@@ -1328,7 +1328,7 @@ fn get_shapes_and_materials(
     } else if api_state.param_set.name == "hyperboloid" {
         println!("TODO: CreateHyperboloidShape");
     // } else if api_state.param_set.name == "curve" {
-    //     let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+    //     let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
     //     let curve_shapes: Vec<Arc<Shape>> = create_curve_shape(
     //         &obj_to_world,
     //         &world_to_obj,
@@ -1427,7 +1427,7 @@ fn get_shapes_and_materials(
             None,
             None,
         ));
-        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Shape::Trngl(Triangle::new(
                 mesh.object_to_world,
@@ -1441,8 +1441,7 @@ fn get_shapes_and_materials(
         }
     } else if api_state.param_set.name == "plymesh" {
         if let Some(ref search_directory) = api_state.search_directory {
-            let mtl: Option<Arc<dyn Material + Send + Sync>> =
-                create_material(&api_state, bsdf_state);
+            let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
             let ply_shapes: Vec<Arc<Shape>> = create_ply_mesh(
                 &obj_to_world,
                 &world_to_obj,
@@ -1487,7 +1486,7 @@ fn get_shapes_and_materials(
             &vertex_indices,
             &p,
         );
-        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Shape::Trngl(Triangle::new(
                 mesh.object_to_world,
@@ -1674,7 +1673,7 @@ fn get_shapes_and_materials(
             None,
             None,
         ));
-        let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+        let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Shape::Trngl(Triangle::new(
                 mesh.object_to_world,
@@ -2893,7 +2892,7 @@ pub fn pbrt_make_named_material(
         .material_params
         .copy_from(&api_state.param_set);
     api_state.graphics_state.current_material = String::new();
-    let mtl: Option<Arc<dyn Material + Send + Sync>> = create_material(&api_state, bsdf_state);
+    let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
     match api_state
         .graphics_state
         .named_materials

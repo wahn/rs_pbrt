@@ -42,7 +42,7 @@ impl TranslucentMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let kd = mp.get_spectrum_texture("Kd", Spectrum::new(0.25 as Float));
         let ks = mp.get_spectrum_texture("Ks", Spectrum::new(0.25 as Float));
         let reflect = mp.get_spectrum_texture("reflect", Spectrum::new(0.5 as Float));
@@ -50,7 +50,7 @@ impl TranslucentMaterial {
         let roughness = mp.get_float_texture("roughness", 0.1 as Float);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        Arc::new(TranslucentMaterial::new(
+        Arc::new(Material::Translucent(TranslucentMaterial::new(
             kd,
             ks,
             roughness,
@@ -58,18 +58,16 @@ impl TranslucentMaterial {
             transmit,
             bump_map,
             remap_roughness,
-        ))
+        )))
     }
-}
-
-impl Material for TranslucentMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -79,7 +77,7 @@ impl Material for TranslucentMaterial {
             sc = scale;
         }
         if let Some(ref bump) = self.bump_map {
-            Self::bump(bump, si);
+            Material::bump(bump, si);
         }
         let eta: Float = 1.5;
         let r: Spectrum = self

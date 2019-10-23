@@ -24,21 +24,19 @@ impl MirrorMaterial {
     ) -> Self {
         MirrorMaterial { kr, bump_map }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let kr = mp.get_spectrum_texture("Kr", Spectrum::new(0.9 as Float));
         let bump_map = mp.get_float_texture_or_null("bumpmap");
-        Arc::new(MirrorMaterial::new(kr, bump_map))
+        Arc::new(Material::Mirror(MirrorMaterial::new(kr, bump_map)))
     }
-}
-
-impl Material for MirrorMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -48,7 +46,7 @@ impl Material for MirrorMaterial {
             sc = scale;
         }
         if let Some(ref bump) = self.bump_map {
-            Self::bump(bump, si);
+            Material::bump(bump, si);
         }
         let r: Spectrum = self
             .kr

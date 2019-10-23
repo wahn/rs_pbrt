@@ -273,7 +273,7 @@ struct RenderOptions {
     has_emitters: bool,
     primitives: Vec<Arc<Primitive>>,
     triangles: Vec<Arc<Shape>>,
-    triangle_materials: Vec<Arc<dyn Material + Sync + Send>>,
+    triangle_materials: Vec<Arc<Material>>,
     triangle_lights: Vec<Option<Arc<Light>>>,
     lights: Vec<Arc<Light>>,
 }
@@ -288,13 +288,13 @@ impl RenderOptions {
         let mut has_emitters: bool = false;
         let primitives: Vec<Arc<Primitive>> = Vec::new();
         let mut triangles: Vec<Arc<Shape>> = Vec::new();
-        let mut triangle_materials: Vec<Arc<dyn Material + Sync + Send>> = Vec::new();
+        let mut triangle_materials: Vec<Arc<Material>> = Vec::new();
         let mut triangle_lights: Vec<Option<Arc<Light>>> = Vec::new();
         let mut lights: Vec<Arc<Light>> = Vec::new();
         // default material
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-        let default_material = Arc::new(MatteMaterial::new(kd, sigma, None));
+        let default_material = Arc::new(Material::Matte(MatteMaterial::new(kd, sigma, None)));
         // lights
         for light in &scene.lights {
             lights.push(light.clone());
@@ -355,7 +355,7 @@ impl RenderOptions {
                         let u_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
                         let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
                         let index = Arc::new(ConstantTexture::new(mat.ang as Float));
-                        let glass = Arc::new(GlassMaterial {
+                        let glass = Arc::new(Material::Glass(GlassMaterial {
                             kr: kr,
                             kt: kt,
                             u_roughness: u_roughness,
@@ -363,7 +363,7 @@ impl RenderOptions {
                             index: index,
                             bump_map: None,
                             remap_roughness: true,
-                        });
+                        }));
                         for _i in 0..shapes.len() {
                             triangle_materials.push(glass.clone());
                             triangle_lights.push(None);
@@ -386,7 +386,7 @@ impl RenderOptions {
                             let k: Arc<dyn Texture<Spectrum> + Send + Sync> =
                                 Arc::new(ConstantTexture::new(copper_k));
                             let remap_roughness: bool = true;
-                            let metal = Arc::new(MetalMaterial::new(
+                            let metal = Arc::new(Material::Metal(MetalMaterial::new(
                                 eta,
                                 k,
                                 Arc::new(ConstantTexture::new(mat.roughness as Float)),
@@ -394,7 +394,7 @@ impl RenderOptions {
                                 None,
                                 None,
                                 remap_roughness,
-                            ));
+                            )));
                             for _i in 0..shapes.len() {
                                 triangle_materials.push(metal.clone());
                                 triangle_lights.push(None);
@@ -406,7 +406,7 @@ impl RenderOptions {
                                 mat.mirg * mat.ray_mirror,
                                 mat.mirb * mat.ray_mirror,
                             )));
-                            let mirror = Arc::new(MirrorMaterial::new(kr, None));
+                            let mirror = Arc::new(Material::Mirror(MirrorMaterial::new(kr, None)));
                             for _i in 0..shapes.len() {
                                 triangle_materials.push(mirror.clone());
                                 triangle_lights.push(None);
@@ -495,14 +495,19 @@ impl RenderOptions {
                             }
                         }
                         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-                        let mut matte = Arc::new(MatteMaterial::new(kd, sigma.clone(), None));
+                        let mut matte =
+                            Arc::new(Material::Matte(MatteMaterial::new(kd, sigma.clone(), None)));
                         if triangle_colors.len() != 0_usize {
                             assert!(triangle_colors.len() == shapes.len());
                             // ignore textures, use triangle colors
                             for i in 0..shapes.len() {
                                 // overwrite kd
                                 kd = Arc::new(ConstantTexture::new(triangle_colors[i]));
-                                matte = Arc::new(MatteMaterial::new(kd, sigma.clone(), None));
+                                matte = Arc::new(Material::Matte(MatteMaterial::new(
+                                    kd,
+                                    sigma.clone(),
+                                    None,
+                                )));
                                 triangle_materials.push(matte.clone());
                                 triangle_lights.push(None);
                             }

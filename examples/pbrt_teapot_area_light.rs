@@ -8,6 +8,7 @@ use pbrt::core::geometry::{
 };
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
+use pbrt::core::material::Material;
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
@@ -1928,21 +1929,21 @@ fn main() {
     let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(0.5, 0.3, 0.8)));
     let ks = Arc::new(ConstantTexture::new(Spectrum::rgb(0.2, 0.2, 0.2)));
     let roughness = Arc::new(ConstantTexture::new(1.0 as Float));
-    let plastic1 = Arc::new(PlasticMaterial::new(
+    let plastic1 = Arc::new(Material::Plastic(PlasticMaterial::new(
         kd,
         ks.clone(),
         roughness.clone(),
         None,
         true,
-    ));
+    )));
     let kd = Arc::new(ConstantTexture::new(Spectrum::rgb(0.8, 0.5, 0.1)));
-    let plastic2 = Arc::new(PlasticMaterial::new(
+    let plastic2 = Arc::new(Material::Plastic(PlasticMaterial::new(
         kd,
         ks.clone(),
         roughness.clone(),
         None,
         true,
-    ));
+    )));
     let mut triangle_count: usize = 0;
     for triangle in render_options.triangles {
         if triangle_count < 72 {
@@ -1967,7 +1968,7 @@ fn main() {
     println!("triangle_count = {}", triangle_count);
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.0)));
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-    let matte = Arc::new(MatteMaterial::new(kd, sigma, None));
+    let matte = Arc::new(Material::Matte(MatteMaterial::new(kd, sigma, None)));
     for disk in render_options.disks {
         let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
             disk,

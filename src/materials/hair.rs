@@ -47,7 +47,7 @@ impl HairMaterial {
             alpha,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let mut sigma_a: Option<Arc<dyn Texture<Spectrum> + Send + Sync>> =
             mp.get_spectrum_texture_or_null("sigma_a");
         let color: Option<Arc<dyn Texture<Spectrum> + Send + Sync>> =
@@ -112,7 +112,7 @@ impl HairMaterial {
         let beta_m = mp.get_float_texture("beta_m", 0.3);
         let beta_n = mp.get_float_texture("beta_n", 0.3);
         let alpha = mp.get_float_texture("alpha", 2.0);
-        Arc::new(HairMaterial::new(
+        Arc::new(Material::Hair(HairMaterial::new(
             sigma_a,
             color,
             eumelanin,
@@ -121,18 +121,16 @@ impl HairMaterial {
             beta_m,
             beta_n,
             alpha,
-        ))
+        )))
     }
-}
-
-impl Material for HairMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         _mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;

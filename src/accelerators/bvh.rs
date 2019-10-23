@@ -542,7 +542,7 @@ impl BVHAccel {
         }
         false
     }
-    pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
+    pub fn get_material(&self) -> Option<Arc<Material>> {
         None
     }
     pub fn get_area_light(&self) -> Option<Arc<Light>> {

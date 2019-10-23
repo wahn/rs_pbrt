@@ -47,7 +47,7 @@ impl GlassMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let kr = mp.get_spectrum_texture("Kr", Spectrum::new(1.0 as Float));
         let kt = mp.get_spectrum_texture("Kt", Spectrum::new(1.0 as Float));
         let roughu = mp.get_float_texture("uroughness", 0.0 as Float);
@@ -57,7 +57,7 @@ impl GlassMaterial {
         let eta_option: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("eta");
         if let Some(ref eta) = eta_option {
-            Arc::new(GlassMaterial::new(
+            Arc::new(Material::Glass(GlassMaterial::new(
                 kr,
                 kt,
                 roughu,
@@ -65,11 +65,11 @@ impl GlassMaterial {
                 eta.clone(),
                 bump_map,
                 remap_roughness,
-            ))
+            )))
         } else {
             let eta: Arc<dyn Texture<Float> + Send + Sync> =
                 mp.get_float_texture("index", 1.5 as Float);
-            Arc::new(GlassMaterial::new(
+            Arc::new(Material::Glass(GlassMaterial::new(
                 kr,
                 kt,
                 roughu,
@@ -77,19 +77,17 @@ impl GlassMaterial {
                 eta,
                 bump_map,
                 remap_roughness,
-            ))
+            )))
         }
     }
-}
-
-impl Material for GlassMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         mode: TransportMode,
         allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -98,8 +96,8 @@ impl Material for GlassMaterial {
             use_scale = true;
             sc = scale;
         }
-        if let Some(ref bump_map) = self.bump_map {
-            Self::bump(bump_map, si);
+        if let Some(ref bump) = self.bump_map {
+            Material::bump(bump, si);
         }
         let mut urough: Float = self.u_roughness.evaluate(si);
         let mut vrough: Float = self.v_roughness.evaluate(si);

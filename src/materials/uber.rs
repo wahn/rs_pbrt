@@ -57,7 +57,7 @@ impl UberMaterial {
             remap_roughness,
         }
     }
-    pub fn create(mp: &mut TextureParams) -> Arc<dyn Material + Send + Sync> {
+    pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let kd: Arc<dyn Texture<Spectrum> + Sync + Send> =
             mp.get_spectrum_texture("Kd", Spectrum::new(0.25));
         let ks: Arc<dyn Texture<Spectrum> + Sync + Send> =
@@ -80,7 +80,7 @@ impl UberMaterial {
         let eta_option: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("eta");
         if let Some(ref eta) = eta_option {
-            Arc::new(UberMaterial::new(
+            Arc::new(Material::Uber(UberMaterial::new(
                 kd,
                 ks,
                 kr,
@@ -92,11 +92,11 @@ impl UberMaterial {
                 eta.clone(),
                 bump_map,
                 remap_roughness,
-            ))
+            )))
         } else {
             let eta: Arc<dyn Texture<Float> + Send + Sync> =
                 mp.get_float_texture("index", 1.5 as Float);
-            Arc::new(UberMaterial::new(
+            Arc::new(Material::Uber(UberMaterial::new(
                 kd,
                 ks,
                 kr,
@@ -108,19 +108,17 @@ impl UberMaterial {
                 eta,
                 bump_map,
                 remap_roughness,
-            ))
+            )))
         }
     }
-}
-
-impl Material for UberMaterial {
-    fn compute_scattering_functions(
+    // Material
+    pub fn compute_scattering_functions(
         &self,
         si: &mut SurfaceInteraction,
         // arena: &mut Arena,
         mode: TransportMode,
         _allow_multiple_lobes: bool,
-        _material: Option<Arc<dyn Material + Send + Sync>>,
+        _material: Option<Arc<Material>>,
         scale_opt: Option<Spectrum>,
     ) {
         let mut use_scale: bool = false;
@@ -129,8 +127,8 @@ impl Material for UberMaterial {
             use_scale = true;
             sc = scale;
         }
-        if let Some(ref bump_map) = self.bump_map {
-            Self::bump(bump_map, si);
+        if let Some(ref bump) = self.bump_map {
+            Material::bump(bump, si);
         }
         let e: Float = self.eta.evaluate(si);
         let op: Spectrum = self
