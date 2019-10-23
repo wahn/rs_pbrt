@@ -8,7 +8,7 @@ use typed_arena::Arena;
 use crate::core::geometry::{bnd3_union_bnd3, bnd3_union_pnt3};
 use crate::core::geometry::{Bounds3f, Point3f, Ray, Vector3f};
 use crate::core::interaction::SurfaceInteraction;
-use crate::core::light::AreaLight;
+use crate::core::light::Light;
 use crate::core::material::Material;
 use crate::core::paramset::ParamSet;
 use crate::core::pbrt::Float;
@@ -144,8 +144,7 @@ impl BVHAccel {
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
-        let mut ordered_prims: Vec<Arc<Primitive>> =
-            Vec::with_capacity(num_prims);
+        let mut ordered_prims: Vec<Arc<Primitive>> = Vec::with_capacity(num_prims);
         // println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
         // let start = PreciseTime::now();
         let root = BVHAccel::recursive_build(
@@ -546,7 +545,7 @@ impl BVHAccel {
     pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
         None
     }
-    pub fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
+    pub fn get_area_light(&self) -> Option<Arc<Light>> {
         None
     }
 }

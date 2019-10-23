@@ -40,13 +40,13 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
     spheres: Vec<Arc<Shape>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    lights: Vec<Arc<Light>>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<Arc<TriangleMesh>>,
     spheres: Vec<Arc<Shape>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    lights: Vec<Arc<Light>>,
 }
 
 impl SceneDescriptionBuilder {
@@ -63,7 +63,11 @@ impl SceneDescriptionBuilder {
         l: &Spectrum,
         w_light: &Vector3f,
     ) -> &mut SceneDescriptionBuilder {
-        let distant_light = Arc::new(DistantLight::new(light_to_world, &l, &w_light));
+        let distant_light = Arc::new(Light::Distant(DistantLight::new(
+            light_to_world,
+            &l,
+            &w_light,
+        )));
         self.lights.push(distant_light);
         self
     }
@@ -133,7 +137,7 @@ struct RenderOptions {
     primitives: Vec<Arc<Primitive>>,
     triangles: Vec<Arc<Shape>>,
     spheres: Vec<Arc<Shape>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    lights: Vec<Arc<Light>>,
 }
 
 impl RenderOptions {
@@ -141,7 +145,7 @@ impl RenderOptions {
         let primitives: Vec<Arc<Primitive>> = Vec::new();
         let mut triangles: Vec<Arc<Shape>> = Vec::new();
         let mut spheres: Vec<Arc<Shape>> = Vec::new();
-        let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
+        let mut lights: Vec<Arc<Light>> = Vec::new();
         // lights
         for light in &scene.lights {
             lights.push(light.clone());

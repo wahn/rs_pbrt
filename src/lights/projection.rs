@@ -12,7 +12,7 @@ use openexr::{FrameBufferMut, InputFile, PixelType};
 use crate::core::geometry::{pnt2_inside_bnd2, pnt3_distance_squared};
 use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
-use crate::core::light::{Light, LightFlags, VisibilityTester};
+use crate::core::light::{LightFlags, VisibilityTester};
 use crate::core::medium::{Medium, MediumInterface};
 use crate::core::mipmap::{ImageWrap, MipMap};
 use crate::core::pbrt::{Float, Spectrum};
@@ -360,10 +360,8 @@ impl ProjectionLight {
             Spectrum::new(1.0 as Float)
         }
     }
-}
-
-impl Light for ProjectionLight {
-    fn sample_li(
+    // Light
+    pub fn sample_li(
         &self,
         iref: &InteractionCommon,
         _u: &Point2f,
@@ -393,7 +391,7 @@ impl Light for ProjectionLight {
         };
         self.i * self.projection(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
-    fn power(&self) -> Spectrum {
+    pub fn power(&self) -> Spectrum {
         if let Some(projection_map) = &self.projection_map {
             projection_map.lookup_pnt_flt(
                 &Point2f {
@@ -413,16 +411,16 @@ impl Light for ProjectionLight {
                 * (1.0 as Float - self.cos_total_width)
         }
     }
-    fn preprocess(&self, _scene: &Scene) {}
+    pub fn preprocess(&self, _scene: &Scene) {}
     /// Default implementation returns no emitted radiance for a ray
     /// that escapes the scene bounds.
-    fn le(&self, _ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
+    pub fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
         0.0 as Float
     }
-    fn sample_le(
+    pub fn sample_le(
         &self,
         u1: &Point2f,
         _u2: &Point2f,
@@ -450,13 +448,13 @@ impl Light for ProjectionLight {
         *pdf_dir = uniform_cone_pdf(self.cos_total_width);
         self.i * self.projection(&ray.d)
     }
-    fn get_flags(&self) -> u8 {
+    pub fn get_flags(&self) -> u8 {
         self.flags
     }
-    fn get_n_samples(&self) -> i32 {
+    pub fn get_n_samples(&self) -> i32 {
         self.n_samples
     }
-    fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+    pub fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         *pdf_pos = 0.0 as Float;
         if cos_theta(&self.world_to_light.transform_vector(&ray.d)) >= self.cos_total_width {
             *pdf_dir = uniform_cone_pdf(self.cos_total_width);

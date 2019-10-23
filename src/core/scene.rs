@@ -17,8 +17,8 @@ use crate::core::sampler::Sampler;
 
 #[derive(Clone)]
 pub struct Scene {
-    pub lights: Vec<Arc<dyn Light + Sync + Send>>,
-    pub infinite_lights: Vec<Arc<dyn Light + Sync + Send>>,
+    pub lights: Vec<Arc<Light>>,
+    pub infinite_lights: Vec<Arc<Light>>,
     pub aggregate: Arc<Primitive>,
     pub world_bound: Bounds3f,
 }
@@ -26,7 +26,7 @@ pub struct Scene {
 impl Scene {
     pub fn new(
         aggregate: Arc<Primitive>,
-        lights: Vec<Arc<dyn Light + Sync + Send>>,
+        lights: Vec<Arc<Light>>,
     ) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
         let scene: Scene = Scene {

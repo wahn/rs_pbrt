@@ -278,7 +278,7 @@ pub fn uniform_sample_one_light(
 pub fn estimate_direct(
     it: &dyn Interaction,
     u_scattering: &Point2f,
-    light: Arc<dyn Light + Send + Sync>,
+    light: Arc<Light>,
     u_light: &Point2f,
     scene: &Scene,
     sampler: &mut Box<dyn Sampler + Send + Sync>,

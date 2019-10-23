@@ -30,7 +30,7 @@ use pbrt::core::geometry::{
     Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f,
 };
 use pbrt::core::integrator::SamplerIntegrator;
-use pbrt::core::light::{AreaLight, Light};
+use pbrt::core::light::Light;
 use pbrt::core::material::Material;
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::mipmap::ImageWrap;
@@ -143,14 +143,14 @@ struct SceneDescription {
     mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
     triangle_colors: Vec<Vec<Spectrum>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    lights: Vec<Arc<Light>>,
 }
 
 struct SceneDescriptionBuilder {
     mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
     triangle_colors: Vec<Vec<Spectrum>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    lights: Vec<Arc<Light>>,
 }
 
 impl SceneDescriptionBuilder {
@@ -204,12 +204,12 @@ impl SceneDescriptionBuilder {
         let l: Spectrum = Spectrum::new(1.0 as Float);
         let sc: Spectrum = Spectrum::new(light_scale as Float);
         let n_samples: i32 = 1;
-        let infinte_light = Arc::new(InfiniteAreaLight::new(
+        let infinte_light = Arc::new(Light::InfiniteArea(InfiniteAreaLight::new(
             &light_to_world,
             &(l * sc),
             n_samples,
             texmap,
-        ));
+        )));
         self.lights.push(infinte_light);
         self
     }
@@ -235,7 +235,11 @@ impl SceneDescriptionBuilder {
         let object_to_world: Transform = Transform::new(
             1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
         );
-        let distant_light = Arc::new(DistantLight::new(&object_to_world, &(l * sc), &dir));
+        let distant_light = Arc::new(Light::Distant(DistantLight::new(
+            &object_to_world,
+            &(l * sc),
+            &dir,
+        )));
         self.lights.push(distant_light);
         self
     }
@@ -247,11 +251,11 @@ impl SceneDescriptionBuilder {
     ) -> &mut SceneDescriptionBuilder {
         let sc: Spectrum = Spectrum::new(light_scale as Float);
         let medium_interface: MediumInterface = MediumInterface::default();
-        let point_light = Arc::new(PointLight::new(
+        let point_light = Arc::new(Light::Point(PointLight::new(
             &light_to_world,
             &medium_interface,
             &(l * sc),
-        ));
+        )));
         self.lights.push(point_light);
         self
     }
@@ -270,8 +274,8 @@ struct RenderOptions {
     primitives: Vec<Arc<Primitive>>,
     triangles: Vec<Arc<Shape>>,
     triangle_materials: Vec<Arc<dyn Material + Sync + Send>>,
-    triangle_lights: Vec<Option<Arc<dyn AreaLight + Sync + Send>>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    triangle_lights: Vec<Option<Arc<Light>>>,
+    lights: Vec<Arc<Light>>,
 }
 
 impl RenderOptions {
@@ -285,8 +289,8 @@ impl RenderOptions {
         let primitives: Vec<Arc<Primitive>> = Vec::new();
         let mut triangles: Vec<Arc<Shape>> = Vec::new();
         let mut triangle_materials: Vec<Arc<dyn Material + Sync + Send>> = Vec::new();
-        let mut triangle_lights: Vec<Option<Arc<dyn AreaLight + Sync + Send>>> = Vec::new();
-        let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
+        let mut triangle_lights: Vec<Option<Arc<Light>>> = Vec::new();
+        let mut lights: Vec<Arc<Light>> = Vec::new();
         // default material
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
@@ -327,18 +331,18 @@ impl RenderOptions {
                         );
                         let n_samples: i32 = 1;
                         let two_sided: bool = false;
-                        let area_light: Arc<DiffuseAreaLight> = Arc::new(DiffuseAreaLight::new(
-                            &mesh.object_to_world,
-                            &mi,
-                            &l_emit,
-                            n_samples,
-                            shape.clone(),
-                            two_sided,
-                        ));
+                        let area_light: Arc<Light> =
+                            Arc::new(Light::DiffuseArea(DiffuseAreaLight::new(
+                                &mesh.object_to_world,
+                                &mi,
+                                &l_emit,
+                                n_samples,
+                                shape.clone(),
+                                two_sided,
+                            )));
                         lights.push(area_light.clone());
                         triangle_materials.push(default_material.clone());
-                        let triangle_light: Option<Arc<dyn AreaLight + Sync + Send>> =
-                            Some(area_light.clone());
+                        let triangle_light: Option<Arc<Light>> = Some(area_light.clone());
                         triangle_lights.push(triangle_light);
                     }
                 } else {

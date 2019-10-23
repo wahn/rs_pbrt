@@ -38,7 +38,7 @@ pub struct EndpointInteraction<'a> {
     pub medium_interface: Option<Arc<MediumInterface>>,
     // EndpointInteraction Public Data
     pub camera: Option<&'a Arc<Camera>>,
-    pub light: Option<&'a Arc<dyn Light + Send + Sync>>,
+    pub light: Option<&'a Arc<Light>>,
 }
 
 impl<'a> EndpointInteraction<'a> {
@@ -74,7 +74,7 @@ impl<'a> EndpointInteraction<'a> {
         }
         ei
     }
-    pub fn new_light(light: &'a Arc<dyn Light + Send + Sync>, ray: &Ray, nl: &Normal3f) -> Self {
+    pub fn new_light(light: &'a Arc<Light>, ray: &Ray, nl: &Normal3f) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction {
             p: ray.o,
             time: ray.time,
@@ -91,7 +91,7 @@ impl<'a> EndpointInteraction<'a> {
     }
     pub fn new_interaction_from_light(
         it: &InteractionCommon,
-        light: &'a Arc<dyn Light + Send + Sync>,
+        light: &'a Arc<Light>,
     ) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::default();
         ei.p = it.p;
@@ -285,7 +285,7 @@ impl<'a> Vertex<'a> {
         v
     }
     pub fn create_light(
-        light: &'a Arc<dyn Light + Send + Sync>,
+        light: &'a Arc<Light>,
         ray: &Ray,
         nl: &Normal3f,
         le: &Spectrum,
@@ -1342,7 +1342,7 @@ pub fn mis_weight<'a>(
         if let Some(ref lv_ei) = sampled.ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut camera: Option<&Arc<Camera>> = None;
-            let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
+            let mut light: Option<&Arc<Light>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
@@ -1435,7 +1435,7 @@ pub fn mis_weight<'a>(
         if let Some(ref lv_ei) = sampled.ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut camera: Option<&Arc<Camera>> = None;
-            let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
+            let mut light: Option<&Arc<Light>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
@@ -1532,7 +1532,7 @@ pub fn mis_weight<'a>(
         if let Some(ref cv_ei) = camera_vertices[t - 1].ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut camera: Option<&Arc<Camera>> = None;
-            let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
+            let mut light: Option<&Arc<Light>> = None;
             if let Some(ref medium_interface_arc) = cv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
@@ -1628,7 +1628,7 @@ pub fn mis_weight<'a>(
         if let Some(ref lv_ei) = light_vertices[s - 1].ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut camera: Option<&Arc<Camera>> = None;
-            let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
+            let mut light: Option<&Arc<Light>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
@@ -1742,7 +1742,7 @@ pub fn mis_weight<'a>(
             if let Some(ref cv_ei) = camera_vertices[t - 2].ei {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
                 let mut camera: Option<&Arc<Camera>> = None;
-                let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
+                let mut light: Option<&Arc<Light>> = None;
                 if let Some(ref medium_interface_arc) = cv_ei.medium_interface {
                     medium_interface = Some(medium_interface_arc.clone());
                 }
@@ -1842,7 +1842,7 @@ pub fn mis_weight<'a>(
             if let Some(ref lv_ei) = light_vertices[s - 2].ei {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
                 let mut camera: Option<&Arc<Camera>> = None;
-                let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
+                let mut light: Option<&Arc<Light>> = None;
                 if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                     medium_interface = Some(medium_interface_arc.clone());
                 }

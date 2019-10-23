@@ -6,7 +6,7 @@ use std::sync::RwLock;
 use crate::core::geometry::vec3_coordinate_system;
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
-use crate::core::light::{Light, LightFlags, VisibilityTester};
+use crate::core::light::{LightFlags, VisibilityTester};
 use crate::core::medium::MediumInterface;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampling::concentric_sample_disk;
@@ -43,10 +43,8 @@ impl DistantLight {
             world_to_light: Transform::default(),
         }
     }
-}
-
-impl Light for DistantLight {
-    fn sample_li(
+    // Light
+    pub fn sample_li(
         &self,
         iref: &InteractionCommon,
         _u: &Point2f,
@@ -79,7 +77,7 @@ impl Light for DistantLight {
         };
         self.l
     }
-    fn power(&self) -> Spectrum {
+    pub fn power(&self) -> Spectrum {
         let world_radius: Float = *self.world_radius.read().unwrap();
         self.l * PI * world_radius * world_radius
     }
@@ -90,7 +88,7 @@ impl Light for DistantLight {
     /// **DistanceLight** implements the optional *preprocess()*
     /// method to get the bound. This method is called at the end of
     /// the **Scene** constructor.
-    fn preprocess(&self, scene: &Scene) {
+    pub fn preprocess(&self, scene: &Scene) {
         let mut world_center_ref = self.world_center.write().unwrap();
         let mut world_radius_ref = self.world_radius.write().unwrap();
         Bounds3f::bounding_sphere(
@@ -101,13 +99,13 @@ impl Light for DistantLight {
     }
     /// Default implementation returns no emitted radiance for a ray
     /// that escapes the scene bounds.
-    fn le(&self, _ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
+    pub fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
         0.0 as Float
     }
-    fn sample_le(
+    pub fn sample_le(
         &self,
         u1: &Point2f,
         _u2: &Point2f,
@@ -141,15 +139,15 @@ impl Light for DistantLight {
         *pdf_dir = 1.0 as Float;
         self.l
     }
-    fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+    pub fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         let world_radius: Float = *self.world_radius.read().unwrap();
         *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);
         *pdf_dir = 0.0 as Float;
     }
-    fn get_flags(&self) -> u8 {
+    pub fn get_flags(&self) -> u8 {
         self.flags
     }
-    fn get_n_samples(&self) -> i32 {
+    pub fn get_n_samples(&self) -> i32 {
         self.n_samples
     }
 }

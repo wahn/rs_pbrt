@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system};
 use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
-use crate::core::light::{AreaLight, Light, LightFlags, VisibilityTester};
+use crate::core::light::{LightFlags, VisibilityTester};
 use crate::core::medium::{Medium, MediumInterface};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
@@ -61,10 +61,8 @@ impl DiffuseAreaLight {
             // world_to_light: Transform::inverse(*light_to_world),
         }
     }
-}
-
-impl Light for DiffuseAreaLight {
-    fn sample_li(
+    // Light
+    pub fn sample_li(
         &self,
         iref: &InteractionCommon,
         u: &Point2f,
@@ -99,7 +97,7 @@ impl Light for DiffuseAreaLight {
         };
         self.l(&p_shape, &-new_wi)
     }
-    fn power(&self) -> Spectrum {
+    pub fn power(&self) -> Spectrum {
         // return (twoSided ? 2 : 1) * Lemit * area * Pi;
         let factor: Float;
         if self.two_sided {
@@ -109,17 +107,17 @@ impl Light for DiffuseAreaLight {
         }
         self.l_emit * factor * self.area * PI
     }
-    fn preprocess(&self, _scene: &Scene) {
+    pub fn preprocess(&self, _scene: &Scene) {
         // TODO?
     }
-    fn le(&self, _ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::default()
     }
-    fn pdf_li(&self, iref: &dyn Interaction, wi: Vector3f) -> Float {
+    pub fn pdf_li(&self, iref: &dyn Interaction, wi: Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
         self.shape.pdf_with_ref_point(iref, &wi)
     }
-    fn sample_le(
+    pub fn sample_le(
         &self,
         u1: &Point2f,
         u2: &Point2f,
@@ -163,7 +161,7 @@ impl Light for DiffuseAreaLight {
         *ray = ic.spawn_ray(&w);
         self.l(&ic, &w)
     }
-    fn pdf_le(&self, ray: &Ray, n: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+    pub fn pdf_le(&self, ray: &Ray, n: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         *pdf_pos = self.shape.pdf(&InteractionCommon::default());
         if self.two_sided {
             *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(nrm_abs_dot_vec3(&n, &ray.d));
@@ -171,16 +169,14 @@ impl Light for DiffuseAreaLight {
             *pdf_dir = cosine_hemisphere_pdf(nrm_dot_vec3(&n, &ray.d));
         }
     }
-    fn get_flags(&self) -> u8 {
+    pub fn get_flags(&self) -> u8 {
         self.flags
     }
-    fn get_n_samples(&self) -> i32 {
+    pub fn get_n_samples(&self) -> i32 {
         self.n_samples
     }
-}
-
-impl AreaLight for DiffuseAreaLight {
-    fn l(&self, intr: &InteractionCommon, w: &Vector3f) -> Spectrum {
+    // AreaLight
+    pub fn l(&self, intr: &InteractionCommon, w: &Vector3f) -> Spectrum {
         if self.two_sided || nrm_dot_vec3(&intr.n, &w) > 0.0 as Float {
             self.l_emit
         } else {

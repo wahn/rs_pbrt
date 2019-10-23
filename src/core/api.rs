@@ -203,7 +203,7 @@ pub struct RenderOptions {
     pub camera_params: ParamSet,
     pub camera_to_world: TransformSet,
     pub named_media: HashMap<String, Arc<Medium>>,
-    pub lights: Vec<Arc<dyn Light + Sync + Send>>,
+    pub lights: Vec<Arc<Light>>,
     pub primitives: Vec<Arc<Primitive>>,
     pub instances: HashMap<String, Vec<Arc<Primitive>>>,
     pub current_instance: String,
@@ -470,7 +470,11 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             y: p.y,
             z: p.z,
         }) * api_state.cur_transform.t[0];
-        let point_light = Arc::new(PointLight::new(&l2w, medium_interface, &(i * sc)));
+        let point_light = Arc::new(Light::Point(PointLight::new(
+            &l2w,
+            medium_interface,
+            &(i * sc),
+        )));
         api_state.render_options.lights.push(point_light);
     } else if api_state.param_set.name == "spot" {
         // CreateSpotLight
@@ -518,13 +522,13 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
                 z: from.z,
             })
             * Transform::inverse(&dir_to_z);
-        let spot_light = Arc::new(SpotLight::new(
+        let spot_light = Arc::new(Light::Spot(SpotLight::new(
             &light2world,
             medium_interface,
             &(i * sc),
             coneangle,
             coneangle - conedelta,
-        ));
+        )));
         api_state.render_options.lights.push(spot_light);
     } else if api_state.param_set.name == "goniometric" {
         // CreateGoniometricLight
@@ -537,12 +541,12 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         let texname: String = api_state
             .param_set
             .find_one_filename("mapname", String::from(""));
-        let projection_light = Arc::new(GonioPhotometricLight::new(
+        let projection_light = Arc::new(Light::GonioPhotometric(GonioPhotometricLight::new(
             &api_state.cur_transform.t[0],
             medium_interface,
             &(i * sc),
             texname,
-        ));
+        )));
         api_state.render_options.lights.push(projection_light);
     } else if api_state.param_set.name == "projection" {
         // CreateProjectionLight
@@ -556,13 +560,13 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         let texname: String = api_state
             .param_set
             .find_one_filename("mapname", String::from(""));
-        let projection_light = Arc::new(ProjectionLight::new(
+        let projection_light = Arc::new(Light::Projection(ProjectionLight::new(
             &api_state.cur_transform.t[0],
             medium_interface,
             &(i * sc),
             texname,
             fov,
-        ));
+        )));
         api_state.render_options.lights.push(projection_light);
     } else if api_state.param_set.name == "distant" {
         // CreateDistantLight
@@ -590,11 +594,11 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         );
         let dir: Vector3f = from - to;
         // return std::make_shared<DistantLight>(light2world, L * sc, dir);
-        let distant_light = Arc::new(DistantLight::new(
+        let distant_light = Arc::new(Light::Distant(DistantLight::new(
             &api_state.cur_transform.t[0],
             &(l * sc),
             &dir,
-        ));
+        )));
         api_state.render_options.lights.push(distant_light);
     } else if api_state.param_set.name == "infinite" || api_state.param_set.name == "exinfinite" {
         let l: Spectrum = api_state
@@ -619,12 +623,12 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
 
         // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
-        let infinte_light = Arc::new(InfiniteAreaLight::new(
+        let infinte_light = Arc::new(Light::InfiniteArea(InfiniteAreaLight::new(
             &api_state.cur_transform.t[0],
             &(l * sc),
             n_samples,
             texmap,
-        ));
+        )));
         api_state.render_options.lights.push(infinte_light);
     } else {
         panic!("MakeLight: unknown name {}", api_state.param_set.name);
@@ -2935,7 +2939,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
     api_state.param_set = params;
     // collect area lights
     let mut prims: Vec<Arc<Primitive>> = Vec::new();
-    let mut area_lights: Vec<Arc<dyn Light + Send + Sync>> = Vec::new();
+    let mut area_lights: Vec<Arc<Light>> = Vec::new();
     // possibly create area light for shape (see pbrtShape())
     if api_state.graphics_state.area_light != String::new() {
         // MakeAreaLight
@@ -2972,14 +2976,14 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                     .find_one_bool("twosided", false);
                 // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
                 let l_emit: Spectrum = l * sc;
-                let area_light: Arc<DiffuseAreaLight> = Arc::new(DiffuseAreaLight::new(
+                let area_light: Arc<Light> = Arc::new(Light::DiffuseArea(DiffuseAreaLight::new(
                     &light_to_world,
                     &mi,
                     &l_emit,
                     n_samples,
                     shape.clone(),
                     two_sided,
-                ));
+                )));
                 area_lights.push(area_light.clone());
                 let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
                     shape.clone(),

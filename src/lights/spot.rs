@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::core::geometry::pnt3_distance_squared;
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
-use crate::core::light::{Light, LightFlags, VisibilityTester};
+use crate::core::light::{LightFlags, VisibilityTester};
 use crate::core::medium::{Medium, MediumInterface};
 use crate::core::pbrt::radians;
 use crate::core::pbrt::{Float, Spectrum};
@@ -73,10 +73,8 @@ impl SpotLight {
             (cos_theta - self.cos_total_width) / (self.cos_falloff_start - self.cos_total_width);
         (delta * delta) * (delta * delta)
     }
-}
-
-impl Light for SpotLight {
-    fn sample_li(
+    // Light
+    pub fn sample_li(
         &self,
         iref: &InteractionCommon,
         _u: &Point2f,
@@ -131,22 +129,22 @@ impl Light for SpotLight {
         };
         self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
-    fn power(&self) -> Spectrum {
+    pub fn power(&self) -> Spectrum {
         self.i
             * 2.0 as Float
             * PI
             * (1.0 as Float - 0.5 as Float * (self.cos_falloff_start + self.cos_total_width))
     }
-    fn preprocess(&self, _scene: &Scene) {}
+    pub fn preprocess(&self, _scene: &Scene) {}
     /// Default implementation returns no emitted radiance for a ray
     /// that escapes the scene bounds.
-    fn le(&self, _ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
-    fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
+    pub fn pdf_li(&self, _iref: &dyn Interaction, _wi: Vector3f) -> Float {
         0.0 as Float
     }
-    fn sample_le(
+    pub fn sample_le(
         &self,
         u1: &Point2f,
         _u2: &Point2f,
@@ -175,13 +173,13 @@ impl Light for SpotLight {
         *pdf_dir = uniform_cone_pdf(self.cos_total_width);
         self.i * self.falloff(&ray.d)
     }
-    fn get_flags(&self) -> u8 {
+    pub fn get_flags(&self) -> u8 {
         self.flags
     }
-    fn get_n_samples(&self) -> i32 {
+    pub fn get_n_samples(&self) -> i32 {
         self.n_samples
     }
-    fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+    pub fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         *pdf_pos = 0.0 as Float;
         if cos_theta(&self.world_to_light.transform_vector(&ray.d)) > self.cos_total_width {
             *pdf_dir = uniform_cone_pdf(self.cos_total_width);

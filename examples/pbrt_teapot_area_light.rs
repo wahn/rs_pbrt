@@ -30,13 +30,13 @@ use std::sync::Arc;
 struct SceneDescription {
     meshes: Vec<Arc<TriangleMesh>>,
     disks: Vec<Arc<Shape>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    lights: Vec<Arc<Light>>,
 }
 
 struct SceneDescriptionBuilder {
     meshes: Vec<Arc<TriangleMesh>>,
     disks: Vec<Arc<Shape>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    lights: Vec<Arc<Light>>,
 }
 
 impl SceneDescriptionBuilder {
@@ -52,11 +52,11 @@ impl SceneDescriptionBuilder {
         light_to_world: &Transform,
         i: &Spectrum,
     ) -> &mut SceneDescriptionBuilder {
-        let point_light = Arc::new(PointLight::new(
+        let point_light = Arc::new(Light::Point(PointLight::new(
             light_to_world,
             &MediumInterface::default(),
             &i,
-        ));
+        )));
         self.lights.push(point_light);
         self
     }
@@ -124,7 +124,7 @@ struct RenderOptions {
     primitives: Vec<Arc<Primitive>>,
     triangles: Vec<Arc<Shape>>,
     disks: Vec<Arc<Shape>>,
-    lights: Vec<Arc<dyn Light + Sync + Send>>,
+    lights: Vec<Arc<Light>>,
 }
 
 impl RenderOptions {
@@ -132,7 +132,7 @@ impl RenderOptions {
         let primitives: Vec<Arc<Primitive>> = Vec::new();
         let mut triangles: Vec<Arc<Shape>> = Vec::new();
         let mut disks: Vec<Arc<Shape>> = Vec::new();
-        let mut lights: Vec<Arc<dyn Light + Sync + Send>> = Vec::new();
+        let mut lights: Vec<Arc<Light>> = Vec::new();
         // lights
         for light in &scene.lights {
             lights.push(light.clone());

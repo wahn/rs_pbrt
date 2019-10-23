@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::core::geometry::bnd3_union_bnd3;
 use crate::core::geometry::{Bounds3f, Ray, Vector3f};
 use crate::core::interaction::SurfaceInteraction;
-use crate::core::light::AreaLight;
+use crate::core::light::Light;
 use crate::core::material::Material;
 use crate::core::paramset::ParamSet;
 use crate::core::pbrt::log_2_int_i32;
@@ -553,8 +553,7 @@ impl KdTreeAccel {
                         unsafe {
                             one_primitive = node.priv_union.one_primitive;
                         }
-                        let p: &Arc<Primitive> =
-                            &self.primitives[one_primitive as usize];
+                        let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
                         // check one primitive inside leaf node
                         if let Some(isect) = p.intersect(ray) {
                             si = isect;
@@ -630,8 +629,7 @@ impl KdTreeAccel {
                         unsafe {
                             one_primitive = node.priv_union.one_primitive;
                         }
-                        let p: &Arc<Primitive> =
-                            &self.primitives[one_primitive as usize];
+                        let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
                         if p.intersect_p(ray) {
                             return true;
                         }
@@ -644,8 +642,7 @@ impl KdTreeAccel {
                             let primitive_index: usize = self.primitive_indices
                                 [(primitive_indices_offset + i) as usize]
                                 as usize;
-                            let prim: &Arc<Primitive> =
-                                &self.primitives[primitive_index];
+                            let prim: &Arc<Primitive> = &self.primitives[primitive_index];
                             if prim.intersect_p(ray) {
                                 return true;
                             }
@@ -714,7 +711,7 @@ impl KdTreeAccel {
     pub fn get_material(&self) -> Option<Arc<dyn Material + Send + Sync>> {
         None
     }
-    pub fn get_area_light(&self) -> Option<Arc<dyn AreaLight + Send + Sync>> {
+    pub fn get_area_light(&self) -> Option<Arc<Light>> {
         None
     }
 }

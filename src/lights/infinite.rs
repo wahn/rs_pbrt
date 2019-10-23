@@ -11,7 +11,7 @@ use openexr::{FrameBufferMut, InputFile, PixelType};
 use crate::core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system};
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
-use crate::core::light::{Light, LightFlags, VisibilityTester};
+use crate::core::light::{LightFlags, VisibilityTester};
 use crate::core::medium::MediumInterface;
 use crate::core::mipmap::{ImageWrap, MipMap};
 use crate::core::pbrt::{Float, Spectrum};
@@ -191,10 +191,13 @@ impl InfiniteAreaLight {
                     };
                     let mut texels: Vec<Spectrum> =
                         vec![Spectrum::default(); (resolution.x * resolution.y) as usize];
-                    let img_result = hdr.read_image_transform(|p| {
-                        let rgb = p.to_hdr();
-                        Spectrum::rgb(rgb[0], rgb[1], rgb[2]) * *l
-                    }, &mut texels);
+                    let img_result = hdr.read_image_transform(
+                        |p| {
+                            let rgb = p.to_hdr();
+                            Spectrum::rgb(rgb[0], rgb[1], rgb[2]) * *l
+                        },
+                        &mut texels,
+                    );
                     if img_result.is_ok() {
                         // create _MipMap_ from converted texels (see above)
                         let do_trilinear: bool = false;
@@ -291,10 +294,8 @@ impl InfiniteAreaLight {
             world_to_light: Transform::default(),
         }
     }
-}
-
-impl Light for InfiniteAreaLight {
-    fn sample_li(
+    // Light
+    pub fn sample_li(
         &self,
         iref: &InteractionCommon,
         u: &Point2f,
@@ -357,7 +358,7 @@ impl Light for InfiniteAreaLight {
     /// Like directional lights, the total power from the infinite
     /// area light is related to the surface area of the scene. Like
     /// many other lights the power computed here is approximate.
-    fn power(&self) -> Spectrum {
+    pub fn power(&self) -> Spectrum {
         let p: Point2f = Point2f { x: 0.5, y: 0.5 };
         let world_radius: Float = *self.world_radius.read().unwrap();
         // TODO: SpectrumType::Illuminant
@@ -367,7 +368,7 @@ impl Light for InfiniteAreaLight {
     /// scene bounds; here again, the **preprocess()** method finds
     /// the scene bounds after all of the scene geometry has been
     /// created.
-    fn preprocess(&self, scene: &Scene) {
+    pub fn preprocess(&self, scene: &Scene) {
         let mut world_center_ref = self.world_center.write().unwrap();
         let mut world_radius_ref = self.world_radius.write().unwrap();
         Bounds3f::bounding_sphere(
@@ -382,7 +383,7 @@ impl Light for InfiniteAreaLight {
     /// emitted radiance due to that light along a ray that escapes
     /// the scene bounds. It's the responsibility of the integrators
     /// to call this method for these rays.
-    fn le(&self, ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, ray: &mut Ray) -> Spectrum {
         let w: Vector3f = self.world_to_light.transform_vector(&ray.d).normalize();
         let st: Point2f = Point2f {
             x: spherical_phi(&w) * INV_2_PI,
@@ -391,7 +392,7 @@ impl Light for InfiniteAreaLight {
         // TODO: SpectrumType::Illuminant
         self.lmap.lookup_pnt_flt(&st, 0.0 as Float)
     }
-    fn pdf_li(&self, _iref: &dyn Interaction, w: Vector3f) -> Float {
+    pub fn pdf_li(&self, _iref: &dyn Interaction, w: Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
         let wi: Vector3f = self.world_to_light.transform_vector(&w);
         let theta: Float = spherical_theta(&wi);
@@ -406,7 +407,7 @@ impl Light for InfiniteAreaLight {
         };
         self.distribution.pdf(&p) / (2.0 as Float * PI * PI * sin_theta)
     }
-    fn sample_le(
+    pub fn sample_le(
         &self,
         u1: &Point2f,
         u2: &Point2f,
@@ -462,7 +463,7 @@ impl Light for InfiniteAreaLight {
         // TODO: return Spectrum(Lmap->Lookup(uv), SpectrumType::Illuminant);
         self.lmap.lookup_pnt_flt(&uv, 0.0 as Float)
     }
-    fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+    pub fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         let d: Vector3f = -self.world_to_light.transform_vector(&ray.d);
         let theta: Float = spherical_theta(&d);
         let phi: Float = spherical_phi(&d);
@@ -475,10 +476,10 @@ impl Light for InfiniteAreaLight {
         *pdf_dir = map_pdf / (2.0 as Float * PI * PI * theta.sin());
         *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);
     }
-    fn get_flags(&self) -> u8 {
+    pub fn get_flags(&self) -> u8 {
         self.flags
     }
-    fn get_n_samples(&self) -> i32 {
+    pub fn get_n_samples(&self) -> i32 {
         self.n_samples
     }
 }
