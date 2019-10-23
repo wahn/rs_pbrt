@@ -37,7 +37,7 @@ pub struct EndpointInteraction<'a> {
     pub n: Normal3f,
     pub medium_interface: Option<Arc<MediumInterface>>,
     // EndpointInteraction Public Data
-    pub camera: Option<&'a Arc<dyn Camera + Send + Sync>>,
+    pub camera: Option<&'a Arc<Camera>>,
     pub light: Option<&'a Arc<dyn Light + Send + Sync>>,
 }
 
@@ -51,7 +51,7 @@ impl<'a> EndpointInteraction<'a> {
     }
     pub fn new_interaction_from_camera(
         it: &InteractionCommon,
-        camera: &'a Arc<dyn Camera + Send + Sync>,
+        camera: &'a Arc<Camera>,
     ) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&it.p, it.time);
         ei.p_error = it.p_error;
@@ -60,7 +60,7 @@ impl<'a> EndpointInteraction<'a> {
         ei.camera = Some(camera);
         ei
     }
-    pub fn new_camera(camera: &'a Arc<dyn Camera + Send + Sync>, ray: &Ray) -> Self {
+    pub fn new_camera(camera: &'a Arc<Camera>, ray: &Ray) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction {
             p: ray.o,
             time: ray.time,
@@ -216,7 +216,7 @@ impl<'a> Vertex<'a> {
         }
     }
     pub fn create_camera_from_ray(
-        camera: &'a Arc<dyn Camera + Send + Sync>,
+        camera: &'a Arc<Camera>,
         ray: &Ray,
         beta: &Spectrum,
     ) -> Vertex<'a> {
@@ -227,7 +227,7 @@ impl<'a> Vertex<'a> {
         )
     }
     pub fn create_camera_from_interaction(
-        camera: &'a Arc<dyn Camera + Send + Sync>,
+        camera: &'a Arc<Camera>,
         it: &InteractionCommon,
         beta: &Spectrum,
     ) -> Vertex<'a> {
@@ -856,7 +856,7 @@ pub fn generate_camera_subpath<'a>(
     scene: &'a Scene,
     sampler: &mut Box<dyn Sampler + Send + Sync>,
     max_depth: u32,
-    camera: &'a Arc<dyn Camera + Send + Sync>,
+    camera: &'a Arc<Camera>,
     p_film: &Point2f,
     path: &mut Vec<Vertex<'a>>,
 ) -> (usize, Point3f, Float) {
@@ -1341,7 +1341,7 @@ pub fn mis_weight<'a>(
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut camera: Option<&Arc<dyn Camera + Send + Sync>> = None;
+            let mut camera: Option<&Arc<Camera>> = None;
             let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
@@ -1434,7 +1434,7 @@ pub fn mis_weight<'a>(
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = sampled.ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut camera: Option<&Arc<dyn Camera + Send + Sync>> = None;
+            let mut camera: Option<&Arc<Camera>> = None;
             let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
@@ -1531,7 +1531,7 @@ pub fn mis_weight<'a>(
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref cv_ei) = camera_vertices[t - 1].ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut camera: Option<&Arc<dyn Camera + Send + Sync>> = None;
+            let mut camera: Option<&Arc<Camera>> = None;
             let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
             if let Some(ref medium_interface_arc) = cv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
@@ -1627,7 +1627,7 @@ pub fn mis_weight<'a>(
         let mut si: Option<SurfaceInteraction> = None;
         if let Some(ref lv_ei) = light_vertices[s - 1].ei {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut camera: Option<&Arc<dyn Camera + Send + Sync>> = None;
+            let mut camera: Option<&Arc<Camera>> = None;
             let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
             if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
@@ -1741,7 +1741,7 @@ pub fn mis_weight<'a>(
             let mut si: Option<SurfaceInteraction> = None;
             if let Some(ref cv_ei) = camera_vertices[t - 2].ei {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
-                let mut camera: Option<&Arc<dyn Camera + Send + Sync>> = None;
+                let mut camera: Option<&Arc<Camera>> = None;
                 let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
                 if let Some(ref medium_interface_arc) = cv_ei.medium_interface {
                     medium_interface = Some(medium_interface_arc.clone());
@@ -1841,7 +1841,7 @@ pub fn mis_weight<'a>(
             let mut si: Option<SurfaceInteraction> = None;
             if let Some(ref lv_ei) = light_vertices[s - 2].ei {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
-                let mut camera: Option<&Arc<dyn Camera + Send + Sync>> = None;
+                let mut camera: Option<&Arc<Camera>> = None;
                 let mut light: Option<&Arc<dyn Light + Send + Sync>> = None;
                 if let Some(ref medium_interface_arc) = lv_ei.medium_interface {
                     medium_interface = Some(medium_interface_arc.clone());
@@ -2011,7 +2011,7 @@ pub fn connect_bdpt<'a>(
     s: usize,
     t: usize,
     light_distr: &Arc<Distribution1D>,
-    camera: &'a Arc<dyn Camera + Send + Sync>,
+    camera: &'a Arc<Camera>,
     sampler: &mut Box<dyn Sampler + Send + Sync>,
     p_raster: &mut Point2f,
     mis_weight_opt: Option<&mut Float>,
@@ -2299,7 +2299,7 @@ pub fn infinite_light_density<'a>(
 /// ![bdpt](/doc/img/uml_pbrt_rust_render_bdpt.png)
 pub fn render_bdpt(
     scene: &Scene,
-    camera: &Arc<dyn Camera + Send + Sync>,
+    camera: &Arc<Camera>,
     sampler: &mut Box<dyn Sampler + Send + Sync>,
     integrator: &mut Box<BDPTIntegrator>,
     num_threads: u8,

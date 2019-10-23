@@ -236,7 +236,7 @@ impl Sampler for MLTSampler {
 
 /// Metropolis Light Transport
 pub struct MLTIntegrator {
-    pub camera: Arc<dyn Camera + Sync + Send>,
+    pub camera: Arc<Camera>,
     pub max_depth: u32,
     pub n_bootstrap: u32,
     pub n_chains: u32,
@@ -247,7 +247,7 @@ pub struct MLTIntegrator {
 
 impl MLTIntegrator {
     pub fn new(
-        camera: Arc<dyn Camera + Sync + Send>,
+        camera: Arc<Camera>,
         max_depth: u32,
         n_bootstrap: u32,
         n_chains: u32,
@@ -361,7 +361,7 @@ impl MLTIntegrator {
 /// ![bdpt](/doc/img/uml_pbrt_rust_render_mlt.png)
 pub fn render_mlt(
     scene: &Scene,
-    camera: &Arc<dyn Camera + Send + Sync>,
+    camera: &Arc<Camera>,
     _sampler: &mut Box<dyn Sampler + Send + Sync>,
     integrator: &mut Box<MLTIntegrator>,
     num_threads: u8,

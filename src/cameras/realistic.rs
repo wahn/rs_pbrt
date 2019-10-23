@@ -142,7 +142,7 @@ impl RealisticCamera {
         film: Arc<Film>,
         medium: Option<Arc<Medium>>,
         search_directory: Option<&Box<PathBuf>>,
-    ) -> Arc<dyn Camera + Send + Sync> {
+    ) -> Arc<Camera> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
@@ -177,7 +177,7 @@ impl RealisticCamera {
                      lens_file, lens_data.len());
         }
         // println!("lens_data = {:?}", lens_data);
-        let camera = Arc::new(RealisticCamera::new(
+        let camera = Arc::new(Camera::Realistic(RealisticCamera::new(
             cam2world,
             shutteropen,
             shutterclose,
@@ -187,7 +187,7 @@ impl RealisticCamera {
             &lens_data,
             film,
             medium,
-        ));
+        )));
         camera
     }
     pub fn generate_ray(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
@@ -683,10 +683,8 @@ impl RealisticCamera {
     pub fn test_exit_pupil_bounds(&self) {
         println!("TODO: RealisticCamera::test_exit_pupil_bounds()");
     }
-}
-
-impl Camera for RealisticCamera {
-    fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
+    // Camera
+    pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
         let wt: Float = self.generate_ray(sample, ray);
         if wt == 0.0 as Float {
             return 0.0 as Float;
@@ -729,17 +727,17 @@ impl Camera for RealisticCamera {
         ray.differential = Some(rd);
         wt
     }
-    fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
+    pub fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
         panic!("camera::we() is not implemented!");
         // Spectrum::default()
     }
-    fn pdf_we(&self, _ray: &Ray) -> (Float, Float) {
+    pub fn pdf_we(&self, _ray: &Ray) -> (Float, Float) {
         // let mut pdf_pos: Float = 0.0;
         // let mut pdf_dir: Float = 0.0;
         panic!("camera::pdf_we() is not implemented!");
         // (pdf_pos, pdf_dir)
     }
-    fn sample_wi(
+    pub fn sample_wi(
         &self,
         _iref: &InteractionCommon,
         _u: &Point2f,
@@ -751,13 +749,13 @@ impl Camera for RealisticCamera {
         panic!("camera::sample_wi() is not implemented!");
         // Spectrum::default()
     }
-    fn get_shutter_open(&self) -> Float {
+    pub fn get_shutter_open(&self) -> Float {
         self.shutter_open
     }
-    fn get_shutter_close(&self) -> Float {
+    pub fn get_shutter_close(&self) -> Float {
         self.shutter_close
     }
-    fn get_film(&self) -> Arc<Film> {
+    pub fn get_film(&self) -> Arc<Film> {
         self.film.clone()
     }
 }

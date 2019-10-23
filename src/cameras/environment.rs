@@ -46,7 +46,7 @@ impl EnvironmentCamera {
         cam2world: AnimatedTransform,
         film: Arc<Film>,
         medium: Option<Arc<Medium>>,
-    ) -> Arc<dyn Camera + Send + Sync> {
+    ) -> Arc<Camera> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
@@ -80,19 +80,17 @@ impl EnvironmentCamera {
                 panic!("\"screenwindow\" should have four values");
             }
         }
-        let camera = Arc::new(EnvironmentCamera::new(
+        let camera = Arc::new(Camera::Environment(EnvironmentCamera::new(
             cam2world,
             shutteropen,
             shutterclose,
             film,
             medium,
-        ));
+        )));
         camera
     }
-}
-
-impl Camera for EnvironmentCamera {
-    fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
+    // Camera
+    pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
         let theta: Float = PI * sample.p_film.y / self.film.full_resolution.y as Float;
         let phi: Float = 2.0 as Float * PI * sample.p_film.x / self.film.full_resolution.x as Float;
         let dir: Vector3f = Vector3f {
@@ -117,17 +115,17 @@ impl Camera for EnvironmentCamera {
         *ray = self.camera_to_world.transform_ray(&in_ray);
         1.0
     }
-    fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
+    pub fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
         panic!("camera::we() is not implemented!");
         // Spectrum::default()
     }
-    fn pdf_we(&self, _ray: &Ray) -> (Float, Float) {
+    pub fn pdf_we(&self, _ray: &Ray) -> (Float, Float) {
         // let mut pdf_pos: Float = 0.0;
         // let mut pdf_dir: Float = 0.0;
         panic!("camera::pdf_we() is not implemented!");
         // (pdf_pos, pdf_dir)
     }
-    fn sample_wi(
+    pub fn sample_wi(
         &self,
         _iref: &InteractionCommon,
         _u: &Point2f,
@@ -139,13 +137,13 @@ impl Camera for EnvironmentCamera {
         panic!("camera::sample_wi() is not implemented!");
         // Spectrum::default()
     }
-    fn get_shutter_open(&self) -> Float {
+    pub fn get_shutter_open(&self) -> Float {
         self.shutter_open
     }
-    fn get_shutter_close(&self) -> Float {
+    pub fn get_shutter_close(&self) -> Float {
         self.shutter_close
     }
-    fn get_film(&self) -> Arc<Film> {
+    pub fn get_film(&self) -> Arc<Film> {
         self.film.clone()
     }
 }

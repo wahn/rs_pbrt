@@ -38,7 +38,7 @@ pub struct SPPMIntegrator {
 
 impl SPPMIntegrator {
     pub fn new(
-        camera: Arc<dyn Camera + Send + Sync>,
+        camera: Arc<Camera>,
         n_iterations: i32,
         photons_per_iteration: i32,
         max_depth: u32,
@@ -119,7 +119,7 @@ fn hash(p: &Point3i, hash_size: i32) -> usize {
 /// ![bdpt](/doc/img/uml_pbrt_rust_render_sppm.png)
 pub fn render_sppm(
     scene: &Scene,
-    camera: &Arc<dyn Camera + Send + Sync>,
+    camera: &Arc<Camera>,
     _sampler: &mut Box<dyn Sampler + Send + Sync>,
     integrator: &mut Box<SPPMIntegrator>,
     num_threads: u8,

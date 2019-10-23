@@ -83,7 +83,7 @@ pub mod whitted;
 /// available cores).
 pub fn render(
     scene: &Scene,
-    camera: &Arc<dyn Camera + Send + Sync>,
+    camera: &Arc<Camera>,
     sampler: &mut Box<dyn Sampler + Send + Sync>,
     integrator: &mut Box<dyn SamplerIntegrator + Send + Sync>,
     num_threads: u8,

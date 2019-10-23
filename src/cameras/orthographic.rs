@@ -101,7 +101,7 @@ impl OrthographicCamera {
         cam2world: AnimatedTransform,
         film: Arc<Film>,
         medium: Option<Arc<Medium>>,
-    ) -> Arc<dyn Camera + Send + Sync> {
+    ) -> Arc<Camera> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
@@ -135,7 +135,7 @@ impl OrthographicCamera {
                 panic!("\"screenwindow\" should have four values");
             }
         }
-        let camera = Arc::new(OrthographicCamera::new(
+        let camera = Arc::new(Camera::Orthographic(OrthographicCamera::new(
             cam2world,
             screen,
             shutteropen,
@@ -144,13 +144,11 @@ impl OrthographicCamera {
             focaldistance,
             film,
             medium,
-        ));
+        )));
         camera
     }
-}
-
-impl Camera for OrthographicCamera {
-    fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
+    // Camera
+    pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
         // TODO: ProfilePhase prof(Prof::GenerateCameraRay);
         // compute raster and camera sample positions
         let p_film: Point3f = Point3f {
@@ -236,17 +234,17 @@ impl Camera for OrthographicCamera {
         *ray = self.camera_to_world.transform_ray(ray);
         1.0
     }
-    fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
+    pub fn we(&self, _ray: &Ray, _p_raster2: Option<&mut Point2f>) -> Spectrum {
         panic!("camera::we() is not implemented!");
         // Spectrum::default()
     }
-    fn pdf_we(&self, _ray: &Ray) -> (Float, Float) {
+    pub fn pdf_we(&self, _ray: &Ray) -> (Float, Float) {
         // let mut pdf_pos: Float = 0.0;
         // let mut pdf_dir: Float = 0.0;
         panic!("camera::pdf_we() is not implemented!");
         // (pdf_pos, pdf_dir)
     }
-    fn sample_wi(
+    pub fn sample_wi(
         &self,
         _iref: &InteractionCommon,
         _u: &Point2f,
@@ -258,13 +256,13 @@ impl Camera for OrthographicCamera {
         panic!("camera::sample_wi() is not implemented!");
         // Spectrum::default()
     }
-    fn get_shutter_open(&self) -> Float {
+    pub fn get_shutter_open(&self) -> Float {
         self.shutter_open
     }
-    fn get_shutter_close(&self) -> Float {
+    pub fn get_shutter_close(&self) -> Float {
         self.shutter_close
     }
-    fn get_film(&self) -> Arc<Film> {
+    pub fn get_film(&self) -> Arc<Film> {
         self.film.clone()
     }
 }

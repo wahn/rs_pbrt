@@ -1881,7 +1881,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
             ));
             // MakeCamera
             // TODO: let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
-            let some_camera: Option<Arc<dyn Camera + Sync + Send>>;
+            let some_camera: Option<Arc<Camera>>;
             let medium_interface: MediumInterface = create_medium_interface(&api_state);
             let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(
                 &api_state.render_options.camera_to_world.t[0],
@@ -1890,7 +1890,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 api_state.render_options.transform_end_time,
             );
             if api_state.render_options.camera_name == "perspective" {
-                let camera: Arc<dyn Camera + Send + Sync> = PerspectiveCamera::create(
+                let camera: Arc<Camera> = PerspectiveCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
                     film,
@@ -1898,7 +1898,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 );
                 some_camera = Some(camera);
             } else if api_state.render_options.camera_name == "orthographic" {
-                let camera: Arc<dyn Camera + Send + Sync> = OrthographicCamera::create(
+                let camera: Arc<Camera> = OrthographicCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
                     film,
@@ -1907,7 +1907,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 some_camera = Some(camera);
             } else if api_state.render_options.camera_name == "realistic" {
                 if let Some(ref search_directory) = api_state.search_directory {
-                    let camera: Arc<dyn Camera + Send + Sync> = RealisticCamera::create(
+                    let camera: Arc<Camera> = RealisticCamera::create(
                         &api_state.render_options.camera_params,
                         animated_cam_to_world,
                         film,
@@ -1917,7 +1917,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     );
                     some_camera = Some(camera);
                 } else {
-                    let camera: Arc<dyn Camera + Send + Sync> = RealisticCamera::create(
+                    let camera: Arc<Camera> = RealisticCamera::create(
                         &api_state.render_options.camera_params,
                         animated_cam_to_world,
                         film,
@@ -1928,7 +1928,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                     some_camera = Some(camera);
                 }
             } else if api_state.render_options.camera_name == "environment" {
-                let camera: Arc<dyn Camera + Send + Sync> = EnvironmentCamera::create(
+                let camera: Arc<Camera> = EnvironmentCamera::create(
                     &api_state.render_options.camera_params,
                     animated_cam_to_world,
                     film,

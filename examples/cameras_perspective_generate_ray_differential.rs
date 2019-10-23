@@ -1,5 +1,5 @@
 use pbrt::cameras::perspective::PerspectiveCamera;
-use pbrt::core::camera::{Camera, CameraSample};
+use pbrt::core::camera::CameraSample;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Point2f, Point2i, Point3f, Ray, Vector2f, Vector3f};

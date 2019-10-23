@@ -612,7 +612,7 @@ fn main() {
         1.0,
         std::f32::INFINITY,
     ));
-    let camera: Arc<dyn Camera + Send + Sync> = Arc::new(PerspectiveCamera::new(
+    let camera: Arc<Camera> = Arc::new(Camera::Perspective(PerspectiveCamera::new(
         animated_cam_to_world,
         screen,
         shutteropen,
@@ -622,7 +622,7 @@ fn main() {
         fov,
         film.clone(),
         None,
-    ));
+    )));
     let mut sampler: Box<dyn Sampler + Sync + Send> = Box::new(ZeroTwoSequenceSampler::default());
     let sample_bounds: Bounds2i = film.get_sample_bounds();
     let mut integrator: Box<dyn SamplerIntegrator + Send + Sync> = Box::new(

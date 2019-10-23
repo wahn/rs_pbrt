@@ -133,7 +133,7 @@ impl PerspectiveCamera {
         cam2world: AnimatedTransform,
         film: Arc<Film>,
         medium: Option<Arc<Medium>>,
-    ) -> Arc<dyn Camera + Send + Sync> {
+    ) -> Arc<Camera> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
         // TODO: std::swap(shutterclose, shutteropen);
@@ -172,7 +172,7 @@ impl PerspectiveCamera {
         //     params.find_one_float(String::from("halffov"), -1.0);
         // TODO: if (halffov > 0.f)
         // TODO: let perspective_camera: Arc<Camera + Sync + Send> =
-        let camera = Arc::new(PerspectiveCamera::new(
+        let camera = Arc::new(Camera::Perspective(PerspectiveCamera::new(
             cam2world,
             screen,
             shutteropen,
@@ -182,13 +182,11 @@ impl PerspectiveCamera {
             fov,
             film,
             medium,
-        ));
+        )));
         camera
     }
-}
-
-impl Camera for PerspectiveCamera {
-    fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
+    // Camera
+    pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
         // TODO: ProfilePhase prof(Prof::GenerateCameraRay);
         // compute raster and camera sample positions
         let p_film: Point3f = Point3f {
@@ -279,7 +277,7 @@ impl Camera for PerspectiveCamera {
         *ray = self.camera_to_world.transform_ray(&in_ray);
         1.0
     }
-    fn we(&self, ray: &Ray, p_raster2: Option<&mut Point2f>) -> Spectrum {
+    pub fn we(&self, ray: &Ray, p_raster2: Option<&mut Point2f>) -> Spectrum {
         // interpolate camera matrix and check if $\w{}$ is forward-facing
         let mut c2w: Transform = Transform::default();
         self.camera_to_world.interpolate(ray.time, &mut c2w);
@@ -330,7 +328,7 @@ impl Camera for PerspectiveCamera {
         let cos_2_theta: Float = cos_theta * cos_theta;
         Spectrum::new(1.0 as Float / (self.a * lens_area * cos_2_theta * cos_2_theta))
     }
-    fn pdf_we(&self, ray: &Ray) -> (Float, Float) {
+    pub fn pdf_we(&self, ray: &Ray) -> (Float, Float) {
         let mut pdf_pos: Float = 0.0;
         let mut pdf_dir: Float = 0.0;
         // interpolate camera matrix and fail if $\w{}$ is not forward-facing
@@ -381,7 +379,7 @@ impl Camera for PerspectiveCamera {
         pdf_dir = 1.0 as Float / (self.a * cos_theta * cos_theta * cos_theta);
         (pdf_pos, pdf_dir)
     }
-    fn sample_wi(
+    pub fn sample_wi(
         &self,
         iref: &InteractionCommon,
         u: &Point2f,
@@ -437,13 +435,13 @@ impl Camera for PerspectiveCamera {
         *pdf = (dist * dist) / (nrm_abs_dot_vec3(&lens_intr.n, wi) * lens_area);
         self.we(&lens_intr.spawn_ray(&-*wi), Some(p_raster))
     }
-    fn get_shutter_open(&self) -> Float {
+    pub fn get_shutter_open(&self) -> Float {
         self.shutter_open
     }
-    fn get_shutter_close(&self) -> Float {
+    pub fn get_shutter_close(&self) -> Float {
         self.shutter_close
     }
-    fn get_film(&self) -> Arc<Film> {
+    pub fn get_film(&self) -> Arc<Film> {
         self.film.clone()
     }
 }
