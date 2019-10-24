@@ -299,6 +299,31 @@ where
     }
 }
 
+// work around bug
+// https://github.com/rust-lang/rust/issues/40395
+impl Div<Float> for Vector2<f32> {
+    type Output = Vector2<f32>;
+    fn div(self, rhs: Float) -> Vector2<f32> {
+        assert_ne!(rhs, 0.0 as Float);
+        let inv: Float = 1.0 as Float / rhs;
+        Vector2::<f32> {
+            x: self.x * inv,
+            y: self.y * inv,
+        }
+    }
+}
+
+// work around bug
+// https://github.com/rust-lang/rust/issues/40395
+impl DivAssign<Float> for Vector2<f32> {
+    fn div_assign(&mut self, rhs: Float) {
+        assert_ne!(rhs, 0.0 as Float);
+        let inv: Float = 1.0 as Float / rhs;
+        self.x *= inv;
+        self.y *= inv;
+    }
+}
+
 impl<T> From<Vector2<T>> for Point2<T> {
     fn from(v: Vector2<T>) -> Self {
         Point2::<T> { x: v.x, y: v.y }

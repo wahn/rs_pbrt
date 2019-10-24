@@ -7,11 +7,12 @@
 // std
 use std::f32::consts::PI;
 // pbrt
-use crate::core::geometry::vec3_dot_vec3;
+use crate::core::geometry::{spherical_phi, spherical_theta, vec3_dot_vec3};
 use crate::core::geometry::{Point2f, Point3f, Vector2f, Vector3f};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, lerp, log_2};
+use crate::core::pbrt::{INV_2_PI, INV_PI};
 use crate::core::transform::Transform;
 
 // see texture.h
@@ -82,6 +83,57 @@ impl TextureMapping2D for UVMapping2D {
             x: si.uv[0] * self.su + self.du,
             y: si.uv[1] * self.sv + self.dv,
         }
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone)]
+pub struct SphericalMapping2D {
+    sphere: Point2f,
+    pub world_to_texture: Transform,
+}
+
+impl SphericalMapping2D {
+    pub fn new(world_to_texture: Transform) -> Self {
+        SphericalMapping2D {
+            sphere: Point2f::default(),
+            world_to_texture,
+        }
+    }
+    pub fn sphere(&self, p: &Point3f) -> Point2f {
+        let vec3f: Vector3f =
+            (self.world_to_texture.transform_point(p) - Point3f::default()).normalize();
+        let theta: Float = spherical_theta(&vec3f);
+        let phi: Float = spherical_phi(&vec3f);
+        Point2f {
+            x: theta * INV_PI,
+            y: phi * INV_2_PI,
+        }
+    }
+}
+
+impl TextureMapping2D for SphericalMapping2D {
+    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+        let st: Point2f = self.sphere(&si.p);
+        // compute texture coordinate differentials for sphere $(u,v)$ mapping
+        let delta: Float = 0.1;
+        let dpdx: Vector3f = *si.dpdx.read().unwrap();
+        let st_delta_x: Point2f = self.sphere(&(si.p + dpdx * delta));
+        *dstdx = (st_delta_x - st) / delta;
+        let dpdy: Vector3f = *si.dpdy.read().unwrap();
+        let st_delta_y: Point2f = self.sphere(&(si.p + dpdy * delta));
+        *dstdy = (st_delta_y - st) / delta;
+        // handle sphere mapping discontinuity for coordinate differentials
+        if (*dstdx)[1] > 0.5 as Float {
+            (*dstdx)[1] = 1.0 as Float - (*dstdx)[1];
+        } else if (*dstdx)[1] < -0.5 as Float {
+            (*dstdx)[1] = -((*dstdx)[1] + 1.0 as Float);
+        }
+        if (*dstdy)[1] > 0.5 as Float {
+            (*dstdy)[1] = 1.0 as Float - (*dstdy)[1];
+        } else if (*dstdy)[1] < -0.5 as Float {
+            (*dstdy)[1] = -((*dstdy)[1] + 1.0 as Float);
+        }
+        st
     }
 }
 
