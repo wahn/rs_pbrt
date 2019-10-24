@@ -265,11 +265,6 @@ pub struct MeasuredSS {
     pub sigma_a: [Float; 3],
 }
 
-pub trait PhaseFunction {
-    fn p(&self, wo: &Vector3f, wi: &Vector3f) -> Float;
-    fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: &Point2f) -> Float;
-}
-
 pub struct NoMedium {}
 
 pub enum Medium {
@@ -303,12 +298,12 @@ pub struct HenyeyGreenstein {
     pub g: Float,
 }
 
-impl PhaseFunction for HenyeyGreenstein {
-    fn p(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
+impl HenyeyGreenstein {
+    pub fn p(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::PhaseFuncEvaluation);
         phase_hg(vec3_dot_vec3(wo, wi), self.g)
     }
-    fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: &Point2f) -> Float {
+    pub fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: &Point2f) -> Float {
         // TODO: ProfilePhase _(Prof::PhaseFuncSampling);
         // compute $\cos \theta$ for Henyey--Greenstein sample
         let cos_theta: Float;

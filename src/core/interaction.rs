@@ -17,7 +17,7 @@ use crate::core::geometry::{
 };
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::material::TransportMode;
-use crate::core::medium::{Medium, MediumInterface, PhaseFunction};
+use crate::core::medium::{Medium, MediumInterface, HenyeyGreenstein};
 use crate::core::pbrt::SHADOW_EPSILON;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::primitive::Primitive;
@@ -39,7 +39,7 @@ pub trait Interaction {
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>>;
     fn get_bsdf(&self) -> Option<&Bsdf>;
     fn get_shading_n(&self) -> Option<Normal3f>;
-    fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>>;
+    fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>>;
 }
 
 #[derive(Default, Clone)]
@@ -127,7 +127,7 @@ pub struct MediumInteraction {
     pub n: Normal3f,
     pub medium_interface: Option<Arc<MediumInterface>>,
     // MediumInteraction Public Data
-    pub phase: Option<Arc<dyn PhaseFunction>>,
+    pub phase: Option<Arc<HenyeyGreenstein>>,
 }
 
 impl MediumInteraction {
@@ -136,7 +136,7 @@ impl MediumInteraction {
         wo: &Vector3f,
         time: Float,
         medium: Option<Arc<Medium>>,
-        phase: Option<Arc<dyn PhaseFunction>>,
+        phase: Option<Arc<HenyeyGreenstein>>,
     ) -> Self {
         if let Some(medium_arc) = medium {
             let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
@@ -192,7 +192,7 @@ impl MediumInteraction {
             false
         }
     }
-    pub fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>> {
+    pub fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
         if let Some(ref phase) = self.phase {
             Some(phase.clone())
         } else {
@@ -247,7 +247,7 @@ impl Interaction for MediumInteraction {
     fn get_shading_n(&self) -> Option<Normal3f> {
         None
     }
-    fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>> {
+    fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
         if let Some(ref phase) = self.phase {
             Some(phase.clone())
         } else {
@@ -608,7 +608,7 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
     fn get_shading_n(&self) -> Option<Normal3f> {
         Some(self.shading.n.clone())
     }
-    fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>> {
+    fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
         None
     }
 }

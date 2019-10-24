@@ -17,7 +17,7 @@ use crate::core::light::is_delta_light;
 use crate::core::light::{Light, LightFlags, VisibilityTester};
 use crate::core::lightdistrib::create_light_sample_distribution;
 use crate::core::material::TransportMode;
-use crate::core::medium::{Medium, MediumInterface, PhaseFunction};
+use crate::core::medium::{HenyeyGreenstein, Medium, MediumInterface};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::Bsdf;
 use crate::core::reflection::BxdfType;
@@ -49,10 +49,7 @@ impl<'a> EndpointInteraction<'a> {
             ..Default::default()
         }
     }
-    pub fn new_interaction_from_camera(
-        it: &InteractionCommon,
-        camera: &'a Arc<Camera>,
-    ) -> Self {
+    pub fn new_interaction_from_camera(it: &InteractionCommon, camera: &'a Arc<Camera>) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&it.p, it.time);
         ei.p_error = it.p_error;
         ei.wo = it.wo;
@@ -89,10 +86,7 @@ impl<'a> EndpointInteraction<'a> {
         ei.n = *nl;
         ei
     }
-    pub fn new_interaction_from_light(
-        it: &InteractionCommon,
-        light: &'a Arc<Light>,
-    ) -> Self {
+    pub fn new_interaction_from_light(it: &InteractionCommon, light: &'a Arc<Light>) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::default();
         ei.p = it.p;
         ei.time = it.time;
@@ -178,7 +172,7 @@ impl<'a> Interaction for EndpointInteraction<'a> {
     fn get_shading_n(&self) -> Option<Normal3f> {
         None
     }
-    fn get_phase(&self) -> Option<Arc<dyn PhaseFunction>> {
+    fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
         None
     }
 }
@@ -1366,7 +1360,7 @@ pub fn mis_weight<'a>(
         }
         if let Some(ref lv_mi) = sampled.mi {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut phase: Option<Arc<dyn PhaseFunction>> = None;
+            let mut phase: Option<Arc<HenyeyGreenstein>> = None;
             if let Some(ref medium_interface_arc) = lv_mi.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
@@ -1459,7 +1453,7 @@ pub fn mis_weight<'a>(
         }
         if let Some(ref lv_mi) = sampled.mi {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut phase: Option<Arc<dyn PhaseFunction>> = None;
+            let mut phase: Option<Arc<HenyeyGreenstein>> = None;
             if let Some(ref medium_interface_arc) = lv_mi.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
@@ -1556,7 +1550,7 @@ pub fn mis_weight<'a>(
         }
         if let Some(ref cv_mi) = camera_vertices[t - 1].mi {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut phase: Option<Arc<dyn PhaseFunction>> = None;
+            let mut phase: Option<Arc<HenyeyGreenstein>> = None;
             if let Some(ref medium_interface_arc) = cv_mi.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
@@ -1652,7 +1646,7 @@ pub fn mis_weight<'a>(
         }
         if let Some(ref lv_mi) = light_vertices[s - 1].mi {
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            let mut phase: Option<Arc<dyn PhaseFunction>> = None;
+            let mut phase: Option<Arc<HenyeyGreenstein>> = None;
             if let Some(ref medium_interface_arc) = lv_mi.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
@@ -1766,7 +1760,7 @@ pub fn mis_weight<'a>(
             }
             if let Some(ref cv_mi) = camera_vertices[t - 2].mi {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
-                let mut phase: Option<Arc<dyn PhaseFunction>> = None;
+                let mut phase: Option<Arc<HenyeyGreenstein>> = None;
                 if let Some(ref medium_interface_arc) = cv_mi.medium_interface {
                     medium_interface = Some(medium_interface_arc.clone());
                 }
@@ -1866,7 +1860,7 @@ pub fn mis_weight<'a>(
             }
             if let Some(ref lv_mi) = light_vertices[s - 2].mi {
                 let mut medium_interface: Option<Arc<MediumInterface>> = None;
-                let mut phase: Option<Arc<dyn PhaseFunction>> = None;
+                let mut phase: Option<Arc<HenyeyGreenstein>> = None;
                 if let Some(ref medium_interface_arc) = lv_mi.medium_interface {
                     medium_interface = Some(medium_interface_arc.clone());
                 }
