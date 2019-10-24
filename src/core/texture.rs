@@ -138,6 +138,50 @@ impl TextureMapping2D for SphericalMapping2D {
 }
 
 #[derive(Debug, Default, Copy, Clone)]
+pub struct CylindricalMapping2D {
+    pub world_to_texture: Transform,
+}
+
+impl CylindricalMapping2D {
+    pub fn new(world_to_texture: Transform) -> Self {
+        CylindricalMapping2D { world_to_texture }
+    }
+    pub fn cylinder(&self, p: &Point3f) -> Point2f {
+        let vec3f: Vector3f =
+            (self.world_to_texture.transform_point(p) - Point3f::default()).normalize();
+        Point2f {
+            x: PI + vec3f.y.atan2(vec3f.x) * INV_2_PI,
+            y: vec3f.z,
+        }
+    }
+}
+
+impl TextureMapping2D for CylindricalMapping2D {
+    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+        let st: Point2f = self.cylinder(&si.p);
+        // compute texture coordinate differentials for cylinder $(u,v)$ mapping
+        let delta: Float = 0.01;
+        let dpdx: Vector3f = *si.dpdx.read().unwrap();
+        let st_delta_x: Point2f = self.cylinder(&(si.p + dpdx * delta));
+        *dstdx = (st_delta_x - st) / delta;
+        if (*dstdx)[1] > 0.5 as Float {
+            (*dstdx)[1] = 1.0 as Float - (*dstdx)[1];
+        } else if (*dstdx)[1] < -0.5 as Float {
+            (*dstdx)[1] = -((*dstdx)[1] + 1.0 as Float);
+        }
+        let dpdy: Vector3f = *si.dpdy.read().unwrap();
+        let st_delta_y: Point2f = self.cylinder(&(si.p + dpdy * delta));
+        *dstdy = (st_delta_y - st) / delta;
+        if (*dstdy)[1] > 0.5 as Float {
+            (*dstdy)[1] = 1.0 as Float - (*dstdy)[1];
+        } else if (*dstdy)[1] < -0.5 as Float {
+            (*dstdy)[1] = -((*dstdy)[1] + 1.0 as Float);
+        }
+        st
+    }
+}
+
+#[derive(Debug, Default, Copy, Clone)]
 pub struct PlanarMapping2D {
     pub vs: Vector3f,
     pub vt: Vector3f,
