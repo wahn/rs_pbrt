@@ -775,22 +775,31 @@ fn make_texture(api_state: &mut ApiState) {
             println!("TODO: CreateBilerpFloatTexture");
         } else if api_state.param_set.tex_name == "imagemap" {
             // CreateImageFloatTexture
-            let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
+            let mut map: Option<Box<TextureMapping2D>> = None;
             let mapping: String = tp.find_string("mapping", String::from("uv"));
             if mapping == "uv" {
                 let su: Float = tp.find_float("uscale", 1.0);
                 let sv: Float = tp.find_float("vscale", 1.0);
                 let du: Float = tp.find_float("udelta", 0.0);
                 let dv: Float = tp.find_float("vdelta", 0.0);
-                map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
+                map = Some(Box::new(TextureMapping2D::UV(UVMapping2D {
+                    su,
+                    sv,
+                    du,
+                    dv,
+                })));
             } else if mapping == "spherical" {
                 let tex_2_world = api_state.cur_transform.t[0];
-                map = Some(Box::new(SphericalMapping2D::new(tex_2_world)));
+                map = Some(Box::new(TextureMapping2D::Spherical(
+                    SphericalMapping2D::new(tex_2_world),
+                )));
             } else if mapping == "cylindrical" {
                 let tex_2_world = api_state.cur_transform.t[0];
-                map = Some(Box::new(CylindricalMapping2D::new(tex_2_world)));
+                map = Some(Box::new(TextureMapping2D::Cylindrical(
+                    CylindricalMapping2D::new(tex_2_world),
+                )));
             } else if mapping == "planar" {
-                map = Some(Box::new(PlanarMapping2D {
+                map = Some(Box::new(TextureMapping2D::Planar(PlanarMapping2D {
                     vs: tp.find_vector3f(
                         "v1",
                         Vector3f {
@@ -809,7 +818,7 @@ fn make_texture(api_state: &mut ApiState) {
                     ),
                     ds: tp.find_float("udelta", 0.0),
                     dt: tp.find_float("vdelta", 0.0),
-                }));
+                })));
             } else {
                 panic!("2D texture mapping \"{}\" unknown", mapping);
             }
@@ -859,22 +868,31 @@ fn make_texture(api_state: &mut ApiState) {
             println!("TODO: CreateCheckerboardFloatTexture");
         } else if api_state.param_set.tex_name == "dots" {
             // CreateDotsFloatTexture
-            let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
+            let mut map: Option<Box<TextureMapping2D>> = None;
             let mapping: String = tp.find_string("mapping", String::from("uv"));
             if mapping == "uv" {
                 let su: Float = tp.find_float("uscale", 1.0);
                 let sv: Float = tp.find_float("vscale", 1.0);
                 let du: Float = tp.find_float("udelta", 0.0);
                 let dv: Float = tp.find_float("vdelta", 0.0);
-                map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
+                map = Some(Box::new(TextureMapping2D::UV(UVMapping2D {
+                    su,
+                    sv,
+                    du,
+                    dv,
+                })));
             } else if mapping == "spherical" {
                 let tex_2_world = api_state.cur_transform.t[0];
-                map = Some(Box::new(SphericalMapping2D::new(tex_2_world)));
+                map = Some(Box::new(TextureMapping2D::Spherical(
+                    SphericalMapping2D::new(tex_2_world),
+                )));
             } else if mapping == "cylindrical" {
                 let tex_2_world = api_state.cur_transform.t[0];
-                map = Some(Box::new(CylindricalMapping2D::new(tex_2_world)));
+                map = Some(Box::new(TextureMapping2D::Cylindrical(
+                    CylindricalMapping2D::new(tex_2_world),
+                )));
             } else if mapping == "planar" {
-                map = Some(Box::new(PlanarMapping2D {
+                map = Some(Box::new(TextureMapping2D::Planar(PlanarMapping2D {
                     vs: tp.find_vector3f(
                         "v1",
                         Vector3f {
@@ -893,7 +911,7 @@ fn make_texture(api_state: &mut ApiState) {
                     ),
                     ds: tp.find_float("udelta", 0.0),
                     dt: tp.find_float("vdelta", 0.0),
-                }));
+                })));
             } else {
                 panic!("2D texture mapping \"{}\" unknown", mapping);
             }
@@ -996,22 +1014,31 @@ fn make_texture(api_state: &mut ApiState) {
             println!("TODO: CreateBilerpSpectrumTexture");
         } else if api_state.param_set.tex_name == "imagemap" {
             // CreateImageSpectrumTexture
-            let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
+            let mut map: Option<Box<TextureMapping2D>> = None;
             let mapping: String = tp.find_string("mapping", String::from("uv"));
             if mapping == "uv" {
                 let su: Float = tp.find_float("uscale", 1.0);
                 let sv: Float = tp.find_float("vscale", 1.0);
                 let du: Float = tp.find_float("udelta", 0.0);
                 let dv: Float = tp.find_float("vdelta", 0.0);
-                map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
+                map = Some(Box::new(TextureMapping2D::UV(UVMapping2D {
+                    su,
+                    sv,
+                    du,
+                    dv,
+                })));
             } else if mapping == "spherical" {
                 let tex_2_world = api_state.cur_transform.t[0];
-                map = Some(Box::new(SphericalMapping2D::new(tex_2_world)));
+                map = Some(Box::new(TextureMapping2D::Spherical(
+                    SphericalMapping2D::new(tex_2_world),
+                )));
             } else if mapping == "cylindrical" {
                 let tex_2_world = api_state.cur_transform.t[0];
-                map = Some(Box::new(CylindricalMapping2D::new(tex_2_world)));
+                map = Some(Box::new(TextureMapping2D::Cylindrical(
+                    CylindricalMapping2D::new(tex_2_world),
+                )));
             } else if mapping == "planar" {
-                map = Some(Box::new(PlanarMapping2D {
+                map = Some(Box::new(TextureMapping2D::Planar(PlanarMapping2D {
                     vs: tp.find_vector3f(
                         "v1",
                         Vector3f {
@@ -1030,7 +1057,7 @@ fn make_texture(api_state: &mut ApiState) {
                     ),
                     ds: tp.find_float("udelta", 0.0),
                     dt: tp.find_float("vdelta", 0.0),
-                }));
+                })));
             } else {
                 panic!("2D texture mapping \"{}\" unknown", mapping);
             }
@@ -1087,22 +1114,31 @@ fn make_texture(api_state: &mut ApiState) {
             let tex2: Arc<dyn Texture<Spectrum> + Send + Sync> =
                 tp.get_spectrum_texture("tex2", Spectrum::new(0.0));
             if dim == 2 {
-                let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
+                let mut map: Option<Box<TextureMapping2D>> = None;
                 let mapping: String = tp.find_string("mapping", String::from("uv"));
                 if mapping == "uv" {
                     let su: Float = tp.find_float("uscale", 1.0);
                     let sv: Float = tp.find_float("vscale", 1.0);
                     let du: Float = tp.find_float("udelta", 0.0);
                     let dv: Float = tp.find_float("vdelta", 0.0);
-                    map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
+                    map = Some(Box::new(TextureMapping2D::UV(UVMapping2D {
+                        su,
+                        sv,
+                        du,
+                        dv,
+                    })));
                 } else if mapping == "spherical" {
                     let tex_2_world = api_state.cur_transform.t[0];
-                    map = Some(Box::new(SphericalMapping2D::new(tex_2_world)));
+                    map = Some(Box::new(TextureMapping2D::Spherical(
+                        SphericalMapping2D::new(tex_2_world),
+                    )));
                 } else if mapping == "cylindrical" {
                     let tex_2_world = api_state.cur_transform.t[0];
-                    map = Some(Box::new(CylindricalMapping2D::new(tex_2_world)));
+                    map = Some(Box::new(TextureMapping2D::Cylindrical(
+                        CylindricalMapping2D::new(tex_2_world),
+                    )));
                 } else if mapping == "planar" {
-                    map = Some(Box::new(PlanarMapping2D {
+                    map = Some(Box::new(TextureMapping2D::Planar(PlanarMapping2D {
                         vs: tp.find_vector3f(
                             "v1",
                             Vector3f {
@@ -1121,7 +1157,7 @@ fn make_texture(api_state: &mut ApiState) {
                         ),
                         ds: tp.find_float("udelta", 0.0),
                         dt: tp.find_float("vdelta", 0.0),
-                    }));
+                    })));
                 } else {
                     panic!("2D texture mapping \"{}\" unknown", mapping);
                 }
@@ -1137,22 +1173,31 @@ fn make_texture(api_state: &mut ApiState) {
             }
         } else if api_state.param_set.tex_name == "dots" {
             // CreateDotsSpectrumTexture
-            let mut map: Option<Box<dyn TextureMapping2D + Send + Sync>> = None;
+            let mut map: Option<Box<TextureMapping2D>> = None;
             let mapping: String = tp.find_string("mapping", String::from("uv"));
             if mapping == "uv" {
                 let su: Float = tp.find_float("uscale", 1.0);
                 let sv: Float = tp.find_float("vscale", 1.0);
                 let du: Float = tp.find_float("udelta", 0.0);
                 let dv: Float = tp.find_float("vdelta", 0.0);
-                map = Some(Box::new(UVMapping2D { su, sv, du, dv }));
+                map = Some(Box::new(TextureMapping2D::UV(UVMapping2D {
+                    su,
+                    sv,
+                    du,
+                    dv,
+                })));
             } else if mapping == "spherical" {
                 let tex_2_world = api_state.cur_transform.t[0];
-                map = Some(Box::new(SphericalMapping2D::new(tex_2_world)));
+                map = Some(Box::new(TextureMapping2D::Spherical(
+                    SphericalMapping2D::new(tex_2_world),
+                )));
             } else if mapping == "cylindrical" {
                 let tex_2_world = api_state.cur_transform.t[0];
-                map = Some(Box::new(CylindricalMapping2D::new(tex_2_world)));
+                map = Some(Box::new(TextureMapping2D::Cylindrical(
+                    CylindricalMapping2D::new(tex_2_world),
+                )));
             } else if mapping == "planar" {
-                map = Some(Box::new(PlanarMapping2D {
+                map = Some(Box::new(TextureMapping2D::Planar(PlanarMapping2D {
                     vs: tp.find_vector3f(
                         "v1",
                         Vector3f {
@@ -1171,7 +1216,7 @@ fn make_texture(api_state: &mut ApiState) {
                     ),
                     ds: tp.find_float("udelta", 0.0),
                     dt: tp.find_float("vdelta", 0.0),
-                }));
+                })));
             } else {
                 panic!("2D texture mapping \"{}\" unknown", mapping);
             }

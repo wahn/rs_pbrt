@@ -15,7 +15,7 @@ use crate::core::texture::{Texture, TextureMapping2D};
 // see imagemap.h
 
 pub struct ImageTexture<T> {
-    pub mapping: Box<dyn TextureMapping2D + Send + Sync>,
+    pub mapping: Box<TextureMapping2D>,
     pub mipmap: Arc<MipMap<T>>,
 }
 
@@ -33,7 +33,7 @@ where
         + Mul<Float, Output = T>,
 {
     pub fn new<F: Fn(&Spectrum) -> T>(
-        mapping: Box<dyn TextureMapping2D + Send + Sync>,
+        mapping: Box<TextureMapping2D>,
         filename: String,
         do_trilinear: bool,
         max_aniso: Float,

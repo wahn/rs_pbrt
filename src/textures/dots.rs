@@ -10,14 +10,14 @@ use crate::core::texture::{Texture, TextureMapping2D};
 // see dots.h
 
 pub struct DotsTexture<T> {
-    pub mapping: Box<dyn TextureMapping2D + Send + Sync>,
+    pub mapping: Box<TextureMapping2D>,
     pub outside_dot: Arc<dyn Texture<T> + Send + Sync>,
     pub inside_dot: Arc<dyn Texture<T> + Send + Sync>,
 }
 
 impl<T: Copy> DotsTexture<T> {
     pub fn new(
-        mapping: Box<dyn TextureMapping2D + Send + Sync>,
+        mapping: Box<TextureMapping2D>,
         outside_dot: Arc<dyn Texture<T> + Send + Sync>,
         inside_dot: Arc<dyn Texture<T> + Send + Sync>,
     ) -> Self {

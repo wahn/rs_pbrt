@@ -16,7 +16,7 @@ use pbrt::core::primitive::{GeometricPrimitive, Primitive};
 use pbrt::core::sampler::Sampler;
 use pbrt::core::scene::Scene;
 use pbrt::core::shape::Shape;
-use pbrt::core::texture::{PlanarMapping2D, UVMapping2D};
+use pbrt::core::texture::{PlanarMapping2D, TextureMapping2D, UVMapping2D};
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
@@ -432,7 +432,7 @@ fn main() {
         let tex2 = Arc::new(ConstantTexture {
             value: Spectrum::new(1.0),
         });
-        let mapping = Box::new(PlanarMapping2D {
+        let mapping = Box::new(TextureMapping2D::Planar(PlanarMapping2D {
             vs: Vector3f {
                 x: 1.0,
                 y: 0.0,
@@ -445,7 +445,7 @@ fn main() {
             },
             ds: 0.0 as Float,
             dt: 1.0 as Float,
-        });
+        }));
         let checker = Arc::new(Checkerboard2DTexture::new(mapping, tex1, tex2));
         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
         let matte = Arc::new(Material::Matte(MatteMaterial::new(checker, sigma, None)));
@@ -485,12 +485,12 @@ fn main() {
         let vscale: Float = 100.0;
         let udelta: Float = 0.0;
         let vdelta: Float = 0.0;
-        let mapping = Box::new(UVMapping2D {
+        let mapping = Box::new(TextureMapping2D::UV(UVMapping2D {
             su: uscale,
             sv: vscale,
             du: udelta,
             dv: vdelta,
-        });
+        }));
         let filename: String = String::from("assets/scenes/textures/lines.png");
         let do_trilinear: bool = false;
         let max_aniso: Float = 8.0;

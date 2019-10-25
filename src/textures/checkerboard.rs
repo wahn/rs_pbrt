@@ -10,13 +10,13 @@ use crate::core::texture::{Texture, TextureMapping2D};
 pub struct Checkerboard2DTexture<T> {
     pub tex1: Arc<dyn Texture<T> + Send + Sync>,
     pub tex2: Arc<dyn Texture<T> + Send + Sync>,
-    pub mapping: Box<dyn TextureMapping2D + Send + Sync>,
+    pub mapping: Box<TextureMapping2D>,
     // TODO: const AAMethod aaMethod;
 }
 
 impl<T: Copy> Checkerboard2DTexture<T> {
     pub fn new(
-        mapping: Box<dyn TextureMapping2D + Send + Sync>,
+        mapping: Box<TextureMapping2D>,
         tex1: Arc<dyn Texture<T> + Send + Sync>,
         tex2: Arc<dyn Texture<T> + Send + Sync>, // , TODO: aaMethod
     ) -> Self {

@@ -48,8 +48,29 @@ pub const NOISE_PERM: [u8; 2 * NOISE_PERM_SIZE] = [
     222, 114, 67, 29, 24, 72, 243, 141, 128, 195, 78, 66, 215, 61, 156, 180,
 ];
 
-pub trait TextureMapping2D {
-    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f;
+pub enum TextureMapping2D {
+    UV(UVMapping2D),
+    Spherical(SphericalMapping2D),
+    Cylindrical(CylindricalMapping2D),
+    Planar(PlanarMapping2D),
+}
+
+impl TextureMapping2D {
+    pub fn map(
+        &self,
+        si: &SurfaceInteraction,
+        dstdx: &mut Vector2f,
+        dstdy: &mut Vector2f,
+    ) -> Point2f {
+        match self {
+            TextureMapping2D::UV(texturemapping2d) => texturemapping2d.map(si, dstdx, dstdy),
+            TextureMapping2D::Spherical(texturemapping2d) => texturemapping2d.map(si, dstdx, dstdy),
+            TextureMapping2D::Cylindrical(texturemapping2d) => {
+                texturemapping2d.map(si, dstdx, dstdy)
+            }
+            TextureMapping2D::Planar(texturemapping2d) => texturemapping2d.map(si, dstdx, dstdy),
+        }
+    }
 }
 
 pub enum TextureMapping3D {
@@ -77,8 +98,13 @@ pub struct UVMapping2D {
     pub dv: Float,
 }
 
-impl TextureMapping2D for UVMapping2D {
-    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+impl UVMapping2D {
+    pub fn map(
+        &self,
+        si: &SurfaceInteraction,
+        dstdx: &mut Vector2f,
+        dstdy: &mut Vector2f,
+    ) -> Point2f {
         // compute texture differentials for 2D identity mapping
         let dudx: Float = *si.dudx.read().unwrap();
         let dvdx: Float = *si.dvdx.read().unwrap();
@@ -124,8 +150,13 @@ impl SphericalMapping2D {
     }
 }
 
-impl TextureMapping2D for SphericalMapping2D {
-    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+impl SphericalMapping2D {
+    pub fn map(
+        &self,
+        si: &SurfaceInteraction,
+        dstdx: &mut Vector2f,
+        dstdy: &mut Vector2f,
+    ) -> Point2f {
         let st: Point2f = self.sphere(&si.p);
         // compute texture coordinate differentials for sphere $(u,v)$ mapping
         let delta: Float = 0.1;
@@ -169,8 +200,13 @@ impl CylindricalMapping2D {
     }
 }
 
-impl TextureMapping2D for CylindricalMapping2D {
-    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+impl CylindricalMapping2D {
+    pub fn map(
+        &self,
+        si: &SurfaceInteraction,
+        dstdx: &mut Vector2f,
+        dstdy: &mut Vector2f,
+    ) -> Point2f {
         let st: Point2f = self.cylinder(&si.p);
         // compute texture coordinate differentials for cylinder $(u,v)$ mapping
         let delta: Float = 0.01;
@@ -202,8 +238,13 @@ pub struct PlanarMapping2D {
     pub dt: Float,
 }
 
-impl TextureMapping2D for PlanarMapping2D {
-    fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f {
+impl PlanarMapping2D {
+    pub fn map(
+        &self,
+        si: &SurfaceInteraction,
+        dstdx: &mut Vector2f,
+        dstdy: &mut Vector2f,
+    ) -> Point2f {
         let vec: Vector3f = Vector3f {
             x: si.p.x,
             y: si.p.y,

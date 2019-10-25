@@ -422,13 +422,13 @@ impl RenderOptions {
                             let sv: Float = 1.0;
                             let du: Float = 0.0;
                             let dv: Float = 0.0;
-                            let mapping: Box<dyn TextureMapping2D + Send + Sync> =
-                                Box::new(UVMapping2D {
+                            let mapping: Box<TextureMapping2D> =
+                                Box::new(TextureMapping2D::UV(UVMapping2D {
                                     su: su,
                                     sv: sv,
                                     du: du,
                                     dv: dv,
-                                });
+                                }));
                             let filename: String = String::from(tex.to_str().unwrap());
                             let do_trilinear: bool = false;
                             let max_aniso: Float = 8.0;
@@ -469,13 +469,13 @@ impl RenderOptions {
                                 let sv: Float = 1.0;
                                 let du: Float = 0.0;
                                 let dv: Float = 0.0;
-                                let mapping: Box<dyn TextureMapping2D + Send + Sync> =
-                                    Box::new(UVMapping2D {
+                                let mapping: Box<TextureMapping2D> =
+                                    Box::new(TextureMapping2D::UV(UVMapping2D {
                                         su: su,
                                         sv: sv,
                                         du: du,
                                         dv: dv,
-                                    });
+                                    }));
                                 let filename: String = String::from(tex.to_str().unwrap());
                                 let do_trilinear: bool = false;
                                 let max_aniso: Float = 8.0;
