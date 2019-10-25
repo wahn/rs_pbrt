@@ -912,8 +912,9 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<dyn TextureMapping3D + Send + Sync> =
-                Box::new(IdentityMapping3D::new(tex_2_world));
+            let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
+                IdentityMapping3D::new(tex_2_world),
+            ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
             let ft = Arc::new(FBmTexture::new(map, octaves, roughness));
@@ -925,8 +926,9 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<dyn TextureMapping3D + Send + Sync> =
-                Box::new(IdentityMapping3D::new(tex_2_world));
+            let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
+                IdentityMapping3D::new(tex_2_world),
+            ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
             let ft = Arc::new(WrinkledTexture::new(map, octaves, roughness));
@@ -940,8 +942,9 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<dyn TextureMapping3D + Send + Sync> =
-                Box::new(IdentityMapping3D::new(tex_2_world));
+            let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
+                IdentityMapping3D::new(tex_2_world),
+            ));
             let ft = Arc::new(WindyTexture::new(map));
             Arc::make_mut(&mut api_state.graphics_state.float_textures)
                 .insert(api_state.param_set.name.clone(), ft);
@@ -1187,8 +1190,9 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<dyn TextureMapping3D + Send + Sync> =
-                Box::new(IdentityMapping3D::new(tex_2_world));
+            let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
+                IdentityMapping3D::new(tex_2_world),
+            ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
             let ft = Arc::new(FBmTexture::new(map, octaves, roughness));
@@ -1200,8 +1204,9 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<dyn TextureMapping3D + Send + Sync> =
-                Box::new(IdentityMapping3D::new(tex_2_world));
+            let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
+                IdentityMapping3D::new(tex_2_world),
+            ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
             let ft = Arc::new(WrinkledTexture::new(map, octaves, roughness));
@@ -1212,8 +1217,9 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<dyn TextureMapping3D + Send + Sync> =
-                Box::new(IdentityMapping3D::new(tex_2_world));
+            let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
+                IdentityMapping3D::new(tex_2_world),
+            ));
             let octaves: i32 = tp.find_int("octaves", 8_i32);
             let roughness: Float = tp.find_float("roughness", 0.5 as Float);
             let scale: Float = tp.find_float("scale", 1.0 as Float);
@@ -1229,8 +1235,9 @@ fn make_texture(api_state: &mut ApiState) {
                 m: api_state.cur_transform.t[0].m,
                 m_inv: api_state.cur_transform.t[0].m_inv,
             };
-            let map: Box<dyn TextureMapping3D + Send + Sync> =
-                Box::new(IdentityMapping3D::new(tex_2_world));
+            let map: Box<TextureMapping3D> = Box::new(TextureMapping3D::Identity(
+                IdentityMapping3D::new(tex_2_world),
+            ));
             let ft = Arc::new(WindyTexture::new(map));
             Arc::make_mut(&mut api_state.graphics_state.spectrum_textures)
                 .insert(api_state.param_set.name.clone(), ft);

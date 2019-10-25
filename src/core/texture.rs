@@ -52,8 +52,21 @@ pub trait TextureMapping2D {
     fn map(&self, si: &SurfaceInteraction, dstdx: &mut Vector2f, dstdy: &mut Vector2f) -> Point2f;
 }
 
-pub trait TextureMapping3D {
-    fn map(&self, si: &SurfaceInteraction, dpdx: &mut Vector3f, dpdy: &mut Vector3f) -> Point3f;
+pub enum TextureMapping3D {
+    Identity(IdentityMapping3D),
+}
+
+impl TextureMapping3D {
+    pub fn map(
+        &self,
+        si: &SurfaceInteraction,
+        dpdx: &mut Vector3f,
+        dpdy: &mut Vector3f,
+    ) -> Point3f {
+        match self {
+            TextureMapping3D::Identity(texturemapping3d) => texturemapping3d.map(si, dpdx, dpdy),
+        }
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -225,10 +238,13 @@ impl IdentityMapping3D {
     pub fn get_world_to_texture(&self) -> Transform {
         self.world_to_texture
     }
-}
-
-impl TextureMapping3D for IdentityMapping3D {
-    fn map(&self, si: &SurfaceInteraction, dpdx: &mut Vector3f, dpdy: &mut Vector3f) -> Point3f {
+    // TextureMapping3D
+    pub fn map(
+        &self,
+        si: &SurfaceInteraction,
+        dpdx: &mut Vector3f,
+        dpdy: &mut Vector3f,
+    ) -> Point3f {
         let world_to_texture = self.get_world_to_texture();
         let si_dpdx: Vector3f = *si.dpdx.read().unwrap();
         *dpdx = world_to_texture.transform_vector(&si_dpdx);

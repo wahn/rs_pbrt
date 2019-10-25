@@ -8,14 +8,14 @@ use crate::core::texture::{Texture, TextureMapping3D};
 // see fbm.h
 
 pub struct FBmTexture {
-    pub mapping: Box<dyn TextureMapping3D + Send + Sync>,
+    pub mapping: Box<TextureMapping3D>,
     pub omega: Float, // default: 0.5
     pub octaves: i32, // default: 8
 }
 
 impl FBmTexture {
     pub fn new(
-        mapping: Box<dyn TextureMapping3D + Send + Sync>,
+        mapping: Box<TextureMapping3D>,
         octaves: i32,
         omega: Float,
     ) -> Self {

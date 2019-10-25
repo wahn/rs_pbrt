@@ -8,7 +8,7 @@ use crate::core::texture::{Texture, TextureMapping3D};
 // see marble.h
 
 pub struct MarbleTexture {
-    pub mapping: Box<dyn TextureMapping3D + Send + Sync>,
+    pub mapping: Box<TextureMapping3D>,
     pub octaves: i32,     // default: 8
     pub omega: Float,     // default: 0.5
     pub scale: Float,     // default: 1.0
@@ -17,7 +17,7 @@ pub struct MarbleTexture {
 
 impl MarbleTexture {
     pub fn new(
-        mapping: Box<dyn TextureMapping3D + Send + Sync>,
+        mapping: Box<TextureMapping3D>,
         octaves: i32,
         omega: Float,
         scale: Float,
