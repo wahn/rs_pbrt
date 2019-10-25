@@ -653,7 +653,7 @@ pub fn vec3_permute<T>(v: &Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<
 where
     T: Copy,
 {
-    let v3: Vec<T> = vec![v.x, v.y, v.z];
+    let v3: [T; 3] = [v.x, v.y, v.z];
     let xp: T = v3[x];
     let yp: T = v3[y];
     let zp: T = v3[z];
