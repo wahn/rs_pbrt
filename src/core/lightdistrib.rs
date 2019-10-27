@@ -143,7 +143,7 @@ impl SpatialLightDistribution {
             assert!(n_voxels[i] < (1 << 20));
         }
         let hash_table_size: usize = (4 as i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
-        let mut hash_table: Vec<HashEntry> = Vec::new();
+        let mut hash_table: Vec<HashEntry> = Vec::with_capacity(hash_table_size);
         // let null: *mut Distribution1D = std::ptr::null_mut();
         for _i in 0..hash_table_size {
             let hash_entry: HashEntry = HashEntry {
@@ -360,7 +360,7 @@ impl SpatialLightDistribution {
                     // voxel's distribution. Now compute the sampling
                     // distribution and add it to the hash table.
                     let dist: Distribution1D = self.compute_distribution(&pi);
-                    let arc_dist: Arc<Distribution1D> = Arc::new(dist.clone());
+                    let arc_dist: Arc<Distribution1D> = Arc::new(dist);
                     let mut distribution = entry.distribution.write().unwrap();
                     *distribution = Some(arc_dist.clone());
                     return arc_dist;
