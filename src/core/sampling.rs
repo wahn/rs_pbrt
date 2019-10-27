@@ -23,7 +23,7 @@ impl Distribution1D {
     pub fn new(f: Vec<Float>) -> Self {
         let n: usize = f.len();
         // compute integral of step function at $x_i$
-        let mut cdf: Vec<Float> = Vec::new();
+        let mut cdf: Vec<Float> = Vec::with_capacity(n + 1);
         cdf.push(0.0 as Float);
         for i in 1..(n + 1) {
             let previous: Float = cdf[i - 1];
@@ -153,7 +153,7 @@ pub struct Distribution2D {
 
 impl Distribution2D {
     pub fn new(func: Vec<Float>, nu: i32, nv: i32) -> Self {
-        let mut p_conditional_v: Vec<Arc<Distribution1D>> = Vec::new();
+        let mut p_conditional_v: Vec<Arc<Distribution1D>> = Vec::with_capacity(nv as usize);
         for v in 0..nv {
             // compute conditional sampling distribution for $\tilde{v}$
             let f: Vec<Float> = func[(v * nu) as usize..((v + 1) * nu) as usize].to_vec();

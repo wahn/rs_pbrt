@@ -2215,7 +2215,8 @@ impl AnimatedTransform {
         let theta: Float = clamp_t(cos_theta, -1.0 as Float, 1.0 as Float).acos();
         for c in 0..3 {
             // find any motion derivative zeros for the component _c_
-            let mut zeros: Vec<Float> = Vec::new();
+            let mut zeros: [Float; 8] = [0.0 as Float; 8];
+            let mut n_zeros: u8 = 0;
             interval_find_zeros(
                 self.c1[c].eval(p),
                 self.c2[c].eval(p),
@@ -2225,6 +2226,7 @@ impl AnimatedTransform {
                 theta,
                 Interval::new(0.0 as Float, 1.0 as Float),
                 &mut zeros,
+                &mut n_zeros,
                 8_usize,
             );
             // expand bounding box for any motion derivative zeros found
@@ -2321,8 +2323,8 @@ pub fn interval_find_zeros(
     c5: Float,
     theta: Float,
     t_interval: Interval,
-    zeros: &mut Vec<Float>,
-    // int *zeroCount,
+    zeros: &mut [Float; 8],
+    zero_count: &mut u8,
     depth: usize,
 ) {
     // evaluate motion derivative in interval form, return if no zeros
@@ -2347,6 +2349,7 @@ pub fn interval_find_zeros(
             theta,
             Interval::new(t_interval.low, mid),
             zeros,
+            zero_count,
             depth - 1_usize,
         );
         interval_find_zeros(
@@ -2358,6 +2361,7 @@ pub fn interval_find_zeros(
             theta,
             Interval::new(mid, t_interval.high),
             zeros,
+            zero_count,
             depth - 1_usize,
         );
     } else {
@@ -2378,7 +2382,8 @@ pub fn interval_find_zeros(
         }
         if t_newton >= t_interval.low - 1e-3 as Float && t_newton < t_interval.high + 1e-3 as Float
         {
-            zeros.push(t_newton);
+            zeros[*zero_count as usize] = t_newton;
+            *zero_count += 1;
         }
     }
 }
