@@ -14,7 +14,7 @@
 use std;
 use std::ops::{DerefMut, Index};
 use std::path::Path;
-use std::sync::{RwLock, RwLockWriteGuard};
+use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 // others
 use image;
@@ -26,6 +26,7 @@ use crate::core::geometry::{
     bnd2_intersect_bnd2, pnt2_ceil, pnt2_floor, pnt2_inside_exclusive, pnt2_max_pnt2, pnt2_min_pnt2,
 };
 use crate::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2f};
+use crate::core::paramset::ParamSet;
 use crate::core::pbrt::{clamp_t, gamma_correct};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::spectrum::xyz_to_rgb;
@@ -220,6 +221,44 @@ impl Film {
             scale,
             max_sample_luminance,
         }
+    }
+    pub fn create(params: &ParamSet, filter: Box<Filter>) -> Arc<Film> {
+        let filename: String = params.find_one_string("filename", String::new());
+        let xres: i32 = params.find_one_int("xresolution", 1280);
+        let yres: i32 = params.find_one_int("yresolution", 720);
+        let resolution: Point2i = Point2i { x: xres, y: yres };
+        // TODO: if (PbrtOptions.quickRender) xres = std::max(1, xres / 4);
+        // TODO: if (PbrtOptions.quickRender) yres = std::max(1, yres / 4);
+        let mut crop: Bounds2f = Bounds2f {
+            p_min: Point2f { x: 0.0, y: 0.0 },
+            p_max: Point2f { x: 1.0, y: 1.0 },
+        };
+        let cr: Vec<Float> = params.find_float("cropwindow");
+        if cr.len() == 4 {
+            crop.p_min.x = clamp_t(cr[0].min(cr[1]), 0.0, 1.0);
+            crop.p_max.x = clamp_t(cr[0].max(cr[1]), 0.0, 1.0);
+            crop.p_min.y = clamp_t(cr[2].min(cr[3]), 0.0, 1.0);
+            crop.p_max.y = clamp_t(cr[2].max(cr[3]), 0.0, 1.0);
+        } else if cr.len() != 0 {
+            panic!(
+                "{:?} values supplied for \"cropwindow\". Expected 4.",
+                cr.len()
+            );
+        }
+        let scale: Float = params.find_one_float("scale", 1.0);
+        let diagonal: Float = params.find_one_float("diagonal", 35.0);
+        let max_sample_luminance: Float =
+            params.find_one_float("maxsampleluminance", std::f32::INFINITY);
+        let film = Arc::new(Film::new(
+            resolution,
+            crop,
+            filter,
+            diagonal,
+            filename,
+            scale,
+            max_sample_luminance,
+        ));
+        film
     }
     pub fn get_cropped_pixel_bounds(&self) -> Bounds2i {
         self.cropped_pixel_bounds.clone()

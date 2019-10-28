@@ -18,7 +18,7 @@ use crate::core::camera::Camera;
 use crate::core::film::Film;
 use crate::core::filter::Filter;
 use crate::core::geometry::{vec3_coordinate_system, vec3_cross_vec3};
-use crate::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
+use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use crate::core::integrator::SamplerIntegrator;
 use crate::core::light::Light;
 use crate::core::material::Material;
@@ -26,7 +26,7 @@ use crate::core::medium::get_medium_scattering_properties;
 use crate::core::medium::{Medium, MediumInterface};
 use crate::core::mipmap::ImageWrap;
 use crate::core::paramset::{ParamSet, TextureParams};
-use crate::core::pbrt::{clamp_t, lerp};
+use crate::core::pbrt::lerp;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
 use crate::core::reflection::FourierBSDFTable;
@@ -1327,6 +1327,16 @@ pub fn make_filter(name: &String, param_set: &ParamSet) -> Option<Box<Filter>> {
     some_filter
 }
 
+pub fn make_film(name: &String, param_set: &ParamSet, filter: Box<Filter>) -> Option<Arc<Film>> {
+    let mut some_film: Option<Arc<Film>> = None;
+    if name == "image" {
+        some_film = Some(Film::create(param_set, filter));
+    } else {
+        println!("Film \"{}\" unknown.", name);
+    }
+    some_film
+}
+
 fn get_shapes_and_materials(
     api_state: &ApiState,
     bsdf_state: &mut BsdfState,
@@ -1893,64 +1903,14 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         &api_state.render_options.filter_name,
         &api_state.render_options.filter_params,
     );
-    // MakeFilm
-    if api_state.render_options.film_name == "image" {
-        let filename: String = api_state
-            .render_options
-            .film_params
-            .find_one_string("filename", String::new());
-        let xres: i32 = api_state
-            .render_options
-            .film_params
-            .find_one_int("xresolution", 1280);
-        let yres: i32 = api_state
-            .render_options
-            .film_params
-            .find_one_int("yresolution", 720);
-        // TODO: if (PbrtOptions.quickRender) xres = std::max(1, xres / 4);
-        // TODO: if (PbrtOptions.quickRender) yres = std::max(1, yres / 4);
-        let mut crop: Bounds2f = Bounds2f {
-            p_min: Point2f { x: 0.0, y: 0.0 },
-            p_max: Point2f { x: 1.0, y: 1.0 },
-        };
-        // TODO: const Float *cr = params.FindFloat("cropwindow", &cwi);
-        let cr: Vec<Float> = api_state
-            .render_options
-            .film_params
-            .find_float("cropwindow");
-        if cr.len() == 4 {
-            crop.p_min.x = clamp_t(cr[0].min(cr[1]), 0.0, 1.0);
-            crop.p_max.x = clamp_t(cr[0].max(cr[1]), 0.0, 1.0);
-            crop.p_min.y = clamp_t(cr[2].min(cr[3]), 0.0, 1.0);
-            crop.p_max.y = clamp_t(cr[2].max(cr[3]), 0.0, 1.0);
-        } else if cr.len() != 0 {
-            panic!(
-                "{:?} values supplied for \"cropwindow\". Expected 4.",
-                cr.len()
-            );
-        }
-        let scale: Float = api_state
-            .render_options
-            .film_params
-            .find_one_float("scale", 1.0);
-        let diagonal: Float = api_state
-            .render_options
-            .film_params
-            .find_one_float("diagonal", 35.0);
-        let max_sample_luminance: Float = api_state
-            .render_options
-            .film_params
-            .find_one_float("maxsampleluminance", std::f32::INFINITY);
-        if let Some(filter) = some_filter {
-            let film: Arc<Film> = Arc::new(Film::new(
-                Point2i { x: xres, y: yres },
-                crop,
-                filter,
-                diagonal,
-                filename,
-                scale,
-                max_sample_luminance,
-            ));
+    if let Some(filter) = some_filter {
+        // MakeFilm
+        let some_film: Option<Arc<Film>> = make_film(
+            &api_state.render_options.film_name,
+            &api_state.render_options.film_params,
+            filter,
+        );
+        if let Some(film) = some_film {
             // MakeCamera
             // TODO: let mut some_camera: Option<Arc<Camera + Sync + Send>> = None;
             let some_camera: Option<Arc<Camera>>;
@@ -2108,6 +2068,14 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                             panic!("Strategy \"{}\" for direct lighting unknown.", st);
                         }
                         // TODO: const int *pb = params.FindInt("pixelbounds", &np);
+                        let xres: i32 = api_state
+                            .render_options
+                            .film_params
+                            .find_one_int("xresolution", 1280);
+                        let yres: i32 = api_state
+                            .render_options
+                            .film_params
+                            .find_one_int("yresolution", 720);
                         let pixel_bounds: Bounds2i = Bounds2i {
                             p_min: Point2i { x: 0, y: 0 },
                             p_max: Point2i { x: xres, y: yres },
@@ -2357,7 +2325,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // TODO: if (renderOptions->haveScatteringMedia && ...)
                         if api_state.render_options.lights.is_empty() {
                             // warn if no light sources are defined
-                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                            println!(
+                            "WARNING: No light sources defined in scene; rendering a black image.",
+                        );
                         }
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
@@ -2409,7 +2379,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // TODO: if (renderOptions->haveScatteringMedia && ...)
                         if api_state.render_options.lights.is_empty() {
                             // warn if no light sources are defined
-                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                            println!(
+                            "WARNING: No light sources defined in scene; rendering a black image.",
+                        );
                         }
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
@@ -2467,7 +2439,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // TODO: if (renderOptions->haveScatteringMedia && ...)
                         if api_state.render_options.lights.is_empty() {
                             // warn if no light sources are defined
-                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                            println!(
+                            "WARNING: No light sources defined in scene; rendering a black image.",
+                        );
                         }
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
@@ -2513,7 +2487,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                         // TODO: if (renderOptions->haveScatteringMedia && ...)
                         if api_state.render_options.lights.is_empty() {
                             // warn if no light sources are defined
-                            println!("WARNING: No light sources defined in scene; rendering a black image.",);
+                            println!(
+                            "WARNING: No light sources defined in scene; rendering a black image.",
+                        );
                         }
                         // MakeAccelerator
                         if api_state.render_options.accelerator_name == "bvh" {
@@ -2572,9 +2548,10 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         } else {
             panic!("Unable to create film.");
         }
-    } else {
-        panic!("Film \"{}\" unknown.", api_state.render_options.film_name);
     }
+    // } else {
+    //     panic!("Film \"{}\" unknown.", api_state.render_options.film_name);
+    // }
 }
 
 pub fn pbrt_translate(api_state: &mut ApiState, dx: Float, dy: Float, dz: Float) {
