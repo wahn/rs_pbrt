@@ -8,9 +8,9 @@ use getopts::Options;
 // pbrt
 use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
+use pbrt::core::api::make_filter;
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
-use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use pbrt::core::integrator::SamplerIntegrator;
 use pbrt::core::light::Light;
@@ -24,7 +24,6 @@ use pbrt::core::scene::Scene;
 use pbrt::core::shape::Shape;
 use pbrt::core::texture::Texture;
 use pbrt::core::transform::{AnimatedTransform, Transform};
-use pbrt::filters::gaussian::GaussianFilter;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
@@ -862,7 +861,7 @@ fn main() {
                                                         {
                                                             let prim_opt = Arc::get_mut(prim);
                                                             if prim_opt.is_some() {
-                                                                let mut prim = prim_opt.unwrap();
+                                                                let prim = prim_opt.unwrap();
                                                                 match prim {
                                                                     Primitive::Geometric(
                                                                         primitive,
@@ -1243,7 +1242,7 @@ fn main() {
                         // println!("#{}: {} -> {:?}", count, shader_idx, shader_name);
                         let prim_opt = Arc::get_mut(prim);
                         if prim_opt.is_some() {
-                            let mut prim = prim_opt.unwrap();
+                            let prim = prim_opt.unwrap();
                             match prim {
                                 Primitive::Geometric(primitive) => {
                                     primitive.material = Some(named_material.clone());
@@ -1265,23 +1264,10 @@ fn main() {
         println!("number of lights = {:?}", lights.len());
         println!("number of primitives = {:?}", primitives.len());
         // MakeFilter
-        let mut some_filter: Option<Box<Filter>> = None;
-        if filter_name == "box" {
-            println!("TODO: CreateBoxFilter");
-        } else if filter_name == "gaussian" {
-            let mut filter_params: ParamSet = ParamSet::default();
-            filter_params.add_float(String::from("xwidth"), filter_width);
-            filter_params.add_float(String::from("ywidth"), filter_width);
-            some_filter = Some(GaussianFilter::create(&filter_params));
-        } else if filter_name == "mitchell" {
-            println!("TODO: CreateMitchellFilter");
-        } else if filter_name == "sinc" {
-            println!("TODO: CreateSincFilter");
-        } else if filter_name == "triangle" {
-            println!("TODO: CreateTriangleFilter");
-        } else {
-            panic!("Filter \"{}\" unknown.", filter_name);
-        }
+        let mut filter_params: ParamSet = ParamSet::default();
+        filter_params.add_float(String::from("xwidth"), filter_width);
+        filter_params.add_float(String::from("ywidth"), filter_width);
+        let some_filter = make_filter(&String::from("gaussian"), &filter_params);
         // MakeFilm
         let resolution: Point2i = Point2i { x: xres, y: yres };
         println!("resolution = {:?}", resolution);

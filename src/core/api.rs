@@ -211,6 +211,15 @@ pub struct RenderOptions {
     pub have_scattering_media: bool, // false
 }
 
+// impl RenderOptions {
+//     pub fn make_integrator(&self) -> Integrator {
+//     }
+//     pub fn make_scene(&self) -> Scene {
+//     }
+//     pub fn make_camera(&self) -> Camera {
+//     }
+// }
+
 impl Default for RenderOptions {
     fn default() -> RenderOptions {
         RenderOptions {
@@ -1300,6 +1309,24 @@ fn make_texture(api_state: &mut ApiState) {
     // MakeSpectrumTexture(texname, curTransform[0], tp);
 }
 
+pub fn make_filter(name: &String, param_set: &ParamSet) -> Option<Box<Filter>> {
+    let mut some_filter: Option<Box<Filter>> = None;
+    if name == "box" {
+        some_filter = Some(BoxFilter::create(param_set));
+    } else if name == "gaussian" {
+        some_filter = Some(GaussianFilter::create(param_set));
+    } else if name == "mitchell" {
+        some_filter = Some(MitchellNetravali::create(param_set));
+    } else if name == "sinc" {
+        some_filter = Some(LanczosSincFilter::create(param_set));
+    } else if name == "triangle" {
+        some_filter = Some(TriangleFilter::create(param_set));
+    } else {
+        println!("Filter \"{}\" unknown.", name);
+    }
+    some_filter
+}
+
 fn get_shapes_and_materials(
     api_state: &ApiState,
     bsdf_state: &mut BsdfState,
@@ -1862,31 +1889,10 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         "Missing end to pbrtTransformBegin()"
     );
     // MakeFilter
-    let mut some_filter: Option<Box<Filter>> = None;
-    if api_state.render_options.filter_name == "box" {
-        some_filter = Some(BoxFilter::create(&api_state.render_options.filter_params));
-    } else if api_state.render_options.filter_name == "gaussian" {
-        some_filter = Some(GaussianFilter::create(
-            &api_state.render_options.filter_params,
-        ));
-    } else if api_state.render_options.filter_name == "mitchell" {
-        some_filter = Some(MitchellNetravali::create(
-            &api_state.render_options.filter_params,
-        ));
-    } else if api_state.render_options.filter_name == "sinc" {
-        some_filter = Some(LanczosSincFilter::create(
-            &api_state.render_options.filter_params,
-        ));
-    } else if api_state.render_options.filter_name == "triangle" {
-        some_filter = Some(TriangleFilter::create(
-            &api_state.render_options.filter_params,
-        ));
-    } else {
-        panic!(
-            "Filter \"{}\" unknown.",
-            api_state.render_options.filter_name
-        );
-    }
+    let some_filter = make_filter(
+        &api_state.render_options.filter_name,
+        &api_state.render_options.filter_params,
+    );
     // MakeFilm
     if api_state.render_options.film_name == "image" {
         let filename: String = api_state
