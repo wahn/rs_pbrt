@@ -2010,13 +2010,13 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         );
         if let Some(film) = some_film {
             // MakeCamera
-            let some_camera: Option<Arc<Camera>> = make_camera(&api_state, film.clone());
+            let some_camera: Option<Arc<Camera>> = make_camera(&api_state, film);
             if let Some(camera) = some_camera {
                 // MakeSampler
                 let some_sampler: Option<Box<dyn Sampler + Sync + Send>> = make_sampler(
                     &api_state.render_options.sampler_name,
                     &api_state.render_options.sampler_params,
-                    film.clone(),
+                    camera.get_film(),
                 );
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
