@@ -1373,6 +1373,40 @@ pub fn make_camera(api_state: &ApiState, film: Arc<Film>) -> Option<Arc<Camera>>
     some_camera
 }
 
+pub fn make_sampler(
+    name: &String,
+    param_set: &ParamSet,
+    film: Arc<Film>,
+) -> Option<Box<dyn Sampler + Sync + Send>> {
+    let mut some_sampler: Option<Box<dyn Sampler + Sync + Send>> = None;
+    if name == "lowdiscrepancy" || name == "02sequence" {
+        // CreateZeroTwoSequenceSampler
+        let sampler = ZeroTwoSequenceSampler::create(param_set);
+        some_sampler = Some(sampler);
+    } else if name == "maxmindist" {
+        // CreateMaxMinDistSampler
+        println!("TODO: CreateMaxMinDistSampler");
+    } else if name == "halton" {
+        // CreateHaltonSampler
+        let sampler = HaltonSampler::create(param_set, &film.get_sample_bounds());
+        some_sampler = Some(sampler);
+    } else if name == "sobol" {
+        // CreateSobolSampler
+        let sampler = SobolSampler::create(param_set, &film.get_sample_bounds());
+        some_sampler = Some(sampler);
+    } else if name == "random" {
+        // CreateRandomSampler
+        let sampler = RandomSampler::create(param_set);
+        some_sampler = Some(sampler);
+    } else if name == "stratified" {
+        // CreateStratifiedSampler
+        println!("TODO: CreateStratifiedSampler");
+    } else {
+        println!("Sampler \"{}\" unknown.", name);
+    }
+    some_sampler
+}
+
 pub fn make_filter(name: &String, param_set: &ParamSet) -> Option<Box<Filter>> {
     let mut some_filter: Option<Box<Filter>> = None;
     if name == "box" {
@@ -1976,66 +2010,14 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         );
         if let Some(film) = some_film {
             // MakeCamera
-            let some_camera: Option<Arc<Camera>> = make_camera(&api_state, film);
+            let some_camera: Option<Arc<Camera>> = make_camera(&api_state, film.clone());
             if let Some(camera) = some_camera {
                 // MakeSampler
-                let mut some_sampler: Option<Box<dyn Sampler + Sync + Send>> = None;
-                if api_state.render_options.sampler_name == "lowdiscrepancy"
-                    || api_state.render_options.sampler_name == "02sequence"
-                {
-                    let nsamp: i32 = api_state
-                        .render_options
-                        .sampler_params
-                        .find_one_int("pixelsamples", 16);
-                    let sd: i32 = api_state
-                        .render_options
-                        .sampler_params
-                        .find_one_int("dimensions", 4);
-                    // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-                    let sampler = Box::new(ZeroTwoSequenceSampler::new(nsamp as i64, sd as i64));
-                    some_sampler = Some(sampler);
-                } else if api_state.render_options.sampler_name == "maxmindist" {
-                    println!("TODO: CreateMaxMinDistSampler");
-                } else if api_state.render_options.sampler_name == "halton" {
-                    let nsamp: i32 = api_state
-                        .render_options
-                        .sampler_params
-                        .find_one_int("pixelsamples", 16);
-                    // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-                    let sample_at_center: bool = api_state
-                        .render_options
-                        .integrator_params
-                        .find_one_bool("samplepixelcenter", false);
-                    let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    let sampler = Box::new(HaltonSampler::new(
-                        nsamp as i64,
-                        sample_bounds,
-                        sample_at_center,
-                    ));
-                    some_sampler = Some(sampler);
-                } else if api_state.render_options.sampler_name == "sobol" {
-                    let nsamp: i32 = api_state
-                        .render_options
-                        .sampler_params
-                        .find_one_int("pixelsamples", 16);
-                    let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    let sampler = Box::new(SobolSampler::new(nsamp as i64, sample_bounds));
-                    some_sampler = Some(sampler);
-                } else if api_state.render_options.sampler_name == "random" {
-                    let nsamp: i32 = api_state
-                        .render_options
-                        .sampler_params
-                        .find_one_int("pixelsamples", 4);
-                    let sampler = Box::new(RandomSampler::new(nsamp as i64));
-                    some_sampler = Some(sampler);
-                } else if api_state.render_options.sampler_name == "stratified" {
-                    println!("TODO: CreateStratifiedSampler");
-                } else {
-                    panic!(
-                        "Sampler \"{}\" unknown.",
-                        api_state.render_options.sampler_name
-                    );
-                }
+                let some_sampler: Option<Box<dyn Sampler + Sync + Send>> = make_sampler(
+                    &api_state.render_options.sampler_name,
+                    &api_state.render_options.sampler_params,
+                    film.clone(),
+                );
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
                     // if let Some(mut sampler) = some_sampler {

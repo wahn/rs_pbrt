@@ -151,7 +151,7 @@ pub fn render_sppm(
         // perform _n_iterations_ of SPPM integration
         let sampler: Box<HaltonSampler> = Box::new(HaltonSampler::new(
             integrator.n_iterations as i64,
-            pixel_bounds,
+            &pixel_bounds,
             false,
         ));
         // compute number of tiles to use for SPPM camera pass

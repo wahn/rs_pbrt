@@ -1,5 +1,6 @@
 // pbrt
 use crate::core::geometry::{Point2f, Point2i};
+use crate::core::paramset::ParamSet;
 use crate::core::pbrt::Float;
 use crate::core::rng::Rng;
 use crate::core::sampler::Sampler;
@@ -35,6 +36,11 @@ impl RandomSampler {
             array_1d_offset: 0_usize,
             array_2d_offset: 0_usize,
         }
+    }
+    pub fn create(params: &ParamSet) -> Box<dyn Sampler + Sync + Send> {
+        let nsamp: i32 = params.find_one_int("pixelsamples", 4);
+        // TODO: if (PbrtOptions.quickRender) nsamp = 1;
+        Box::new(RandomSampler::new(nsamp as i64))
     }
 }
 

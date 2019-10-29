@@ -1,6 +1,7 @@
 // pbrt
 use crate::core::geometry::{Point2f, Point2i};
 use crate::core::lowdiscrepancy::{sobol_2d, van_der_corput};
+use crate::core::paramset::ParamSet;
 use crate::core::pbrt::round_up_pow2_32;
 use crate::core::pbrt::Float;
 use crate::core::rng::Rng;
@@ -86,6 +87,12 @@ impl ZeroTwoSequenceSampler {
             lds.samples_2d.push(additional_2d);
         }
         lds
+    }
+    pub fn create(params: &ParamSet) -> Box<dyn Sampler + Sync + Send> {
+        let nsamp: i32 = params.find_one_int("pixelsamples", 16);
+        let sd: i32 = params.find_one_int("dimensions", 4);
+        // TODO: if (PbrtOptions.quickRender) nsamp = 1;
+        Box::new(ZeroTwoSequenceSampler::new(nsamp as i64, sd as i64))
     }
     pub fn get_current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index

@@ -7,6 +7,7 @@ use crate::core::lowdiscrepancy::{
     scrambled_radical_inverse,
 };
 use crate::core::lowdiscrepancy::{PRIME_SUMS, PRIME_TABLE_SIZE};
+use crate::core::paramset::ParamSet;
 use crate::core::pbrt::mod_t;
 use crate::core::pbrt::Float;
 use crate::core::rng::Rng;
@@ -75,7 +76,7 @@ pub struct HaltonSampler {
 impl HaltonSampler {
     pub fn new(
         samples_per_pixel: i64,
-        sample_bounds: Bounds2i,
+        sample_bounds: &Bounds2i,
         sample_at_pixel_center: bool,
     ) -> Self {
         // find radical inverse base scales and exponents that cover sampling area
@@ -127,6 +128,16 @@ impl HaltonSampler {
             array_1d_offset: 0_usize,
             array_2d_offset: 0_usize,
         }
+    }
+    pub fn create(params: &ParamSet, sample_bounds: &Bounds2i) -> Box<dyn Sampler + Sync + Send> {
+        let nsamp: i32 = params.find_one_int("pixelsamples", 16);
+        // TODO: if (PbrtOptions.quickRender) nsamp = 1;
+        let sample_at_center: bool = params.find_one_bool("samplepixelcenter", false);
+        Box::new(HaltonSampler::new(
+            nsamp as i64,
+            sample_bounds,
+            sample_at_center,
+        ))
     }
     pub fn get_index_for_sample(&self, sample_num: u64) -> u64 {
         let pixel_for_offset: Point2i = *self.pixel_for_offset.read().unwrap();

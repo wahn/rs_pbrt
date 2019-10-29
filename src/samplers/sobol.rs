@@ -1,6 +1,7 @@
 // pbrt
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 use crate::core::lowdiscrepancy::{sobol_interval_to_index, sobol_sample};
+use crate::core::paramset::ParamSet;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{
     clamp_t, is_power_of_2, log_2_int_u32, round_up_pow2_32, round_up_pow2_64,
@@ -34,7 +35,7 @@ pub struct SobolSampler {
 }
 
 impl SobolSampler {
-    pub fn new(samples_per_pixel: i64, sample_bounds: Bounds2i) -> Self {
+    pub fn new(samples_per_pixel: i64, sample_bounds: &Bounds2i) -> Self {
         let mut samples_per_pixel: i64 = samples_per_pixel;
         if !is_power_of_2(samples_per_pixel) {
             samples_per_pixel = round_up_pow2_64(samples_per_pixel);
@@ -51,7 +52,16 @@ impl SobolSampler {
         }
         SobolSampler {
             samples_per_pixel,
-            sample_bounds,
+            sample_bounds: Bounds2i {
+                p_min: Point2i {
+                    x: sample_bounds.p_min.x,
+                    y: sample_bounds.p_min.y,
+                },
+                p_max: Point2i {
+                    x: sample_bounds.p_max.x,
+                    y: sample_bounds.p_max.y,
+                },
+            },
             resolution,
             log_2_resolution,
             dimension: 0_i64,
@@ -67,6 +77,11 @@ impl SobolSampler {
             array_1d_offset: 0_usize,
             array_2d_offset: 0_usize,
         }
+    }
+    pub fn create(params: &ParamSet, sample_bounds: &Bounds2i) -> Box<dyn Sampler + Sync + Send> {
+        let nsamp: i32 = params.find_one_int("pixelsamples", 16);
+        // TODO: if (PbrtOptions.quickRender) nsamp = 1;
+        Box::new(SobolSampler::new(nsamp as i64, sample_bounds))
     }
     pub fn get_index_for_sample(&self, sample_num: u64) -> u64 {
         let v: Vector2i = self.current_pixel - self.sample_bounds.p_min;

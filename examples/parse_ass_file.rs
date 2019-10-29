@@ -1315,7 +1315,7 @@ fn main() {
                 let some_sampler: Option<Box<dyn Sampler + Sync + Send>>;
                 // use SobolSampler for now
                 let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                let sampler = Box::new(SobolSampler::new(samples_per_pixel as i64, sample_bounds));
+                let sampler = Box::new(SobolSampler::new(samples_per_pixel as i64, &sample_bounds));
                 some_sampler = Some(sampler);
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
