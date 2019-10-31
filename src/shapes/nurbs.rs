@@ -1,5 +1,7 @@
 // std
 use std;
+// others
+use smallvec::SmallVec;
 // pbrt
 use crate::core::geometry::{Point3f, Vector3f};
 use crate::core::pbrt::Float;
@@ -29,7 +31,7 @@ pub struct Homogeneous3 {
 pub fn nurbs_evaluate(
     order: i32,
     knot: &Vec<Float>,
-    cp: &Vec<Homogeneous3>,
+    cp: &SmallVec<[Homogeneous3; 128]>,
     cp_start: i32,
     np: i32,
     cp_stride: i32,
@@ -40,7 +42,7 @@ pub fn nurbs_evaluate(
     let knot_offset: usize = knot_offset(knot, order, np, t);
     let cp_offset: usize = knot_offset + 1 - order as usize;
     assert!(cp_offset < np as usize);
-    let mut cp_work: Vec<Homogeneous3> = Vec::with_capacity(order as usize);
+    let mut cp_work: SmallVec<[Homogeneous3; 128]> = SmallVec::with_capacity(order as usize);
     for i in 0_usize..order as usize {
         cp_work.push(cp[(cp_start + (cp_offset + i) as i32 * cp_stride) as usize]);
     }
@@ -98,7 +100,8 @@ pub fn nurbs_evaluate_surface(
     dpdu_opt: Option<&mut Vector3f>,
     dpdv_opt: Option<&mut Vector3f>,
 ) -> Point3f {
-    let mut iso: Vec<Homogeneous3> = Vec::with_capacity(std::cmp::max(u_order, v_order) as usize);
+    let mut iso: SmallVec<[Homogeneous3; 128]> =
+        SmallVec::with_capacity(std::cmp::max(u_order, v_order) as usize);
     let u_offset: usize = knot_offset(u_knot, u_order, ucp, u);
     let u_first_cp: usize = u_offset + 1 - u_order as usize;
     assert!(u_first_cp + u_order as usize - 1 < ucp as usize);
@@ -106,7 +109,7 @@ pub fn nurbs_evaluate_surface(
         iso.push(nurbs_evaluate(
             v_order,
             v_knot,
-            &cp,
+            &SmallVec::from_vec(cp.to_vec()),
             u_first_cp as i32 + i,
             vcp,
             ucp,
@@ -132,7 +135,7 @@ pub fn nurbs_evaluate_surface(
             iso[i as usize] = nurbs_evaluate(
                 u_order,
                 u_knot,
-                &cp,
+                &SmallVec::from_vec(cp.to_vec()),
                 (v_first_cp as i32 + i) * ucp,
                 ucp,
                 1,
