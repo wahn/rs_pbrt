@@ -3,6 +3,8 @@
 
 // std
 use std::f32::consts::PI;
+// others
+use smallvec::SmallVec;
 // pbrt
 use crate::core::pbrt::find_interval;
 use crate::core::pbrt::Float;
@@ -210,7 +212,7 @@ pub fn integrate_catmull_rom(
 }
 
 /// Evaluates the weighted sum of cosines.
-pub fn fourier(a: &Vec<Float>, si: usize, m: i32, cos_phi: f64) -> Float {
+pub fn fourier(a: &SmallVec<[Float; 128]>, si: usize, m: i32, cos_phi: f64) -> Float {
     let mut value: f64 = 0.0;
     // initialize cosine iterates
     let mut cos_k_minus_one_phi: f64 = cos_phi;
@@ -228,7 +230,7 @@ pub fn fourier(a: &Vec<Float>, si: usize, m: i32, cos_phi: f64) -> Float {
 /// Returns the value of the Fourier expansion at the sampled
 /// position.
 pub fn sample_fourier(
-    ak: &Vec<Float>,
+    ak: &SmallVec<[Float; 128]>,
     recip: &Vec<Float>,
     m: i32,
     u: Float,

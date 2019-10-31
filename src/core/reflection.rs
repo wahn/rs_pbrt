@@ -14,6 +14,7 @@ use std::sync::Arc;
 // others
 use byteorder::{LittleEndian, ReadBytesExt};
 use num::Zero;
+use smallvec::SmallVec;
 // pbrt
 use crate::core::bssrdf::SeparableBssrdfAdapter;
 use crate::core::geometry::{
@@ -1528,8 +1529,8 @@ impl FourierBSDF {
             return Spectrum::default();
         }
         // allocate storage to accumulate _ak_ coefficients
-        let mut ak: Vec<Float> =
-            Vec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
+        let mut ak: SmallVec<[Float; 128]> =
+            SmallVec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
         for _i in 0..(self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize {
             ak.push(0.0 as Float); // initialize with 0
         }
@@ -1637,8 +1638,8 @@ impl FourierBSDF {
             return Spectrum::default();
         }
         // allocate storage to accumulate _ak_ coefficients
-        let mut ak: Vec<Float> =
-            Vec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
+        let mut ak: SmallVec<[Float; 128]> =
+            SmallVec::with_capacity((self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize);
         for _i in 0..(self.bsdf_table.m_max * self.bsdf_table.n_channels) as usize {
             ak.push(0.0 as Float); // initialize with 0
         }
@@ -1762,7 +1763,8 @@ impl FourierBSDF {
         {
             return 0.0 as Float;
         }
-        let mut ak: Vec<Float> = Vec::with_capacity(self.bsdf_table.m_max as usize);
+        let mut ak: SmallVec<[Float; 128]> =
+            SmallVec::with_capacity(self.bsdf_table.m_max as usize);
         for _i in 0..self.bsdf_table.m_max as usize {
             ak.push(0.0 as Float); // initialize with 0
         }
