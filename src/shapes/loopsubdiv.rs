@@ -4,6 +4,8 @@ use std::collections::{HashMap, HashSet};
 use std::f32::consts::PI;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
+// others
+use smallvec::SmallVec;
 // pbrt
 use crate::core::geometry::vec3_cross_vec3;
 use crate::core::geometry::{Normal3f, Point3f, Vector3f};
@@ -42,7 +44,7 @@ impl SDVertex {
     }
     pub fn one_ring(
         &self,
-        p: &mut Vec<Point3f>,
+        p: &mut SmallVec<[Point3f; 128]>,
         vi: i32,
         faces: &Vec<Arc<SDFace>>,
         verts: &Vec<Arc<SDVertex>>,
@@ -583,7 +585,12 @@ pub fn loop_subdivide(
         if valence as usize > p_ring.len() {
             p_ring.resize(valence as usize, Point3f::default());
         }
-        vertex.one_ring(&mut p_ring, vi as i32, &faces, &verts);
+        vertex.one_ring(
+            &mut SmallVec::from_vec(p_ring.to_vec()),
+            vi as i32,
+            &faces,
+            &verts,
+        );
         if !vertex.boundary {
             // compute tangents of interior face
             for j in 0..valence as usize {
@@ -667,7 +674,7 @@ fn weight_one_ring(
 ) -> Point3f {
     // put _vert_ one-ring in _p_ring_
     let valence: i32 = vert.valence(vi, faces);
-    let mut p_ring: Vec<Point3f> = Vec::with_capacity(valence as usize);
+    let mut p_ring: SmallVec<[Point3f; 128]> = SmallVec::with_capacity(valence as usize);
     for _i in 0..valence as usize {
         p_ring.push(Point3f::default());
     }
@@ -688,7 +695,7 @@ fn weight_boundary(
 ) -> Point3f {
     // put _vert_ one-ring in _p_ring_
     let valence: i32 = vert.valence(vi, faces);
-    let mut p_ring: Vec<Point3f> = Vec::with_capacity(valence as usize);
+    let mut p_ring: SmallVec<[Point3f; 128]> = SmallVec::with_capacity(valence as usize);
     for _i in 0..valence as usize {
         p_ring.push(Point3f::default());
     }
