@@ -511,7 +511,7 @@ impl BVHAccel {
         let mut current_node_index: u32 = 0;
         let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
         loop {
-            let node: LinearBVHNode = self.nodes[current_node_index as usize];
+            let node: &LinearBVHNode = &self.nodes[current_node_index as usize];
             let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
             if intersects {
                 // process BVH node _node_ for traversal
