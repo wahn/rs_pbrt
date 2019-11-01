@@ -106,9 +106,10 @@ pub struct LinearBVHNode {
     bounds: Bounds3f,
     // in C++ a union { int primitivesOffset;     // leaf
     //                  int secondChildOffset; }; // interior
-    offset: usize,
-    n_primitives: usize,
-    axis: u8, // TODO? pad
+    offset: i32,
+    n_primitives: u16,
+    axis: u8,
+    pad: u8,
 }
 
 // BVHAccel -> Aggregate -> Primitive
@@ -389,9 +390,10 @@ impl BVHAccel {
             // leaf
             let linear_node = LinearBVHNode {
                 bounds: node.bounds,
-                offset: node.first_prim_offset,
-                n_primitives: node.n_primitives,
+                offset: node.first_prim_offset as i32,
+                n_primitives: node.n_primitives as u16,
                 axis: 0_u8,
+                pad: 0_u8,
             };
             nodes[my_offset] = linear_node;
         } else {
@@ -402,9 +404,10 @@ impl BVHAccel {
             if let Some(ref mut child2) = node.child2 {
                 let linear_node = LinearBVHNode {
                     bounds: node.bounds,
-                    offset: BVHAccel::flatten_bvh_tree(child2, nodes, offset),
-                    n_primitives: 0_usize,
+                    offset: BVHAccel::flatten_bvh_tree(child2, nodes, offset) as i32,
+                    n_primitives: 0_u16,
                     axis: node.split_axis,
+                    pad: 0_u8,
                 };
                 nodes[my_offset] = linear_node;
             }
@@ -449,7 +452,9 @@ impl BVHAccel {
                     // intersect ray with primitives in leaf BVH node
                     for i in 0..node.n_primitives {
                         // see primitive.h GeometricPrimitive::Intersect() ...
-                        if let Some(isect) = self.primitives[node.offset + i].intersect(ray) {
+                        if let Some(isect) =
+                            self.primitives[node.offset as usize + i as usize].intersect(ray)
+                        {
                             // TODO: CHECK_GE(...)
                             si = isect;
                             hit = true;
@@ -512,7 +517,7 @@ impl BVHAccel {
                 // process BVH node _node_ for traversal
                 if node.n_primitives > 0 {
                     for i in 0..node.n_primitives {
-                        if self.primitives[node.offset + i].intersect_p(ray) {
+                        if self.primitives[node.offset as usize + i as usize].intersect_p(ray) {
                             return true;
                         }
                     }
