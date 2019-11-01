@@ -2882,19 +2882,20 @@ fn main() -> std::io::Result<()> {
     let mut integrator: Box<dyn SamplerIntegrator + Send + Sync>;
     if let Some(integrator_str) = args.integrator {
         print!("integrator = {:?} [", integrator_str);
-        if integrator_str == String::from("ao") {
-            println!("Ambient Occlusion (AO)]");
-            // AOIntegrator
-            integrator = Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
-            // in the end we want to call render()
-            render(
-                &scene,
-                &camera.clone(),
-                &mut sampler,
-                &mut integrator,
-                num_threads,
-            );
-        } else if integrator_str == String::from("directlighting") {
+        // if integrator_str == String::from("ao") {
+        //     println!("Ambient Occlusion (AO)]");
+        //     // AOIntegrator
+        //     integrator = Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
+        //     // in the end we want to call render()
+        //     render(
+        //         &scene,
+        //         &camera.clone(),
+        //         &mut sampler,
+        //         &mut integrator,
+        //         num_threads,
+        //     );
+        // } else 
+            if integrator_str == String::from("directlighting") {
             println!("Direct Lighting]");
             // DirectLightingIntegrator
             let max_depth: i32 = args.max_depth as i32;
@@ -3005,10 +3006,10 @@ fn main() -> std::io::Result<()> {
                 rr_threshold,
                 light_strategy,
             ));
-        } else {
-            // AOIntegrator
-            integrator = Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
-        }
+        // } else {
+        //     // AOIntegrator
+        //     integrator = Box::new(AOIntegrator::new(true, 64_i32, sample_bounds));
+        // }
         // in the end we want to call render()
         render(
             &scene,
@@ -3017,6 +3018,7 @@ fn main() -> std::io::Result<()> {
             &mut integrator,
             num_threads,
         );
+        } // TMP
     }
     Ok(())
 }

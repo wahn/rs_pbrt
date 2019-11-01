@@ -211,14 +211,15 @@ pub struct RenderOptions {
     pub have_scattering_media: bool, // false
 }
 
-// impl RenderOptions {
-//     pub fn make_integrator(&self) -> Integrator {
-//     }
-//     pub fn make_scene(&self) -> Scene {
-//     }
-//     pub fn make_camera(&self) -> Camera {
-//     }
-// }
+impl RenderOptions {
+    pub fn make_integrator(&self) -> Option<Box<dyn SamplerIntegrator + Send + Sync>> {
+        None
+    }
+    //     pub fn make_scene(&self) -> Scene {
+    //     }
+    //     pub fn make_camera(&self) -> Camera {
+    //     }
+}
 
 impl Default for RenderOptions {
     fn default() -> RenderOptions {
@@ -2020,289 +2021,296 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                 );
                 if let Some(mut sampler) = some_sampler {
                     // MakeIntegrator
-                    // if let Some(mut sampler) = some_sampler {
                     let mut some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>> =
-                        None;
-                    let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
-                    let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
-                    let mut some_sppm_integrator: Option<Box<SPPMIntegrator>> = None;
-                    if api_state.render_options.integrator_name == "whitted" {
-                        let max_depth: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("maxdepth", 5);
-                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                        let integrator =
-                            Box::new(WhittedIntegrator::new(max_depth as u32, pixel_bounds));
-                        some_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == "directlighting" {
-                        // CreateDirectLightingIntegrator
-                        let max_depth: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("maxdepth", 5);
-                        let st: String = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_string("strategy", String::from("all"));
-                        let strategy: LightStrategy;
-                        if st == "one" {
-                            strategy = LightStrategy::UniformSampleOne;
-                        } else if st == "all" {
-                            strategy = LightStrategy::UniformSampleAll;
-                        } else {
-                            panic!("Strategy \"{}\" for direct lighting unknown.", st);
-                        }
-                        // TODO: const int *pb = params.FindInt("pixelbounds", &np);
-                        let xres: i32 = api_state
-                            .render_options
-                            .film_params
-                            .find_one_int("xresolution", 1280);
-                        let yres: i32 = api_state
-                            .render_options
-                            .film_params
-                            .find_one_int("yresolution", 720);
-                        let pixel_bounds: Bounds2i = Bounds2i {
-                            p_min: Point2i { x: 0, y: 0 },
-                            p_max: Point2i { x: xres, y: yres },
-                        };
-                        let integrator = Box::new(DirectLightingIntegrator::new(
-                            strategy,
-                            max_depth as u32,
-                            pixel_bounds,
-                        ));
-                        some_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == "path" {
-                        // CreatePathIntegrator
-                        let max_depth: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("maxdepth", 5);
-                        let pb: Vec<i32> = api_state
-                            .render_options
-                            .integrator_params
-                            .find_int("pixelbounds");
-                        let np: usize = pb.len();
-                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                        if np > 0 as usize {
-                            if np != 4 as usize {
-                                panic!(
-                                    "Expected four values for \"pixelbounds\" parameter. Got {}.",
-                                    np
-                                );
-                            } else {
-                                println!("TODO: pixelBounds = Intersect(...)");
-                                // pixelBounds = Intersect(pixelBounds,
-                                //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
-                                // if (pixelBounds.Area() == 0)
-                                //     Error("Degenerate \"pixelbounds\" specified.");
-                            }
-                        }
-                        let rr_threshold: Float = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_float("rrthreshold", 1.0 as Float);
-                        let light_strategy: String = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_string("lightsamplestrategy", String::from("spatial"));
-                        let integrator = Box::new(PathIntegrator::new(
-                            max_depth as u32,
-                            pixel_bounds,
-                            rr_threshold,
-                            light_strategy,
-                        ));
-                        some_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == "volpath" {
-                        // CreateVolPathIntegrator
-                        let max_depth: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("maxdepth", 5);
-                        let pb: Vec<i32> = api_state
-                            .render_options
-                            .integrator_params
-                            .find_int("pixelbounds");
-                        let np: usize = pb.len();
-                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                        if np > 0 as usize {
-                            if np != 4 as usize {
-                                panic!(
-                                    "Expected four values for \"pixelbounds\" parameter. Got {}.",
-                                    np
-                                );
-                            } else {
-                                println!("TODO: pixelBounds = Intersect(...)");
-                                // pixelBounds = Intersect(pixelBounds,
-                                //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
-                                // if (pixelBounds.Area() == 0)
-                                //     Error("Degenerate \"pixelbounds\" specified.");
-                            }
-                        }
-                        let rr_threshold: Float = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_float("rrthreshold", 1.0 as Float);
-                        let light_strategy: String = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_string("lightsamplestrategy", String::from("spatial"));
-                        let integrator = Box::new(VolPathIntegrator::new(
-                            max_depth as u32,
-                            pixel_bounds,
-                            rr_threshold,
-                            light_strategy,
-                        ));
-                        some_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == "bdpt" {
-                        // CreateBDPTIntegrator
-                        let mut max_depth: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("maxdepth", 5);
-                        let visualize_strategies: bool = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_bool("visualizestrategies", false);
-                        let visualize_weights: bool = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_bool("visualizeweights", false);
-                        if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
-                            println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
-                            max_depth = 5;
-                        }
-                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                        let light_strategy: String = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_string("lightsamplestrategy", String::from("power"));
-                        let integrator = Box::new(BDPTIntegrator::new(
-                            max_depth as u32,
-                            // visualize_strategies,
-                            // visualize_weights,
-                            pixel_bounds,
-                            light_strategy,
-                        ));
-                        some_bdpt_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == "mlt" {
-                        // CreateMLTIntegrator
-                        let max_depth: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("maxdepth", 5);
-                        let n_bootstrap: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("bootstrapsamples", 100000);
-                        let n_chains: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("chains", 1000);
-                        let mutations_per_pixel: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("mutationsperpixel", 100);
-                        let large_step_probability: Float = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_float("largestepprobability", 0.3 as Float);
-                        let sigma: Float = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_float("sigma", 0.01 as Float);
-                        let integrator = Box::new(MLTIntegrator::new(
-                            camera.clone(),
-                            max_depth as u32,
-                            n_bootstrap as u32,
-                            n_chains as u32,
-                            mutations_per_pixel as u32,
-                            sigma,
-                            large_step_probability,
-                        ));
-                        some_mlt_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == "ambientocclusion" {
-                        // CreateAOIntegrator
-                        let pb: Vec<i32> = api_state
-                            .render_options
-                            .integrator_params
-                            .find_int("pixelbounds");
-                        let np: usize = pb.len();
-                        let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                        if np > 0 as usize {
-                            if np != 4 as usize {
-                                panic!(
-                                    "Expected four values for \"pixelbounds\" parameter. Got {}.",
-                                    np
-                                );
-                            } else {
-                                println!("TODO: pixelBounds = Intersect(...)");
-                                // pixelBounds = Intersect(pixelBounds,
-                                //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
-                                // if (pixelBounds.Area() == 0)
-                                //     Error("Degenerate \"pixelbounds\" specified.");
-                            }
-                        }
-                        let cos_sample: bool = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_bool("cossample", true);
-                        let n_samples: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("nsamples", 64 as i32);
-                        let integrator =
-                            Box::new(AOIntegrator::new(cos_sample, n_samples, pixel_bounds));
-                        some_integrator = Some(integrator);
-                    } else if api_state.render_options.integrator_name == "sppm" {
-                        // CreateSPPMIntegrator
-                        let mut n_iterations: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("numiterations", 64);
-                        n_iterations = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("iterations", n_iterations);
-                        let max_depth: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("maxdepth", 5);
-                        let photons_per_iter: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("photonsperiteration", -1);
-                        let write_freq: i32 = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_int("imagewritefrequency", 1 << 31);
-                        let radius: Float = api_state
-                            .render_options
-                            .integrator_params
-                            .find_one_float("radius", 1.0 as Float);
-                        // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
-                        let integrator = Box::new(SPPMIntegrator::new(
-                            camera.clone(),
-                            n_iterations,
-                            photons_per_iter,
-                            max_depth as u32,
-                            radius,
-                            write_freq,
-                        ));
-                        some_sppm_integrator = Some(integrator);
-                    } else {
-                        panic!(
-                            "Integrator \"{}\" unknown.",
-                            api_state.render_options.integrator_name
-                        );
-                    }
+                        api_state.render_options.make_integrator();
+                    // let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
+                    // let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
+                    // let mut some_sppm_integrator: Option<Box<SPPMIntegrator>> = None;
+                    // if api_state.render_options.integrator_name == "whitted" {
+                    //     let max_depth: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("maxdepth", 5);
+                    //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    //     let integrator =
+                    //         Box::new(WhittedIntegrator::new(max_depth as u32, pixel_bounds));
+                    //     some_integrator = Some(integrator);
+                    // } else if api_state.render_options.integrator_name == "directlighting" {
+                    //     // CreateDirectLightingIntegrator
+                    //     let max_depth: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("maxdepth", 5);
+                    //     let st: String = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_string("strategy", String::from("all"));
+                    //     let strategy: LightStrategy;
+                    //     if st == "one" {
+                    //         strategy = LightStrategy::UniformSampleOne;
+                    //     } else if st == "all" {
+                    //         strategy = LightStrategy::UniformSampleAll;
+                    //     } else {
+                    //         panic!("Strategy \"{}\" for direct lighting unknown.", st);
+                    //     }
+                    //     // TODO: const int *pb = params.FindInt("pixelbounds", &np);
+                    //     let xres: i32 = api_state
+                    //         .render_options
+                    //         .film_params
+                    //         .find_one_int("xresolution", 1280);
+                    //     let yres: i32 = api_state
+                    //         .render_options
+                    //         .film_params
+                    //         .find_one_int("yresolution", 720);
+                    //     let pixel_bounds: Bounds2i = Bounds2i {
+                    //         p_min: Point2i { x: 0, y: 0 },
+                    //         p_max: Point2i { x: xres, y: yres },
+                    //     };
+                    //     let integrator = Box::new(DirectLightingIntegrator::new(
+                    //         strategy,
+                    //         max_depth as u32,
+                    //         pixel_bounds,
+                    //     ));
+                    //     some_integrator = Some(integrator);
+                    // } else if api_state.render_options.integrator_name == "path" {
+                    //     // CreatePathIntegrator
+                    //     let max_depth: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("maxdepth", 5);
+                    //     let pb: Vec<i32> = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_int("pixelbounds");
+                    //     let np: usize = pb.len();
+                    //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    //     if np > 0 as usize {
+                    //         if np != 4 as usize {
+                    //             panic!(
+                    //                 "Expected four values for \"pixelbounds\" parameter. Got {}.",
+                    //                 np
+                    //             );
+                    //         } else {
+                    //             println!("TODO: pixelBounds = Intersect(...)");
+                    //             // pixelBounds = Intersect(pixelBounds,
+                    //             //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
+                    //             // if (pixelBounds.Area() == 0)
+                    //             //     Error("Degenerate \"pixelbounds\" specified.");
+                    //         }
+                    //     }
+                    //     let rr_threshold: Float = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_float("rrthreshold", 1.0 as Float);
+                    //     let light_strategy: String = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_string("lightsamplestrategy", String::from("spatial"));
+                    //     let integrator = Box::new(PathIntegrator::new(
+                    //         max_depth as u32,
+                    //         pixel_bounds,
+                    //         rr_threshold,
+                    //         light_strategy,
+                    //     ));
+                    //     some_integrator = Some(integrator);
+                    // } else if api_state.render_options.integrator_name == "volpath" {
+                    //     // CreateVolPathIntegrator
+                    //     let max_depth: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("maxdepth", 5);
+                    //     let pb: Vec<i32> = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_int("pixelbounds");
+                    //     let np: usize = pb.len();
+                    //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    //     if np > 0 as usize {
+                    //         if np != 4 as usize {
+                    //             panic!(
+                    //                 "Expected four values for \"pixelbounds\" parameter. Got {}.",
+                    //                 np
+                    //             );
+                    //         } else {
+                    //             println!("TODO: pixelBounds = Intersect(...)");
+                    //             // pixelBounds = Intersect(pixelBounds,
+                    //             //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
+                    //             // if (pixelBounds.Area() == 0)
+                    //             //     Error("Degenerate \"pixelbounds\" specified.");
+                    //         }
+                    //     }
+                    //     let rr_threshold: Float = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_float("rrthreshold", 1.0 as Float);
+                    //     let light_strategy: String = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_string("lightsamplestrategy", String::from("spatial"));
+                    //     let integrator = Box::new(VolPathIntegrator::new(
+                    //         max_depth as u32,
+                    //         pixel_bounds,
+                    //         rr_threshold,
+                    //         light_strategy,
+                    //     ));
+                    //     some_integrator = Some(integrator);
+                    // } else if api_state.render_options.integrator_name == "bdpt" {
+                    //     // CreateBDPTIntegrator
+                    //     let mut max_depth: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("maxdepth", 5);
+                    //     let visualize_strategies: bool = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_bool("visualizestrategies", false);
+                    //     let visualize_weights: bool = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_bool("visualizeweights", false);
+                    //     if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
+                    //         println!("WARNING: visualizestrategies/visualizeweights was enabled, limiting maxdepth to 5");
+                    //         max_depth = 5;
+                    //     }
+                    //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    //     let light_strategy: String = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_string("lightsamplestrategy", String::from("power"));
+                    //     let integrator = Box::new(BDPTIntegrator::new(
+                    //         max_depth as u32,
+                    //         // visualize_strategies,
+                    //         // visualize_weights,
+                    //         pixel_bounds,
+                    //         light_strategy,
+                    //     ));
+                    //     some_bdpt_integrator = Some(integrator);
+                    // } else if api_state.render_options.integrator_name == "mlt" {
+                    //     // CreateMLTIntegrator
+                    //     let max_depth: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("maxdepth", 5);
+                    //     let n_bootstrap: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("bootstrapsamples", 100000);
+                    //     let n_chains: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("chains", 1000);
+                    //     let mutations_per_pixel: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("mutationsperpixel", 100);
+                    //     let large_step_probability: Float = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_float("largestepprobability", 0.3 as Float);
+                    //     let sigma: Float = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_float("sigma", 0.01 as Float);
+                    //     let integrator = Box::new(MLTIntegrator::new(
+                    //         camera.clone(),
+                    //         max_depth as u32,
+                    //         n_bootstrap as u32,
+                    //         n_chains as u32,
+                    //         mutations_per_pixel as u32,
+                    //         sigma,
+                    //         large_step_probability,
+                    //     ));
+                    //     some_mlt_integrator = Some(integrator);
+                    // } else if api_state.render_options.integrator_name == "ambientocclusion" {
+                    //     // CreateAOIntegrator
+                    //     let pb: Vec<i32> = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_int("pixelbounds");
+                    //     let np: usize = pb.len();
+                    //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    //     if np > 0 as usize {
+                    //         if np != 4 as usize {
+                    //             panic!(
+                    //                 "Expected four values for \"pixelbounds\" parameter. Got {}.",
+                    //                 np
+                    //             );
+                    //         } else {
+                    //             println!("TODO: pixelBounds = Intersect(...)");
+                    //             // pixelBounds = Intersect(pixelBounds,
+                    //             //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
+                    //             // if (pixelBounds.Area() == 0)
+                    //             //     Error("Degenerate \"pixelbounds\" specified.");
+                    //         }
+                    //     }
+                    //     let cos_sample: bool = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_bool("cossample", true);
+                    //     let n_samples: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("nsamples", 64 as i32);
+                    //     let integrator = Box::new(AOIntegrator::new(
+                    //         cos_sample,
+                    //         n_samples,
+                    //         &camera,
+                    //         &mut sampler,
+                    //         pixel_bounds,
+                    //     ));
+                    //     some_integrator = Some(integrator);
+                    // } else if api_state.render_options.integrator_name == "sppm" {
+                    //     // CreateSPPMIntegrator
+                    //     let mut n_iterations: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("numiterations", 64);
+                    //     n_iterations = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("iterations", n_iterations);
+                    //     let max_depth: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("maxdepth", 5);
+                    //     let photons_per_iter: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("photonsperiteration", -1);
+                    //     let write_freq: i32 = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_int("imagewritefrequency", 1 << 31);
+                    //     let radius: Float = api_state
+                    //         .render_options
+                    //         .integrator_params
+                    //         .find_one_float("radius", 1.0 as Float);
+                    //     // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
+                    //     let integrator = Box::new(SPPMIntegrator::new(
+                    //         camera.clone(),
+                    //         n_iterations,
+                    //         photons_per_iter,
+                    //         max_depth as u32,
+                    //         radius,
+                    //         write_freq,
+                    //     ));
+                    //     some_sppm_integrator = Some(integrator);
+                    // } else {
+                    //     panic!(
+                    //         "Integrator \"{}\" unknown.",
+                    //         api_state.render_options.integrator_name
+                    //     );
+                    // }
                     if api_state.render_options.have_scattering_media
                         && api_state.render_options.integrator_name != String::from("volpath")
                         && api_state.render_options.integrator_name != String::from("bdpt")
                         && api_state.render_options.integrator_name != String::from("mlt")
                     {
-                        print!("WARNING: Scene has scattering media but \"{}\" integrator doesn't support ",
-                               api_state.render_options.integrator_name);
+                        print!(
+                            "WARNING: Scene has scattering media but \"{}\" ",
+                            api_state.render_options.integrator_name
+                        );
+                        print!("integrator doesn't support ");
                         print!("volume scattering. Consider using \"volpath\", \"bdpt\", or ");
                         println!("\"mlt\".");
                     }
@@ -2354,174 +2362,174 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
                                 api_state.render_options.accelerator_name
                             );
                         }
-                    } else if let Some(mut integrator) = some_bdpt_integrator {
-                        // because we can't call
-                        // integrator.render() yet,
-                        // let us repeat some code and
-                        // call render_bdpt(...)
-                        // instead:
+                    // } else if let Some(mut integrator) = some_bdpt_integrator {
+                    //     // because we can't call
+                    //     // integrator.render() yet,
+                    //     // let us repeat some code and
+                    //     // call render_bdpt(...)
+                    //     // instead:
 
-                        // MakeIntegrator
-                        // TODO: if (renderOptions->haveScatteringMedia && ...)
-                        if api_state.render_options.lights.is_empty() {
-                            // warn if no light sources are defined
-                            println!(
-                            "WARNING: No light sources defined in scene; rendering a black image.",
-                        );
-                        }
-                        // MakeAccelerator
-                        if api_state.render_options.accelerator_name == "bvh" {
-                            //  CreateBVHAccelerator
-                            let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
-                                api_state.render_options.primitives.clone(),
-                                &api_state.render_options.accelerator_params,
-                            ));
-                            // MakeScene
-                            let scene: Scene =
-                                Scene::new(accelerator, api_state.render_options.lights.clone());
-                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                            // TODO: lights.erase(lights.begin(), lights.end());
-                            let num_threads: u8 = api_state.number_of_threads;
-                            render_bdpt(
-                                &scene,
-                                &camera,
-                                &mut sampler,
-                                &mut integrator,
-                                num_threads,
-                            );
-                        } else if api_state.render_options.accelerator_name == "kdtree" {
-                            // CreateKdTreeAccelerator
-                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
-                                api_state.render_options.primitives.clone(),
-                                &api_state.render_options.accelerator_params,
-                            ));
-                            // MakeScene
-                            let scene: Scene =
-                                Scene::new(accelerator, api_state.render_options.lights.clone());
-                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                            // TODO: lights.erase(lights.begin(), lights.end());
-                            let num_threads: u8 = api_state.number_of_threads;
-                            render_bdpt(
-                                &scene,
-                                &camera,
-                                &mut sampler,
-                                &mut integrator,
-                                num_threads,
-                            );
-                        } else {
-                            panic!(
-                                "Accelerator \"{}\" unknown.",
-                                api_state.render_options.accelerator_name
-                            );
-                        }
-                    } else if let Some(mut integrator) = some_mlt_integrator {
-                        // because we can't call
-                        // integrator.render() yet,
-                        // let us repeat some code and
-                        // call render_mlt(...)
-                        // instead:
+                    //     // MakeIntegrator
+                    //     // TODO: if (renderOptions->haveScatteringMedia && ...)
+                    //     if api_state.render_options.lights.is_empty() {
+                    //         // warn if no light sources are defined
+                    //         println!(
+                    //         "WARNING: No light sources defined in scene; rendering a black image.",
+                    //     );
+                    //     }
+                    //     // MakeAccelerator
+                    //     if api_state.render_options.accelerator_name == "bvh" {
+                    //         //  CreateBVHAccelerator
+                    //         let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
+                    //             api_state.render_options.primitives.clone(),
+                    //             &api_state.render_options.accelerator_params,
+                    //         ));
+                    //         // MakeScene
+                    //         let scene: Scene =
+                    //             Scene::new(accelerator, api_state.render_options.lights.clone());
+                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
+                    //         // TODO: lights.erase(lights.begin(), lights.end());
+                    //         let num_threads: u8 = api_state.number_of_threads;
+                    //         render_bdpt(
+                    //             &scene,
+                    //             &camera,
+                    //             &mut sampler,
+                    //             &mut integrator,
+                    //             num_threads,
+                    //         );
+                    //     } else if api_state.render_options.accelerator_name == "kdtree" {
+                    //         // CreateKdTreeAccelerator
+                    //         let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
+                    //             api_state.render_options.primitives.clone(),
+                    //             &api_state.render_options.accelerator_params,
+                    //         ));
+                    //         // MakeScene
+                    //         let scene: Scene =
+                    //             Scene::new(accelerator, api_state.render_options.lights.clone());
+                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
+                    //         // TODO: lights.erase(lights.begin(), lights.end());
+                    //         let num_threads: u8 = api_state.number_of_threads;
+                    //         render_bdpt(
+                    //             &scene,
+                    //             &camera,
+                    //             &mut sampler,
+                    //             &mut integrator,
+                    //             num_threads,
+                    //         );
+                    //     } else {
+                    //         panic!(
+                    //             "Accelerator \"{}\" unknown.",
+                    //             api_state.render_options.accelerator_name
+                    //         );
+                    //     }
+                    // } else if let Some(mut integrator) = some_mlt_integrator {
+                    //     // because we can't call
+                    //     // integrator.render() yet,
+                    //     // let us repeat some code and
+                    //     // call render_mlt(...)
+                    //     // instead:
 
-                        // MakeIntegrator
-                        // TODO: if (renderOptions->haveScatteringMedia && ...)
-                        if api_state.render_options.lights.is_empty() {
-                            // warn if no light sources are defined
-                            println!(
-                            "WARNING: No light sources defined in scene; rendering a black image.",
-                        );
-                        }
-                        // MakeAccelerator
-                        if api_state.render_options.accelerator_name == "bvh" {
-                            //  CreateBVHAccelerator
-                            let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
-                                api_state.render_options.primitives.clone(),
-                                &api_state.render_options.accelerator_params,
-                            ));
-                            // MakeScene
-                            let scene: Scene =
-                                Scene::new(accelerator, api_state.render_options.lights.clone());
-                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                            // TODO: lights.erase(lights.begin(), lights.end());
-                            let num_threads: u8 = api_state.number_of_threads;
-                            render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                        } else if api_state.render_options.accelerator_name == "kdtree" {
-                            // CreateKdTreeAccelerator
-                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
-                                api_state.render_options.primitives.clone(),
-                                &api_state.render_options.accelerator_params,
-                            ));
-                            // MakeScene
-                            let scene: Scene =
-                                Scene::new(accelerator, api_state.render_options.lights.clone());
-                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                            // TODO: lights.erase(lights.begin(), lights.end());
-                            let num_threads: u8 = api_state.number_of_threads;
-                            render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
-                        } else {
-                            panic!(
-                                "Accelerator \"{}\" unknown.",
-                                api_state.render_options.accelerator_name
-                            );
-                        }
-                    } else if let Some(mut integrator) = some_sppm_integrator {
-                        // because we can't call
-                        // integrator.render() yet,
-                        // let us repeat some code and
-                        // call render_sppm(...)
-                        // instead:
+                    //     // MakeIntegrator
+                    //     // TODO: if (renderOptions->haveScatteringMedia && ...)
+                    //     if api_state.render_options.lights.is_empty() {
+                    //         // warn if no light sources are defined
+                    //         println!(
+                    //         "WARNING: No light sources defined in scene; rendering a black image.",
+                    //     );
+                    //     }
+                    //     // MakeAccelerator
+                    //     if api_state.render_options.accelerator_name == "bvh" {
+                    //         //  CreateBVHAccelerator
+                    //         let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
+                    //             api_state.render_options.primitives.clone(),
+                    //             &api_state.render_options.accelerator_params,
+                    //         ));
+                    //         // MakeScene
+                    //         let scene: Scene =
+                    //             Scene::new(accelerator, api_state.render_options.lights.clone());
+                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
+                    //         // TODO: lights.erase(lights.begin(), lights.end());
+                    //         let num_threads: u8 = api_state.number_of_threads;
+                    //         render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                    //     } else if api_state.render_options.accelerator_name == "kdtree" {
+                    //         // CreateKdTreeAccelerator
+                    //         let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
+                    //             api_state.render_options.primitives.clone(),
+                    //             &api_state.render_options.accelerator_params,
+                    //         ));
+                    //         // MakeScene
+                    //         let scene: Scene =
+                    //             Scene::new(accelerator, api_state.render_options.lights.clone());
+                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
+                    //         // TODO: lights.erase(lights.begin(), lights.end());
+                    //         let num_threads: u8 = api_state.number_of_threads;
+                    //         render_mlt(&scene, &camera, &mut sampler, &mut integrator, num_threads);
+                    //     } else {
+                    //         panic!(
+                    //             "Accelerator \"{}\" unknown.",
+                    //             api_state.render_options.accelerator_name
+                    //         );
+                    //     }
+                    // } else if let Some(mut integrator) = some_sppm_integrator {
+                    //     // because we can't call
+                    //     // integrator.render() yet,
+                    //     // let us repeat some code and
+                    //     // call render_sppm(...)
+                    //     // instead:
 
-                        // MakeIntegrator
-                        // TODO: if (renderOptions->haveScatteringMedia && ...)
-                        if api_state.render_options.lights.is_empty() {
-                            // warn if no light sources are defined
-                            println!(
-                            "WARNING: No light sources defined in scene; rendering a black image.",
-                        );
-                        }
-                        // MakeAccelerator
-                        if api_state.render_options.accelerator_name == "bvh" {
-                            //  CreateBVHAccelerator
-                            let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
-                                api_state.render_options.primitives.clone(),
-                                &api_state.render_options.accelerator_params,
-                            ));
-                            // MakeScene
-                            let scene: Scene =
-                                Scene::new(accelerator, api_state.render_options.lights.clone());
-                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                            // TODO: lights.erase(lights.begin(), lights.end());
-                            let num_threads: u8 = api_state.number_of_threads;
-                            render_sppm(
-                                &scene,
-                                &camera,
-                                &mut sampler,
-                                &mut integrator,
-                                num_threads,
-                            );
-                        } else if api_state.render_options.accelerator_name == "kdtree" {
-                            // CreateKdTreeAccelerator
-                            let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
-                                api_state.render_options.primitives.clone(),
-                                &api_state.render_options.accelerator_params,
-                            ));
-                            // MakeScene
-                            let scene: Scene =
-                                Scene::new(accelerator, api_state.render_options.lights.clone());
-                            // TODO: primitives.erase(primitives.begin(), primitives.end());
-                            // TODO: lights.erase(lights.begin(), lights.end());
-                            let num_threads: u8 = api_state.number_of_threads;
-                            render_sppm(
-                                &scene,
-                                &camera,
-                                &mut sampler,
-                                &mut integrator,
-                                num_threads,
-                            );
-                        } else {
-                            panic!(
-                                "Accelerator \"{}\" unknown.",
-                                api_state.render_options.accelerator_name
-                            );
-                        }
+                    //     // MakeIntegrator
+                    //     // TODO: if (renderOptions->haveScatteringMedia && ...)
+                    //     if api_state.render_options.lights.is_empty() {
+                    //         // warn if no light sources are defined
+                    //         println!(
+                    //         "WARNING: No light sources defined in scene; rendering a black image.",
+                    //     );
+                    //     }
+                    //     // MakeAccelerator
+                    //     if api_state.render_options.accelerator_name == "bvh" {
+                    //         //  CreateBVHAccelerator
+                    //         let accelerator: Arc<Primitive> = Arc::new(BVHAccel::create(
+                    //             api_state.render_options.primitives.clone(),
+                    //             &api_state.render_options.accelerator_params,
+                    //         ));
+                    //         // MakeScene
+                    //         let scene: Scene =
+                    //             Scene::new(accelerator, api_state.render_options.lights.clone());
+                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
+                    //         // TODO: lights.erase(lights.begin(), lights.end());
+                    //         let num_threads: u8 = api_state.number_of_threads;
+                    //         render_sppm(
+                    //             &scene,
+                    //             &camera,
+                    //             &mut sampler,
+                    //             &mut integrator,
+                    //             num_threads,
+                    //         );
+                    //     } else if api_state.render_options.accelerator_name == "kdtree" {
+                    //         // CreateKdTreeAccelerator
+                    //         let accelerator: Arc<Primitive> = Arc::new(KdTreeAccel::create(
+                    //             api_state.render_options.primitives.clone(),
+                    //             &api_state.render_options.accelerator_params,
+                    //         ));
+                    //         // MakeScene
+                    //         let scene: Scene =
+                    //             Scene::new(accelerator, api_state.render_options.lights.clone());
+                    //         // TODO: primitives.erase(primitives.begin(), primitives.end());
+                    //         // TODO: lights.erase(lights.begin(), lights.end());
+                    //         let num_threads: u8 = api_state.number_of_threads;
+                    //         render_sppm(
+                    //             &scene,
+                    //             &camera,
+                    //             &mut sampler,
+                    //             &mut integrator,
+                    //             num_threads,
+                    //         );
+                    //     } else {
+                    //         panic!(
+                    //             "Accelerator \"{}\" unknown.",
+                    //             api_state.render_options.accelerator_name
+                    //         );
+                    //     }
                     } else {
                         panic!("Unable to create integrator.");
                     }
