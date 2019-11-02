@@ -18,22 +18,22 @@ use crate::core::scene::Scene;
 // see ao.h
 
 /// Ambient Occlusion
-pub struct AOIntegrator<'c, 's> {
+pub struct AOIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
-    camera: &'c Arc<Camera>,
-    sampler: &'s mut Box<dyn Sampler + Send + Sync>,
+    camera: Arc<Camera>,
+    sampler: Box<dyn Sampler + Send + Sync>,
     pixel_bounds: Bounds2i,
     // see ao.h
     cos_sample: bool,
     n_samples: i32,
 }
 
-impl<'c, 's> AOIntegrator<'c, 's> {
+impl AOIntegrator {
     pub fn new(
         cos_sample: bool,
         n_samples: i32,
-        camera: &'c Arc<Camera>,
-        sampler: &'s mut Box<Sampler + Send + Sync>,
+        camera: Arc<Camera>,
+        sampler: Box<dyn Sampler + Send + Sync>,
         pixel_bounds: Bounds2i,
     ) -> Self {
         AOIntegrator {
@@ -46,7 +46,7 @@ impl<'c, 's> AOIntegrator<'c, 's> {
     }
 }
 
-impl<'c, 's> SamplerIntegrator for AOIntegrator<'c, 's> {
+impl SamplerIntegrator for AOIntegrator {
     fn preprocess(&mut self, _scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>) {
         sampler.request_2d_array(self.n_samples);
     }
