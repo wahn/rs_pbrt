@@ -280,8 +280,19 @@ impl RenderOptions {
         }
         some_integrator
     }
-    //     pub fn make_scene(&self) -> Scene {
-    //     }
+    pub fn make_scene(&self) -> Option<Arc<Scene>> {
+        let some_scene: Option<Arc<Scene>> = None;
+        let some_accelerator = make_accelerator(
+            &self.accelerator_name,
+            &self.primitives,
+            &self.accelerator_params,
+        );
+        if let Some(accelerator) = some_accelerator {
+        } else {
+            panic!("Unable to create accelerator.");
+        }
+        some_scene
+    }
     pub fn make_camera(&self) -> Option<Arc<Camera>> {
         let mut some_camera: Option<Arc<Camera>> = None;
         let some_filter = make_filter(&self.filter_name, &self.filter_params);
@@ -1396,6 +1407,16 @@ fn make_texture(api_state: &mut ApiState) {
     // MakeSpectrumTexture(texname, curTransform[0], tp);
 }
 
+pub fn make_accelerator(
+    accelerator_name: &String,
+    primitives: &Vec<Arc<Primitive>>,
+    accelerator_params: &ParamSet,
+) -> Option<Arc<Primitive>> {
+    let some_accelerator: Option<Arc<Primitive>> = None;
+    // WORK
+    some_accelerator
+}
+
 pub fn make_camera(
     camera_name: &String,
     camera_params: &ParamSet,
@@ -2105,6 +2126,16 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
     // MakeIntegrator
     let mut some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>> =
         api_state.render_options.make_integrator();
+    if let Some(mut integrator) = some_integrator {
+        let mut some_scene = api_state.render_options.make_scene();
+        if let Some(mut scene) = some_scene {
+            // integrator.render(scene);
+        } else {
+            panic!("Unable to create scene.");
+        }
+    } else {
+        panic!("Unable to create integrator.");
+    }
     // let mut some_bdpt_integrator: Option<Box<BDPTIntegrator>> = None;
     // let mut some_mlt_integrator: Option<Box<MLTIntegrator>> = None;
     // let mut some_sppm_integrator: Option<Box<SPPMIntegrator>> = None;
