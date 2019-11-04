@@ -1834,7 +1834,7 @@ where
         y: b.p_max.y.max(p.y),
         z: b.p_max.z.max(p.z),
     };
-    Bounds3::new(p_min, p_max)
+    Bounds3 { p_min, p_max }
 }
 
 /// Construct a new box that bounds the space encompassed by two other
@@ -1853,7 +1853,7 @@ where
         y: b1.p_max.y.max(b2.p_max.y),
         z: b1.p_max.z.max(b2.p_max.z),
     };
-    Bounds3::new(p_min, p_max)
+    Bounds3 {p_min, p_max }
 }
 
 /// Determine if a given point is inside the bounding box.
