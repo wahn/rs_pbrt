@@ -61,7 +61,7 @@
 // std
 use std::sync::Arc;
 // pbrt
-use crate::blockqueue::BlockQueue;
+// use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
 use crate::core::geometry::pnt2_inside_exclusive;
 use crate::core::geometry::{Bounds2i, Point2i, Ray, Vector2i};

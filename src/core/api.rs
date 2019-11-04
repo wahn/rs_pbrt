@@ -258,7 +258,7 @@ impl RenderOptions {
                     }
                     let cos_sample: bool = self.integrator_params.find_one_bool("cossample", true);
                     let n_samples: i32 = self.integrator_params.find_one_int("nsamples", 64 as i32);
-                    let integrator = Box::new(AOIntegrator::new(
+                    let mut integrator = Box::new(AOIntegrator::new(
                         cos_sample,
                         n_samples,
                         camera,
@@ -280,19 +280,17 @@ impl RenderOptions {
         }
         some_integrator
     }
-    pub fn make_scene(&self) -> Option<Arc<Scene>> {
-        let mut some_scene: Option<Arc<Scene>> = None;
+    pub fn make_scene(&self) -> Scene {
         let some_accelerator = make_accelerator(
             &self.accelerator_name,
             &self.primitives,
             &self.accelerator_params,
         );
         if let Some(accelerator) = some_accelerator {
-            some_scene = Some(Arc::new(Scene::new(accelerator, self.lights.clone())));
+            return Scene::new(accelerator, self.lights.clone());
         } else {
             panic!("Unable to create accelerator.");
         }
-        some_scene
     }
     pub fn make_camera(&self) -> Option<Arc<Camera>> {
         let mut some_camera: Option<Arc<Camera>> = None;
@@ -2137,15 +2135,11 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
     //             );
     //             if let Some(mut sampler) = some_sampler {
     // MakeIntegrator
-    let mut some_integrator: Option<Box<AOIntegrator>> =
-        api_state.render_options.make_integrator();
+    let mut some_integrator: Option<Box<AOIntegrator>> = api_state.render_options.make_integrator();
     if let Some(mut integrator) = some_integrator {
-        let mut some_scene = api_state.render_options.make_scene();
-        if let Some(mut scene) = some_scene {
-            integrator.render(scene);
-        } else {
-            panic!("Unable to create scene.");
-        }
+        let scene = api_state.render_options.make_scene();
+        let num_threads: u8 = api_state.number_of_threads;
+        integrator.render(&scene, num_threads);
     } else {
         panic!("Unable to create integrator.");
     }
