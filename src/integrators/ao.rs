@@ -4,7 +4,7 @@ use std::sync::Arc;
 use crate::core::camera::Camera;
 use crate::core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm};
 use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
-use crate::core::integrator::SamplerIntegrator;
+// use crate::core::integrator::SamplerIntegrator;
 use crate::core::interaction::Interaction;
 use crate::core::material::TransportMode;
 use crate::core::pbrt::{Float, Spectrum};
@@ -20,12 +20,12 @@ use crate::core::scene::Scene;
 /// Ambient Occlusion
 pub struct AOIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
-    camera: Arc<Camera>,
-    sampler: Box<dyn Sampler + Send + Sync>,
-    pixel_bounds: Bounds2i,
+    pub camera: Arc<Camera>,
+    pub sampler: Box<dyn Sampler + Send + Sync>,
+    pub pixel_bounds: Bounds2i,
     // see ao.h
-    cos_sample: bool,
-    n_samples: i32,
+    pub cos_sample: bool,
+    pub n_samples: i32,
 }
 
 impl AOIntegrator {
@@ -44,13 +44,13 @@ impl AOIntegrator {
             n_samples,
         }
     }
-}
-
-impl SamplerIntegrator for AOIntegrator {
-    fn preprocess(&mut self, _scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>) {
+    pub fn render(&mut self, scene: Arc<Scene>) {
+        println!("TODO: AOIntegrator::render()");
+    }
+    pub fn preprocess(&mut self, _scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>) {
         sampler.request_2d_array(self.n_samples);
     }
-    fn li(
+    pub fn li(
         &self,
         r: &mut Ray,
         scene: &Scene,
@@ -107,7 +107,7 @@ impl SamplerIntegrator for AOIntegrator {
         }
         l
     }
-    fn get_pixel_bounds(&self) -> Bounds2i {
+    pub fn get_pixel_bounds(&self) -> Bounds2i {
         self.pixel_bounds
     }
 }

@@ -44,17 +44,17 @@ use crate::filters::mitchell::MitchellNetravali;
 use crate::filters::sinc::LanczosSincFilter;
 use crate::filters::triangle::TriangleFilter;
 use crate::integrators::ao::AOIntegrator;
-use crate::integrators::bdpt::render_bdpt;
-use crate::integrators::bdpt::BDPTIntegrator;
-use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
-use crate::integrators::mlt::render_mlt;
-use crate::integrators::mlt::MLTIntegrator;
-use crate::integrators::path::PathIntegrator;
-use crate::integrators::render;
-use crate::integrators::sppm::render_sppm;
-use crate::integrators::sppm::SPPMIntegrator;
-use crate::integrators::volpath::VolPathIntegrator;
-use crate::integrators::whitted::WhittedIntegrator;
+// use crate::integrators::bdpt::render_bdpt;
+// use crate::integrators::bdpt::BDPTIntegrator;
+// use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+// use crate::integrators::mlt::render_mlt;
+// use crate::integrators::mlt::MLTIntegrator;
+// use crate::integrators::path::PathIntegrator;
+// use crate::integrators::render;
+// use crate::integrators::sppm::render_sppm;
+// use crate::integrators::sppm::SPPMIntegrator;
+// use crate::integrators::volpath::VolPathIntegrator;
+// use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
 use crate::lights::distant::DistantLight;
 use crate::lights::goniometric::GonioPhotometricLight;
@@ -212,8 +212,8 @@ pub struct RenderOptions {
 }
 
 impl RenderOptions {
-    pub fn make_integrator(&self) -> Option<Box<dyn SamplerIntegrator + Send + Sync>> {
-        let mut some_integrator: Option<Box<dyn SamplerIntegrator + Send + Sync>> = None;
+    pub fn make_integrator(&self) -> Option<Box<AOIntegrator>> {
+        let mut some_integrator: Option<Box<AOIntegrator>> = None;
         let some_camera: Option<Arc<Camera>> = self.make_camera();
         if let Some(camera) = some_camera {
             let some_sampler: Option<Box<dyn Sampler + Sync + Send>> =
@@ -281,13 +281,14 @@ impl RenderOptions {
         some_integrator
     }
     pub fn make_scene(&self) -> Option<Arc<Scene>> {
-        let some_scene: Option<Arc<Scene>> = None;
+        let mut some_scene: Option<Arc<Scene>> = None;
         let some_accelerator = make_accelerator(
             &self.accelerator_name,
             &self.primitives,
             &self.accelerator_params,
         );
         if let Some(accelerator) = some_accelerator {
+            some_scene = Some(Arc::new(Scene::new(accelerator, self.lights.clone())));
         } else {
             panic!("Unable to create accelerator.");
         }
@@ -1412,8 +1413,20 @@ pub fn make_accelerator(
     primitives: &Vec<Arc<Primitive>>,
     accelerator_params: &ParamSet,
 ) -> Option<Arc<Primitive>> {
-    let some_accelerator: Option<Arc<Primitive>> = None;
-    // WORK
+    let mut some_accelerator: Option<Arc<Primitive>> = None;
+    if accelerator_name == "bvh" {
+        // CreateBVHAccelerator
+        some_accelerator = Some(Arc::new(BVHAccel::create(
+            primitives.clone(),
+            accelerator_params,
+        )));
+    } else if accelerator_name == "kdtree" {
+        // CreateKdTreeAccelerator
+        some_accelerator = Some(Arc::new(KdTreeAccel::create(
+            primitives.clone(),
+            accelerator_params,
+        )));
+    }
     some_accelerator
 }
 
@@ -2124,12 +2137,12 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
     //             );
     //             if let Some(mut sampler) = some_sampler {
     // MakeIntegrator
-    let mut some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>> =
+    let mut some_integrator: Option<Box<AOIntegrator>> =
         api_state.render_options.make_integrator();
     if let Some(mut integrator) = some_integrator {
         let mut some_scene = api_state.render_options.make_scene();
         if let Some(mut scene) = some_scene {
-            // integrator.render(scene);
+            integrator.render(scene);
         } else {
             panic!("Unable to create scene.");
         }
