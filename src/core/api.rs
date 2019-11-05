@@ -1723,9 +1723,9 @@ fn get_shapes_and_materials(
             p_ws.push(obj_to_world.transform_point(&p[i]));
         }
         // vertex indices are expected as usize, not i32
-        let mut vertex_indices: Vec<usize> = Vec::new();
+        let mut vertex_indices: Vec<u32> = Vec::new();
         for i in 0..vi.len() {
-            vertex_indices.push(vi[i] as usize);
+            vertex_indices.push(vi[i] as u32);
         }
         let mesh = Arc::new(TriangleMesh::new(
             obj_to_world,
@@ -1733,7 +1733,7 @@ fn get_shapes_and_materials(
             api_state.graphics_state.reverse_orientation,
             (vi.len() / 3).try_into().unwrap(), // n_triangles
             vertex_indices,
-            n_vertices,
+            n_vertices.try_into().unwrap(),
             p_ws, // in world space
             s_ws, // in world space
             n_ws, // in world space
@@ -1949,16 +1949,16 @@ fn get_shapes_and_materials(
         }
         // generate points-polygons mesh
         let n_tris: usize = 2 * (diceu - 1) * (dicev - 1);
-        let mut vertices: Vec<usize> = Vec::with_capacity(3 * n_tris);
+        let mut vertices: Vec<u32> = Vec::with_capacity(3 * n_tris);
         // compute the vertex offset numbers for the triangles
         for v in 0_usize..(dicev - 1) as usize {
             for u in 0_usize..(diceu - 1) as usize {
-                vertices.push(v * diceu + u);
-                vertices.push(v * diceu + u + 1);
-                vertices.push((v + 1) * diceu + u + 1);
-                vertices.push(v * diceu + u);
-                vertices.push((v + 1) * diceu + u + 1);
-                vertices.push((v + 1) * diceu + u);
+                vertices.push((v * diceu + u).try_into().unwrap());
+                vertices.push((v * diceu + u + 1).try_into().unwrap());
+                vertices.push(((v + 1) * diceu + u + 1).try_into().unwrap());
+                vertices.push((v * diceu + u).try_into().unwrap());
+                vertices.push(((v + 1) * diceu + u + 1).try_into().unwrap());
+                vertices.push(((v + 1) * diceu + u).try_into().unwrap());
             }
         }
         // transform mesh vertices to world space
@@ -1979,7 +1979,7 @@ fn get_shapes_and_materials(
             api_state.graphics_state.reverse_orientation,
             n_tris.try_into().unwrap(), // n_triangles
             vertices,
-            n_vertices,
+            n_vertices.try_into().unwrap(),
             p_ws,       // in world space
             Vec::new(), // in world space
             n_ws,       // in world space

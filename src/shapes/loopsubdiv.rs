@@ -631,11 +631,11 @@ pub fn loop_subdivide(
     }
     // create triangle mesh from subdivision mesh
     let ntris: usize = faces.len();
-    let mut vertex_indices: Vec<usize> = Vec::with_capacity(3 * ntris);
+    let mut vertex_indices: Vec<u32> = Vec::with_capacity(3 * ntris);
     let tot_verts: usize = verts.len();
     for i in 0..ntris {
         for j in 0..3_usize {
-            vertex_indices.push(faces[i].v[j] as usize);
+            vertex_indices.push(faces[i].v[j] as u32);
         }
     }
     // transform mesh vertices to world space
@@ -656,7 +656,7 @@ pub fn loop_subdivide(
         reverse_orientation,
         ntris.try_into().unwrap(),
         vertex_indices,
-        tot_verts,
+        tot_verts.try_into().unwrap(),
         p_ws, // in world space
         Vec::new(),
         n_ws, // in world space
