@@ -42,6 +42,7 @@ use pbrt::textures::constant::ConstantTexture;
 // use pbrt::integrators::ao::AOIntegrator;
 // std
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::env;
 use std::fs::File;
 use std::io::BufReader;
@@ -985,17 +986,17 @@ fn main() {
                                                 let n_ws: Vec<Normal3f> = Vec::new();
                                                 let uvs: Vec<Point2f> = Vec::new();
                                                 // vertex indices are expected as usize, not u32
-                                                let mut vertex_indices: Vec<usize> = Vec::new();
+                                                let mut vertex_indices: Vec<u32> = Vec::new();
                                                 for i in 0..vi_tri.len() {
-                                                    vertex_indices.push(vi_tri[i] as usize);
+                                                    vertex_indices.push(vi_tri[i] as u32);
                                                 }
                                                 let mesh = Arc::new(TriangleMesh::new(
                                                     obj_to_world,
                                                     world_to_obj,
                                                     false, // reverse_orientation,
-                                                    n_triangles,
+                                                    n_triangles.try_into().unwrap(),
                                                     vertex_indices,
-                                                    p_ws_len,
+                                                    p_ws_len as u32,
                                                     p_ws.clone(), // in world space
                                                     s_ws,         // in world space
                                                     n_ws,         // in world space

@@ -13,6 +13,7 @@
 
 // std
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::Read;
@@ -167,9 +168,9 @@ impl SceneDescriptionBuilder {
         base_name: String,
         object_to_world: Transform,
         world_to_object: Transform,
-        n_triangles: usize,
-        vertex_indices: Vec<usize>,
-        n_vertices: usize,
+        n_triangles: u32,
+        vertex_indices: Vec<u32>,
+        n_vertices: u32,
         p_ws: Vec<Point3f>,
         s: Vec<Vector3f>,
         n_ws: Vec<Normal3f>,
@@ -181,8 +182,8 @@ impl SceneDescriptionBuilder {
             object_to_world,
             world_to_object,
             false,
-            n_triangles,
-            vertex_indices,
+            n_triangles.try_into().unwrap(),
+            vertex_indices.try_into().unwrap(),
             n_vertices,
             p_ws, // in world space
             s,    // empty
@@ -706,7 +707,7 @@ fn read_mesh(
     n: &Vec<Normal3f>,
     uvs: &mut Vec<Point2f>,
     loops: &Vec<u8>,
-    vertex_indices: Vec<usize>,
+    vertex_indices: Vec<u32>,
     vertex_colors: Vec<u8>,
     is_smooth: bool,
     builder: &mut SceneDescriptionBuilder,
@@ -766,19 +767,19 @@ fn read_mesh(
     }
     let s: Vec<Vector3f> = Vec::new();
     let mut uv: Vec<Point2f> = Vec::new();
-    let mut new_vertex_indices: Vec<usize> = Vec::new();
+    let mut new_vertex_indices: Vec<u32> = Vec::new();
     if !uvs.is_empty() {
         let mut p_ws_vi: Vec<Point3f> = Vec::new();
-        let mut vertex_counter: usize = 0;
+        let mut vertex_counter: u32 = 0;
         for vi in &vertex_indices {
-            p_ws_vi.push(p_ws[*vi]);
+            p_ws_vi.push(p_ws[*vi as usize]);
             new_vertex_indices.push(vertex_counter);
             vertex_counter += 1;
         }
         if is_smooth {
             let mut n_ws_vi: Vec<Normal3f> = Vec::new();
             for vi in &vertex_indices {
-                n_ws_vi.push(n_ws[*vi]);
+                n_ws_vi.push(n_ws[*vi as usize]);
             }
             n_ws = n_ws_vi;
         }
@@ -823,9 +824,9 @@ fn read_mesh(
             base_name.clone(),
             *object_to_world,
             world_to_object,
-            n_triangles,
+            n_triangles.try_into().unwrap(),
             new_vertex_indices.clone(),
-            n_vertices,
+            n_vertices.try_into().unwrap(),
             p_ws, // in world space
             s,    // empty
             n_ws, // in world space
@@ -837,9 +838,9 @@ fn read_mesh(
             base_name.clone(),
             *object_to_world,
             world_to_object,
-            n_triangles,
+            n_triangles.try_into().unwrap(),
             vertex_indices.clone(),
-            n_vertices,
+            n_vertices.try_into().unwrap(),
             p_ws, // in world space
             s,    // empty
             n_ws, // in world space
@@ -942,7 +943,7 @@ fn main() -> std::io::Result<()> {
     let mut n: Vec<Normal3f> = Vec::new();
     let mut uvs: Vec<Point2f> = Vec::new();
     let mut loops: Vec<u8> = Vec::new();
-    let mut vertex_indices: Vec<usize> = Vec::new();
+    let mut vertex_indices: Vec<u32> = Vec::new();
     let mut vertex_colors: Vec<u8> = Vec::new();
     let mut hdr_path: OsString = OsString::new();
     // first get the DNA
@@ -2505,24 +2506,24 @@ fn main() -> std::io::Result<()> {
                                         // triangle
                                         for i in 0..3 {
                                             vertex_indices.push(
-                                                loop_indices[(loopstart + i) as usize] as usize,
+                                                loop_indices[(loopstart + i) as usize] as u32,
                                             );
                                         }
                                     } else if totloop == 4_u32 {
                                         loops.push(totloop as u8);
                                         // quads
                                         vertex_indices
-                                            .push(loop_indices[(loopstart + 0) as usize] as usize);
+                                            .push(loop_indices[(loopstart + 0) as usize] as u32);
                                         vertex_indices
-                                            .push(loop_indices[(loopstart + 1) as usize] as usize);
+                                            .push(loop_indices[(loopstart + 1) as usize] as u32);
                                         vertex_indices
-                                            .push(loop_indices[(loopstart + 2) as usize] as usize);
+                                            .push(loop_indices[(loopstart + 2) as usize] as u32);
                                         vertex_indices
-                                            .push(loop_indices[(loopstart + 0) as usize] as usize);
+                                            .push(loop_indices[(loopstart + 0) as usize] as u32);
                                         vertex_indices
-                                            .push(loop_indices[(loopstart + 2) as usize] as usize);
+                                            .push(loop_indices[(loopstart + 2) as usize] as u32);
                                         vertex_indices
-                                            .push(loop_indices[(loopstart + 3) as usize] as usize);
+                                            .push(loop_indices[(loopstart + 3) as usize] as u32);
                                     } else {
                                         println!(
                                             "WARNING: quads or triangles expected (totloop = {}): {:?}",
