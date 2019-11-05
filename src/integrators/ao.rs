@@ -4,7 +4,6 @@ use std::sync::Arc;
 use crate::core::camera::{Camera, CameraSample};
 use crate::core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm};
 use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Point2i, Ray, Vector2i, Vector3f};
-// use crate::core::integrator::SamplerIntegrator;
 use crate::blockqueue::BlockQueue;
 use crate::core::geometry::pnt2_inside_exclusive;
 use crate::core::interaction::Interaction;

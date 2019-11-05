@@ -5,8 +5,8 @@
 use std;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
-use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Ray, RayDifferential, Vector3f};
+use crate::core::geometry::vec3_abs_dot_nrm;
+use crate::core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::light::is_delta_light;
 use crate::core::light::{Light, VisibilityTester};
@@ -16,160 +16,77 @@ use crate::core::sampler::Sampler;
 use crate::core::sampling::power_heuristic;
 use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
+use crate::integrators::ao::AOIntegrator;
+use crate::integrators::directlighting::DirectLightingIntegrator;
 
 // see integrator.h
 
-pub trait SamplerIntegrator {
-    // TODO: use Sampler trait
-    fn preprocess(&mut self, scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>);
-    fn render(scene: &Scene);
-    /// Returns the incident radiance at the origin of a given
-    /// ray. Uses the scene's intersect routine to calculate a
-    /// **SurfaceInteraction** and spawns rays if necessary.
-    fn li(
+pub enum SamplerIntegrator {
+    AO(AOIntegrator),
+    DirectLighting(DirectLightingIntegrator),
+}
+
+impl SamplerIntegrator {
+    pub fn preprocess(&mut self, scene: &Scene) {
+        match self {
+            SamplerIntegrator::AO(integrator) => integrator.preprocess(scene),
+            SamplerIntegrator::DirectLighting(integrator) => integrator.preprocess(scene),
+        }
+    }
+    pub fn render(&mut self, scene: &Scene, num_threads: u8) {
+        match self {
+            SamplerIntegrator::AO(integrator) => integrator.render(scene, num_threads),
+            SamplerIntegrator::DirectLighting(integrator) => integrator.render(scene, num_threads),
+        }
+    }
+    pub fn li(
         &self,
         ray: &mut Ray,
         scene: &Scene,
         sampler: &mut Box<dyn Sampler + Send + Sync>,
-        // arena: &mut Arena,
-        depth: i32,
-    ) -> Spectrum;
-    fn get_pixel_bounds(&self) -> Bounds2i;
-    fn specular_reflect(
-        &self,
-        ray: &Ray,
-        isect: &SurfaceInteraction,
-        scene: &Scene,
-        sampler: &mut Box<dyn Sampler + Send + Sync>,
-        // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
-        // compute specular reflection direction _wi_ and BSDF value
-        let wo: Vector3f = isect.wo;
-        let mut wi: Vector3f = Vector3f::default();
-        let mut pdf: Float = 0.0 as Float;
-        let ns: Normal3f = isect.shading.n;
-        let mut sampled_type: u8 = 0_u8;
-        let bsdf_flags: u8 = BxdfType::BsdfReflection as u8 | BxdfType::BsdfSpecular as u8;
-        let f: Spectrum;
-        if let Some(ref bsdf) = isect.bsdf {
-            f = bsdf.sample_f(
-                &wo,
-                &mut wi,
-                &sampler.get_2d(),
-                &mut pdf,
-                bsdf_flags,
-                &mut sampled_type,
-            );
-            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(&wi, &ns) != 0.0 as Float {
-                // compute ray differential _rd_ for specular reflection
-                let mut rd: Ray = isect.spawn_ray(&wi);
-                if let Some(d) = ray.differential.iter().next() {
-                    let dudx: Float = *isect.dudx.read().unwrap();
-                    let dvdx: Float = *isect.dvdx.read().unwrap();
-                    let dndx: Normal3f = isect.shading.dndu * dudx + isect.shading.dndv * dvdx;
-                    let dudy: Float = *isect.dudy.read().unwrap();
-                    let dvdy: Float = *isect.dvdy.read().unwrap();
-                    let dndy: Normal3f = isect.shading.dndu * dudy + isect.shading.dndv * dvdy;
-                    let dwodx: Vector3f = -d.rx_direction - wo;
-                    let dwody: Vector3f = -d.ry_direction - wo;
-                    let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
-                    let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
-                    // compute differential reflected directions
-                    let dpdx: Vector3f = *isect.dpdx.read().unwrap();
-                    let dpdy: Vector3f = *isect.dpdy.read().unwrap();
-                    let diff: RayDifferential = RayDifferential {
-                        rx_origin: isect.p + dpdx,
-                        ry_origin: isect.p + dpdy,
-                        rx_direction: wi - dwodx
-                            + Vector3f::from(dndx * vec3_dot_nrm(&wo, &ns) + ns * ddndx)
-                                * 2.0 as Float,
-                        ry_direction: wi - dwody
-                            + Vector3f::from(dndy * vec3_dot_nrm(&wo, &ns) + ns * ddndy)
-                                * 2.0 as Float,
-                    };
-                    rd.differential = Some(diff);
-                }
-                return f
-                    * self.li(&mut rd, scene, sampler, depth + 1)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
-            } else {
-                Spectrum::new(0.0)
+        match self {
+            SamplerIntegrator::AO(integrator) => integrator.li(ray, scene, sampler, depth),
+            SamplerIntegrator::DirectLighting(integrator) => {
+                integrator.li(ray, scene, sampler, depth)
             }
-        } else {
-            Spectrum::new(0.0)
         }
     }
-    fn specular_transmit(
+    pub fn get_pixel_bounds(&self) -> Bounds2i {
+        match self {
+            SamplerIntegrator::AO(integrator) => integrator.get_pixel_bounds(),
+            SamplerIntegrator::DirectLighting(integrator) => integrator.get_pixel_bounds(),
+        }
+    }
+    pub fn specular_reflect(
         &self,
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
         sampler: &mut Box<dyn Sampler + Send + Sync>,
-        // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
-        let wo: Vector3f = isect.wo;
-        let mut wi: Vector3f = Vector3f::default();
-        let mut pdf: Float = 0.0 as Float;
-        // let p: Point3f = isect.p;
-        let ns: Normal3f = isect.shading.n;
-        let mut sampled_type: u8 = 0_u8;
-        let bsdf_flags: u8 = BxdfType::BsdfTransmission as u8 | BxdfType::BsdfSpecular as u8;
-        let f: Spectrum;
-        if let Some(ref bsdf) = isect.bsdf {
-            f = bsdf.sample_f(
-                &wo,
-                &mut wi,
-                &sampler.get_2d(),
-                &mut pdf,
-                bsdf_flags,
-                &mut sampled_type,
-            );
-            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(&wi, &ns) != 0.0 as Float {
-                // compute ray differential _rd_ for specular transmission
-                let mut rd: Ray = isect.spawn_ray(&wi);
-                if let Some(d) = ray.differential.iter().next() {
-                    let mut eta: Float = bsdf.eta;
-                    let w: Vector3f = -wo;
-                    if vec3_dot_nrm(&wo, &ns) < 0.0 as Float {
-                        eta = 1.0 / eta;
-                    }
-                    let dudx: Float = *isect.dudx.read().unwrap();
-                    let dvdx: Float = *isect.dvdx.read().unwrap();
-                    let dndx: Normal3f = isect.shading.dndu * dudx + isect.shading.dndv * dvdx;
-                    let dudy: Float = *isect.dudy.read().unwrap();
-                    let dvdy: Float = *isect.dvdy.read().unwrap();
-                    let dndy: Normal3f = isect.shading.dndu * dudy + isect.shading.dndv * dvdy;
-                    let dwodx: Vector3f = -d.rx_direction - wo;
-                    let dwody: Vector3f = -d.ry_direction - wo;
-                    let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
-                    let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
-                    let mu: Float = eta * vec3_dot_nrm(&w, &ns) - vec3_dot_nrm(&wi, &ns);
-                    let dmudx: Float = (eta
-                        - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns))
-                        * ddndx;
-                    let dmudy: Float = (eta
-                        - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns))
-                        * ddndy;
-                    let dpdx: Vector3f = *isect.dpdx.read().unwrap();
-                    let dpdy: Vector3f = *isect.dpdy.read().unwrap();
-                    let diff: RayDifferential = RayDifferential {
-                        rx_origin: isect.p + dpdx,
-                        ry_origin: isect.p + dpdy,
-                        rx_direction: wi + dwodx * eta - Vector3f::from(dndx * mu + ns * dmudx),
-                        ry_direction: wi + dwody * eta - Vector3f::from(dndy * mu + ns * dmudy),
-                    };
-                    rd.differential = Some(diff);
-                }
-                return f
-                    * self.li(&mut rd, scene, sampler, depth + 1)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
-            } else {
-                Spectrum::new(0.0)
+        match self {
+            SamplerIntegrator::DirectLighting(integrator) => {
+                integrator.specular_reflect(ray, isect, scene, sampler, depth)
             }
-        } else {
-            Spectrum::new(0.0)
+            _ => Spectrum::default(),
+        }
+    }
+    pub fn specular_transmit(
+        &self,
+        ray: &Ray,
+        isect: &SurfaceInteraction,
+        scene: &Scene,
+        sampler: &mut Box<dyn Sampler + Send + Sync>,
+        depth: i32,
+    ) -> Spectrum {
+        match self {
+            SamplerIntegrator::DirectLighting(integrator) => {
+                integrator.specular_transmit(ray, isect, scene, sampler, depth)
+            }
+            _ => Spectrum::default(),
         }
     }
 }

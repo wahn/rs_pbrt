@@ -13,8 +13,8 @@ Film "image"
 Sampler "sobol" "integer pixelsamples" [8]
 ##PixelFilter "blackmanharris"
 ##SurfaceIntegrator "bidirectional"
-##Integrator "directlighting" "integer maxdepth" [10]
-Integrator "ambientocclusion"
+Integrator "directlighting" "integer maxdepth" [10]
+##Integrator "ambientocclusion"
 ##Integrator "path"
 WorldBegin
   # box_Material
