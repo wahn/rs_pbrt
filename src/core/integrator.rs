@@ -20,12 +20,14 @@ use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
 use crate::integrators::ao::AOIntegrator;
 use crate::integrators::directlighting::DirectLightingIntegrator;
+use crate::integrators::whitted::WhittedIntegrator;
 
 // see integrator.h
 
 pub enum SamplerIntegrator {
     AO(AOIntegrator),
     DirectLighting(DirectLightingIntegrator),
+    Whitted(WhittedIntegrator),
 }
 
 impl SamplerIntegrator {
@@ -33,6 +35,7 @@ impl SamplerIntegrator {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.preprocess(scene),
             SamplerIntegrator::DirectLighting(integrator) => integrator.preprocess(scene),
+            SamplerIntegrator::Whitted(integrator) => integrator.preprocess(scene),
         }
     }
     pub fn render(&mut self, scene: &Scene, num_threads: u8) {
@@ -208,24 +211,28 @@ impl SamplerIntegrator {
             SamplerIntegrator::DirectLighting(integrator) => {
                 integrator.li(ray, scene, sampler, depth)
             }
+            SamplerIntegrator::Whitted(integrator) => integrator.li(ray, scene, sampler, depth),
         }
     }
     pub fn get_camera(&self) -> Arc<Camera> {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_camera(),
             SamplerIntegrator::DirectLighting(integrator) => integrator.get_camera(),
+            SamplerIntegrator::Whitted(integrator) => integrator.get_camera(),
         }
     }
     pub fn get_sampler(&self) -> &Box<dyn Sampler + Send + Sync> {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_sampler(),
             SamplerIntegrator::DirectLighting(integrator) => integrator.get_sampler(),
+            SamplerIntegrator::Whitted(integrator) => integrator.get_sampler(),
         }
     }
     pub fn get_pixel_bounds(&self) -> Bounds2i {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_pixel_bounds(),
             SamplerIntegrator::DirectLighting(integrator) => integrator.get_pixel_bounds(),
+            SamplerIntegrator::Whitted(integrator) => integrator.get_pixel_bounds(),
         }
     }
     pub fn specular_reflect(
@@ -238,6 +245,9 @@ impl SamplerIntegrator {
     ) -> Spectrum {
         match self {
             SamplerIntegrator::DirectLighting(integrator) => {
+                integrator.specular_reflect(ray, isect, scene, sampler, depth)
+            }
+            SamplerIntegrator::Whitted(integrator) => {
                 integrator.specular_reflect(ray, isect, scene, sampler, depth)
             }
             _ => Spectrum::default(),

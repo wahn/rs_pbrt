@@ -55,7 +55,7 @@ use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy
 // use crate::integrators::sppm::render_sppm;
 // use crate::integrators::sppm::SPPMIntegrator;
 // use crate::integrators::volpath::VolPathIntegrator;
-// use crate::integrators::whitted::WhittedIntegrator;
+use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
 use crate::lights::distant::DistantLight;
 use crate::lights::goniometric::GonioPhotometricLight;
@@ -222,7 +222,15 @@ impl RenderOptions {
             if let Some(sampler) = some_sampler {
                 if self.integrator_name == "whitted" {
                     // CreateWhittedIntegrator
-                    println!("TODO: CreateWhittedIntegrator");
+                    let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    let integrator = Box::new(SamplerIntegrator::Whitted(WhittedIntegrator::new(
+                        max_depth as u32,
+                        camera,
+                        sampler,
+                        pixel_bounds,
+                    )));
+                    some_integrator = Some(integrator);
                 } else if self.integrator_name == "directlighting" {
                     // CreateDirectLightingIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
