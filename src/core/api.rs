@@ -219,7 +219,7 @@ impl RenderOptions {
         if let Some(camera) = some_camera {
             let some_sampler: Option<Box<dyn Sampler + Sync + Send>> =
                 make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
-            if let Some(mut sampler) = some_sampler {
+            if let Some(sampler) = some_sampler {
                 if self.integrator_name == "whitted" {
                     // CreateWhittedIntegrator
                     println!("TODO: CreateWhittedIntegrator");
@@ -287,7 +287,7 @@ impl RenderOptions {
                     }
                     let cos_sample: bool = self.integrator_params.find_one_bool("cossample", true);
                     let n_samples: i32 = self.integrator_params.find_one_int("nsamples", 64 as i32);
-                    let mut integrator = Box::new(SamplerIntegrator::AO(AOIntegrator::new(
+                    let integrator = Box::new(SamplerIntegrator::AO(AOIntegrator::new(
                         cos_sample,
                         n_samples,
                         camera,
@@ -2164,7 +2164,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
     //             );
     //             if let Some(mut sampler) = some_sampler {
     // MakeIntegrator
-    let mut some_integrator: Option<Box<SamplerIntegrator>> =
+    let some_integrator: Option<Box<SamplerIntegrator>> =
         api_state.render_options.make_integrator();
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
