@@ -446,26 +446,26 @@ impl Triangle {
         // TODO: ProfilePhase p(Prof::TriIntersectP);
         // TODO: ++nTests;
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
-        let p1: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let p0: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+        let p1: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
+        let p2: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
         // translate vertices based on ray origin
-        let mut p0t: Point3f = p0
+        let mut p0t: Point3f = *p0
             - Vector3f {
                 x: ray.o.x,
                 y: ray.o.y,
                 z: ray.o.z,
             };
-        let mut p1t: Point3f = p1
+        let mut p1t: Point3f = *p1
             - Vector3f {
                 x: ray.o.x,
                 y: ray.o.y,
                 z: ray.o.z,
             };
-        let mut p2t: Point3f = p2
+        let mut p2t: Point3f = *p2
             - Vector3f {
                 x: ray.o.x,
                 y: ray.o.y,
@@ -594,8 +594,8 @@ impl Triangle {
             // compute deltas for triangle partial derivatives
             let duv02: Vector2f = uv[0] - uv[2];
             let duv12: Vector2f = uv[1] - uv[2];
-            let dp02: Vector3f = p0 - p2;
-            let dp12: Vector3f = p1 - p2;
+            let dp02: Vector3f = *p0 - *p2;
+            let dp12: Vector3f = *p1 - *p2;
             let determinant: Float = duv02[0] * duv12[1] - duv02[1] * duv12[0];
             let degenerate_uv: bool = determinant.abs() < 1e-8 as Float;
             if !degenerate_uv {
@@ -605,20 +605,20 @@ impl Triangle {
             }
             if degenerate_uv || vec3_cross_vec3(&dpdu, &dpdv).length_squared() == 0.0 {
                 // handle zero determinant for triangle partial derivative matrix
-                let ng = vec3_cross_vec3(&(p2 - p0), &(p1 - p0));
+                let ng = vec3_cross_vec3(&(*p2 - *p0), &(*p1 - *p0));
                 if ng.length_squared() == 0.0 as Float {
                     // the triangle is actually degenerate; the
                     // intersection is bogus
                     return false;
                 }
                 vec3_coordinate_system(
-                    &vec3_cross_vec3(&(p2 - p0), &(p1 - p0)).normalize(),
+                    &vec3_cross_vec3(&(*p2 - *p0), &(*p1 - *p0)).normalize(),
                     &mut dpdu,
                     &mut dpdv,
                 );
             }
             // interpolate $(u,v)$ parametric coordinates and hit point
-            let p_hit: Point3f = p0 * b0 + p1 * b1 + p2 * b2;
+            let p_hit: Point3f = *p0 * b0 + *p1 * b1 + *p2 * b2;
             let uv_hit: Point2f = uv[0] * b0 + uv[1] * b1 + uv[2] * b2;
             let wo: Vector3f = -ray.d;
             let isect_local: SurfaceInteraction = SurfaceInteraction::new(
