@@ -1,5 +1,6 @@
 // std
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -254,7 +255,7 @@ pub fn create_ply_mesh(
         *o2w,
         *w2o,
         reverse_orientation,
-        tm_vertex_indices.len() / 3, // n_triangles
+        (tm_vertex_indices.len() / 3).try_into().unwrap(), // n_triangles
         tm_vertex_indices,
         n_vertices,
         p_ws, // in world space
@@ -271,7 +272,7 @@ pub fn create_ply_mesh(
             mesh.world_to_object,
             mesh.transform_swaps_handedness,
             mesh.clone(),
-            id,
+            id.try_into().unwrap(),
         )));
         shapes.push(triangle.clone());
     }

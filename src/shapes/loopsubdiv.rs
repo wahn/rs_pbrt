@@ -1,6 +1,7 @@
 // std
 use std;
 use std::collections::{HashMap, HashSet};
+use std::convert::TryInto;
 use std::f32::consts::PI;
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
@@ -653,7 +654,7 @@ pub fn loop_subdivide(
         *object_to_world,
         *world_to_object,
         reverse_orientation,
-        ntris,
+        ntris.try_into().unwrap(),
         vertex_indices,
         tot_verts,
         p_ws, // in world space
