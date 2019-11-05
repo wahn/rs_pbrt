@@ -61,7 +61,7 @@ pub fn create_ply_mesh(
     let mut uvs: Vec<Point2f> = Vec::new();
     let mut has_normals: bool = false;
     let mut has_uvs: bool = false;
-    let mut tm_vertex_indices: Vec<usize> = Vec::new();
+    let mut tm_vertex_indices: Vec<u32> = Vec::new();
     for (name, list) in payload.into_iter() {
         match name.as_ref() {
             "vertex" => {
@@ -158,7 +158,7 @@ pub fn create_ply_mesh(
                                     }
                                     // now we can add the indices to the triangle mesh vertex indices
                                     for vi in vertex_indices {
-                                        tm_vertex_indices.push(vi);
+                                        tm_vertex_indices.push(vi.try_into().unwrap());
                                     }
                                 } else if let ply::Property::ListUInt(li) = list2 {
                                     let mut vertex_indices: Vec<usize> = Vec::new();
@@ -182,7 +182,7 @@ pub fn create_ply_mesh(
                                     }
                                     // now we can add the indices to the triangle mesh vertex indices
                                     for vi in vertex_indices {
-                                        tm_vertex_indices.push(vi);
+                                        tm_vertex_indices.push(vi.try_into().unwrap());
                                     }
                                 }
                             }
@@ -257,7 +257,7 @@ pub fn create_ply_mesh(
         reverse_orientation,
         (tm_vertex_indices.len() / 3).try_into().unwrap(), // n_triangles
         tm_vertex_indices,
-        n_vertices,
+        n_vertices.try_into().unwrap(),
         p_ws, // in world space
         s_ws, // in world space
         n_ws, // in world space
