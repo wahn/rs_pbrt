@@ -5,6 +5,7 @@
 // std
 use std;
 use std::collections::HashMap;
+use std::convert::TryInto;
 use std::path::PathBuf;
 use std::sync::Arc;
 // pbrt
@@ -1730,7 +1731,7 @@ fn get_shapes_and_materials(
             obj_to_world,
             world_to_obj,
             api_state.graphics_state.reverse_orientation,
-            vi.len() / 3, // n_triangles
+            (vi.len() / 3).try_into().unwrap(), // n_triangles
             vertex_indices,
             n_vertices,
             p_ws, // in world space
@@ -1747,7 +1748,7 @@ fn get_shapes_and_materials(
                 mesh.world_to_object,
                 mesh.reverse_orientation,
                 mesh.clone(),
-                id,
+                id.try_into().unwrap(),
             )));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
@@ -1806,7 +1807,7 @@ fn get_shapes_and_materials(
                 mesh.world_to_object,
                 mesh.reverse_orientation,
                 mesh.clone(),
-                id,
+                id.try_into().unwrap(),
             )));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
@@ -1976,7 +1977,7 @@ fn get_shapes_and_materials(
             obj_to_world,
             world_to_obj,
             api_state.graphics_state.reverse_orientation,
-            n_tris, // n_triangles
+            n_tris.try_into().unwrap(), // n_triangles
             vertices,
             n_vertices,
             p_ws,       // in world space
@@ -1993,7 +1994,7 @@ fn get_shapes_and_materials(
                 mesh.world_to_object,
                 mesh.reverse_orientation,
                 mesh.clone(),
-                id,
+                id.try_into().unwrap(),
             )));
             shapes.push(triangle.clone());
             materials.push(mtl.clone());
