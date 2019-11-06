@@ -20,7 +20,7 @@ use crate::core::film::Film;
 use crate::core::filter::Filter;
 use crate::core::geometry::{vec3_coordinate_system, vec3_cross_vec3};
 use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
-use crate::core::integrator::SamplerIntegrator;
+use crate::core::integrator::{Integrator, SamplerIntegrator};
 use crate::core::light::Light;
 use crate::core::material::Material;
 use crate::core::medium::get_medium_scattering_properties;
@@ -213,8 +213,8 @@ pub struct RenderOptions {
 }
 
 impl RenderOptions {
-    pub fn make_integrator(&self) -> Option<Box<SamplerIntegrator>> {
-        let mut some_integrator: Option<Box<SamplerIntegrator>> = None;
+    pub fn make_integrator(&self) -> Option<Box<Integrator>> {
+        let mut some_integrator: Option<Box<Integrator>> = None;
         let some_camera: Option<Arc<Camera>> = self.make_camera();
         if let Some(camera) = some_camera {
             let some_sampler: Option<Box<dyn Sampler + Sync + Send>> =
@@ -224,11 +224,8 @@ impl RenderOptions {
                     // CreateWhittedIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    let integrator = Box::new(SamplerIntegrator::Whitted(WhittedIntegrator::new(
-                        max_depth as u32,
-                        camera,
-                        sampler,
-                        pixel_bounds,
+                    let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Whitted(
+                        WhittedIntegrator::new(max_depth as u32, camera, sampler, pixel_bounds),
                     )));
                     some_integrator = Some(integrator);
                 } else if self.integrator_name == "directlighting" {
@@ -252,14 +249,14 @@ impl RenderOptions {
                         p_min: Point2i { x: 0, y: 0 },
                         p_max: Point2i { x: xres, y: yres },
                     };
-                    let integrator = Box::new(SamplerIntegrator::DirectLighting(
-                        DirectLightingIntegrator::new(
+                    let integrator = Box::new(Integrator::Sampler(
+                        SamplerIntegrator::DirectLighting(DirectLightingIntegrator::new(
                             strategy,
                             max_depth as u32,
                             camera,
                             sampler,
                             pixel_bounds,
-                        ),
+                        )),
                     ));
                     some_integrator = Some(integrator);
                 } else if self.integrator_name == "path" {
@@ -288,13 +285,15 @@ impl RenderOptions {
                     let light_strategy: String = self
                         .integrator_params
                         .find_one_string("lightsamplestrategy", String::from("spatial"));
-                    let integrator = Box::new(SamplerIntegrator::Path(PathIntegrator::new(
-                        max_depth as u32,
-                        camera,
-                        sampler,
-                        pixel_bounds,
-                        rr_threshold,
-                        light_strategy,
+                    let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Path(
+                        PathIntegrator::new(
+                            max_depth as u32,
+                            camera,
+                            sampler,
+                            pixel_bounds,
+                            rr_threshold,
+                            light_strategy,
+                        ),
                     )));
                     some_integrator = Some(integrator);
                 } else if self.integrator_name == "volpath" {
@@ -323,13 +322,15 @@ impl RenderOptions {
                     let light_strategy: String = self
                         .integrator_params
                         .find_one_string("lightsamplestrategy", String::from("spatial"));
-                    let integrator = Box::new(SamplerIntegrator::VolPath(VolPathIntegrator::new(
-                        max_depth as u32,
-                        camera,
-                        sampler,
-                        pixel_bounds,
-                        rr_threshold,
-                        light_strategy,
+                    let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::VolPath(
+                        VolPathIntegrator::new(
+                            max_depth as u32,
+                            camera,
+                            sampler,
+                            pixel_bounds,
+                            rr_threshold,
+                            light_strategy,
+                        ),
                     )));
                     some_integrator = Some(integrator);
                 } else if self.integrator_name == "bdpt" {
@@ -359,12 +360,8 @@ impl RenderOptions {
                     }
                     let cos_sample: bool = self.integrator_params.find_one_bool("cossample", true);
                     let n_samples: i32 = self.integrator_params.find_one_int("nsamples", 64 as i32);
-                    let integrator = Box::new(SamplerIntegrator::AO(AOIntegrator::new(
-                        cos_sample,
-                        n_samples,
-                        camera,
-                        sampler,
-                        pixel_bounds,
+                    let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::AO(
+                        AOIntegrator::new(cos_sample, n_samples, camera, sampler, pixel_bounds),
                     )));
                     some_integrator = Some(integrator);
                 } else if self.integrator_name == "sppm" {
@@ -2236,8 +2233,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
     //             );
     //             if let Some(mut sampler) = some_sampler {
     // MakeIntegrator
-    let some_integrator: Option<Box<SamplerIntegrator>> =
-        api_state.render_options.make_integrator();
+    let some_integrator: Option<Box<Integrator>> = api_state.render_options.make_integrator();
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;

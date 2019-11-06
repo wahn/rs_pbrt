@@ -19,12 +19,27 @@ use crate::core::sampling::power_heuristic;
 use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
 use crate::integrators::ao::AOIntegrator;
+use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::DirectLightingIntegrator;
 use crate::integrators::path::PathIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 
 // see integrator.h
+
+pub enum Integrator {
+    BDPT(BDPTIntegrator),
+    Sampler(SamplerIntegrator),
+}
+
+impl Integrator {
+    pub fn render(&mut self, scene: &Scene, num_threads: u8) {
+        match self {
+            Integrator::BDPT(integrator) => {println!("TODO: BDPTIntegrator::render()");},
+            Integrator::Sampler(integrator) => integrator.render(scene, num_threads),
+        }
+    }
+}
 
 pub enum SamplerIntegrator {
     AO(AOIntegrator),
