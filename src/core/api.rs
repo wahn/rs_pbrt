@@ -49,9 +49,7 @@ use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use crate::integrators::mlt::MLTIntegrator;
 use crate::integrators::path::PathIntegrator;
-// use crate::integrators::render;
-// use crate::integrators::sppm::render_sppm;
-// use crate::integrators::sppm::SPPMIntegrator;
+use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
@@ -410,7 +408,31 @@ impl RenderOptions {
                     some_integrator = Some(integrator);
                 } else if self.integrator_name == "sppm" {
                     // CreateSPPMIntegrator
-                    println!("TODO: CreateSPPMIntegrator");
+                    let mut n_iterations: i32 =
+                        self.integrator_params.find_one_int("numiterations", 64);
+                    n_iterations = self
+                        .integrator_params
+                        .find_one_int("iterations", n_iterations);
+                    let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                    let photons_per_iter: i32 = self
+                        .integrator_params
+                        .find_one_int("photonsperiteration", -1);
+                    let write_freq: i32 = self
+                        .integrator_params
+                        .find_one_int("imagewritefrequency", 1 << 31);
+                    let radius: Float = self
+                        .integrator_params
+                        .find_one_float("radius", 1.0 as Float);
+                    // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
+                    let integrator = Box::new(Integrator::SPPM(SPPMIntegrator::new(
+                        camera.clone(),
+                        n_iterations,
+                        photons_per_iter,
+                        max_depth as u32,
+                        radius,
+                        write_freq,
+                    )));
+                    some_integrator = Some(integrator);
                 } else {
                     println!("Integrator \"{}\" unknown.", self.integrator_name);
                 }
