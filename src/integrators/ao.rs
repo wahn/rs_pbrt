@@ -1,7 +1,9 @@
+// std
+use std::sync::Arc;
 // pbrt
+use crate::core::camera::Camera;
 use crate::core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm};
 use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
-use crate::core::integrator::SamplerIntegrator;
 use crate::core::interaction::Interaction;
 use crate::core::material::TransportMode;
 use crate::core::pbrt::{Float, Spectrum};
@@ -17,33 +19,34 @@ use crate::core::scene::Scene;
 /// Ambient Occlusion
 pub struct AOIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
-    pixel_bounds: Bounds2i,
+    pub camera: Arc<Camera>,
+    pub sampler: Box<dyn Sampler + Send + Sync>,
+    pub pixel_bounds: Bounds2i,
     // see ao.h
-    cos_sample: bool,
-    n_samples: i32,
+    pub cos_sample: bool,
+    pub n_samples: i32,
 }
 
 impl AOIntegrator {
     pub fn new(
         cos_sample: bool,
         n_samples: i32,
-        // _perspective_camera: &PerspectiveCamera,
-        // _sampler: &mut Box<Sampler + Send + Sync>,
+        camera: Arc<Camera>,
+        sampler: Box<dyn Sampler + Send + Sync>,
         pixel_bounds: Bounds2i,
     ) -> Self {
         AOIntegrator {
+            camera,
+            sampler,
             pixel_bounds,
             cos_sample,
             n_samples,
         }
     }
-}
-
-impl SamplerIntegrator for AOIntegrator {
-    fn preprocess(&mut self, _scene: &Scene, sampler: &mut Box<dyn Sampler + Send + Sync>) {
-        sampler.request_2d_array(self.n_samples);
+    pub fn preprocess(&mut self, _scene: &Scene) {
+        self.sampler.request_2d_array(self.n_samples);
     }
-    fn li(
+    pub fn li(
         &self,
         r: &mut Ray,
         scene: &Scene,
@@ -100,7 +103,13 @@ impl SamplerIntegrator for AOIntegrator {
         }
         l
     }
-    fn get_pixel_bounds(&self) -> Bounds2i {
+    pub fn get_camera(&self) -> Arc<Camera> {
+        self.camera.clone()
+    }
+    pub fn get_sampler(&self) -> &Box<dyn Sampler + Send + Sync> {
+        &self.sampler
+    }
+    pub fn get_pixel_bounds(&self) -> Bounds2i {
         self.pixel_bounds
     }
 }

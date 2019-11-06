@@ -353,152 +353,148 @@ impl MLTIntegrator {
             None,
         ) * (n_strategies as Float)
     }
-}
-
-/// **Main function** to **render** a scene multi-threaded (using all
-/// available cores) with **Metropolis Light Transport** (MLT).
-///
-/// ![bdpt](/doc/img/uml_pbrt_rust_render_mlt.png)
-pub fn render_mlt(
-    scene: &Scene,
-    camera: &Arc<Camera>,
-    _sampler: &mut Box<dyn Sampler + Send + Sync>,
-    integrator: &mut Box<MLTIntegrator>,
-    num_threads: u8,
-) {
-    let num_cores: usize;
-    if num_threads == 0_u8 {
-        num_cores = num_cpus::get();
-    } else {
-        num_cores = num_threads as usize;
-    }
-    if let Some(light_distr) = compute_light_power_distribution(scene) {
-        println!("Generating bootstrap paths ...");
-        // generate bootstrap samples and compute normalization constant $b$
-        let n_bootstrap_samples: u32 = integrator.n_bootstrap * (integrator.max_depth + 1);
-        let mut bootstrap_weights: Vec<Float> = vec![0.0 as Float; n_bootstrap_samples as usize];
-        if scene.lights.len() > 0 {
-            // TODO: ProgressReporter progress(nBootstrap / 256, "Generating bootstrap paths");
-            // let chunk_size: u32 = clamp_t(integrator.n_bootstrap / 128, 1, 8192);
-            let chunk_size: usize = (n_bootstrap_samples / num_cores as u32) as usize;
-            {
-                let bands: Vec<&mut [Float]> = bootstrap_weights.chunks_mut(chunk_size).collect();
-                let integrator = &integrator;
-                let light_distr = &light_distr;
-                crossbeam::scope(|scope| {
-                    let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
-                    // spawn worker threads
-                    for (b, band) in bands.into_iter().enumerate() {
-                        let band_tx = band_tx.clone();
+    pub fn render(&self, scene: &Scene, num_threads: u8) {
+        let num_cores: usize;
+        if num_threads == 0_u8 {
+            num_cores = num_cpus::get();
+        } else {
+            num_cores = num_threads as usize;
+        }
+        if let Some(light_distr) = compute_light_power_distribution(scene) {
+            println!("Generating bootstrap paths ...");
+            // generate bootstrap samples and compute normalization constant $b$
+            let n_bootstrap_samples: u32 = self.n_bootstrap * (self.max_depth + 1);
+            let mut bootstrap_weights: Vec<Float> =
+                vec![0.0 as Float; n_bootstrap_samples as usize];
+            if scene.lights.len() > 0 {
+                // TODO: ProgressReporter progress(nBootstrap / 256, "Generating bootstrap paths");
+                // let chunk_size: u32 = clamp_t(integrator.n_bootstrap / 128, 1, 8192);
+                let chunk_size: usize = (n_bootstrap_samples / num_cores as u32) as usize;
+                {
+                    let bands: Vec<&mut [Float]> =
+                        bootstrap_weights.chunks_mut(chunk_size).collect();
+                    let integrator = &self;
+                    let light_distr = &light_distr;
+                    crossbeam::scope(|scope| {
+                        let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
+                        // spawn worker threads
+                        for (b, band) in bands.into_iter().enumerate() {
+                            let band_tx = band_tx.clone();
+                            scope.spawn(move |_| {
+                                for (w, weight) in band.into_iter().enumerate() {
+                                    let rng_index: u64 = ((b * chunk_size) + w) as u64;
+                                    let depth: u32 =
+                                        (rng_index % (integrator.max_depth + 1) as u64) as u32;
+                                    let mut sampler: MLTSampler = MLTSampler::new(
+                                        integrator.mutations_per_pixel as i64,
+                                        rng_index,
+                                        integrator.sigma,
+                                        integrator.large_step_probability,
+                                        N_SAMPLE_STREAMS as i32,
+                                    );
+                                    let mut p_raster: Point2f = Point2f::default();
+                                    *weight = integrator
+                                        .l(scene, &light_distr, &mut sampler, depth, &mut p_raster)
+                                        .y();
+                                }
+                            });
+                            // send progress through the channel to main thread
+                            band_tx.send(b).expect(&format!("Failed to send progress"));
+                        }
+                        // spawn thread to report progress
                         scope.spawn(move |_| {
-                            for (w, weight) in band.into_iter().enumerate() {
-                                let rng_index: u64 = ((b * chunk_size) + w) as u64;
-                                let depth: u32 =
-                                    (rng_index % (integrator.max_depth + 1) as u64) as u32;
-                                let mut sampler: MLTSampler = MLTSampler::new(
-                                    integrator.mutations_per_pixel as i64,
-                                    rng_index,
-                                    integrator.sigma,
-                                    integrator.large_step_probability,
-                                    N_SAMPLE_STREAMS as i32,
-                                );
-                                let mut p_raster: Point2f = Point2f::default();
-                                *weight = integrator
-                                    .l(scene, &light_distr, &mut sampler, depth, &mut p_raster)
-                                    .y();
+                            for _ in pbr::PbIter::new(0..num_cores) {
+                                band_rx.recv().unwrap();
                             }
                         });
-                        // send progress through the channel to main thread
-                        band_tx.send(b).expect(&format!("Failed to send progress"));
-                    }
-                    // spawn thread to report progress
-                    scope.spawn(move |_| {
-                        for _ in pbr::PbIter::new(0..num_cores) {
-                            band_rx.recv().unwrap();
-                        }
-                    });
-                })
-                .unwrap();
+                    })
+                    .unwrap();
+                }
             }
-        }
-        println!("Rendering ...");
-        let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
-        let b: Float = bootstrap.func_int * (integrator.max_depth + 1) as Float;
-        // run _n_chains_ Markov chains in parallel
-        let film: Arc<Film> = camera.get_film();
-        let n_total_mutations: u64 =
-            integrator.mutations_per_pixel as u64 * film.get_sample_bounds().area() as u64;
-        if scene.lights.len() > 0 {
-            // TODO: let progress_frequency = 32768;
-            // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
-            //                           "Rendering");
-            // use parallel iterator (par_iter_with) from rayon crate
-            let (sender, receiver) = crossbeam_channel::bounded(num_cores);
-            let n_chains = integrator.n_chains;
-            // spawn thread to report progress
-            let finish = thread::spawn(move || {
-                for _ in pbr::PbIter::new(0..n_chains) {
-                    receiver.recv().unwrap();
-                }
-            });
-            // for i in 0..n_chains {
-            let ivec: Vec<u32> = (0..n_chains).collect();
-            ivec.par_iter().for_each_with(sender, |s, &i| {
-                s.send(i).expect(&format!("Failed to send chain"));
-                let n_chain_mutations: u64 = ((i as u64 + 1) * n_total_mutations / n_chains as u64)
-                    .min(n_total_mutations)
-                    - i as u64 * n_total_mutations / n_chains as u64;
-                // select initial state from the set of bootstrap samples
-                let mut rng: Rng = Rng::default();
-                rng.set_sequence(i as u64);
-                let bootstrap_index: usize = bootstrap.sample_discrete(rng.uniform_float(), None);
-                let depth: u32 = bootstrap_index as u32 % (integrator.max_depth as u32 + 1);
-                // initialize local variables for selected state
-                let mut sampler: MLTSampler = MLTSampler::new(
-                    integrator.mutations_per_pixel as i64,
-                    bootstrap_index as u64,
-                    integrator.sigma,
-                    integrator.large_step_probability,
-                    N_SAMPLE_STREAMS as i32,
-                );
-                let mut p_current: Point2f = Point2f::default();
-                let mut l_current: Spectrum =
-                    integrator.l(scene, &light_distr, &mut sampler, depth, &mut p_current);
-                // run the Markov chain for _n_chain_mutations_ steps
-                for _j in 0..n_chain_mutations {
-                    sampler.start_iteration();
-                    let mut p_proposed: Point2f = Point2f::default();
-                    let l_proposed: Spectrum =
-                        integrator.l(scene, &light_distr, &mut sampler, depth, &mut p_proposed);
-                    // compute acceptance probability for proposed sample
-                    let accept: Float = (1.0 as Float).min(l_proposed.y() / l_current.y());
-                    // splat both current and proposed samples to _film_
-                    if accept > 0.0 as Float {
-                        film.add_splat(&p_proposed, &(l_proposed * accept / l_proposed.y()));
+            println!("Rendering ...");
+            let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
+            let b: Float = bootstrap.func_int * (self.max_depth + 1) as Float;
+            // run _n_chains_ Markov chains in parallel
+            let film: Arc<Film> = self.get_camera().get_film();
+            let n_total_mutations: u64 =
+                self.mutations_per_pixel as u64 * film.get_sample_bounds().area() as u64;
+            if scene.lights.len() > 0 {
+                // TODO: let progress_frequency = 32768;
+                // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
+                //                           "Rendering");
+                // use parallel iterator (par_iter_with) from rayon crate
+                let (sender, receiver) = crossbeam_channel::bounded(num_cores);
+                let n_chains = self.n_chains;
+                // spawn thread to report progress
+                let finish = thread::spawn(move || {
+                    for _ in pbr::PbIter::new(0..n_chains) {
+                        receiver.recv().unwrap();
                     }
-                    film.add_splat(
-                        &p_current,
-                        &(l_current * (1.0 as Float - accept) / l_current.y()),
+                });
+                // for i in 0..n_chains {
+                let ivec: Vec<u32> = (0..n_chains).collect();
+                ivec.par_iter().for_each_with(sender, |s, &i| {
+                    s.send(i).expect(&format!("Failed to send chain"));
+                    let n_chain_mutations: u64 = ((i as u64 + 1) * n_total_mutations
+                        / n_chains as u64)
+                        .min(n_total_mutations)
+                        - i as u64 * n_total_mutations / n_chains as u64;
+                    // select initial state from the set of bootstrap samples
+                    let mut rng: Rng = Rng::default();
+                    rng.set_sequence(i as u64);
+                    let bootstrap_index: usize =
+                        bootstrap.sample_discrete(rng.uniform_float(), None);
+                    let depth: u32 = bootstrap_index as u32 % (self.max_depth as u32 + 1);
+                    // initialize local variables for selected state
+                    let mut sampler: MLTSampler = MLTSampler::new(
+                        self.mutations_per_pixel as i64,
+                        bootstrap_index as u64,
+                        self.sigma,
+                        self.large_step_probability,
+                        N_SAMPLE_STREAMS as i32,
                     );
-                    // accept or reject the proposal
-                    if rng.uniform_float() < accept {
-                        p_current = p_proposed;
-                        l_current = l_proposed;
-                        sampler.accept();
-                    // TODO: ++acceptedMutations;
-                    } else {
-                        sampler.reject();
+                    let mut p_current: Point2f = Point2f::default();
+                    let mut l_current: Spectrum =
+                        self.l(scene, &light_distr, &mut sampler, depth, &mut p_current);
+                    // run the Markov chain for _n_chain_mutations_ steps
+                    for _j in 0..n_chain_mutations {
+                        sampler.start_iteration();
+                        let mut p_proposed: Point2f = Point2f::default();
+                        let l_proposed: Spectrum =
+                            self.l(scene, &light_distr, &mut sampler, depth, &mut p_proposed);
+                        // compute acceptance probability for proposed sample
+                        let accept: Float = (1.0 as Float).min(l_proposed.y() / l_current.y());
+                        // splat both current and proposed samples to _film_
+                        if accept > 0.0 as Float {
+                            film.add_splat(&p_proposed, &(l_proposed * accept / l_proposed.y()));
+                        }
+                        film.add_splat(
+                            &p_current,
+                            &(l_current * (1.0 as Float - accept) / l_current.y()),
+                        );
+                        // accept or reject the proposal
+                        if rng.uniform_float() < accept {
+                            p_current = p_proposed;
+                            l_current = l_proposed;
+                            sampler.accept();
+                        // TODO: ++acceptedMutations;
+                        } else {
+                            sampler.reject();
+                        }
+                        // TODO: ++totalMutations;
+                        // if (i * n_total_mutations / n_chains + j) % progress_frequency == 0 {
+                        //     progress.update();
+                        // }
+                        // TODO: arena.Reset();
                     }
-                    // TODO: ++totalMutations;
-                    // if (i * n_total_mutations / n_chains + j) % progress_frequency == 0 {
-                    //     progress.update();
-                    // }
-                    // TODO: arena.Reset();
-                }
-            });
-            finish.join().unwrap();
+                });
+                finish.join().unwrap();
+            }
+            // Store final image computed with MLT
+            film.write_image(b / self.mutations_per_pixel as Float);
         }
-        // Store final image computed with MLT
-        film.write_image(b / integrator.mutations_per_pixel as Float);
+    }
+    pub fn get_camera(&self) -> Arc<Camera> {
+        self.camera.clone()
     }
 }

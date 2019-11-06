@@ -6,13 +6,11 @@ use pest::Parser;
 // getopts
 use getopts::Options;
 // pbrt
-use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
-use pbrt::cameras::perspective::PerspectiveCamera;
-use pbrt::core::api::make_filter;
+use pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
-use pbrt::core::integrator::SamplerIntegrator;
+use pbrt::core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Vector3f};
+use pbrt::core::integrator::{Integrator, SamplerIntegrator};
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
 use pbrt::core::medium::MediumInterface;
@@ -25,7 +23,6 @@ use pbrt::core::shape::Shape;
 use pbrt::core::texture::Texture;
 use pbrt::core::transform::{AnimatedTransform, Transform};
 use pbrt::integrators::path::PathIntegrator;
-use pbrt::integrators::render;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::point::PointLight;
 use pbrt::lights::spot::SpotLight;
@@ -33,7 +30,6 @@ use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::metal::MetalMaterial;
 use pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
 use pbrt::materials::mirror::MirrorMaterial;
-use pbrt::samplers::sobol::SobolSampler;
 use pbrt::shapes::cylinder::Cylinder;
 use pbrt::shapes::disk::Disk;
 use pbrt::shapes::sphere::Sphere;
@@ -153,6 +149,90 @@ fn get_shader_names(iter: &mut Peekable<std::str::SplitWhitespace<'_>>) -> Vec<S
     shader_names
 }
 
+pub fn make_perspective_camera(
+    filter_width: Float,
+    xres: i32,
+    yres: i32,
+    fov: Float,
+    animated_cam_to_world: AnimatedTransform,
+) -> Option<Arc<Camera>> {
+    let mut some_camera: Option<Arc<Camera>> = None;
+    let mut filter_params: ParamSet = ParamSet::default();
+    filter_params.add_float(String::from("xwidth"), filter_width);
+    filter_params.add_float(String::from("ywidth"), filter_width);
+    let some_filter = make_filter(&String::from("gaussian"), &filter_params);
+    if let Some(filter) = some_filter {
+        let film_name: String = String::from("image");
+        let mut film_params: ParamSet = ParamSet::default();
+        film_params.add_int(String::from("xresolution"), xres);
+        film_params.add_int(String::from("yresolution"), yres);
+        let some_film: Option<Arc<Film>> = make_film(&film_name, &film_params, filter);
+        if let Some(film) = some_film {
+            let camera_name: String = String::from("perspective");
+            let mut camera_params: ParamSet = ParamSet::default();
+            camera_params.add_float(String::from("fov"), fov);
+            some_camera = make_camera(&camera_name, &camera_params, animated_cam_to_world, film);
+        }
+    }
+    some_camera
+}
+
+fn make_path_integrator(
+    filter_width: Float,
+    xres: i32,
+    yres: i32,
+    fov: Float,
+    animated_cam_to_world: AnimatedTransform,
+    maxdepth: i32,
+    pixelsamples: i32,
+) -> Option<Box<Integrator>> {
+    let some_integrator: Option<Box<Integrator>>;
+    let some_camera: Option<Arc<Camera>> =
+        make_perspective_camera(filter_width, xres, yres, fov, animated_cam_to_world);
+    if let Some(camera) = some_camera {
+        let sampler_name: String = String::from("sobol");
+        let mut sampler_params: ParamSet = ParamSet::default();
+        sampler_params.add_int(String::from("pixelsamples"), pixelsamples);
+        let some_sampler: Option<Box<dyn Sampler + Sync + Send>> =
+            make_sampler(&sampler_name, &sampler_params, camera.get_film());
+        if let Some(sampler) = some_sampler {
+            // CreatePathIntegrator
+            let integrator_params: ParamSet = ParamSet::default();
+            let max_depth: i32 = integrator_params.find_one_int("maxdepth", maxdepth);
+            let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+            let rr_threshold: Float = integrator_params.find_one_float("rrthreshold", 1.0 as Float);
+            let light_strategy: String =
+                integrator_params.find_one_string("lightsamplestrategy", String::from("spatial"));
+            let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Path(
+                PathIntegrator::new(
+                    max_depth as u32,
+                    camera,
+                    sampler,
+                    pixel_bounds,
+                    rr_threshold,
+                    light_strategy,
+                ),
+            )));
+            some_integrator = Some(integrator);
+        } else {
+            panic!("Unable to create sampler.");
+        }
+    } else {
+        panic!("Unable to create camera.");
+    }
+    some_integrator
+}
+
+fn make_scene(primitives: &Vec<Arc<Primitive>>, lights: Vec<Arc<Light>>) -> Scene {
+    let accelerator_name: String = String::from("bvh");
+    let some_accelerator = make_accelerator(&accelerator_name, &primitives, &ParamSet::default());
+    if let Some(accelerator) = some_accelerator {
+        return Scene::new(accelerator, lights);
+    } else {
+        panic!("Unable to create accelerator.");
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let program = args[0].clone();
@@ -190,7 +270,7 @@ fn main() {
         let mut filter_width: Float = 2.0;
         let mut render_camera: String = String::from(""); // no default name
         let mut mesh: String = String::from(""); // no default name
-        let mut camera_name: String = String::from("perspective");
+                                                 // let mut camera_name: String = String::from("perspective");
         let mut fov: Float = 90.0; // read persp_camera.fov
         let mut intensity: Float = 1.0; // read mesh_light.intensity
         let mut cone_angle: Float = 30.0; // read spot_light.cone_angle
@@ -367,7 +447,7 @@ fn main() {
                                             } else if node_type == "persp_camera"
                                                 && node_name == render_camera
                                             {
-                                                camera_name = String::from("perspective");
+                                                // camera_name = String::from("perspective");
                                                 if next == "fov" {
                                                     if let Some(fov_str) = iter.next() {
                                                         fov = f32::from_str(fov_str).unwrap();
@@ -1264,111 +1344,21 @@ fn main() {
         println!("samples_per_pixel = {:?}", samples_per_pixel);
         println!("number of lights = {:?}", lights.len());
         println!("number of primitives = {:?}", primitives.len());
-        // MakeFilter
-        let mut filter_params: ParamSet = ParamSet::default();
-        filter_params.add_float(String::from("xwidth"), filter_width);
-        filter_params.add_float(String::from("ywidth"), filter_width);
-        let some_filter = make_filter(&String::from("gaussian"), &filter_params);
-        // MakeFilm
-        let resolution: Point2i = Point2i { x: xres, y: yres };
-        println!("resolution = {:?}", resolution);
-        if let Some(filter) = some_filter {
-            let crop: Bounds2f = Bounds2f {
-                p_min: Point2f { x: 0.0, y: 0.0 },
-                p_max: Point2f { x: 1.0, y: 1.0 },
-            };
-            let diagonal: Float = 35.0;
-            let scale: Float = 1.0;
-            let max_sample_luminance: Float = std::f32::INFINITY;
-            let film: Arc<Film> = Arc::new(Film::new(
-                resolution,
-                crop,
-                filter,
-                diagonal,
-                String::from(""),
-                scale,
-                max_sample_luminance,
-            ));
-            // MakeCamera
-            let mut some_camera: Option<Arc<Camera>> = None;
-            let medium_interface: MediumInterface = MediumInterface::default();
-            if camera_name == "perspective" {
-                let mut camera_params: ParamSet = ParamSet::default();
-                camera_params.add_float(String::from("fov"), fov);
-                let camera: Arc<Camera> = PerspectiveCamera::create(
-                    &camera_params,
-                    animated_cam_to_world,
-                    film,
-                    medium_interface.outside,
-                );
-                some_camera = Some(camera);
-            } else if camera_name == "orthographic" {
-                println!("TODO: CreateOrthographicCamera");
-            } else if camera_name == "realistic" {
-                println!("TODO: CreateRealisticCamera");
-            } else if camera_name == "environment" {
-                println!("TODO: CreateEnvironmentCamera");
-            } else {
-                panic!("Camera \"{}\" unknown.", camera_name);
-            }
-            if let Some(camera) = some_camera {
-                // MakeSampler
-                let some_sampler: Option<Box<dyn Sampler + Sync + Send>>;
-                // use SobolSampler for now
-                let sample_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                let sampler = Box::new(SobolSampler::new(samples_per_pixel as i64, &sample_bounds));
-                some_sampler = Some(sampler);
-                if let Some(mut sampler) = some_sampler {
-                    // MakeIntegrator
-                    let some_integrator: Option<Box<dyn SamplerIntegrator + Sync + Send>>;
-                    // CreateAOIntegrator
-                    // let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    // let cos_sample: bool = true;
-                    // let n_samples: i32 = 64;
-                    // let integrator =
-                    //     Box::new(AOIntegrator::new(cos_sample, n_samples, pixel_bounds));
-                    // CreatePathIntegrator
-                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    let rr_threshold: Float = 1.0;
-                    let light_strategy: String = String::from("spatial");
-                    let integrator = Box::new(PathIntegrator::new(
-                        max_depth as u32,
-                        pixel_bounds,
-                        rr_threshold,
-                        light_strategy,
-                    ));
-                    some_integrator = Some(integrator);
-                    if let Some(mut integrator) = some_integrator {
-                        // MakeIntegrator
-                        if lights.is_empty() {
-                            // warn if no light sources are defined
-                            print!("WARNING: No light sources defined in scene; ");
-                            println!("rendering a black image.");
-                        }
-                        if !primitives.is_empty() {
-                            let split_method = SplitMethod::SAH;
-                            let max_prims_in_node: i32 = 4;
-                            let accelerator = Arc::new(Primitive::BVH(BVHAccel::new(
-                                primitives.clone(),
-                                max_prims_in_node as usize,
-                                split_method,
-                            )));
-                            let scene: Scene = Scene::new(accelerator.clone(), lights.clone());
-                            let num_threads: u8 = num_cpus::get() as u8;
-                            render(
-                                &scene,
-                                &camera.clone(),
-                                &mut sampler,
-                                &mut integrator,
-                                num_threads,
-                            );
-                        } else {
-                            print!("WARNING: No primitives defined in scene; ");
-                            println!("no need to render anything.");
-                        }
-                    }
-                }
-            }
+        let some_integrator: Option<Box<Integrator>> = make_path_integrator(
+            filter_width,
+            xres,
+            yres,
+            fov,
+            animated_cam_to_world,
+            max_depth,
+            samples_per_pixel as i32,
+        );
+        if let Some(mut integrator) = some_integrator {
+            let scene = make_scene(&primitives, lights);
+            let num_threads: u8 = num_cpus::get() as u8;
+            integrator.render(&scene, num_threads);
+        } else {
+            panic!("Unable to create integrator.");
         }
         return;
     } else if matches.opt_present("v") {

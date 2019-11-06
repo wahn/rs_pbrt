@@ -3,10 +3,10 @@ use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
 // use crate::core::bssrdf::Bssrdf;
+use crate::core::camera::Camera;
 use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 use crate::core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use crate::core::integrator::uniform_sample_one_light;
-use crate::core::integrator::SamplerIntegrator;
 use crate::core::interaction::Interaction;
 use crate::core::lightdistrib::create_light_sample_distribution;
 use crate::core::lightdistrib::LightDistribution;
@@ -22,6 +22,8 @@ use crate::core::scene::Scene;
 /// Path Tracing (Global Illumination)
 pub struct PathIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
+    pub camera: Arc<Camera>,
+    pub sampler: Box<dyn Sampler + Send + Sync>,
     pixel_bounds: Bounds2i,
     // see path.h
     max_depth: u32,
@@ -33,11 +35,15 @@ pub struct PathIntegrator {
 impl PathIntegrator {
     pub fn new(
         max_depth: u32,
+        camera: Arc<Camera>,
+        sampler: Box<dyn Sampler + Send + Sync>,
         pixel_bounds: Bounds2i,
         rr_threshold: Float,
         light_sample_strategy: String,
     ) -> Self {
         PathIntegrator {
+            camera,
+            sampler,
             pixel_bounds,
             max_depth,
             rr_threshold,
@@ -45,14 +51,11 @@ impl PathIntegrator {
             light_distribution: None,
         }
     }
-}
-
-impl SamplerIntegrator for PathIntegrator {
-    fn preprocess(&mut self, scene: &Scene, _sampler: &mut Box<dyn Sampler + Send + Sync>) {
+    pub fn preprocess(&mut self, scene: &Scene) {
         self.light_distribution =
             create_light_sample_distribution(self.light_sample_strategy.clone(), scene);
     }
-    fn li(
+    pub fn li(
         &self,
         r: &mut Ray,
         scene: &Scene,
@@ -278,7 +281,13 @@ impl SamplerIntegrator for PathIntegrator {
         }
         l
     }
-    fn get_pixel_bounds(&self) -> Bounds2i {
+    pub fn get_camera(&self) -> Arc<Camera> {
+        self.camera.clone()
+    }
+    pub fn get_sampler(&self) -> &Box<dyn Sampler + Send + Sync> {
+        &self.sampler
+    }
+    pub fn get_pixel_bounds(&self) -> Bounds2i {
         self.pixel_bounds
     }
 }
