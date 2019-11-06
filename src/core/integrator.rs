@@ -35,7 +35,7 @@ pub enum Integrator {
 impl Integrator {
     pub fn render(&mut self, scene: &Scene, num_threads: u8) {
         match self {
-            Integrator::BDPT(integrator) => {println!("TODO: BDPTIntegrator::render()");},
+            Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
             Integrator::Sampler(integrator) => integrator.render(scene, num_threads),
         }
     }
