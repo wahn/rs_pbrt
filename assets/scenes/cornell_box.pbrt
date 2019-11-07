@@ -17,9 +17,9 @@ Sampler "sobol" "integer pixelsamples" [8]
 ##Integrator "whitted"
 ##        "integer maxdepth" [5]
 ##Integrator "ambientocclusion"
-##Integrator "path"
+Integrator "path"
 ##Integrator "bdpt"
-Integrator "mlt"
+##Integrator "mlt"
 WorldBegin
   # box_Material
   MakeNamedMaterial "box_Material"
