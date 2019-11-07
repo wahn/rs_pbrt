@@ -24,17 +24,19 @@ use structopt::StructOpt;
 // pbrt
 use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
 use pbrt::cameras::perspective::PerspectiveCamera;
+use pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
 use pbrt::core::filter::Filter;
 use pbrt::core::geometry::{
     Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f,
 };
-use pbrt::core::integrator::SamplerIntegrator;
+use pbrt::core::integrator::{Integrator, SamplerIntegrator};
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
 use pbrt::core::medium::MediumInterface;
 use pbrt::core::mipmap::ImageWrap;
+use pbrt::core::paramset::ParamSet;
 use pbrt::core::pbrt::degrees;
 use pbrt::core::pbrt::{Float, Spectrum};
 use pbrt::core::primitive::{GeometricPrimitive, Primitive};
@@ -49,6 +51,9 @@ use pbrt::integrators::bdpt::BDPTIntegrator;
 use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
+use pbrt::integrators::sppm::SPPMIntegrator;
+use pbrt::integrators::volpath::VolPathIntegrator;
+use pbrt::integrators::whitted::WhittedIntegrator;
 use pbrt::lights::diffuse::DiffuseAreaLight;
 use pbrt::lights::distant::DistantLight;
 use pbrt::lights::infinite::InfiniteAreaLight;
@@ -912,6 +917,234 @@ fn read_type_names(
     //     name_counter, byte_counter
     // );
     Ok(())
+}
+
+pub fn make_perspective_camera(
+    filter_width: Float,
+    xres: i32,
+    yres: i32,
+    fov: Float,
+    animated_cam_to_world: AnimatedTransform,
+) -> Option<Arc<Camera>> {
+    let mut some_camera: Option<Arc<Camera>> = None;
+    let mut filter_params: ParamSet = ParamSet::default();
+    filter_params.add_float(String::from("xwidth"), filter_width);
+    filter_params.add_float(String::from("ywidth"), filter_width);
+    let some_filter = make_filter(&String::from("gaussian"), &filter_params);
+    if let Some(filter) = some_filter {
+        let film_name: String = String::from("image");
+        let mut film_params: ParamSet = ParamSet::default();
+        film_params.add_int(String::from("xresolution"), xres);
+        film_params.add_int(String::from("yresolution"), yres);
+        let some_film: Option<Arc<Film>> = make_film(&film_name, &film_params, filter);
+        if let Some(film) = some_film {
+            let camera_name: String = String::from("perspective");
+            let mut camera_params: ParamSet = ParamSet::default();
+            camera_params.add_float(String::from("fov"), fov);
+            some_camera = make_camera(&camera_name, &camera_params, animated_cam_to_world, film);
+        }
+    }
+    some_camera
+}
+
+fn make_integrator(
+    integrator_name: &String,
+    filter_width: Float,
+    xres: i32,
+    yres: i32,
+    fov: Float,
+    animated_cam_to_world: AnimatedTransform,
+    pixelsamples: i32,
+    integrator_params: ParamSet,
+) -> Option<Box<Integrator>> {
+    let mut some_integrator: Option<Box<Integrator>> = None;
+    let some_camera: Option<Arc<Camera>> =
+        make_perspective_camera(filter_width, xres, yres, fov, animated_cam_to_world);
+    if let Some(camera) = some_camera {
+        let sampler_name: String = String::from("sobol");
+        let mut sampler_params: ParamSet = ParamSet::default();
+        sampler_params.add_int(String::from("pixelsamples"), pixelsamples);
+        let some_sampler: Option<Box<dyn Sampler + Sync + Send>> =
+            make_sampler(&sampler_name, &sampler_params, camera.get_film());
+        if let Some(sampler) = some_sampler {
+            print!("integrator = {:?} [", integrator_name);
+            if integrator_name == "whitted" {
+                println!("Whitted’s Ray-Tracing]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateWhittedIntegrator
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Whitted(
+                    WhittedIntegrator::new(max_depth as u32, camera, sampler, pixel_bounds),
+                )));
+                some_integrator = Some(integrator);
+            } else if integrator_name == "directlighting" {
+                println!("Direct Lighting]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateDirectLightingIntegrator
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                println!("  max_depth = {}", max_depth);
+                let st: String = integrator_params.find_one_string("strategy", String::from("all"));
+                let strategy: LightStrategy;
+                if st == "one" {
+                    strategy = LightStrategy::UniformSampleOne;
+                } else if st == "all" {
+                    strategy = LightStrategy::UniformSampleAll;
+                } else {
+                    panic!("Strategy \"{}\" for direct lighting unknown.", st);
+                }
+                let pixel_bounds: Bounds2i = Bounds2i {
+                    p_min: Point2i { x: 0, y: 0 },
+                    p_max: Point2i { x: xres, y: yres },
+                };
+                let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::DirectLighting(
+                    DirectLightingIntegrator::new(
+                        strategy,
+                        max_depth as u32,
+                        camera,
+                        sampler,
+                        pixel_bounds,
+                    ),
+                )));
+                some_integrator = Some(integrator);
+            } else if integrator_name == "path" {
+                println!("(Unidirectional) Path Tracing]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreatePathIntegrator
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                println!("  max_depth = {}", max_depth);
+                let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                let rr_threshold: Float = 1.0;
+                let light_strategy: String = String::from("spatial");
+                let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Path(
+                    PathIntegrator::new(
+                        max_depth as u32,
+                        camera,
+                        sampler,
+                        pixel_bounds,
+                        rr_threshold,
+                        light_strategy,
+                    ),
+                )));
+                some_integrator = Some(integrator);
+            } else if integrator_name == "volpath" {
+                println!("Path Tracing (Participating Media)]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateVolPathIntegrator
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                let rr_threshold: Float = 1.0;
+                let light_strategy: String = String::from("spatial");
+                let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::VolPath(
+                    VolPathIntegrator::new(
+                        max_depth as u32,
+                        camera,
+                        sampler,
+                        pixel_bounds,
+                        rr_threshold,
+                        light_strategy,
+                    ),
+                )));
+                some_integrator = Some(integrator);
+            } else if integrator_name == "bdpt" {
+                println!("Bidirectional Path Tracing (BDPT)]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateBDPTIntegrator
+                let mut max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                println!("  max_depth = {}", max_depth);
+                let visualize_strategies: bool = false;
+                let visualize_weights: bool = false;
+                let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                let light_strategy: String = String::from("power");
+                let integrator = Box::new(Integrator::BDPT(BDPTIntegrator::new(
+                    camera,
+                    sampler,
+                    pixel_bounds,
+                    max_depth as u32,
+                    light_strategy,
+                )));
+                some_integrator = Some(integrator);
+            } else if integrator_name == "mlt" {
+                println!("Metropolis Light Transport (MLT)]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateMLTIntegrator
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                println!("  max_depth = {}", max_depth);
+                let n_bootstrap: i32 = integrator_params.find_one_int("bootstrapsamples", 100000);
+                println!("  bootstrap_samples = {}", n_bootstrap);
+                let n_chains: i32 = integrator_params.find_one_int("chains", 1000);
+                println!("  chains = {}", n_chains);
+                let mutations_per_pixel: i32 =
+                    integrator_params.find_one_int("mutationsperpixel", 100);
+                println!("  mutations_per_pixel = {}", mutations_per_pixel);
+                let large_step_probability: Float =
+                    integrator_params.find_one_float("largestepprobability", 0.3 as Float);
+                println!("  step_probability = {}", large_step_probability);
+                let sigma: Float = integrator_params.find_one_float("sigma", 0.01 as Float);
+                println!("  sigma = {}", sigma);
+                let integrator = Box::new(Integrator::MLT(MLTIntegrator::new(
+                    camera.clone(),
+                    max_depth as u32,
+                    n_bootstrap as u32,
+                    n_chains as u32,
+                    mutations_per_pixel as u32,
+                    sigma,
+                    large_step_probability,
+                )));
+                some_integrator = Some(integrator);
+            } else if integrator_name == "ao" || integrator_name == "ambientocclusion" {
+                println!("Ambient Occlusion (AO)]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateAOIntegrator
+                let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                let cos_sample: bool = integrator_params.find_one_bool("cossample", true);
+                let n_samples: i32 = integrator_params.find_one_int("nsamples", 64 as i32);
+                let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::AO(
+                    AOIntegrator::new(cos_sample, n_samples, camera, sampler, pixel_bounds),
+                )));
+                some_integrator = Some(integrator);
+            } else if integrator_name == "sppm" {
+                println!("Stochastic Progressive Photon Mapping (SPPM)]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateSPPMIntegrator
+                let mut n_iterations: i32 = integrator_params.find_one_int("numiterations", 64);
+                n_iterations = integrator_params.find_one_int("iterations", n_iterations);
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                let photons_per_iter: i32 =
+                    integrator_params.find_one_int("photonsperiteration", -1);
+                let write_freq: i32 =
+                    integrator_params.find_one_int("imagewritefrequency", 1 << 31);
+                let radius: Float = integrator_params.find_one_float("radius", 1.0 as Float);
+                // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
+                let integrator = Box::new(Integrator::SPPM(SPPMIntegrator::new(
+                    camera.clone(),
+                    n_iterations,
+                    photons_per_iter,
+                    max_depth as u32,
+                    radius,
+                    write_freq,
+                )));
+                some_integrator = Some(integrator);
+            } else {
+                println!("Integrator \"{}\" unknown.", integrator_name);
+            }
+        } else {
+            panic!("Unable to create sampler.");
+        }
+    } else {
+        panic!("Unable to create camera.");
+    }
+    some_integrator
+}
+
+fn make_scene(primitives: &Vec<Arc<Primitive>>, lights: Vec<Arc<Light>>) -> Scene {
+    let accelerator_name: String = String::from("bvh");
+    let some_accelerator = make_accelerator(&accelerator_name, &primitives, &ParamSet::default());
+    if let Some(accelerator) = some_accelerator {
+        return Scene::new(accelerator, lights);
+    } else {
+        panic!("Unable to create accelerator.");
+    }
 }
 
 fn main() -> std::io::Result<()> {
@@ -2744,12 +2977,6 @@ fn main() -> std::io::Result<()> {
         "number of primitives = {:?}",
         render_options.primitives.len()
     );
-    let accelerator = Arc::new(Primitive::BVH(BVHAccel::new(
-        render_options.primitives,
-        4,
-        SplitMethod::SAH,
-    )));
-    let scene: Scene = Scene::new(accelerator.clone(), render_options.lights);
     let mut pos = Point3f {
         x: 0.0,
         y: 0.0,
@@ -2835,15 +3062,6 @@ fn main() -> std::io::Result<()> {
         p_min: Point2f { x: 0.0, y: 0.0 },
         p_max: Point2f { x: 1.0, y: 1.0 },
     };
-    let xw: Float = 0.5;
-    let yw: Float = 0.5;
-    let filter: Box<Filter> = Box::new(Filter::Bx(BoxFilter {
-        radius: Vector2f { x: xw, y: yw },
-        inv_radius: Vector2f {
-            x: 1.0 / xw,
-            y: 1.0 / yw,
-        },
-    }));
     let filename: String = String::from("spheres-differentials-texfilt.exr");
     let render_x: u32 = resolution_x * resolution_percentage as u32 / 100_u32;
     let render_y: u32 = resolution_y * resolution_percentage as u32 / 100_u32;
@@ -2851,5 +3069,64 @@ fn main() -> std::io::Result<()> {
         "{}x{} [{}%] = {}x{}",
         resolution_x, resolution_y, resolution_percentage, render_x, render_y
     );
+    if let Some(integrator_name) = args.integrator {
+        let mut integrator_params: ParamSet = ParamSet::default();
+        if integrator_name == "mlt" {
+            integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+            integrator_params.add_int(
+                String::from("bootstrapsamples"),
+                args.bootstrap_samples as i32,
+            );
+            integrator_params.add_int(String::from("chains"), args.chains as i32);
+            integrator_params.add_int(
+                String::from("mutationsperpixel"),
+                args.mutations_per_pixel as i32,
+            );
+            integrator_params.add_float(
+                String::from("largestepprobability"),
+                args.step_probability as Float,
+            );
+            integrator_params.add_float(String::from("sigma"), args.sigma as Float);
+        } else {
+            integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+        }
+        let some_integrator: Option<Box<Integrator>> = make_integrator(
+            &integrator_name,
+            2.0 as Float,
+            render_x as i32,
+            render_y as i32,
+            fov,
+            animated_cam_to_world,
+            args.samples as i32,
+            integrator_params,
+        );
+        if let Some(mut integrator) = some_integrator {
+            let scene = make_scene(&render_options.primitives, render_options.lights);
+            let num_threads: u8 = num_cpus::get() as u8;
+            integrator.render(&scene, num_threads);
+        } else {
+            panic!("Unable to create integrator.");
+        }
+    } else {
+        let mut integrator_params: ParamSet = ParamSet::default();
+        integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+        let some_integrator: Option<Box<Integrator>> = make_integrator(
+            &String::from("path"),
+            2.0 as Float,
+            render_x as i32,
+            render_y as i32,
+            fov,
+            animated_cam_to_world,
+            args.samples as i32,
+            integrator_params,
+        );
+        if let Some(mut integrator) = some_integrator {
+            let scene = make_scene(&render_options.primitives, render_options.lights);
+            let num_threads: u8 = num_cpus::get() as u8;
+            integrator.render(&scene, num_threads);
+        } else {
+            panic!("Unable to create integrator.");
+        }
+    }
     Ok(())
 }
