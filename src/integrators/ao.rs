@@ -77,7 +77,8 @@ impl AOIntegrator {
             let n: Normal3f = nrm_faceforward_vec3(&isect.n, &-ray.d);
             let s: Vector3f = isect.dpdu.normalize();
             let t: Vector3f = nrm_cross_vec3(&isect.n, &s);
-            let u: Vec<Point2f> = sampler.get_2d_array(self.n_samples);
+            let u_opt: Option<&[Point2f]> = sampler.get_2d_array(self.n_samples);
+            if let Some(u) = u_opt {
             for i in 0..self.n_samples as usize {
                 // Vector3f wi;
                 let mut wi: Vector3f;
@@ -99,6 +100,7 @@ impl AOIntegrator {
                 if !scene.intersect_p(&mut ray) {
                     l += Spectrum::new(vec3_dot_nrm(&wi, &n) / (pdf * self.n_samples as Float));
                 }
+            }
             }
         }
         l

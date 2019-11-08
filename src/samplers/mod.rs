@@ -49,7 +49,7 @@
 //! ![lowdiscrepancy](/doc/img/cornell_box_pbrt_rust_lowdiscrepancy.png)
 //!
 
-pub mod halton;
-pub mod random;
+// pub mod halton;
+// pub mod random;
 pub mod sobol;
-pub mod zerotwosequence;
+// pub mod zerotwosequence;

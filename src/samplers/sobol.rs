@@ -183,10 +183,10 @@ impl Sampler for SobolSampler {
     fn round_count(&self, count: i32) -> i32 {
         count
     }
-    fn get_2d_array(&mut self, n: i32) -> Vec<Point2f> {
+    fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
         let mut samples: Vec<Point2f> = Vec::new();
         if self.array_2d_offset == self.sample_array_2d.len() {
-            return samples;
+            return None;
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
         assert!(
@@ -197,9 +197,10 @@ impl Sampler for SobolSampler {
         );
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
-        samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
+        // samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
         self.array_2d_offset += 1;
-        samples
+        // Some(&samples[..])
+        Some(&self.sample_array_2d[self.array_2d_offset - 1][start..end])
     }
     fn start_next_sample(&mut self) -> bool {
         self.dimension = 0_i64;
