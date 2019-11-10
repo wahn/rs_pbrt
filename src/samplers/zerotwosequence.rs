@@ -183,7 +183,6 @@ impl Sampler for ZeroTwoSequenceSampler {
         round_up_pow2_32(count)
     }
     fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
-        let mut samples: Vec<Point2f> = Vec::new();
         if self.array_2d_offset == self.sample_array_2d.len() {
             return None;
         }
