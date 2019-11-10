@@ -48,7 +48,7 @@ use crate::integrators::ao::AOIntegrator;
 // use crate::integrators::bdpt::BDPTIntegrator;
 // use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 // use crate::integrators::mlt::MLTIntegrator;
-// use crate::integrators::path::PathIntegrator;
+use crate::integrators::path::PathIntegrator;
 // use crate::integrators::sppm::SPPMIntegrator;
 // use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
@@ -255,43 +255,43 @@ impl RenderOptions {
                 //         )),
                 //     ));
                 //     some_integrator = Some(integrator);
-                // } else if self.integrator_name == "path" {
-                //     // CreatePathIntegrator
-                //     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
-                //     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
-                //     let np: usize = pb.len();
-                //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                //     if np > 0 as usize {
-                //         if np != 4 as usize {
-                //             panic!(
-                //                 "Expected four values for \"pixelbounds\" parameter. Got {}.",
-                //                 np
-                //             );
-                //         } else {
-                //             println!("TODO: pixelBounds = Intersect(...)");
-                //             // pixelBounds = Intersect(pixelBounds,
-                //             //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
-                //             // if (pixelBounds.Area() == 0)
-                //             //     Error("Degenerate \"pixelbounds\" specified.");
-                //         }
-                //     }
-                //     let rr_threshold: Float = self
-                //         .integrator_params
-                //         .find_one_float("rrthreshold", 1.0 as Float);
-                //     let light_strategy: String = self
-                //         .integrator_params
-                //         .find_one_string("lightsamplestrategy", String::from("spatial"));
-                //     let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Path(
-                //         PathIntegrator::new(
-                //             max_depth as u32,
-                //             camera,
-                //             sampler,
-                //             pixel_bounds,
-                //             rr_threshold,
-                //             light_strategy,
-                //         ),
-                //     )));
-                //     some_integrator = Some(integrator);
+                } else if self.integrator_name == "path" {
+                    // CreatePathIntegrator
+                    let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                    let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
+                    let np: usize = pb.len();
+                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    if np > 0 as usize {
+                        if np != 4 as usize {
+                            panic!(
+                                "Expected four values for \"pixelbounds\" parameter. Got {}.",
+                                np
+                            );
+                        } else {
+                            println!("TODO: pixelBounds = Intersect(...)");
+                            // pixelBounds = Intersect(pixelBounds,
+                            //                         Bounds2i{{pb[0], pb[2]}, {pb[1], pb[3]}});
+                            // if (pixelBounds.Area() == 0)
+                            //     Error("Degenerate \"pixelbounds\" specified.");
+                        }
+                    }
+                    let rr_threshold: Float = self
+                        .integrator_params
+                        .find_one_float("rrthreshold", 1.0 as Float);
+                    let light_strategy: String = self
+                        .integrator_params
+                        .find_one_string("lightsamplestrategy", String::from("spatial"));
+                    let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Path(
+                        PathIntegrator::new(
+                            max_depth as u32,
+                            camera,
+                            sampler,
+                            pixel_bounds,
+                            rr_threshold,
+                            light_strategy,
+                        ),
+                    )));
+                    some_integrator = Some(integrator);
                 // } else if self.integrator_name == "volpath" {
                 //     // CreateVolPathIntegrator
                 //     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
