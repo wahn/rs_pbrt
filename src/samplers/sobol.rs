@@ -197,9 +197,7 @@ impl Sampler for SobolSampler {
         );
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
-        // samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
         self.array_2d_offset += 1;
-        // Some(&samples[..])
         Some(&self.sample_array_2d[self.array_2d_offset - 1][start..end])
     }
     fn start_next_sample(&mut self) -> bool {
