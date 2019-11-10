@@ -65,4 +65,4 @@ pub mod ao;
 // pub mod path;
 // pub mod sppm;
 // pub mod volpath;
-// pub mod whitted;
+pub mod whitted;

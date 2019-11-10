@@ -14,9 +14,9 @@ Sampler "sobol" "integer pixelsamples" [8]
 ##PixelFilter "blackmanharris"
 ##SurfaceIntegrator "bidirectional"
 ##Integrator "directlighting" "integer maxdepth" [10]
-##Integrator "whitted"
-##        "integer maxdepth" [5]
-Integrator "ambientocclusion"
+Integrator "whitted"
+       "integer maxdepth" [5]
+##Integrator "ambientocclusion"
 ##Integrator "path"
 ##Integrator "bdpt"
 ##Integrator "mlt"

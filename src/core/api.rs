@@ -51,7 +51,7 @@ use crate::integrators::ao::AOIntegrator;
 // use crate::integrators::path::PathIntegrator;
 // use crate::integrators::sppm::SPPMIntegrator;
 // use crate::integrators::volpath::VolPathIntegrator;
-// use crate::integrators::whitted::WhittedIntegrator;
+use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
 use crate::lights::distant::DistantLight;
 use crate::lights::goniometric::GonioPhotometricLight;
@@ -216,14 +216,14 @@ impl RenderOptions {
             let some_sampler: Option<Box<dyn Sampler + Sync + Send>> =
                 make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
             if let Some(sampler) = some_sampler {
-                // if self.integrator_name == "whitted" {
-                //     // CreateWhittedIntegrator
-                //     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
-                //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                //     let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Whitted(
-                //         WhittedIntegrator::new(max_depth as u32, camera, sampler, pixel_bounds),
-                //     )));
-                //     some_integrator = Some(integrator);
+                if self.integrator_name == "whitted" {
+                    // CreateWhittedIntegrator
+                    let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::Whitted(
+                        WhittedIntegrator::new(max_depth as u32, camera, sampler, pixel_bounds),
+                    )));
+                    some_integrator = Some(integrator);
                 // } else if self.integrator_name == "directlighting" {
                 //     // CreateDirectLightingIntegrator
                 //     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
@@ -381,8 +381,7 @@ impl RenderOptions {
                 //         large_step_probability,
                 //     )));
                 //     some_integrator = Some(integrator);
-                // } else 
-                    if self.integrator_name == "ambientocclusion" {
+                } else if self.integrator_name == "ambientocclusion" {
                     // CreateAOIntegrator
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
                     let np: usize = pb.len();
