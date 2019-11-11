@@ -26,6 +26,7 @@ pub trait Sampler: SamplerClone {
     fn request_2d_array(&mut self, n: i32);
     fn round_count(&self, count: i32) -> i32;
     fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]>;
+    fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f>;
     fn start_next_sample(&mut self) -> bool;
     fn reseed(&mut self, seed: u64);
     fn get_current_pixel(&self) -> Point2i;

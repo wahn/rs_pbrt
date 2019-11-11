@@ -79,28 +79,28 @@ impl AOIntegrator {
             let t: Vector3f = nrm_cross_vec3(&isect.n, &s);
             let u_opt: Option<&[Point2f]> = sampler.get_2d_array(self.n_samples);
             if let Some(u) = u_opt {
-            for i in 0..self.n_samples as usize {
-                // Vector3f wi;
-                let mut wi: Vector3f;
-                let pdf: Float;
-                if self.cos_sample {
-                    wi = cosine_sample_hemisphere(&u[i]);
-                    pdf = cosine_hemisphere_pdf(wi.z.abs());
-                } else {
-                    wi = uniform_sample_hemisphere(&u[i]);
-                    pdf = uniform_hemisphere_pdf();
+                for i in 0..self.n_samples as usize {
+                    // Vector3f wi;
+                    let mut wi: Vector3f;
+                    let pdf: Float;
+                    if self.cos_sample {
+                        wi = cosine_sample_hemisphere(&u[i]);
+                        pdf = cosine_hemisphere_pdf(wi.z.abs());
+                    } else {
+                        wi = uniform_sample_hemisphere(&u[i]);
+                        pdf = uniform_hemisphere_pdf();
+                    }
+                    // transform wi from local frame to world space.
+                    wi = Vector3f {
+                        x: s.x * wi.x + t.x * wi.y + n.x * wi.z,
+                        y: s.y * wi.x + t.y * wi.y + n.y * wi.z,
+                        z: s.z * wi.x + t.z * wi.y + n.z * wi.z,
+                    };
+                    let mut ray: Ray = isect.spawn_ray(&wi);
+                    if !scene.intersect_p(&mut ray) {
+                        l += Spectrum::new(vec3_dot_nrm(&wi, &n) / (pdf * self.n_samples as Float));
+                    }
                 }
-                // transform wi from local frame to world space.
-                wi = Vector3f {
-                    x: s.x * wi.x + t.x * wi.y + n.x * wi.z,
-                    y: s.y * wi.x + t.y * wi.y + n.y * wi.z,
-                    z: s.z * wi.x + t.z * wi.y + n.z * wi.z,
-                };
-                let mut ray: Ray = isect.spawn_ray(&wi);
-                if !scene.intersect_p(&mut ray) {
-                    l += Spectrum::new(vec3_dot_nrm(&wi, &n) / (pdf * self.n_samples as Float));
-                }
-            }
             }
         }
         l

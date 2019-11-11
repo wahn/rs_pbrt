@@ -20,10 +20,10 @@ use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
 use crate::integrators::ao::AOIntegrator;
 use crate::integrators::bdpt::BDPTIntegrator;
-// use crate::integrators::directlighting::DirectLightingIntegrator;
+use crate::integrators::directlighting::DirectLightingIntegrator;
 use crate::integrators::mlt::MLTIntegrator;
-use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::path::PathIntegrator;
+use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 
@@ -49,7 +49,7 @@ impl Integrator {
 
 pub enum SamplerIntegrator {
     AO(AOIntegrator),
-    // DirectLighting(DirectLightingIntegrator),
+    DirectLighting(DirectLightingIntegrator),
     Path(PathIntegrator),
     VolPath(VolPathIntegrator),
     Whitted(WhittedIntegrator),
@@ -59,7 +59,7 @@ impl SamplerIntegrator {
     pub fn preprocess(&mut self, scene: &Scene) {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.preprocess(scene),
-            // SamplerIntegrator::DirectLighting(integrator) => integrator.preprocess(scene),
+            SamplerIntegrator::DirectLighting(integrator) => integrator.preprocess(scene),
             SamplerIntegrator::Path(integrator) => integrator.preprocess(scene),
             SamplerIntegrator::VolPath(integrator) => integrator.preprocess(scene),
             SamplerIntegrator::Whitted(integrator) => integrator.preprocess(scene),
@@ -235,9 +235,9 @@ impl SamplerIntegrator {
     ) -> Spectrum {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.li(ray, scene, sampler, depth),
-            // SamplerIntegrator::DirectLighting(integrator) => {
-            //     integrator.li(ray, scene, sampler, depth)
-            // }
+            SamplerIntegrator::DirectLighting(integrator) => {
+                integrator.li(ray, scene, sampler, depth)
+            }
             SamplerIntegrator::Path(integrator) => integrator.li(ray, scene, sampler, depth),
             SamplerIntegrator::VolPath(integrator) => integrator.li(ray, scene, sampler, depth),
             SamplerIntegrator::Whitted(integrator) => integrator.li(ray, scene, sampler, depth),
@@ -246,7 +246,7 @@ impl SamplerIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_camera(),
-            // SamplerIntegrator::DirectLighting(integrator) => integrator.get_camera(),
+            SamplerIntegrator::DirectLighting(integrator) => integrator.get_camera(),
             SamplerIntegrator::Path(integrator) => integrator.get_camera(),
             SamplerIntegrator::VolPath(integrator) => integrator.get_camera(),
             SamplerIntegrator::Whitted(integrator) => integrator.get_camera(),
@@ -255,7 +255,7 @@ impl SamplerIntegrator {
     pub fn get_sampler(&self) -> &Box<dyn Sampler + Send + Sync> {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_sampler(),
-            // SamplerIntegrator::DirectLighting(integrator) => integrator.get_sampler(),
+            SamplerIntegrator::DirectLighting(integrator) => integrator.get_sampler(),
             SamplerIntegrator::Path(integrator) => integrator.get_sampler(),
             SamplerIntegrator::VolPath(integrator) => integrator.get_sampler(),
             SamplerIntegrator::Whitted(integrator) => integrator.get_sampler(),
@@ -264,7 +264,7 @@ impl SamplerIntegrator {
     pub fn get_pixel_bounds(&self) -> Bounds2i {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_pixel_bounds(),
-            // SamplerIntegrator::DirectLighting(integrator) => integrator.get_pixel_bounds(),
+            SamplerIntegrator::DirectLighting(integrator) => integrator.get_pixel_bounds(),
             SamplerIntegrator::Path(integrator) => integrator.get_pixel_bounds(),
             SamplerIntegrator::VolPath(integrator) => integrator.get_pixel_bounds(),
             SamplerIntegrator::Whitted(integrator) => integrator.get_pixel_bounds(),
@@ -279,9 +279,9 @@ impl SamplerIntegrator {
         depth: i32,
     ) -> Spectrum {
         match self {
-            // SamplerIntegrator::DirectLighting(integrator) => {
-            //     integrator.specular_reflect(ray, isect, scene, sampler, depth)
-            // }
+            SamplerIntegrator::DirectLighting(integrator) => {
+                integrator.specular_reflect(ray, isect, scene, sampler, depth)
+            }
             SamplerIntegrator::Whitted(integrator) => {
                 integrator.specular_reflect(ray, isect, scene, sampler, depth)
             }
@@ -297,9 +297,9 @@ impl SamplerIntegrator {
         depth: i32,
     ) -> Spectrum {
         match self {
-            // SamplerIntegrator::DirectLighting(integrator) => {
-            //     integrator.specular_transmit(ray, isect, scene, sampler, depth)
-            // }
+            SamplerIntegrator::DirectLighting(integrator) => {
+                integrator.specular_transmit(ray, isect, scene, sampler, depth)
+            }
             SamplerIntegrator::Whitted(integrator) => {
                 integrator.specular_transmit(ray, isect, scene, sampler, depth)
             }
@@ -320,44 +320,44 @@ pub fn uniform_sample_all_lights(
 ) -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
     let mut l: Spectrum = Spectrum::new(0.0);
-    // for j in 0..scene.lights.len() {
-    //     // accumulate contribution of _j_th light to _L_
-    //     let ref light = scene.lights[j];
-    //     let n_samples = n_light_samples[j];
-    //     let u_light_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
-    //     let u_scattering_array: Vec<Point2f> = sampler.get_2d_array(n_samples);
-    //     if u_light_array.is_empty() || u_scattering_array.is_empty() {
-    //         // use a single sample for illumination from _light_
-    //         let u_light: Point2f = sampler.get_2d();
-    //         let u_scattering: Point2f = sampler.get_2d();
-    //         l += estimate_direct(
-    //             it,
-    //             &u_scattering,
-    //             light.clone(),
-    //             &u_light,
-    //             scene,
-    //             sampler,
-    //             handle_media,
-    //             false,
-    //         );
-    //     } else {
-    //         // estimate direct lighting using sample arrays
-    //         let mut ld: Spectrum = Spectrum::new(0.0);
-    //         for k in 0..n_samples {
-    //             ld += estimate_direct(
-    //                 it,
-    //                 &u_scattering_array[k as usize],
-    //                 light.clone(),
-    //                 &u_light_array[k as usize],
-    //                 scene,
-    //                 sampler,
-    //                 handle_media,
-    //                 false,
-    //             );
-    //         }
-    //         l += ld / n_samples as Float;
-    //     }
-    // }
+    for j in 0..scene.lights.len() {
+        // accumulate contribution of _j_th light to _L_
+        let ref light = scene.lights[j];
+        let n_samples = n_light_samples[j];
+        let u_light_array: Vec<Point2f> = sampler.get_2d_array_vec(n_samples);
+        let u_scattering_array: Vec<Point2f> = sampler.get_2d_array_vec(n_samples);
+        if u_light_array.is_empty() || u_scattering_array.is_empty() {
+            // use a single sample for illumination from _light_
+            let u_light: Point2f = sampler.get_2d();
+            let u_scattering: Point2f = sampler.get_2d();
+            l += estimate_direct(
+                it,
+                &u_scattering,
+                light.clone(),
+                &u_light,
+                scene,
+                sampler,
+                handle_media,
+                false,
+            );
+        } else {
+            // estimate direct lighting using sample arrays
+            let mut ld: Spectrum = Spectrum::new(0.0);
+            for k in 0..n_samples {
+                ld += estimate_direct(
+                    it,
+                    &u_scattering_array[k as usize],
+                    light.clone(),
+                    &u_light_array[k as usize],
+                    scene,
+                    sampler,
+                    handle_media,
+                    false,
+                );
+            }
+            l += ld / n_samples as Float;
+        }
+    }
     l
 }
 

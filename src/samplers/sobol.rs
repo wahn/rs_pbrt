@@ -199,6 +199,24 @@ impl Sampler for SobolSampler {
         self.array_2d_offset += 1;
         Some(&self.sample_array_2d[self.array_2d_offset - 1][start..end])
     }
+    fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
+        let mut samples: Vec<Point2f> = Vec::new();
+        if self.array_2d_offset == self.sample_array_2d.len() {
+            return samples;
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
+        self.array_2d_offset += 1;
+        samples
+    }
     fn start_next_sample(&mut self) -> bool {
         self.dimension = 0_i64;
         self.interval_sample_index =

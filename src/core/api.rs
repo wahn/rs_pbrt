@@ -46,7 +46,7 @@ use crate::filters::sinc::LanczosSincFilter;
 use crate::filters::triangle::TriangleFilter;
 use crate::integrators::ao::AOIntegrator;
 use crate::integrators::bdpt::BDPTIntegrator;
-// use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use crate::integrators::mlt::MLTIntegrator;
 use crate::integrators::path::PathIntegrator;
 use crate::integrators::sppm::SPPMIntegrator;
@@ -224,37 +224,37 @@ impl RenderOptions {
                         WhittedIntegrator::new(max_depth as u32, camera, sampler, pixel_bounds),
                     )));
                     some_integrator = Some(integrator);
-                // } else if self.integrator_name == "directlighting" {
-                //     // CreateDirectLightingIntegrator
-                //     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
-                //     let st: String = self
-                //         .integrator_params
-                //         .find_one_string("strategy", String::from("all"));
-                //     let strategy: LightStrategy;
-                //     if st == "one" {
-                //         strategy = LightStrategy::UniformSampleOne;
-                //     } else if st == "all" {
-                //         strategy = LightStrategy::UniformSampleAll;
-                //     } else {
-                //         panic!("Strategy \"{}\" for direct lighting unknown.", st);
-                //     }
-                //     // TODO: const int *pb = params.FindInt("pixelbounds", &np);
-                //     let xres: i32 = self.film_params.find_one_int("xresolution", 1280);
-                //     let yres: i32 = self.film_params.find_one_int("yresolution", 720);
-                //     let pixel_bounds: Bounds2i = Bounds2i {
-                //         p_min: Point2i { x: 0, y: 0 },
-                //         p_max: Point2i { x: xres, y: yres },
-                //     };
-                //     let integrator = Box::new(Integrator::Sampler(
-                //         SamplerIntegrator::DirectLighting(DirectLightingIntegrator::new(
-                //             strategy,
-                //             max_depth as u32,
-                //             camera,
-                //             sampler,
-                //             pixel_bounds,
-                //         )),
-                //     ));
-                //     some_integrator = Some(integrator);
+                } else if self.integrator_name == "directlighting" {
+                    // CreateDirectLightingIntegrator
+                    let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                    let st: String = self
+                        .integrator_params
+                        .find_one_string("strategy", String::from("all"));
+                    let strategy: LightStrategy;
+                    if st == "one" {
+                        strategy = LightStrategy::UniformSampleOne;
+                    } else if st == "all" {
+                        strategy = LightStrategy::UniformSampleAll;
+                    } else {
+                        panic!("Strategy \"{}\" for direct lighting unknown.", st);
+                    }
+                    // TODO: const int *pb = params.FindInt("pixelbounds", &np);
+                    let xres: i32 = self.film_params.find_one_int("xresolution", 1280);
+                    let yres: i32 = self.film_params.find_one_int("yresolution", 720);
+                    let pixel_bounds: Bounds2i = Bounds2i {
+                        p_min: Point2i { x: 0, y: 0 },
+                        p_max: Point2i { x: xres, y: yres },
+                    };
+                    let integrator = Box::new(Integrator::Sampler(
+                        SamplerIntegrator::DirectLighting(DirectLightingIntegrator::new(
+                            strategy,
+                            max_depth as u32,
+                            camera,
+                            sampler,
+                            pixel_bounds,
+                        )),
+                    ));
+                    some_integrator = Some(integrator);
                 } else if self.integrator_name == "path" {
                     // CreatePathIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);

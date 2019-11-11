@@ -60,7 +60,7 @@
 
 pub mod ao;
 pub mod bdpt;
-// pub mod directlighting;
+pub mod directlighting;
 pub mod mlt;
 pub mod path;
 pub mod sppm;

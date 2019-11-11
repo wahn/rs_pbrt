@@ -22,15 +22,10 @@ use std::path::Path;
 use std::sync::Arc;
 use structopt::StructOpt;
 // pbrt
-use pbrt::accelerators::bvh::{BVHAccel, SplitMethod};
-use pbrt::cameras::perspective::PerspectiveCamera;
 use pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
 use pbrt::core::camera::Camera;
 use pbrt::core::film::Film;
-use pbrt::core::filter::Filter;
-use pbrt::core::geometry::{
-    Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector2f, Vector3f,
-};
+use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use pbrt::core::integrator::{Integrator, SamplerIntegrator};
 use pbrt::core::light::Light;
 use pbrt::core::material::Material;
@@ -45,10 +40,9 @@ use pbrt::core::scene::Scene;
 use pbrt::core::shape::Shape;
 use pbrt::core::texture::{Texture, TextureMapping2D, UVMapping2D};
 use pbrt::core::transform::{AnimatedTransform, Transform};
-use pbrt::filters::boxfilter::BoxFilter;
 use pbrt::integrators::ao::AOIntegrator;
 use pbrt::integrators::bdpt::BDPTIntegrator;
-// use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use pbrt::integrators::mlt::MLTIntegrator;
 use pbrt::integrators::path::PathIntegrator;
 use pbrt::integrators::sppm::SPPMIntegrator;
@@ -63,7 +57,6 @@ use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::metal::MetalMaterial;
 use pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
 use pbrt::materials::mirror::MirrorMaterial;
-use pbrt::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
 use pbrt::textures::imagemap::convert_to_spectrum;
@@ -978,35 +971,35 @@ fn make_integrator(
                     WhittedIntegrator::new(max_depth as u32, camera, sampler, pixel_bounds),
                 )));
                 some_integrator = Some(integrator);
-            // } else if integrator_name == "directlighting" {
-            //     println!("Direct Lighting]");
-            //     println!("  pixelsamples = {}", pixelsamples);
-            //     // CreateDirectLightingIntegrator
-            //     let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
-            //     println!("  max_depth = {}", max_depth);
-            //     let st: String = integrator_params.find_one_string("strategy", String::from("all"));
-            //     let strategy: LightStrategy;
-            //     if st == "one" {
-            //         strategy = LightStrategy::UniformSampleOne;
-            //     } else if st == "all" {
-            //         strategy = LightStrategy::UniformSampleAll;
-            //     } else {
-            //         panic!("Strategy \"{}\" for direct lighting unknown.", st);
-            //     }
-            //     let pixel_bounds: Bounds2i = Bounds2i {
-            //         p_min: Point2i { x: 0, y: 0 },
-            //         p_max: Point2i { x: xres, y: yres },
-            //     };
-            //     let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::DirectLighting(
-            //         DirectLightingIntegrator::new(
-            //             strategy,
-            //             max_depth as u32,
-            //             camera,
-            //             sampler,
-            //             pixel_bounds,
-            //         ),
-            //     )));
-            //     some_integrator = Some(integrator);
+            } else if integrator_name == "directlighting" {
+                println!("Direct Lighting]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateDirectLightingIntegrator
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                println!("  max_depth = {}", max_depth);
+                let st: String = integrator_params.find_one_string("strategy", String::from("all"));
+                let strategy: LightStrategy;
+                if st == "one" {
+                    strategy = LightStrategy::UniformSampleOne;
+                } else if st == "all" {
+                    strategy = LightStrategy::UniformSampleAll;
+                } else {
+                    panic!("Strategy \"{}\" for direct lighting unknown.", st);
+                }
+                let pixel_bounds: Bounds2i = Bounds2i {
+                    p_min: Point2i { x: 0, y: 0 },
+                    p_max: Point2i { x: xres, y: yres },
+                };
+                let integrator = Box::new(Integrator::Sampler(SamplerIntegrator::DirectLighting(
+                    DirectLightingIntegrator::new(
+                        strategy,
+                        max_depth as u32,
+                        camera,
+                        sampler,
+                        pixel_bounds,
+                    ),
+                )));
+                some_integrator = Some(integrator);
             } else if integrator_name == "path" {
                 println!("(Unidirectional) Path Tracing]");
                 println!("  pixelsamples = {}", pixelsamples);
@@ -1050,10 +1043,8 @@ fn make_integrator(
                 println!("Bidirectional Path Tracing (BDPT)]");
                 println!("  pixelsamples = {}", pixelsamples);
                 // CreateBDPTIntegrator
-                let mut max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
                 println!("  max_depth = {}", max_depth);
-                let visualize_strategies: bool = false;
-                let visualize_weights: bool = false;
                 let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
                 let light_strategy: String = String::from("power");
                 let integrator = Box::new(Integrator::BDPT(BDPTIntegrator::new(
@@ -3054,15 +3045,6 @@ fn main() -> std::io::Result<()> {
         screen.p_min.y = -1.0 / frame;
         screen.p_max.y = 1.0 / frame;
     }
-    let shutteropen: Float = 0.0;
-    let shutterclose: Float = 1.0;
-    let lensradius: Float = 0.0;
-    let focaldistance: Float = 1e6;
-    let crop: Bounds2f = Bounds2f {
-        p_min: Point2f { x: 0.0, y: 0.0 },
-        p_max: Point2f { x: 1.0, y: 1.0 },
-    };
-    let filename: String = String::from("spheres-differentials-texfilt.exr");
     let render_x: u32 = resolution_x * resolution_percentage as u32 / 100_u32;
     let render_y: u32 = resolution_y * resolution_percentage as u32 / 100_u32;
     println!(
@@ -3110,8 +3092,14 @@ fn main() -> std::io::Result<()> {
     } else {
         let mut integrator_params: ParamSet = ParamSet::default();
         integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+        let integrator_name: String;
+        if render_options.has_emitters {
+            integrator_name = String::from("path");
+        } else {
+            integrator_name = String::from("ao");
+        }
         let some_integrator: Option<Box<Integrator>> = make_integrator(
-            &String::from("path"),
+            &integrator_name,
             2.0 as Float,
             render_x as i32,
             render_y as i32,
