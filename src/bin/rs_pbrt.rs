@@ -806,7 +806,14 @@ fn parse_file(
                             }
                         }
                         Rule::trailing_comment => {
-                            // ignore
+                            // ignore (only if there are no '"' chars)
+                            if statement_pair.as_str().contains("\"") {
+                                if parse_again != "" {
+                                    parse_again = parse_again + " " + statement_pair.as_str();
+                                } else {
+                                    parse_again += statement_pair.as_str();
+                                }
+                            }
                         }
                         _ => println!("TODO: {:?}", statement_pair.as_rule()),
                     }
