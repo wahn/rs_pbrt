@@ -1,0 +1,13 @@
+  [SDNAnr = 9]
+  IDProperty (len=128) {
+    IDProperty *next;
+    IDProperty *prev;
+    char type;
+    char subtype;
+    short flag;
+    char name[64];
+    int saved;
+    IDPropertyData data;
+    int len;
+    int totallen;
+  }

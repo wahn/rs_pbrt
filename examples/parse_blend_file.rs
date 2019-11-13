@@ -1416,6 +1416,7 @@ fn main() -> std::io::Result<()> {
             println!("{:?}", buffer);
         } else {
             let mut data_following_mesh: bool = false;
+            let mut data_following_object: bool = false;
             let mut is_smooth: bool = false;
             // Blender
             let mut loop_indices: Vec<u32> = Vec::new();
@@ -1484,6 +1485,7 @@ fn main() -> std::io::Result<()> {
                     }
                     // reset booleans
                     data_following_mesh = false;
+                    data_following_object = false;
                     is_smooth = false;
                 } else {
                     // read len bytes
@@ -1778,6 +1780,7 @@ fn main() -> std::io::Result<()> {
                         }
                         // reset booleans
                         data_following_mesh = false;
+                        data_following_object = true;
                         is_smooth = false;
                     } else if code == String::from("ME") {
                         if data_following_mesh {
@@ -2131,6 +2134,7 @@ fn main() -> std::io::Result<()> {
                         // skip_bytes += 4;
                         // reset booleans
                         data_following_mesh = false;
+                        data_following_object = false;
                         is_smooth = false;
                     } else if code == String::from("CA") {
                         // CA
@@ -2252,6 +2256,7 @@ fn main() -> std::io::Result<()> {
                         camera_hm.insert(base_name.clone(), cam);
                         // reset booleans
                         data_following_mesh = false;
+                        data_following_object = false;
                         is_smooth = false;
                     } else if code == String::from("MA") {
                         if data_following_mesh {
@@ -2569,6 +2574,7 @@ fn main() -> std::io::Result<()> {
                         }
                         // reset booleans
                         data_following_mesh = false;
+                        data_following_object = false;
                         is_smooth = false;
                     } else if code == String::from("LA") {
                         // LA
@@ -2892,6 +2898,60 @@ fn main() -> std::io::Result<()> {
                                 }
                                 // println!("vertex_colors: {:?}", vertex_colors);
                             }
+                        } else if data_following_object {
+                            // type_id
+                            let type_id: usize = dna_2_type_id[sdna_nr as usize] as usize;
+                            if types[type_id] == "IDProperty" {
+                                // println!("{}[{}] ({})", code, data_len, len);
+                                // println!("  SDNAnr = {}", sdna_nr);
+                                // println!("  {} ({})", types[type_id], tlen[type_id]);
+                                let mut skip_bytes: usize = 0;
+                                for _p in 0..data_len {
+                                    // println!("  {}:", p + 1);
+                                    // next
+                                    skip_bytes += 8;
+                                    // prev
+                                    skip_bytes += 8;
+                                    // type
+                                    let prop_type: u8 = buffer[skip_bytes] as u8;
+                                    // println!("  prop_type = {}", prop_type);
+                                    skip_bytes += 1;
+                                    if prop_type == 8_u8 { // IDP_DOUBLE (see DNA_ID.h)
+                                        // subtype
+                                        skip_bytes += 1;
+                                        // flag
+                                        skip_bytes += 2;
+                                        // char name[64]
+                                        let mut prop_name = String::new();
+                                        for i in 0..64 {
+                                            if buffer[skip_bytes + i] == 0 {
+                                                break;
+                                            }
+                                            prop_name.push(buffer[skip_bytes + i] as char);
+                                        }
+                                        if prop_name.len() > 0 {
+                                            println!("  prop_name[{}] = {}", prop_name.len(), prop_name);
+                                        }
+                                        skip_bytes += 64;
+                                        // saved
+                                        skip_bytes += 4;
+                                        // v279: data (len=32)
+                                        // v280: data (len=32)
+                                        skip_bytes += 8;
+                                        // group
+                                        skip_bytes += 16;
+                                        // val
+                                        // val2
+                                        let mut val_buf: [u8; 8] = [0_u8; 8];
+                                        for b in 0..8 as usize {
+                                            val_buf[b] = buffer[skip_bytes + b];
+                                        }
+                                        let val: f64 = unsafe { mem::transmute(val_buf) };
+                                        println!("  prop_val = {}", val);
+                                        skip_bytes += 8;
+                                    }
+                                }
+                            }
                         }
                     } else {
                         if data_following_mesh {
@@ -2913,6 +2973,7 @@ fn main() -> std::io::Result<()> {
                         }
                         // reset booleans
                         data_following_mesh = false;
+                        data_following_object = false;
                         is_smooth = false;
                     }
                     if code != String::from("DATA")
