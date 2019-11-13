@@ -57,6 +57,7 @@ use pbrt::materials::matte::MatteMaterial;
 use pbrt::materials::metal::MetalMaterial;
 use pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
 use pbrt::materials::mirror::MirrorMaterial;
+use pbrt::shapes::sphere::Sphere;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
 use pbrt::textures::imagemap::convert_to_spectrum;
@@ -136,16 +137,26 @@ fn focallength_to_fov(focal_length: f32, sensor: f32) -> f32 {
 // TMP (see pbrt_spheres_differentials_texfilt.rs)
 
 struct SceneDescription {
+    // mesh
     mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
     triangle_colors: Vec<Vec<Spectrum>>,
+    // sphere
+    sphere_names: Vec<String>,
+    spheres: Vec<Arc<Shape>>,
+    // lights
     lights: Vec<Arc<Light>>,
 }
 
 struct SceneDescriptionBuilder {
+    // mesh
     mesh_names: Vec<String>,
     meshes: Vec<Arc<TriangleMesh>>,
     triangle_colors: Vec<Vec<Spectrum>>,
+    // sphere
+    sphere_names: Vec<String>,
+    spheres: Vec<Arc<Shape>>,
+    // lights
     lights: Vec<Arc<Light>>,
 }
 
@@ -155,6 +166,8 @@ impl SceneDescriptionBuilder {
             mesh_names: Vec::new(),
             meshes: Vec::new(),
             triangle_colors: Vec::new(),
+            sphere_names: Vec::new(),
+            spheres: Vec::new(),
             lights: Vec::new(),
         }
     }
@@ -189,6 +202,29 @@ impl SceneDescriptionBuilder {
         ));
         self.meshes.push(triangle_mesh);
         self.triangle_colors.push(triangle_colors);
+        self
+    }
+    fn add_sphere(
+        &mut self,
+        base_name: String,
+        object_to_world: Transform,
+        world_to_object: Transform,
+        radius: Float,
+        z_min: Float,
+        z_max: Float,
+        phi_max: Float,
+    ) -> &mut SceneDescriptionBuilder {
+        self.sphere_names.push(base_name);
+        let sphere = Arc::new(Shape::Sphr(Sphere::new(
+            object_to_world,
+            world_to_object,
+            false,
+            radius,
+            z_min,
+            z_max,
+            phi_max,
+        )));
+        self.spheres.push(sphere);
         self
     }
     fn add_hdr_light(
@@ -260,6 +296,8 @@ impl SceneDescriptionBuilder {
             mesh_names: self.mesh_names,
             meshes: self.meshes,
             triangle_colors: self.triangle_colors,
+            sphere_names: self.sphere_names,
+            spheres: self.spheres,
             lights: self.lights,
         }
     }
@@ -294,6 +332,170 @@ impl RenderOptions {
         // lights
         for light in &scene.lights {
             lights.push(light.clone());
+        }
+        // spheres
+        for sphere_idx in 0..scene.spheres.len() {
+            let sphere = &scene.spheres[sphere_idx];
+            let sphere_name = &scene.sphere_names[sphere_idx];
+            if let Some(mat) = get_material(sphere_name, material_hm) {
+                // println!("{:?}: {:?}", sphere_name, mat);
+                if mat.emit > 0.0 {
+                    has_emitters = true;
+                } else {
+                    if mat.ang != 1.0 {
+                        // GlassMaterial
+                        let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+                        let kt = Arc::new(ConstantTexture::new(Spectrum::rgb(
+                            mat.specr, mat.specg, mat.specb,
+                        )));
+                        let u_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let index = Arc::new(ConstantTexture::new(mat.ang as Float));
+                        let glass = Arc::new(Material::Glass(GlassMaterial {
+                            kr: kr,
+                            kt: kt,
+                            u_roughness: u_roughness,
+                            v_roughness: v_roughness,
+                            index: index,
+                            bump_map: None,
+                            remap_roughness: true,
+                        }));
+                        triangles.push(sphere.clone());
+                        triangle_materials.push(glass.clone());
+                        triangle_lights.push(None);
+                    } else if mat.ray_mirror > 0.0 {
+                        if mat.roughness > 0.0 {
+                            // MetalMaterial
+                            let copper_n: Spectrum = Spectrum::from_sampled(
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_N,
+                                COPPER_SAMPLES as i32,
+                            );
+                            let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                                Arc::new(ConstantTexture::new(copper_n));
+                            let copper_k: Spectrum = Spectrum::from_sampled(
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_K,
+                                COPPER_SAMPLES as i32,
+                            );
+                            let k: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                                Arc::new(ConstantTexture::new(copper_k));
+                            let remap_roughness: bool = true;
+                            let metal = Arc::new(Material::Metal(MetalMaterial::new(
+                                eta,
+                                k,
+                                Arc::new(ConstantTexture::new(mat.roughness as Float)),
+                                None,
+                                None,
+                                None,
+                                remap_roughness,
+                            )));
+                            triangles.push(sphere.clone());
+                            triangle_materials.push(metal.clone());
+                            triangle_lights.push(None);
+                        } else {
+                            // MirrorMaterial
+                            let kr = Arc::new(ConstantTexture::new(Spectrum::rgb(
+                                mat.mirr * mat.ray_mirror,
+                                mat.mirg * mat.ray_mirror,
+                                mat.mirb * mat.ray_mirror,
+                            )));
+                            let mirror = Arc::new(Material::Mirror(MirrorMaterial::new(kr, None)));
+                            triangles.push(sphere.clone());
+                            triangle_materials.push(mirror.clone());
+                            triangle_lights.push(None);
+                        }
+                    } else {
+                        // MatteMaterial
+                        let mut kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                            Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+                        if let Some(tex) = texture_hm.get(sphere_name) {
+                            // first try texture with exactly the same name as the mesh
+                            let su: Float = 1.0;
+                            let sv: Float = 1.0;
+                            let du: Float = 0.0;
+                            let dv: Float = 0.0;
+                            let mapping: Box<TextureMapping2D> =
+                                Box::new(TextureMapping2D::UV(UVMapping2D {
+                                    su: su,
+                                    sv: sv,
+                                    du: du,
+                                    dv: dv,
+                                }));
+                            let filename: String = String::from(tex.to_str().unwrap());
+                            let do_trilinear: bool = false;
+                            let max_aniso: Float = 8.0;
+                            let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                            let scale: Float = 1.0;
+                            let gamma: bool = true;
+                            kd = Arc::new(ImageTexture::new(
+                                mapping,
+                                filename,
+                                do_trilinear,
+                                max_aniso,
+                                wrap_mode,
+                                scale,
+                                gamma,
+                                convert_to_spectrum,
+                            ));
+                        } else {
+                            // then remove trailing digits from mesh name
+                            let mut ntd: String = String::new();
+                            let mut chars = sphere_name.chars();
+                            let mut digits: String = String::new(); // many digits
+                            while let Some(c) = chars.next() {
+                                if c.is_digit(10_u32) {
+                                    // collect digits
+                                    digits.push(c);
+                                } else {
+                                    // push collected digits (if any)
+                                    ntd += &digits;
+                                    // and reset
+                                    digits = String::new();
+                                    // push non-digit
+                                    ntd.push(c);
+                                }
+                            }
+                            // try no trailing digits (ntd)
+                            if let Some(tex) = texture_hm.get(&ntd) {
+                                let su: Float = 1.0;
+                                let sv: Float = 1.0;
+                                let du: Float = 0.0;
+                                let dv: Float = 0.0;
+                                let mapping: Box<TextureMapping2D> =
+                                    Box::new(TextureMapping2D::UV(UVMapping2D {
+                                        su: su,
+                                        sv: sv,
+                                        du: du,
+                                        dv: dv,
+                                    }));
+                                let filename: String = String::from(tex.to_str().unwrap());
+                                let do_trilinear: bool = false;
+                                let max_aniso: Float = 8.0;
+                                let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                                let scale: Float = 1.0;
+                                let gamma: bool = true;
+                                kd = Arc::new(ImageTexture::new(
+                                    mapping,
+                                    filename,
+                                    do_trilinear,
+                                    max_aniso,
+                                    wrap_mode,
+                                    scale,
+                                    gamma,
+                                    convert_to_spectrum,
+                                ));
+                            }
+                        }
+                        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let matte =
+                            Arc::new(Material::Matte(MatteMaterial::new(kd, sigma.clone(), None)));
+                        triangles.push(sphere.clone());
+                        triangle_materials.push(matte.clone());
+                        triangle_lights.push(None);
+                    }
+                }
+            }
         }
         // meshes
         for mesh_idx in 0..scene.meshes.len() {
@@ -1166,6 +1368,10 @@ fn main() -> std::io::Result<()> {
     let mut loops: Vec<u8> = Vec::new();
     let mut vertex_indices: Vec<u32> = Vec::new();
     let mut vertex_colors: Vec<u8> = Vec::new();
+    let mut sphere_radius: f64 = 1.0;
+    let mut sphere_zmin: f64 = -1.0;
+    let mut sphere_zmax: f64 = 1.0;
+    let mut sphere_phimax: f64 = 360.0;
     let mut hdr_path: OsString = OsString::new();
     // first get the DNA
     let mut names: Vec<String> = Vec::new();
@@ -1467,19 +1673,40 @@ fn main() -> std::io::Result<()> {
                     f.read(&mut buffer)?;
                     counter += len as usize;
                     if data_following_mesh {
-                        read_mesh(
-                            &base_name,
-                            &object_to_world_hm,
-                            &mut object_to_world,
-                            &p,
-                            &n,
-                            &mut uvs,
-                            &loops,
-                            vertex_indices,
-                            vertex_colors,
-                            is_smooth,
-                            &mut builder,
-                        );
+                        if base_name.starts_with("PbrtSphere") {
+                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                object_to_world = *o2w;
+                            } else {
+                                println!(
+                                    "WARNING: looking up object_to_world by name ({:?}) failed",
+                                    base_name
+                                );
+                            }
+                            let world_to_object: Transform = Transform::inverse(&object_to_world);
+                            builder.add_sphere(
+                                base_name.clone(),
+                                object_to_world,
+                                world_to_object,
+                                sphere_radius as f32,
+                                sphere_zmin as f32,
+                                sphere_zmax as f32,
+                                sphere_phimax as f32,
+                            );
+                        } else {
+                            read_mesh(
+                                &base_name,
+                                &object_to_world_hm,
+                                &mut object_to_world,
+                                &p,
+                                &n,
+                                &mut uvs,
+                                &loops,
+                                vertex_indices,
+                                vertex_colors,
+                                is_smooth,
+                                &mut builder,
+                            );
+                        }
                         vertex_indices = Vec::new();
                         vertex_colors = Vec::new();
                     }
@@ -1784,19 +2011,41 @@ fn main() -> std::io::Result<()> {
                         is_smooth = false;
                     } else if code == String::from("ME") {
                         if data_following_mesh {
-                            read_mesh(
-                                &base_name,
-                                &object_to_world_hm,
-                                &mut object_to_world,
-                                &p,
-                                &n,
-                                &mut uvs,
-                                &loops,
-                                vertex_indices,
-                                vertex_colors,
-                                is_smooth,
-                                &mut builder,
-                            );
+                            if base_name.starts_with("PbrtSphere") {
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    object_to_world = *o2w;
+                                } else {
+                                    println!(
+                                        "WARNING: looking up object_to_world by name ({:?}) failed",
+                                        base_name
+                                    );
+                                }
+                                let world_to_object: Transform =
+                                    Transform::inverse(&object_to_world);
+                                builder.add_sphere(
+                                    base_name.clone(),
+                                    object_to_world,
+                                    world_to_object,
+                                    sphere_radius as f32,
+                                    sphere_zmin as f32,
+                                    sphere_zmax as f32,
+                                    sphere_phimax as f32,
+                                );
+                            } else {
+                                read_mesh(
+                                    &base_name,
+                                    &object_to_world_hm,
+                                    &mut object_to_world,
+                                    &p,
+                                    &n,
+                                    &mut uvs,
+                                    &loops,
+                                    vertex_indices,
+                                    vertex_colors,
+                                    is_smooth,
+                                    &mut builder,
+                                );
+                            }
                             vertex_indices = Vec::new();
                             vertex_colors = Vec::new();
                         }
@@ -2260,19 +2509,41 @@ fn main() -> std::io::Result<()> {
                         is_smooth = false;
                     } else if code == String::from("MA") {
                         if data_following_mesh {
-                            read_mesh(
-                                &base_name,
-                                &object_to_world_hm,
-                                &mut object_to_world,
-                                &p,
-                                &n,
-                                &mut uvs,
-                                &loops,
-                                vertex_indices,
-                                vertex_colors,
-                                is_smooth,
-                                &mut builder,
-                            );
+                            if base_name.starts_with("PbrtSphere") {
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    object_to_world = *o2w;
+                                } else {
+                                    println!(
+                                        "WARNING: looking up object_to_world by name ({:?}) failed",
+                                        base_name
+                                    );
+                                }
+                                let world_to_object: Transform =
+                                    Transform::inverse(&object_to_world);
+                                builder.add_sphere(
+                                    base_name.clone(),
+                                    object_to_world,
+                                    world_to_object,
+                                    sphere_radius as f32,
+                                    sphere_zmin as f32,
+                                    sphere_zmax as f32,
+                                    sphere_phimax as f32,
+                                );
+                            } else {
+                                read_mesh(
+                                    &base_name,
+                                    &object_to_world_hm,
+                                    &mut object_to_world,
+                                    &p,
+                                    &n,
+                                    &mut uvs,
+                                    &loops,
+                                    vertex_indices,
+                                    vertex_colors,
+                                    is_smooth,
+                                    &mut builder,
+                                );
+                            }
                             vertex_indices = Vec::new();
                             vertex_colors = Vec::new();
                         }
@@ -2916,7 +3187,8 @@ fn main() -> std::io::Result<()> {
                                     let prop_type: u8 = buffer[skip_bytes] as u8;
                                     // println!("  prop_type = {}", prop_type);
                                     skip_bytes += 1;
-                                    if prop_type == 8_u8 { // IDP_DOUBLE (see DNA_ID.h)
+                                    if prop_type == 8_u8 {
+                                        // IDP_DOUBLE (see DNA_ID.h)
                                         // subtype
                                         skip_bytes += 1;
                                         // flag
@@ -2929,9 +3201,13 @@ fn main() -> std::io::Result<()> {
                                             }
                                             prop_name.push(buffer[skip_bytes + i] as char);
                                         }
-                                        if prop_name.len() > 0 {
-                                            println!("  prop_name[{}] = {}", prop_name.len(), prop_name);
-                                        }
+                                        // if prop_name.len() > 0 {
+                                        //     println!(
+                                        //         "  prop_name[{}] = {}",
+                                        //         prop_name.len(),
+                                        //         prop_name
+                                        //     );
+                                        // }
                                         skip_bytes += 64;
                                         // saved
                                         skip_bytes += 4;
@@ -2946,28 +3222,68 @@ fn main() -> std::io::Result<()> {
                                         for b in 0..8 as usize {
                                             val_buf[b] = buffer[skip_bytes + b];
                                         }
-                                        let val: f64 = unsafe { mem::transmute(val_buf) };
-                                        println!("  prop_val = {}", val);
+                                        let prop_val: f64 = unsafe { mem::transmute(val_buf) };
+                                        // println!("  prop_val = {}", prop_val);
                                         skip_bytes += 8;
+                                        if base_name.starts_with("PbrtSphere") {
+                                            // println!(
+                                            //     "  {}.{} = {}",
+                                            //     base_name, prop_name, prop_val
+                                            // );
+                                            if prop_name == String::from("radius") {
+                                                sphere_radius = prop_val;
+                                            }
+                                            if prop_name == String::from("zmin") {
+                                                sphere_zmin = prop_val;
+                                            }
+                                            if prop_name == String::from("zmax") {
+                                                sphere_zmax = prop_val;
+                                            }
+                                            if prop_name == String::from("phimax") {
+                                                sphere_phimax = prop_val;
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     } else {
                         if data_following_mesh {
-                            read_mesh(
-                                &base_name,
-                                &object_to_world_hm,
-                                &mut object_to_world,
-                                &p,
-                                &n,
-                                &mut uvs,
-                                &loops,
-                                vertex_indices,
-                                vertex_colors,
-                                is_smooth,
-                                &mut builder,
-                            );
+                            if base_name.starts_with("PbrtSphere") {
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    object_to_world = *o2w;
+                                } else {
+                                    println!(
+                                        "WARNING: looking up object_to_world by name ({:?}) failed",
+                                        base_name
+                                    );
+                                }
+                                let world_to_object: Transform =
+                                    Transform::inverse(&object_to_world);
+                                builder.add_sphere(
+                                    base_name.clone(),
+                                    object_to_world,
+                                    world_to_object,
+                                    sphere_radius as f32,
+                                    sphere_zmin as f32,
+                                    sphere_zmax as f32,
+                                    sphere_phimax as f32,
+                                );
+                            } else {
+                                read_mesh(
+                                    &base_name,
+                                    &object_to_world_hm,
+                                    &mut object_to_world,
+                                    &p,
+                                    &n,
+                                    &mut uvs,
+                                    &loops,
+                                    vertex_indices,
+                                    vertex_colors,
+                                    is_smooth,
+                                    &mut builder,
+                                );
+                            }
                             vertex_indices = Vec::new();
                             vertex_colors = Vec::new();
                         }
