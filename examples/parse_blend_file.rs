@@ -103,6 +103,27 @@ struct Cli {
     path: std::path::PathBuf,
 }
 
+// PBRT
+
+#[derive(Debug, Default, Copy, Clone)]
+struct PbrtSphere {
+    pub radius: f32,
+    pub zmin: f32,
+    pub zmax: f32,
+    pub phimax: f32,
+}
+
+impl PbrtSphere {
+    fn new(radius: f32, zmin: f32, zmax: f32, phimax: f32) -> Self {
+        PbrtSphere {
+            radius,
+            zmin,
+            zmax,
+            phimax,
+        }
+    }
+}
+
 // Blender
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -1358,6 +1379,7 @@ fn main() -> std::io::Result<()> {
     let mut camera_hm: HashMap<String, BlendCamera> = HashMap::new();
     let mut material_hm: HashMap<String, Blend279Material> = HashMap::new();
     let mut texture_hm: HashMap<String, OsString> = HashMap::new();
+    let mut spheres_hm: HashMap<String, PbrtSphere> = HashMap::new();
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
     let mut object_to_world: Transform = Transform::new(
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
@@ -1672,8 +1694,21 @@ fn main() -> std::io::Result<()> {
                     let mut buffer = vec![0; len as usize];
                     f.read(&mut buffer)?;
                     counter += len as usize;
+                    if data_following_object {
+                        if base_name.starts_with("PbrtSphere") {
+                            // store sphere values for later
+                            let pbrt_sphere: PbrtSphere = PbrtSphere::new(
+                                sphere_radius as f32,
+                                sphere_zmin as f32,
+                                sphere_zmax as f32,
+                                sphere_phimax as f32,
+                            );
+                            spheres_hm.insert(base_name.clone(), pbrt_sphere);
+                        }
+                    }
                     if data_following_mesh {
                         if base_name.starts_with("PbrtSphere") {
+                            // create sphere after mesh data
                             if let Some(o2w) = object_to_world_hm.get(&base_name) {
                                 object_to_world = *o2w;
                             } else {
@@ -1683,15 +1718,17 @@ fn main() -> std::io::Result<()> {
                                 );
                             }
                             let world_to_object: Transform = Transform::inverse(&object_to_world);
-                            builder.add_sphere(
-                                base_name.clone(),
-                                object_to_world,
-                                world_to_object,
-                                sphere_radius as f32,
-                                sphere_zmin as f32,
-                                sphere_zmax as f32,
-                                sphere_phimax as f32,
-                            );
+                            if let Some(sphere) = spheres_hm.get(&base_name) {
+                                builder.add_sphere(
+                                    base_name.clone(),
+                                    object_to_world,
+                                    world_to_object,
+                                    sphere.radius,
+                                    sphere.zmin,
+                                    sphere.zmax,
+                                    sphere.phimax,
+                                );
+                            }
                         } else {
                             read_mesh(
                                 &base_name,
@@ -1789,6 +1826,18 @@ fn main() -> std::io::Result<()> {
                             }
                         }
                     } else if code == String::from("OB") {
+                        if data_following_object {
+                            if base_name.starts_with("PbrtSphere") {
+                                // store sphere values for later
+                                let pbrt_sphere: PbrtSphere = PbrtSphere::new(
+                                    sphere_radius as f32,
+                                    sphere_zmin as f32,
+                                    sphere_zmax as f32,
+                                    sphere_phimax as f32,
+                                );
+                                spheres_hm.insert(base_name.clone(), pbrt_sphere);
+                            }
+                        }
                         // OB
                         // println!("{} ({})", code, len);
                         // println!("  SDNAnr = {}", sdna_nr);
@@ -2010,8 +2059,21 @@ fn main() -> std::io::Result<()> {
                         data_following_object = true;
                         is_smooth = false;
                     } else if code == String::from("ME") {
+                        if data_following_object {
+                            if base_name.starts_with("PbrtSphere") {
+                                // store sphere values for later
+                                let pbrt_sphere: PbrtSphere = PbrtSphere::new(
+                                    sphere_radius as f32,
+                                    sphere_zmin as f32,
+                                    sphere_zmax as f32,
+                                    sphere_phimax as f32,
+                                );
+                                spheres_hm.insert(base_name.clone(), pbrt_sphere);
+                            }
+                        }
                         if data_following_mesh {
                             if base_name.starts_with("PbrtSphere") {
+                                // create sphere after mesh data
                                 if let Some(o2w) = object_to_world_hm.get(&base_name) {
                                     object_to_world = *o2w;
                                 } else {
@@ -2022,15 +2084,17 @@ fn main() -> std::io::Result<()> {
                                 }
                                 let world_to_object: Transform =
                                     Transform::inverse(&object_to_world);
-                                builder.add_sphere(
-                                    base_name.clone(),
-                                    object_to_world,
-                                    world_to_object,
-                                    sphere_radius as f32,
-                                    sphere_zmin as f32,
-                                    sphere_zmax as f32,
-                                    sphere_phimax as f32,
-                                );
+                                if let Some(sphere) = spheres_hm.get(&base_name) {
+                                    builder.add_sphere(
+                                        base_name.clone(),
+                                        object_to_world,
+                                        world_to_object,
+                                        sphere.radius,
+                                        sphere.zmin,
+                                        sphere.zmax,
+                                        sphere.phimax,
+                                    );
+                                }
                             } else {
                                 read_mesh(
                                     &base_name,
@@ -2508,8 +2572,21 @@ fn main() -> std::io::Result<()> {
                         data_following_object = false;
                         is_smooth = false;
                     } else if code == String::from("MA") {
+                        if data_following_object {
+                            if base_name.starts_with("PbrtSphere") {
+                                // store sphere values for later
+                                let pbrt_sphere: PbrtSphere = PbrtSphere::new(
+                                    sphere_radius as f32,
+                                    sphere_zmin as f32,
+                                    sphere_zmax as f32,
+                                    sphere_phimax as f32,
+                                );
+                                spheres_hm.insert(base_name.clone(), pbrt_sphere);
+                            }
+                        }
                         if data_following_mesh {
                             if base_name.starts_with("PbrtSphere") {
+                                // create sphere after mesh data
                                 if let Some(o2w) = object_to_world_hm.get(&base_name) {
                                     object_to_world = *o2w;
                                 } else {
@@ -2520,15 +2597,17 @@ fn main() -> std::io::Result<()> {
                                 }
                                 let world_to_object: Transform =
                                     Transform::inverse(&object_to_world);
-                                builder.add_sphere(
-                                    base_name.clone(),
-                                    object_to_world,
-                                    world_to_object,
-                                    sphere_radius as f32,
-                                    sphere_zmin as f32,
-                                    sphere_zmax as f32,
-                                    sphere_phimax as f32,
-                                );
+                                if let Some(sphere) = spheres_hm.get(&base_name) {
+                                    builder.add_sphere(
+                                        base_name.clone(),
+                                        object_to_world,
+                                        world_to_object,
+                                        sphere.radius,
+                                        sphere.zmin,
+                                        sphere.zmax,
+                                        sphere.phimax,
+                                    );
+                                }
                             } else {
                                 read_mesh(
                                     &base_name,
@@ -3248,8 +3327,21 @@ fn main() -> std::io::Result<()> {
                             }
                         }
                     } else {
+                        if data_following_object {
+                            if base_name.starts_with("PbrtSphere") {
+                                // store sphere values for later
+                                let pbrt_sphere: PbrtSphere = PbrtSphere::new(
+                                    sphere_radius as f32,
+                                    sphere_zmin as f32,
+                                    sphere_zmax as f32,
+                                    sphere_phimax as f32,
+                                );
+                                spheres_hm.insert(base_name.clone(), pbrt_sphere);
+                            }
+                        }
                         if data_following_mesh {
                             if base_name.starts_with("PbrtSphere") {
+                                // create sphere after mesh data
                                 if let Some(o2w) = object_to_world_hm.get(&base_name) {
                                     object_to_world = *o2w;
                                 } else {
@@ -3260,15 +3352,17 @@ fn main() -> std::io::Result<()> {
                                 }
                                 let world_to_object: Transform =
                                     Transform::inverse(&object_to_world);
-                                builder.add_sphere(
-                                    base_name.clone(),
-                                    object_to_world,
-                                    world_to_object,
-                                    sphere_radius as f32,
-                                    sphere_zmin as f32,
-                                    sphere_zmax as f32,
-                                    sphere_phimax as f32,
-                                );
+                                if let Some(sphere) = spheres_hm.get(&base_name) {
+                                    builder.add_sphere(
+                                        base_name.clone(),
+                                        object_to_world,
+                                        world_to_object,
+                                        sphere.radius,
+                                        sphere.zmin,
+                                        sphere.zmax,
+                                        sphere.phimax,
+                                    );
+                                }
                             } else {
                                 read_mesh(
                                     &base_name,
