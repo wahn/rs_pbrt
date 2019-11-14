@@ -27,10 +27,10 @@ pub struct Sphere {
     pub theta_max: Float,
     pub phi_max: Float,
     // inherited from class Shape (see shape.h)
-    object_to_world: Transform,
-    world_to_object: Transform,
-    reverse_orientation: bool,
-    transform_swaps_handedness: bool,
+    pub object_to_world: Transform,
+    pub world_to_object: Transform,
+    pub reverse_orientation: bool,
+    pub transform_swaps_handedness: bool,
     pub material: Option<Arc<Material>>,
 }
 
@@ -362,6 +362,9 @@ impl Sphere {
     }
     pub fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
+    }
+    pub fn get_object_to_world(&self) -> Transform {
+        self.object_to_world
     }
     pub fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)

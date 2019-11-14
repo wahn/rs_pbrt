@@ -362,6 +362,28 @@ impl RenderOptions {
                 // println!("{:?}: {:?}", sphere_name, mat);
                 if mat.emit > 0.0 {
                     has_emitters = true;
+                    let mi: MediumInterface = MediumInterface::default();
+                    let l_emit: Spectrum = Spectrum::rgb(
+                        mat.r * mat.emit * light_scale,
+                        mat.g * mat.emit * light_scale,
+                        mat.b * mat.emit * light_scale,
+                    );
+                    let n_samples: i32 = 1;
+                    let two_sided: bool = false;
+                    let area_light: Arc<Light> =
+                        Arc::new(Light::DiffuseArea(DiffuseAreaLight::new(
+                            &sphere.get_object_to_world(),
+                            &mi,
+                            &l_emit,
+                            n_samples,
+                            sphere.clone(),
+                            two_sided,
+                        )));
+                    lights.push(area_light.clone());
+                    triangles.push(sphere.clone());
+                    triangle_materials.push(default_material.clone());
+                    let triangle_light: Option<Arc<Light>> = Some(area_light.clone());
+                    triangle_lights.push(triangle_light);
                 } else {
                     if mat.ang != 1.0 {
                         // GlassMaterial

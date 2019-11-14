@@ -10,6 +10,7 @@
 use crate::core::geometry::{Bounds3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::pbrt::Float;
+use crate::core::transform::Transform;
 use crate::shapes::curve::Curve;
 use crate::shapes::cylinder::Cylinder;
 use crate::shapes::disk::Disk;
@@ -79,6 +80,15 @@ impl Shape {
             Shape::Dsk(shape) => shape.get_transform_swaps_handedness(),
             Shape::Sphr(shape) => shape.get_transform_swaps_handedness(),
             Shape::Trngl(shape) => shape.get_transform_swaps_handedness(),
+        }
+    }
+    pub fn get_object_to_world(&self) -> Transform {
+        match self {
+            Shape::Crv(shape) => shape.get_object_to_world(),
+            Shape::Clndr(shape) => shape.get_object_to_world(),
+            Shape::Dsk(shape) => shape.get_object_to_world(),
+            Shape::Sphr(shape) => shape.get_object_to_world(),
+            Shape::Trngl(shape) => shape.get_object_to_world(),
         }
     }
     pub fn area(&self) -> Float {

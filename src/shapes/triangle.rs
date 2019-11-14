@@ -85,10 +85,10 @@ pub struct Triangle {
     mesh: Arc<TriangleMesh>,
     pub id: u32,
     // inherited from class Shape (see shape.h)
-    object_to_world: Transform,
-    world_to_object: Transform,
-    reverse_orientation: bool,
-    transform_swaps_handedness: bool,
+    pub object_to_world: Transform,
+    pub world_to_object: Transform,
+    pub reverse_orientation: bool,
+    pub transform_swaps_handedness: bool,
     pub material: Option<Arc<Material>>,
 }
 
@@ -652,6 +652,9 @@ impl Triangle {
     }
     pub fn get_transform_swaps_handedness(&self) -> bool {
         self.transform_swaps_handedness
+    }
+    pub fn get_object_to_world(&self) -> Transform {
+        self.object_to_world
     }
     pub fn area(&self) -> Float {
         // get triangle vertices in _p0_, _p1_, and _p2_
