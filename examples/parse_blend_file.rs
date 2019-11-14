@@ -327,9 +327,9 @@ impl SceneDescriptionBuilder {
 struct RenderOptions {
     has_emitters: bool,
     primitives: Vec<Arc<Primitive>>,
-    triangles: Vec<Arc<Shape>>,
-    triangle_materials: Vec<Arc<Material>>,
-    triangle_lights: Vec<Option<Arc<Light>>>,
+    shapes: Vec<Arc<Shape>>,
+    shape_materials: Vec<Arc<Material>>,
+    shape_lights: Vec<Option<Arc<Light>>>,
     lights: Vec<Arc<Light>>,
 }
 
@@ -342,9 +342,9 @@ impl RenderOptions {
     ) -> RenderOptions {
         let mut has_emitters: bool = false;
         let primitives: Vec<Arc<Primitive>> = Vec::new();
-        let mut triangles: Vec<Arc<Shape>> = Vec::new();
-        let mut triangle_materials: Vec<Arc<Material>> = Vec::new();
-        let mut triangle_lights: Vec<Option<Arc<Light>>> = Vec::new();
+        let mut shapes: Vec<Arc<Shape>> = Vec::new();
+        let mut shape_materials: Vec<Arc<Material>> = Vec::new();
+        let mut shape_lights: Vec<Option<Arc<Light>>> = Vec::new();
         let mut lights: Vec<Arc<Light>> = Vec::new();
         // default material
         let kd = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
@@ -380,10 +380,10 @@ impl RenderOptions {
                             two_sided,
                         )));
                     lights.push(area_light.clone());
-                    triangles.push(sphere.clone());
-                    triangle_materials.push(default_material.clone());
-                    let triangle_light: Option<Arc<Light>> = Some(area_light.clone());
-                    triangle_lights.push(triangle_light);
+                    shapes.push(sphere.clone());
+                    shape_materials.push(default_material.clone());
+                    let shape_light: Option<Arc<Light>> = Some(area_light.clone());
+                    shape_lights.push(shape_light);
                 } else {
                     if mat.ang != 1.0 {
                         // GlassMaterial
@@ -403,9 +403,9 @@ impl RenderOptions {
                             bump_map: None,
                             remap_roughness: true,
                         }));
-                        triangles.push(sphere.clone());
-                        triangle_materials.push(glass.clone());
-                        triangle_lights.push(None);
+                        shapes.push(sphere.clone());
+                        shape_materials.push(glass.clone());
+                        shape_lights.push(None);
                     } else if mat.ray_mirror > 0.0 {
                         if mat.roughness > 0.0 {
                             // MetalMaterial
@@ -433,9 +433,9 @@ impl RenderOptions {
                                 None,
                                 remap_roughness,
                             )));
-                            triangles.push(sphere.clone());
-                            triangle_materials.push(metal.clone());
-                            triangle_lights.push(None);
+                            shapes.push(sphere.clone());
+                            shape_materials.push(metal.clone());
+                            shape_lights.push(None);
                         } else {
                             // MirrorMaterial
                             let kr = Arc::new(ConstantTexture::new(Spectrum::rgb(
@@ -444,9 +444,9 @@ impl RenderOptions {
                                 mat.mirb * mat.ray_mirror,
                             )));
                             let mirror = Arc::new(Material::Mirror(MirrorMaterial::new(kr, None)));
-                            triangles.push(sphere.clone());
-                            triangle_materials.push(mirror.clone());
-                            triangle_lights.push(None);
+                            shapes.push(sphere.clone());
+                            shape_materials.push(mirror.clone());
+                            shape_lights.push(None);
                         }
                     } else {
                         // MatteMaterial
@@ -533,9 +533,9 @@ impl RenderOptions {
                         let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
                         let matte =
                             Arc::new(Material::Matte(MatteMaterial::new(kd, sigma.clone(), None)));
-                        triangles.push(sphere.clone());
-                        triangle_materials.push(matte.clone());
-                        triangle_lights.push(None);
+                        shapes.push(sphere.clone());
+                        shape_materials.push(matte.clone());
+                        shape_lights.push(None);
                     }
                 }
             }
@@ -546,7 +546,7 @@ impl RenderOptions {
             let mesh_name = &scene.mesh_names[mesh_idx];
             let triangle_colors = &scene.triangle_colors[mesh_idx];
             // create individual triangles
-            let mut shapes: Vec<Arc<Shape>> = Vec::new();
+            let mut triangles: Vec<Arc<Shape>> = Vec::new();
             for id in 0..mesh.n_triangles {
                 let triangle = Arc::new(Shape::Trngl(Triangle::new(
                     mesh.object_to_world,
@@ -562,8 +562,8 @@ impl RenderOptions {
                 // println!("{:?}: {:?}", mesh_name, mat);
                 if mat.emit > 0.0 {
                     has_emitters = true;
-                    for i in 0..shapes.len() {
-                        let shape = &shapes[i];
+                    for i in 0..triangles.len() {
+                        let triangle = &triangles[i];
                         let mi: MediumInterface = MediumInterface::default();
                         let l_emit: Spectrum = Spectrum::rgb(
                             mat.r * mat.emit * light_scale,
@@ -578,13 +578,13 @@ impl RenderOptions {
                                 &mi,
                                 &l_emit,
                                 n_samples,
-                                shape.clone(),
+                                triangle.clone(),
                                 two_sided,
                             )));
                         lights.push(area_light.clone());
-                        triangle_materials.push(default_material.clone());
+                        shape_materials.push(default_material.clone());
                         let triangle_light: Option<Arc<Light>> = Some(area_light.clone());
-                        triangle_lights.push(triangle_light);
+                        shape_lights.push(triangle_light);
                     }
                 } else {
                     if mat.ang != 1.0 {
@@ -605,9 +605,9 @@ impl RenderOptions {
                             bump_map: None,
                             remap_roughness: true,
                         }));
-                        for _i in 0..shapes.len() {
-                            triangle_materials.push(glass.clone());
-                            triangle_lights.push(None);
+                        for _i in 0..triangles.len() {
+                            shape_materials.push(glass.clone());
+                            shape_lights.push(None);
                         }
                     } else if mat.ray_mirror > 0.0 {
                         if mat.roughness > 0.0 {
@@ -636,9 +636,9 @@ impl RenderOptions {
                                 None,
                                 remap_roughness,
                             )));
-                            for _i in 0..shapes.len() {
-                                triangle_materials.push(metal.clone());
-                                triangle_lights.push(None);
+                            for _i in 0..triangles.len() {
+                                shape_materials.push(metal.clone());
+                                shape_lights.push(None);
                             }
                         } else {
                             // MirrorMaterial
@@ -648,9 +648,9 @@ impl RenderOptions {
                                 mat.mirb * mat.ray_mirror,
                             )));
                             let mirror = Arc::new(Material::Mirror(MirrorMaterial::new(kr, None)));
-                            for _i in 0..shapes.len() {
-                                triangle_materials.push(mirror.clone());
-                                triangle_lights.push(None);
+                            for _i in 0..triangles.len() {
+                                shape_materials.push(mirror.clone());
+                                shape_lights.push(None);
                             }
                         }
                     } else {
@@ -739,9 +739,9 @@ impl RenderOptions {
                         let mut matte =
                             Arc::new(Material::Matte(MatteMaterial::new(kd, sigma.clone(), None)));
                         if triangle_colors.len() != 0_usize {
-                            assert!(triangle_colors.len() == shapes.len());
+                            assert!(triangle_colors.len() == triangles.len());
                             // ignore textures, use triangle colors
-                            for i in 0..shapes.len() {
+                            for i in 0..triangles.len() {
                                 // overwrite kd
                                 kd = Arc::new(ConstantTexture::new(triangle_colors[i]));
                                 matte = Arc::new(Material::Matte(MatteMaterial::new(
@@ -749,31 +749,31 @@ impl RenderOptions {
                                     sigma.clone(),
                                     None,
                                 )));
-                                triangle_materials.push(matte.clone());
-                                triangle_lights.push(None);
+                                shape_materials.push(matte.clone());
+                                shape_lights.push(None);
                             }
                         } else {
-                            for _i in 0..shapes.len() {
-                                triangle_materials.push(matte.clone());
-                                triangle_lights.push(None);
+                            for _i in 0..triangles.len() {
+                                shape_materials.push(matte.clone());
+                                shape_lights.push(None);
                             }
                         }
                     }
                 }
             } else {
                 println!("{:?}: no mat", mesh_name);
-                for _i in 0..shapes.len() {
-                    triangle_materials.push(default_material.clone());
-                    triangle_lights.push(None);
+                for _i in 0..triangles.len() {
+                    shape_materials.push(default_material.clone());
+                    shape_lights.push(None);
                 }
             }
         }
         RenderOptions {
             has_emitters: has_emitters,
             primitives: primitives,
-            triangles: triangles,
-            triangle_materials: triangle_materials,
-            triangle_lights: triangle_lights,
+            shapes: shapes,
+            shape_materials: shape_materials,
+            shape_lights: shape_lights,
             lights: lights,
         }
     }
@@ -3443,15 +3443,15 @@ fn main() -> std::io::Result<()> {
         &texture_hm,
         args.light_scale as Float,
     );
-    assert!(render_options.triangles.len() == render_options.triangle_lights.len());
-    for triangle_idx in 0..render_options.triangles.len() {
-        let triangle = &render_options.triangles[triangle_idx];
-        let triangle_material = &render_options.triangle_materials[triangle_idx];
-        let triangle_light = &render_options.triangle_lights[triangle_idx];
+    assert!(render_options.shapes.len() == render_options.shape_lights.len());
+    for shape_idx in 0..render_options.shapes.len() {
+        let shape = &render_options.shapes[shape_idx];
+        let shape_material = &render_options.shape_materials[shape_idx];
+        let shape_light = &render_options.shape_lights[shape_idx];
         let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
-            triangle.clone(),
-            Some(triangle_material.clone()),
-            triangle_light.clone(),
+            shape.clone(),
+            Some(shape_material.clone()),
+            shape_light.clone(),
             None,
         )));
         render_options.primitives.push(geo_prim.clone());
