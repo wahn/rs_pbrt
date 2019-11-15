@@ -58,6 +58,7 @@ use pbrt::materials::metal::MetalMaterial;
 use pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
 use pbrt::materials::mirror::MirrorMaterial;
 use pbrt::shapes::cylinder::Cylinder;
+use pbrt::shapes::disk::Disk;
 use pbrt::shapes::sphere::Sphere;
 use pbrt::shapes::triangle::{Triangle, TriangleMesh};
 use pbrt::textures::constant::ConstantTexture;
@@ -144,6 +145,25 @@ impl PbrtCylinder {
     }
 }
 
+#[derive(Debug, Default, Copy, Clone)]
+struct PbrtDisk {
+    pub height: f32,
+    pub radius: f32,
+    pub innerradius: f32,
+    pub phimax: f32,
+}
+
+impl PbrtDisk {
+    fn new(height: f32, radius: f32, innerradius: f32, phimax: f32) -> Self {
+        PbrtDisk {
+            height,
+            radius,
+            innerradius,
+            phimax,
+        }
+    }
+}
+
 // Blender
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -185,6 +205,9 @@ struct SceneDescription {
     // cylinder
     cylinder_names: Vec<String>,
     cylinders: Vec<Arc<Shape>>,
+    // disk
+    disk_names: Vec<String>,
+    disks: Vec<Arc<Shape>>,
     // sphere
     sphere_names: Vec<String>,
     spheres: Vec<Arc<Shape>>,
@@ -200,6 +223,9 @@ struct SceneDescriptionBuilder {
     // cylinder
     cylinder_names: Vec<String>,
     cylinders: Vec<Arc<Shape>>,
+    // disk
+    disk_names: Vec<String>,
+    disks: Vec<Arc<Shape>>,
     // sphere
     sphere_names: Vec<String>,
     spheres: Vec<Arc<Shape>>,
@@ -215,6 +241,8 @@ impl SceneDescriptionBuilder {
             triangle_colors: Vec::new(),
             cylinder_names: Vec::new(),
             cylinders: Vec::new(),
+            disk_names: Vec::new(),
+            disks: Vec::new(),
             sphere_names: Vec::new(),
             spheres: Vec::new(),
             lights: Vec::new(),
@@ -274,6 +302,29 @@ impl SceneDescriptionBuilder {
             phi_max,
         )));
         self.cylinders.push(cylinder);
+        self
+    }
+    fn add_disk(
+        &mut self,
+        base_name: String,
+        object_to_world: Transform,
+        world_to_object: Transform,
+        height: Float,
+        radius: Float,
+        inner_radius: Float,
+        phi_max: Float,
+    ) -> &mut SceneDescriptionBuilder {
+        self.disk_names.push(base_name);
+        let disk = Arc::new(Shape::Dsk(Disk::new(
+            object_to_world,
+            world_to_object,
+            false,
+            height,
+            radius,
+            inner_radius,
+            phi_max,
+        )));
+        self.disks.push(disk);
         self
     }
     fn add_sphere(
@@ -370,6 +421,8 @@ impl SceneDescriptionBuilder {
             triangle_colors: self.triangle_colors,
             cylinder_names: self.cylinder_names,
             cylinders: self.cylinders,
+            disk_names: self.disk_names,
+            disks: self.disks,
             sphere_names: self.sphere_names,
             spheres: self.spheres,
             lights: self.lights,
@@ -587,6 +640,192 @@ impl RenderOptions {
                         let matte =
                             Arc::new(Material::Matte(MatteMaterial::new(kd, sigma.clone(), None)));
                         shapes.push(cylinder.clone());
+                        shape_materials.push(matte.clone());
+                        shape_lights.push(None);
+                    }
+                }
+            }
+        }
+        // disks
+        for disk_idx in 0..scene.disks.len() {
+            let disk = &scene.disks[disk_idx];
+            let disk_name = &scene.disk_names[disk_idx];
+            if let Some(mat) = get_material(disk_name, material_hm) {
+                // println!("{:?}: {:?}", disk_name, mat);
+                if mat.emit > 0.0 {
+                    has_emitters = true;
+                    let mi: MediumInterface = MediumInterface::default();
+                    let l_emit: Spectrum = Spectrum::rgb(
+                        mat.r * mat.emit * light_scale,
+                        mat.g * mat.emit * light_scale,
+                        mat.b * mat.emit * light_scale,
+                    );
+                    let n_samples: i32 = 1;
+                    let two_sided: bool = false;
+                    let area_light: Arc<Light> =
+                        Arc::new(Light::DiffuseArea(DiffuseAreaLight::new(
+                            &disk.get_object_to_world(),
+                            &mi,
+                            &l_emit,
+                            n_samples,
+                            disk.clone(),
+                            two_sided,
+                        )));
+                    lights.push(area_light.clone());
+                    shapes.push(disk.clone());
+                    shape_materials.push(default_material.clone());
+                    let shape_light: Option<Arc<Light>> = Some(area_light.clone());
+                    shape_lights.push(shape_light);
+                } else {
+                    if mat.ang != 1.0 {
+                        // GlassMaterial
+                        let kr = Arc::new(ConstantTexture::new(Spectrum::new(1.0)));
+                        let kt = Arc::new(ConstantTexture::new(Spectrum::rgb(
+                            mat.specr, mat.specg, mat.specb,
+                        )));
+                        let u_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let v_roughness = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let index = Arc::new(ConstantTexture::new(mat.ang as Float));
+                        let glass = Arc::new(Material::Glass(GlassMaterial {
+                            kr: kr,
+                            kt: kt,
+                            u_roughness: u_roughness,
+                            v_roughness: v_roughness,
+                            index: index,
+                            bump_map: None,
+                            remap_roughness: true,
+                        }));
+                        shapes.push(disk.clone());
+                        shape_materials.push(glass.clone());
+                        shape_lights.push(None);
+                    } else if mat.ray_mirror > 0.0 {
+                        if mat.roughness > 0.0 {
+                            // MetalMaterial
+                            let copper_n: Spectrum = Spectrum::from_sampled(
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_N,
+                                COPPER_SAMPLES as i32,
+                            );
+                            let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                                Arc::new(ConstantTexture::new(copper_n));
+                            let copper_k: Spectrum = Spectrum::from_sampled(
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_K,
+                                COPPER_SAMPLES as i32,
+                            );
+                            let k: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                                Arc::new(ConstantTexture::new(copper_k));
+                            let remap_roughness: bool = true;
+                            let metal = Arc::new(Material::Metal(MetalMaterial::new(
+                                eta,
+                                k,
+                                Arc::new(ConstantTexture::new(mat.roughness as Float)),
+                                None,
+                                None,
+                                None,
+                                remap_roughness,
+                            )));
+                            shapes.push(disk.clone());
+                            shape_materials.push(metal.clone());
+                            shape_lights.push(None);
+                        } else {
+                            // MirrorMaterial
+                            let kr = Arc::new(ConstantTexture::new(Spectrum::rgb(
+                                mat.mirr * mat.ray_mirror,
+                                mat.mirg * mat.ray_mirror,
+                                mat.mirb * mat.ray_mirror,
+                            )));
+                            let mirror = Arc::new(Material::Mirror(MirrorMaterial::new(kr, None)));
+                            shapes.push(disk.clone());
+                            shape_materials.push(mirror.clone());
+                            shape_lights.push(None);
+                        }
+                    } else {
+                        // MatteMaterial
+                        let mut kd: Arc<dyn Texture<Spectrum> + Send + Sync> =
+                            Arc::new(ConstantTexture::new(Spectrum::rgb(mat.r, mat.g, mat.b)));
+                        if let Some(tex) = texture_hm.get(disk_name) {
+                            // first try texture with exactly the same name as the mesh
+                            let su: Float = 1.0;
+                            let sv: Float = 1.0;
+                            let du: Float = 0.0;
+                            let dv: Float = 0.0;
+                            let mapping: Box<TextureMapping2D> =
+                                Box::new(TextureMapping2D::UV(UVMapping2D {
+                                    su: su,
+                                    sv: sv,
+                                    du: du,
+                                    dv: dv,
+                                }));
+                            let filename: String = String::from(tex.to_str().unwrap());
+                            let do_trilinear: bool = false;
+                            let max_aniso: Float = 8.0;
+                            let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                            let scale: Float = 1.0;
+                            let gamma: bool = true;
+                            kd = Arc::new(ImageTexture::new(
+                                mapping,
+                                filename,
+                                do_trilinear,
+                                max_aniso,
+                                wrap_mode,
+                                scale,
+                                gamma,
+                                convert_to_spectrum,
+                            ));
+                        } else {
+                            // then remove trailing digits from mesh name
+                            let mut ntd: String = String::new();
+                            let mut chars = disk_name.chars();
+                            let mut digits: String = String::new(); // many digits
+                            while let Some(c) = chars.next() {
+                                if c.is_digit(10_u32) {
+                                    // collect digits
+                                    digits.push(c);
+                                } else {
+                                    // push collected digits (if any)
+                                    ntd += &digits;
+                                    // and reset
+                                    digits = String::new();
+                                    // push non-digit
+                                    ntd.push(c);
+                                }
+                            }
+                            // try no trailing digits (ntd)
+                            if let Some(tex) = texture_hm.get(&ntd) {
+                                let su: Float = 1.0;
+                                let sv: Float = 1.0;
+                                let du: Float = 0.0;
+                                let dv: Float = 0.0;
+                                let mapping: Box<TextureMapping2D> =
+                                    Box::new(TextureMapping2D::UV(UVMapping2D {
+                                        su: su,
+                                        sv: sv,
+                                        du: du,
+                                        dv: dv,
+                                    }));
+                                let filename: String = String::from(tex.to_str().unwrap());
+                                let do_trilinear: bool = false;
+                                let max_aniso: Float = 8.0;
+                                let wrap_mode: ImageWrap = ImageWrap::Repeat;
+                                let scale: Float = 1.0;
+                                let gamma: bool = true;
+                                kd = Arc::new(ImageTexture::new(
+                                    mapping,
+                                    filename,
+                                    do_trilinear,
+                                    max_aniso,
+                                    wrap_mode,
+                                    scale,
+                                    gamma,
+                                    convert_to_spectrum,
+                                ));
+                            }
+                        }
+                        let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
+                        let matte =
+                            Arc::new(Material::Matte(MatteMaterial::new(kd, sigma.clone(), None)));
+                        shapes.push(disk.clone());
                         shape_materials.push(matte.clone());
                         shape_lights.push(None);
                     }
@@ -1642,6 +1881,7 @@ fn main() -> std::io::Result<()> {
     let mut texture_hm: HashMap<String, OsString> = HashMap::new();
     let mut spheres_hm: HashMap<String, PbrtSphere> = HashMap::new();
     let mut cylinders_hm: HashMap<String, PbrtCylinder> = HashMap::new();
+    let mut disks_hm: HashMap<String, PbrtDisk> = HashMap::new();
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
     let mut object_to_world: Transform = Transform::new(
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
@@ -1652,7 +1892,9 @@ fn main() -> std::io::Result<()> {
     let mut loops: Vec<u8> = Vec::new();
     let mut vertex_indices: Vec<u32> = Vec::new();
     let mut vertex_colors: Vec<u8> = Vec::new();
+    let mut prop_height: f64 = 0.0;
     let mut prop_radius: f64 = 1.0;
+    let mut prop_innerradius: f64 = 0.0;
     let mut prop_zmin: f64 = -1.0;
     let mut prop_zmax: f64 = 1.0;
     let mut prop_phimax: f64 = 360.0;
@@ -1975,6 +2217,15 @@ fn main() -> std::io::Result<()> {
                                 prop_phimax as f32,
                             );
                             cylinders_hm.insert(base_name.clone(), pbrt_cylinder);
+                        } else if base_name.starts_with("PbrtDisk") {
+                            // store disk values for later
+                            let pbrt_disk: PbrtDisk = PbrtDisk::new(
+                                prop_height as f32,
+                                prop_radius as f32,
+                                prop_innerradius as f32,
+                                prop_phimax as f32,
+                            );
+                            disks_hm.insert(base_name.clone(), pbrt_disk);
                         }
                     }
                     if data_following_mesh {
@@ -2020,6 +2271,28 @@ fn main() -> std::io::Result<()> {
                                     cylinder.zmin,
                                     cylinder.zmax,
                                     cylinder.phimax,
+                                );
+                            }
+                        } else if base_name.starts_with("PbrtDisk") {
+                            // create disk after mesh data
+                            if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                object_to_world = *o2w;
+                            } else {
+                                println!(
+                                    "WARNING: looking up object_to_world by name ({:?}) failed",
+                                    base_name
+                                );
+                            }
+                            let world_to_object: Transform = Transform::inverse(&object_to_world);
+                            if let Some(disk) = disks_hm.get(&base_name) {
+                                builder.add_disk(
+                                    base_name.clone(),
+                                    object_to_world,
+                                    world_to_object,
+                                    disk.height,
+                                    disk.radius,
+                                    disk.innerradius,
+                                    disk.phimax,
                                 );
                             }
                         } else {
@@ -2138,6 +2411,15 @@ fn main() -> std::io::Result<()> {
                                     prop_phimax as f32,
                                 );
                                 cylinders_hm.insert(base_name.clone(), pbrt_cylinder);
+                            } else if base_name.starts_with("PbrtDisk") {
+                                // store disk values for later
+                                let pbrt_disk: PbrtDisk = PbrtDisk::new(
+                                    prop_height as f32,
+                                    prop_radius as f32,
+                                    prop_innerradius as f32,
+                                    prop_phimax as f32,
+                                );
+                                disks_hm.insert(base_name.clone(), pbrt_disk);
                             }
                         }
                         // OB
@@ -2380,6 +2662,15 @@ fn main() -> std::io::Result<()> {
                                     prop_phimax as f32,
                                 );
                                 cylinders_hm.insert(base_name.clone(), pbrt_cylinder);
+                            } else if base_name.starts_with("PbrtDisk") {
+                                // store disk values for later
+                                let pbrt_disk: PbrtDisk = PbrtDisk::new(
+                                    prop_height as f32,
+                                    prop_radius as f32,
+                                    prop_innerradius as f32,
+                                    prop_phimax as f32,
+                                );
+                                disks_hm.insert(base_name.clone(), pbrt_disk);
                             }
                         }
                         if data_following_mesh {
@@ -2427,6 +2718,29 @@ fn main() -> std::io::Result<()> {
                                         cylinder.zmin,
                                         cylinder.zmax,
                                         cylinder.phimax,
+                                    );
+                                }
+                            } else if base_name.starts_with("PbrtDisk") {
+                                // create disk after mesh data
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    object_to_world = *o2w;
+                                } else {
+                                    println!(
+                                        "WARNING: looking up object_to_world by name ({:?}) failed",
+                                        base_name
+                                    );
+                                }
+                                let world_to_object: Transform =
+                                    Transform::inverse(&object_to_world);
+                                if let Some(disk) = disks_hm.get(&base_name) {
+                                    builder.add_disk(
+                                        base_name.clone(),
+                                        object_to_world,
+                                        world_to_object,
+                                        disk.height,
+                                        disk.radius,
+                                        disk.innerradius,
+                                        disk.phimax,
                                     );
                                 }
                             } else {
@@ -2925,6 +3239,15 @@ fn main() -> std::io::Result<()> {
                                     prop_phimax as f32,
                                 );
                                 cylinders_hm.insert(base_name.clone(), pbrt_cylinder);
+                            } else if base_name.starts_with("PbrtDisk") {
+                                // store disk values for later
+                                let pbrt_disk: PbrtDisk = PbrtDisk::new(
+                                    prop_height as f32,
+                                    prop_radius as f32,
+                                    prop_innerradius as f32,
+                                    prop_phimax as f32,
+                                );
+                                disks_hm.insert(base_name.clone(), pbrt_disk);
                             }
                         }
                         if data_following_mesh {
@@ -2972,6 +3295,29 @@ fn main() -> std::io::Result<()> {
                                         cylinder.zmin,
                                         cylinder.zmax,
                                         cylinder.phimax,
+                                    );
+                                }
+                            } else if base_name.starts_with("PbrtDisk") {
+                                // create disk after mesh data
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    object_to_world = *o2w;
+                                } else {
+                                    println!(
+                                        "WARNING: looking up object_to_world by name ({:?}) failed",
+                                        base_name
+                                    );
+                                }
+                                let world_to_object: Transform =
+                                    Transform::inverse(&object_to_world);
+                                if let Some(disk) = disks_hm.get(&base_name) {
+                                    builder.add_disk(
+                                        base_name.clone(),
+                                        object_to_world,
+                                        world_to_object,
+                                        disk.height,
+                                        disk.radius,
+                                        disk.innerradius,
+                                        disk.phimax,
                                     );
                                 }
                             } else {
@@ -3672,13 +4018,20 @@ fn main() -> std::io::Result<()> {
                                         skip_bytes += 8;
                                         if base_name.starts_with("PbrtSphere")
                                             || base_name.starts_with("PbrtCylinder")
+                                            || base_name.starts_with("PbrtDisk")
                                         {
                                             // println!(
                                             //     "  {}.{} = {}",
                                             //     base_name, prop_name, prop_val
                                             // );
+                                            if prop_name == String::from("height") {
+                                                prop_height = prop_val;
+                                            }
                                             if prop_name == String::from("radius") {
                                                 prop_radius = prop_val;
+                                            }
+                                            if prop_name == String::from("innerradius") {
+                                                prop_innerradius = prop_val;
                                             }
                                             if prop_name == String::from("zmin") {
                                                 prop_zmin = prop_val;
@@ -3714,6 +4067,15 @@ fn main() -> std::io::Result<()> {
                                     prop_phimax as f32,
                                 );
                                 cylinders_hm.insert(base_name.clone(), pbrt_cylinder);
+                            } else if base_name.starts_with("PbrtDisk") {
+                                // store disk values for later
+                                let pbrt_disk: PbrtDisk = PbrtDisk::new(
+                                    prop_height as f32,
+                                    prop_radius as f32,
+                                    prop_innerradius as f32,
+                                    prop_phimax as f32,
+                                );
+                                disks_hm.insert(base_name.clone(), pbrt_disk);
                             }
                         }
                         if data_following_mesh {
@@ -3761,6 +4123,29 @@ fn main() -> std::io::Result<()> {
                                         cylinder.zmin,
                                         cylinder.zmax,
                                         cylinder.phimax,
+                                    );
+                                }
+                            } else if base_name.starts_with("PbrtDisk") {
+                                // create disk after mesh data
+                                if let Some(o2w) = object_to_world_hm.get(&base_name) {
+                                    object_to_world = *o2w;
+                                } else {
+                                    println!(
+                                        "WARNING: looking up object_to_world by name ({:?}) failed",
+                                        base_name
+                                    );
+                                }
+                                let world_to_object: Transform =
+                                    Transform::inverse(&object_to_world);
+                                if let Some(disk) = disks_hm.get(&base_name) {
+                                    builder.add_disk(
+                                        base_name.clone(),
+                                        object_to_world,
+                                        world_to_object,
+                                        disk.height,
+                                        disk.radius,
+                                        disk.innerradius,
+                                        disk.phimax,
                                     );
                                 }
                             } else {
