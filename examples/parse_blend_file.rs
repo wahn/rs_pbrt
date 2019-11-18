@@ -79,7 +79,7 @@ struct Cli {
     /// pixel samples
     #[structopt(short = "s", long = "samples", default_value = "1")]
     samples: u32,
-    /// ao, directlighting, path, bdpt, mlt
+    /// ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
     #[structopt(short = "i", long = "integrator")]
     integrator: Option<String>,
     /// max length of a light-carrying path
@@ -97,9 +97,12 @@ struct Cli {
     /// prob of discarding path [MLT]
     #[structopt(long = "step_probability", default_value = "0.3")]
     step_probability: f32,
-    /// deviation of the perturbation [MLT]
+    /// perturbation deviation [MLT]
     #[structopt(long = "sigma", default_value = "0.01")]
     sigma: f32,
+    /// frequency to write image [SPPM]
+    #[structopt(long = "write_frequency", default_value = "1")]
+    write_frequency: i32,
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
@@ -1828,6 +1831,7 @@ fn make_integrator(
                     integrator_params.find_one_int("photonsperiteration", -1);
                 let write_freq: i32 =
                     integrator_params.find_one_int("imagewritefrequency", 1 << 31);
+                println!("  imagewritefrequency = {}", write_freq);
                 let radius: Float = integrator_params.find_one_float("radius", 1.0 as Float);
                 // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
                 let integrator = Box::new(Integrator::SPPM(SPPMIntegrator::new(
@@ -4311,6 +4315,7 @@ fn main() -> std::io::Result<()> {
         let mut integrator_params: ParamSet = ParamSet::default();
         if integrator_name == "mlt" {
             integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+            // MLT
             integrator_params.add_int(
                 String::from("bootstrapsamples"),
                 args.bootstrap_samples as i32,
@@ -4325,6 +4330,13 @@ fn main() -> std::io::Result<()> {
                 args.step_probability as Float,
             );
             integrator_params.add_float(String::from("sigma"), args.sigma as Float);
+        } else if integrator_name == "sppm" {
+            integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
+            // SPPM
+            integrator_params.add_int(
+                String::from("imagewritefrequency"),
+                args.write_frequency,
+            );
         } else {
             integrator_params.add_int(String::from("maxdepth"), args.max_depth as i32);
         }
