@@ -6,15 +6,23 @@
 use crate::core::camera::CameraSample;
 use crate::core::geometry::{Point2f, Point2i};
 use crate::core::pbrt::Float;
+use crate::samplers::random::RandomSampler;
 
 // see sampler.h
 
-pub trait Sampler // : SamplerClone
-{
-    fn start_pixel(&mut self, p: &Point2i);
-    fn get_1d(&mut self) -> Float;
-    fn get_2d(&mut self) -> Point2f;
-    fn get_camera_sample(&mut self, p_raster: &Point2i) -> CameraSample {
+pub enum Sampler {
+    Random(RandomSampler),
+}
+
+impl Sampler {
+    pub fn start_pixel(&mut self, p: &Point2i) {}
+    pub fn get_1d(&mut self) -> Float {
+        0.0 as Float
+    }
+    pub fn get_2d(&mut self) -> Point2f {
+        Point2f::default()
+    }
+    pub fn get_camera_sample(&mut self, p_raster: &Point2i) -> CameraSample {
         let mut cs: CameraSample = CameraSample::default();
         cs.p_film = Point2f {
             x: p_raster.x as Float,
@@ -24,39 +32,30 @@ pub trait Sampler // : SamplerClone
         cs.p_lens = self.get_2d();
         cs
     }
-    fn request_2d_array(&mut self, n: i32);
-    fn round_count(&self, count: i32) -> i32;
-    fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]>;
-    fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>);
-    fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f>;
-    fn start_next_sample(&mut self) -> bool;
-    fn reseed(&mut self, seed: u64);
-    fn get_current_pixel(&self) -> Point2i;
-    fn get_current_sample_number(&self) -> i64;
-    fn get_samples_per_pixel(&self) -> i64;
+    pub fn request_2d_array(&mut self, n: i32) {}
+    pub fn round_count(&self, count: i32) -> i32 {
+        0
+    }
+    pub fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
+        None
+    }
+    pub fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
+        (None, None)
+    }
+    pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
+        Vec::new()
+    }
+    pub fn start_next_sample(&mut self) -> bool {
+        false
+    }
+    pub fn reseed(&mut self, seed: u64) {}
+    pub fn get_current_pixel(&self) -> Point2i {
+        Point2i::default()
+    }
+    pub fn get_current_sample_number(&self) -> i64 {
+        0
+    }
+    pub fn get_samples_per_pixel(&self) -> i64 {
+        0
+    }
 }
-
-// pub trait PixelSampler: Sampler {}
-
-// pub trait GlobalSampler: Sampler {
-//     fn set_sample_number(&mut self, sample_num: i64) -> bool;
-// }
-
-// pub trait SamplerClone {
-//     fn box_clone(&self) -> Box<dyn Sampler + Send + Sync>;
-// }
-
-// impl<T> SamplerClone for T
-// where
-//     T: 'static + Sampler + Clone + Send + Sync,
-// {
-//     fn box_clone(&self) -> Box<dyn Sampler + Send + Sync> {
-//         Box::new(self.clone())
-//     }
-// }
-
-// impl Clone for Box<dyn Sampler + Send + Sync> {
-//     fn clone(&self) -> Box<dyn Sampler + Send + Sync> {
-//         self.box_clone()
-//     }
-// }

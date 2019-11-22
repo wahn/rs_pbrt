@@ -27,14 +27,14 @@ impl HomogeneousMedium {
         }
     }
     // Medium
-    pub fn tr(&self, ray: &Ray, _sampler: &mut Box<dyn Sampler + Send + Sync>) -> Spectrum {
+    pub fn tr(&self, ray: &Ray, _sampler: &mut Box<Sampler>) -> Spectrum {
         // TODO: ProfilePhase _(Prof::MediumTr);
         (-self.sigma_t * (ray.t_max * ray.d.length()).min(f32::MAX)).exp()
     }
     pub fn sample(
         &self,
         ray: &Ray,
-        sampler: &mut Box<dyn Sampler + Send + Sync>,
+        sampler: &mut Box<Sampler>,
     ) -> (Spectrum, Option<MediumInteraction>) {
         // TODO: ProfilePhase _(Prof::MediumSample);
         // sample a channel and distance along the ray

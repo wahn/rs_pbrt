@@ -193,7 +193,7 @@ fn make_path_integrator(
         let sampler_name: String = String::from("sobol");
         let mut sampler_params: ParamSet = ParamSet::default();
         sampler_params.add_int(String::from("pixelsamples"), pixelsamples);
-        let some_sampler: Option<Box<dyn Sampler + Sync + Send>> =
+        let some_sampler: Option<Box<Sampler>> =
             make_sampler(&sampler_name, &sampler_params, camera.get_film());
         if let Some(sampler) = some_sampler {
             // CreatePathIntegrator

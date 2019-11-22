@@ -20,7 +20,7 @@ use crate::core::scene::Scene;
 pub struct AOIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,
-    pub sampler: Box<dyn Sampler + Send + Sync>,
+    pub sampler: Box<Sampler>,
     pub pixel_bounds: Bounds2i,
     // see ao.h
     pub cos_sample: bool,
@@ -32,7 +32,7 @@ impl AOIntegrator {
         cos_sample: bool,
         n_samples: i32,
         camera: Arc<Camera>,
-        sampler: Box<dyn Sampler + Send + Sync>,
+        sampler: Box<Sampler>,
         pixel_bounds: Bounds2i,
     ) -> Self {
         AOIntegrator {
@@ -50,7 +50,7 @@ impl AOIntegrator {
         &self,
         r: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<dyn Sampler + Send + Sync>,
+        sampler: &mut Box<Sampler>,
         // arena: &mut Arena,
         _depth: i32,
     ) -> Spectrum {
@@ -108,7 +108,7 @@ impl AOIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Box<dyn Sampler + Send + Sync> {
+    pub fn get_sampler(&self) -> &Box<Sampler> {
         &self.sampler
     }
     pub fn get_pixel_bounds(&self) -> Bounds2i {

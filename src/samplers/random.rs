@@ -36,15 +36,13 @@ impl RandomSampler {
             array_2d_offset: 0_usize,
         }
     }
-    pub fn create(params: &ParamSet) -> Box<dyn Sampler + Sync + Send> {
+    pub fn create(params: &ParamSet) -> Box<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 4);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-        Box::new(RandomSampler::new(nsamp as i64))
+        Box::new(Sampler::Random(RandomSampler::new(nsamp as i64)))
     }
-}
-
-impl Sampler for RandomSampler {
-    fn start_pixel(&mut self, p: &Point2i) {
+    // Sampler
+    pub fn start_pixel(&mut self, p: &Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         for i in 0..self.sample_array_1d.len() {
             for j in 0..self.sample_array_1d[i].len() {
@@ -66,12 +64,12 @@ impl Sampler for RandomSampler {
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;
     }
-    fn get_1d(&mut self) -> Float {
+    pub fn get_1d(&mut self) -> Float {
         // TODO: ProfilePhase _(Prof::GetSample);
         assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         self.rng.uniform_float()
     }
-    fn get_2d(&mut self) -> Point2f {
+    pub fn get_2d(&mut self) -> Point2f {
         // TODO: ProfilePhase _(Prof::GetSample);
         assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         // C++: call x first
@@ -79,20 +77,20 @@ impl Sampler for RandomSampler {
         let y = self.rng.uniform_float();
         Point2f { x, y }
     }
-    fn reseed(&mut self, seed: u64) {
+    pub fn reseed(&mut self, seed: u64) {
         self.rng.set_sequence(seed);
     }
-    fn request_2d_array(&mut self, n: i32) {
+    pub fn request_2d_array(&mut self, n: i32) {
         assert_eq!(self.round_count(n), n);
         self.samples_2d_array_sizes.push(n);
         let size: usize = (n * self.samples_per_pixel as i32) as usize;
         let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
         self.sample_array_2d.push(additional_points);
     }
-    fn round_count(&self, count: i32) -> i32 {
+    pub fn round_count(&self, count: i32) -> i32 {
         count
     }
-    fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
+    pub fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
         if self.array_2d_offset == self.sample_array_2d.len() {
             return None;
         }
@@ -108,7 +106,7 @@ impl Sampler for RandomSampler {
         self.array_2d_offset += 1;
         Some(&self.sample_array_2d[self.array_2d_offset - 1][start..end])
     }
-    fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
+    pub fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
         if self.array_2d_offset == self.sample_array_2d.len() {
             return (None, None);
         }
@@ -141,7 +139,7 @@ impl Sampler for RandomSampler {
         // return tuple
         (Some(ret1), Some(ret2))
     }
-    fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
+    pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
         let mut samples: Vec<Point2f> = Vec::new();
         if self.array_2d_offset == self.sample_array_2d.len() {
             return samples;
@@ -159,20 +157,20 @@ impl Sampler for RandomSampler {
         self.array_2d_offset += 1;
         samples
     }
-    fn start_next_sample(&mut self) -> bool {
+    pub fn start_next_sample(&mut self) -> bool {
         // reset array offsets for next pixel sample
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;
         self.current_pixel_sample_index += 1_i64;
         self.current_pixel_sample_index < self.samples_per_pixel
     }
-    fn get_current_pixel(&self) -> Point2i {
+    pub fn get_current_pixel(&self) -> Point2i {
         self.current_pixel
     }
-    fn get_current_sample_number(&self) -> i64 {
+    pub fn get_current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index
     }
-    fn get_samples_per_pixel(&self) -> i64 {
+    pub fn get_samples_per_pixel(&self) -> i64 {
         self.samples_per_pixel
     }
 }

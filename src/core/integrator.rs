@@ -104,7 +104,7 @@ impl SamplerIntegrator {
         //                 // spawn worker threads
         //                 for _ in 0..num_cores {
         //                     let pixel_tx = pixel_tx.clone();
-        //                     let mut tile_sampler: Box<dyn Sampler + Send + Sync> =
+        //                     let mut tile_sampler: Box<Sampler> =
         //                         sampler.box_clone();
         //                     scope.spawn(move |_| {
         //                         while let Some((x, y)) = bq.next() {
@@ -230,7 +230,7 @@ impl SamplerIntegrator {
         &self,
         ray: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<dyn Sampler + Send + Sync>,
+        sampler: &mut Box<Sampler>,
         depth: i32,
     ) -> Spectrum {
         match self {
@@ -252,7 +252,7 @@ impl SamplerIntegrator {
             SamplerIntegrator::Whitted(integrator) => integrator.get_camera(),
         }
     }
-    pub fn get_sampler(&self) -> &Box<dyn Sampler + Send + Sync> {
+    pub fn get_sampler(&self) -> &Box<Sampler> {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_sampler(),
             SamplerIntegrator::DirectLighting(integrator) => integrator.get_sampler(),
@@ -275,7 +275,7 @@ impl SamplerIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<dyn Sampler + Send + Sync>,
+        sampler: &mut Box<Sampler>,
         depth: i32,
     ) -> Spectrum {
         match self {
@@ -293,7 +293,7 @@ impl SamplerIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<dyn Sampler + Send + Sync>,
+        sampler: &mut Box<Sampler>,
         depth: i32,
     ) -> Spectrum {
         match self {
@@ -314,7 +314,7 @@ impl SamplerIntegrator {
 pub fn uniform_sample_all_lights(
     it: &SurfaceInteraction,
     scene: &Scene,
-    sampler: &mut Box<dyn Sampler + Send + Sync>,
+    sampler: &mut Box<Sampler>,
     n_light_samples: &Vec<i32>,
     handle_media: bool,
 ) -> Spectrum {
@@ -369,7 +369,7 @@ pub fn uniform_sample_all_lights(
 pub fn uniform_sample_one_light(
     it: &dyn Interaction,
     scene: &Scene,
-    sampler: &mut Box<dyn Sampler + Send + Sync>,
+    sampler: &mut Box<Sampler>,
     handle_media: bool,
     light_distrib: Option<&Distribution1D>,
 ) -> Spectrum {
@@ -419,7 +419,7 @@ pub fn estimate_direct(
     light: Arc<Light>,
     u_light: &Point2f,
     scene: &Scene,
-    // sampler: &mut Box<dyn Sampler + Send + Sync>,
+    // sampler: &mut Box<Sampler>,
     // TODO: arena
     handle_media: bool,
     specular: bool,
