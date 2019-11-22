@@ -281,6 +281,39 @@ impl Sampler for HaltonSampler {
         self.array_2d_offset += 1;
         Some(&self.sample_array_2d[self.array_2d_offset - 1][start..end])
     }
+    fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
+        if self.array_2d_offset == self.sample_array_2d.len() {
+            return (None, None);
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        self.array_2d_offset += 1;
+        let ret1 = &self.sample_array_2d[self.array_2d_offset - 1][start..end];
+        // repeat code from above
+        if self.array_2d_offset == self.sample_array_2d.len() {
+            return (None, None);
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        self.array_2d_offset += 1;
+        let ret2 = &self.sample_array_2d[self.array_2d_offset - 1][start..end];
+        // return tuple
+        (Some(ret1), Some(ret2))
+    }
     fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
         let mut samples: Vec<Point2f> = Vec::new();
         if self.array_2d_offset == self.sample_array_2d.len() {
