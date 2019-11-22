@@ -104,6 +104,8 @@ impl SamplerIntegrator {
                         // spawn worker threads
                         for _ in 0..num_cores {
                             let pixel_tx = pixel_tx.clone();
+                            let mut tile_sampler: Box<Sampler> =
+                                sampler.clone_with_seed(0_u64);
                             scope.spawn(move |_| {
                                 while let Some((x, y)) = bq.next() {
                                     let tile: Point2i = Point2i {
@@ -111,9 +113,7 @@ impl SamplerIntegrator {
                                         y: y as i32,
                                     };
                                     let seed: i32 = tile.y * n_tiles.x + tile.x;
-                                    let mut tile_sampler: Box<Sampler> =
-                                        sampler.clone_with_seed(seed as u64);
-                                    // tile_sampler.reseed(seed as u64);
+                                    tile_sampler.reseed(seed as u64);
                                     let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                                     let x1: i32 =
                                         std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);

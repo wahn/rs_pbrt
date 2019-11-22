@@ -23,12 +23,29 @@ impl Sampler {
             }
         }
     }
-    pub fn start_pixel(&mut self, p: &Point2i) {}
+    pub fn start_pixel(&mut self, p: &Point2i) {
+        match self {
+            Sampler::Random(sampler) => sampler.start_pixel(p),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
+    }
     pub fn get_1d(&mut self) -> Float {
-        0.0 as Float
+        match self {
+            Sampler::Random(sampler) => sampler.get_1d(),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
     pub fn get_2d(&mut self) -> Point2f {
-        Point2f::default()
+        match self {
+            Sampler::Random(sampler) => sampler.get_2d(),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
     pub fn get_camera_sample(&mut self, p_raster: &Point2i) -> CameraSample {
         let mut cs: CameraSample = CameraSample::default();
@@ -40,30 +57,84 @@ impl Sampler {
         cs.p_lens = self.get_2d();
         cs
     }
-    pub fn request_2d_array(&mut self, n: i32) {}
+    pub fn request_2d_array(&mut self, n: i32) {
+        match self {
+            Sampler::Random(sampler) => sampler.request_2d_array(n),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
+    }
     pub fn round_count(&self, count: i32) -> i32 {
-        0
+        match self {
+            Sampler::Random(sampler) => sampler.round_count(count),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
     pub fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
-        None
+        match self {
+            Sampler::Random(sampler) => sampler.get_2d_array(n),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
     pub fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
-        (None, None)
+        match self {
+            Sampler::Random(sampler) => sampler.get_2d_arrays(n),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
     pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
-        Vec::new()
+        match self {
+            Sampler::Random(sampler) => sampler.get_2d_array_vec(n),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
     pub fn start_next_sample(&mut self) -> bool {
-        false
+        match self {
+            Sampler::Random(sampler) => sampler.start_next_sample(),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
-    pub fn reseed(&mut self, seed: u64) {}
+    pub fn reseed(&mut self, seed: u64) {
+        match self {
+            Sampler::Random(sampler) => sampler.reseed(seed),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
+    }
     pub fn get_current_pixel(&self) -> Point2i {
-        Point2i::default()
+        match self {
+            Sampler::Random(sampler) => sampler.get_current_pixel(),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
     pub fn get_current_sample_number(&self) -> i64 {
-        0
+        match self {
+            Sampler::Random(sampler) => sampler.get_current_sample_number(),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
     pub fn get_samples_per_pixel(&self) -> i64 {
-        0
+        match self {
+            Sampler::Random(sampler) => sampler.get_samples_per_pixel(),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
     }
 }
