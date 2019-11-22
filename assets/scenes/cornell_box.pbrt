@@ -9,8 +9,8 @@ Film "image"
   "integer xresolution" [ 500 ]
   "integer yresolution" [ 500 ]
 ##  "integer outlierrejection_k" [ 10 ]
-##Sampler "sobol"
-Sampler "sobol" "integer pixelsamples" [8]
+Sampler "random"
+##Sampler "sobol" "integer pixelsamples" [8]
 ##PixelFilter "blackmanharris"
 ##SurfaceIntegrator "bidirectional"
 Integrator "directlighting" "integer maxdepth" [10]
