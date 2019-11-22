@@ -15,6 +15,14 @@ pub enum Sampler {
 }
 
 impl Sampler {
+    pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
+        match self {
+            Sampler::Random(sampler) => sampler.clone_with_seed(seed),
+            _ => {
+                panic!("Unknown sampler.");
+            }
+        }
+    }
     pub fn start_pixel(&mut self, p: &Point2i) {}
     pub fn get_1d(&mut self) -> Float {
         0.0 as Float

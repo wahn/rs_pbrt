@@ -104,8 +104,6 @@ impl SamplerIntegrator {
                         // spawn worker threads
                         for _ in 0..num_cores {
                             let pixel_tx = pixel_tx.clone();
-                            // let mut tile_sampler: Box<Sampler> =
-                            //     sampler.box_clone();
                             scope.spawn(move |_| {
                                 while let Some((x, y)) = bq.next() {
                                     let tile: Point2i = Point2i {
@@ -113,6 +111,8 @@ impl SamplerIntegrator {
                                         y: y as i32,
                                     };
                                     let seed: i32 = tile.y * n_tiles.x + tile.x;
+                                    let mut tile_sampler: Box<Sampler> =
+                                        sampler.clone_with_seed(seed as u64);
                                     // tile_sampler.reseed(seed as u64);
                                     let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                                     let x1: i32 =
@@ -127,7 +127,7 @@ impl SamplerIntegrator {
                                     // println!("Starting image tile {:?}", tile_bounds);
                                     let mut film_tile = film.get_film_tile(&tile_bounds);
                                     for pixel in &tile_bounds {
-                                        // tile_sampler.start_pixel(&pixel);
+                                        tile_sampler.start_pixel(&pixel);
                                         if !pnt2_inside_exclusive(&pixel, &pixel_bounds) {
                                             continue;
                                         }
@@ -137,71 +137,71 @@ impl SamplerIntegrator {
                                             // let mut arena: Arena = Arena::with_capacity(262144); // 256kB
 
                                             // initialize _CameraSample_ for current sample
-                                            // let camera_sample: CameraSample =
-                                            //     tile_sampler.get_camera_sample(&pixel);
+                                            let camera_sample: CameraSample =
+                                                tile_sampler.get_camera_sample(&pixel);
                                             // generate camera ray for current sample
                                             let mut ray: Ray = Ray::default();
-                                            // let ray_weight: Float = camera
-                                            //     .generate_ray_differential(
-                                            //         &camera_sample,
-                                            //         &mut ray,
-                                            //     );
-                                            // ray.scale_differentials(
-                                            //     1.0 as Float
-                                            //         / (tile_sampler.get_samples_per_pixel()
-                                            //             as Float)
-                                            //             .sqrt(),
-                                            // );
+                                            let ray_weight: Float = camera
+                                                .generate_ray_differential(
+                                                    &camera_sample,
+                                                    &mut ray,
+                                                );
+                                            ray.scale_differentials(
+                                                1.0 as Float
+                                                    / (tile_sampler.get_samples_per_pixel()
+                                                        as Float)
+                                                        .sqrt(),
+                                            );
                                             // TODO: ++nCameraRays;
                                             // evaluate radiance along camera ray
                                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
                                             let y: Float = l.y();
-                                            // if ray_weight > 0.0 {
-                                            //     // l = integrator.li(
-                                            //     //     &mut ray,
-                                            //     //     scene,
-                                            //     //     &mut tile_sampler, // &mut arena,
-                                            //     //     0_i32,
-                                            //     // );
-                                            // }
+                                            if ray_weight > 0.0 {
+                                                l = integrator.li(
+                                                    &mut ray,
+                                                    scene,
+                                                    &mut tile_sampler, // &mut arena,
+                                                    0_i32,
+                                                );
+                                            }
                                             if l.has_nans() {
-                                                //         println!(
-                                                //     "Not-a-number radiance value returned for pixel \
-                                                //      ({:?}, {:?}), sample {:?}. Setting to black.",
-                                                //     pixel.x,
-                                                //     pixel.y,
-                                                //     tile_sampler.get_current_sample_number()
-                                                // );
+                                                println!(
+                                                    "Not-a-number radiance value returned for pixel \
+                                                     ({:?}, {:?}), sample {:?}. Setting to black.",
+                                                    pixel.x,
+                                                    pixel.y,
+                                                    tile_sampler.get_current_sample_number()
+                                                );
                                                 l = Spectrum::new(0.0);
                                             } else if y < -10.0e-5 as Float {
-                                                //     println!(
-                                                // "Negative luminance value, {:?}, returned for pixel \
-                                                //  ({:?}, {:?}), sample {:?}. Setting to black.",
-                                                // y,
-                                                // pixel.x,
-                                                // pixel.y,
-                                                // tile_sampler.get_current_sample_number()
-                                                // );
+                                                println!(
+                                                "Negative luminance value, {:?}, returned for pixel \
+                                                 ({:?}, {:?}), sample {:?}. Setting to black.",
+                                                y,
+                                                pixel.x,
+                                                pixel.y,
+                                                tile_sampler.get_current_sample_number()
+                                                );
                                                 l = Spectrum::new(0.0);
                                             } else if y.is_infinite() {
-                                                //     println!(
-                                                // "Infinite luminance value returned for pixel ({:?}, \
-                                                //  {:?}), sample {:?}. Setting to black.",
-                                                // pixel.x,
-                                                // pixel.y,
-                                                // tile_sampler.get_current_sample_number()
-                                                // );
+                                                println!(
+                                                "Infinite luminance value returned for pixel ({:?}, \
+                                                 {:?}), sample {:?}. Setting to black.",
+                                                pixel.x,
+                                                pixel.y,
+                                                tile_sampler.get_current_sample_number()
+                                                );
                                                 l = Spectrum::new(0.0);
                                             }
                                             // println!("Camera sample: {:?} -> ray: {:?} -> L = {:?}",
                                             //          camera_sample, ray, l);
                                             // add camera ray's contribution to image
-                                            // film_tile.add_sample(
-                                            //     &camera_sample.p_film,
-                                            //     &mut l,
-                                            //     ray_weight,
-                                            // );
-                                            // done = !tile_sampler.start_next_sample();
+                                            film_tile.add_sample(
+                                                &camera_sample.p_film,
+                                                &mut l,
+                                                ray_weight,
+                                            );
+                                            done = !tile_sampler.start_next_sample();
                                         } // arena is dropped here !
                                     }
                                     // send the tile through the channel to main thread

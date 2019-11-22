@@ -36,6 +36,9 @@ impl RandomSampler {
             array_2d_offset: 0_usize,
         }
     }
+    pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
+        Box::new(Sampler::Random(RandomSampler::new(self.samples_per_pixel)))
+    }
     pub fn create(params: &ParamSet) -> Box<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 4);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
