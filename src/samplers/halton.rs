@@ -11,7 +11,7 @@ use crate::core::paramset::ParamSet;
 use crate::core::pbrt::mod_t;
 use crate::core::pbrt::Float;
 use crate::core::rng::Rng;
-use crate::core::sampler::{GlobalSampler, Sampler};
+use crate::core::sampler::Sampler;
 
 // Generate random digit permutations for Halton sampler
 lazy_static::lazy_static! {
@@ -192,6 +192,17 @@ impl HaltonSampler {
         }
         &RADICAL_INVERSE_PERMUTATIONS[PRIME_SUMS[dim as usize] as usize..]
     }
+    // GlobalSampler
+    fn set_sample_number(&mut self, sample_num: i64) -> bool {
+        // GlobalSampler::SetSampleNumber(...)
+        self.dimension = 0_i64;
+        self.interval_sample_index = self.get_index_for_sample(sample_num as u64);
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
+        self.current_pixel_sample_index = sample_num;
+        self.current_pixel_sample_index < self.samples_per_pixel
+    }
 }
 
 impl Sampler for HaltonSampler {
@@ -354,19 +365,6 @@ impl Sampler for HaltonSampler {
     }
     fn get_samples_per_pixel(&self) -> i64 {
         self.samples_per_pixel
-    }
-}
-
-impl GlobalSampler for HaltonSampler {
-    fn set_sample_number(&mut self, sample_num: i64) -> bool {
-        // GlobalSampler::SetSampleNumber(...)
-        self.dimension = 0_i64;
-        self.interval_sample_index = self.get_index_for_sample(sample_num as u64);
-        // reset array offsets for next pixel sample
-        self.array_1d_offset = 0_usize;
-        self.array_2d_offset = 0_usize;
-        self.current_pixel_sample_index = sample_num;
-        self.current_pixel_sample_index < self.samples_per_pixel
     }
 }
 

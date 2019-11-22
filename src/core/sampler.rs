@@ -36,11 +36,11 @@ pub trait Sampler // : SamplerClone
     fn get_samples_per_pixel(&self) -> i64;
 }
 
-pub trait PixelSampler: Sampler {}
+// pub trait PixelSampler: Sampler {}
 
-pub trait GlobalSampler: Sampler {
-    fn set_sample_number(&mut self, sample_num: i64) -> bool;
-}
+// pub trait GlobalSampler: Sampler {
+//     fn set_sample_number(&mut self, sample_num: i64) -> bool;
+// }
 
 // pub trait SamplerClone {
 //     fn box_clone(&self) -> Box<dyn Sampler + Send + Sync>;

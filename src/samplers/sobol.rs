@@ -7,7 +7,7 @@ use crate::core::pbrt::{
     clamp_t, is_power_of_2, log_2_int_u32, round_up_pow2_32, round_up_pow2_64,
 };
 use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
-use crate::core::sampler::{GlobalSampler, Sampler};
+use crate::core::sampler::Sampler;
 use crate::core::sobolmatrices::NUM_SOBOL_DIMENSIONS;
 
 // see sobol.h
@@ -109,6 +109,17 @@ impl SobolSampler {
             );
         }
         s
+    }
+    // GlobalSampler
+    pub fn set_sample_number(&mut self, sample_num: i64) -> bool {
+        // GlobalSampler::SetSampleNumber(...)
+        self.dimension = 0_i64;
+        self.interval_sample_index = self.get_index_for_sample(sample_num as u64);
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
+        self.current_pixel_sample_index = sample_num;
+        self.current_pixel_sample_index < self.samples_per_pixel
     }
 }
 
@@ -272,18 +283,5 @@ impl Sampler for SobolSampler {
     }
     fn get_samples_per_pixel(&self) -> i64 {
         self.samples_per_pixel
-    }
-}
-
-impl GlobalSampler for SobolSampler {
-    fn set_sample_number(&mut self, sample_num: i64) -> bool {
-        // GlobalSampler::SetSampleNumber(...)
-        self.dimension = 0_i64;
-        self.interval_sample_index = self.get_index_for_sample(sample_num as u64);
-        // reset array offsets for next pixel sample
-        self.array_1d_offset = 0_usize;
-        self.array_2d_offset = 0_usize;
-        self.current_pixel_sample_index = sample_num;
-        self.current_pixel_sample_index < self.samples_per_pixel
     }
 }

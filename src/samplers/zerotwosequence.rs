@@ -5,7 +5,7 @@ use crate::core::paramset::ParamSet;
 use crate::core::pbrt::round_up_pow2_32;
 use crate::core::pbrt::Float;
 use crate::core::rng::Rng;
-use crate::core::sampler::{PixelSampler, Sampler};
+use crate::core::sampler::Sampler;
 
 // see zerotwosequence.h
 
@@ -273,4 +273,4 @@ impl Sampler for ZeroTwoSequenceSampler {
     }
 }
 
-impl PixelSampler for ZeroTwoSequenceSampler {}
+// impl PixelSampler for ZeroTwoSequenceSampler {}
