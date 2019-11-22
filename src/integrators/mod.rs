@@ -59,10 +59,10 @@
 //! ![Stochastic Progressive Photon Mapping](/doc/img/caustic_glass_pbrt_rust_sppm.png)
 
 pub mod ao;
-pub mod bdpt;
+// pub mod bdpt;
 pub mod directlighting;
-pub mod mlt;
+// pub mod mlt;
 pub mod path;
-pub mod sppm;
+// pub mod sppm;
 pub mod volpath;
 pub mod whitted;

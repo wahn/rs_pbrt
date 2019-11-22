@@ -45,11 +45,11 @@ use crate::filters::mitchell::MitchellNetravali;
 use crate::filters::sinc::LanczosSincFilter;
 use crate::filters::triangle::TriangleFilter;
 use crate::integrators::ao::AOIntegrator;
-use crate::integrators::bdpt::BDPTIntegrator;
+// use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
-use crate::integrators::mlt::MLTIntegrator;
+// use crate::integrators::mlt::MLTIntegrator;
 use crate::integrators::path::PathIntegrator;
-use crate::integrators::sppm::SPPMIntegrator;
+// use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
@@ -329,58 +329,58 @@ impl RenderOptions {
                         ),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "bdpt" {
-                    // CreateBDPTIntegrator
-                    let mut max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
-                    let visualize_strategies: bool = self
-                        .integrator_params
-                        .find_one_bool("visualizestrategies", false);
-                    let visualize_weights: bool = self
-                        .integrator_params
-                        .find_one_bool("visualizeweights", false);
-                    if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
-                        print!("WARNING: visualizestrategies/visualizeweights was enabled,");
-                        println!(" limiting maxdepth to 5");
-                        max_depth = 5;
-                    }
-                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                    let light_strategy: String = self
-                        .integrator_params
-                        .find_one_string("lightsamplestrategy", String::from("power"));
-                    let integrator = Box::new(Integrator::BDPT(BDPTIntegrator::new(
-                        camera,
-                        sampler,
-                        pixel_bounds,
-                        max_depth as u32,
-                        light_strategy,
-                    )));
-                    some_integrator = Some(integrator);
-                } else if self.integrator_name == "mlt" {
-                    // CreateMLTIntegrator
-                    let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
-                    let n_bootstrap: i32 = self
-                        .integrator_params
-                        .find_one_int("bootstrapsamples", 100000);
-                    let n_chains: i32 = self.integrator_params.find_one_int("chains", 1000);
-                    let mutations_per_pixel: i32 = self
-                        .integrator_params
-                        .find_one_int("mutationsperpixel", 100);
-                    let large_step_probability: Float = self
-                        .integrator_params
-                        .find_one_float("largestepprobability", 0.3 as Float);
-                    let sigma: Float = self
-                        .integrator_params
-                        .find_one_float("sigma", 0.01 as Float);
-                    let integrator = Box::new(Integrator::MLT(MLTIntegrator::new(
-                        camera.clone(),
-                        max_depth as u32,
-                        n_bootstrap as u32,
-                        n_chains as u32,
-                        mutations_per_pixel as u32,
-                        sigma,
-                        large_step_probability,
-                    )));
-                    some_integrator = Some(integrator);
+                // } else if self.integrator_name == "bdpt" {
+                //     // CreateBDPTIntegrator
+                //     let mut max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                //     let visualize_strategies: bool = self
+                //         .integrator_params
+                //         .find_one_bool("visualizestrategies", false);
+                //     let visualize_weights: bool = self
+                //         .integrator_params
+                //         .find_one_bool("visualizeweights", false);
+                //     if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
+                //         print!("WARNING: visualizestrategies/visualizeweights was enabled,");
+                //         println!(" limiting maxdepth to 5");
+                //         max_depth = 5;
+                //     }
+                //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                //     let light_strategy: String = self
+                //         .integrator_params
+                //         .find_one_string("lightsamplestrategy", String::from("power"));
+                //     let integrator = Box::new(Integrator::BDPT(BDPTIntegrator::new(
+                //         camera,
+                //         sampler,
+                //         pixel_bounds,
+                //         max_depth as u32,
+                //         light_strategy,
+                //     )));
+                //     some_integrator = Some(integrator);
+                // } else if self.integrator_name == "mlt" {
+                //     // CreateMLTIntegrator
+                //     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                //     let n_bootstrap: i32 = self
+                //         .integrator_params
+                //         .find_one_int("bootstrapsamples", 100000);
+                //     let n_chains: i32 = self.integrator_params.find_one_int("chains", 1000);
+                //     let mutations_per_pixel: i32 = self
+                //         .integrator_params
+                //         .find_one_int("mutationsperpixel", 100);
+                //     let large_step_probability: Float = self
+                //         .integrator_params
+                //         .find_one_float("largestepprobability", 0.3 as Float);
+                //     let sigma: Float = self
+                //         .integrator_params
+                //         .find_one_float("sigma", 0.01 as Float);
+                //     let integrator = Box::new(Integrator::MLT(MLTIntegrator::new(
+                //         camera.clone(),
+                //         max_depth as u32,
+                //         n_bootstrap as u32,
+                //         n_chains as u32,
+                //         mutations_per_pixel as u32,
+                //         sigma,
+                //         large_step_probability,
+                //     )));
+                //     some_integrator = Some(integrator);
                 } else if self.integrator_name == "ambientocclusion" {
                     // CreateAOIntegrator
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
@@ -406,33 +406,33 @@ impl RenderOptions {
                         AOIntegrator::new(cos_sample, n_samples, camera, sampler, pixel_bounds),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "sppm" {
-                    // CreateSPPMIntegrator
-                    let mut n_iterations: i32 =
-                        self.integrator_params.find_one_int("numiterations", 64);
-                    n_iterations = self
-                        .integrator_params
-                        .find_one_int("iterations", n_iterations);
-                    let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
-                    let photons_per_iter: i32 = self
-                        .integrator_params
-                        .find_one_int("photonsperiteration", -1);
-                    let write_freq: i32 = self
-                        .integrator_params
-                        .find_one_int("imagewritefrequency", 1 << 31);
-                    let radius: Float = self
-                        .integrator_params
-                        .find_one_float("radius", 1.0 as Float);
-                    // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
-                    let integrator = Box::new(Integrator::SPPM(SPPMIntegrator::new(
-                        camera.clone(),
-                        n_iterations,
-                        photons_per_iter,
-                        max_depth as u32,
-                        radius,
-                        write_freq,
-                    )));
-                    some_integrator = Some(integrator);
+                // } else if self.integrator_name == "sppm" {
+                //     // CreateSPPMIntegrator
+                //     let mut n_iterations: i32 =
+                //         self.integrator_params.find_one_int("numiterations", 64);
+                //     n_iterations = self
+                //         .integrator_params
+                //         .find_one_int("iterations", n_iterations);
+                //     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                //     let photons_per_iter: i32 = self
+                //         .integrator_params
+                //         .find_one_int("photonsperiteration", -1);
+                //     let write_freq: i32 = self
+                //         .integrator_params
+                //         .find_one_int("imagewritefrequency", 1 << 31);
+                //     let radius: Float = self
+                //         .integrator_params
+                //         .find_one_float("radius", 1.0 as Float);
+                //     // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
+                //     let integrator = Box::new(Integrator::SPPM(SPPMIntegrator::new(
+                //         camera.clone(),
+                //         n_iterations,
+                //         photons_per_iter,
+                //         max_depth as u32,
+                //         radius,
+                //         write_freq,
+                //     )));
+                //     some_integrator = Some(integrator);
                 } else {
                     println!("Integrator \"{}\" unknown.", self.integrator_name);
                 }
