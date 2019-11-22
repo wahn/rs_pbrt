@@ -12,7 +12,6 @@ use crate::core::sobolmatrices::NUM_SOBOL_DIMENSIONS;
 
 // see sobol.h
 
-#[derive(Clone)]
 pub struct SobolSampler {
     pub samples_per_pixel: i64,
     pub sample_bounds: Bounds2i,

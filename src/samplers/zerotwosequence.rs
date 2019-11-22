@@ -9,7 +9,6 @@ use crate::core::sampler::Sampler;
 
 // see zerotwosequence.h
 
-#[derive(Debug, Clone)]
 pub struct ZeroTwoSequenceSampler {
     pub samples_per_pixel: i64,
     pub n_sampled_dimensions: i64,

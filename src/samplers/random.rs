@@ -7,7 +7,6 @@ use crate::core::sampler::Sampler;
 
 // see random.h
 
-#[derive(Clone)]
 pub struct RandomSampler {
     pub samples_per_pixel: i64,
     pub rng: Rng,

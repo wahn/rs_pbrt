@@ -368,31 +368,31 @@ impl Sampler for HaltonSampler {
     }
 }
 
-impl Clone for HaltonSampler {
-    fn clone(&self) -> HaltonSampler {
-        let pixel_for_offset: Point2i = *self.pixel_for_offset.read().unwrap();
-        let offset_for_current_pixel: u64 = *self.offset_for_current_pixel.read().unwrap();
-        HaltonSampler {
-            samples_per_pixel: self.samples_per_pixel,
-            base_scales: self.base_scales,
-            base_exponents: self.base_exponents,
-            sample_stride: self.sample_stride,
-            mult_inverse: self.mult_inverse,
-            pixel_for_offset: RwLock::new(pixel_for_offset),
-            offset_for_current_pixel: RwLock::new(offset_for_current_pixel),
-            sample_at_pixel_center: self.sample_at_pixel_center,
-            dimension: self.dimension,
-            interval_sample_index: self.interval_sample_index,
-            array_start_dim: self.array_start_dim,
-            array_end_dim: self.array_end_dim,
-            current_pixel: self.current_pixel,
-            current_pixel_sample_index: self.current_pixel_sample_index,
-            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
-            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
-            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
-            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
-            array_1d_offset: self.array_1d_offset,
-            array_2d_offset: self.array_2d_offset,
-        }
-    }
-}
+// impl Clone for HaltonSampler {
+//     fn clone(&self) -> HaltonSampler {
+//         let pixel_for_offset: Point2i = *self.pixel_for_offset.read().unwrap();
+//         let offset_for_current_pixel: u64 = *self.offset_for_current_pixel.read().unwrap();
+//         HaltonSampler {
+//             samples_per_pixel: self.samples_per_pixel,
+//             base_scales: self.base_scales,
+//             base_exponents: self.base_exponents,
+//             sample_stride: self.sample_stride,
+//             mult_inverse: self.mult_inverse,
+//             pixel_for_offset: RwLock::new(pixel_for_offset),
+//             offset_for_current_pixel: RwLock::new(offset_for_current_pixel),
+//             sample_at_pixel_center: self.sample_at_pixel_center,
+//             dimension: self.dimension,
+//             interval_sample_index: self.interval_sample_index,
+//             array_start_dim: self.array_start_dim,
+//             array_end_dim: self.array_end_dim,
+//             current_pixel: self.current_pixel,
+//             current_pixel_sample_index: self.current_pixel_sample_index,
+//             samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
+//             samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
+//             sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
+//             sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
+//             array_1d_offset: self.array_1d_offset,
+//             array_2d_offset: self.array_2d_offset,
+//         }
+//     }
+// }
