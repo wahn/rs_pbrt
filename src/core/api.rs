@@ -45,7 +45,7 @@ use crate::filters::mitchell::MitchellNetravali;
 use crate::filters::sinc::LanczosSincFilter;
 use crate::filters::triangle::TriangleFilter;
 use crate::integrators::ao::AOIntegrator;
-// use crate::integrators::bdpt::BDPTIntegrator;
+use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 // use crate::integrators::mlt::MLTIntegrator;
 use crate::integrators::path::PathIntegrator;
@@ -329,32 +329,32 @@ impl RenderOptions {
                         ),
                     )));
                     some_integrator = Some(integrator);
-                // } else if self.integrator_name == "bdpt" {
-                //     // CreateBDPTIntegrator
-                //     let mut max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
-                //     let visualize_strategies: bool = self
-                //         .integrator_params
-                //         .find_one_bool("visualizestrategies", false);
-                //     let visualize_weights: bool = self
-                //         .integrator_params
-                //         .find_one_bool("visualizeweights", false);
-                //     if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
-                //         print!("WARNING: visualizestrategies/visualizeweights was enabled,");
-                //         println!(" limiting maxdepth to 5");
-                //         max_depth = 5;
-                //     }
-                //     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
-                //     let light_strategy: String = self
-                //         .integrator_params
-                //         .find_one_string("lightsamplestrategy", String::from("power"));
-                //     let integrator = Box::new(Integrator::BDPT(BDPTIntegrator::new(
-                //         camera,
-                //         sampler,
-                //         pixel_bounds,
-                //         max_depth as u32,
-                //         light_strategy,
-                //     )));
-                //     some_integrator = Some(integrator);
+                } else if self.integrator_name == "bdpt" {
+                    // CreateBDPTIntegrator
+                    let mut max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
+                    let visualize_strategies: bool = self
+                        .integrator_params
+                        .find_one_bool("visualizestrategies", false);
+                    let visualize_weights: bool = self
+                        .integrator_params
+                        .find_one_bool("visualizeweights", false);
+                    if (visualize_strategies || visualize_weights) && max_depth > 5_i32 {
+                        print!("WARNING: visualizestrategies/visualizeweights was enabled,");
+                        println!(" limiting maxdepth to 5");
+                        max_depth = 5;
+                    }
+                    let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
+                    let light_strategy: String = self
+                        .integrator_params
+                        .find_one_string("lightsamplestrategy", String::from("power"));
+                    let integrator = Box::new(Integrator::BDPT(BDPTIntegrator::new(
+                        camera,
+                        sampler,
+                        pixel_bounds,
+                        max_depth as u32,
+                        light_strategy,
+                    )));
+                    some_integrator = Some(integrator);
                 // } else if self.integrator_name == "mlt" {
                 //     // CreateMLTIntegrator
                 //     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);

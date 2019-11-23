@@ -793,7 +793,7 @@ impl<'a> Vertex<'a> {
 /// Bidirectional Path Tracing (Global Illumination)
 pub struct BDPTIntegrator {
     pub camera: Arc<Camera>,
-    pub sampler: Box<dyn Sampler + Send + Sync>,
+    pub sampler: Box<Sampler>,
     pub pixel_bounds: Bounds2i,
     // see bdpt.h
     pub max_depth: u32,
@@ -805,7 +805,7 @@ pub struct BDPTIntegrator {
 impl BDPTIntegrator {
     pub fn new(
         camera: Arc<Camera>,
-        sampler: Box<dyn Sampler + Send + Sync>,
+        sampler: Box<Sampler>,
         pixel_bounds: Bounds2i,
         max_depth: u32,
         // visualize_strategies: bool,
@@ -876,7 +876,7 @@ impl BDPTIntegrator {
                     // spawn worker threads
                     for _ in 0..num_cores {
                         let pixel_tx = pixel_tx.clone();
-                        let mut tile_sampler: Box<dyn Sampler + Send + Sync> = sampler.box_clone();
+                        let mut tile_sampler: Box<Sampler> = sampler.clone_with_seed(0_u64);
                         scope.spawn(move |_| {
                             while let Some((x, y)) = bq.next() {
                                 let tile: Point2i = Point2i {
@@ -938,7 +938,7 @@ impl BDPTIntegrator {
                                                 let (n_camera_new, p_new, time_new) =
                                                     generate_camera_subpath(
                                                         scene,
-                                                        &mut tile_sampler.box_clone(),
+                                                        &mut tile_sampler.clone_with_seed(0_u64),
                                                         integrator.max_depth + 2,
                                                         camera,
                                                         &p_film,
@@ -958,7 +958,7 @@ impl BDPTIntegrator {
                                             {
                                                 n_light = generate_light_subpath(
                                                     scene,
-                                                    &mut tile_sampler.box_clone(),
+                                                    &mut tile_sampler.clone_with_seed(0_u64),
                                                     integrator.max_depth + 1,
                                                     time,
                                                     &light_distr,
@@ -995,7 +995,7 @@ impl BDPTIntegrator {
                                                         t,
                                                         &light_distr,
                                                         camera,
-                                                        &mut tile_sampler.box_clone(),
+                                                        &mut tile_sampler.clone_with_seed(0_u64),
                                                         &mut p_film_new,
                                                         mis_weight.as_mut(),
                                                     );
@@ -1057,7 +1057,7 @@ impl BDPTIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Box<dyn Sampler + Send + Sync> {
+    pub fn get_sampler(&self) -> &Box<Sampler> {
         &self.sampler
     }
 }
@@ -1088,7 +1088,7 @@ pub fn correct_shading_normal(
 
 pub fn generate_camera_subpath<'a>(
     scene: &'a Scene,
-    sampler: &mut Box<dyn Sampler + Send + Sync>,
+    sampler: &mut Box<Sampler>,
     max_depth: u32,
     camera: &'a Arc<Camera>,
     p_film: &Point2f,
@@ -1133,7 +1133,7 @@ pub fn generate_camera_subpath<'a>(
 
 pub fn generate_light_subpath<'a>(
     scene: &'a Scene,
-    sampler: &mut Box<dyn Sampler + Send + Sync>,
+    sampler: &mut Box<Sampler>,
     max_depth: u32,
     time: Float,
     light_distr: &Arc<Distribution1D>,
@@ -1210,7 +1210,7 @@ pub fn generate_light_subpath<'a>(
 pub fn random_walk<'a>(
     scene: &'a Scene,
     ray: &Ray,
-    sampler: &mut Box<dyn Sampler + Send + Sync>,
+    sampler: &mut Box<Sampler>,
     beta: &mut Spectrum,
     pdf: Float,
     max_depth: u32,
@@ -1440,12 +1440,7 @@ pub fn random_walk<'a>(
     bounces
 }
 
-pub fn g<'a>(
-    scene: &'a Scene,
-    sampler: &mut Box<dyn Sampler + Send + Sync>,
-    v0: &Vertex,
-    v1: &Vertex,
-) -> Spectrum {
+pub fn g<'a>(scene: &'a Scene, sampler: &mut Box<Sampler>, v0: &Vertex, v1: &Vertex) -> Spectrum {
     // Vector3f d = v0.p() - v1.p();
     let mut d: Vector3f = v0.p() - v1.p();
     let mut g: Float = 1.0 / d.length_squared();
@@ -2246,7 +2241,7 @@ pub fn connect_bdpt<'a>(
     t: usize,
     light_distr: &Arc<Distribution1D>,
     camera: &'a Arc<Camera>,
-    sampler: &mut Box<dyn Sampler + Send + Sync>,
+    sampler: &mut Box<Sampler>,
     p_raster: &mut Point2f,
     mis_weight_opt: Option<&mut Float>,
 ) -> Spectrum {
