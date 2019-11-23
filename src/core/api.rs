@@ -76,7 +76,7 @@ use crate::media::grid::GridDensityMedium;
 use crate::media::homogeneous::HomogeneousMedium;
 use crate::samplers::halton::HaltonSampler;
 use crate::samplers::random::RandomSampler;
-// use crate::samplers::sobol::SobolSampler;
+use crate::samplers::sobol::SobolSampler;
 // use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use crate::shapes::curve::create_curve_shape;
 use crate::shapes::cylinder::Cylinder;
@@ -1666,11 +1666,10 @@ pub fn make_sampler(name: &String, param_set: &ParamSet, film: Arc<Film>) -> Opt
         // CreateHaltonSampler
         let sampler = HaltonSampler::create(param_set, &film.get_sample_bounds());
         some_sampler = Some(sampler);
-    // } else
-    //     if name == "sobol" {
-    //     // CreateSobolSampler
-    //     let sampler = SobolSampler::create(param_set, &film.get_sample_bounds());
-    //     some_sampler = Some(sampler);
+    } else if name == "sobol" {
+        // CreateSobolSampler
+        let sampler = SobolSampler::create(param_set, &film.get_sample_bounds());
+        some_sampler = Some(sampler);
     } else if name == "random" {
         // CreateRandomSampler
         let sampler = RandomSampler::create(param_set);

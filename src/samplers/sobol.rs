@@ -77,10 +77,35 @@ impl SobolSampler {
             array_2d_offset: 0_usize,
         }
     }
-    pub fn create(params: &ParamSet, sample_bounds: &Bounds2i) -> Box<dyn Sampler + Sync + Send> {
+    pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
+        let sobol_sampler = SobolSampler {
+            samples_per_pixel: self.samples_per_pixel,
+            sample_bounds: self.sample_bounds,
+            resolution: self.resolution,
+            log_2_resolution: self.log_2_resolution,
+            dimension: self.dimension,
+            interval_sample_index: self.interval_sample_index,
+            array_start_dim: self.array_start_dim,
+            array_end_dim: self.array_end_dim,
+            current_pixel: self.current_pixel,
+            current_pixel_sample_index: self.current_pixel_sample_index,
+            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
+            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
+            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
+            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
+            array_1d_offset: self.array_1d_offset,
+            array_2d_offset: self.array_2d_offset,
+        };
+        let sampler = Sampler::Sobol(sobol_sampler);
+        Box::new(sampler)
+    }
+    pub fn create(params: &ParamSet, sample_bounds: &Bounds2i) -> Box<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 16);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-        Box::new(SobolSampler::new(nsamp as i64, sample_bounds))
+        Box::new(Sampler::Sobol(SobolSampler::new(
+            nsamp as i64,
+            sample_bounds,
+        )))
     }
     pub fn get_index_for_sample(&self, sample_num: u64) -> u64 {
         let v: Vector2i = self.current_pixel - self.sample_bounds.p_min;
@@ -109,21 +134,8 @@ impl SobolSampler {
         }
         s
     }
-    // GlobalSampler
-    pub fn set_sample_number(&mut self, sample_num: i64) -> bool {
-        // GlobalSampler::SetSampleNumber(...)
-        self.dimension = 0_i64;
-        self.interval_sample_index = self.get_index_for_sample(sample_num as u64);
-        // reset array offsets for next pixel sample
-        self.array_1d_offset = 0_usize;
-        self.array_2d_offset = 0_usize;
-        self.current_pixel_sample_index = sample_num;
-        self.current_pixel_sample_index < self.samples_per_pixel
-    }
-}
-
-impl Sampler for SobolSampler {
-    fn start_pixel(&mut self, p: &Point2i) {
+    // Sampler
+    pub fn start_pixel(&mut self, p: &Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         // Sampler::StartPixel(p);
         self.current_pixel = *p;
@@ -160,7 +172,7 @@ impl Sampler for SobolSampler {
         }
         assert!(self.array_end_dim == dim);
     }
-    fn get_1d(&mut self) -> Float {
+    pub fn get_1d(&mut self) -> Float {
         // TODO: ProfilePhase _(Prof::GetSample);
         if self.dimension >= self.array_start_dim && self.dimension < self.array_end_dim {
             self.dimension = self.array_end_dim;
@@ -171,7 +183,7 @@ impl Sampler for SobolSampler {
         // then return
         ret
     }
-    fn get_2d(&mut self) -> Point2f {
+    pub fn get_2d(&mut self) -> Point2f {
         // TODO: ProfilePhase _(Prof::GetSample);
         if self.dimension + 1 >= self.array_start_dim && self.dimension < self.array_end_dim {
             self.dimension = self.array_end_dim;
@@ -183,17 +195,17 @@ impl Sampler for SobolSampler {
         self.dimension += 2;
         return p;
     }
-    fn request_2d_array(&mut self, n: i32) {
+    pub fn request_2d_array(&mut self, n: i32) {
         assert_eq!(self.round_count(n), n);
         self.samples_2d_array_sizes.push(n);
         let size: usize = (n * self.samples_per_pixel as i32) as usize;
         let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
         self.sample_array_2d.push(additional_points);
     }
-    fn round_count(&self, count: i32) -> i32 {
+    pub fn round_count(&self, count: i32) -> i32 {
         count
     }
-    fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
+    pub fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
         if self.array_2d_offset == self.sample_array_2d.len() {
             return None;
         }
@@ -209,7 +221,7 @@ impl Sampler for SobolSampler {
         self.array_2d_offset += 1;
         Some(&self.sample_array_2d[self.array_2d_offset - 1][start..end])
     }
-    fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
+    pub fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
         if self.array_2d_offset == self.sample_array_2d.len() {
             return (None, None);
         }
@@ -242,7 +254,7 @@ impl Sampler for SobolSampler {
         // return tuple
         (Some(ret1), Some(ret2))
     }
-    fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
+    pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
         let mut samples: Vec<Point2f> = Vec::new();
         if self.array_2d_offset == self.sample_array_2d.len() {
             return samples;
@@ -260,7 +272,7 @@ impl Sampler for SobolSampler {
         self.array_2d_offset += 1;
         samples
     }
-    fn start_next_sample(&mut self) -> bool {
+    pub fn start_next_sample(&mut self) -> bool {
         self.dimension = 0_i64;
         self.interval_sample_index =
             self.get_index_for_sample(self.current_pixel_sample_index as u64 + 1_u64);
@@ -271,16 +283,27 @@ impl Sampler for SobolSampler {
         self.current_pixel_sample_index += 1_i64;
         self.current_pixel_sample_index < self.samples_per_pixel
     }
-    fn reseed(&mut self, _seed: u64) {
+    pub fn reseed(&mut self, _seed: u64) {
         // do nothing
     }
-    fn get_current_pixel(&self) -> Point2i {
+    pub fn get_current_pixel(&self) -> Point2i {
         self.current_pixel
     }
-    fn get_current_sample_number(&self) -> i64 {
+    pub fn get_current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index
     }
-    fn get_samples_per_pixel(&self) -> i64 {
+    pub fn get_samples_per_pixel(&self) -> i64 {
         self.samples_per_pixel
+    }
+    // GlobalSampler
+    pub fn set_sample_number(&mut self, sample_num: i64) -> bool {
+        // GlobalSampler::SetSampleNumber(...)
+        self.dimension = 0_i64;
+        self.interval_sample_index = self.get_index_for_sample(sample_num as u64);
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
+        self.current_pixel_sample_index = sample_num;
+        self.current_pixel_sample_index < self.samples_per_pixel
     }
 }

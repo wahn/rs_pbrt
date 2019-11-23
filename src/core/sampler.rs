@@ -8,12 +8,14 @@ use crate::core::geometry::{Point2f, Point2i};
 use crate::core::pbrt::Float;
 use crate::samplers::halton::HaltonSampler;
 use crate::samplers::random::RandomSampler;
+use crate::samplers::sobol::SobolSampler;
 
 // see sampler.h
 
 pub enum Sampler {
     Halton(HaltonSampler),
     Random(RandomSampler),
+    Sobol(SobolSampler),
 }
 
 impl Sampler {
@@ -21,24 +23,28 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.clone_with_seed(seed),
             Sampler::Random(sampler) => sampler.clone_with_seed(seed),
+            Sampler::Sobol(sampler) => sampler.clone_with_seed(seed),
         }
     }
     pub fn start_pixel(&mut self, p: &Point2i) {
         match self {
             Sampler::Halton(sampler) => sampler.start_pixel(p),
             Sampler::Random(sampler) => sampler.start_pixel(p),
+            Sampler::Sobol(sampler) => sampler.start_pixel(p),
         }
     }
     pub fn get_1d(&mut self) -> Float {
         match self {
             Sampler::Halton(sampler) => sampler.get_1d(),
             Sampler::Random(sampler) => sampler.get_1d(),
+            Sampler::Sobol(sampler) => sampler.get_1d(),
         }
     }
     pub fn get_2d(&mut self) -> Point2f {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d(),
             Sampler::Random(sampler) => sampler.get_2d(),
+            Sampler::Sobol(sampler) => sampler.get_2d(),
         }
     }
     pub fn get_camera_sample(&mut self, p_raster: &Point2i) -> CameraSample {
@@ -55,60 +61,70 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.request_2d_array(n),
             Sampler::Random(sampler) => sampler.request_2d_array(n),
+            Sampler::Sobol(sampler) => sampler.request_2d_array(n),
         }
     }
     pub fn round_count(&self, count: i32) -> i32 {
         match self {
             Sampler::Halton(sampler) => sampler.round_count(count),
             Sampler::Random(sampler) => sampler.round_count(count),
+            Sampler::Sobol(sampler) => sampler.round_count(count),
         }
     }
     pub fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d_array(n),
             Sampler::Random(sampler) => sampler.get_2d_array(n),
+            Sampler::Sobol(sampler) => sampler.get_2d_array(n),
         }
     }
     pub fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d_arrays(n),
             Sampler::Random(sampler) => sampler.get_2d_arrays(n),
+            Sampler::Sobol(sampler) => sampler.get_2d_arrays(n),
         }
     }
     pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d_array_vec(n),
             Sampler::Random(sampler) => sampler.get_2d_array_vec(n),
+            Sampler::Sobol(sampler) => sampler.get_2d_array_vec(n),
         }
     }
     pub fn start_next_sample(&mut self) -> bool {
         match self {
             Sampler::Halton(sampler) => sampler.start_next_sample(),
             Sampler::Random(sampler) => sampler.start_next_sample(),
+            Sampler::Sobol(sampler) => sampler.start_next_sample(),
         }
     }
     pub fn reseed(&mut self, seed: u64) {
         match self {
             Sampler::Halton(sampler) => sampler.reseed(seed),
             Sampler::Random(sampler) => sampler.reseed(seed),
+            Sampler::Sobol(sampler) => sampler.reseed(seed),
         }
     }
     pub fn get_current_pixel(&self) -> Point2i {
         match self {
             Sampler::Halton(sampler) => sampler.get_current_pixel(),
             Sampler::Random(sampler) => sampler.get_current_pixel(),
+            Sampler::Sobol(sampler) => sampler.get_current_pixel(),
         }
     }
     pub fn get_current_sample_number(&self) -> i64 {
         match self {
             Sampler::Halton(sampler) => sampler.get_current_sample_number(),
             Sampler::Random(sampler) => sampler.get_current_sample_number(),
+            Sampler::Sobol(sampler) => sampler.get_current_sample_number(),
         }
     }
     pub fn get_samples_per_pixel(&self) -> i64 {
         match self {
             Sampler::Halton(sampler) => sampler.get_samples_per_pixel(),
             Sampler::Random(sampler) => sampler.get_samples_per_pixel(),
+            Sampler::Sobol(sampler) => sampler.get_samples_per_pixel(),
         }
     }
 }
