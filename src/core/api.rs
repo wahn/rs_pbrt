@@ -74,7 +74,7 @@ use crate::materials::translucent::TranslucentMaterial;
 use crate::materials::uber::UberMaterial;
 use crate::media::grid::GridDensityMedium;
 use crate::media::homogeneous::HomogeneousMedium;
-// use crate::samplers::halton::HaltonSampler;
+use crate::samplers::halton::HaltonSampler;
 use crate::samplers::random::RandomSampler;
 // use crate::samplers::sobol::SobolSampler;
 // use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
@@ -1652,11 +1652,7 @@ pub fn make_camera(
     some_camera
 }
 
-pub fn make_sampler(
-    name: &String,
-    param_set: &ParamSet,
-    film: Arc<Film>,
-) -> Option<Box<Sampler>> {
+pub fn make_sampler(name: &String, param_set: &ParamSet, film: Arc<Film>) -> Option<Box<Sampler>> {
     let mut some_sampler: Option<Box<Sampler>> = None;
     // if name == "lowdiscrepancy" || name == "02sequence" {
     //     // CreateZeroTwoSequenceSampler
@@ -1665,17 +1661,17 @@ pub fn make_sampler(
     // } else if name == "maxmindist" {
     //     // CreateMaxMinDistSampler
     //     println!("TODO: CreateMaxMinDistSampler");
-    // } else if name == "halton" {
-    //     // CreateHaltonSampler
-    //     let sampler = HaltonSampler::create(param_set, &film.get_sample_bounds());
-    //     some_sampler = Some(sampler);
+    // } else
+    if name == "halton" {
+        // CreateHaltonSampler
+        let sampler = HaltonSampler::create(param_set, &film.get_sample_bounds());
+        some_sampler = Some(sampler);
     // } else
     //     if name == "sobol" {
     //     // CreateSobolSampler
     //     let sampler = SobolSampler::create(param_set, &film.get_sample_bounds());
     //     some_sampler = Some(sampler);
-    // } else
-    if name == "random" {
+    } else if name == "random" {
         // CreateRandomSampler
         let sampler = RandomSampler::create(param_set);
         some_sampler = Some(sampler);
