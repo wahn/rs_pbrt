@@ -159,4 +159,12 @@ impl Sampler {
             Sampler::ZeroTwoSequence(sampler) => sampler.get_samples_per_pixel(),
         }
     }
+    // GlobalSampler
+    pub fn set_sample_number(&mut self, sample_num: i64) -> bool {
+        match self {
+            Sampler::Halton(sampler) => sampler.set_sample_number(sample_num),
+            Sampler::Sobol(sampler) => sampler.set_sample_number(sample_num),
+            _ => false,
+        }
+    }
 }

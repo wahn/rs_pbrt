@@ -23,7 +23,6 @@ use crate::core::parallel::AtomicFloat;
 use crate::core::pbrt::{clamp_t, lerp};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{Bsdf, BxdfType};
-use crate::core::sampler::{GlobalSampler, Sampler, SamplerClone};
 use crate::core::scene::Scene;
 use crate::samplers::halton::HaltonSampler;
 
@@ -135,7 +134,7 @@ impl SPPMIntegrator {
 
                                         // follow camera paths for _tile_ in image for SPPM
                                         // TODO: let tile_index: i32 = tile.y * n_tiles.x + tile.x;
-                                        let mut tile_sampler = sampler.clone();
+                                        let mut tile_sampler = sampler.clone_with_seed(0_u64);
                                         // compute _tileBounds_ for SPPM tile
                                         let x0: i32 = pixel_bounds.p_min.x + tile.x * tile_size;
                                         let x1: i32 =
@@ -204,7 +203,8 @@ impl SPPMIntegrator {
                                                             * uniform_sample_one_light(
                                                                 &isect,
                                                                 scene,
-                                                                &mut tile_sampler.box_clone(),
+                                                                &mut tile_sampler
+                                                                    .clone_with_seed(0_u64),
                                                                 false,
                                                                 None,
                                                             );

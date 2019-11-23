@@ -1,0 +1,30 @@
+
+Film "image"
+    "integer xresolution" [512] "integer yresolution" [512] 
+    "string filename" "caustic-proj.exr"
+
+Integrator "sppm" "integer numiterations" 256
+    "float radius" .25
+    "integer maxdepth" 10
+
+#Integrator "mlt" "integer mutationsperpixel" 200 "integer maxdepth" 10
+
+LookAt 0 -4 5    0 0 -1   0 0 1
+Camera "perspective" "float fov" [50 ]
+
+WorldBegin
+
+AttributeBegin
+    LightSource "infinite" "string mapname" ["textures/grace-new_latlong.hdr"]
+AttributeEnd
+
+AttributeBegin
+    Material "matte"
+    Shape "trianglemesh" "integer indices" [0 2 1 0 3 2 ]
+        "point P" [-20 -20 -2   20 -20 -2   20 20 -2   -20 20 -2 ]
+AttributeEnd
+
+Material "glass" "float index" [1.5 ]
+Shape "sphere" "float radius" 1.5  
+
+WorldEnd
