@@ -37,7 +37,19 @@ impl RandomSampler {
         }
     }
     pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
-        Box::new(Sampler::Random(RandomSampler::new(self.samples_per_pixel)))
+        let mut random_sampler = RandomSampler::new(self.samples_per_pixel);
+        random_sampler.rng.set_sequence(seed);
+        // manually copy remaining bits
+        random_sampler.current_pixel = self.current_pixel;
+        random_sampler.current_pixel_sample_index = self.current_pixel_sample_index;
+        random_sampler.samples_1d_array_sizes = self.samples_1d_array_sizes.clone();
+        random_sampler.samples_2d_array_sizes = self.samples_2d_array_sizes.clone();
+        random_sampler.sample_array_1d = self.sample_array_1d.clone();
+        random_sampler.sample_array_2d = self.sample_array_2d.clone();
+        random_sampler.array_1d_offset = self.array_1d_offset;
+        random_sampler.array_2d_offset = self.array_2d_offset;
+        let sampler = Sampler::Random(random_sampler);
+        Box::new(sampler)
     }
     pub fn create(params: &ParamSet) -> Box<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 4);
