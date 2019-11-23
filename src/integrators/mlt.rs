@@ -10,7 +10,7 @@ use crate::core::pbrt::erf_inv;
 use crate::core::pbrt::SQRT_2;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::rng::Rng;
-use crate::core::sampler::{Sampler, SamplerClone};
+use crate::core::sampler::Sampler;
 use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
 use crate::integrators::bdpt::Vertex;
@@ -98,6 +98,31 @@ impl MLTSampler {
             array_2d_offset: 0_usize,
         }
     }
+    pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
+        let mlt_sampler = MLTSampler {
+            samples_per_pixel: self.samples_per_pixel,
+            rng: self.rng.clone(),
+            sigma: self.sigma,
+            large_step_probability: self.large_step_probability,
+            stream_count: self.stream_count,
+            x: self.x.clone(),
+            current_iteration: self.current_iteration,
+            large_step: self.large_step,
+            last_large_step_iteration: self.last_large_step_iteration,
+            stream_index: self.stream_index,
+            sample_index: self.sample_index,
+            current_pixel: self.current_pixel,
+            current_pixel_sample_index: self.current_pixel_sample_index,
+            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
+            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
+            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
+            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
+            array_1d_offset: self.array_1d_offset,
+            array_2d_offset: self.array_2d_offset,
+        };
+        let sampler = Sampler::MLT(mlt_sampler);
+        Box::new(sampler)
+    }
     pub fn start_iteration(&mut self) {
         self.current_iteration += 1;
         self.large_step = self.rng.uniform_float() < self.large_step_probability;
@@ -164,41 +189,39 @@ impl MLTSampler {
             panic!("self.x.get_mut({:?}) failed", index);
         }
     }
-}
-
-impl Sampler for MLTSampler {
-    fn start_pixel(&mut self, p: &Point2i) {
+    // Sampler
+    pub fn start_pixel(&mut self, p: &Point2i) {
         // Sampler::StartPixel(p);
         self.current_pixel = *p;
         self.current_pixel_sample_index = 0_i64;
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;
     }
-    fn get_1d(&mut self) -> Float {
+    pub fn get_1d(&mut self) -> Float {
         // TODO: ProfilePhase _(Prof::GetSample);
         let index: i32 = self.get_next_index();
         self.ensure_ready(index);
         self.x[index as usize].value
     }
-    fn get_2d(&mut self) -> Point2f {
+    pub fn get_2d(&mut self) -> Point2f {
         let x: Float = self.get_1d();
         let y: Float = self.get_1d();
         Point2f { x, y }
     }
-    fn reseed(&mut self, seed: u64) {
+    pub fn reseed(&mut self, seed: u64) {
         self.rng.set_sequence(seed);
     }
-    fn request_2d_array(&mut self, n: i32) {
+    pub fn request_2d_array(&mut self, n: i32) {
         assert_eq!(self.round_count(n), n);
         self.samples_2d_array_sizes.push(n);
         let size: usize = (n * self.samples_per_pixel as i32) as usize;
         let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
         self.sample_array_2d.push(additional_points);
     }
-    fn round_count(&self, count: i32) -> i32 {
+    pub fn round_count(&self, count: i32) -> i32 {
         count
     }
-    fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
+    pub fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
         if self.array_2d_offset == self.sample_array_2d.len() {
             return None;
         }
@@ -214,7 +237,7 @@ impl Sampler for MLTSampler {
         self.array_2d_offset += 1;
         Some(&self.sample_array_2d[self.array_2d_offset - 1][start..end])
     }
-    fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
+    pub fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
         if self.array_2d_offset == self.sample_array_2d.len() {
             return (None, None);
         }
@@ -247,7 +270,7 @@ impl Sampler for MLTSampler {
         // return tuple
         (Some(ret1), Some(ret2))
     }
-    fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
+    pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
         let mut samples: Vec<Point2f> = Vec::new();
         if self.array_2d_offset == self.sample_array_2d.len() {
             return samples;
@@ -265,20 +288,20 @@ impl Sampler for MLTSampler {
         self.array_2d_offset += 1;
         samples
     }
-    fn start_next_sample(&mut self) -> bool {
+    pub fn start_next_sample(&mut self) -> bool {
         // reset array offsets for next pixel sample
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;
         self.current_pixel_sample_index += 1_i64;
         self.current_pixel_sample_index < self.samples_per_pixel
     }
-    fn get_current_pixel(&self) -> Point2i {
+    pub fn get_current_pixel(&self) -> Point2i {
         self.current_pixel
     }
-    fn get_current_sample_number(&self) -> i64 {
+    pub fn get_current_sample_number(&self) -> i64 {
         self.current_pixel_sample_index
     }
-    fn get_samples_per_pixel(&self) -> i64 {
+    pub fn get_samples_per_pixel(&self) -> i64 {
         self.samples_per_pixel
     }
 }
@@ -356,7 +379,7 @@ impl MLTIntegrator {
         {
             let (n_camera_new, _p_new, time_new) = generate_camera_subpath(
                 scene,
-                &mut mlt_sampler.box_clone(),
+                &mut mlt_sampler.clone_with_seed(0_u64),
                 t,
                 &self.camera,
                 p_raster,
@@ -375,7 +398,7 @@ impl MLTIntegrator {
         {
             n_light = generate_light_subpath(
                 scene,
-                &mut mlt_sampler.box_clone(),
+                &mut mlt_sampler.clone_with_seed(0_u64),
                 s,
                 time,
                 &light_distr,
@@ -397,7 +420,7 @@ impl MLTIntegrator {
             &light_distr,
             // light_to_index,
             &self.camera,
-            &mut mlt_sampler.box_clone(),
+            &mut mlt_sampler.clone_with_seed(0_u64),
             p_raster,
             None,
         ) * (n_strategies as Float)
