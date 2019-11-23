@@ -77,7 +77,7 @@ use crate::media::homogeneous::HomogeneousMedium;
 use crate::samplers::halton::HaltonSampler;
 use crate::samplers::random::RandomSampler;
 use crate::samplers::sobol::SobolSampler;
-// use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
+use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use crate::shapes::curve::create_curve_shape;
 use crate::shapes::cylinder::Cylinder;
 use crate::shapes::disk::Disk;
@@ -1654,15 +1654,14 @@ pub fn make_camera(
 
 pub fn make_sampler(name: &String, param_set: &ParamSet, film: Arc<Film>) -> Option<Box<Sampler>> {
     let mut some_sampler: Option<Box<Sampler>> = None;
-    // if name == "lowdiscrepancy" || name == "02sequence" {
-    //     // CreateZeroTwoSequenceSampler
-    //     let sampler = ZeroTwoSequenceSampler::create(param_set);
-    //     some_sampler = Some(sampler);
-    // } else if name == "maxmindist" {
-    //     // CreateMaxMinDistSampler
-    //     println!("TODO: CreateMaxMinDistSampler");
-    // } else
-    if name == "halton" {
+    if name == "lowdiscrepancy" || name == "02sequence" {
+        // CreateZeroTwoSequenceSampler
+        let sampler = ZeroTwoSequenceSampler::create(param_set);
+        some_sampler = Some(sampler);
+    } else if name == "maxmindist" {
+        // CreateMaxMinDistSampler
+        println!("TODO: CreateMaxMinDistSampler");
+    } else if name == "halton" {
         // CreateHaltonSampler
         let sampler = HaltonSampler::create(param_set, &film.get_sample_bounds());
         some_sampler = Some(sampler);
@@ -1674,9 +1673,9 @@ pub fn make_sampler(name: &String, param_set: &ParamSet, film: Arc<Film>) -> Opt
         // CreateRandomSampler
         let sampler = RandomSampler::create(param_set);
         some_sampler = Some(sampler);
-    // } else if name == "stratified" {
-    //     // CreateStratifiedSampler
-    //     println!("TODO: CreateStratifiedSampler");
+    } else if name == "stratified" {
+        // CreateStratifiedSampler
+        println!("TODO: CreateStratifiedSampler");
     } else {
         println!("Sampler \"{}\" unknown.", name);
     }
