@@ -87,8 +87,8 @@ impl ZeroTwoSequenceSampler {
         }
         lds
     }
-    pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
-        let sobol_sampler = ZeroTwoSequenceSampler {
+    pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
+        let mut zero_two_sampler = ZeroTwoSequenceSampler {
             samples_per_pixel: self.samples_per_pixel,
             n_sampled_dimensions: self.n_sampled_dimensions,
             samples_1d: self.samples_1d.clone(),
@@ -105,7 +105,8 @@ impl ZeroTwoSequenceSampler {
             array_1d_offset: self.array_1d_offset,
             array_2d_offset: self.array_2d_offset,
         };
-        let sampler = Sampler::ZeroTwoSequence(sobol_sampler);
+        zero_two_sampler.reseed(seed);
+        let sampler = Sampler::ZeroTwoSequence(zero_two_sampler);
         Box::new(sampler)
     }
     pub fn create(params: &ParamSet) -> Box<Sampler> {

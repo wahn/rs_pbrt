@@ -876,7 +876,6 @@ impl BDPTIntegrator {
                     // spawn worker threads
                     for _ in 0..num_cores {
                         let pixel_tx = pixel_tx.clone();
-                        let mut tile_sampler: Box<Sampler> = sampler.clone_with_seed(0_u64);
                         scope.spawn(move |_| {
                             while let Some((x, y)) = bq.next() {
                                 let tile: Point2i = Point2i {
@@ -884,7 +883,8 @@ impl BDPTIntegrator {
                                     y: y as i32,
                                 };
                                 let seed: i32 = tile.y * n_x_tiles + tile.x;
-                                tile_sampler.reseed(seed as u64);
+                                let mut tile_sampler: Box<Sampler> =
+                                    sampler.clone_with_seed(seed as u64);
                                 let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                                 let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
                                 let y0: i32 = sample_bounds.p_min.y + tile.y * tile_size;
@@ -938,7 +938,7 @@ impl BDPTIntegrator {
                                                 let (n_camera_new, p_new, time_new) =
                                                     generate_camera_subpath(
                                                         scene,
-                                                        &mut tile_sampler.clone_with_seed(0_u64),
+                                                        &mut tile_sampler,
                                                         integrator.max_depth + 2,
                                                         camera,
                                                         &p_film,
@@ -958,7 +958,7 @@ impl BDPTIntegrator {
                                             {
                                                 n_light = generate_light_subpath(
                                                     scene,
-                                                    &mut tile_sampler.clone_with_seed(0_u64),
+                                                    &mut tile_sampler,
                                                     integrator.max_depth + 1,
                                                     time,
                                                     &light_distr,
@@ -995,7 +995,7 @@ impl BDPTIntegrator {
                                                         t,
                                                         &light_distr,
                                                         camera,
-                                                        &mut tile_sampler.clone_with_seed(0_u64),
+                                                        &mut tile_sampler,
                                                         &mut p_film_new,
                                                         mis_weight.as_mut(),
                                                     );
