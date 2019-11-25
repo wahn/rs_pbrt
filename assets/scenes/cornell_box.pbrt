@@ -8,6 +8,7 @@ Camera "perspective"
 Film "image"
   "integer xresolution" [ 500 ]
   "integer yresolution" [ 500 ]
+  "float cropwindow" [ 0.3 0.7 0.5 0.7 ]
 ##  "integer outlierrejection_k" [ 10 ]
 ##Sampler "random" "integer pixelsamples" [8]
 ##Sampler "halton" "integer pixelsamples" [8]
@@ -19,8 +20,8 @@ Sampler "02sequence" "integer pixelsamples" [8]
 ##Integrator "whitted" "integer maxdepth" [5]
 ##Integrator "ambientocclusion"
 ##Integrator "path"
-Integrator "bdpt"
-##Integrator "mlt"
+##Integrator "bdpt"
+Integrator "mlt"
 WorldBegin
   # box_Material
   MakeNamedMaterial "box_Material"

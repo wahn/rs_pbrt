@@ -204,8 +204,9 @@ impl MLTSampler {
         self.x[index as usize].value
     }
     pub fn get_2d(&mut self) -> Point2f {
-        let x: Float = self.get_1d();
+        // C++: call y first
         let y: Float = self.get_1d();
+        let x: Float = self.get_1d();
         Point2f { x, y }
     }
     pub fn reseed(&mut self, seed: u64) {
@@ -484,6 +485,10 @@ impl MLTIntegrator {
                 }
             }
             println!("Rendering ...");
+            for i in 0..bootstrap_weights.len() {
+                let bootstrap_weight = bootstrap_weights[i];
+                println!("{}: {}", i, bootstrap_weight);
+            }
             let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
             let b: Float = bootstrap.func_int * (self.max_depth + 1) as Float;
             // run _n_chains_ Markov chains in parallel
