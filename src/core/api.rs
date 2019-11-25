@@ -2830,7 +2830,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
         }
         if area_lights.len() > 0 {
             for area_light in area_lights {
-                api_state.render_options.lights.push(area_light);
+                api_state.render_options.lights.push(area_light.clone());
             }
         }
     }

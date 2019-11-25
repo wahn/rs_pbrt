@@ -758,7 +758,7 @@ impl<'a> Vertex<'a> {
                             for i in 0..scene.lights.len() {
                                 let light = &scene.lights[i];
                                 let pa = &*area_light as *const _ as *const usize;
-                                let pl = &*light as *const _ as *const usize;
+                                let pl = &**light as *const _ as *const usize;
                                 if pa == pl {
                                     // compute the discrete
                                     // probability of sampling
