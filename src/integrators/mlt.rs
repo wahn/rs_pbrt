@@ -1,4 +1,5 @@
 // std
+use std::ops::DerefMut;
 use std::sync::Arc;
 use std::thread;
 // pbrt
@@ -342,12 +343,14 @@ impl MLTIntegrator {
         &self,
         scene: &Scene,
         light_distr: &Arc<Distribution1D>,
-        mlt_sampler: &mut MLTSampler,
+        sampler: &mut Box<Sampler>,
         depth: u32,
         p_raster: &mut Point2f,
     ) -> Spectrum {
-        let mut sampler = mlt_sampler.clone_with_seed(0_u64);
-        mlt_sampler.start_stream(CAMERA_STREAM_INDEX as i32);
+        match sampler.deref_mut() {
+            Sampler::MLT(mlt_sampler) => mlt_sampler.start_stream(CAMERA_STREAM_INDEX as i32),
+            _ => panic!("MLTSampler needed."),
+        }
         // determine the number of available strategies and pick a specific one
         let s: u32;
         let t: u32;
@@ -358,7 +361,7 @@ impl MLTIntegrator {
             t = 2;
         } else {
             n_strategies = depth + 2;
-            s = ((mlt_sampler.get_1d() * n_strategies as Float) as u32).min(n_strategies - 1);
+            s = ((sampler.get_1d() * n_strategies as Float) as u32).min(n_strategies - 1);
             t = n_strategies - s;
         }
         // generate a camera subpath with exactly _t_ vertices
@@ -375,13 +378,13 @@ impl MLTIntegrator {
                 y: sample_bounds.p_max.y as Float,
             },
         };
-        *p_raster = sample_bounds_f.lerp(&mlt_sampler.get_2d());
+        *p_raster = sample_bounds_f.lerp(&sampler.get_2d());
         let n_camera;
         let time;
         {
             let (n_camera_new, _p_new, time_new) = generate_camera_subpath(
                 scene,
-                &mut sampler,
+                sampler,
                 t,
                 &self.camera,
                 p_raster,
@@ -394,13 +397,16 @@ impl MLTIntegrator {
             return Spectrum::default();
         }
         // generate a light subpath with exactly _s_ vertices
-        mlt_sampler.start_stream(LIGHT_STREAM_INDEX as i32);
+        match sampler.deref_mut() {
+            Sampler::MLT(mlt_sampler) => mlt_sampler.start_stream(LIGHT_STREAM_INDEX as i32),
+            _ => panic!("MLTSampler needed."),
+        }
         let mut light_vertices: Vec<Vertex> = Vec::with_capacity(s as usize);
         let n_light;
         {
             n_light = generate_light_subpath(
                 scene,
-                &mut sampler,
+                sampler,
                 s,
                 time,
                 &light_distr,
@@ -412,7 +418,10 @@ impl MLTIntegrator {
             return Spectrum::default();
         }
         // execute connection strategy and return the radiance estimate
-        mlt_sampler.start_stream(CONNECTION_STREAM_INDEX as i32);
+        match sampler.deref_mut() {
+            Sampler::MLT(mlt_sampler) => mlt_sampler.start_stream(CONNECTION_STREAM_INDEX as i32),
+            _ => panic!("MLTSampler needed."),
+        }
         connect_bdpt(
             scene,
             &light_vertices,
@@ -422,7 +431,7 @@ impl MLTIntegrator {
             &light_distr,
             // light_to_index,
             &self.camera,
-            &mut sampler,
+            sampler,
             p_raster,
             None,
         ) * (n_strategies as Float)
@@ -459,13 +468,14 @@ impl MLTIntegrator {
                                     let rng_index: u64 = ((b * chunk_size) + w) as u64;
                                     let depth: u32 =
                                         (rng_index % (integrator.max_depth + 1) as u64) as u32;
-                                    let mut sampler: MLTSampler = MLTSampler::new(
-                                        integrator.mutations_per_pixel as i64,
-                                        rng_index,
-                                        integrator.sigma,
-                                        integrator.large_step_probability,
-                                        N_SAMPLE_STREAMS as i32,
-                                    );
+                                    let mut sampler: Box<Sampler> =
+                                        Box::new(Sampler::MLT(MLTSampler::new(
+                                            integrator.mutations_per_pixel as i64,
+                                            rng_index,
+                                            integrator.sigma,
+                                            integrator.large_step_probability,
+                                            N_SAMPLE_STREAMS as i32,
+                                        )));
                                     let mut p_raster: Point2f = Point2f::default();
                                     *weight = integrator
                                         .l(scene, &light_distr, &mut sampler, depth, &mut p_raster)
@@ -484,11 +494,6 @@ impl MLTIntegrator {
                     })
                     .unwrap();
                 }
-            }
-            println!("Rendering ...");
-            for i in 0..bootstrap_weights.len() {
-                let bootstrap_weight = bootstrap_weights[i];
-                println!("{}: {}", i, bootstrap_weight);
             }
             let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
             let b: Float = bootstrap.func_int * (self.max_depth + 1) as Float;
@@ -524,19 +529,22 @@ impl MLTIntegrator {
                         bootstrap.sample_discrete(rng.uniform_float(), None);
                     let depth: u32 = bootstrap_index as u32 % (self.max_depth as u32 + 1);
                     // initialize local variables for selected state
-                    let mut sampler: MLTSampler = MLTSampler::new(
+                    let mut sampler: Box<Sampler> = Box::new(Sampler::MLT(MLTSampler::new(
                         self.mutations_per_pixel as i64,
                         bootstrap_index as u64,
                         self.sigma,
                         self.large_step_probability,
                         N_SAMPLE_STREAMS as i32,
-                    );
+                    )));
                     let mut p_current: Point2f = Point2f::default();
                     let mut l_current: Spectrum =
                         self.l(scene, &light_distr, &mut sampler, depth, &mut p_current);
                     // run the Markov chain for _n_chain_mutations_ steps
                     for _j in 0..n_chain_mutations {
-                        sampler.start_iteration();
+                        match sampler.deref_mut() {
+                            Sampler::MLT(mlt_sampler) => mlt_sampler.start_iteration(),
+                            _ => panic!("MLTSampler needed."),
+                        }
                         let mut p_proposed: Point2f = Point2f::default();
                         let l_proposed: Spectrum =
                             self.l(scene, &light_distr, &mut sampler, depth, &mut p_proposed);
@@ -554,10 +562,16 @@ impl MLTIntegrator {
                         if rng.uniform_float() < accept {
                             p_current = p_proposed;
                             l_current = l_proposed;
-                            sampler.accept();
+                            match sampler.deref_mut() {
+                                Sampler::MLT(mlt_sampler) => mlt_sampler.accept(),
+                                _ => panic!("MLTSampler needed."),
+                            }
                         // TODO: ++acceptedMutations;
                         } else {
-                            sampler.reject();
+                            match sampler.deref_mut() {
+                                Sampler::MLT(mlt_sampler) => mlt_sampler.reject(),
+                                _ => panic!("MLTSampler needed."),
+                            }
                         }
                         // TODO: ++totalMutations;
                         // if (i * n_total_mutations / n_chains + j) % progress_frequency == 0 {
