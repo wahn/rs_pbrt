@@ -324,8 +324,9 @@ pub fn uniform_sample_all_lights(
         // accumulate contribution of _j_th light to _L_
         let ref light = scene.lights[j];
         let n_samples = n_light_samples[j];
-        let (u_light_array_opt, u_scattering_array_opt) = sampler.get_2d_arrays(n_samples);
-        if u_light_array_opt.is_none() || u_scattering_array_opt.is_none() {
+        let u_light_array: Vec<Point2f> = sampler.get_2d_array_vec(n_samples);
+        let u_scattering_array: Vec<Point2f> = sampler.get_2d_array_vec(n_samples);
+        if u_light_array.is_empty() || u_scattering_array.is_empty() {
             // use a single sample for illumination from _light_
             let u_light: Point2f = sampler.get_2d();
             let u_scattering: Point2f = sampler.get_2d();
@@ -335,30 +336,26 @@ pub fn uniform_sample_all_lights(
                 light.clone(),
                 &u_light,
                 scene,
-                // sampler,
+                sampler,
                 handle_media,
                 false,
             );
         } else {
-            if let Some(u_light_array) = u_light_array_opt {
-                if let Some(u_scattering_array) = u_scattering_array_opt {
-                    // estimate direct lighting using sample arrays
-                    let mut ld: Spectrum = Spectrum::new(0.0);
-                    for k in 0..n_samples {
-                        ld += estimate_direct(
-                            it,
-                            &u_scattering_array[k as usize],
-                            light.clone(),
-                            &u_light_array[k as usize],
-                            scene,
-                            // sampler,
-                            handle_media,
-                            false,
-                        );
-                    }
-                    l += ld / n_samples as Float;
-                }
+            // estimate direct lighting using sample arrays
+            let mut ld: Spectrum = Spectrum::new(0.0);
+            for k in 0..n_samples {
+                ld += estimate_direct(
+                    it,
+                    &u_scattering_array[k as usize],
+                    light.clone(),
+                    &u_light_array[k as usize],
+                    scene,
+                    sampler,
+                    handle_media,
+                    false,
+                );
             }
+            l += ld / n_samples as Float;
         }
     }
     l
@@ -406,7 +403,7 @@ pub fn uniform_sample_one_light(
         light.clone(),
         &u_light,
         scene,
-        // sampler,
+        sampler,
         handle_media,
         false,
     ) / pdf
@@ -419,7 +416,7 @@ pub fn estimate_direct(
     light: Arc<Light>,
     u_light: &Point2f,
     scene: &Scene,
-    // sampler: &mut Box<Sampler>,
+    sampler: &mut Box<Sampler>,
     // TODO: arena
     handle_media: bool,
     specular: bool,
@@ -475,17 +472,17 @@ pub fn estimate_direct(
         }
         if !f.is_black() {
             // compute effect of visibility for light source sample
-            // if handle_media {
-            //     li *= visibility.tr(scene, sampler);
-            // // TODO: VLOG(2) << "  after Tr, Li: " << Li;
-            // } else {
-            if !visibility.unoccluded(scene) {
-                // TODO: println!("  shadow ray blocked");
-                li = Spectrum::new(0.0 as Float);
+            if handle_media {
+                li *= visibility.tr(scene, sampler);
+            // TODO: VLOG(2) << "  after Tr, Li: " << Li;
             } else {
-                // TODO: println!("  shadow ray unoccluded");
+                if !visibility.unoccluded(scene) {
+                    // TODO: println!("  shadow ray blocked");
+                    li = Spectrum::new(0.0 as Float);
+                } else {
+                    // TODO: println!("  shadow ray unoccluded");
+                }
             }
-            // }
             // add light's contribution to reflected radiance
             if !li.is_black() {
                 if is_delta_light(light.get_flags()) {
@@ -546,35 +543,35 @@ pub fn estimate_direct(
             let mut found_surface_interaction: bool = false;
             // add light contribution from material sampling
             let mut li: Spectrum = Spectrum::default();
-            // if handle_media {
-            //     let (light_isect_opt, tr_spectrum) = scene.intersect_tr(&mut ray, sampler);
-            //     tr = tr_spectrum; // copy return value
-            //     if let Some(ref light_isect) = light_isect_opt {
-            //         found_surface_interaction = true;
-            //         if let Some(primitive) = &light_isect.primitive {
-            //             if let Some(area_light) = primitive.get_area_light() {
-            //                 let pa = &*area_light as *const _ as *const usize;
-            //                 let pl = &*light as *const _ as *const usize;
-            //                 if pa == pl {
-            //                     li = light_isect.le(&-wi);
-            //                 }
-            //             }
-            //         }
-            //     }
-            // } else {
-            if let Some(ref light_isect) = scene.intersect(&mut ray) {
-                found_surface_interaction = true;
-                if let Some(primitive) = &light_isect.primitive {
-                    if let Some(area_light) = primitive.get_area_light() {
-                        let pa = &*area_light as *const _ as *const usize;
-                        let pl = &*light as *const _ as *const usize;
-                        if pa == pl {
-                            li = light_isect.le(&-wi);
+            if handle_media {
+                let (light_isect_opt, tr_spectrum) = scene.intersect_tr(&mut ray, sampler);
+                tr = tr_spectrum; // copy return value
+                if let Some(ref light_isect) = light_isect_opt {
+                    found_surface_interaction = true;
+                    if let Some(primitive) = &light_isect.primitive {
+                        if let Some(area_light) = primitive.get_area_light() {
+                            let pa = &*area_light as *const _ as *const usize;
+                            let pl = &*light as *const _ as *const usize;
+                            if pa == pl {
+                                li = light_isect.le(&-wi);
+                            }
+                        }
+                    }
+                }
+            } else {
+                if let Some(ref light_isect) = scene.intersect(&mut ray) {
+                    found_surface_interaction = true;
+                    if let Some(primitive) = &light_isect.primitive {
+                        if let Some(area_light) = primitive.get_area_light() {
+                            let pa = &*area_light as *const _ as *const usize;
+                            let pl = &*light as *const _ as *const usize;
+                            if pa == pl {
+                                li = light_isect.le(&-wi);
+                            }
                         }
                     }
                 }
             }
-            // }
             if !found_surface_interaction {
                 li = light.le(&mut ray);
             }
