@@ -346,6 +346,7 @@ impl MLTIntegrator {
         depth: u32,
         p_raster: &mut Point2f,
     ) -> Spectrum {
+        let mut sampler = mlt_sampler.clone_with_seed(0_u64);
         mlt_sampler.start_stream(CAMERA_STREAM_INDEX as i32);
         // determine the number of available strategies and pick a specific one
         let s: u32;
@@ -380,7 +381,7 @@ impl MLTIntegrator {
         {
             let (n_camera_new, _p_new, time_new) = generate_camera_subpath(
                 scene,
-                &mut mlt_sampler.clone_with_seed(0_u64),
+                &mut sampler,
                 t,
                 &self.camera,
                 p_raster,
@@ -399,7 +400,7 @@ impl MLTIntegrator {
         {
             n_light = generate_light_subpath(
                 scene,
-                &mut mlt_sampler.clone_with_seed(0_u64),
+                &mut sampler,
                 s,
                 time,
                 &light_distr,
@@ -421,7 +422,7 @@ impl MLTIntegrator {
             &light_distr,
             // light_to_index,
             &self.camera,
-            &mut mlt_sampler.clone_with_seed(0_u64),
+            &mut sampler,
             p_raster,
             None,
         ) * (n_strategies as Float)
