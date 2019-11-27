@@ -2,7 +2,7 @@
 authors = ["Jan Walter <jan@janwalter.com>"]
 edition = "2018"
 name = "pbrt"
-version = "0.7.2"
+version = "0.7.3"
 [dependencies]
 atom = "0.3.5"
 atomic = "0.4"

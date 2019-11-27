@@ -19,9 +19,9 @@ Sampler "02sequence" "integer pixelsamples" [8]
 ##Integrator "directlighting" "integer maxdepth" [10]
 ##Integrator "whitted" "integer maxdepth" [5]
 ##Integrator "ambientocclusion"
-##Integrator "path"
+Integrator "path"
 ##Integrator "bdpt"
-Integrator "mlt"
+##Integrator "mlt"
 WorldBegin
   # box_Material
   MakeNamedMaterial "box_Material"
