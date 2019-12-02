@@ -75,6 +75,7 @@ use crate::materials::uber::UberMaterial;
 use crate::media::grid::GridDensityMedium;
 use crate::media::homogeneous::HomogeneousMedium;
 use crate::samplers::halton::HaltonSampler;
+use crate::samplers::maxmin::MaxMinDistSampler;
 use crate::samplers::random::RandomSampler;
 use crate::samplers::sobol::SobolSampler;
 use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
@@ -1660,7 +1661,8 @@ pub fn make_sampler(name: &String, param_set: &ParamSet, film: Arc<Film>) -> Opt
         some_sampler = Some(sampler);
     } else if name == "maxmindist" {
         // CreateMaxMinDistSampler
-        println!("TODO: CreateMaxMinDistSampler");
+        let sampler = MaxMinDistSampler::create(param_set);
+        some_sampler = Some(sampler);
     } else if name == "halton" {
         // CreateHaltonSampler
         let sampler = HaltonSampler::create(param_set, &film.get_sample_bounds());

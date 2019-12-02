@@ -13,7 +13,8 @@ Film "image"
 ##Sampler "random" "integer pixelsamples" [8]
 ##Sampler "halton" "integer pixelsamples" [8]
 ##Sampler "sobol" "integer pixelsamples" [8]
-Sampler "02sequence" "integer pixelsamples" [8]
+##Sampler "02sequence" "integer pixelsamples" [8]
+Sampler "maxmindist" "integer pixelsamples" [8]
 ##PixelFilter "blackmanharris"
 ##SurfaceIntegrator "bidirectional"
 ##Integrator "directlighting" "integer maxdepth" [10]
