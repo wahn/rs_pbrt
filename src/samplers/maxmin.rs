@@ -120,7 +120,7 @@ impl MaxMinDistSampler {
             };
         }
         shuffle(
-            &mut self.samples_2d,
+            &mut self.samples_2d[0][..],
             self.samples_per_pixel as i32,
             1,
             &mut self.rng,
