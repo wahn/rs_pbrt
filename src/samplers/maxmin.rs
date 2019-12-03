@@ -119,18 +119,31 @@ impl MaxMinDistSampler {
                 y: sample_generator_matrix(&self.c_pixel, i as u32, 0_u32),
             };
         }
+        let samples: &mut [Point2f] = self.samples_2d[0].as_mut_slice();
         shuffle(
-            &mut self.samples_2d[0][..],
+            samples,
             self.samples_per_pixel as i32,
             1,
             &mut self.rng,
         );
         // generate remaining samples for _MaxMinDistSampler_
-        for samples in &mut self.samples_1d {
-            van_der_corput(1, self.samples_per_pixel as i32, samples, &mut self.rng);
+        for i in 0..self.samples_1d.len() {
+            let samples: &mut [Float] = self.samples_1d[i].as_mut_slice();
+            van_der_corput(
+                1,
+                self.samples_per_pixel as i32,
+                samples,
+                &mut self.rng,
+            );
         }
-        for samples in &mut self.samples_2d {
-            sobol_2d(1, self.samples_per_pixel as i32, samples, &mut self.rng);
+        for i in 1..self.samples_2d.len() {
+            let samples: &mut [Point2f] = self.samples_2d[i].as_mut_slice();
+            sobol_2d(
+                1,
+                self.samples_per_pixel as i32,
+                samples,
+                &mut self.rng,
+            );
         }
         for i in 0..self.samples_1d_array_sizes.len() {
             let samples: &mut [Float] = self.sample_array_1d[i].as_mut_slice();

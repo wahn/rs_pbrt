@@ -344,9 +344,8 @@ pub fn multiply_generator(c: &[u32], a: u32) -> u32 {
 }
 
 pub fn sample_generator_matrix(c: &[u32], a: u32, scramble: u32) -> Float {
-    // 0x1p-32f: 1/2^32
-    let x = (2.0 as f32).powi(-32 as i32);
-    ((multiply_generator(c, a) ^ scramble) as Float * x as Float).min(FLOAT_ONE_MINUS_EPSILON)
+    ((multiply_generator(c, a) ^ scramble) as Float * hexf32!("0x1.0p-32") as Float)
+        .min(FLOAT_ONE_MINUS_EPSILON)
 }
 
 /// Takes a generator matrix *c*, a number of 1D samples to generate
@@ -464,11 +463,38 @@ pub fn sobol_2d(
             0x1,
         ],
         [
-            0x80000000, 0xc0000000, 0xa0000000, 0xf0000000, 0x88000000, 0xcc000000, 0xaa000000,
-            0xff000000, 0x80800000, 0xc0c00000, 0xa0a00000, 0xf0f00000, 0x88880000, 0xcccc0000,
-            0xaaaa0000, 0xffff0000, 0x80008000, 0xc000c000, 0xa000a000, 0xf000f000, 0x88008800,
-            0xcc00cc00, 0xaa00aa00, 0xff00ff00, 0x80808080, 0xc0c0c0c0, 0xa0a0a0a0, 0xf0f0f0f0,
-            0x88888888, 0xcccccccc, 0xaaaaaaaa, 0xffffffff,
+            0x80000000_u32,
+            0xc0000000,
+            0xa0000000,
+            0xf0000000,
+            0x88000000,
+            0xcc000000,
+            0xaa000000,
+            0xff000000,
+            0x80800000,
+            0xc0c00000,
+            0xa0a00000,
+            0xf0f00000,
+            0x88880000,
+            0xcccc0000,
+            0xaaaa0000,
+            0xffff0000,
+            0x80008000,
+            0xc000c000,
+            0xa000a000,
+            0xf000f000,
+            0x88008800,
+            0xcc00cc00,
+            0xaa00aa00,
+            0xff00ff00,
+            0x80808080,
+            0xc0c0c0c0,
+            0xa0a0a0a0,
+            0xf0f0f0f0,
+            0x88888888,
+            0xcccccccc,
+            0xaaaaaaaa,
+            0xffffffff,
         ],
     ];
     gray_code_sample_2d(
@@ -476,18 +502,18 @@ pub fn sobol_2d(
         &c_sobol[1],
         (n_samples_per_pixel_sample * n_pixel_samples) as u32,
         &scramble,
-        &mut samples[..],
+        samples,
     );
-    for i in 0..n_pixel_samples as usize {
+    for _i in 0..n_pixel_samples as usize {
         shuffle(
-            &mut samples[(i * n_samples_per_pixel_sample as usize)..],
+            samples,
             n_samples_per_pixel_sample,
             1,
             rng,
         );
     }
     shuffle(
-        &mut samples[..],
+        samples,
         n_pixel_samples,
         n_samples_per_pixel_sample,
         rng,
