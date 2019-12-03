@@ -1,13 +1,13 @@
-// std
-use std::sync::RwLock;
 // pbrt
-use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
+use crate::core::geometry::{Point2f, Point2i};
 use crate::core::lowdiscrepancy::C_MAX_MIN_DIST;
+use crate::core::lowdiscrepancy::{sample_generator_matrix, sobol_2d, van_der_corput};
 use crate::core::paramset::ParamSet;
 use crate::core::pbrt::Float;
-use crate::core::pbrt::{is_power_of_2, log_2_int_i64, round_up_pow2_64};
+use crate::core::pbrt::{is_power_of_2, log_2_int_i64, round_up_pow2_32, round_up_pow2_64};
 use crate::core::rng::Rng;
 use crate::core::sampler::Sampler;
+use crate::core::sampling::shuffle;
 
 pub struct MaxMinDistSampler {
     pub samples_per_pixel: i64,
@@ -111,74 +111,186 @@ impl MaxMinDistSampler {
     }
     // Sampler
     pub fn start_pixel(&mut self, p: &Point2i) {
-        // ProfilePhase _(Prof::StartPixel);
-        // Float invSPP = (Float)1 / samplesPerPixel;
-        // for (int i = 0; i < samplesPerPixel; ++i)
-        //     samples2D[0][i] = Point2f(i * invSPP, SampleGeneratorMatrix(CPixel, i));
-        // Shuffle(&samples2D[0][0], samplesPerPixel, 1, rng);
-        // // Generate remaining samples for _MaxMinDistSampler_
-        // for (size_t i = 0; i < samples1D.size(); ++i)
-        //     VanDerCorput(1, samplesPerPixel, &samples1D[i][0], rng);
-
-        // for (size_t i = 1; i < samples2D.size(); ++i)
-        //     Sobol2D(1, samplesPerPixel, &samples2D[i][0], rng);
-
-        // for (size_t i = 0; i < samples1DArraySizes.size(); ++i) {
-        //     int count = samples1DArraySizes[i];
-        //     VanDerCorput(count, samplesPerPixel, &sampleArray1D[i][0], rng);
-        // }
-
-        // for (size_t i = 0; i < samples2DArraySizes.size(); ++i) {
-        //     int count = samples2DArraySizes[i];
-        //     Sobol2D(count, samplesPerPixel, &sampleArray2D[i][0], rng);
-        // }
+        // TODO: ProfilePhase _(Prof::StartPixel);
+        let inv_spp: Float = 1.0 as Float / self.samples_per_pixel as Float;
+        for i in 0..self.samples_per_pixel as usize {
+            self.samples_2d[0_usize][i] = Point2f {
+                x: i as Float * inv_spp,
+                y: sample_generator_matrix(&self.c_pixel, i as u32, 0_u32),
+            };
+        }
+        shuffle(
+            &mut self.samples_2d,
+            self.samples_per_pixel as i32,
+            1,
+            &mut self.rng,
+        );
+        // generate remaining samples for _MaxMinDistSampler_
+        for samples in &mut self.samples_1d {
+            van_der_corput(1, self.samples_per_pixel as i32, samples, &mut self.rng);
+        }
+        for samples in &mut self.samples_2d {
+            sobol_2d(1, self.samples_per_pixel as i32, samples, &mut self.rng);
+        }
+        for i in 0..self.samples_1d_array_sizes.len() {
+            let samples: &mut [Float] = self.sample_array_1d[i].as_mut_slice();
+            van_der_corput(
+                self.samples_1d_array_sizes[i],
+                self.samples_per_pixel as i32,
+                samples,
+                &mut self.rng,
+            );
+        }
+        for i in 0..self.samples_2d_array_sizes.len() {
+            let samples: &mut [Point2f] = self.sample_array_2d[i].as_mut_slice();
+            sobol_2d(
+                self.samples_2d_array_sizes[i],
+                self.samples_per_pixel as i32,
+                samples,
+                &mut self.rng,
+            );
+        }
         // PixelSampler::StartPixel(p);
-        // WORK
+        self.current_pixel = *p;
+        self.current_pixel_sample_index = 0_i64;
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
     }
     pub fn get_1d(&mut self) -> Float {
-        // WORK
-        0.0 as Float
+        // TODO: ProfilePhase _(Prof::GetSample);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "current_pixel_sample_index = {}, samples_per_pixel = {}",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        if self.current_1d_dimension < self.samples_1d.len() as i32 {
+            let sample: Float = self.samples_1d[self.current_1d_dimension as usize]
+                [self.current_pixel_sample_index as usize];
+            self.current_1d_dimension += 1;
+            sample
+        } else {
+            self.rng.uniform_float()
+        }
     }
     pub fn get_2d(&mut self) -> Point2f {
-        // WORK
-        Point2f::default()
+        // TODO: ProfilePhase _(Prof::GetSample);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "current_pixel_sample_index = {}, samples_per_pixel = {}",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        if self.current_2d_dimension < self.samples_2d.len() as i32 {
+            let sample: Point2f = self.samples_2d[self.current_2d_dimension as usize]
+                [self.current_pixel_sample_index as usize];
+            self.current_2d_dimension += 1;
+            sample
+        } else {
+            // C++ call order for Point2f(rng.UniformFloat(), rng.UniformFloat());
+            let y = self.rng.uniform_float();
+            let x = self.rng.uniform_float();
+            Point2f { x, y }
+        }
     }
     pub fn request_2d_array(&mut self, n: i32) {
-        // WORK
+        assert_eq!(self.round_count(n), n);
+        self.samples_2d_array_sizes.push(n);
+        let size: usize = (n * self.samples_per_pixel as i32) as usize;
+        let additional_points: Vec<Point2f> = vec![Point2f::default(); size];
+        self.sample_array_2d.push(additional_points);
     }
     pub fn round_count(&self, count: i32) -> i32 {
-        // WORK
-        0_i32
+        round_up_pow2_32(count)
     }
     pub fn get_2d_array(&mut self, n: i32) -> Option<&[Point2f]> {
-        // WORK
-        None
+        if self.array_2d_offset == self.sample_array_2d.len() {
+            return None;
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        self.array_2d_offset += 1;
+        Some(&self.sample_array_2d[self.array_2d_offset - 1][start..end])
     }
     pub fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
-        // WORK
-        (None, None)
+        if self.array_2d_offset == self.sample_array_2d.len() {
+            return (None, None);
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        self.array_2d_offset += 1;
+        let ret1 = &self.sample_array_2d[self.array_2d_offset - 1][start..end];
+        // repeat code from above
+        if self.array_2d_offset == self.sample_array_2d.len() {
+            return (None, None);
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        self.array_2d_offset += 1;
+        let ret2 = &self.sample_array_2d[self.array_2d_offset - 1][start..end];
+        // return tuple
+        (Some(ret1), Some(ret2))
     }
     pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
-        // WORK
-        Vec::new()
+        let mut samples: Vec<Point2f> = Vec::new();
+        if self.array_2d_offset == self.sample_array_2d.len() {
+            return samples;
+        }
+        assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
+        assert!(
+            self.current_pixel_sample_index < self.samples_per_pixel,
+            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
+            self.current_pixel_sample_index,
+            self.samples_per_pixel
+        );
+        let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
+        let end: usize = start + n as usize;
+        samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
+        self.array_2d_offset += 1;
+        samples
     }
     pub fn start_next_sample(&mut self) -> bool {
-        // WORK
-        false
+        self.current_1d_dimension = 0_i32;
+        self.current_2d_dimension = 0_i32;
+        // Sampler::StartNextSample()
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
+        self.current_pixel_sample_index += 1_i64;
+        self.current_pixel_sample_index < self.samples_per_pixel
     }
     pub fn reseed(&mut self, seed: u64) {
         self.rng.set_sequence(seed);
     }
     pub fn get_current_pixel(&self) -> Point2i {
-        // WORK
-        Point2i::default()
+        self.current_pixel
     }
     pub fn get_current_sample_number(&self) -> i64 {
-        // WORK
-        0_i64
+        self.current_pixel_sample_index
     }
     pub fn get_samples_per_pixel(&self) -> i64 {
-        // WORK
-        0_i64
+        self.samples_per_pixel
     }
 }

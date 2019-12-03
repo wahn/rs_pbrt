@@ -326,6 +326,29 @@ pub fn inverse_radical_inverse(base: u8, inverse: u64, n_digits: u64) -> u64 {
     index
 }
 
+pub fn multiply_generator(c: &[u32], a: u32) -> u32 {
+    let mut v: u32 = 0;
+    let mut i = 0;
+    let mut a = a;
+    loop {
+        if a == 0 {
+            break;
+        }
+        if a & 1 != 0 {
+            v = v ^ c[i];
+        }
+        i += 1;
+        a = a >> 1;
+    }
+    v
+}
+
+pub fn sample_generator_matrix(c: &[u32], a: u32, scramble: u32) -> Float {
+    // 0x1p-32f: 1/2^32
+    let x = (2.0 as f32).powi(-32 as i32);
+    ((multiply_generator(c, a) ^ scramble) as Float * x as Float).min(FLOAT_ONE_MINUS_EPSILON)
+}
+
 /// Takes a generator matrix *c*, a number of 1D samples to generate
 /// *n*, and stores the corresponding samples in memory at the
 /// location pointed to by *p*.
