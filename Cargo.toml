@@ -24,7 +24,7 @@ rayon = "1.1"
 smallvec = "1.0"
 structopt = "0.3"
 time = "0.1"
-typed-arena = "1.4"
+typed-arena = "2.0"
 
 [[bin]]
 name = "rs_pbrt"
