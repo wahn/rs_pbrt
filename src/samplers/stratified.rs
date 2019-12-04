@@ -4,7 +4,7 @@ use crate::core::paramset::ParamSet;
 use crate::core::pbrt::Float;
 use crate::core::rng::Rng;
 use crate::core::sampler::Sampler;
-use crate::core::sampling::{shuffle, stratified_sample_1d};
+use crate::core::sampling::{shuffle, stratified_sample_1d, stratified_sample_2d};
 
 pub struct StratifiedSampler {
     pub samples_per_pixel: i64,
@@ -101,7 +101,6 @@ impl StratifiedSampler {
     pub fn start_pixel(&mut self, p: &Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         // generate single stratified samples for the pixel
-        // for (size_t i = 0; i < samples1D.size(); ++i) {
         for i in 0..self.samples_1d.len() {
             let samples: &mut [Float] = self.samples_1d[i].as_mut_slice();
             stratified_sample_1d(
@@ -117,27 +116,42 @@ impl StratifiedSampler {
                 &mut self.rng,
             );
         }
-        // for (size_t i = 0; i < samples2D.size(); ++i) {
-        //     StratifiedSample2D(&samples2D[i][0], x_pixel_samples, y_pixel_samples, rng,
-        //                        self.jitter_samples);
-        //     Shuffle(&samples2D[i][0], x_pixel_samples * y_pixel_samples, 1, rng);
-        // }
-
-        // // Generate arrays of stratified samples for the pixel
-        // for (size_t i = 0; i < samples1DArraySizes.size(); ++i)
-        //     for (int64_t j = 0; j < samplesPerPixel; ++j) {
-        //         int count = samples1DArraySizes[i];
-        //         stratified_sample_1d(&sampleArray1D[i][j * count], count, rng,
-        //                            self.jitter_samples);
-        //         Shuffle(&sampleArray1D[i][j * count], count, 1, rng);
-        //     }
-        // for (size_t i = 0; i < samples2DArraySizes.size(); ++i)
-        //     for (int64_t j = 0; j < samplesPerPixel; ++j) {
-        //         int count = samples2DArraySizes[i];
-        //         LatinHypercube(&sampleArray2D[i][j * count].x, count, 2, rng);
-        //     }
-        // PixelSampler::StartPixel(p);
+        for i in 0..self.samples_2d.len() {
+            let samples: &mut [Point2f] = self.samples_2d[i].as_mut_slice();
+            stratified_sample_2d(
+                samples,
+                self.x_pixel_samples,
+                self.y_pixel_samples,
+                &mut self.rng,
+                self.jitter_samples,
+            );
+            shuffle(
+                samples,
+                self.x_pixel_samples * self.y_pixel_samples,
+                1,
+                &mut self.rng,
+            );
+        }
+        // generate arrays of stratified samples for the pixel
+        for i in 0..self.samples_1d_array_sizes.len() {
+            //     for (int64_t j = 0; j < samplesPerPixel; ++j) {
+            //         int count = samples1DArraySizes[i];
+            //         stratified_sample_1d(&sampleArray1D[i][j * count], count, rng,
+            //                            self.jitter_samples);
+            //         Shuffle(&sampleArray1D[i][j * count], count, 1, rng);
+        }
+        for i in 0..self.samples_2d_array_sizes.len() {
+            //     for (int64_t j = 0; j < samplesPerPixel; ++j) {
+            //         int count = samples2DArraySizes[i];
+            //         LatinHypercube(&sampleArray2D[i][j * count].x, count, 2, rng);
+        }
         // WORK
+        // PixelSampler::StartPixel(p);
+        self.current_pixel = *p;
+        self.current_pixel_sample_index = 0_i64;
+        // reset array offsets for next pixel sample
+        self.array_1d_offset = 0_usize;
+        self.array_2d_offset = 0_usize;
     }
     pub fn get_1d(&mut self) -> Float {
         // WORK

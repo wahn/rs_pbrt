@@ -247,6 +247,31 @@ pub fn stratified_sample_1d(samp: &mut [Float], n_samples: i32, rng: &mut Rng, j
     }
 }
 
+pub fn stratified_sample_2d(samp: &mut [Point2f], nx: i32, ny: i32, rng: &mut Rng, jitter: bool) {
+    let dx: Float = 1.0 as Float / nx as Float;
+    let dy: Float = 1.0 as Float / ny as Float;
+    let mut samp_idx: usize = 0;
+    for y in 0..ny {
+        for x in 0..nx {
+            let jx: Float;
+            if jitter {
+                jx = rng.uniform_float();
+            } else {
+                jx = 0.5 as Float;
+            }
+            let jy: Float;
+            if jitter {
+                jy = rng.uniform_float();
+            } else {
+                jy = 0.5 as Float;
+            }
+            samp[samp_idx].x = ((x as Float + jx) * dx).min(FLOAT_ONE_MINUS_EPSILON);
+            samp[samp_idx].y = ((y as Float + jy) * dy).min(FLOAT_ONE_MINUS_EPSILON);
+            samp_idx += 1;
+        }
+    }
+}
+
 /// Uniformly sample rays in a hemisphere. Choose a direction.
 pub fn uniform_sample_hemisphere(u: &Point2f) -> Vector3f {
     let z: Float = u[0_u8];
