@@ -11,6 +11,7 @@ use crate::samplers::halton::HaltonSampler;
 use crate::samplers::maxmin::MaxMinDistSampler;
 use crate::samplers::random::RandomSampler;
 use crate::samplers::sobol::SobolSampler;
+use crate::samplers::stratified::StratifiedSampler;
 use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 
 // see sampler.h
@@ -21,6 +22,7 @@ pub enum Sampler {
     MLT(MLTSampler),
     Random(RandomSampler),
     Sobol(SobolSampler),
+    Stratified(StratifiedSampler),
     ZeroTwoSequence(ZeroTwoSequenceSampler),
 }
 
@@ -32,6 +34,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.clone_with_seed(seed),
             Sampler::Random(sampler) => sampler.clone_with_seed(seed),
             Sampler::Sobol(sampler) => sampler.clone_with_seed(seed),
+            Sampler::Stratified(sampler) => sampler.clone_with_seed(seed),
             Sampler::ZeroTwoSequence(sampler) => sampler.clone_with_seed(seed),
         }
     }
@@ -42,6 +45,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.start_pixel(p),
             Sampler::Random(sampler) => sampler.start_pixel(p),
             Sampler::Sobol(sampler) => sampler.start_pixel(p),
+            Sampler::Stratified(sampler) => sampler.start_pixel(p),
             Sampler::ZeroTwoSequence(sampler) => sampler.start_pixel(p),
         }
     }
@@ -52,6 +56,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.get_1d(),
             Sampler::Random(sampler) => sampler.get_1d(),
             Sampler::Sobol(sampler) => sampler.get_1d(),
+            Sampler::Stratified(sampler) => sampler.get_1d(),
             Sampler::ZeroTwoSequence(sampler) => sampler.get_1d(),
         }
     }
@@ -62,6 +67,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.get_2d(),
             Sampler::Random(sampler) => sampler.get_2d(),
             Sampler::Sobol(sampler) => sampler.get_2d(),
+            Sampler::Stratified(sampler) => sampler.get_2d(),
             Sampler::ZeroTwoSequence(sampler) => sampler.get_2d(),
         }
     }
@@ -82,6 +88,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.request_2d_array(n),
             Sampler::Random(sampler) => sampler.request_2d_array(n),
             Sampler::Sobol(sampler) => sampler.request_2d_array(n),
+            Sampler::Stratified(sampler) => sampler.request_2d_array(n),
             Sampler::ZeroTwoSequence(sampler) => sampler.request_2d_array(n),
         }
     }
@@ -92,6 +99,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.round_count(count),
             Sampler::Random(sampler) => sampler.round_count(count),
             Sampler::Sobol(sampler) => sampler.round_count(count),
+            Sampler::Stratified(sampler) => sampler.round_count(count),
             Sampler::ZeroTwoSequence(sampler) => sampler.round_count(count),
         }
     }
@@ -102,6 +110,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.get_2d_array(n),
             Sampler::Random(sampler) => sampler.get_2d_array(n),
             Sampler::Sobol(sampler) => sampler.get_2d_array(n),
+            Sampler::Stratified(sampler) => sampler.get_2d_array(n),
             Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_array(n),
         }
     }
@@ -112,6 +121,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.get_2d_arrays(n),
             Sampler::Random(sampler) => sampler.get_2d_arrays(n),
             Sampler::Sobol(sampler) => sampler.get_2d_arrays(n),
+            Sampler::Stratified(sampler) => sampler.get_2d_arrays(n),
             Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_arrays(n),
         }
     }
@@ -122,6 +132,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.get_2d_array_vec(n),
             Sampler::Random(sampler) => sampler.get_2d_array_vec(n),
             Sampler::Sobol(sampler) => sampler.get_2d_array_vec(n),
+            Sampler::Stratified(sampler) => sampler.get_2d_array_vec(n),
             Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_array_vec(n),
         }
     }
@@ -132,6 +143,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.start_next_sample(),
             Sampler::Random(sampler) => sampler.start_next_sample(),
             Sampler::Sobol(sampler) => sampler.start_next_sample(),
+            Sampler::Stratified(sampler) => sampler.start_next_sample(),
             Sampler::ZeroTwoSequence(sampler) => sampler.start_next_sample(),
         }
     }
@@ -142,6 +154,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.reseed(seed),
             Sampler::Random(sampler) => sampler.reseed(seed),
             Sampler::Sobol(sampler) => sampler.reseed(seed),
+            Sampler::Stratified(sampler) => sampler.reseed(seed),
             Sampler::ZeroTwoSequence(sampler) => sampler.reseed(seed),
         }
     }
@@ -152,6 +165,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.get_current_pixel(),
             Sampler::Random(sampler) => sampler.get_current_pixel(),
             Sampler::Sobol(sampler) => sampler.get_current_pixel(),
+            Sampler::Stratified(sampler) => sampler.get_current_pixel(),
             Sampler::ZeroTwoSequence(sampler) => sampler.get_current_pixel(),
         }
     }
@@ -162,6 +176,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.get_current_sample_number(),
             Sampler::Random(sampler) => sampler.get_current_sample_number(),
             Sampler::Sobol(sampler) => sampler.get_current_sample_number(),
+            Sampler::Stratified(sampler) => sampler.get_current_sample_number(),
             Sampler::ZeroTwoSequence(sampler) => sampler.get_current_sample_number(),
         }
     }
@@ -172,6 +187,7 @@ impl Sampler {
             Sampler::MLT(sampler) => sampler.get_samples_per_pixel(),
             Sampler::Random(sampler) => sampler.get_samples_per_pixel(),
             Sampler::Sobol(sampler) => sampler.get_samples_per_pixel(),
+            Sampler::Stratified(sampler) => sampler.get_samples_per_pixel(),
             Sampler::ZeroTwoSequence(sampler) => sampler.get_samples_per_pixel(),
         }
     }
