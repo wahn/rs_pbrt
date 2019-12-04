@@ -9,6 +9,7 @@ use crate::core::pbrt::clamp_t;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{INV_2_PI, INV_4_PI, INV_PI, PI_OVER_2, PI_OVER_4};
 use crate::core::rng::Rng;
+use crate::core::rng::FLOAT_ONE_MINUS_EPSILON;
 
 // see sampling.h
 
@@ -231,6 +232,20 @@ pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
 }
 
 // see sampling.cpp
+
+pub fn stratified_sample_1d(samp: &mut [Float], n_samples: i32, rng: &mut Rng, jitter: bool) {
+    let inv_n_samples: Float = 1.0 as Float / n_samples as Float;
+    for i in 0..n_samples {
+        let delta: Float;
+        if jitter {
+            delta = rng.uniform_float();
+        } else {
+            delta = 0.5 as Float;
+        }
+        samp[i as usize] =
+            ((i as Float + delta) * inv_n_samples as Float).min(FLOAT_ONE_MINUS_EPSILON);
+    }
+}
 
 /// Uniformly sample rays in a hemisphere. Choose a direction.
 pub fn uniform_sample_hemisphere(u: &Point2f) -> Vector3f {

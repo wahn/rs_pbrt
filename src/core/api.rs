@@ -78,6 +78,7 @@ use crate::samplers::halton::HaltonSampler;
 use crate::samplers::maxmin::MaxMinDistSampler;
 use crate::samplers::random::RandomSampler;
 use crate::samplers::sobol::SobolSampler;
+use crate::samplers::stratified::StratifiedSampler;
 use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 use crate::shapes::curve::create_curve_shape;
 use crate::shapes::cylinder::Cylinder;
@@ -1677,7 +1678,8 @@ pub fn make_sampler(name: &String, param_set: &ParamSet, film: Arc<Film>) -> Opt
         some_sampler = Some(sampler);
     } else if name == "stratified" {
         // CreateStratifiedSampler
-        println!("TODO: CreateStratifiedSampler");
+        let sampler = StratifiedSampler::create(param_set);
+        some_sampler = Some(sampler);
     } else {
         println!("Sampler \"{}\" unknown.", name);
     }
