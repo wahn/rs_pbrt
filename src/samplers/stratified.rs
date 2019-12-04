@@ -65,10 +65,10 @@ impl StratifiedSampler {
     }
     pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
         let mut ss = StratifiedSampler {
-            samples_per_pixel: 0_i64,
-            x_pixel_samples: 0_i32,
-            y_pixel_samples: 0_i32,
-            jitter_samples: true,
+            samples_per_pixel: self.samples_per_pixel,
+            x_pixel_samples: self.x_pixel_samples,
+            y_pixel_samples: self.y_pixel_samples,
+            jitter_samples: self.jitter_samples,
             samples_1d: self.samples_1d.clone(),
             samples_2d: self.samples_2d.clone(),
             current_1d_dimension: self.current_1d_dimension,
@@ -185,7 +185,7 @@ impl StratifiedSampler {
         false
     }
     pub fn reseed(&mut self, seed: u64) {
-        // WORK
+        self.rng.set_sequence(seed);
     }
     pub fn get_current_pixel(&self) -> Point2i {
         self.current_pixel
