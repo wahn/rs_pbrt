@@ -272,8 +272,7 @@ pub fn stratified_sample_2d(samp: &mut [Point2f], nx: i32, ny: i32, rng: &mut Rn
     }
 }
 
-pub fn latin_hypercube(samples: &mut [Point2f], rng: &mut Rng) {
-    let n_samples: usize = samples.len();
+pub fn latin_hypercube(samples: &mut [Point2f], n_samples: u32, rng: &mut Rng) {
     let n_dim: usize = 2;
     // generate LHS samples along diagonal
     let inv_n_samples: Float = 1.0 as Float / n_samples as Float;
