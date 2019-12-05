@@ -20,8 +20,8 @@ Sampler "stratified" "integer pixelsamples" [8]
 ##SurfaceIntegrator "bidirectional"
 ##Integrator "directlighting" "integer maxdepth" [10]
 ##Integrator "whitted" "integer maxdepth" [5]
-##Integrator "ambientocclusion"
-Integrator "path"
+Integrator "ambientocclusion"
+##Integrator "path"
 ##Integrator "bdpt"
 ##Integrator "mlt"
 WorldBegin

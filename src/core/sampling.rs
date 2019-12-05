@@ -272,6 +272,42 @@ pub fn stratified_sample_2d(samp: &mut [Point2f], nx: i32, ny: i32, rng: &mut Rn
     }
 }
 
+pub fn latin_hypercube(samples: &mut [Point2f], rng: &mut Rng) {
+    let n_samples: usize = samples.len();
+    let n_dim: usize = 2;
+    // generate LHS samples along diagonal
+    let inv_n_samples: Float = 1.0 as Float / n_samples as Float;
+    for i in 0..n_samples {
+        for j in 0..n_dim {
+            let sj: Float = (i as Float + (rng.uniform_float())) * inv_n_samples;
+            if j == 0 {
+                samples[i as usize].x = sj.min(FLOAT_ONE_MINUS_EPSILON);
+            } else {
+                samples[i as usize].y = sj.min(FLOAT_ONE_MINUS_EPSILON);
+            }
+        }
+    }
+    // permute LHS samples in each dimension
+    for i in 0..n_dim {
+        for j in 0..n_samples {
+            let other: u32 = j as u32 + rng.uniform_uint32_bounded((n_samples - j) as u32);
+            if i == 0 {
+                let tmp = samples[j as usize].x;
+                samples[j as usize].x = samples[other as usize].x;
+                samples[other as usize].x = tmp;
+            } else {
+                let tmp = samples[j as usize].y;
+                samples[j as usize].y = samples[other as usize].y;
+                samples[other as usize].y = tmp;
+            }
+            // samples.swap(
+            //     (n_dim * j + i) as usize,
+            //     (n_dim * other + i) as usize,
+            // );
+        }
+    }
+}
+
 /// Uniformly sample rays in a hemisphere. Choose a direction.
 pub fn uniform_sample_hemisphere(u: &Point2f) -> Vector3f {
     let z: Float = u[0_u8];
