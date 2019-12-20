@@ -566,7 +566,6 @@ dependencies = [
  "rayon 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "smallvec 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "structopt 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
  "typed-arena 2.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 

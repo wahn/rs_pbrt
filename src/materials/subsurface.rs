@@ -2,7 +2,7 @@
 use std;
 use std::sync::Arc;
 // others
-use time::PreciseTime;
+// use time::PreciseTime;
 // pbrt
 use crate::core::bssrdf::compute_beam_diffusion_bssrdf;
 use crate::core::bssrdf::BssrdfTable;
@@ -101,8 +101,9 @@ impl SubsurfaceMaterial {
             mp.get_float_texture("vroughness", 0.0 as Float);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        let start = PreciseTime::now();
-        let tmp = Arc::new(Material::Subsurface(SubsurfaceMaterial::new(
+        // let start = PreciseTime::now();
+        //let tmp =
+        Arc::new(Material::Subsurface(SubsurfaceMaterial::new(
             scale,
             kr,
             kt,
@@ -114,13 +115,14 @@ impl SubsurfaceMaterial {
             roughv,
             bump_map,
             remap_roughness,
-        )));
-        let end = PreciseTime::now();
-        println!(
-            "{} seconds for SubsurfaceMaterial::new() ...",
-            start.to(end)
-        );
-        tmp
+        )))
+        //;
+        // let end = PreciseTime::now();
+        // println!(
+        //     "{} seconds for SubsurfaceMaterial::new() ...",
+        //     start.to(end)
+        // );
+        // tmp
     }
     // Material
     pub fn compute_scattering_functions(

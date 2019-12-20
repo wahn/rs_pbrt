@@ -277,11 +277,11 @@ pub struct SurfaceInteraction<'a> {
     pub dvdx: RwLock<Float>,
     pub dudy: RwLock<Float>,
     pub dvdy: RwLock<Float>,
-    pub primitive: Option<&'a (Primitive)>,
+    pub primitive: Option<&'a Primitive>,
     pub shading: Shading,
     pub bsdf: Option<Bsdf>,
     pub bssrdf: Option<TabulatedBssrdf>,
-    pub shape: Option<&'a (Shape)>,
+    pub shape: Option<&'a Shape>,
 }
 
 impl<'a> SurfaceInteraction<'a> {
@@ -295,7 +295,7 @@ impl<'a> SurfaceInteraction<'a> {
         dndu: &Normal3f,
         dndv: &Normal3f,
         time: Float,
-        sh: Option<&'a (Shape)>,
+        sh: Option<&'a Shape>,
     ) -> Self {
         let nv: Vector3f = vec3_cross_vec3(dpdu, dpdv).normalize();
         let mut n: Normal3f = Normal3f {
