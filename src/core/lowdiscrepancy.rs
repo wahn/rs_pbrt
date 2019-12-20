@@ -17,7 +17,7 @@ use crate::core::sobolmatrices::{
 
 pub const PRIME_TABLE_SIZE: u16 = 1000_u16;
 
-pub const PRIMES: [u32; PRIME_TABLE_SIZE as usize] = [
+pub const PRIMES: &[u32; PRIME_TABLE_SIZE as usize] = &[
     2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
     101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193,
     197, 199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307,
@@ -81,7 +81,7 @@ pub const PRIMES: [u32; PRIME_TABLE_SIZE as usize] = [
     7853, 7867, 7873, 7877, 7879, 7883, 7901, 7907, 7919,
 ];
 
-pub const PRIME_SUMS: [u32; PRIME_TABLE_SIZE as usize] = [
+pub const PRIME_SUMS: &[u32; PRIME_TABLE_SIZE as usize] = &[
     0, 2, 5, 10, 17, 28, 41, 58, 77, 100, 129, 160, 197, 238, 281, 328, 381, 440, 501, 568, 639,
     712, 791, 874, 963, 1060, 1161, 1264, 1371, 1480, 1593, 1720, 1851, 1988, 2127, 2276, 2427,
     2584, 2747, 2914, 3087, 3266, 3447, 3638, 3831, 4028, 4227, 4438, 4661, 4888, 5117, 5350, 5589,
@@ -173,7 +173,7 @@ pub const PRIME_SUMS: [u32; PRIME_TABLE_SIZE as usize] = [
     3643424, 3651303, 3659186, 3667087, 3674994,
 ];
 
-pub const C_MAX_MIN_DIST: [[u32; 32]; 17] = [
+pub const C_MAX_MIN_DIST: &[[u32; 32]; 17] = &[
     [
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
@@ -505,19 +505,9 @@ pub fn sobol_2d(
         samples,
     );
     for _i in 0..n_pixel_samples as usize {
-        shuffle(
-            samples,
-            n_samples_per_pixel_sample,
-            1,
-            rng,
-        );
+        shuffle(samples, n_samples_per_pixel_sample, 1, rng);
     }
-    shuffle(
-        samples,
-        n_pixel_samples,
-        n_samples_per_pixel_sample,
-        rng,
-    );
+    shuffle(samples, n_pixel_samples, n_samples_per_pixel_sample, rng);
 }
 
 /// Returns the index of the _frame_th sample in the pixel p, if the

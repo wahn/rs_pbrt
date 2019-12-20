@@ -13,7 +13,7 @@ use crate::core::pbrt::{clamp_t, find_interval, lerp};
 // see spectrum.h
 
 pub const N_CIE_SAMPLES: u16 = 471_u16;
-pub const CIE_X: [Float; N_CIE_SAMPLES as usize] = [
+pub const CIE_X: &[Float; N_CIE_SAMPLES as usize] = &[
     // CIE X function values
     0.0001299000,
     0.0001458470,
@@ -488,7 +488,7 @@ pub const CIE_X: [Float; N_CIE_SAMPLES as usize] = [
     0.000001251141,
 ];
 
-pub const CIE_Y: [Float; N_CIE_SAMPLES as usize] = [
+pub const CIE_Y: &[Float; N_CIE_SAMPLES as usize] = &[
     // CIE Y function values
     0.000003917000,
     0.000004393581,
@@ -963,7 +963,7 @@ pub const CIE_Y: [Float; N_CIE_SAMPLES as usize] = [
     0.0000004518100,
 ];
 
-pub const CIE_Z: [Float; N_CIE_SAMPLES as usize] = [
+pub const CIE_Z: &[Float; N_CIE_SAMPLES as usize] = &[
     // CIE Z function values
     0.0006061000,
     0.0006808792,
@@ -1438,7 +1438,7 @@ pub const CIE_Z: [Float; N_CIE_SAMPLES as usize] = [
     0.0,
 ];
 
-pub const CIE_LAMBDA: [Float; N_CIE_SAMPLES as usize] = [
+pub const CIE_LAMBDA: &[Float; N_CIE_SAMPLES as usize] = &[
     360.0, 361.0, 362.0, 363.0, 364.0, 365.0, 366.0, 367.0, 368.0, 369.0, 370.0, 371.0, 372.0,
     373.0, 374.0, 375.0, 376.0, 377.0, 378.0, 379.0, 380.0, 381.0, 382.0, 383.0, 384.0, 385.0,
     386.0, 387.0, 388.0, 389.0, 390.0, 391.0, 392.0, 393.0, 394.0, 395.0, 396.0, 397.0, 398.0,

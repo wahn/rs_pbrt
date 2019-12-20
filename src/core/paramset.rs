@@ -296,9 +296,9 @@ impl ParamSet {
         let mut s: Vec<Spectrum> = Vec::with_capacity(n_values);
         let mut v: Vec<Float> = Vec::with_capacity(N_CIE_SAMPLES as usize);
         for i in 0..n_values {
-            blackbody_normalized(&CIE_LAMBDA, N_CIE_SAMPLES as usize, values[2 * i], &mut v);
+            blackbody_normalized(CIE_LAMBDA, N_CIE_SAMPLES as usize, values[2 * i], &mut v);
             s.push(
-                Spectrum::from_sampled(&CIE_LAMBDA, &v, N_CIE_SAMPLES as i32) * values[2 * i + 1],
+                Spectrum::from_sampled(CIE_LAMBDA, &v, N_CIE_SAMPLES as i32) * values[2 * i + 1],
             );
         }
         self.spectra.push(ParamSetItem::<Spectrum> {
