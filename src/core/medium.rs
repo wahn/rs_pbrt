@@ -14,7 +14,7 @@ use crate::core::sampler::Sampler;
 use crate::media::grid::GridDensityMedium;
 use crate::media::homogeneous::HomogeneousMedium;
 
-pub const SUBSURFACE_PARAMETER_TABLE: &[MeasuredSS; 47] = &[
+pub const SUBSURFACE_PARAMETER_TABLE: [MeasuredSS; 47] = [
     // From "A Practical Model for Subsurface Light Transport"
     // Jensen, Marschner, Levoy, Hanrahan
     // Proc SIGGRAPH 2001

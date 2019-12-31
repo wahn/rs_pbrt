@@ -519,15 +519,15 @@ impl RenderOptions {
                         if mat.roughness > 0.0 {
                             // MetalMaterial
                             let copper_n: Spectrum = Spectrum::from_sampled(
-                                COPPER_WAVELENGTHS,
-                                COPPER_N,
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_N,
                                 COPPER_SAMPLES as i32,
                             );
                             let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
                                 Arc::new(ConstantTexture::new(copper_n));
                             let copper_k: Spectrum = Spectrum::from_sampled(
-                                COPPER_WAVELENGTHS,
-                                COPPER_K,
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_K,
                                 COPPER_SAMPLES as i32,
                             );
                             let k: Arc<dyn Texture<Spectrum> + Send + Sync> =
@@ -705,15 +705,15 @@ impl RenderOptions {
                         if mat.roughness > 0.0 {
                             // MetalMaterial
                             let copper_n: Spectrum = Spectrum::from_sampled(
-                                COPPER_WAVELENGTHS,
-                                COPPER_N,
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_N,
                                 COPPER_SAMPLES as i32,
                             );
                             let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
                                 Arc::new(ConstantTexture::new(copper_n));
                             let copper_k: Spectrum = Spectrum::from_sampled(
-                                COPPER_WAVELENGTHS,
-                                COPPER_K,
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_K,
                                 COPPER_SAMPLES as i32,
                             );
                             let k: Arc<dyn Texture<Spectrum> + Send + Sync> =
@@ -891,15 +891,15 @@ impl RenderOptions {
                         if mat.roughness > 0.0 {
                             // MetalMaterial
                             let copper_n: Spectrum = Spectrum::from_sampled(
-                                COPPER_WAVELENGTHS,
-                                COPPER_N,
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_N,
                                 COPPER_SAMPLES as i32,
                             );
                             let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
                                 Arc::new(ConstantTexture::new(copper_n));
                             let copper_k: Spectrum = Spectrum::from_sampled(
-                                COPPER_WAVELENGTHS,
-                                COPPER_K,
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_K,
                                 COPPER_SAMPLES as i32,
                             );
                             let k: Arc<dyn Texture<Spectrum> + Send + Sync> =
@@ -1094,15 +1094,15 @@ impl RenderOptions {
                         if mat.roughness > 0.0 {
                             // MetalMaterial
                             let copper_n: Spectrum = Spectrum::from_sampled(
-                                COPPER_WAVELENGTHS,
-                                COPPER_N,
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_N,
                                 COPPER_SAMPLES as i32,
                             );
                             let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
                                 Arc::new(ConstantTexture::new(copper_n));
                             let copper_k: Spectrum = Spectrum::from_sampled(
-                                COPPER_WAVELENGTHS,
-                                COPPER_K,
+                                &COPPER_WAVELENGTHS,
+                                &COPPER_K,
                                 COPPER_SAMPLES as i32,
                             );
                             let k: Arc<dyn Texture<Spectrum> + Send + Sync> =

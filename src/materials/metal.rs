@@ -10,7 +10,7 @@ use crate::core::reflection::{Bsdf, Bxdf, Fresnel, FresnelConductor, MicrofacetR
 use crate::core::texture::Texture;
 
 pub const COPPER_SAMPLES: u8 = 56_u8;
-pub const COPPER_WAVELENGTHS: &[Float; COPPER_SAMPLES as usize] = &[
+pub const COPPER_WAVELENGTHS: [Float; COPPER_SAMPLES as usize] = [
     298.7570554,
     302.4004341,
     306.1337728,
@@ -68,14 +68,14 @@ pub const COPPER_WAVELENGTHS: &[Float; COPPER_SAMPLES as usize] = &[
     855.0632966,
     885.6012714,
 ];
-pub const COPPER_N: &[Float; COPPER_SAMPLES as usize] = &[
+pub const COPPER_N: [Float; COPPER_SAMPLES as usize] = [
     1.400313, 1.38, 1.358438, 1.34, 1.329063, 1.325, 1.3325, 1.34, 1.334375, 1.325, 1.317812, 1.31,
     1.300313, 1.29, 1.281563, 1.27, 1.249062, 1.225, 1.2, 1.18, 1.174375, 1.175, 1.1775, 1.18,
     1.178125, 1.175, 1.172812, 1.17, 1.165312, 1.16, 1.155312, 1.15, 1.142812, 1.135, 1.131562,
     1.12, 1.092437, 1.04, 0.950375, 0.826, 0.645875, 0.468, 0.35125, 0.272, 0.230813, 0.214,
     0.20925, 0.213, 0.21625, 0.223, 0.2365, 0.25, 0.254188, 0.26, 0.28, 0.3,
 ];
-pub const COPPER_K: &[Float; COPPER_SAMPLES as usize] = &[
+pub const COPPER_K: [Float; COPPER_SAMPLES as usize] = [
     1.662125, 1.687, 1.703313, 1.72, 1.744563, 1.77, 1.791625, 1.81, 1.822125, 1.834, 1.85175,
     1.872, 1.89425, 1.916, 1.931688, 1.95, 1.972438, 2.015, 2.121562, 2.21, 2.177188, 2.13,
     2.160063, 2.21, 2.249938, 2.289, 2.326, 2.362, 2.397625, 2.433, 2.469187, 2.504, 2.535875,
@@ -116,11 +116,11 @@ impl MetalMaterial {
     }
     pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let copper_n: Spectrum =
-            Spectrum::from_sampled(COPPER_WAVELENGTHS, COPPER_N, COPPER_SAMPLES as i32);
+            Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_N, COPPER_SAMPLES as i32);
         let eta: Arc<dyn Texture<Spectrum> + Send + Sync> =
             mp.get_spectrum_texture("eta", copper_n);
         let copper_k: Spectrum =
-            Spectrum::from_sampled(COPPER_WAVELENGTHS, COPPER_K, COPPER_SAMPLES as i32);
+            Spectrum::from_sampled(&COPPER_WAVELENGTHS, &COPPER_K, COPPER_SAMPLES as i32);
         let k: Arc<dyn Texture<Spectrum> + Send + Sync> = mp.get_spectrum_texture("k", copper_k);
         let roughness: Arc<dyn Texture<Float> + Send + Sync> =
             mp.get_float_texture("roughness", 0.01 as Float);

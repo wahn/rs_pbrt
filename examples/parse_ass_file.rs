@@ -1236,8 +1236,8 @@ fn main() {
                                                     } else {
                                                         let copper_n: Spectrum =
                                                             Spectrum::from_sampled(
-                                                                COPPER_WAVELENGTHS,
-                                                                COPPER_N,
+                                                                &COPPER_WAVELENGTHS,
+                                                                &COPPER_N,
                                                                 COPPER_SAMPLES as i32,
                                                             );
                                                         let eta: Arc<
@@ -1247,8 +1247,8 @@ fn main() {
                                                         ));
                                                         let copper_k: Spectrum =
                                                             Spectrum::from_sampled(
-                                                                COPPER_WAVELENGTHS,
-                                                                COPPER_K,
+                                                                &COPPER_WAVELENGTHS,
+                                                                &COPPER_K,
                                                                 COPPER_SAMPLES as i32,
                                                             );
                                                         let k: Arc<
