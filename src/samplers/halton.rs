@@ -214,8 +214,8 @@ impl HaltonSampler {
     fn permutation_for_dimension(&self, dim: i64) -> &[u16] {
         if dim >= PRIME_TABLE_SIZE as i64 {
             panic!(
-                "FATAL: HaltonSampler can only sample {:?} dimensions.",
-                PRIME_TABLE_SIZE
+                "FATAL: HaltonSampler can only sample {:?} dimensions (dim = {}).",
+                PRIME_TABLE_SIZE, dim
             );
         }
         &RADICAL_INVERSE_PERMUTATIONS[PRIME_SUMS[dim as usize] as usize..]

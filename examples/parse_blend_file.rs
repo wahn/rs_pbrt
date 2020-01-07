@@ -1680,7 +1680,7 @@ fn make_integrator(
     let some_camera: Option<Arc<Camera>> =
         make_perspective_camera(filter_width, xres, yres, fov, animated_cam_to_world);
     if let Some(camera) = some_camera {
-        let sampler_name: String = String::from("sobol");
+        let sampler_name: String = String::from("halton");
         let mut sampler_params: ParamSet = ParamSet::default();
         sampler_params.add_int(String::from("pixelsamples"), pixelsamples);
         let some_sampler: Option<Box<Sampler>> =
