@@ -4285,7 +4285,9 @@ fn main() -> std::io::Result<()> {
     }
     if let Some(cam) = camera_hm.get(&base_name) {
         // overwrite fov
-        if aspect >= 1.0 {
+        if aspect == 1.0 {
+            fov = 2.0 as Float * degrees((16.0 as Float / (aspect * cam.lens)).atan());
+        } else if aspect > 1.0 {
             fov = cam.angle_x / 2.0;
         } else {
             fov = 2.0 as Float * degrees(((aspect * 16.0 as Float) / cam.lens).atan());
