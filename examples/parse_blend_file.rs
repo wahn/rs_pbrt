@@ -239,9 +239,9 @@ struct SceneDescriptionBuilder {
 impl SceneDescriptionBuilder {
     fn new() -> SceneDescriptionBuilder {
         SceneDescriptionBuilder {
-            mesh_names: Vec::new(),
-            meshes: Vec::new(),
-            triangle_colors: Vec::new(),
+            mesh_names: Vec::with_capacity(256),
+            meshes: Vec::with_capacity(256),
+            triangle_colors: Vec::with_capacity(256),
             cylinder_names: Vec::new(),
             cylinders: Vec::new(),
             disk_names: Vec::new(),
@@ -1433,7 +1433,7 @@ fn read_mesh(
     is_smooth: bool,
     builder: &mut SceneDescriptionBuilder,
 ) {
-    let mut triangle_colors: Vec<Spectrum> = Vec::new();
+    let mut triangle_colors: Vec<Spectrum> = Vec::with_capacity(loops.len() * 2);
     if vertex_colors.len() != 0_usize {
         // let n_vertex_colors: usize = vertex_colors.len() / 4;
         // println!("{:?}: {} vertex colors found", base_name, n_vertex_colors);
@@ -1471,12 +1471,12 @@ fn read_mesh(
     let world_to_object: Transform = Transform::inverse(&object_to_world);
     let n_triangles: usize = vertex_indices.len() / 3;
     // transform mesh vertices to world space
-    let mut p_ws: Vec<Point3f> = Vec::new();
+    let mut p_ws: Vec<Point3f> = Vec::with_capacity(p.len());
     let mut n_vertices: usize = p.len();
     for i in 0..n_vertices {
         p_ws.push(object_to_world.transform_point(&p[i]));
     }
-    let mut n_ws: Vec<Normal3f> = Vec::new();
+    let mut n_ws: Vec<Normal3f> = Vec::with_capacity(n.len());
     if is_smooth {
         // println!("  is_smooth = {}", is_smooth);
         assert!(n.len() == p.len());
@@ -1487,10 +1487,10 @@ fn read_mesh(
         }
     }
     let s: Vec<Vector3f> = Vec::new();
-    let mut uv: Vec<Point2f> = Vec::new();
-    let mut new_vertex_indices: Vec<u32> = Vec::new();
+    let mut uv: Vec<Point2f> = Vec::with_capacity(uvs.len());
+    let mut new_vertex_indices: Vec<u32> = Vec::with_capacity(vertex_indices.len());
     if !uvs.is_empty() {
-        let mut p_ws_vi: Vec<Point3f> = Vec::new();
+        let mut p_ws_vi: Vec<Point3f> = Vec::with_capacity(vertex_indices.len());
         let mut vertex_counter: u32 = 0;
         for vi in &vertex_indices {
             p_ws_vi.push(p_ws[*vi as usize]);
@@ -1498,13 +1498,13 @@ fn read_mesh(
             vertex_counter += 1;
         }
         if is_smooth {
-            let mut n_ws_vi: Vec<Normal3f> = Vec::new();
+            let mut n_ws_vi: Vec<Normal3f> = Vec::with_capacity(vertex_indices.len());
             for vi in &vertex_indices {
                 n_ws_vi.push(n_ws[*vi as usize]);
             }
             n_ws = n_ws_vi;
         }
-        let mut new_uvs: Vec<Point2f> = Vec::new();
+        let mut new_uvs: Vec<Point2f> = Vec::with_capacity(uvs.len());
         let mut loop_idx: usize = 0;
         for poly in loops {
             // triangle
@@ -1881,21 +1881,20 @@ fn main() -> std::io::Result<()> {
     let mut angle_y: f32 = 45.0;
     let mut base_name = String::new();
     let mut camera_hm: HashMap<String, BlendCamera> = HashMap::new();
-    let mut material_hm: HashMap<String, Blend279Material> = HashMap::new();
     let mut texture_hm: HashMap<String, OsString> = HashMap::new();
     let mut spheres_hm: HashMap<String, PbrtSphere> = HashMap::new();
     let mut cylinders_hm: HashMap<String, PbrtCylinder> = HashMap::new();
     let mut disks_hm: HashMap<String, PbrtDisk> = HashMap::new();
-    let mut object_to_world_hm: HashMap<String, Transform> = HashMap::new();
+    let mut ob_count: usize = 0;
     let mut object_to_world: Transform = Transform::new(
         1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
     );
-    let mut p: Vec<Point3f> = Vec::new();
-    let mut n: Vec<Normal3f> = Vec::new();
-    let mut uvs: Vec<Point2f> = Vec::new();
-    let mut loops: Vec<u8> = Vec::new();
-    let mut vertex_indices: Vec<u32> = Vec::new();
-    let mut vertex_colors: Vec<u8> = Vec::new();
+    let mut p: Vec<Point3f> = Vec::with_capacity(1048576);
+    let mut n: Vec<Normal3f> = Vec::with_capacity(1048576);
+    let mut uvs: Vec<Point2f> = Vec::with_capacity(1048576);
+    let mut loops: Vec<u8> = Vec::with_capacity(1048576);
+    let mut vertex_indices: Vec<u32> = Vec::with_capacity(1048576);
+    let mut vertex_colors: Vec<u8> = Vec::with_capacity(1048576);
     let mut prop_height: f64 = 0.0;
     let mut prop_radius: f64 = 1.0;
     let mut prop_innerradius: f64 = 0.0;
@@ -2130,12 +2129,17 @@ fn main() -> std::io::Result<()> {
                     let mut buffer = vec![0; len as usize];
                     f.read(&mut buffer)?;
                     // counter += len as usize;
+                    if code == String::from("OB") {
+                        ob_count += 1;
+                    }
                 }
             }
             // println!("{} bytes read", counter);
         }
     }
     // then use the DNA
+    let mut material_hm: HashMap<String, Blend279Material> = HashMap::with_capacity(ob_count);
+    let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
     let mut builder: SceneDescriptionBuilder = SceneDescriptionBuilder::new();
     {
         let mut f = File::open(&args.path)?;
@@ -2155,7 +2159,7 @@ fn main() -> std::io::Result<()> {
             let mut data_following_object: bool = false;
             let mut is_smooth: bool = false;
             // Blender
-            let mut loop_indices: Vec<u32> = Vec::new();
+            let mut loop_indices: Vec<u32> = Vec::with_capacity(4194304); // 2^22
             loop {
                 // code
                 let mut buffer = [0; 4];
@@ -2308,14 +2312,14 @@ fn main() -> std::io::Result<()> {
                                 &n,
                                 &mut uvs,
                                 &loops,
-                                vertex_indices,
-                                vertex_colors,
+                                vertex_indices.clone(),
+                                vertex_colors.clone(),
                                 is_smooth,
                                 &mut builder,
                             );
                         }
-                        vertex_indices = Vec::new();
-                        vertex_colors = Vec::new();
+                        vertex_indices.clear();
+                        vertex_colors.clear();
                     }
                     // reset booleans
                     data_following_mesh = false;
@@ -2756,14 +2760,14 @@ fn main() -> std::io::Result<()> {
                                     &n,
                                     &mut uvs,
                                     &loops,
-                                    vertex_indices,
-                                    vertex_colors,
+                                    vertex_indices.clone(),
+                                    vertex_colors.clone(),
                                     is_smooth,
                                     &mut builder,
                                 );
                             }
-                            vertex_indices = Vec::new();
-                            vertex_colors = Vec::new();
+                            vertex_indices.clear();
+                            vertex_colors.clear();
                         }
                         // ME
                         // println!("{} ({})", code, len);
@@ -3333,14 +3337,14 @@ fn main() -> std::io::Result<()> {
                                     &n,
                                     &mut uvs,
                                     &loops,
-                                    vertex_indices,
-                                    vertex_colors,
+                                    vertex_indices.clone(),
+                                    vertex_colors.clone(),
                                     is_smooth,
                                     &mut builder,
                                 );
                             }
-                            vertex_indices = Vec::new();
-                            vertex_colors = Vec::new();
+                            vertex_indices.clear();
+                            vertex_colors.clear();
                         }
                         // MA
                         // println!("{} ({})", code, len);
@@ -4161,14 +4165,14 @@ fn main() -> std::io::Result<()> {
                                     &n,
                                     &mut uvs,
                                     &loops,
-                                    vertex_indices,
-                                    vertex_colors,
+                                    vertex_indices.clone(),
+                                    vertex_colors.clone(),
                                     is_smooth,
                                     &mut builder,
                                 );
                             }
-                            vertex_indices = Vec::new();
-                            vertex_colors = Vec::new();
+                            vertex_indices.clear();
+                            vertex_colors.clear();
                         }
                         // reset booleans
                         data_following_mesh = false;
