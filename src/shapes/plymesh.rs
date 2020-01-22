@@ -133,6 +133,7 @@ pub fn create_ply_mesh(
             }
             "face" => {
                 for elem in list.into_iter() {
+                    let mut nrm: Normal3f = Normal3f::default();
                     for (name2, list2) in elem.into_iter() {
                         match name2.as_ref() {
                             "vertex_indices" => {
@@ -186,7 +187,27 @@ pub fn create_ply_mesh(
                                     }
                                 }
                             }
-                            _ => unreachable!(),
+                            "nx" => {
+                                has_normals = true;
+                                if let ply::Property::Float(x) = list2 {
+                                    nrm.x = x;
+                                }
+                            }
+                            "ny" => {
+                                has_normals = true;
+                                if let ply::Property::Float(y) = list2 {
+                                    nrm.y = y;
+                                }
+                            }
+                            "nz" => {
+                                has_normals = true;
+                                if let ply::Property::Float(z) = list2 {
+                                    nrm.z = z;
+                                }
+                            }
+                            _ => {
+                                unreachable!()
+                            },
                         }
                     }
                 }
