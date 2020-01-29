@@ -151,10 +151,8 @@ impl Matrix4x4 {
                                 irow = j;
                                 icol = k;
                             }
-                        } else {
-                            if ipiv[k] > 1 {
-                                println!("Singular matrix in MatrixInvert");
-                            }
+                        } else if ipiv[k] > 1 {
+                            println!("Singular matrix in MatrixInvert");
                         }
                     }
                 }
@@ -599,25 +597,23 @@ impl Transform {
                     medium: None,
                 }
             }
+        } else if let Some(ref medium_arc) = r.medium {
+            Ray {
+                o,
+                d,
+                t_max,
+                time: r.time,
+                differential: None,
+                medium: Some(medium_arc.clone()),
+            }
         } else {
-            if let Some(ref medium_arc) = r.medium {
-                Ray {
-                    o,
-                    d,
-                    t_max,
-                    time: r.time,
-                    differential: None,
-                    medium: Some(medium_arc.clone()),
-                }
-            } else {
-                Ray {
-                    o,
-                    d,
-                    t_max,
-                    time: r.time,
-                    differential: None,
-                    medium: None,
-                }
+            Ray {
+                o,
+                d,
+                t_max,
+                time: r.time,
+                differential: None,
+                medium: None,
             }
         }
     }

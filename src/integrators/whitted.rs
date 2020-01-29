@@ -111,12 +111,12 @@ impl WhittedIntegrator {
                     depth,
                 );
             }
-            return l;
+            l
         } else {
             for light in &scene.lights {
                 l += light.le(ray);
             }
-            return l;
+            l
         }
     }
     pub fn get_camera(&self) -> Arc<Camera> {
@@ -183,9 +183,8 @@ impl WhittedIntegrator {
                     };
                     rd.differential = Some(diff);
                 }
-                return f
-                    * self.li(&mut rd, scene, sampler, depth + 1)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
+                f * self.li(&mut rd, scene, sampler, depth + 1)
+                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf)
             } else {
                 Spectrum::new(0.0)
             }
@@ -255,9 +254,8 @@ impl WhittedIntegrator {
                     };
                     rd.differential = Some(diff);
                 }
-                return f
-                    * self.li(&mut rd, scene, sampler, depth + 1)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
+                f * self.li(&mut rd, scene, sampler, depth + 1)
+                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf)
             } else {
                 Spectrum::new(0.0)
             }

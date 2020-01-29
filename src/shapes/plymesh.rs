@@ -205,9 +205,7 @@ pub fn create_ply_mesh(
                                     nrm.z = z;
                                 }
                             }
-                            _ => {
-                                unreachable!()
-                            },
+                            _ => unreachable!(),
                         }
                     }
                 }
@@ -249,10 +247,8 @@ pub fn create_ply_mesh(
                 None
             }
         }
-    } else {
-        if params.find_one_float("alpha", 1.0 as Float) == 0.0 as Float {
-            alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
-        }
+    } else if params.find_one_float("alpha", 1.0 as Float) == 0.0 as Float {
+        alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
     }
     let mut shadow_alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
     let shadow_alpha_tex_name: String = params.find_texture("shadowalpha");
@@ -267,10 +263,8 @@ pub fn create_ply_mesh(
                 None
             }
         }
-    } else {
-        if params.find_one_float("shadowalpha", 1.0 as Float) == 0.0 as Float {
-            shadow_alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
-        }
+    } else if params.find_one_float("shadowalpha", 1.0 as Float) == 0.0 as Float {
+        shadow_alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
     }
     let mesh = Arc::new(TriangleMesh::new(
         *o2w,

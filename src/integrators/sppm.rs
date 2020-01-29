@@ -864,8 +864,8 @@ fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[i32; 3], pi: &mut Point3i
 }
 
 fn hash(p: &Point3i, hash_size: i32) -> usize {
-    let (x, _overflow) = p.x.overflowing_mul(73856093);
-    let (y, _overflow) = p.y.overflowing_mul(19349663);
-    let (z, _overflow) = p.z.overflowing_mul(83492791);
+    let (x, _overflow) = p.x.overflowing_mul(73_856_093);
+    let (y, _overflow) = p.y.overflowing_mul(19_349_663);
+    let (z, _overflow) = p.z.overflowing_mul(83_492_791);
     ((x ^ y ^ z) as u32 % hash_size as u32) as usize
 }

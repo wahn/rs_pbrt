@@ -254,16 +254,7 @@ impl Sphere {
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit,
-            &p_error,
-            &uv_hit,
-            &wo,
-            &dpdu,
-            &dpdv,
-            &dndu,
-            &dndv,
-            ray.time,
-            None,
+            &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(ref shape) = si.shape {
@@ -502,6 +493,6 @@ impl Sphere {
         let sin_theta_max2: Float =
             self.radius * self.radius / pnt3_distance_squared(&iref.get_p(), &p_center);
         let cos_theta_max: Float = (0.0 as Float).max(1.0 as Float - sin_theta_max2).sqrt();
-        return uniform_cone_pdf(cos_theta_max);
+        uniform_cone_pdf(cos_theta_max)
     }
 }

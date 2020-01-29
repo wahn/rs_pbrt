@@ -143,14 +143,14 @@ impl BVHAccel {
             primitive_info[i] = BVHPrimitiveInfo::new(i, world_bound);
         }
         // TODO: if (splitMethod == SplitMethod::HLBVH)
-        let mut arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
+        let arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
         let mut total_nodes: usize = 0;
         let mut ordered_prims: Vec<Arc<Primitive>> = Vec::with_capacity(num_prims);
         // println!("BVHAccel::recursive_build(..., {}, ...)", num_prims);
         // let start = PreciseTime::now();
         let root = BVHAccel::recursive_build(
-            bvh.clone(), // instead of self
-            &mut arena,
+            bvh, // instead of self
+            &arena,
             &mut primitive_info,
             0,
             num_prims,
@@ -171,7 +171,7 @@ impl BVHAccel {
         // primitives.swap(orderedPrims);
         let bvh_ordered_prims = Arc::new(BVHAccel {
             max_prims_in_node: std::cmp::min(max_prims_in_node, 255),
-            split_method: split_method.clone(),
+            split_method,
             primitives: ordered_prims,
             nodes,
         });
@@ -198,7 +198,7 @@ impl BVHAccel {
         }
         let max_prims_in_node: i32 = ps.find_one_int("maxnodeprims", 4);
         Primitive::BVH(BVHAccel::new(
-            prims.clone(),
+            prims,
             max_prims_in_node as usize,
             split_method,
         ))
@@ -320,7 +320,7 @@ impl BVHAccel {
                                 let (mut left, mut right): (
                                     Vec<BVHPrimitiveInfo>,
                                     Vec<BVHPrimitiveInfo>,
-                                ) = primitive_info[start..end].into_iter().partition(|&pi| {
+                                ) = primitive_info[start..end].iter().partition(|&pi| {
                                     let mut b: usize = (n_buckets as Float
                                         * centroid_bounds.offset(&pi.centroid)[dim])
                                         as usize;
@@ -365,7 +365,7 @@ impl BVHAccel {
                     ordered_prims,
                 );
                 let c0 = BVHAccel::recursive_build(
-                    bvh.clone(),
+                    bvh,
                     arena,
                     primitive_info,
                     start,
@@ -415,14 +415,14 @@ impl BVHAccel {
     }
     // Primitive
     pub fn world_bound(&self) -> Bounds3f {
-        if self.nodes.len() > 0 {
+        if !self.nodes.is_empty() {
             self.nodes[0].bounds
         } else {
             Bounds3f::default()
         }
     }
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
-        if self.nodes.len() == 0 {
+        if !self.nodes.is_empty() {
             return None;
         }
         // TODO: ProfilePhase p(Prof::AccelIntersect);
@@ -492,7 +492,7 @@ impl BVHAccel {
         }
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
-        if self.nodes.len() == 0 {
+        if !self.nodes.is_empty() {
             return false;
         }
         // TODO: ProfilePhase p(Prof::AccelIntersectP);

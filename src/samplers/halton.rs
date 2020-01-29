@@ -279,7 +279,7 @@ impl HaltonSampler {
         let x = self.sample_dimension(self.interval_sample_index, self.dimension);
         let p: Point2f = Point2f { x, y };
         self.dimension += 2;
-        return p;
+        p
     }
     pub fn request_2d_array(&mut self, n: i32) {
         assert_eq!(self.round_count(n), n);

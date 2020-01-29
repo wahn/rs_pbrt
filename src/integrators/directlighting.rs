@@ -181,9 +181,8 @@ impl DirectLightingIntegrator {
                     };
                     rd.differential = Some(diff);
                 }
-                return f
-                    * self.li(&mut rd, scene, sampler, depth + 1)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
+                f * self.li(&mut rd, scene, sampler, depth + 1)
+                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf)
             } else {
                 Spectrum::new(0.0)
             }
@@ -253,9 +252,8 @@ impl DirectLightingIntegrator {
                     };
                     rd.differential = Some(diff);
                 }
-                return f
-                    * self.li(&mut rd, scene, sampler, depth + 1)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf);
+                f * self.li(&mut rd, scene, sampler, depth + 1)
+                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf)
             } else {
                 Spectrum::new(0.0)
             }

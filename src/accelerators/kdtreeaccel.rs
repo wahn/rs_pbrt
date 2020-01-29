@@ -122,12 +122,11 @@ pub struct BoundEdge {
 
 impl BoundEdge {
     pub fn new(t: Float, prim_num: usize, starting: bool) -> Self {
-        let edge_type: EdgeType;
-        if starting {
-            edge_type = EdgeType::Start;
+        let edge_type = if starting {
+            EdgeType::Start
         } else {
-            edge_type = EdgeType::End;
-        }
+            EdgeType::End
+        };
         BoundEdge {
             t,
             prim_num,
@@ -244,7 +243,7 @@ impl KdTreeAccel {
         let max_prims: i32 = ps.find_one_int("maxprims", 1);
         let max_depth: i32 = ps.find_one_int("maxdepth", -1);
         Primitive::KdTree(KdTreeAccel::new(
-            prims.clone(),
+            prims,
             isect_cost,
             trav_cost,
             empty_bonus,
@@ -360,12 +359,11 @@ impl KdTreeAccel {
                                 * (d[other_axis_0] + d[other_axis_1]));
                     let p_below: Float = below_sa * inv_total_sa;
                     let p_above: Float = above_sa * inv_total_sa;
-                    let eb: Float;
-                    if n_above == 0 || n_below == 0 {
-                        eb = self.empty_bonus;
+                    let eb = if n_above == 0 || n_below == 0 {
+                        self.empty_bonus
                     } else {
-                        eb = 0.0 as Float;
-                    }
+                        0.0 as Float
+                    };
                     let cost: Float = self.traversal_cost as Float
                         + self.isect_cost as Float
                             * (1.0 as Float - eb)
@@ -475,7 +473,7 @@ impl KdTreeAccel {
     }
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
         // TODO: ProfilePhase p(Prof::AccelIntersect);
-        if self.nodes.len() == 0 {
+        if self.nodes.is_empty() {
             return None;
         }
         // compute initial parametric range of ray inside kd-tree extent
@@ -600,7 +598,7 @@ impl KdTreeAccel {
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
         // TODO: ProfilePhase p(Prof::AccelIntersectP);
-        if self.nodes.len() == 0 {
+        if self.nodes.is_empty() {
             return false;
         }
         // compute initial parametric range of ray inside kd-tree extent

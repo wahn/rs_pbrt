@@ -120,12 +120,10 @@ impl<'a> EndpointInteraction<'a> {
             } else {
                 None
             }
+        } else if let Some(ref medium_interface) = self.medium_interface {
+            medium_interface.inside.clone()
         } else {
-            if let Some(ref medium_interface) = self.medium_interface {
-                medium_interface.inside.clone()
-            } else {
-                None
-            }
+            None
         }
     }
 }
@@ -372,28 +370,26 @@ impl<'a> Vertex<'a> {
         match self.vertex_type {
             VertexType::Medium => {
                 if let Some(ref mi) = self.mi {
-                    return mi.n;
+                    mi.n
                 } else {
-                    return Normal3f::default();
+                    Normal3f::default()
                 }
             }
             VertexType::Surface => {
                 if let Some(ref si) = self.si {
-                    return si.shading.n;
+                    si.shading.n
                 } else {
-                    return Normal3f::default();
+                    Normal3f::default()
                 }
             }
             VertexType::Light => {
                 if let Some(ref ei) = self.ei {
-                    return ei.n;
+                    ei.n
                 } else {
-                    return Normal3f::default();
+                    Normal3f::default()
                 }
             }
-            _ => {
-                return Normal3f::default();
-            }
+            _ => Normal3f::default(),
         }
     }
     pub fn is_on_surface(&self) -> bool {
@@ -410,24 +406,24 @@ impl<'a> Vertex<'a> {
                 if let Some(ref si) = self.si {
                     if let Some(ref bsdf) = si.bsdf {
                         let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                        return bsdf.f(&si.wo, &wi, bsdf_flags)
-                            * correct_shading_normal(si, &si.wo, &wi, mode);
+                        bsdf.f(&si.wo, &wi, bsdf_flags)
+                            * correct_shading_normal(si, &si.wo, &wi, mode)
                     } else {
-                        return Spectrum::default();
+                        Spectrum::default()
                     }
                 } else {
-                    return Spectrum::default();
+                    Spectrum::default()
                 }
             }
             VertexType::Medium => {
                 if let Some(ref mi) = self.mi {
                     if let Some(phase) = mi.get_phase() {
-                        return Spectrum::new(phase.p(&mi.wo, &wi));
+                        Spectrum::new(phase.p(&mi.wo, &wi))
                     } else {
-                        return Spectrum::default();
+                        Spectrum::default()
                     }
                 } else {
-                    return Spectrum::default();
+                    Spectrum::default()
                 }
             }
             _ => {
@@ -471,13 +467,11 @@ impl<'a> Vertex<'a> {
     pub fn is_light(&self) -> bool {
         if self.vertex_type == VertexType::Light {
             return true;
-        } else {
-            if self.vertex_type == VertexType::Surface {
-                if let Some(ref si) = self.si {
-                    if let Some(primitive) = &si.primitive {
-                        if let Some(_area_light) = primitive.get_area_light() {
-                            return true;
-                        }
+        } else if self.vertex_type == VertexType::Surface {
+            if let Some(ref si) = self.si {
+                if let Some(primitive) = &si.primitive {
+                    if let Some(_area_light) = primitive.get_area_light() {
+                        return true;
                     }
                 }
             }
@@ -539,18 +533,16 @@ impl<'a> Vertex<'a> {
                 le += light.le(&mut ray);
             }
             return le;
-        } else {
-            if let Some(ref si) = self.si {
-                if let Some(primitive) = &si.primitive {
-                    if let Some(light) = primitive.get_area_light() {
-                        let mut iref: InteractionCommon = InteractionCommon::default();
-                        iref.p = si.p;
-                        iref.time = si.time;
-                        iref.p_error = si.p_error;
-                        iref.wo = si.wo;
-                        iref.n = si.n;
-                        return light.l(&iref, &w);
-                    }
+        } else if let Some(ref si) = self.si {
+            if let Some(primitive) = &si.primitive {
+                if let Some(light) = primitive.get_area_light() {
+                    let mut iref: InteractionCommon = InteractionCommon::default();
+                    iref.p = si.p;
+                    iref.time = si.time;
+                    iref.p_error = si.p_error;
+                    iref.wo = si.wo;
+                    iref.n = si.n;
+                    return light.l(&iref, &w);
                 }
             }
         }
@@ -662,29 +654,27 @@ impl<'a> Vertex<'a> {
                         pdf = pdf_dir * inv_dist2;
                     }
                 }
-            } else {
-                if let Some(ref si) = self.si {
-                    if let Some(primitive) = &si.primitive {
-                        if let Some(area_light) = primitive.get_area_light() {
-                            // compute sampling density for
-                            // non-infinite light sources
-                            let mut pdf_pos: Float = 0.0;
-                            let mut pdf_dir: Float = 0.0;
-                            area_light.pdf_le(
-                                &Ray {
-                                    o: self.p(),
-                                    d: w,
-                                    t_max: std::f32::INFINITY,
-                                    time: self.time(),
-                                    differential: None,
-                                    medium: None,
-                                },
-                                &self.ng(),
-                                &mut pdf_pos,
-                                &mut pdf_dir,
-                            );
-                            pdf = pdf_dir * inv_dist2;
-                        }
+            } else if let Some(ref si) = self.si {
+                if let Some(primitive) = &si.primitive {
+                    if let Some(area_light) = primitive.get_area_light() {
+                        // compute sampling density for
+                        // non-infinite light sources
+                        let mut pdf_pos: Float = 0.0;
+                        let mut pdf_dir: Float = 0.0;
+                        area_light.pdf_le(
+                            &Ray {
+                                o: self.p(),
+                                d: w,
+                                t_max: std::f32::INFINITY,
+                                time: self.time(),
+                                differential: None,
+                                medium: None,
+                            },
+                            &self.ng(),
+                            &mut pdf_pos,
+                            &mut pdf_dir,
+                        );
+                        pdf = pdf_dir * inv_dist2;
                     }
                 }
             }
@@ -1014,10 +1004,8 @@ impl BDPTIntegrator {
                                                     // }
                                                     if t != 1 {
                                                         l += lpath;
-                                                    } else {
-                                                        if !lpath.is_black() {
-                                                            film.add_splat(&p_film_new, &lpath);
-                                                        }
+                                                    } else if !lpath.is_black() {
+                                                        film.add_splat(&p_film_new, &lpath);
                                                     }
                                                 }
                                             }
@@ -1955,11 +1943,9 @@ pub fn mis_weight<'a>(
                     overwrite.pdf_rev = callable.pdf(scene, None, &overwrite);
                 }
             }
-        } else {
-            if t > 1 {
-                overwrite.pdf_rev =
-                    overwrite.pdf_light_origin(scene, &camera_vertices[t - 2], &light_pdf);
-            }
+        } else if t > 1 {
+            overwrite.pdf_rev =
+                overwrite.pdf_light_origin(scene, &camera_vertices[t - 2], &light_pdf);
         }
     }
     // update reverse density of vertex $\pt{}_{t-2}$

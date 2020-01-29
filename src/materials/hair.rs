@@ -159,10 +159,8 @@ impl HairMaterial {
                 if let Some(ref pheomelanin) = self.pheomelanin {
                     cp = (0.0 as Float).max(pheomelanin.evaluate(si));
                 }
-            } else {
-                if let Some(ref pheomelanin) = self.pheomelanin {
-                    cp = (0.0 as Float).max(pheomelanin.evaluate(si));
-                }
+            } else if let Some(ref pheomelanin) = self.pheomelanin {
+                cp = (0.0 as Float).max(pheomelanin.evaluate(si));
             }
             sig_a = HairBSDF::sigma_a_from_concentration(ce, cp);
         }
@@ -180,7 +178,7 @@ impl HairMaterial {
 }
 
 pub const P_MAX: u8 = 3_u8;
-pub const SQRT_PI_OVER_8: Float = 0.626657069 as Float;
+pub const SQRT_PI_OVER_8: Float = 0.626_657_069 as Float;
 
 #[derive(Default, Copy, Clone)]
 pub struct HairBSDF {
@@ -630,22 +628,22 @@ fn compact_1_by_1(mut x: u32) -> u32 {
     // TODO: as of Haswell, the PEXT instruction could do all this in a
     // single instruction.
     // x = -f-e -d-c -b-a -9-8 -7-6 -5-4 -3-2 -1-0
-    x &= 0x55555555;
+    x &= 0x5555_5555;
     // x = --fe --dc --ba --98 --76 --54 --32 --10
-    x = (x ^ (x >> 1)) & 0x33333333;
+    x = (x ^ (x >> 1)) & 0x3333_3333;
     // x = ---- fedc ---- ba98 ---- 7654 ---- 3210
-    x = (x ^ (x >> 2)) & 0x0f0f0f0f;
+    x = (x ^ (x >> 2)) & 0x0f0f_0f0f;
     // x = ---- ---- fedc ba98 ---- ---- 7654 3210
-    x = (x ^ (x >> 4)) & 0x00ff00ff;
+    x = (x ^ (x >> 4)) & 0x00ff_00ff;
     // x = ---- ---- ---- ---- fedc ba98 7654 3210
-    x = (x ^ (x >> 8)) & 0x0000ffff;
+    x = (x ^ (x >> 8)) & 0x0000_ffff;
     x
 }
 
 fn demux_float(f: Float) -> Point2f {
     assert!(f >= 0.0 as Float && f < 1.0 as Float);
     let v: u64 = (f * (1u64 << 32) as Float) as u64;
-    assert!(v < 0x100000000);
+    assert!(v < 0x1000_00000);
     let bits: [u32; 2] = [compact_1_by_1(v as u32), compact_1_by_1((v >> 1) as u32)];
     Point2f {
         x: bits[0] as Float / (1 << 16) as Float,
@@ -765,7 +763,7 @@ fn np(phi: Float, p: i32, s: Float, gamma_o: Float, gamma_t: Float) -> Float {
     while dphi < -PI {
         dphi += 2.0 as Float * PI;
     }
-    return trimmed_logistic(dphi, s, -PI, PI);
+    trimmed_logistic(dphi, s, -PI, PI)
 }
 
 fn sample_trimmed_logistic(u: Float, s: Float, a: Float, b: Float) -> Float {

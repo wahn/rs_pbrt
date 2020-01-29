@@ -155,41 +155,39 @@ impl DisneyMaterial {
                         ));
                         bxdf_idx += 1;
                     }
-                } else {
-                    if sd.is_black() {
-                        // No subsurface scattering; use regular (Fresnel modified) diffuse.
-                        if use_scale {
-                            bsdf.bxdfs[bxdf_idx] =
-                                Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c, Some(sc)));
-                            bxdf_idx += 1;
-                        } else {
-                            bsdf.bxdfs[bxdf_idx] =
-                                Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c, None));
-                            bxdf_idx += 1;
-                        }
+                } else if sd.is_black() {
+                    // No subsurface scattering; use regular (Fresnel modified) diffuse.
+                    if use_scale {
+                        bsdf.bxdfs[bxdf_idx] =
+                            Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c, Some(sc)));
+                        bxdf_idx += 1;
                     } else {
-                        // Use a BSSRDF instead.
-                        if use_scale {
-                            bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
-                                Spectrum::from(1.0),
-                                1.0,
-                                e,
-                                mode,
-                                Some(sc),
-                            ));
-                            bxdf_idx += 1;
-                        } else {
-                            bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
-                                Spectrum::from(1.0),
-                                1.0,
-                                e,
-                                mode,
-                                None,
-                            ));
-                            bxdf_idx += 1;
-                        }
-                        // TODO: BSSRDF
+                        bsdf.bxdfs[bxdf_idx] =
+                            Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c, None));
+                        bxdf_idx += 1;
                     }
+                } else {
+                    // Use a BSSRDF instead.
+                    if use_scale {
+                        bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
+                            Spectrum::from(1.0),
+                            1.0,
+                            e,
+                            mode,
+                            Some(sc),
+                        ));
+                        bxdf_idx += 1;
+                    } else {
+                        bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
+                            Spectrum::from(1.0),
+                            1.0,
+                            e,
+                            mode,
+                            None,
+                        ));
+                        bxdf_idx += 1;
+                    }
+                    // TODO: BSSRDF
                 }
 
                 // Retro-reflection.

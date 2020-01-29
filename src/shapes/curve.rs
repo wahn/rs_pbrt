@@ -342,7 +342,7 @@ impl Curve {
             // return true;
             hit = Some((isect, t_hit));
         }
-        return hit;
+        hit
     }
     // Shape
     pub fn object_bound(&self) -> Bounds3f {
@@ -463,7 +463,7 @@ impl Curve {
         let eps: Float = self.common.width[0].max(self.common.width[1]) * 0.05 as Float;
         // compute log base 4 by dividing log2 in half.
         let r0: i32 =
-            log2(1.41421356237 as Float * 6.0 as Float * l0 / (8.0 as Float * eps)) / 2_i32;
+            log2(1.414_213_562_37 as Float * 6.0 as Float * l0 / (8.0 as Float * eps)) / 2_i32;
         let max_depth: i32 = clamp_t(r0, 0_i32, 10_i32);
         // TODO: ReportValue(refinementLevel, maxDepth);
         self.recursive_intersect(

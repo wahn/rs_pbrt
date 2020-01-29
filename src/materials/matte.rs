@@ -78,13 +78,10 @@ impl MatteMaterial {
                         bsdf.bxdfs[bxdf_idx] =
                             Bxdf::LambertianRefl(LambertianReflection::new(r, None));
                     }
+                } else if use_scale {
+                    bsdf.bxdfs[bxdf_idx] = Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, Some(sc)));
                 } else {
-                    if use_scale {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, Some(sc)));
-                    } else {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, None));
-                    }
+                    bsdf.bxdfs[bxdf_idx] = Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, None));
                 }
             }
         }
