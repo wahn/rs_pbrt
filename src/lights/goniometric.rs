@@ -205,7 +205,7 @@ impl GonioPhotometricLight {
                         ));
                         let p_light: Point3f = light_to_world.transform_point(&Point3f::default());
                         return GonioPhotometricLight {
-                            p_light: p_light,
+                            p_light,
                             i: *i,
                             mipmap: Some(projection_map),
                             flags: LightFlags::DeltaPosition as u8,

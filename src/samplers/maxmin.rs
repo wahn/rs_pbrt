@@ -53,7 +53,7 @@ impl MaxMinDistSampler {
         let c_index: i32 = log_2_int_i64(samples_per_pixel) as i32;
         assert!(c_index >= 0_i32 && c_index < 17);
         let mut mmds: MaxMinDistSampler = MaxMinDistSampler {
-            samples_per_pixel: samples_per_pixel,
+            samples_per_pixel,
             c_pixel: C_MAX_MIN_DIST[c_index as usize],
             samples_1d: Vec::new(),
             samples_2d: Vec::new(),

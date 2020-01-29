@@ -260,12 +260,11 @@ impl BVHAccel {
                     SplitMethod::SAH | SplitMethod::HLBVH => {
                         if n_primitives <= 2 {
                             mid = (start + end) / 2;
-                            if start != end - 1 {
-                                if primitive_info[end - 1].centroid[dim]
+                            if start != end - 1
+                                && primitive_info[end - 1].centroid[dim]
                                     < primitive_info[start].centroid[dim]
-                                {
-                                    primitive_info.swap(start, end - 1);
-                                }
+                            {
+                                primitive_info.swap(start, end - 1);
                             }
                         } else {
                             // allocate _BucketInfo_ for SAH partition buckets
@@ -377,7 +376,7 @@ impl BVHAccel {
                 node.init_interior(dim, c0, c1);
             }
         }
-        return node;
+        node
     }
     pub fn flatten_bvh_tree<'a>(
         node: &mut BVHBuildNode<'a>,
@@ -526,16 +525,14 @@ impl BVHAccel {
                     }
                     to_visit_offset -= 1_u32;
                     current_node_index = nodes_to_visit[to_visit_offset as usize];
+                } else if dir_is_neg[node.axis as usize] == 1_u8 {
+                    nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
+                    to_visit_offset += 1_u32;
+                    current_node_index = node.offset as u32;
                 } else {
-                    if dir_is_neg[node.axis as usize] == 1_u8 {
-                        nodes_to_visit[to_visit_offset as usize] = current_node_index + 1_u32;
-                        to_visit_offset += 1_u32;
-                        current_node_index = node.offset as u32;
-                    } else {
-                        nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
-                        to_visit_offset += 1_u32;
-                        current_node_index += 1_u32;
-                    }
+                    nodes_to_visit[to_visit_offset as usize] = node.offset as u32;
+                    to_visit_offset += 1_u32;
+                    current_node_index += 1_u32;
                 }
             } else {
                 if to_visit_offset == 0_u32 {

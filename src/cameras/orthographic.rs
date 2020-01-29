@@ -209,9 +209,9 @@ impl OrthographicCamera {
                 z: 0.0 as Float,
             };
             let diff = RayDifferential {
-                rx_origin: rx_origin,
+                rx_origin,
                 rx_direction: (p_focus - rx_origin).normalize(),
-                ry_origin: ry_origin,
+                ry_origin,
                 ry_direction: (p_focus - ry_origin).normalize(),
             };
             // replace differential
