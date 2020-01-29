@@ -17,7 +17,7 @@ use crate::core::geometry::{
 };
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::material::TransportMode;
-use crate::core::medium::{Medium, MediumInterface, HenyeyGreenstein};
+use crate::core::medium::{HenyeyGreenstein, Medium, MediumInterface};
 use crate::core::pbrt::SHADOW_EPSILON;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::primitive::Primitive;
@@ -98,12 +98,10 @@ impl InteractionCommon {
             } else {
                 None
             }
+        } else if let Some(ref medium_interface_arc) = self.medium_interface {
+            medium_interface_arc.get_inside()
         } else {
-            if let Some(ref medium_interface_arc) = self.medium_interface {
-                medium_interface_arc.get_inside()
-            } else {
-                None
-            }
+            None
         }
     }
 }
@@ -173,16 +171,14 @@ impl MediumInteraction {
             } else {
                 None
             }
-        } else {
-            if let Some(ref medium_interface) = self.medium_interface {
-                if let Some(ref inside_arc) = medium_interface.inside {
-                    Some(inside_arc.clone())
-                } else {
-                    None
-                }
+        } else if let Some(ref medium_interface) = self.medium_interface {
+            if let Some(ref inside_arc) = medium_interface.inside {
+                Some(inside_arc.clone())
             } else {
                 None
             }
+        } else {
+            None
         }
     }
     pub fn is_valid(&self) -> bool {
@@ -381,16 +377,14 @@ impl<'a> SurfaceInteraction<'a> {
             } else {
                 None
             }
-        } else {
-            if let Some(ref medium_interface) = self.medium_interface {
-                if let Some(ref inside_arc) = medium_interface.inside {
-                    Some(inside_arc.clone())
-                } else {
-                    None
-                }
+        } else if let Some(ref medium_interface) = self.medium_interface {
+            if let Some(ref inside_arc) = medium_interface.inside {
+                Some(inside_arc.clone())
             } else {
                 None
             }
+        } else {
+            None
         }
     }
     pub fn set_shading_geometry(

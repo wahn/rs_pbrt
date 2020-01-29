@@ -18,12 +18,12 @@ pub type Float = f32;
 
 pub const MACHINE_EPSILON: Float = std::f32::EPSILON * 0.5;
 pub const SHADOW_EPSILON: Float = 0.0001;
-pub const INV_PI: Float = 0.31830988618379067154;
-pub const INV_2_PI: Float = 0.15915494309189533577;
-pub const INV_4_PI: Float = 0.07957747154594766788;
-pub const PI_OVER_2: Float = 1.57079632679489661923;
-pub const PI_OVER_4: Float = 0.78539816339744830961;
-pub const SQRT_2: Float = 1.41421356237309504880;
+pub const INV_PI: Float = 0.318_309_886_183_790_671_54;
+pub const INV_2_PI: Float = 0.159_154_943_091_895_335_77;
+pub const INV_4_PI: Float = 0.079_577_471_545_947_667_88;
+pub const PI_OVER_2: Float = 1.570_796_326_794_896_619_23;
+pub const PI_OVER_4: Float = 0.785_398_163_397_448_309_61;
+pub const SQRT_2: Float = 1.414_213_562_373_095_048_80;
 
 /// Use **unsafe**
 /// [std::mem::transmute_copy][transmute_copy]
@@ -110,7 +110,7 @@ pub fn gamma(n: i32) -> Float {
 
 /// Is used to write sRGB-compatible 8-bit image files.
 pub fn gamma_correct(value: Float) -> Float {
-    if value <= 0.0031308 {
+    if value <= 0.003_130_8 {
         12.92 * value
     } else {
         1.055 as Float * value.powf((1.0 / 2.4) as Float) - 0.055
@@ -164,7 +164,7 @@ pub fn degrees(rad: Float) -> Float {
 }
 
 pub fn log_2(x: Float) -> Float {
-    let inv_log2: Float = 1.442695040888963387004650940071;
+    let inv_log2: Float = 1.442_695_040_888_963_387_004_650_940_071;
     x.ln() * inv_log2
 }
 
@@ -290,38 +290,38 @@ pub fn erf_inv(x: Float) -> Float {
     let mut p: Float;
     if w < 5.0 as Float {
         w = w - 2.5 as Float;
-        p = 2.81022636e-08;
-        p = 3.43273939e-07 + p * w;
-        p = -3.5233877e-06 + p * w;
-        p = -4.39150654e-06 + p * w;
-        p = 0.00021858087 + p * w;
-        p = -0.00125372503 + p * w;
-        p = -0.00417768164 + p * w;
-        p = 0.246640727 + p * w;
-        p = 1.50140941 + p * w;
+        p = 2.810_226_36e-08;
+        p = 3.432_739_39e-07 + p * w;
+        p = -3.523_387_7e-06 + p * w;
+        p = -4.391_506_54e-06 + p * w;
+        p = 0.000_218_580_87 + p * w;
+        p = -0.001_253_725_03 + p * w;
+        p = -0.004_177_681_640 + p * w;
+        p = 0.246_640_727 + p * w;
+        p = 1.501_409_41 + p * w;
     } else {
         w = w.sqrt() - 3.0 as Float;
-        p = -0.000200214257;
-        p = 0.000100950558 + p * w;
-        p = 0.00134934322 + p * w;
-        p = -0.00367342844 + p * w;
-        p = 0.00573950773 + p * w;
-        p = -0.0076224613 + p * w;
-        p = 0.00943887047 + p * w;
-        p = 1.00167406 + p * w;
-        p = 2.83297682 + p * w;
+        p = -0.000_200_214_257;
+        p = 0.000_100_950_558 + p * w;
+        p = 0.001_349_343_22 + p * w;
+        p = -0.003_673_428_44 + p * w;
+        p = 0.005_739_507_73 + p * w;
+        p = -0.007_622_461_3 + p * w;
+        p = 0.009_438_870_47 + p * w;
+        p = 1.001_674_06 + p * w;
+        p = 2.832_976_82 + p * w;
     }
     p * clamped_x
 }
 
 pub fn erf(x: Float) -> Float {
     // constants
-    let a1: Float = 0.254829592;
-    let a2: Float = -0.284496736;
-    let a3: Float = 1.421413741;
-    let a4: Float = -1.453152027;
-    let a5: Float = 1.061405429;
-    let p: Float = 0.3275911;
+    let a1: Float = 0.254_829_592;
+    let a2: Float = -0.284_496_736;
+    let a3: Float = 1.421_413_741;
+    let a4: Float = -1.453_152_027;
+    let a5: Float = 1.061_405_429;
+    let p: Float = 0.327_591_1;
     // save the sign of x
     let mut sign: Float = 1.0;
     if x < 0.0 as Float {

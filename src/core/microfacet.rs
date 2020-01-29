@@ -108,10 +108,10 @@ impl BeckmannDistribution {
         }
         let x: Float = roughness.ln(); // natural (base e) logarithm
         1.62142
-            + 0.819955 * x
+            + 0.819_955 * x
             + 0.1734 * x * x
-            + 0.0171201 * x * x * x
-            + 0.000640711 * x * x * x * x
+            + 0.017_120_1 * x * x * x
+            + 0.000_640_711 * x * x * x * x
     }
     pub fn d(&self, wh: &Vector3f) -> Float {
         let tan_2_theta: Float = tan_2_theta(wh);
@@ -241,10 +241,10 @@ impl TrowbridgeReitzDistribution {
         }
         let x: Float = roughness.ln(); // natural (base e) logarithm
         1.62142
-            + 0.819955 * x
+            + 0.819_955 * x
             + 0.1734 * x * x
-            + 0.0171201 * x * x * x
-            + 0.000640711 * x * x * x * x
+            + 0.017_120_1 * x * x * x
+            + 0.000_640_711 * x * x * x * x
     }
     pub fn d(&self, wh: &Vector3f) -> Float {
         let tan_2_theta: Float = tan_2_theta(wh);
@@ -461,7 +461,7 @@ fn trowbridge_reitz_sample_11(
     // special case (normal incidence)
     if cos_theta > 0.9999 {
         let r: Float = (u1 / (1.0 - u1)).sqrt();
-        let phi: Float = 6.28318530718 * u2;
+        let phi: Float = 6.283_185_307_18 * u2;
         *slope_x = r * phi.cos();
         *slope_y = r * phi.sin();
         return;
@@ -503,7 +503,7 @@ fn trowbridge_reitz_sample_11(
         new_u2 = 2.0 * (0.5 - u2);
     }
     let z: Float = (new_u2 * (new_u2 * (new_u2 * 0.27385 - 0.73369) + 0.46341))
-        / (new_u2 * (new_u2 * (new_u2 * 0.093073 + 0.309420) - 1.0) + 0.597999);
+        / (new_u2 * (new_u2 * (new_u2 * 0.093_073 + 0.309_420) - 1.0) + 0.597_999);
     *slope_y = s * z * (1.0 + *slope_x * *slope_x).sqrt();
 
     assert!(!(*slope_y).is_infinite());

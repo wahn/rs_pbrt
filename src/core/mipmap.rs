@@ -240,17 +240,17 @@ where
         let level: Float = self.levels() as Float - 1.0 as Float + width.max(1e-8 as Float).log2();
         // perform trilinear interpolation at appropriate MIPMap level
         if level < 0.0 as Float {
-            return self.triangle(0_usize, st);
+            self.triangle(0_usize, st)
         } else if level >= self.levels() as Float - 1 as Float {
-            return *self.texel(self.levels() - 1, 0_isize, 0_isize);
+            *self.texel(self.levels() - 1, 0_isize, 0_isize)
         } else {
             let i_level: usize = level.floor() as usize;
             let delta: Float = level - i_level as Float;
-            return lerp(
+            lerp(
                 delta,
                 self.triangle(i_level, st),
                 self.triangle(i_level + 1_usize, st),
-            );
+            )
         }
     }
     pub fn lookup_pnt_vec_vec(&self, st: &Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> T {

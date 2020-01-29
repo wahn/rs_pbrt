@@ -12,9 +12,9 @@ use crate::core::pbrt::Float;
 //#else
 pub const FLOAT_ONE_MINUS_EPSILON: Float = hexf32!("0x1.fffffep-1");
 //#endif
-pub const PCG32_DEFAULT_STATE: u64 = 0x853c49e6748fea9b;
-pub const PCG32_DEFAULT_STREAM: u64 = 0xda3e39cb94b95bdb;
-pub const PCG32_MULT: u64 = 0x5851f42d4c957f2d;
+pub const PCG32_DEFAULT_STATE: u64 = 0x853c_49e6_748f_ea9b;
+pub const PCG32_DEFAULT_STREAM: u64 = 0xda3e_39cb_94b9_5bdb;
+pub const PCG32_MULT: u64 = 0x5851_f42d_4c95_7f2d;
 
 /// Random number generator
 #[derive(Debug, Default, Copy, Clone)]

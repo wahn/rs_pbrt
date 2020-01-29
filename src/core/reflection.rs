@@ -418,7 +418,7 @@ impl Bsdf {
             //     ratio = f / *pdf;
             // }
             // println!("Overall f = {:?}, pdf = {:?}, ratio = {:?}", f, *pdf, ratio);
-            return f;
+            f
         } else {
             panic!("CHECK_NOTNULL(bxdf)");
         }
@@ -903,9 +903,9 @@ impl FresnelSpecular {
             }
             *pdf = f;
             if let Some(sc) = self.sc_opt {
-                return sc * self.r * f / abs_cos_theta(&*wi);
+                sc * self.r * f / abs_cos_theta(&*wi)
             } else {
-                return self.r * f / abs_cos_theta(&*wi);
+                self.r * f / abs_cos_theta(&*wi)
             }
         } else {
             // compute specular transmission for _FresnelSpecular_
@@ -950,9 +950,9 @@ impl FresnelSpecular {
             }
             *pdf = 1.0 as Float - f;
             if let Some(sc) = self.sc_opt {
-                return sc * ft / abs_cos_theta(&*wi);
+                sc * ft / abs_cos_theta(&*wi)
             } else {
-                return ft / abs_cos_theta(&*wi);
+                ft / abs_cos_theta(&*wi)
             }
         }
     }
@@ -1429,12 +1429,10 @@ impl FresnelBlend {
             } else {
                 diffuse + specular
             }
+        } else if let Some(sc) = self.sc_opt {
+            sc * diffuse
         } else {
-            if let Some(sc) = self.sc_opt {
-                sc * diffuse
-            } else {
-                diffuse
-            }
+            diffuse
         }
     }
     pub fn sample_f(
@@ -1591,7 +1589,7 @@ impl FourierBSDF {
                 m_max,
                 cos_phi as f64,
             );
-            let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
+            let g: Float = 1.398_29 as Float * y - 0.100_913 as Float * b - 0.297_375 as Float * r;
             let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
             if let Some(sc) = self.sc_opt {
                 sc * Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)
@@ -1735,7 +1733,7 @@ impl FourierBSDF {
                 m_max,
                 cos_phi as f64,
             );
-            let g: Float = 1.39829 as Float * y - 0.100913 as Float * b - 0.297375 as Float * r;
+            let g: Float = 1.398_29 as Float * y - 0.100_913 as Float * b - 0.297_375 as Float * r;
             let rgb: [Float; 3] = [r * scale, g * scale, b * scale];
             if let Some(sc) = self.sc_opt {
                 sc * Spectrum::from_rgb(&rgb).clamp(0.0 as Float, std::f32::INFINITY as Float)

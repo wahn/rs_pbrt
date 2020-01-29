@@ -290,11 +290,11 @@ impl SpatialLightDistribution {
         let mut hash: u64 = packed_pos;
         hash ^= hash >> 31;
         // hash *= 0x7fb5d329728ea185;
-        let (mul, _overflow) = hash.overflowing_mul(0x7fb5d329728ea185);
+        let (mul, _overflow) = hash.overflowing_mul(0x7fb5_d329_728e_a185);
         hash = mul;
         hash ^= hash >> 27;
         // hash *= 0x81dadef4bc2dd44d;
-        let (mul, _overflow) = hash.overflowing_mul(0x81dadef4bc2dd44d);
+        let (mul, _overflow) = hash.overflowing_mul(0x81da_def4_bc2d_d44d);
         hash = mul;
         hash ^= hash >> 33;
         hash %= self.hash_table_size as u64;
@@ -372,7 +372,7 @@ impl SpatialLightDistribution {
 
 // see lightdistrib.cpp
 
-const INVALID_PACKED_POS: u64 = 0xffffffffffffffff;
+const INVALID_PACKED_POS: u64 = 0xffff_ffff_ffff_ffff;
 
 /// Decides based on the name and the number of scene lights which
 /// light distribution to return.
@@ -381,24 +381,24 @@ pub fn create_light_sample_distribution(
     scene: &Scene,
 ) -> Option<Arc<LightDistribution>> {
     if name == "uniform" || scene.lights.len() == 1 {
-        return Some(Arc::new(LightDistribution::Uniform(
+        Some(Arc::new(LightDistribution::Uniform(
             UniformLightDistribution::new(scene),
-        )));
+        )))
     } else if name == "power" {
-        return Some(Arc::new(LightDistribution::Power(
+        Some(Arc::new(LightDistribution::Power(
             PowerLightDistribution::new(scene),
-        )));
+        )))
     } else if name == "spatial" {
-        return Some(Arc::new(LightDistribution::Spatial(
+        Some(Arc::new(LightDistribution::Spatial(
             SpatialLightDistribution::new(scene, 64),
-        )));
+        )))
     } else {
         println!(
             "Light sample distribution type \"{:?}\" unknown. Using \"spatial\".",
             name
         );
-        return Some(Arc::new(LightDistribution::Spatial(
+        Some(Arc::new(LightDistribution::Spatial(
             SpatialLightDistribution::new(scene, 64),
-        )));
+        )))
     }
 }

@@ -558,16 +558,14 @@ pub fn estimate_direct(
                         }
                     }
                 }
-            } else {
-                if let Some(ref light_isect) = scene.intersect(&mut ray) {
-                    found_surface_interaction = true;
-                    if let Some(primitive) = &light_isect.primitive {
-                        if let Some(area_light) = primitive.get_area_light() {
-                            let pa = &*area_light as *const _ as *const usize;
-                            let pl = &*light as *const _ as *const usize;
-                            if pa == pl {
-                                li = light_isect.le(&-wi);
-                            }
+            } else if let Some(ref light_isect) = scene.intersect(&mut ray) {
+                found_surface_interaction = true;
+                if let Some(primitive) = &light_isect.primitive {
+                    if let Some(area_light) = primitive.get_area_light() {
+                        let pa = &*area_light as *const _ as *const usize;
+                        let pl = &*light as *const _ as *const usize;
+                        if pa == pl {
+                            li = light_isect.le(&-wi);
                         }
                     }
                 }

@@ -133,21 +133,19 @@ impl GeometricPrimitive {
                     medium_interface: None,
                 }
             }
+        } else if let Some(medium_interface) = medium_interface {
+            GeometricPrimitive {
+                shape,
+                material,
+                area_light: None,
+                medium_interface: Some(medium_interface),
+            }
         } else {
-            if let Some(medium_interface) = medium_interface {
-                GeometricPrimitive {
-                    shape,
-                    material,
-                    area_light: None,
-                    medium_interface: Some(medium_interface),
-                }
-            } else {
-                GeometricPrimitive {
-                    shape,
-                    material,
-                    area_light: None,
-                    medium_interface: None,
-                }
+            GeometricPrimitive {
+                shape,
+                material,
+                area_light: None,
+                medium_interface: None,
             }
         }
     }
@@ -165,13 +163,10 @@ impl GeometricPrimitive {
             if let Some(ref medium_interface) = self.medium_interface {
                 if medium_interface.is_medium_transition() {
                     isect.medium_interface = Some(medium_interface.clone());
-                } else {
-                    if let Some(ref medium_arc) = ray.medium {
-                        let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
-                        let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
-                        isect.medium_interface =
-                            Some(Arc::new(MediumInterface::new(inside, outside)));
-                    }
+                } else if let Some(ref medium_arc) = ray.medium {
+                    let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
+                    let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
+                    isect.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
                 }
                 // print!("medium_interface = {{inside = ");
                 // if let Some(ref inside) = medium_interface.inside {
