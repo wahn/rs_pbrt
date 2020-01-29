@@ -422,7 +422,7 @@ impl BVHAccel {
         }
     }
     pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
-        if !self.nodes.is_empty() {
+        if self.nodes.is_empty() {
             return None;
         }
         // TODO: ProfilePhase p(Prof::AccelIntersect);
@@ -492,7 +492,7 @@ impl BVHAccel {
         }
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
-        if !self.nodes.is_empty() {
+        if self.nodes.is_empty() {
             return false;
         }
         // TODO: ProfilePhase p(Prof::AccelIntersectP);
