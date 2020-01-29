@@ -1,6 +1,6 @@
 use pest_derive::*;
 
-pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Parser)]
 #[grammar = "../examples/pbrt.pest"]
@@ -56,20 +56,19 @@ fn pbrt_bool_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, boo
     let string: String = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
-    let string2: String;
-    if lbrack.as_str() == "[" {
+    let string2 = if lbrack.as_str() == "[" {
         // check for brackets
         let string = pairs.next();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
+        String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap()
     } else {
         // no brackets
         let string = option.clone();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
-    }
+        String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap()
+    };
     // return boolean (instead of string)
     let b: bool;
     if string2 == "true" {
@@ -160,20 +159,19 @@ fn pbrt_string_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, S
     let string1: String = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
-    let string2: String;
-    if lbrack.as_str() == "[" {
+    let string2 = if lbrack.as_str() == "[" {
         // check for brackets
         let string = pairs.next();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
+        String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap()
     } else {
         // no brackets
         let string = option.clone();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
-    }
+        String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap()
+    };
     (string1, string2)
 }
 
@@ -183,20 +181,19 @@ fn pbrt_texture_parameter(pairs: &mut pest::iterators::Pairs<Rule>) -> (String, 
     let string1: String = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
     let option = pairs.next();
     let lbrack = option.clone().unwrap();
-    let string2: String;
-    if lbrack.as_str() == "[" {
+    let string2 = if lbrack.as_str() == "[" {
         // check for brackets
         let string = pairs.next();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
+        String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap()
     } else {
         // no brackets
         let string = option.clone();
         let pair = string.unwrap().clone();
         let ident = pair.into_inner().next();
-        string2 = String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap();
-    }
+        String::from_str(ident.unwrap().clone().as_span().as_str()).unwrap()
+    };
     (string1, string2)
 }
 
@@ -595,8 +592,8 @@ fn parse_line(
                     let mut m: Vec<Float> = Vec::new();
                     for rule_pair in inner_pair.into_inner() {
                         // ignore brackets
-                        let not_opening: bool = rule_pair.as_str() != String::from("[");
-                        let not_closing: bool = rule_pair.as_str() != String::from("]");
+                        let not_opening: bool = rule_pair.as_str() != "[";
+                        let not_closing: bool = rule_pair.as_str() != "]";
                         if not_opening && not_closing {
                             let number: Float =
                                 f32::from_str(rule_pair.clone().as_span().as_str()).unwrap();
@@ -693,8 +690,8 @@ fn parse_line(
                     let mut m: Vec<Float> = Vec::new();
                     for rule_pair in inner_pair.into_inner() {
                         // ignore brackets
-                        let not_opening: bool = rule_pair.as_str() != String::from("[");
-                        let not_closing: bool = rule_pair.as_str() != String::from("]");
+                        let not_opening: bool = rule_pair.as_str() != "[";
+                        let not_closing: bool = rule_pair.as_str() != "]";
                         if not_opening && not_closing {
                             let number: Float =
                                 f32::from_str(rule_pair.clone().as_span().as_str()).unwrap();
@@ -807,7 +804,7 @@ fn parse_file(
                         }
                         Rule::trailing_comment => {
                             // ignore (only if there are no '"' chars)
-                            if statement_pair.as_str().contains("\"") {
+                            if statement_pair.as_str().contains('\"') {
                                 if parse_again != "" {
                                     parse_again = parse_again + " " + statement_pair.as_str();
                                 } else {
@@ -869,7 +866,6 @@ fn main() {
     };
     if matches.opt_present("h") {
         print_usage(&program, opts);
-        return;
     } else if matches.opt_present("i") {
         let mut number_of_threads: u8 = 0_u8;
         if matches.opt_present("t") {
@@ -902,12 +898,9 @@ fn main() {
             }
             None => panic!("No input file name."),
         }
-        return;
     } else if matches.opt_present("v") {
         print_version(&program);
-        return;
     } else {
         print_usage(&program, opts);
-        return;
     }
 }
