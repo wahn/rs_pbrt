@@ -177,7 +177,7 @@ impl RealisticCamera {
                      lens_file, lens_data.len());
         }
         // println!("lens_data = {:?}", lens_data);
-        let camera = Arc::new(Camera::Realistic(RealisticCamera::new(
+        Arc::new(Camera::Realistic(RealisticCamera::new(
             cam2world,
             shutteropen,
             shutterclose,
@@ -187,8 +187,7 @@ impl RealisticCamera {
             &lens_data,
             film,
             medium,
-        )));
-        camera
+        )))
     }
     pub fn generate_ray(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
         // TODO: ProfilePhase prof(Prof::GenerateCameraRay);

@@ -252,7 +252,7 @@ impl Film {
         let diagonal: Float = params.find_one_float("diagonal", 35.0);
         let max_sample_luminance: Float =
             params.find_one_float("maxsampleluminance", std::f32::INFINITY);
-        let film = Arc::new(Film::new(
+        Arc::new(Film::new(
             resolution,
             crop,
             filter,
@@ -260,8 +260,7 @@ impl Film {
             filename,
             scale,
             max_sample_luminance,
-        ));
-        film
+        ))
     }
     pub fn get_cropped_pixel_bounds(&self) -> Bounds2i {
         self.cropped_pixel_bounds.clone()

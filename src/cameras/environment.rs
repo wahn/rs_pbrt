@@ -80,14 +80,13 @@ impl EnvironmentCamera {
                 panic!("\"screenwindow\" should have four values");
             }
         }
-        let camera = Arc::new(Camera::Environment(EnvironmentCamera::new(
+        Arc::new(Camera::Environment(EnvironmentCamera::new(
             cam2world,
             shutteropen,
             shutterclose,
             film,
             medium,
-        )));
-        camera
+        )))
     }
     // Camera
     pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {

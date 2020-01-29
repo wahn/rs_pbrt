@@ -568,7 +568,7 @@ where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
 {
     // DCHECK(!v1.HasNaNs() && !n2.HasNaNs());
-    return v1.x * n2.x + v1.y * n2.y + v1.z * n2.z;
+    v1.x * n2.x + v1.y * n2.y + v1.z * n2.z
 }
 
 /// Computes the absolute value of the dot product.
@@ -638,12 +638,10 @@ where
         } else {
             2_usize
         }
+    } else if v.y > v.z {
+        1_usize
     } else {
-        if v.y > v.z {
-            1_usize
-        } else {
-            2_usize
-        }
+        2_usize
     }
 }
 
@@ -1176,10 +1174,8 @@ pub fn pnt3_offset_ray_origin(
     for i in 0..3 {
         if offset[i] > 0.0 as Float {
             po[i] = next_float_up(po[i]);
-        } else {
-            if offset[i] < 0.0 as Float {
-                po[i] = next_float_down(po[i]);
-            }
+        } else if offset[i] < 0.0 as Float {
+            po[i] = next_float_down(po[i]);
         }
     }
     po
@@ -1853,7 +1849,7 @@ where
         y: b1.p_max.y.max(b2.p_max.y),
         z: b1.p_max.z.max(b2.p_max.z),
     };
-    Bounds3 {p_min, p_max }
+    Bounds3 { p_min, p_max }
 }
 
 /// Determine if a given point is inside the bounding box.

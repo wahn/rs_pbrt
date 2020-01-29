@@ -362,7 +362,7 @@ impl RenderOptions {
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let n_bootstrap: i32 = self
                         .integrator_params
-                        .find_one_int("bootstrapsamples", 100000);
+                        .find_one_int("bootstrapsamples", 100_000);
                     let n_chains: i32 = self.integrator_params.find_one_int("chains", 1000);
                     let mutations_per_pixel: i32 = self
                         .integrator_params
@@ -453,7 +453,7 @@ impl RenderOptions {
             &self.accelerator_params,
         );
         if let Some(accelerator) = some_accelerator {
-            return Scene::new(accelerator, self.lights.clone());
+            Scene::new(accelerator, self.lights.clone())
         } else {
             panic!("Unable to create accelerator.");
         }
@@ -3032,6 +3032,5 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
             "ERROR: Unable to find instance named {:?}",
             api_state.param_set.name.clone()
         );
-        return;
     }
 }

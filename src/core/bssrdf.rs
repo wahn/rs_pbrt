@@ -568,7 +568,7 @@ pub fn fresnel_moment1(eta: Float) -> Float {
     let eta4: Float = eta3 * eta;
     let eta5: Float = eta4 * eta;
     if eta < 1.0 as Float {
-        0.45966 as Float - 1.73965 as Float * eta + 3.37668 as Float * eta2 - 3.904945 * eta3
+        0.45966 as Float - 1.73965 as Float * eta + 3.37668 as Float * eta2 - 3.904_945 * eta3
             + 2.49277 as Float * eta4
             - 0.68441 as Float * eta5
     } else {
