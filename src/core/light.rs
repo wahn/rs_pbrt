@@ -189,8 +189,8 @@ pub fn is_delta_light(flags: u8) -> bool {
     pos || dir
 }
 
-/// A closure - an object that encapsulates a small amount of data and
-/// some computation that is yet to be done.
+/// VisibilityTesters are created by providing two Interaction
+/// objects, one for each end point of the shadow ray to be traced.
 #[derive(Default, Clone)]
 pub struct VisibilityTester {
     pub p0: InteractionCommon, // TODO: private
