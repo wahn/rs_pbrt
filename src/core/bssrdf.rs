@@ -74,7 +74,7 @@ impl TabulatedBssrdf {
                 ts: nrm_cross_vec3(&ns, &ss),
                 material,
                 mode,
-                table: table.clone(),
+                table,
                 sigma_t,
                 rho,
             }
@@ -128,7 +128,7 @@ impl TabulatedBssrdf {
         &self,
         scene: &Scene,
         u1: Float,
-        u2: &Point2f,
+        u2: Point2f,
         pi: &mut SurfaceInteraction,
         pdf: &mut Float,
     ) -> Spectrum {
@@ -214,21 +214,21 @@ impl TabulatedBssrdf {
                             //         ptr->next = next;
                             //         ptr = next;
                             let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
-                            si_eval.p = si.p.clone();
+                            si_eval.p = si.p;
                             si_eval.time = si.time;
-                            si_eval.p_error = si.p_error.clone();
-                            si_eval.wo = si.wo.clone();
-                            si_eval.n = si.n.clone();
+                            si_eval.p_error = si.p_error;
+                            si_eval.wo = si.wo;
+                            si_eval.n = si.n;
                             if let Some(medium_interface) = &si.medium_interface {
-                                Some(Arc::new(medium_interface.clone()));
+                                Arc::new(medium_interface.clone());
                             } else {
                                 si_eval.medium_interface = None
                             }
-                            si_eval.uv = si.uv.clone();
-                            si_eval.dpdu = si.dpdu.clone();
-                            si_eval.dpdv = si.dpdv.clone();
-                            si_eval.dndu = si.dndu.clone();
-                            si_eval.dndv = si.dndv.clone();
+                            si_eval.uv = si.uv;
+                            si_eval.dpdu = si.dpdu;
+                            si_eval.dpdv = si.dpdv;
+                            si_eval.dndu = si.dndu;
+                            si_eval.dndv = si.dndv;
                             let dudx: Float = *si.dudx.read().unwrap();
                             si_eval.dudx = RwLock::new(dudx);
                             let dvdx: Float = *si.dvdx.read().unwrap();
@@ -241,12 +241,12 @@ impl TabulatedBssrdf {
                             si_eval.dpdx = RwLock::new(dpdx);
                             let dpdy: Vector3f = *si.dpdy.read().unwrap();
                             si_eval.dpdy = RwLock::new(dpdy);
-                            si_eval.primitive = Some(geo_prim.clone());
-                            si_eval.shading.n = si.shading.n.clone();
-                            si_eval.shading.dpdu = si.shading.dpdu.clone();
-                            si_eval.shading.dpdv = si.shading.dpdv.clone();
-                            si_eval.shading.dndu = si.shading.dndu.clone();
-                            si_eval.shading.dndv = si.shading.dndv.clone();
+                            si_eval.primitive = Some(geo_prim);
+                            si_eval.shading.n = si.shading.n;
+                            si_eval.shading.dpdu = si.shading.dpdu;
+                            si_eval.shading.dpdv = si.shading.dpdv;
+                            si_eval.shading.dndu = si.shading.dndu;
+                            si_eval.shading.dndv = si.shading.dndv;
                             if let Some(bsdf) = si.bsdf {
                                 si_eval.bsdf = Some(bsdf);
                             } else {
@@ -354,9 +354,9 @@ impl TabulatedBssrdf {
             }
             // set BSSRDF value _Sr[ch]_ using tensor spline interpolation
             let mut srf: Float = 0.0;
-            for i in 0..4_usize {
-                for j in 0..4_usize {
-                    let weight: Float = rho_weights[i] * radius_weights[j];
+            for (i, rho_weight) in rho_weights.iter().enumerate() {
+                for (j, radius_weight) in radius_weights.iter().enumerate() {
+                    let weight: Float = rho_weight * radius_weight;
                     if weight != 0.0 as Float {
                         srf += weight
                             * self
@@ -399,20 +399,20 @@ impl TabulatedBssrdf {
         // return BSSRDF profile density for channel _ch_
         let mut sr: Float = 0.0;
         let mut rho_eff: Float = 0.0;
-        for i in 0..4_usize {
-            if rho_weights[i] == 0.0 as Float {
+        for (i, rho_weight) in rho_weights.iter().enumerate() {
+            if *rho_weight == 0.0 as Float {
                 continue;
             }
-            rho_eff += self.table.rho_eff[rho_offset as usize + i] * rho_weights[i];
-            for j in 0..4_usize {
-                if radius_weights[j] == 0.0 as Float {
+            rho_eff += self.table.rho_eff[rho_offset as usize + i] * rho_weight;
+            for (j, radius_weight) in radius_weights.iter().enumerate() {
+                if *radius_weight == 0.0 as Float {
                     continue;
                 }
                 sr += self
                     .table
                     .eval_profile(rho_offset + i as i32, radius_offset + j as i32)
-                    * rho_weights[i]
-                    * radius_weights[j];
+                    * rho_weight
+                    * radius_weight;
             }
         }
         // cancel marginal PDF factor from tabulated BSSRDF profile
@@ -451,7 +451,7 @@ impl TabulatedBssrdf {
         // done
         scene: &Scene,
         u1: Float,
-        u2: &Point2f,
+        u2: Point2f,
         pdf: &mut Float,
     ) -> (Spectrum, Option<SurfaceInteraction>) {
         // ProfilePhase pp(Prof::BSSRDFSampling);

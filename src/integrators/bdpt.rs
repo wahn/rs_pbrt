@@ -1005,7 +1005,7 @@ impl BDPTIntegrator {
                                                     if t != 1 {
                                                         l += lpath;
                                                     } else if !lpath.is_black() {
-                                                        film.add_splat(&p_film_new, &lpath);
+                                                        film.add_splat(p_film_new, &lpath);
                                                     }
                                                 }
                                             }
@@ -1015,7 +1015,7 @@ impl BDPTIntegrator {
                                             //     l,
                                             //     l.y()
                                             // );
-                                            film_tile.add_sample(&p_film, &mut l, 1.0 as Float);
+                                            film_tile.add_sample(p_film, &mut l, 1.0 as Float);
                                             done = !tile_sampler.start_next_sample();
                                         }
                                     }

@@ -135,7 +135,7 @@ impl OrthographicCamera {
                 panic!("\"screenwindow\" should have four values");
             }
         }
-        Arc::new(Camera::Orthographic(OrthographicCamera::new(
+        Arc::new(Camera::Orthographic(Box::new(OrthographicCamera::new(
             cam2world,
             screen,
             shutteropen,
@@ -144,7 +144,7 @@ impl OrthographicCamera {
             focaldistance,
             film,
             medium,
-        )))
+        ))))
     }
     // Camera
     pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {

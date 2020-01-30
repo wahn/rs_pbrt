@@ -197,7 +197,7 @@ impl SamplerIntegrator {
                                             //          camera_sample, ray, l);
                                             // add camera ray's contribution to image
                                             film_tile.add_sample(
-                                                &camera_sample.p_film,
+                                                camera_sample.p_film,
                                                 &mut l,
                                                 ray_weight,
                                             );

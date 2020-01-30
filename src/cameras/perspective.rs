@@ -172,7 +172,7 @@ impl PerspectiveCamera {
         //     params.find_one_float(String::from("halffov"), -1.0);
         // TODO: if (halffov > 0.f)
         // TODO: let perspective_camera: Arc<Camera + Sync + Send> =
-        Arc::new(Camera::Perspective(PerspectiveCamera::new(
+        Arc::new(Camera::Perspective(Box::new(PerspectiveCamera::new(
             cam2world,
             screen,
             shutteropen,
@@ -182,7 +182,7 @@ impl PerspectiveCamera {
             fov,
             film,
             medium,
-        )))
+        ))))
     }
     // Camera
     pub fn generate_ray_differential(&self, sample: &CameraSample, ray: &mut Ray) -> Float {

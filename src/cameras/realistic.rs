@@ -179,7 +179,7 @@ impl RealisticCamera {
                      lens_file, lens_data.len());
         }
         // println!("lens_data = {:?}", lens_data);
-        Arc::new(Camera::Realistic(RealisticCamera::new(
+        Arc::new(Camera::Realistic(Box::new(RealisticCamera::new(
             cam2world,
             shutteropen,
             shutterclose,
@@ -189,7 +189,7 @@ impl RealisticCamera {
             &lens_data,
             film,
             medium,
-        )))
+        ))))
     }
     pub fn generate_ray(&self, sample: &CameraSample, ray: &mut Ray) -> Float {
         // TODO: ProfilePhase prof(Prof::GenerateCameraRay);
@@ -525,7 +525,7 @@ impl RealisticCamera {
         // small.  (e.g. 2 [mm] for `aperturediameter` with
         // wide.22mm.dat),
         let mut found_focus_ray: bool = false;
-        for scale in scale_factors.into_iter() {
+        for scale in scale_factors.iter() {
             lu = scale * bounds.p_max[0];
             if self.trace_lenses_from_film(
                 &Ray {

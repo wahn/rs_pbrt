@@ -1844,8 +1844,8 @@ fn get_shapes_and_materials(
             assert!(s.len() == p.len());
             // transform tangents to world space
             let n_tangents: usize = s.len();
-            for i in 0..n_tangents {
-                s_ws.push(obj_to_world.transform_vector(&s[i]));
+            for item in s.iter().take(n_tangents) {
+                s_ws.push(obj_to_world.transform_vector(&item));
             }
         }
         let n = api_state.param_set.find_normal3f("N");
@@ -1854,15 +1854,15 @@ fn get_shapes_and_materials(
             assert!(n.len() == p.len());
             // transform normals to world space
             let n_normals: usize = n.len();
-            for i in 0..n_normals {
-                n_ws.push(obj_to_world.transform_normal(&n[i]));
+            for item in n.iter().take(n_normals) {
+                n_ws.push(obj_to_world.transform_normal(&item));
             }
         }
-        for i in 0..vi.len() {
-            if vi[i] as usize >= p.len() {
+        for item in &vi {
+            if *item as usize >= p.len() {
                 panic!(
                     "trianglemesh has out of-bounds vertex index {} ({} \"P\" values were given)",
-                    vi[i],
+                    item,
                     p.len()
                 );
             }
@@ -1872,13 +1872,13 @@ fn get_shapes_and_materials(
         // transform mesh vertices to world space
         let mut p_ws: Vec<Point3f> = Vec::new();
         let n_vertices: usize = p.len();
-        for i in 0..n_vertices {
-            p_ws.push(obj_to_world.transform_point(&p[i]));
+        for item in p.iter().take(n_vertices) {
+            p_ws.push(obj_to_world.transform_point(&item));
         }
         // vertex indices are expected as usize, not i32
         let mut vertex_indices: Vec<u32> = Vec::new();
-        for i in 0..vi.len() {
-            vertex_indices.push(vi[i] as u32);
+        for item in &vi {
+            vertex_indices.push(*item as u32);
         }
         let mesh = Arc::new(TriangleMesh::new(
             obj_to_world,
@@ -2062,20 +2062,20 @@ fn get_shapes_and_materials(
                 });
             }
         } else {
-            for i in 0..(nu * nv) as usize {
+            for item in p.iter().take((nu * nv) as usize) {
                 hom3.push(Homogeneous3 {
-                    x: p[i].x,
-                    y: p[i].y,
-                    z: p[i].z,
+                    x: item.x,
+                    y: item.y,
+                    z: item.z,
                     w: 1.0 as Float,
                 });
             }
         }
-        for v in 0..dicev {
-            for u in 0..diceu {
+        for veval_item in veval.iter().take(dicev) {
+            for ueval_item in ueval.iter().take(diceu) {
                 uvs.push(Point2f {
-                    x: ueval[u],
-                    y: veval[v],
+                    x: *ueval_item,
+                    y: *veval_item,
                 });
                 let mut dpdu: Vector3f = Vector3f::default();
                 let mut dpdv: Vector3f = Vector3f::default();
@@ -2083,11 +2083,11 @@ fn get_shapes_and_materials(
                     uorder,
                     &uknots,
                     nu,
-                    ueval[u],
+                    *ueval_item,
                     vorder,
                     &vknots,
                     nv,
-                    veval[v],
+                    *veval_item,
                     &hom3,
                     Some(&mut dpdu),
                     Some(&mut dpdv),
@@ -2117,14 +2117,14 @@ fn get_shapes_and_materials(
         // transform mesh vertices to world space
         let mut p_ws: Vec<Point3f> = Vec::new();
         let n_vertices: usize = eval_ps.len();
-        for i in 0..n_vertices {
-            p_ws.push(obj_to_world.transform_point(&eval_ps[i]));
+        for item in eval_ps.iter().take(n_vertices) {
+            p_ws.push(obj_to_world.transform_point(&item));
         }
         // transform normals to world space
         let mut n_ws: Vec<Normal3f> = Vec::new();
         let n_normals: usize = eval_ns.len();
-        for i in 0..n_normals {
-            n_ws.push(obj_to_world.transform_normal(&eval_ns[i]));
+        for item in eval_ns.iter().take(n_normals) {
+            n_ws.push(obj_to_world.transform_normal(&item));
         }
         let mesh = Arc::new(TriangleMesh::new(
             obj_to_world,
@@ -2258,11 +2258,11 @@ pub fn pbrt_init(number_of_threads: u8) -> (ApiState, BsdfState) {
 pub fn pbrt_cleanup(api_state: &ApiState) {
     // println!("WorldEnd");
     assert!(
-        api_state.pushed_graphics_states.len() == 0_usize,
+        api_state.pushed_graphics_states.is_empty(),
         "Missing end to pbrtAttributeBegin()"
     );
     assert!(
-        api_state.pushed_transforms.len() == 0_usize,
+        api_state.pushed_transforms.is_empty(),
         "Missing end to pbrtTransformBegin()"
     );
     // MakeIntegrator
@@ -2519,14 +2519,10 @@ pub fn pbrt_make_named_medium(api_state: &mut ApiState, params: ParamSet) {
     make_medium(api_state);
 }
 
-pub fn pbrt_medium_interface(
-    api_state: &mut ApiState,
-    inside_name: &String,
-    outside_name: &String,
-) {
+pub fn pbrt_medium_interface(api_state: &mut ApiState, inside_name: &str, outside_name: &str) {
     // println!("MediumInterface \"{}\" \"{}\"", inside_name, outside_name);
-    api_state.graphics_state.current_inside_medium = inside_name.clone();
-    api_state.graphics_state.current_outside_medium = outside_name.clone();
+    api_state.graphics_state.current_inside_medium = inside_name.to_string();
+    api_state.graphics_state.current_outside_medium = outside_name.to_string();
     api_state.render_options.have_scattering_media = true;
 }
 
@@ -2581,7 +2577,7 @@ pub fn pbrt_attribute_begin(api_state: &mut ApiState) {
 
 pub fn pbrt_attribute_end(api_state: &mut ApiState) {
     // println!("AttributeEnd");
-    if !(api_state.pushed_graphics_states.len() >= 1_usize) {
+    if api_state.pushed_graphics_states.is_empty() {
         panic!("Unmatched pbrtAttributeEnd() encountered.")
     }
     api_state.graphics_state = api_state.pushed_graphics_states.pop().unwrap();
@@ -2661,15 +2657,12 @@ pub fn pbrt_make_named_material(
         .copy_from(&api_state.param_set);
     api_state.graphics_state.current_material = String::new();
     let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
-    match api_state
+    if let Some(_named_material) = api_state
         .graphics_state
         .named_materials
         .get(api_state.param_set.name.as_str())
     {
-        Some(_named_material) => {
-            println!("Named material \"{}\" redefined", mat_type);
-        }
-        None => {}
+        println!("Named material \"{}\" redefined", mat_type);
     }
     Arc::make_mut(&mut api_state.graphics_state.named_materials)
         .insert(api_state.param_set.name.clone(), mtl);
@@ -2793,20 +2786,20 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                     SplitMethod::SAH,
                 )));
                 prims.clear();
-                prims.push(bvh.clone());
+                prims.push(bvh);
             }
             if let Some(primitive) = prims.pop() {
                 let geo_prim = Arc::new(Primitive::Transformed(TransformedPrimitive::new(
                     primitive,
                     animated_object_to_world,
                 )));
-                prims.push(geo_prim.clone());
+                prims.push(geo_prim);
             }
         }
     }
     // add _prims_ and _areaLights_ to scene or current instance
     if api_state.render_options.current_instance != "" {
-        if area_lights.len() > 0 {
+        if !area_lights.is_empty() {
             println!("WARNING: Area lights not supported with object instancing");
         }
         if let Some(instance_vec) = api_state
@@ -2822,7 +2815,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
         for prim in prims {
             api_state.render_options.primitives.push(prim.clone());
         }
-        if area_lights.len() > 0 {
+        if !area_lights.is_empty() {
             for area_light in area_lights {
                 api_state.render_options.lights.push(area_light.clone());
             }
@@ -2840,24 +2833,20 @@ fn shape_may_set_material_parameters(ps: &ParamSet) -> bool {
     for p in &ps.textures {
         // Any texture other than one for an alpha mask is almost
         // certainly for a Material (or is unused!).
-        if p.name != String::from("alpha") && p.name != String::from("shadowalpha") {
+        if p.name != "alpha" && p.name != "shadowalpha" {
             return true;
         }
     }
     // Special case spheres, which are the most common non-mesh primitive.
     for p in &ps.floats {
-        if p.n_values == 1 && p.name != String::from("radius") {
+        if p.n_values == 1 && p.name != "radius" {
             return true;
         }
     }
     // Extra special case strings, since plymesh uses "filename",
     // curve "type", and loopsubdiv "scheme".
     for p in &ps.strings {
-        if p.n_values == 1
-            && p.name != String::from("filename")
-            && p.name != String::from("type")
-            && p.name != String::from("scheme")
-        {
+        if p.n_values == 1 && p.name != "filename" && p.name != "type" && p.name != "scheme" {
             return true;
         }
     }
@@ -3016,7 +3005,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
             instance_vec[0].clone(),
             animated_instance_to_world,
         )));
-        api_state.render_options.primitives.push(prim.clone());
+        api_state.render_options.primitives.push(prim);
     } else {
         println!(
             "ERROR: Unable to find instance named {:?}",

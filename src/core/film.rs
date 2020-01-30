@@ -93,13 +93,13 @@ impl<'a> FilmTile<'a> {
             max_sample_luminance,
         }
     }
-    pub fn add_sample(&mut self, p_film: &Point2f, l: &mut Spectrum, sample_weight: Float) {
+    pub fn add_sample(&mut self, p_film: Point2f, l: &mut Spectrum, sample_weight: Float) {
         // TODO: ProfilePhase _(Prof::AddFilmSample);
         if l.y() > self.max_sample_luminance {
             *l *= Spectrum::new(self.max_sample_luminance / l.y());
         }
         // compute sample's raster bounds
-        let p_film_discrete: Point2f = *p_film - Vector2f { x: 0.5, y: 0.5 };
+        let p_film_discrete: Point2f = p_film - Vector2f { x: 0.5, y: 0.5 };
         let p0f: Point2f = pnt2_ceil(&(p_film_discrete - self.filter_radius));
         let mut p0: Point2i = Point2i {
             x: p0f.x as i32,
@@ -142,7 +142,7 @@ impl<'a> FilmTile<'a> {
                 let filter_weight: Float = self.filter_table[offset];
                 // update pixel values with filtered sample contribution
                 let idx = self.get_pixel_index(x, y);
-                let ref mut pixel = self.pixels[idx];
+                let pixel = &mut self.pixels[idx];
                 pixel.contrib_sum +=
                     *l * Spectrum::new(sample_weight) * Spectrum::new(filter_weight);
                 pixel.filter_weight_sum += filter_weight;
@@ -242,7 +242,7 @@ impl Film {
             crop.p_max.x = clamp_t(cr[0].max(cr[1]), 0.0, 1.0);
             crop.p_min.y = clamp_t(cr[2].min(cr[3]), 0.0, 1.0);
             crop.p_max.y = clamp_t(cr[2].max(cr[3]), 0.0, 1.0);
-        } else if cr.len() != 0 {
+        } else if !cr.is_empty() {
             panic!(
                 "{:?} values supplied for \"cropwindow\". Expected 4.",
                 cr.len()
@@ -263,7 +263,7 @@ impl Film {
         ))
     }
     pub fn get_cropped_pixel_bounds(&self) -> Bounds2i {
-        self.cropped_pixel_bounds.clone()
+        self.cropped_pixel_bounds
     }
     pub fn get_sample_bounds(&self) -> Bounds2i {
         let f: Point2f = pnt2_floor(
@@ -352,7 +352,7 @@ impl Film {
         for pixel in &tile.pixel_bounds {
             // merge _pixel_ into _Film::pixels_
             let idx = tile.get_pixel_index(pixel.x, pixel.y);
-            let ref tile_pixel = tile.pixels[idx];
+            let tile_pixel = &tile.pixels[idx];
             // START let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
             assert!(pnt2_inside_exclusive(&pixel, &self.cropped_pixel_bounds));
             let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
@@ -363,8 +363,8 @@ impl Film {
             // END let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
             let mut xyz: [Float; 3] = [0.0; 3];
             tile_pixel.contrib_sum.to_xyz(&mut xyz);
-            for i in 0..3 {
-                merge_pixel.xyz[i] += xyz[i];
+            for (i, item) in xyz.iter().enumerate() {
+                merge_pixel.xyz[i] += item;
             }
             merge_pixel.filter_weight_sum += tile_pixel.filter_weight_sum;
             // write pixel back
@@ -378,8 +378,8 @@ impl Film {
             let mut merge_pixel = &mut pixels_write[i];
             let mut xyz: [Float; 3] = [0.0; 3];
             img[i].to_xyz(&mut xyz);
-            for i in 0..3 {
-                merge_pixel.xyz[i] = xyz[i];
+            for (i, item) in xyz.iter().enumerate() {
+                merge_pixel.xyz[i] = *item;
             }
             merge_pixel.filter_weight_sum = 1.0 as Float;
             merge_pixel.splat_xyz[0] = 0.0;
@@ -387,7 +387,7 @@ impl Film {
             merge_pixel.splat_xyz[2] = 0.0;
         }
     }
-    pub fn add_splat(&self, p: &Point2f, v: &Spectrum) {
+    pub fn add_splat(&self, p: Point2f, v: &Spectrum) {
         let mut v: Spectrum = *v;
         // TODO: ProfilePhase pp(Prof::SplatFilm);
         if v.has_nans() {
@@ -452,14 +452,14 @@ impl Film {
             let start: usize = 3 * offset;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
             xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
-            rgb[start + 0] = rgb_array[0];
+            rgb[start] = rgb_array[0];
             rgb[start + 1] = rgb_array[1];
             rgb[start + 2] = rgb_array[2];
             // normalize pixel with weight sum
             let filter_weight_sum: Float = pixel.filter_weight_sum;
             if filter_weight_sum != 0.0 as Float {
                 let inv_wt: Float = 1.0 as Float / filter_weight_sum;
-                rgb[start + 0] = (rgb[start + 0] * inv_wt).max(0.0 as Float);
+                rgb[start] = (rgb[start] * inv_wt).max(0.0 as Float);
                 rgb[start + 1] = (rgb[start + 1] * inv_wt).max(0.0 as Float);
                 rgb[start + 2] = (rgb[start + 2] * inv_wt).max(0.0 as Float);
             }
@@ -472,11 +472,11 @@ impl Film {
                 *pixel_splat_xyz.index(2),
             ];
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
-            rgb[start + 0] += splat_scale * splat_rgb[0];
+            rgb[start] += splat_scale * splat_rgb[0];
             rgb[start + 1] += splat_scale * splat_rgb[1];
             rgb[start + 2] += splat_scale * splat_rgb[2];
             // scale pixel value by _scale_
-            rgb[start + 0] *= self.scale;
+            rgb[start] *= self.scale;
             rgb[start + 1] *= self.scale;
             rgb[start + 2] *= self.scale;
         }
@@ -496,7 +496,7 @@ impl Film {
         for y in 0..height {
             for x in 0..width {
                 // red
-                let index: usize = (3 * (y * width + x) + 0) as usize;
+                let index: usize = (3 * (y * width + x)) as usize;
                 buffer[index] = clamp_t(
                     255.0 as Float * gamma_correct(rgb[index]) + 0.5,
                     0.0 as Float,
@@ -545,14 +545,14 @@ impl Film {
             let start = 3 * offset;
             let mut rgb_array: [Float; 3] = [0.0 as Float; 3];
             xyz_to_rgb(&pixel.xyz, &mut rgb_array); // TODO: Use 'rgb' directly.
-            rgb[start + 0] = rgb_array[0];
+            rgb[start] = rgb_array[0];
             rgb[start + 1] = rgb_array[1];
             rgb[start + 2] = rgb_array[2];
             // normalize pixel with weight sum
             let filter_weight_sum: Float = pixel.filter_weight_sum;
             if filter_weight_sum != 0.0 as Float {
                 let inv_wt: Float = 1.0 as Float / filter_weight_sum;
-                rgb[start + 0] = (rgb[start + 0] * inv_wt).max(0.0 as Float);
+                rgb[start] = (rgb[start] * inv_wt).max(0.0 as Float);
                 rgb[start + 1] = (rgb[start + 1] * inv_wt).max(0.0 as Float);
                 rgb[start + 2] = (rgb[start + 2] * inv_wt).max(0.0 as Float);
             }
@@ -565,15 +565,15 @@ impl Film {
                 *pixel_splat_xyz.index(2),
             ];
             xyz_to_rgb(&splat_xyz, &mut splat_rgb);
-            rgb[start + 0] += splat_scale * splat_rgb[0];
+            rgb[start] += splat_scale * splat_rgb[0];
             rgb[start + 1] += splat_scale * splat_rgb[1];
             rgb[start + 2] += splat_scale * splat_rgb[2];
             // scale pixel value by _scale_
-            rgb[start + 0] *= self.scale;
+            rgb[start] *= self.scale;
             rgb[start + 1] *= self.scale;
             rgb[start + 2] *= self.scale;
             // copy data for OpenEXR image
-            exr[offset].0 = rgb[start + 0];
+            exr[offset].0 = rgb[start];
             exr[offset].1 = rgb[start + 1];
             exr[offset].2 = rgb[start + 2];
         }
@@ -615,7 +615,7 @@ impl Film {
         for y in 0..height {
             for x in 0..width {
                 // red
-                let index: usize = (3 * (y * width + x) + 0) as usize;
+                let index: usize = (3 * (y * width + x)) as usize;
                 buffer[index] = clamp_t(
                     255.0 as Float * gamma_correct(rgb[index]) + 0.5,
                     0.0 as Float,

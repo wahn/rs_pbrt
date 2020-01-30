@@ -18,10 +18,10 @@ use crate::core::pbrt::{Float, Spectrum};
 // see camera.h
 
 pub enum Camera {
-    Environment(EnvironmentCamera),
-    Orthographic(OrthographicCamera),
-    Perspective(PerspectiveCamera),
-    Realistic(RealisticCamera),
+    Environment(Box<EnvironmentCamera>),
+    Orthographic(Box<OrthographicCamera>),
+    Perspective(Box<PerspectiveCamera>),
+    Realistic(Box<RealisticCamera>),
 }
 
 impl Camera {

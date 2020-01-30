@@ -221,7 +221,7 @@ impl VolPathIntegrator {
                                         // done
                                         scene,
                                         s1,
-                                        &s2,
+                                        s2,
                                         &mut pdf,
                                     );
                                     if s.is_black() || pdf == 0.0 as Float {

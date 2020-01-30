@@ -552,10 +552,10 @@ impl MLTIntegrator {
                         let accept: Float = (1.0 as Float).min(l_proposed.y() / l_current.y());
                         // splat both current and proposed samples to _film_
                         if accept > 0.0 as Float {
-                            film.add_splat(&p_proposed, &(l_proposed * accept / l_proposed.y()));
+                            film.add_splat(p_proposed, &(l_proposed * accept / l_proposed.y()));
                         }
                         film.add_splat(
-                            &p_current,
+                            p_current,
                             &(l_current * (1.0 as Float - accept) / l_current.y()),
                         );
                         // accept or reject the proposal
