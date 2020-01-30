@@ -55,8 +55,8 @@ impl KdAccelNode {
             1 => self.priv_union.one_primitive = prim_nums[0] as i32,
             _ => {
                 self.priv_union.primitive_indices_offset = primitive_indices.len() as i32;
-                for i in 0..np {
-                    primitive_indices.push(prim_nums[i] as i32);
+                for item in prim_nums.iter().take(np) {
+                    primitive_indices.push(*item as i32);
                 }
             }
         }
@@ -179,8 +179,8 @@ impl KdTreeAccel {
         }
         // compute bounds for kd-tree construction
         let mut prim_bounds: Vec<Bounds3f> = Vec::with_capacity(p_len);
-        for i in 0..p_len {
-            let b: Bounds3f = p[i].world_bound();
+        for item in p.iter().take(p_len) {
+            let b: Bounds3f = item.world_bound();
             bounds = bnd3_union_bnd3(&bounds, &b);
             prim_bounds.push(b);
         }
@@ -255,7 +255,7 @@ impl KdTreeAccel {
         &mut self,
         node_num: i32,
         node_bounds: &Bounds3f,
-        all_prim_bounds: &Vec<Bounds3f>,
+        all_prim_bounds: &[Bounds3f],
         prim_nums: &[usize],
         n_primitives: usize,
         depth: i32,
@@ -316,8 +316,8 @@ impl KdTreeAccel {
             // trim edges to 2 * n_primitives
             edges[axis as usize].resize_with(2 * n_primitives, BoundEdge::default);
             // initialize edges for _axis_
-            for i in 0..n_primitives {
-                let pn: usize = prim_nums[i];
+            for (i, item) in prim_nums.iter().enumerate().take(n_primitives) {
+                let pn: usize = *item;
                 let bounds: &Bounds3f = &all_prim_bounds[pn];
                 edges[axis as usize][2 * i] = BoundEdge::new(bounds.p_min[axis], pn, true);
                 edges[axis as usize][2 * i + 1] = BoundEdge::new(bounds.p_max[axis], pn, false);

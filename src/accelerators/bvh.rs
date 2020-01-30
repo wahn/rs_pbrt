@@ -233,8 +233,8 @@ impl BVHAccel {
         } else {
             // compute bound of primitive centroids, choose split dimension _dim_
             let mut centroid_bounds: Bounds3f = Bounds3f::default();
-            for i in start..end {
-                centroid_bounds = bnd3_union_pnt3(&centroid_bounds, &primitive_info[i].centroid);
+            for item in primitive_info.iter().take(end).skip(start) {
+                centroid_bounds = bnd3_union_pnt3(&centroid_bounds, &item.centroid);
             }
             let dim: u8 = centroid_bounds.maximum_extent();
             // partition primitives into two sets and build children
@@ -242,8 +242,8 @@ impl BVHAccel {
             if centroid_bounds.p_max[dim] == centroid_bounds.p_min[dim] {
                 // create leaf _BVHBuildNode_
                 let first_prim_offset: usize = ordered_prims.len();
-                for i in start..end {
-                    let prim_num: usize = primitive_info[i].primitive_number;
+                for item in primitive_info.iter().take(end).skip(start) {
+                    let prim_num: usize = item.primitive_number;
                     ordered_prims.push(bvh.primitives[prim_num].clone());
                 }
                 node.init_leaf(first_prim_offset, n_primitives, &bounds);
@@ -271,9 +271,9 @@ impl BVHAccel {
                             let n_buckets: usize = 12;
                             let mut buckets: [BucketInfo; 12] = [BucketInfo::default(); 12];
                             // initialize _BucketInfo_ for SAH partition buckets
-                            for i in start..end {
+                            for item in primitive_info.iter().take(end).skip(start) {
                                 let mut b: usize = (n_buckets as Float
-                                    * centroid_bounds.offset(&primitive_info[i].centroid)[dim])
+                                    * centroid_bounds.offset(&item.centroid)[dim])
                                     as usize;
                                 if b == n_buckets {
                                     b = n_buckets - 1;
@@ -282,24 +282,24 @@ impl BVHAccel {
                                 assert!(b < n_buckets, "b < {}", n_buckets);
                                 buckets[b].count += 1;
                                 buckets[b].bounds =
-                                    bnd3_union_bnd3(&buckets[b].bounds, &primitive_info[i].bounds);
+                                    bnd3_union_bnd3(&buckets[b].bounds, &item.bounds);
                             }
                             // compute costs for splitting after each bucket
                             let mut cost: [Float; 11] = [0.0; 11];
-                            for i in 0..(n_buckets - 1) {
+                            for (i, cost_item) in cost.iter_mut().enumerate().take(n_buckets - 1) {
                                 let mut b0: Bounds3f = Bounds3f::default();
                                 let mut b1: Bounds3f = Bounds3f::default();
                                 let mut count0: usize = 0;
                                 let mut count1: usize = 0;
-                                for j in 0..(i + 1) {
-                                    b0 = bnd3_union_bnd3(&b0, &buckets[j].bounds);
-                                    count0 += buckets[j].count;
+                                for item in buckets.iter().take(i + 1) {
+                                    b0 = bnd3_union_bnd3(&b0, &item.bounds);
+                                    count0 += item.count;
                                 }
-                                for j in (i + 1)..n_buckets {
-                                    b1 = bnd3_union_bnd3(&b1, &buckets[j].bounds);
-                                    count1 += buckets[j].count;
+                                for item in buckets.iter().take(n_buckets).skip(i + 1) {
+                                    b1 = bnd3_union_bnd3(&b1, &item.bounds);
+                                    count1 += item.count;
                                 }
-                                cost[i] = 1.0
+                                *cost_item = 1.0
                                     + (count0 as Float * b0.surface_area()
                                         + count1 as Float * b1.surface_area())
                                         / bounds.surface_area();
@@ -307,9 +307,9 @@ impl BVHAccel {
                             // find bucket to split at that minimizes SAH metric
                             let mut min_cost: Float = cost[0];
                             let mut min_cost_split_bucket: usize = 0;
-                            for i in 0..(n_buckets - 1) {
-                                if cost[i] < min_cost {
-                                    min_cost = cost[i];
+                            for (i, item) in cost.iter().enumerate().take(n_buckets - 1) {
+                                if item < &min_cost {
+                                    min_cost = *item;
                                     min_cost_split_bucket = i;
                                 }
                             }
@@ -344,8 +344,8 @@ impl BVHAccel {
                             } else {
                                 // create leaf _BVHBuildNode_
                                 let first_prim_offset: usize = ordered_prims.len();
-                                for i in start..end {
-                                    let prim_num: usize = primitive_info[i].primitive_number;
+                                for item in primitive_info.iter().take(end).skip(start) {
+                                    let prim_num: usize = item.primitive_number;
                                     ordered_prims.push(bvh.primitives[prim_num].clone());
                                 }
                                 node.init_leaf(first_prim_offset, n_primitives, &bounds);
