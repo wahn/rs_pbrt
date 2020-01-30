@@ -178,11 +178,7 @@ impl TransformSet {
         // return false;
 
         // we have only 2 transforms
-        if self.t[0] != self.t[1] {
-            true
-        } else {
-            false
-        }
+        self.t[0] != self.t[1]
     }
 }
 
@@ -374,7 +370,7 @@ impl RenderOptions {
                         .integrator_params
                         .find_one_float("sigma", 0.01 as Float);
                     let integrator = Box::new(Integrator::MLT(MLTIntegrator::new(
-                        camera.clone(),
+                        camera,
                         max_depth as u32,
                         n_bootstrap as u32,
                         n_chains as u32,
@@ -427,7 +423,7 @@ impl RenderOptions {
                         .find_one_float("radius", 1.0 as Float);
                     // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
                     let integrator = Box::new(Integrator::SPPM(SPPMIntegrator::new(
-                        camera.clone(),
+                        camera,
                         n_iterations,
                         photons_per_iter,
                         max_depth as u32,
@@ -696,7 +692,7 @@ fn create_material(api_state: &ApiState, bsdf_state: &mut BsdfState) -> Option<A
 
 fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
     let mut m: MediumInterface = MediumInterface::default();
-    if api_state.graphics_state.current_inside_medium != String::from("") {
+    if api_state.graphics_state.current_inside_medium != "" {
         match api_state
             .render_options
             .named_media
@@ -711,7 +707,7 @@ fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
             }
         }
     }
-    if api_state.graphics_state.current_outside_medium != String::from("") {
+    if api_state.graphics_state.current_outside_medium != "" {
         match api_state
             .render_options
             .named_media
@@ -886,7 +882,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
         let mut texmap: String = api_state
             .param_set
             .find_one_filename("mapname", String::from(""));
-        if texmap != String::from("") {
+        if texmap != "" {
             if let Some(ref search_directory) = api_state.search_directory {
                 // texmap = AbsolutePath(ResolveFilename(texmap));
                 let mut path_buf: PathBuf = PathBuf::from("/");
@@ -923,7 +919,7 @@ fn make_medium(api_state: &mut ApiState) {
     let mut sig_s: Spectrum = Spectrum::from_rgb(&sig_s_rgb);
     let preset: String = api_state.param_set.find_one_string("preset", String::new());
     let found: bool = get_medium_scattering_properties(&preset, &mut sig_a, &mut sig_s);
-    if preset != String::from("") && !found {
+    if preset != "" && !found {
         println!(
             "WARNING: Material preset \"{:?}\" not found.  Using defaults.",
             preset
@@ -1010,15 +1006,12 @@ fn make_texture(api_state: &mut ApiState) {
         material_params,
     };
     if api_state.param_set.tex_type == "float" {
-        match api_state
+        if let Some(_float_texture) = api_state
             .graphics_state
             .float_textures
             .get(api_state.param_set.name.as_str())
         {
-            Some(_float_texture) => {
-                println!("Texture \"{}\" being redefined", api_state.param_set.name);
-            }
-            None => {}
+            println!("Texture \"{}\" being redefined", api_state.param_set.name);
         }
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeFloatTexture(texname, curTransform[0], tp);
@@ -1248,15 +1241,12 @@ fn make_texture(api_state: &mut ApiState) {
         }
     } else if api_state.param_set.tex_type == "color" || api_state.param_set.tex_type == "spectrum"
     {
-        match api_state
+        if let Some(_spectrum_texture) = api_state
             .graphics_state
             .spectrum_textures
             .get(api_state.param_set.name.as_str())
         {
-            Some(_spectrum_texture) => {
-                println!("Texture \"{}\" being redefined", api_state.param_set.name);
-            }
-            None => {}
+            println!("Texture \"{}\" being redefined", api_state.param_set.name);
         }
         // TODO: WARN_IF_ANIMATED_TRANSFORM("Texture");
         // MakeSpectrumTexture(texname, curTransform[0], tp);
@@ -1573,21 +1563,21 @@ fn make_texture(api_state: &mut ApiState) {
 }
 
 pub fn make_accelerator(
-    accelerator_name: &String,
-    primitives: &Vec<Arc<Primitive>>,
+    accelerator_name: &str,
+    primitives: &[Arc<Primitive>],
     accelerator_params: &ParamSet,
 ) -> Option<Arc<Primitive>> {
     let mut some_accelerator: Option<Arc<Primitive>> = None;
     if accelerator_name == "bvh" {
         // CreateBVHAccelerator
         some_accelerator = Some(Arc::new(BVHAccel::create(
-            primitives.clone(),
+            primitives.to_owned(),
             accelerator_params,
         )));
     } else if accelerator_name == "kdtree" {
         // CreateKdTreeAccelerator
         some_accelerator = Some(Arc::new(KdTreeAccel::create(
-            primitives.clone(),
+            primitives.to_owned(),
             accelerator_params,
         )));
     }
@@ -1595,7 +1585,7 @@ pub fn make_accelerator(
 }
 
 pub fn make_camera(
-    camera_name: &String,
+    camera_name: &str,
     camera_params: &ParamSet,
     animated_cam_to_world: AnimatedTransform,
     film: Arc<Film>,
@@ -1654,7 +1644,7 @@ pub fn make_camera(
     some_camera
 }
 
-pub fn make_sampler(name: &String, param_set: &ParamSet, film: Arc<Film>) -> Option<Box<Sampler>> {
+pub fn make_sampler(name: &str, param_set: &ParamSet, film: Arc<Film>) -> Option<Box<Sampler>> {
     let mut some_sampler: Option<Box<Sampler>> = None;
     if name == "lowdiscrepancy" || name == "02sequence" {
         // CreateZeroTwoSequenceSampler
@@ -1686,7 +1676,7 @@ pub fn make_sampler(name: &String, param_set: &ParamSet, film: Arc<Film>) -> Opt
     some_sampler
 }
 
-pub fn make_filter(name: &String, param_set: &ParamSet) -> Option<Box<Filter>> {
+pub fn make_filter(name: &str, param_set: &ParamSet) -> Option<Box<Filter>> {
     let mut some_filter: Option<Box<Filter>> = None;
     if name == "box" {
         some_filter = Some(BoxFilter::create(param_set));
@@ -1704,14 +1694,13 @@ pub fn make_filter(name: &String, param_set: &ParamSet) -> Option<Box<Filter>> {
     some_filter
 }
 
-pub fn make_film(name: &String, param_set: &ParamSet, filter: Box<Filter>) -> Option<Arc<Film>> {
-    let mut some_film: Option<Arc<Film>> = None;
+pub fn make_film(name: &str, param_set: &ParamSet, filter: Box<Filter>) -> Option<Arc<Film>> {
     if name == "image" {
-        some_film = Some(Film::create(param_set, filter));
+        Some(Film::create(param_set, filter))
     } else {
         println!("Film \"{}\" unknown.", name);
+        None
     }
-    some_film
 }
 
 fn get_shapes_and_materials(
@@ -1733,18 +1722,19 @@ fn get_shapes_and_materials(
         m: api_state.cur_transform.t[0].m,
         m_inv: api_state.cur_transform.t[0].m_inv,
     };
-    let mut world_to_obj: Transform = Transform {
-        m: api_state.cur_transform.t[0].m_inv,
-        m_inv: api_state.cur_transform.t[0].m,
-    };
-    if api_state.cur_transform.is_animated() {
-        if api_state.graphics_state.area_light != String::from("") {
+    let world_to_obj = if api_state.cur_transform.is_animated() {
+        if api_state.graphics_state.area_light != "" {
             println!("WARNING: Ignoring currently set area light when creating animated shape",);
         }
         // set both transforms to identity
         obj_to_world = Transform::default();
-        world_to_obj = Transform::default();
-    }
+        Transform::default()
+    } else {
+        Transform {
+            m: api_state.cur_transform.t[0].m_inv,
+            m_inv: api_state.cur_transform.t[0].m,
+        }
+    };
     // MakeShapes (api.cpp:296)
     if api_state.param_set.name == "sphere" {
         // CreateSphereShape
@@ -1762,7 +1752,7 @@ fn get_shapes_and_materials(
             phi_max,
         )));
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
-        shapes.push(sphere.clone());
+        shapes.push(sphere);
         materials.push(mtl);
     } else if api_state.param_set.name == "cylinder" {
         let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
@@ -1779,8 +1769,8 @@ fn get_shapes_and_materials(
             phi_max,
         )));
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
-        shapes.push(cylinder.clone());
-        materials.push(mtl.clone());
+        shapes.push(cylinder);
+        materials.push(mtl);
     } else if api_state.param_set.name == "disk" {
         let height: Float = api_state.param_set.find_one_float("height", 0.0);
         let radius: Float = api_state.param_set.find_one_float("radius", 1.0);
@@ -1796,8 +1786,8 @@ fn get_shapes_and_materials(
             phi_max,
         )));
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
-        shapes.push(disk.clone());
-        materials.push(mtl.clone());
+        shapes.push(disk);
+        materials.push(mtl);
     } else if api_state.param_set.name == "cone" {
         println!("TODO: CreateConeShape");
     } else if api_state.param_set.name == "paraboloid" {
@@ -1846,8 +1836,8 @@ fn get_shapes_and_materials(
             // TODO: if (nuvi < npi) {...} else if (nuvi > npi) ...
             assert!(uvs.len() == p.len());
         }
-        assert!(vi.len() > 0_usize);
-        assert!(p.len() > 0_usize);
+        assert!(!vi.is_empty());
+        assert!(!p.is_empty());
         let s = api_state.param_set.find_vector3f("S");
         let mut s_ws: Vec<Vector3f> = Vec::new();
         if !s.is_empty() {
@@ -2815,7 +2805,7 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
         }
     }
     // add _prims_ and _areaLights_ to scene or current instance
-    if api_state.render_options.current_instance != String::from("") {
+    if api_state.render_options.current_instance != "" {
         if area_lights.len() > 0 {
             println!("WARNING: Area lights not supported with object instancing");
         }
@@ -2927,7 +2917,7 @@ pub fn pbrt_object_begin(api_state: &mut ApiState, params: ParamSet) {
     // println!("ObjectBegin \"{}\"", params.name);
     api_state.param_set = params;
     pbrt_attribute_begin(api_state);
-    if api_state.render_options.current_instance != String::from("") {
+    if api_state.render_options.current_instance != "" {
         println!("ERROR: ObjectBegin called inside of instance definition");
     }
     api_state
@@ -2950,7 +2940,7 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
     // println!("ObjectInstance \"{}\"", params.name);
     api_state.param_set = params;
     // perform object instance error checking
-    if api_state.render_options.current_instance != String::from("") {
+    if api_state.render_options.current_instance != "" {
         println!("ERROR: ObjectInstance can't be called inside instance definition");
         return;
     }

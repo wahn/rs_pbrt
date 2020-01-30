@@ -119,7 +119,9 @@ impl RealisticCamera {
                         }
                     });
                     // send progress through the channel to main thread
-                    band_tx.send(b).expect(&format!("Failed to send progress"));
+                    band_tx
+                        .send(b)
+                        .unwrap_or_else(|_| panic!("Failed to send progress"));
                 }
                 // spawn thread to report progress
                 scope.spawn(move |_| {
@@ -141,7 +143,7 @@ impl RealisticCamera {
         cam2world: AnimatedTransform,
         film: Arc<Film>,
         medium: Option<Arc<Medium>>,
-        search_directory: Option<&Box<PathBuf>>,
+        search_directory: Option<&PathBuf>,
     ) -> Arc<Camera> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
@@ -149,10 +151,10 @@ impl RealisticCamera {
         assert!(shutterclose >= shutteropen);
         // realistic camera-specific parameters
         let mut lens_file: String = params.find_one_filename("lensfile", String::from(""));
-        if lens_file != String::from("") {
+        if lens_file != "" {
             if let Some(ref search_directory) = search_directory {
                 let mut path_buf: PathBuf = PathBuf::from("/");
-                path_buf.push(search_directory.as_ref());
+                path_buf.push(search_directory);
                 path_buf.push(lens_file);
                 lens_file = String::from(path_buf.to_str().unwrap());
             }
@@ -206,11 +208,11 @@ impl RealisticCamera {
         // trace ray from _p_film_ through lens system
         let mut exit_pupil_bounds_area: Float = 0.0 as Float;
         let p_rear: Point3f = self.sample_exit_pupil(
-            &Point2f {
+            Point2f {
                 x: p_film.x,
                 y: p_film.y,
             },
-            &sample.p_lens,
+            sample.p_lens,
             &mut exit_pupil_bounds_area,
         );
         let mut r_film: Ray = Ray::default();
@@ -298,12 +300,11 @@ impl RealisticCamera {
             if !is_stop {
                 let mut w: Vector3f = Vector3f::default();
                 let eta_i: Float = element.eta;
-                let eta_t: Float;
-                if i > 0_usize && self.element_interfaces[i - 1].eta != 0.0 as Float {
-                    eta_t = self.element_interfaces[i - 1].eta;
+                let eta_t = if i > 0_usize && self.element_interfaces[i - 1].eta != 0.0 as Float {
+                    self.element_interfaces[i - 1].eta
                 } else {
-                    eta_t = 1.0 as Float;
-                }
+                    1.0 as Float
+                };
                 if !refract(&(-r_lens.d).normalize(), &n, eta_i / eta_t, &mut w) {
                     return false;
                 }
@@ -387,18 +388,16 @@ impl RealisticCamera {
             // update ray path for from-scene element interface interaction
             if !is_stop {
                 let mut wt: Vector3f = Vector3f::default();
-                let eta_i: Float;
-                if i == 0 || self.element_interfaces[i - 1].eta == 0.0 as Float {
-                    eta_i = 1.0 as Float;
+                let eta_i = if i == 0 || self.element_interfaces[i - 1].eta == 0.0 as Float {
+                    1.0 as Float
                 } else {
-                    eta_i = self.element_interfaces[i - 1].eta;
-                }
-                let eta_t: Float;
-                if self.element_interfaces[i].eta != 0.0 as Float {
-                    eta_t = self.element_interfaces[i].eta;
+                    self.element_interfaces[i - 1].eta
+                };
+                let eta_t = if self.element_interfaces[i].eta != 0.0 as Float {
+                    self.element_interfaces[i].eta
                 } else {
-                    eta_t = 1.0 as Float;
-                }
+                    1.0 as Float
+                };
                 if !refract(&(-r_lens.d).normalize(), &n, eta_i / eta_t, &mut wt) {
                     return false;
                 }
@@ -650,8 +649,8 @@ impl RealisticCamera {
     }
     pub fn sample_exit_pupil(
         &self,
-        p_film: &Point2f,
-        lens_sample: &Point2f,
+        p_film: Point2f,
+        lens_sample: Point2f,
         sample_bounds_area: &mut Float,
     ) -> Point3f {
         // find exit pupil bound for sample distance from film center
@@ -663,16 +662,18 @@ impl RealisticCamera {
         let pupil_bounds: Bounds2f = self.exit_pupil_bounds[r_index];
         *sample_bounds_area = pupil_bounds.area();
         // generate sample point inside exit pupil bound
-        let p_lens: Point2f = pupil_bounds.lerp(lens_sample);
+        let p_lens: Point2f = pupil_bounds.lerp(&lens_sample);
         // return sample point rotated by angle of _p_film_ with $+x$ axis
-        let mut sin_theta: Float = 0.0 as Float;
-        if r_film != 0.0 as Float {
-            sin_theta = p_film.y / r_film;
-        }
-        let mut cos_theta: Float = 1.0 as Float;
-        if r_film != 0.0 as Float {
-            cos_theta = p_film.x / r_film;
-        }
+        let sin_theta = if r_film != 0.0 as Float {
+            p_film.y / r_film
+        } else {
+            0.0 as Float
+        };
+        let cos_theta = if r_film != 0.0 as Float {
+            p_film.x / r_film
+        } else {
+            1.0 as Float
+        };
         Point3f {
             x: cos_theta * p_lens.x - sin_theta * p_lens.y,
             y: sin_theta * p_lens.x + cos_theta * p_lens.y,
