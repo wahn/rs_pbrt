@@ -138,9 +138,9 @@ impl BVHAccel {
             return unwrapped.ok().unwrap();
         }
         let mut primitive_info = vec![BVHPrimitiveInfo::default(); num_prims];
-        for i in 0..num_prims {
+        for (i, item) in primitive_info.iter_mut().enumerate().take(num_prims) {
             let world_bound = bvh.primitives[i].world_bound();
-            primitive_info[i] = BVHPrimitiveInfo::new(i, world_bound);
+            *item = BVHPrimitiveInfo::new(i, world_bound);
         }
         // TODO: if (splitMethod == SplitMethod::HLBVH)
         let arena: Arena<BVHBuildNode> = Arena::with_capacity(1024 * 1024);
@@ -217,15 +217,15 @@ impl BVHAccel {
         *total_nodes += 1_usize;
         // compute bounds of all primitives in BVH node
         let mut bounds: Bounds3f = Bounds3f::default();
-        for i in start..end {
-            bounds = bnd3_union_bnd3(&bounds, &primitive_info[i].bounds);
+        for item in primitive_info.iter().take(end).skip(start) {
+            bounds = bnd3_union_bnd3(&bounds, &item.bounds);
         }
         let n_primitives: usize = end - start;
         if n_primitives == 1 {
             // create leaf _BVHBuildNode_
             let first_prim_offset: usize = ordered_prims.len();
-            for i in start..end {
-                let prim_num: usize = primitive_info[i].primitive_number;
+            for item in primitive_info.iter().take(end).skip(start) {
+                let prim_num: usize = item.primitive_number;
                 ordered_prims.push(bvh.primitives[prim_num].clone());
             }
             node.init_leaf(first_prim_offset, n_primitives, &bounds);

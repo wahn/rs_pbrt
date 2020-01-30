@@ -474,14 +474,8 @@ pub fn estimate_direct(
             // compute effect of visibility for light source sample
             if handle_media {
                 li *= visibility.tr(scene, sampler);
-            // TODO: VLOG(2) << "  after Tr, Li: " << Li;
-            } else {
-                if !visibility.unoccluded(scene) {
-                    // TODO: println!("  shadow ray blocked");
-                    li = Spectrum::new(0.0 as Float);
-                } else {
-                    // TODO: println!("  shadow ray unoccluded");
-                }
+            } else if !visibility.unoccluded(scene) {
+                li = Spectrum::new(0.0 as Float);
             }
             // add light's contribution to reflected radiance
             if !li.is_black() {
