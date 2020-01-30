@@ -50,7 +50,7 @@ impl RealisticCamera {
         aperture_diameter: Float,
         focus_distance: Float,
         simple_weighting: bool,
-        lens_data: &Vec<Float>,
+        lens_data: &[Float],
         film: Arc<Film>,
         medium: Option<Arc<Medium>>,
     ) -> Self {
@@ -109,7 +109,7 @@ impl RealisticCamera {
                 for (b, band) in bands.into_iter().enumerate() {
                     let band_tx = band_tx.clone();
                     scope.spawn(move |_| {
-                        for (index, bound) in band.into_iter().enumerate() {
+                        for (index, bound) in band.iter_mut().enumerate() {
                             let i: usize = (b * chunk_size) + index;
                             let r0: Float =
                                 i as Float / n_samples as Float * film.diagonal / 2.0 as Float;
@@ -739,7 +739,7 @@ impl RealisticCamera {
     pub fn sample_wi(
         &self,
         _iref: &InteractionCommon,
-        _u: &Point2f,
+        _u: Point2f,
         _wi: &mut Vector3f,
         _pdf: &mut Float,
         _p_raster: &mut Point2f,

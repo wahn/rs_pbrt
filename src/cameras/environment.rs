@@ -70,7 +70,7 @@ impl EnvironmentCamera {
             screen.p_max.y = 1.0 / frame;
         }
         let sw: Vec<Float> = params.find_float("screenwindow");
-        if sw.len() > 0_usize {
+        if !sw.is_empty() {
             if sw.len() == 4 {
                 screen.p_min.x = sw[0];
                 screen.p_max.x = sw[1];
@@ -127,7 +127,7 @@ impl EnvironmentCamera {
     pub fn sample_wi(
         &self,
         _iref: &InteractionCommon,
-        _u: &Point2f,
+        _u: Point2f,
         _wi: &mut Vector3f,
         _pdf: &mut Float,
         _p_raster: &mut Point2f,

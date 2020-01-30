@@ -33,7 +33,7 @@ impl BlockQueue {
         let mut blocks: Vec<(u32, u32)> = (0..num_blocks.0 * num_blocks.1)
             .map(|i| (i % num_blocks.0, i / num_blocks.0))
             .collect();
-        blocks.sort_by(|a, b| morton2(a).cmp(&morton2(b)));
+        blocks.sort_by(|a, b| morton2(*a).cmp(&morton2(*b)));
         // If we're only rendering a subset of the blocks then filter our list down
         if select_blocks.1 > 0 {
             blocks = blocks
@@ -110,6 +110,6 @@ fn part1_by1(mut x: u32) -> u32 {
     (x ^ (x << 1)) & 0x5555_5555
 }
 /// Compute the Morton code for the `(x, y)` position.
-fn morton2(p: &(u32, u32)) -> u32 {
+fn morton2(p: (u32, u32)) -> u32 {
     (part1_by1(p.1) << 1) + part1_by1(p.0)
 }

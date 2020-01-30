@@ -157,7 +157,7 @@ impl PerspectiveCamera {
             screen.p_max.y = 1.0 / frame;
         }
         let sw: Vec<Float> = params.find_float("screenwindow");
-        if sw.len() > 0_usize {
+        if !sw.is_empty() {
             if sw.len() == 4 {
                 screen.p_min.x = sw[0];
                 screen.p_max.x = sw[1];
@@ -292,12 +292,11 @@ impl PerspectiveCamera {
             return Spectrum::default();
         }
         // map ray $(\p{}, \w{})$ onto the raster grid
-        let p_focus: Point3f;
-        if self.lens_radius > 0.0 as Float {
-            p_focus = ray.position(self.focal_distance / cos_theta);
+        let p_focus = if self.lens_radius > 0.0 as Float {
+            ray.position(self.focal_distance / cos_theta)
         } else {
-            p_focus = ray.position(1.0 as Float / cos_theta);
-        }
+            ray.position(1.0 as Float / cos_theta)
+        };
         let p_raster: Point3f = Transform::inverse(&self.raster_to_camera)
             .transform_point(&Transform::inverse(&c2w).transform_point(&p_focus));
         // return raster position if requested
@@ -317,12 +316,11 @@ impl PerspectiveCamera {
             return Spectrum::default();
         }
         // compute lens area of perspective camera
-        let lens_area: Float;
-        if self.lens_radius != 0.0 as Float {
-            lens_area = PI * self.lens_radius * self.lens_radius;
+        let lens_area = if self.lens_radius != 0.0 as Float {
+            PI * self.lens_radius * self.lens_radius
         } else {
-            lens_area = 1.0 as Float;
-        }
+            1.0 as Float
+        };
         // return importance for point on image plane
         let cos_2_theta: Float = cos_theta * cos_theta;
         Spectrum::new(1.0 as Float / (self.a * lens_area * cos_2_theta * cos_2_theta))
@@ -347,12 +345,11 @@ impl PerspectiveCamera {
         }
         // map ray $(\p{}, \w{})$ onto the raster grid
         // Point3f p_focus = ray((self.lens_radius > 0 ? self.focal_distance : 1) / cos_theta);
-        let t: Float;
-        if self.lens_radius > 0.0 as Float {
-            t = self.focal_distance / cos_theta;
+        let t = if self.lens_radius > 0.0 as Float {
+            self.focal_distance / cos_theta
         } else {
-            t = 1.0 as Float / cos_theta;
-        }
+            1.0 as Float / cos_theta
+        };
         let p_focus: Point3f = ray.position(t);
         let p_raster: Point3f = Transform::inverse(&self.raster_to_camera)
             .transform_point(&Transform::inverse(&c2w).transform_point(&p_focus));
@@ -368,12 +365,11 @@ impl PerspectiveCamera {
         }
         // compute lens area of perspective camera
         // Float lens_area = self.lens_radius != 0 ? (Pi * self.lens_radius * self.lens_radius) : 1;
-        let lens_area: Float;
-        if self.lens_radius != 0.0 as Float {
-            lens_area = PI * self.lens_radius * self.lens_radius;
+        let lens_area = if self.lens_radius != 0.0 as Float {
+            PI * self.lens_radius * self.lens_radius
         } else {
-            lens_area = 1.0 as Float;
-        }
+            1.0 as Float
+        };
         pdf_pos = 1.0 as Float / lens_area;
         pdf_dir = 1.0 as Float / (self.a * cos_theta * cos_theta * cos_theta);
         (pdf_pos, pdf_dir)
@@ -381,14 +377,14 @@ impl PerspectiveCamera {
     pub fn sample_wi(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         p_raster: &mut Point2f,
         vis: &mut VisibilityTester,
     ) -> Spectrum {
         // uniformly sample a lens interaction _lensIntr_
-        let p_lens: Point2f = concentric_sample_disk(u) * self.lens_radius;
+        let p_lens: Point2f = concentric_sample_disk(&u) * self.lens_radius;
         let p_lens_world: Point3f = self.camera_to_world.transform_point(
             iref.time,
             &Point3f {
@@ -427,10 +423,11 @@ impl PerspectiveCamera {
         // compute PDF for importance arriving at _iref_
 
         // compute lens area of perspective camera
-        let mut lens_area: Float = 1.0 as Float;
-        if self.lens_radius != 0.0 as Float {
-            lens_area = PI * self.lens_radius * self.lens_radius;
-        }
+        let lens_area = if self.lens_radius != 0.0 as Float {
+            PI * self.lens_radius * self.lens_radius
+        } else {
+            1.0 as Float
+        };
         *pdf = (dist * dist) / (nrm_abs_dot_vec3(&lens_intr.n, wi) * lens_area);
         self.we(&lens_intr.spawn_ray(&-*wi), Some(p_raster))
     }

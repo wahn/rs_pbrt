@@ -8,6 +8,8 @@ Camera "perspective"
 Film "image"
   "integer xresolution" [ 500 ]
   "integer yresolution" [ 500 ]
+Accelerator "kdtree"
+##Accelerator "bvh"
 ##  "float cropwindow" [ 0.3 0.7 0.5 0.7 ]
 ##  "integer outlierrejection_k" [ 10 ]
 ##Sampler "random" "integer pixelsamples" [8]

@@ -52,7 +52,7 @@ impl Camera {
     pub fn sample_wi(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         p_raster: &mut Point2f,

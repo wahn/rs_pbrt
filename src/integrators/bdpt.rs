@@ -2306,7 +2306,7 @@ pub fn connect_bdpt<'a>(
             let mut vis: VisibilityTester = VisibilityTester::default();
             let wi_color: Spectrum = camera.sample_wi(
                 &iref,
-                &sampler.get_2d(),
+                sampler.get_2d(),
                 &mut wi,
                 &mut pdf,
                 p_raster,

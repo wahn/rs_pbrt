@@ -495,99 +495,94 @@ impl KdTreeAccel {
         let mut si: SurfaceInteraction = SurfaceInteraction::default();
         let mut node_idx: usize = 0;
         let mut node_opt: Option<&KdAccelNode> = self.nodes.get(node_idx);
-        loop {
-            if let Some(node) = node_opt {
-                // bail out if we found a hit closer than the current node
-                if ray.t_max < t_min {
-                    break;
-                }
-                if !node.is_leaf() {
-                    // process kd-tree interior node
+        while let Some(node) = node_opt {
+            // bail out if we found a hit closer than the current node
+            if ray.t_max < t_min {
+                break;
+            }
+            if !node.is_leaf() {
+                // process kd-tree interior node
 
-                    // compute parametric distance along ray to split plane
-                    let axis: u8 = node.split_axis() as u8;
-                    let t_plane: Float = (node.split_pos() - ray.o[axis]) * inv_dir[axis];
-                    // get node children pointers for ray
-                    let below_first: bool = (ray.o[axis] < node.split_pos())
-                        || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
-                    let first_child: Option<&KdAccelNode>;
-                    let second_child: Option<&KdAccelNode>;
-                    let first_idx: usize;
-                    let second_idx: usize;
-                    if below_first {
-                        first_idx = node_idx + 1;
-                        first_child = self.nodes.get(first_idx);
-                        second_idx = node.above_child() as usize;
-                        second_child = self.nodes.get(second_idx);
-                    } else {
-                        first_idx = node.above_child() as usize;
-                        first_child = self.nodes.get(first_idx);
-                        second_idx = node_idx + 1;
-                        second_child = self.nodes.get(second_idx);
+                // compute parametric distance along ray to split plane
+                let axis: u8 = node.split_axis() as u8;
+                let t_plane: Float = (node.split_pos() - ray.o[axis]) * inv_dir[axis];
+                // get node children pointers for ray
+                let below_first: bool = (ray.o[axis] < node.split_pos())
+                    || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
+                let first_child: Option<&KdAccelNode>;
+                let second_child: Option<&KdAccelNode>;
+                let first_idx: usize;
+                let second_idx: usize;
+                if below_first {
+                    first_idx = node_idx + 1;
+                    first_child = self.nodes.get(first_idx);
+                    second_idx = node.above_child() as usize;
+                    second_child = self.nodes.get(second_idx);
+                } else {
+                    first_idx = node.above_child() as usize;
+                    first_child = self.nodes.get(first_idx);
+                    second_idx = node_idx + 1;
+                    second_child = self.nodes.get(second_idx);
+                }
+                // advance to next child node, possibly enqueue other child
+                if t_plane > t_max || t_plane <= 0.0 as Float {
+                    node_opt = first_child;
+                    node_idx = first_idx;
+                } else if t_plane < t_min {
+                    node_opt = second_child;
+                    node_idx = second_idx;
+                } else {
+                    // enqueue _second_child_ in todo list
+                    todo[todo_pos].node = second_child;
+                    todo[todo_pos].idx = second_idx;
+                    todo[todo_pos].t_min = t_plane;
+                    todo[todo_pos].t_max = t_max;
+                    todo_pos += 1;
+                    node_opt = first_child;
+                    node_idx = first_idx;
+                    t_max = t_plane;
+                }
+            } else {
+                // check for intersections inside leaf node
+                let n_primitives: i32 = node.n_primitives();
+                if n_primitives == 1 {
+                    let one_primitive: i32;
+                    unsafe {
+                        one_primitive = node.priv_union.one_primitive;
                     }
-                    // advance to next child node, possibly enqueue other child
-                    if t_plane > t_max || t_plane <= 0.0 as Float {
-                        node_opt = first_child;
-                        node_idx = first_idx;
-                    } else if t_plane < t_min {
-                        node_opt = second_child;
-                        node_idx = second_idx;
-                    } else {
-                        // enqueue _second_child_ in todo list
-                        todo[todo_pos].node = second_child;
-                        todo[todo_pos].idx = second_idx;
-                        todo[todo_pos].t_min = t_plane;
-                        todo[todo_pos].t_max = t_max;
-                        todo_pos += 1;
-                        node_opt = first_child;
-                        node_idx = first_idx;
-                        t_max = t_plane;
+                    let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
+                    // check one primitive inside leaf node
+                    if let Some(isect) = p.intersect(ray) {
+                        si = isect;
+                        hit = true;
                     }
                 } else {
-                    // check for intersections inside leaf node
-                    let n_primitives: i32 = node.n_primitives();
-                    if n_primitives == 1 {
-                        let one_primitive: i32;
+                    for i in 0..n_primitives {
+                        let primitive_indices_offset: i32;
                         unsafe {
-                            one_primitive = node.priv_union.one_primitive;
+                            primitive_indices_offset = node.priv_union.primitive_indices_offset;
                         }
-                        let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
+                        let index: usize = self.primitive_indices
+                            [(primitive_indices_offset + i) as usize]
+                            as usize;
+                        let p: &Arc<Primitive> = &self.primitives[index];
                         // check one primitive inside leaf node
                         if let Some(isect) = p.intersect(ray) {
                             si = isect;
                             hit = true;
                         }
-                    } else {
-                        for i in 0..n_primitives {
-                            let primitive_indices_offset: i32;
-                            unsafe {
-                                primitive_indices_offset = node.priv_union.primitive_indices_offset;
-                            }
-                            let index: usize = self.primitive_indices
-                                [(primitive_indices_offset + i) as usize]
-                                as usize;
-                            let p: &Arc<Primitive> = &self.primitives[index];
-                            // check one primitive inside leaf node
-                            if let Some(isect) = p.intersect(ray) {
-                                si = isect;
-                                hit = true;
-                            }
-                        }
-                    }
-                    // grab next node to process from todo list
-                    if todo_pos > 0 {
-                        todo_pos -= 1;
-                        node_opt = todo[todo_pos].node;
-                        node_idx = todo[todo_pos].idx;
-                        t_min = todo[todo_pos].t_min;
-                        t_max = todo[todo_pos].t_max;
-                    } else {
-                        break;
                     }
                 }
-            } else {
-                // node == nullptr (in C++)
-                break;
+                // grab next node to process from todo list
+                if todo_pos > 0 {
+                    todo_pos -= 1;
+                    node_opt = todo[todo_pos].node;
+                    node_idx = todo[todo_pos].idx;
+                    t_min = todo[todo_pos].t_min;
+                    t_max = todo[todo_pos].t_max;
+                } else {
+                    break;
+                }
             }
         }
         if hit {
@@ -617,91 +612,86 @@ impl KdTreeAccel {
         let mut todo_pos: usize = 0;
         let mut node_idx: usize = 0;
         let mut node_opt: Option<&KdAccelNode> = self.nodes.get(node_idx);
-        loop {
-            if let Some(node) = node_opt {
-                if node.is_leaf() {
-                    // check for shadow ray intersections inside leaf node
-                    let n_primitives: i32 = node.n_primitives();
-                    if n_primitives == 1 {
-                        let one_primitive: i32;
-                        unsafe {
-                            one_primitive = node.priv_union.one_primitive;
-                        }
-                        let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
-                        if p.intersect_p(ray) {
-                            return true;
-                        }
-                    } else {
-                        for i in 0..n_primitives {
-                            let primitive_indices_offset: i32;
-                            unsafe {
-                                primitive_indices_offset = node.priv_union.primitive_indices_offset;
-                            }
-                            let primitive_index: usize = self.primitive_indices
-                                [(primitive_indices_offset + i) as usize]
-                                as usize;
-                            let prim: &Arc<Primitive> = &self.primitives[primitive_index];
-                            if prim.intersect_p(ray) {
-                                return true;
-                            }
-                        }
+        while let Some(node) = node_opt {
+            if node.is_leaf() {
+                // check for shadow ray intersections inside leaf node
+                let n_primitives: i32 = node.n_primitives();
+                if n_primitives == 1 {
+                    let one_primitive: i32;
+                    unsafe {
+                        one_primitive = node.priv_union.one_primitive;
                     }
-                    // grab next node to process from todo list
-                    if todo_pos > 0 {
-                        todo_pos -= 1;
-                        node_opt = todo[todo_pos].node;
-                        node_idx = todo[todo_pos].idx;
-                        t_min = todo[todo_pos].t_min;
-                        t_max = todo[todo_pos].t_max;
-                    } else {
-                        break;
+                    let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
+                    if p.intersect_p(ray) {
+                        return true;
                     }
                 } else {
-                    // process kd-tree interior node
-
-                    // compute parametric distance along ray to split plane
-                    let axis: u8 = node.split_axis() as u8;
-                    let t_plane: Float = (node.split_pos() - ray.o[axis]) * inv_dir[axis];
-                    // get node children pointers for ray
-                    let below_first: bool = (ray.o[axis] < node.split_pos())
-                        || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
-                    let first_child: Option<&KdAccelNode>;
-                    let second_child: Option<&KdAccelNode>;
-                    let first_idx: usize;
-                    let second_idx: usize;
-                    if below_first {
-                        first_idx = node_idx + 1;
-                        first_child = self.nodes.get(first_idx);
-                        second_idx = node.above_child() as usize;
-                        second_child = self.nodes.get(second_idx);
-                    } else {
-                        first_idx = node.above_child() as usize;
-                        first_child = self.nodes.get(first_idx);
-                        second_idx = node_idx + 1;
-                        second_child = self.nodes.get(second_idx);
-                    }
-                    // advance to next child node, possibly enqueue other child
-                    if t_plane > t_max || t_plane <= 0.0 as Float {
-                        node_opt = first_child;
-                        node_idx = first_idx;
-                    } else if t_plane < t_min {
-                        node_opt = second_child;
-                        node_idx = second_idx;
-                    } else {
-                        // enqueue _second_child_ in todo list
-                        todo[todo_pos].node = second_child;
-                        todo[todo_pos].idx = second_idx;
-                        todo[todo_pos].t_min = t_plane;
-                        todo[todo_pos].t_max = t_max;
-                        todo_pos += 1;
-                        node_opt = first_child;
-                        node_idx = first_idx;
-                        t_max = t_plane;
+                    for i in 0..n_primitives {
+                        let primitive_indices_offset: i32;
+                        unsafe {
+                            primitive_indices_offset = node.priv_union.primitive_indices_offset;
+                        }
+                        let primitive_index: usize = self.primitive_indices
+                            [(primitive_indices_offset + i) as usize]
+                            as usize;
+                        let prim: &Arc<Primitive> = &self.primitives[primitive_index];
+                        if prim.intersect_p(ray) {
+                            return true;
+                        }
                     }
                 }
+                // grab next node to process from todo list
+                if todo_pos > 0 {
+                    todo_pos -= 1;
+                    node_opt = todo[todo_pos].node;
+                    node_idx = todo[todo_pos].idx;
+                    t_min = todo[todo_pos].t_min;
+                    t_max = todo[todo_pos].t_max;
+                } else {
+                    break;
+                }
             } else {
-                // node == nullptr (in C++)
-                break;
+                // process kd-tree interior node
+
+                // compute parametric distance along ray to split plane
+                let axis: u8 = node.split_axis() as u8;
+                let t_plane: Float = (node.split_pos() - ray.o[axis]) * inv_dir[axis];
+                // get node children pointers for ray
+                let below_first: bool = (ray.o[axis] < node.split_pos())
+                    || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
+                let first_child: Option<&KdAccelNode>;
+                let second_child: Option<&KdAccelNode>;
+                let first_idx: usize;
+                let second_idx: usize;
+                if below_first {
+                    first_idx = node_idx + 1;
+                    first_child = self.nodes.get(first_idx);
+                    second_idx = node.above_child() as usize;
+                    second_child = self.nodes.get(second_idx);
+                } else {
+                    first_idx = node.above_child() as usize;
+                    first_child = self.nodes.get(first_idx);
+                    second_idx = node_idx + 1;
+                    second_child = self.nodes.get(second_idx);
+                }
+                // advance to next child node, possibly enqueue other child
+                if t_plane > t_max || t_plane <= 0.0 as Float {
+                    node_opt = first_child;
+                    node_idx = first_idx;
+                } else if t_plane < t_min {
+                    node_opt = second_child;
+                    node_idx = second_idx;
+                } else {
+                    // enqueue _second_child_ in todo list
+                    todo[todo_pos].node = second_child;
+                    todo[todo_pos].idx = second_idx;
+                    todo[todo_pos].t_min = t_plane;
+                    todo[todo_pos].t_max = t_max;
+                    todo_pos += 1;
+                    node_opt = first_child;
+                    node_idx = first_idx;
+                    t_max = t_plane;
+                }
             }
         }
         false
