@@ -4,20 +4,19 @@
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
+use std::result::Result;
 // pbrt
 use crate::core::pbrt::Float;
 
-pub fn read_float_file(filename: &String, values: &mut Vec<Float>) -> bool {
+pub fn read_float_file(filename: &str, values: &mut Vec<Float>) -> bool {
     let path = Path::new(&filename);
     let result = File::open(path);
-    if result.is_ok() {
-        let f = result.unwrap();
+    if let Result::Ok(f) = result {
         let reader = BufReader::new(f);
         for (line_number, line_result) in reader.lines().enumerate() {
-            if line_result.is_ok() {
-                let line = line_result.unwrap();
+            if let Result::Ok(line) = line_result {
                 if !line.is_empty() {
-                    if line.chars().next() == Some('#') {
+                    if line.starts_with('#') {
                         // ignore comments
                     } else {
                         for token in line.split_whitespace() {
