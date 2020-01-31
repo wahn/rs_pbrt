@@ -57,7 +57,7 @@ impl RandomSampler {
         Box::new(Sampler::Random(RandomSampler::new(nsamp as i64)))
     }
     // Sampler
-    pub fn start_pixel(&mut self, p: &Point2i) {
+    pub fn start_pixel(&mut self, p: Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         for i in 0..self.sample_array_1d.len() {
             for j in 0..self.sample_array_1d[i].len() {
@@ -74,7 +74,7 @@ impl RandomSampler {
             }
         }
         // Sampler::StartPixel(p);
-        self.current_pixel = *p;
+        self.current_pixel = p;
         self.current_pixel_sample_index = 0_i64;
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;

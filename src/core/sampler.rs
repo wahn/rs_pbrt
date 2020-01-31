@@ -38,7 +38,7 @@ impl Sampler {
             Sampler::ZeroTwoSequence(sampler) => sampler.clone_with_seed(seed),
         }
     }
-    pub fn start_pixel(&mut self, p: &Point2i) {
+    pub fn start_pixel(&mut self, p: Point2i) {
         match self {
             Sampler::Halton(sampler) => sampler.start_pixel(p),
             Sampler::MaxMinDist(sampler) => sampler.start_pixel(p),
@@ -71,7 +71,7 @@ impl Sampler {
             Sampler::ZeroTwoSequence(sampler) => sampler.get_2d(),
         }
     }
-    pub fn get_camera_sample(&mut self, p_raster: &Point2i) -> CameraSample {
+    pub fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
         let mut cs: CameraSample = CameraSample::default();
         cs.p_film = Point2f {
             x: p_raster.x as Float,

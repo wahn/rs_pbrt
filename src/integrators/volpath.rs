@@ -123,7 +123,7 @@ impl VolPathIntegrator {
                                     Some(Arc::borrow(&distrib)),
                                 );
                             let mut wi: Vector3f = Vector3f::default();
-                            phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
+                            phase.sample_p(&(-ray.d), &mut wi, sampler.get_2d());
                             ray = mi.spawn_ray(&wi);
                             specular_bounce = false;
                         }
@@ -172,7 +172,7 @@ impl VolPathIntegrator {
                             let f: Spectrum = bsdf.sample_f(
                                 &wo,
                                 &mut wi,
-                                &sampler.get_2d(),
+                                sampler.get_2d(),
                                 &mut pdf,
                                 bsdf_flags,
                                 &mut sampled_type,
@@ -250,7 +250,7 @@ impl VolPathIntegrator {
                                             let f: Spectrum = bsdf.sample_f(
                                                 &pi.wo,
                                                 &mut wi,
-                                                &sampler.get_2d(),
+                                                sampler.get_2d(),
                                                 &mut pdf,
                                                 bsdf_flags,
                                                 &mut sampled_type,
@@ -323,7 +323,7 @@ impl VolPathIntegrator {
                                     Some(Arc::borrow(&distrib)),
                                 );
                             let mut wi: Vector3f = Vector3f::default();
-                            phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
+                            phase.sample_p(&(-ray.d), &mut wi, sampler.get_2d());
                             ray = mi.spawn_ray(&wi);
                             specular_bounce = false;
                         }

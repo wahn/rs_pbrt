@@ -100,7 +100,7 @@ impl Shape {
             Shape::Trngl(shape) => shape.area(),
         }
     }
-    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         match self {
             Shape::Crv(shape) => shape.sample(u, pdf),
             Shape::Clndr(shape) => shape.sample(u, pdf),
@@ -115,7 +115,7 @@ impl Shape {
     pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         pdf: &mut Float,
     ) -> InteractionCommon {
         match self {

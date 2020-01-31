@@ -228,7 +228,7 @@ impl PerspectiveCamera {
         // modify ray for depth of field
         if self.lens_radius > 0.0 as Float {
             // sample point on lens
-            let p_lens: Point2f = concentric_sample_disk(&sample.p_lens) * self.lens_radius;
+            let p_lens: Point2f = concentric_sample_disk(sample.p_lens) * self.lens_radius;
             // compute point on plane of focus
             let ft: Float = self.focal_distance / in_ray.d.z;
             let p_focus: Point3f = in_ray.position(ft);
@@ -245,7 +245,7 @@ impl PerspectiveCamera {
             // compute _PerspectiveCamera_ ray differentials accounting for lens
 
             // sample point on lens
-            let p_lens: Point2f = concentric_sample_disk(&sample.p_lens) * self.lens_radius;
+            let p_lens: Point2f = concentric_sample_disk(sample.p_lens) * self.lens_radius;
             let dx: Vector3f = Vector3f::from(p_camera + self.dx_camera).normalize();
             let ft: Float = self.focal_distance / dx.z;
             let p_focus: Point3f = Point3f::default() + (dx * ft);
@@ -384,7 +384,7 @@ impl PerspectiveCamera {
         vis: &mut VisibilityTester,
     ) -> Spectrum {
         // uniformly sample a lens interaction _lensIntr_
-        let p_lens: Point2f = concentric_sample_disk(&u) * self.lens_radius;
+        let p_lens: Point2f = concentric_sample_disk(u) * self.lens_radius;
         let p_lens_world: Point3f = self.camera_to_world.transform_point(
             iref.time,
             &Point3f {

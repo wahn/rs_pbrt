@@ -257,7 +257,7 @@ impl ProjectionLight {
                         let max_aniso: Float = 8.0 as Float;
                         let wrap_mode: ImageWrap = ImageWrap::Repeat;
                         let projection_map = Arc::new(MipMap::new(
-                            &resolution,
+                            resolution,
                             &texels[..],
                             do_trilinear,
                             max_aniso,
@@ -350,12 +350,12 @@ impl ProjectionLight {
             y: wl.y,
             z: wl.z,
         });
-        if !pnt2_inside_bnd2(&Point2f { x: p.x, y: p.y }, &self.screen_bounds) {
+        if !pnt2_inside_bnd2(Point2f { x: p.x, y: p.y }, &self.screen_bounds) {
             return Spectrum::default();
         }
         if let Some(projection_map) = &self.projection_map {
             let st: Point2f = Point2f::from(self.screen_bounds.offset(Point2f { x: p.x, y: p.y }));
-            projection_map.lookup_pnt_flt(&st, 0.0 as Float)
+            projection_map.lookup_pnt_flt(st, 0.0 as Float)
         } else {
             Spectrum::new(1.0 as Float)
         }
@@ -364,7 +364,7 @@ impl ProjectionLight {
     pub fn sample_li(
         &self,
         iref: &InteractionCommon,
-        _u: &Point2f,
+        _u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         vis: &mut VisibilityTester,
@@ -394,7 +394,7 @@ impl ProjectionLight {
     pub fn power(&self) -> Spectrum {
         if let Some(projection_map) = &self.projection_map {
             projection_map.lookup_pnt_flt(
-                &Point2f {
+                Point2f {
                     x: 0.5 as Float,
                     y: 0.5 as Float,
                 },
@@ -422,8 +422,8 @@ impl ProjectionLight {
     }
     pub fn sample_le(
         &self,
-        u1: &Point2f,
-        _u2: &Point2f,
+        u1: Point2f,
+        _u2: Point2f,
         time: Float,
         ray: &mut Ray,
         n_light: &mut Normal3f,

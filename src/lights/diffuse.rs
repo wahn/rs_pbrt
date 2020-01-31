@@ -65,13 +65,13 @@ impl DiffuseAreaLight {
     pub fn sample_li(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         vis: &mut VisibilityTester,
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
-        let p_shape: InteractionCommon = self.shape.sample_with_ref_point(&iref, &*u, pdf);
+        let p_shape: InteractionCommon = self.shape.sample_with_ref_point(&iref, u, pdf);
         // TODO: iref.mediumInterface = mediumInterface;
         if *pdf == 0.0 as Float || (p_shape.p - iref.p).length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
@@ -119,8 +119,8 @@ impl DiffuseAreaLight {
     }
     pub fn sample_le(
         &self,
-        u1: &Point2f,
-        u2: &Point2f,
+        u1: Point2f,
+        u2: Point2f,
         _time: Float,
         ray: &mut Ray,
         n_light: &mut Normal3f,
@@ -142,10 +142,10 @@ impl DiffuseAreaLight {
             // the chosen side.
             if u[0] < 0.5 as Float {
                 u[0] = (u[0] * 2.0 as Float).min(FLOAT_ONE_MINUS_EPSILON);
-                w = cosine_sample_hemisphere(&u);
+                w = cosine_sample_hemisphere(u);
             } else {
                 u[0] = ((u[0] - 0.5 as Float) * 2.0 as Float).min(FLOAT_ONE_MINUS_EPSILON);
-                w = cosine_sample_hemisphere(&u);
+                w = cosine_sample_hemisphere(u);
                 w.z *= -1.0 as Float;
             }
             *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(w.z.abs());

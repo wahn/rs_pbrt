@@ -144,7 +144,7 @@ impl PathIntegrator {
                         let f: Spectrum = bsdf.sample_f(
                             &wo,
                             &mut wi,
-                            &sampler.get_2d(),
+                            sampler.get_2d(),
                             &mut pdf,
                             bsdf_flags,
                             &mut sampled_type,
@@ -227,7 +227,7 @@ impl PathIntegrator {
                                         let f: Spectrum = bsdf.sample_f(
                                             &pi.wo,
                                             &mut wi,
-                                            &sampler.get_2d(),
+                                            sampler.get_2d(),
                                             &mut pdf,
                                             bsdf_flags,
                                             &mut sampled_type,

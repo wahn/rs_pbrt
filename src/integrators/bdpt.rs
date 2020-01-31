@@ -886,8 +886,8 @@ impl BDPTIntegrator {
                                 // println!("Starting image tile {:?}", tile_bounds);
                                 let mut film_tile = film.get_film_tile(&tile_bounds);
                                 for p_pixel in &tile_bounds {
-                                    tile_sampler.start_pixel(&p_pixel);
-                                    if !pnt2_inside_exclusive(&p_pixel, &integrator.pixel_bounds) {
+                                    tile_sampler.start_pixel(p_pixel);
+                                    if !pnt2_inside_exclusive(p_pixel, &integrator.pixel_bounds) {
                                         continue;
                                     }
                                     let mut done: bool = false;
@@ -931,7 +931,7 @@ impl BDPTIntegrator {
                                                         &mut tile_sampler,
                                                         integrator.max_depth + 2,
                                                         camera,
-                                                        &p_film,
+                                                        p_film,
                                                         &mut camera_vertices,
                                                     );
                                                 n_camera = n_camera_new;
@@ -1079,7 +1079,7 @@ pub fn generate_camera_subpath<'a>(
     sampler: &mut Box<Sampler>,
     max_depth: u32,
     camera: &'a Arc<Camera>,
-    p_film: &Point2f,
+    p_film: Point2f,
     path: &mut Vec<Vertex<'a>>,
 ) -> (usize, Point3f, Float) {
     if max_depth == 0 {
@@ -1088,7 +1088,7 @@ pub fn generate_camera_subpath<'a>(
     // TODO: ProfilePhase _(Prof::BDPTGenerateSubpath);
     // sample initial ray for camera subpath
     let mut camera_sample: CameraSample = CameraSample::default();
-    camera_sample.p_film = *p_film;
+    camera_sample.p_film = p_film;
     camera_sample.time = sampler.get_1d();
     camera_sample.p_lens = sampler.get_2d();
     let mut ray: Ray = Ray::default();
@@ -1144,8 +1144,8 @@ pub fn generate_light_subpath<'a>(
     let u2: Point2f = sampler.get_2d();
     let u1: Point2f = sampler.get_2d();
     let le: Spectrum = light.sample_le(
-        &u1,
-        &u2,
+        u1,
+        u2,
         time,
         &mut ray,
         &mut n_light,
@@ -1258,7 +1258,7 @@ pub fn random_walk<'a>(
                 }
                 // sample direction and compute reverse density at preceding vertex
                 let mut wi: Vector3f = Vector3f::default();
-                pdf_fwd = phase.sample_p(&(-ray.d), &mut wi, &sampler.get_2d());
+                pdf_fwd = phase.sample_p(&(-ray.d), &mut wi, sampler.get_2d());
                 pdf_rev = pdf_fwd;
                 if let Some(ref mi) = vertex.mi {
                     let new_ray = mi.spawn_ray(&wi);
@@ -1375,7 +1375,7 @@ pub fn random_walk<'a>(
                     let f: Spectrum = bsdf.sample_f(
                         &isect_wo,
                         &mut wi,
-                        &sampler.get_2d(),
+                        sampler.get_2d(),
                         &mut pdf_fwd,
                         bsdf_flags,
                         &mut sampled_type,
@@ -2380,7 +2380,7 @@ pub fn connect_bdpt<'a>(
             }
             let light_weight: Spectrum = scene.lights[light_num].sample_li(
                 &iref,
-                &sampler.get_2d(),
+                sampler.get_2d(),
                 &mut wi,
                 &mut pdf,
                 &mut vis,

@@ -85,7 +85,7 @@ where
             .collect();
         // create _MipMap_ from converted texels (see above)
         let mipmap = Arc::new(MipMap::new(
-            &res,
+            res,
             &converted_texels[..],
             do_trilinear,
             max_aniso,
@@ -124,7 +124,7 @@ impl Texture<Float> for ImageTexture<Float> {
         let mut dstdx: Vector2f = Vector2f::default();
         let mut dstdy: Vector2f = Vector2f::default();
         let st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
-        let mem: Float = self.mipmap.lookup_pnt_vec_vec(&st, &mut dstdx, &mut dstdy);
+        let mem: Float = self.mipmap.lookup_pnt_vec_vec(st, &mut dstdx, &mut dstdy);
         let mut ret: Float = 0.0 as Float;
         ImageTexture::<Float>::convert_out(&mem, &mut ret);
         ret
@@ -142,7 +142,7 @@ impl Texture<Spectrum> for ImageTexture<Spectrum> {
         let mut dstdx: Vector2f = Vector2f::default();
         let mut dstdy: Vector2f = Vector2f::default();
         let st: Point2f = self.mapping.map(si, &mut dstdx, &mut dstdy);
-        let mem: Spectrum = self.mipmap.lookup_pnt_vec_vec(&st, &mut dstdx, &mut dstdy);
+        let mem: Spectrum = self.mipmap.lookup_pnt_vec_vec(st, &mut dstdx, &mut dstdy);
         let mut ret: Spectrum = Spectrum::new(0.0);
         ImageTexture::<Spectrum>::convert_out(&mem, &mut ret);
         ret

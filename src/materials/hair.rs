@@ -421,7 +421,7 @@ impl HairBSDF {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        sample: &Point2f,
+        sample: Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {

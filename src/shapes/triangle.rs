@@ -666,7 +666,7 @@ impl Triangle {
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
         0.5 as Float * vec3_cross_vec3(&(p1 - p0), &(p2 - p0)).length()
     }
-    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let b: Point2f = uniform_sample_triangle(u);
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: Point3f =
@@ -708,7 +708,7 @@ impl Triangle {
     pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         pdf: &mut Float,
     ) -> InteractionCommon {
         let intr: InteractionCommon = self.sample(u, pdf);

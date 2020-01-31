@@ -603,7 +603,7 @@ impl RealisticCamera {
             };
             // expand pupil bounds if ray makes it through the lens system
             if pnt2_inside_bnd2(
-                &Point2f {
+                Point2f {
                     x: p_rear.x,
                     y: p_rear.y,
                 },
@@ -621,7 +621,7 @@ impl RealisticCamera {
             ) {
                 pupil_bounds = bnd2_union_pnt2(
                     &pupil_bounds,
-                    &Point2f {
+                    Point2f {
                         x: p_rear.x,
                         y: p_rear.y,
                     },

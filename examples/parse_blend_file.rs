@@ -362,12 +362,12 @@ impl SceneDescriptionBuilder {
         let l: Spectrum = Spectrum::new(1.0 as Float);
         let sc: Spectrum = Spectrum::new(light_scale as Float);
         let n_samples: i32 = 1;
-        let infinte_light = Arc::new(Light::InfiniteArea(InfiniteAreaLight::new(
+        let infinte_light = Arc::new(Light::InfiniteArea(Box::new(InfiniteAreaLight::new(
             &light_to_world,
             &(l * sc),
             n_samples,
             texmap,
-        )));
+        ))));
         self.lights.push(infinte_light);
         self
     }
@@ -393,11 +393,11 @@ impl SceneDescriptionBuilder {
         let object_to_world: Transform = Transform::new(
             1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
         );
-        let distant_light = Arc::new(Light::Distant(DistantLight::new(
+        let distant_light = Arc::new(Light::Distant(Box::new(DistantLight::new(
             &object_to_world,
             &(l * sc),
             &dir,
-        )));
+        ))));
         self.lights.push(distant_light);
         self
     }
@@ -409,11 +409,11 @@ impl SceneDescriptionBuilder {
     ) -> &mut SceneDescriptionBuilder {
         let sc: Spectrum = Spectrum::new(light_scale as Float);
         let medium_interface: MediumInterface = MediumInterface::default();
-        let point_light = Arc::new(Light::Point(PointLight::new(
+        let point_light = Arc::new(Light::Point(Box::new(PointLight::new(
             &light_to_world,
             &medium_interface,
             &(l * sc),
-        )));
+        ))));
         self.lights.push(point_light);
         self
     }
@@ -480,14 +480,14 @@ impl RenderOptions {
                     let n_samples: i32 = 1;
                     let two_sided: bool = false;
                     let area_light: Arc<Light> =
-                        Arc::new(Light::DiffuseArea(DiffuseAreaLight::new(
+                        Arc::new(Light::DiffuseArea(Box::new(DiffuseAreaLight::new(
                             &cylinder.get_object_to_world(),
                             &mi,
                             &l_emit,
                             n_samples,
                             cylinder.clone(),
                             two_sided,
-                        )));
+                        ))));
                     lights.push(area_light.clone());
                     shapes.push(cylinder.clone());
                     shape_materials.push(default_material.clone());
@@ -666,14 +666,14 @@ impl RenderOptions {
                     let n_samples: i32 = 1;
                     let two_sided: bool = false;
                     let area_light: Arc<Light> =
-                        Arc::new(Light::DiffuseArea(DiffuseAreaLight::new(
+                        Arc::new(Light::DiffuseArea(Box::new(DiffuseAreaLight::new(
                             &disk.get_object_to_world(),
                             &mi,
                             &l_emit,
                             n_samples,
                             disk.clone(),
                             two_sided,
-                        )));
+                        ))));
                     lights.push(area_light.clone());
                     shapes.push(disk.clone());
                     shape_materials.push(default_material.clone());
@@ -852,14 +852,14 @@ impl RenderOptions {
                     let n_samples: i32 = 1;
                     let two_sided: bool = false;
                     let area_light: Arc<Light> =
-                        Arc::new(Light::DiffuseArea(DiffuseAreaLight::new(
+                        Arc::new(Light::DiffuseArea(Box::new(DiffuseAreaLight::new(
                             &sphere.get_object_to_world(),
                             &mi,
                             &l_emit,
                             n_samples,
                             sphere.clone(),
                             two_sided,
-                        )));
+                        ))));
                     lights.push(area_light.clone());
                     shapes.push(sphere.clone());
                     shape_materials.push(default_material.clone());
@@ -1054,14 +1054,14 @@ impl RenderOptions {
                         let n_samples: i32 = 1;
                         let two_sided: bool = false;
                         let area_light: Arc<Light> =
-                            Arc::new(Light::DiffuseArea(DiffuseAreaLight::new(
+                            Arc::new(Light::DiffuseArea(Box::new(DiffuseAreaLight::new(
                                 &mesh.object_to_world,
                                 &mi,
                                 &l_emit,
                                 n_samples,
                                 triangle.clone(),
                                 two_sided,
-                            )));
+                            ))));
                         lights.push(area_light.clone());
                         shape_materials.push(default_material.clone());
                         let triangle_light: Option<Arc<Light>> = Some(area_light.clone());

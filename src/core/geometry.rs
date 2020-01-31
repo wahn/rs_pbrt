@@ -807,7 +807,7 @@ impl<T> IndexMut<u8> for Point2<T> {
 }
 
 /// Apply floor operation component-wise.
-pub fn pnt2_floor<T>(p: &Point2<T>) -> Point2<T>
+pub fn pnt2_floor<T>(p: Point2<T>) -> Point2<T>
 where
     T: num::Float,
 {
@@ -818,7 +818,7 @@ where
 }
 
 /// Apply ceil operation component-wise.
-pub fn pnt2_ceil<T>(p: &Point2<T>) -> Point2<T>
+pub fn pnt2_ceil<T>(p: Point2<T>) -> Point2<T>
 where
     T: num::Float,
 {
@@ -853,7 +853,7 @@ where
 /// Given a bounding box and a point, the **bnd2_union_pnt2()**
 /// function returns a new bounding box that encompasses that point as
 /// well as the original box.
-pub fn bnd2_union_pnt2<T>(b: &Bounds2<T>, p: &Point2<T>) -> Bounds2<T>
+pub fn bnd2_union_pnt2<T>(b: &Bounds2<T>, p: Point2<T>) -> Bounds2<T>
 where
     T: num::Float,
 {
@@ -869,7 +869,7 @@ where
 }
 
 /// Determine if a given point is inside the bounding box.
-pub fn pnt2_inside_bnd2<T>(pt: &Point2<T>, b: &Bounds2<T>) -> bool
+pub fn pnt2_inside_bnd2<T>(pt: Point2<T>, b: &Bounds2<T>) -> bool
 where
     T: PartialOrd,
 {
@@ -877,7 +877,7 @@ where
 }
 
 /// Is a 2D point inside a 2D bound?
-pub fn pnt2_inside_exclusive<T>(pt: &Point2<T>, b: &Bounds2<T>) -> bool
+pub fn pnt2_inside_exclusive<T>(pt: Point2<T>, b: &Bounds2<T>) -> bool
 where
     T: PartialOrd,
 {

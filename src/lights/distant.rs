@@ -47,7 +47,7 @@ impl DistantLight {
     pub fn sample_li(
         &self,
         iref: &InteractionCommon,
-        _u: &Point2f,
+        _u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         vis: &mut VisibilityTester,
@@ -107,8 +107,8 @@ impl DistantLight {
     }
     pub fn sample_le(
         &self,
-        u1: &Point2f,
-        _u2: &Point2f,
+        u1: Point2f,
+        _u2: Point2f,
         time: Float,
         ray: &mut Ray,
         n_light: &mut Normal3f,

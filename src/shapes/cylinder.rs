@@ -339,7 +339,7 @@ impl Cylinder {
     pub fn area(&self) -> Float {
         (self.z_max - self.z_min) * self.radius * self.phi_max
     }
-    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let z: Float = lerp(u[0], self.z_min, self.z_max);
         let phi: Float = u[1] * self.phi_max;
         let mut p_obj: Point3f = Point3f {
@@ -381,7 +381,7 @@ impl Cylinder {
     pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         pdf: &mut Float,
     ) -> InteractionCommon {
         let intr: InteractionCommon = self.sample(u, pdf);

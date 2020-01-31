@@ -112,7 +112,7 @@ impl SobolSampler {
         sobol_interval_to_index(
             self.log_2_resolution as u32,
             sample_num,
-            &Point2i { x: v.x, y: v.y },
+            Point2i { x: v.x, y: v.y },
         )
     }
     pub fn sample_dimension(&self, index: u64, dim: i64) -> Float {
@@ -135,10 +135,10 @@ impl SobolSampler {
         s
     }
     // Sampler
-    pub fn start_pixel(&mut self, p: &Point2i) {
+    pub fn start_pixel(&mut self, p: Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         // Sampler::StartPixel(p);
-        self.current_pixel = *p;
+        self.current_pixel = p;
         self.current_pixel_sample_index = 0_i64;
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;

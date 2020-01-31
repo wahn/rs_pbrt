@@ -217,7 +217,7 @@ impl Disk {
             * 0.5 as Float
             * (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
-    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let pd: Point2f = concentric_sample_disk(u);
         let p_obj: Point3f = Point3f {
             x: pd.x * self.radius,
@@ -246,7 +246,7 @@ impl Disk {
     pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         pdf: &mut Float,
     ) -> InteractionCommon {
         let intr: InteractionCommon = self.sample(u, pdf);

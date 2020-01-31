@@ -98,7 +98,7 @@ impl StratifiedSampler {
         )))
     }
     // Sampler
-    pub fn start_pixel(&mut self, p: &Point2i) {
+    pub fn start_pixel(&mut self, p: Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         // generate single stratified samples for the pixel
         for i in 0..self.samples_1d.len() {
@@ -154,7 +154,7 @@ impl StratifiedSampler {
             }
         }
         // PixelSampler::StartPixel(p);
-        self.current_pixel = *p;
+        self.current_pixel = p;
         self.current_pixel_sample_index = 0_i64;
         // reset array offsets for next pixel sample
         self.array_1d_offset = 0_usize;

@@ -204,7 +204,7 @@ impl InfiniteAreaLight {
                         let max_aniso: Float = 8.0 as Float;
                         let wrap_mode: ImageWrap = ImageWrap::Repeat;
                         let lmap = Arc::new(MipMap::new(
-                            &resolution,
+                            resolution,
                             &texels[..],
                             do_trilinear,
                             max_aniso,
@@ -226,7 +226,7 @@ impl InfiniteAreaLight {
                             for u in 0..width {
                                 let up: Float = (u as Float + 0.5 as Float) / width as Float;
                                 let st: Point2f = Point2f { x: up, y: vp };
-                                img.push(lmap.lookup_pnt_flt(&st, fwidth).y() * sin_theta);
+                                img.push(lmap.lookup_pnt_flt(st, fwidth).y() * sin_theta);
                             }
                         }
                         let distribution: Arc<Distribution2D> =
@@ -257,7 +257,7 @@ impl InfiniteAreaLight {
         let max_aniso: Float = 8.0 as Float;
         let wrap_mode: ImageWrap = ImageWrap::Repeat;
         let lmap = Arc::new(MipMap::new(
-            &resolution,
+            resolution,
             &texels[..],
             do_trilinear,
             max_aniso,
@@ -278,7 +278,7 @@ impl InfiniteAreaLight {
             for u in 0..width {
                 let up: Float = (u as Float + 0.5 as Float) / width as Float;
                 let st: Point2f = Point2f { x: up, y: vp };
-                img.push(lmap.lookup_pnt_flt(&st, fwidth).y() * sin_theta);
+                img.push(lmap.lookup_pnt_flt(st, fwidth).y() * sin_theta);
             }
         }
         let distribution: Arc<Distribution2D> = Arc::new(Distribution2D::new(img, width, height));
@@ -298,7 +298,7 @@ impl InfiniteAreaLight {
     pub fn sample_li(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         vis: &mut VisibilityTester,
@@ -306,7 +306,7 @@ impl InfiniteAreaLight {
         // TODO: ProfilePhase _(Prof::LightSample);
         // find $(u,v)$ sample coordinates in infinite light texture
         let mut map_pdf: Float = 0.0 as Float;
-        let uv: Point2f = self.distribution.sample_continuous(&u, &mut map_pdf);
+        let uv: Point2f = self.distribution.sample_continuous(u, &mut map_pdf);
         if map_pdf == 0 as Float {
             return Spectrum::default();
         }
@@ -353,7 +353,7 @@ impl InfiniteAreaLight {
             },
         };
         // TODO: SpectrumType::Illuminant
-        self.lmap.lookup_pnt_flt(&uv, 0.0 as Float)
+        self.lmap.lookup_pnt_flt(uv, 0.0 as Float)
     }
     /// Like directional lights, the total power from the infinite
     /// area light is related to the surface area of the scene. Like
@@ -362,7 +362,7 @@ impl InfiniteAreaLight {
         let p: Point2f = Point2f { x: 0.5, y: 0.5 };
         let world_radius: Float = *self.world_radius.read().unwrap();
         // TODO: SpectrumType::Illuminant
-        self.lmap.lookup_pnt_flt(&p, 0.5 as Float) * Spectrum::new(PI * world_radius * world_radius)
+        self.lmap.lookup_pnt_flt(p, 0.5 as Float) * Spectrum::new(PI * world_radius * world_radius)
     }
     /// Like **DistanceLights**, **InfiniteAreaLights** also need the
     /// scene bounds; here again, the **preprocess()** method finds
@@ -390,7 +390,7 @@ impl InfiniteAreaLight {
             y: spherical_theta(&w) * INV_PI,
         };
         // TODO: SpectrumType::Illuminant
-        self.lmap.lookup_pnt_flt(&st, 0.0 as Float)
+        self.lmap.lookup_pnt_flt(st, 0.0 as Float)
     }
     pub fn pdf_li(&self, _iref: &dyn Interaction, w: Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
@@ -405,12 +405,12 @@ impl InfiniteAreaLight {
             x: phi * INV_2_PI,
             y: theta * INV_PI,
         };
-        self.distribution.pdf(&p) / (2.0 as Float * PI * PI * sin_theta)
+        self.distribution.pdf(p) / (2.0 as Float * PI * PI * sin_theta)
     }
     pub fn sample_le(
         &self,
-        u1: &Point2f,
-        u2: &Point2f,
+        u1: Point2f,
+        u2: Point2f,
         time: Float,
         ray: &mut Ray,
         n_light: &mut Normal3f,
@@ -461,7 +461,7 @@ impl InfiniteAreaLight {
         }
         *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);
         // TODO: return Spectrum(Lmap->Lookup(uv), SpectrumType::Illuminant);
-        self.lmap.lookup_pnt_flt(&uv, 0.0 as Float)
+        self.lmap.lookup_pnt_flt(uv, 0.0 as Float)
     }
     pub fn pdf_le(&self, ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         let d: Vector3f = -self.world_to_light.transform_vector(&ray.d);
@@ -471,7 +471,7 @@ impl InfiniteAreaLight {
             x: phi * INV_2_PI,
             y: theta * INV_PI,
         };
-        let map_pdf: Float = self.distribution.pdf(&uv);
+        let map_pdf: Float = self.distribution.pdf(uv);
         let world_radius: Float = *self.world_radius.read().unwrap();
         *pdf_dir = map_pdf / (2.0 as Float * PI * PI * theta.sin());
         *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);

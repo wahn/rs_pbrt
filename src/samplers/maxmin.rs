@@ -110,7 +110,7 @@ impl MaxMinDistSampler {
         )))
     }
     // Sampler
-    pub fn start_pixel(&mut self, p: &Point2i) {
+    pub fn start_pixel(&mut self, p: Point2i) {
         // TODO: ProfilePhase _(Prof::StartPixel);
         let inv_spp: Float = 1.0 as Float / self.samples_per_pixel as Float;
         for i in 0..self.samples_per_pixel as usize {
@@ -164,7 +164,7 @@ impl MaxMinDistSampler {
             );
         }
         // PixelSampler::StartPixel(p);
-        self.current_pixel = *p;
+        self.current_pixel = p;
         self.current_pixel_sample_index = 0_i64;
         // reset array offsets for next pixel sample
         self.array_1d_offset = 0_usize;

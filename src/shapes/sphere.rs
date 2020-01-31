@@ -360,7 +360,7 @@ impl Sphere {
     pub fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
-    pub fn sample(&self, u: &Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let mut p_obj: Point3f = Point3f::default() + uniform_sample_sphere(u) * self.radius;
         let mut it: InteractionCommon = InteractionCommon::default();
         it.n = self
@@ -388,7 +388,7 @@ impl Sphere {
     pub fn sample_with_ref_point(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         pdf: &mut Float,
     ) -> InteractionCommon {
         let p_center: Point3f = self.object_to_world.transform_point(&Point3f::default());

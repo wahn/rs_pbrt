@@ -217,7 +217,7 @@ impl SpatialLightDistribution {
                 let mut wi: Vector3f = Vector3f::default();
                 let mut vis: VisibilityTester = VisibilityTester::default();
                 let li: Spectrum =
-                    self.scene.lights[j].sample_li(&intr, &u, &mut wi, &mut pdf, &mut vis);
+                    self.scene.lights[j].sample_li(&intr, u, &mut wi, &mut pdf, &mut vis);
                 if pdf > 0.0 as Float {
                     // TODO: look at tracing shadow rays / computing
                     // beam transmittance. Probably shouldn't give

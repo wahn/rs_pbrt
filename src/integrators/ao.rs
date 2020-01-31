@@ -84,10 +84,10 @@ impl AOIntegrator {
                     let mut wi: Vector3f;
                     let pdf: Float;
                     if self.cos_sample {
-                        wi = cosine_sample_hemisphere(&u[i]);
+                        wi = cosine_sample_hemisphere(u[i]);
                         pdf = cosine_hemisphere_pdf(wi.z.abs());
                     } else {
-                        wi = uniform_sample_hemisphere(&u[i]);
+                        wi = uniform_sample_hemisphere(u[i]);
                         pdf = uniform_hemisphere_pdf();
                     }
                     // transform wi from local frame to world space.

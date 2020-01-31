@@ -82,7 +82,7 @@ impl WhittedIntegrator {
                 };
                 let li: Spectrum = light.sample_li(
                     &it_common,
-                    &sampler.get_2d(),
+                    sampler.get_2d(),
                     &mut wi,
                     &mut pdf,
                     &mut visibility,
@@ -149,7 +149,7 @@ impl WhittedIntegrator {
             f = bsdf.sample_f(
                 &wo,
                 &mut wi,
-                &sampler.get_2d(),
+                sampler.get_2d(),
                 &mut pdf,
                 bsdf_flags,
                 &mut sampled_type,
@@ -213,7 +213,7 @@ impl WhittedIntegrator {
             f = bsdf.sample_f(
                 &wo,
                 &mut wi,
-                &sampler.get_2d(),
+                sampler.get_2d(),
                 &mut pdf,
                 bsdf_flags,
                 &mut sampled_type,

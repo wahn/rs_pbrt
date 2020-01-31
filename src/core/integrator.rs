@@ -126,8 +126,8 @@ impl SamplerIntegrator {
                                     // println!("Starting image tile {:?}", tile_bounds);
                                     let mut film_tile = film.get_film_tile(&tile_bounds);
                                     for pixel in &tile_bounds {
-                                        tile_sampler.start_pixel(&pixel);
-                                        if !pnt2_inside_exclusive(&pixel, &pixel_bounds) {
+                                        tile_sampler.start_pixel(pixel);
+                                        if !pnt2_inside_exclusive(pixel, &pixel_bounds) {
                                             continue;
                                         }
                                         let mut done: bool = false;
@@ -137,7 +137,7 @@ impl SamplerIntegrator {
 
                                             // initialize _CameraSample_ for current sample
                                             let camera_sample: CameraSample =
-                                                tile_sampler.get_camera_sample(&pixel);
+                                                tile_sampler.get_camera_sample(pixel);
                                             // generate camera ray for current sample
                                             let mut ray: Ray = Ray::default();
                                             let ray_weight: Float = camera
@@ -435,7 +435,7 @@ pub fn estimate_direct(
     };
     let mut li: Spectrum = light.sample_li(
         &it_common,
-        &u_light,
+        u_light,
         &mut wi,
         &mut light_pdf,
         &mut visibility,
@@ -493,7 +493,7 @@ pub fn estimate_direct(
                     f = bsdf.sample_f(
                         &it.get_wo(),
                         &mut wi,
-                        &u_scattering,
+                        u_scattering,
                         &mut scattering_pdf,
                         bsdf_flags,
                         &mut sampled_type,
@@ -507,7 +507,7 @@ pub fn estimate_direct(
         } else {
             // sample scattered direction for medium interactions
             if let Some(ref phase) = it.get_phase() {
-                let p: Float = phase.sample_p(&it.get_wo(), &mut wi, &u_scattering);
+                let p: Float = phase.sample_p(&it.get_wo(), &mut wi, u_scattering);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
             }

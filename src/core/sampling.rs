@@ -171,7 +171,7 @@ impl Distribution2D {
             p_marginal,
         }
     }
-    pub fn sample_continuous(&self, u: &Point2f, pdf: &mut Float) -> Point2f {
+    pub fn sample_continuous(&self, u: Point2f, pdf: &mut Float) -> Point2f {
         let mut pdfs: [Float; 2] = [0.0 as Float; 2];
         let mut v: usize = 0_usize;
         let d1: Float = self
@@ -181,7 +181,7 @@ impl Distribution2D {
         *pdf = pdfs[0] * pdfs[1];
         Point2f { x: d0, y: d1 }
     }
-    pub fn pdf(&self, p: &Point2f) -> Float {
+    pub fn pdf(&self, p: Point2f) -> Float {
         let iu: usize = clamp_t(
             (p[0] * self.p_conditional_v[0].count() as Float) as usize,
             0_usize,
@@ -211,7 +211,7 @@ pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) 
 }
 
 /// Cosine-weighted hemisphere sampling using Malley's method.
-pub fn cosine_sample_hemisphere(u: &Point2f) -> Vector3f {
+pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
     let d: Point2f = concentric_sample_disk(u);
     let z: Float = (0.0 as Float)
         .max(1.0 as Float - d.x * d.x - d.y * d.y)
@@ -308,7 +308,7 @@ pub fn latin_hypercube(samples: &mut [Point2f], n_samples: u32, rng: &mut Rng) {
 }
 
 /// Uniformly sample rays in a hemisphere. Choose a direction.
-pub fn uniform_sample_hemisphere(u: &Point2f) -> Vector3f {
+pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
     let z: Float = u[0_u8];
     let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
     let phi: Float = 2.0 as Float * PI * u[1_u8];
@@ -326,7 +326,7 @@ pub fn uniform_hemisphere_pdf() -> Float {
 }
 
 /// Uniformly sample rays in a full sphere. Choose a direction.
-pub fn uniform_sample_sphere(u: &Point2f) -> Vector3f {
+pub fn uniform_sample_sphere(u: Point2f) -> Vector3f {
     let z: Float = 1.0 as Float - 2.0 as Float * u[0];
     let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
     let phi: Float = 2.0 as Float * PI * u[1];
@@ -343,9 +343,9 @@ pub fn uniform_sphere_pdf() -> Float {
 }
 
 /// Uniformly distribute samples over a unit disk.
-pub fn concentric_sample_disk(u: &Point2f) -> Point2f {
+pub fn concentric_sample_disk(u: Point2f) -> Point2f {
     // map uniform random numbers to $[-1,1]^2$
-    let u_offset: Point2f = *u * 2.0 as Float - Vector2f { x: 1.0, y: 1.0 };
+    let u_offset: Point2f = u * 2.0 as Float - Vector2f { x: 1.0, y: 1.0 };
     // handle degeneracy at the origin
     if u_offset.x == 0.0 as Float && u_offset.y == 0.0 as Float {
         return Point2f::default();
@@ -373,7 +373,7 @@ pub fn uniform_cone_pdf(cos_theta_max: Float) -> Float {
 }
 
 /// Samples in a cone of directions about the (0, 0, 1) axis.
-pub fn uniform_sample_cone(u: &Point2f, cos_theta_max: Float) -> Vector3f {
+pub fn uniform_sample_cone(u: Point2f, cos_theta_max: Float) -> Vector3f {
     let cos_theta: Float = (1.0 as Float - u[0]) + u[0] * cos_theta_max;
     let sin_theta: Float = (1.0 as Float - cos_theta * cos_theta).sqrt();
     let phi: Float = u[1] * 2.0 as Float * PI;
@@ -386,7 +386,7 @@ pub fn uniform_sample_cone(u: &Point2f, cos_theta_max: Float) -> Vector3f {
 
 /// Uniformly distributing samples over isosceles right triangles
 /// actually works for any triangle.
-pub fn uniform_sample_triangle(u: &Point2f) -> Point2f {
+pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
     let su0: Float = u[0].sqrt();
     Point2f {
         x: 1.0 as Float - su0,

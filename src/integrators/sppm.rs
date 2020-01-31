@@ -148,11 +148,11 @@ impl SPPMIntegrator {
                                         );
                                         for p_pixel in &tile_bounds {
                                             // prepare _tileSampler_ for _p_pixel_
-                                            tile_sampler.start_pixel(&p_pixel);
+                                            tile_sampler.start_pixel(p_pixel);
                                             tile_sampler.set_sample_number(iteration as i64);
                                             // generate camera ray for pixel for SPPM
                                             let camera_sample: CameraSample =
-                                                tile_sampler.get_camera_sample(&p_pixel);
+                                                tile_sampler.get_camera_sample(p_pixel);
                                             let mut ray: Ray = Ray::default();
                                             let mut beta: Spectrum = Spectrum::new(
                                                 self.get_camera().generate_ray_differential(
@@ -243,7 +243,7 @@ impl SPPMIntegrator {
                                                             let f: Spectrum = bsdf.sample_f(
                                                                 &wo,
                                                                 &mut wi,
-                                                                &tile_sampler.get_2d(),
+                                                                tile_sampler.get_2d(),
                                                                 &mut pdf,
                                                                 bsdf_flags,
                                                                 &mut sampled_type,
@@ -508,8 +508,8 @@ impl SPPMIntegrator {
                                         let mut pdf_pos: Float = 0.0;
                                         let mut pdf_dir: Float = 0.0;
                                         let le: Spectrum = light.sample_le(
-                                            &u_light_0,
-                                            &u_light_1,
+                                            u_light_0,
+                                            u_light_1,
                                             u_light_time,
                                             &mut photon_ray,
                                             &mut n_light,
@@ -651,7 +651,7 @@ impl SPPMIntegrator {
                                                     let fr: Spectrum = photon_bsdf.sample_f(
                                                         &wo,
                                                         &mut wi,
-                                                        &bsdf_sample,
+                                                        bsdf_sample,
                                                         &mut pdf,
                                                         bsdf_flags,
                                                         &mut sampled_type,

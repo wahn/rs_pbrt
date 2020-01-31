@@ -303,7 +303,7 @@ impl HenyeyGreenstein {
         // TODO: ProfilePhase _(Prof::PhaseFuncEvaluation);
         phase_hg(vec3_dot_vec3(wo, wi), self.g)
     }
-    pub fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: &Point2f) -> Float {
+    pub fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: Point2f) -> Float {
         // TODO: ProfilePhase _(Prof::PhaseFuncSampling);
         // compute $\cos \theta$ for Henyey--Greenstein sample
         let cos_theta: Float;

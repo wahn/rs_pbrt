@@ -956,7 +956,7 @@ fn main() {
                                                                         let two_sided: bool = false;
                                                                         let area_light: Arc<Light> =
                                                                             Arc::new(Light::DiffuseArea(
-                                                                                DiffuseAreaLight::new(
+                                                                                Box::new(DiffuseAreaLight::new(
                                                                                     &cur_transform,
                                                                                     &mi,
                                                                                     &l_emit,
@@ -964,7 +964,7 @@ fn main() {
                                                                                     shape,
                                                                                     two_sided,
                                                                                 ),
-                                                                            ));
+                                                                            )));
                                                                         lights.push(
                                                                             area_light.clone(),
                                                                         );
@@ -990,25 +990,27 @@ fn main() {
                                             } else if node_type == "point_light" {
                                                 let mi: MediumInterface =
                                                     MediumInterface::default();
-                                                let point_light =
-                                                    Arc::new(Light::Point(PointLight::new(
+                                                let point_light = Arc::new(Light::Point(Box::new(
+                                                    PointLight::new(
                                                         &cur_transform,
                                                         &mi,
                                                         &(color * intensity),
-                                                    )));
+                                                    ),
+                                                )));
                                                 lights.push(point_light);
                                                 println!("}}");
                                             } else if node_type == "spot_light" {
                                                 let mi: MediumInterface =
                                                     MediumInterface::default();
-                                                let spot_light =
-                                                    Arc::new(Light::Spot(SpotLight::new(
+                                                let spot_light = Arc::new(Light::Spot(Box::new(
+                                                    SpotLight::new(
                                                         &cur_transform,
                                                         &mi,
                                                         &(color * intensity),
                                                         cone_angle,
                                                         cone_angle - cone_delta_angle,
-                                                    )));
+                                                    ),
+                                                )));
                                                 lights.push(spot_light);
                                                 println!("}}");
                                             } else if node_type == "polymesh" {

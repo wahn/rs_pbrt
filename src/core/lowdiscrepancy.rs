@@ -837,7 +837,7 @@ pub fn gray_code_sample_1d(c: [u32; 32], n: u32, scramble: u32, p: &mut [Float])
 /// Takes two generator matrices *c0* and *c1*, a number of 2D samples
 /// to generate *n*, and stores the corresponding samples in memory at
 /// the location pointed to by *p*.
-pub fn gray_code_sample_2d(c0: &[u32], c1: &[u32], n: u32, scramble: &Point2i, p: &mut [Point2f]) {
+pub fn gray_code_sample_2d(c0: &[u32], c1: &[u32], n: u32, scramble: Point2i, p: &mut [Point2f]) {
     let mut v: [u32; 2] = [scramble.x as u32, scramble.y as u32];
     for i in 0..n as usize {
         // #ifndef PBRT_HAVE_HEX_FP_CONSTANTS
@@ -1000,7 +1000,7 @@ pub fn sobol_2d(
         &c_sobol[0],
         &c_sobol[1],
         (n_samples_per_pixel_sample * n_pixel_samples) as u32,
-        &scramble,
+        scramble,
         samples,
     );
     for _i in 0..n_pixel_samples as usize {
@@ -1011,7 +1011,7 @@ pub fn sobol_2d(
 
 /// Returns the index of the _frame_th sample in the pixel p, if the
 /// sampling domain has be scaled to cover the pixel sampling area.
-pub fn sobol_interval_to_index(m: u32, frame: u64, p: &Point2i) -> u64 {
+pub fn sobol_interval_to_index(m: u32, frame: u64, p: Point2i) -> u64 {
     if m == 0_u32 {
         return 0_u64;
     }

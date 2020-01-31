@@ -197,7 +197,7 @@ impl GonioPhotometricLight {
                         let max_aniso: Float = 8.0 as Float;
                         let wrap_mode: ImageWrap = ImageWrap::Repeat;
                         let projection_map = Arc::new(MipMap::new(
-                            &resolution,
+                            resolution,
                             &texels[..],
                             do_trilinear,
                             max_aniso,
@@ -241,7 +241,7 @@ impl GonioPhotometricLight {
                 x: phi * INV_2_PI,
                 y: theta * INV_PI,
             };
-            mipmap.lookup_pnt_flt(&st, 0.0 as Float)
+            mipmap.lookup_pnt_flt(st, 0.0 as Float)
         } else {
             Spectrum::new(1.0 as Float)
         }
@@ -250,7 +250,7 @@ impl GonioPhotometricLight {
     pub fn sample_li(
         &self,
         iref: &InteractionCommon,
-        _u: &Point2f,
+        _u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         vis: &mut VisibilityTester,
@@ -280,7 +280,7 @@ impl GonioPhotometricLight {
     pub fn power(&self) -> Spectrum {
         if let Some(mipmap) = &self.mipmap {
             mipmap.lookup_pnt_flt(
-                &Point2f {
+                Point2f {
                     x: 0.5 as Float,
                     y: 0.5 as Float,
                 },
@@ -303,8 +303,8 @@ impl GonioPhotometricLight {
     }
     pub fn sample_le(
         &self,
-        u1: &Point2f,
-        _u2: &Point2f,
+        u1: Point2f,
+        _u2: Point2f,
         time: Float,
         ray: &mut Ray,
         n_light: &mut Normal3f,

@@ -191,9 +191,9 @@ impl MLTSampler {
         }
     }
     // Sampler
-    pub fn start_pixel(&mut self, p: &Point2i) {
+    pub fn start_pixel(&mut self, p: Point2i) {
         // Sampler::StartPixel(p);
-        self.current_pixel = *p;
+        self.current_pixel = p;
         self.current_pixel_sample_index = 0_i64;
         self.array_1d_offset = 0_usize;
         self.array_2d_offset = 0_usize;
@@ -387,7 +387,7 @@ impl MLTIntegrator {
                 sampler,
                 t,
                 &self.camera,
-                p_raster,
+                *p_raster,
                 &mut camera_vertices,
             );
             n_camera = n_camera_new;

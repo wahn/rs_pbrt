@@ -30,13 +30,13 @@ pub enum LightFlags {
 }
 
 pub enum Light {
-    DiffuseArea(DiffuseAreaLight),
-    Distant(DistantLight),
-    GonioPhotometric(GonioPhotometricLight),
-    InfiniteArea(InfiniteAreaLight),
-    Point(PointLight),
-    Projection(ProjectionLight),
-    Spot(SpotLight),
+    DiffuseArea(Box<DiffuseAreaLight>),
+    Distant(Box<DistantLight>),
+    GonioPhotometric(Box<GonioPhotometricLight>),
+    InfiniteArea(Box<InfiniteAreaLight>),
+    Point(Box<PointLight>),
+    Projection(Box<ProjectionLight>),
+    Spot(Box<SpotLight>),
 }
 
 impl Light {
@@ -46,7 +46,7 @@ impl Light {
     pub fn sample_li(
         &self,
         iref: &InteractionCommon,
-        u: &Point2f,
+        u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         vis: &mut VisibilityTester,
@@ -107,8 +107,8 @@ impl Light {
     }
     pub fn sample_le(
         &self,
-        u1: &Point2f,
-        u2: &Point2f,
+        u1: Point2f,
+        u2: Point2f,
         time: Float,
         ray: &mut Ray,
         n_light: &mut Normal3f,

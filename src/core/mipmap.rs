@@ -57,13 +57,13 @@ where
         + Mul<Float, Output = T>,
 {
     pub fn new(
-        res: &Point2i,
+        res: Point2i,
         img: &[T],
         do_trilinear: bool,
         max_anisotropy: Float,
         wrap_mode: ImageWrap,
     ) -> Self {
-        let mut resolution = *res;
+        let mut resolution = res;
         let mut resampled_image: Vec<T> = Vec::new();
         if !is_power_of_2(resolution.x) || !is_power_of_2(resolution.y) {
             // resample image to power-of-two resolution
@@ -233,7 +233,7 @@ where
         };
         &l[(ss, tt)]
     }
-    pub fn lookup_pnt_flt(&self, st: &Point2f, width: Float) -> T {
+    pub fn lookup_pnt_flt(&self, st: Point2f, width: Float) -> T {
         // TODO: ++nTrilerpLookups;
         // TODO: ProfilePhase p(Prof::TexFiltTrilerp);
         // compute MIPMap level for trilinear filtering
@@ -253,7 +253,7 @@ where
             )
         }
     }
-    pub fn lookup_pnt_vec_vec(&self, st: &Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> T {
+    pub fn lookup_pnt_vec_vec(&self, st: Point2f, dst0: &mut Vector2f, dst1: &mut Vector2f) -> T {
         if self.do_trilinear {
             let width: Float = dst0
                 .x
@@ -321,7 +321,7 @@ where
         }
         wt
     }
-    fn triangle(&self, level: usize, st: &Point2f) -> T {
+    fn triangle(&self, level: usize, st: Point2f) -> T {
         let level: usize = clamp_t(level, 0_usize, self.levels() - 1_usize);
         let s: Float = st.x * self.pyramid[level].u_size() as Float - 0.5;
         let t: Float = st.y * self.pyramid[level].v_size() as Float - 0.5;

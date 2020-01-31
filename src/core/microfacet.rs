@@ -62,7 +62,7 @@ impl MicrofacetDistribution {
             MicrofacetDistribution::DisneyMicrofacet(distribution) => distribution.pdf(wo, wh),
         }
     }
-    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+    pub fn sample_wh(&self, wo: &Vector3f, u: Point2f) -> Vector3f {
         match self {
             MicrofacetDistribution::Beckmann(distribution) => distribution.sample_wh(wo, u),
             MicrofacetDistribution::TrowbridgeReitz(distribution) => distribution.sample_wh(wo, u),
@@ -153,7 +153,7 @@ impl BeckmannDistribution {
             self.d(wh) * abs_cos_theta(wh)
         }
     }
-    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+    pub fn sample_wh(&self, wo: &Vector3f, u: Point2f) -> Vector3f {
         if !self.sample_visible_area {
             // sample full distribution of normals for Beckmann
             // distribution
@@ -288,7 +288,7 @@ impl TrowbridgeReitzDistribution {
             self.d(wh) * abs_cos_theta(wh)
         }
     }
-    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
+    pub fn sample_wh(&self, wo: &Vector3f, u: Point2f) -> Vector3f {
         let mut wh: Vector3f;
         if !self.sample_visible_area {
             let cos_theta;
