@@ -138,7 +138,7 @@ impl MediumInteraction {
     ) -> Self {
         if let Some(medium_arc) = medium {
             let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
-            let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
+            let outside: Option<Arc<Medium>> = Some(medium_arc);
             MediumInteraction {
                 p: *p,
                 time,
@@ -216,19 +216,19 @@ impl Interaction for MediumInteraction {
         }
     }
     fn get_p(&self) -> Point3f {
-        self.p.clone()
+        self.p
     }
     fn get_time(&self) -> Float {
         self.time
     }
     fn get_p_error(&self) -> Vector3f {
-        self.p_error.clone()
+        self.p_error
     }
     fn get_wo(&self) -> Vector3f {
-        self.wo.clone()
+        self.wo
     }
     fn get_n(&self) -> Normal3f {
-        self.n.clone()
+        self.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
         if let Some(ref medium_interface) = self.medium_interface {
@@ -284,7 +284,7 @@ impl<'a> SurfaceInteraction<'a> {
     pub fn new(
         p: &Point3f,
         p_error: &Vector3f,
-        uv: &Point2f,
+        uv: Point2f,
         wo: &Vector3f,
         dpdu: &Vector3f,
         dpdv: &Vector3f,
@@ -302,8 +302,8 @@ impl<'a> SurfaceInteraction<'a> {
         // initialize shading geometry from true geometry
         let mut shading: Shading = Shading {
             n,
-            dpdu: Vector3f::from(*dpdu),
-            dpdv: Vector3f::from(*dpdv),
+            dpdu: *dpdu,
+            dpdv: *dpdv,
             dndu: *dndu,
             dndv: *dndv,
         };
@@ -322,7 +322,7 @@ impl<'a> SurfaceInteraction<'a> {
                 wo: wo.normalize(),
                 n,
                 medium_interface: None,
-                uv: *uv,
+                uv: uv,
                 dpdu: *dpdu,
                 dpdv: *dpdv,
                 dndu: *dndu,
@@ -347,7 +347,7 @@ impl<'a> SurfaceInteraction<'a> {
                 wo: wo.normalize(),
                 n,
                 medium_interface: None,
-                uv: *uv,
+                uv: uv,
                 dpdu: *dpdu,
                 dpdv: *dpdv,
                 dndu: *dndu,

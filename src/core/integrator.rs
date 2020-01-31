@@ -225,13 +225,7 @@ impl SamplerIntegrator {
             }
         }
     }
-    pub fn li(
-        &self,
-        ray: &mut Ray,
-        scene: &Scene,
-        sampler: &mut Sampler,
-        depth: i32,
-    ) -> Spectrum {
+    pub fn li(&self, ray: &mut Ray, scene: &Scene, sampler: &mut Sampler, depth: i32) -> Spectrum {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.li(ray, scene, sampler, depth),
             SamplerIntegrator::DirectLighting(integrator) => {
@@ -274,7 +268,7 @@ impl SamplerIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         depth: i32,
     ) -> Spectrum {
         match self {
@@ -292,7 +286,7 @@ impl SamplerIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         depth: i32,
     ) -> Spectrum {
         match self {
@@ -314,26 +308,25 @@ pub fn uniform_sample_all_lights(
     it: &SurfaceInteraction,
     scene: &Scene,
     sampler: &mut Sampler,
-    n_light_samples: &Vec<i32>,
+    n_light_samples: &[i32],
     handle_media: bool,
 ) -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
     let mut l: Spectrum = Spectrum::new(0.0);
-    for j in 0..scene.lights.len() {
+    for (j, n_samples) in n_light_samples.iter().enumerate().take(scene.lights.len()) {
         // accumulate contribution of _j_th light to _L_
-        let ref light = scene.lights[j];
-        let n_samples = n_light_samples[j];
-        let u_light_array: Vec<Point2f> = sampler.get_2d_array_vec(n_samples);
-        let u_scattering_array: Vec<Point2f> = sampler.get_2d_array_vec(n_samples);
+        let light = &scene.lights[j];
+        let u_light_array: Vec<Point2f> = sampler.get_2d_array_vec(*n_samples);
+        let u_scattering_array: Vec<Point2f> = sampler.get_2d_array_vec(*n_samples);
         if u_light_array.is_empty() || u_scattering_array.is_empty() {
             // use a single sample for illumination from _light_
             let u_light: Point2f = sampler.get_2d();
             let u_scattering: Point2f = sampler.get_2d();
             l += estimate_direct(
                 it,
-                &u_scattering,
+                u_scattering,
                 light.clone(),
-                &u_light,
+                u_light,
                 scene,
                 sampler,
                 handle_media,
@@ -342,19 +335,19 @@ pub fn uniform_sample_all_lights(
         } else {
             // estimate direct lighting using sample arrays
             let mut ld: Spectrum = Spectrum::new(0.0);
-            for k in 0..n_samples {
+            for k in 0..*n_samples {
                 ld += estimate_direct(
                     it,
-                    &u_scattering_array[k as usize],
+                    u_scattering_array[k as usize],
                     light.clone(),
-                    &u_light_array[k as usize],
+                    u_light_array[k as usize],
                     scene,
                     sampler,
                     handle_media,
                     false,
                 );
             }
-            l += ld / n_samples as Float;
+            l += ld / *n_samples as Float;
         }
     }
     l
@@ -398,9 +391,9 @@ pub fn uniform_sample_one_light(
     let u_scattering: Point2f = sampler.get_2d();
     estimate_direct(
         it,
-        &u_scattering,
+        u_scattering,
         light.clone(),
-        &u_light,
+        u_light,
         scene,
         sampler,
         handle_media,
@@ -411,20 +404,21 @@ pub fn uniform_sample_one_light(
 /// Computes a direct lighting estimate for a single light source sample.
 pub fn estimate_direct(
     it: &dyn Interaction,
-    u_scattering: &Point2f,
+    u_scattering: Point2f,
     light: Arc<Light>,
-    u_light: &Point2f,
+    u_light: Point2f,
     scene: &Scene,
     sampler: &mut Sampler,
     // TODO: arena
     handle_media: bool,
     specular: bool,
 ) -> Spectrum {
-    let mut bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-    if !specular {
+    let bsdf_flags = if !specular {
         // bitwise not in Rust is ! (not the ~ operator like in C)
-        bsdf_flags = BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8);
-    }
+        BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8)
+    } else {
+        BxdfType::BsdfAll as u8
+    };
     let mut ld: Spectrum = Spectrum::new(0.0);
     // sample light source with multiple importance sampling
     let mut wi: Vector3f = Vector3f::default();
@@ -441,7 +435,7 @@ pub fn estimate_direct(
     };
     let mut li: Spectrum = light.sample_li(
         &it_common,
-        u_light,
+        &u_light,
         &mut wi,
         &mut light_pdf,
         &mut visibility,
@@ -499,7 +493,7 @@ pub fn estimate_direct(
                     f = bsdf.sample_f(
                         &it.get_wo(),
                         &mut wi,
-                        u_scattering,
+                        &u_scattering,
                         &mut scattering_pdf,
                         bsdf_flags,
                         &mut sampled_type,
@@ -513,7 +507,7 @@ pub fn estimate_direct(
         } else {
             // sample scattered direction for medium interactions
             if let Some(ref phase) = it.get_phase() {
-                let p: Float = phase.sample_p(&it.get_wo(), &mut wi, u_scattering);
+                let p: Float = phase.sample_p(&it.get_wo(), &mut wi, &u_scattering);
                 f = Spectrum::new(p);
                 scattering_pdf = p;
             }
@@ -522,14 +516,15 @@ pub fn estimate_direct(
         //          f, scattering_pdf);
         if !f.is_black() && scattering_pdf > 0.0 {
             // account for light contributions along sampled direction _wi_
-            let mut weight: Float = 1.0;
-            if !sampled_specular {
+            let weight = if !sampled_specular {
                 light_pdf = light.pdf_li(it, wi);
                 if light_pdf == 0.0 {
                     return ld;
                 }
-                weight = power_heuristic(1, scattering_pdf, 1, light_pdf);
-            }
+                power_heuristic(1, scattering_pdf, 1, light_pdf)
+            } else {
+                1.0
+            };
             // find intersection and compute transmittance
             let mut ray: Ray = it.spawn_ray(&wi);
             let mut tr: Spectrum = Spectrum::new(1.0 as Float);
@@ -582,7 +577,7 @@ pub fn compute_light_power_distribution(scene: &Scene) -> Option<Arc<Distributio
     }
     let mut light_power: Vec<Float> = Vec::with_capacity(scene.lights.len());
     for li in 0..scene.lights.len() {
-        let ref light = scene.lights[li];
+        let light = &scene.lights[li];
         light_power.push(light.power().y());
     }
     Some(Arc::new(Distribution1D::new(light_power)))

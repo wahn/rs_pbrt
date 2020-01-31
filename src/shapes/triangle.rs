@@ -335,7 +335,7 @@ impl Triangle {
             let isect_local: SurfaceInteraction = SurfaceInteraction::new(
                 &p_hit,
                 &Vector3f::default(),
-                &uv_hit,
+                uv_hit,
                 &wo,
                 &dpdu,
                 &dpdv,
@@ -353,7 +353,7 @@ impl Triangle {
         let dndv: Normal3f = Normal3f::default();
         let wo: Vector3f = -ray.d;
         let mut si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit, &p_error, &uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
+            &p_hit, &p_error, uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
         );
         // override surface normal in _isect_ for triangle
         let surface_normal: Normal3f = Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
@@ -624,7 +624,7 @@ impl Triangle {
             let isect_local: SurfaceInteraction = SurfaceInteraction::new(
                 &p_hit,
                 &Vector3f::default(),
-                &uv_hit,
+                uv_hit,
                 &wo,
                 &dpdu,
                 &dpdv,

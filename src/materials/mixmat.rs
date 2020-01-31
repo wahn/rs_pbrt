@@ -59,7 +59,7 @@ impl MixMaterial {
         let mut si2: SurfaceInteraction = SurfaceInteraction::new(
             &si.p,
             &si.p_error,
-            &si.uv,
+            si.uv,
             &si.wo,
             &si.dpdu,
             &si.dpdv,

@@ -323,7 +323,7 @@ impl Curve {
             let si: SurfaceInteraction = SurfaceInteraction::new(
                 &ray.position(pc.z),
                 &p_error,
-                &Point2f { x: u, y: v },
+                Point2f { x: u, y: v },
                 &-ray.d,
                 &dpdu,
                 &dpdv,

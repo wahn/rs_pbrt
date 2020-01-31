@@ -150,7 +150,7 @@ impl Disk {
         let si: SurfaceInteraction = SurfaceInteraction::new(
             &p_hit,
             &p_error,
-            &uv_hit,
+            uv_hit,
             &wo,
             &dpdu,
             &dpdv,

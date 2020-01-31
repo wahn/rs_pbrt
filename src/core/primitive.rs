@@ -236,7 +236,7 @@ impl TransformedPrimitive {
                 let mut is: SurfaceInteraction = SurfaceInteraction::new(
                     &new_isect.p,
                     &new_isect.p_error,
-                    &new_isect.uv,
+                    new_isect.uv,
                     &new_isect.wo,
                     &new_isect.dpdu,
                     &new_isect.dpdv,
