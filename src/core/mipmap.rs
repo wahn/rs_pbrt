@@ -241,7 +241,7 @@ where
         // perform trilinear interpolation at appropriate MIPMap level
         if level < 0.0 as Float {
             self.triangle(0_usize, st)
-        } else if level >= self.levels() as Float - 1 as Float {
+        } else if level >= self.levels() as Float - 1.0 as Float {
             *self.texel(self.levels() - 1, 0_isize, 0_isize)
         } else {
             let i_level: usize = level.floor() as usize;
@@ -375,9 +375,9 @@ where
         // scan over ellipse bound and compute quadratic equation
         let mut sum: T = T::default();
         let mut sum_wts: Float = 0.0;
-        for it in t0..(t1 + 1) {
+        for it in t0..=t1 {
             let tt: Float = it as Float - new_st.y;
-            for is in s0..(s1 + 1) {
+            for is in s0..=s1 {
                 let ss: Float = is as Float - new_st.x;
                 // compute squared radius and filter texel if inside ellipse
                 let r2: Float = a * ss * ss + b * ss * tt + c * tt * tt;

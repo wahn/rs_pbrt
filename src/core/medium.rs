@@ -306,15 +306,14 @@ impl HenyeyGreenstein {
     pub fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: Point2f) -> Float {
         // TODO: ProfilePhase _(Prof::PhaseFuncSampling);
         // compute $\cos \theta$ for Henyey--Greenstein sample
-        let cos_theta: Float;
-        if self.g.abs() < 1e-3 as Float {
-            cos_theta = 1.0 as Float - 2.0 as Float * u[0];
+        let cos_theta = if self.g.abs() < 1e-3 as Float {
+            1.0 as Float - 2.0 as Float * u[0]
         } else {
             let sqr_term: Float = (1.0 as Float - self.g * self.g)
                 / (1.0 as Float - self.g + 2.0 as Float * self.g * u[0]);
-            cos_theta =
-                (1.0 as Float + self.g * self.g - sqr_term * sqr_term) / (2.0 as Float * self.g);
-        }
+
+            (1.0 as Float + self.g * self.g - sqr_term * sqr_term) / (2.0 as Float * self.g)
+        };
         // compute direction _wi_ for Henyey--Greenstein sample
         let sin_theta: Float = (0.0 as Float)
             .max(1.0 as Float - cos_theta * cos_theta)
@@ -378,11 +377,11 @@ impl MediumInterface {
 }
 
 pub fn get_medium_scattering_properties(
-    name: &String,
+    name: &str,
     sigma_a: &mut Spectrum,
     sigma_prime_s: &mut Spectrum,
 ) -> bool {
-    if *name == "" {
+    if name == "" {
         return false;
     }
     for mss in SUBSURFACE_PARAMETER_TABLE.iter() {

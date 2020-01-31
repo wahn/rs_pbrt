@@ -122,7 +122,7 @@ impl ParamSet {
             name
         );
         for i in 0..n_points {
-            let x: Float = values[i * 2 + 0];
+            let x: Float = values[i * 2];
             let y: Float = values[i * 2 + 1];
             p_values.push(Point2f { x, y });
         }
@@ -152,7 +152,7 @@ impl ParamSet {
             name
         );
         for i in 0..n_points {
-            let x: Float = values[i * 3 + 0];
+            let x: Float = values[i * 3];
             let y: Float = values[i * 3 + 1];
             let z: Float = values[i * 3 + 2];
             p_values.push(Point3f { x, y, z });
@@ -168,9 +168,9 @@ impl ParamSet {
         // TODO: cachedSpectra
         self.erase_spectrum(name.clone());
         let mut s: Vec<Spectrum> = Vec::with_capacity(names.len());
-        for i in 0..names.len() {
-            // std::string filename = AbsolutePath(ResolveFilename(names[i]));
-            let fn_str: &String = &names[i];
+        for name in &names {
+            // std::string filename = AbsolutePath(ResolveFilename(name));
+            let fn_str: &String = &name;
             let _f = File::open(fn_str.clone()).unwrap();
             let ip: &Path = Path::new(fn_str.as_str());
             if ip.is_relative() {
@@ -207,7 +207,7 @@ impl ParamSet {
         }
         let n_values: usize = s.len();
         self.spectra.push(ParamSetItem::<Spectrum> {
-            name: name.clone(),
+            name,
             values: s,
             n_values,
             looked_up: false,
@@ -243,7 +243,7 @@ impl ParamSet {
         let n_vectors: usize = values.len() / 3_usize;
         assert!(n_values % 3 == 0, "vector parameters need 3 coordinates");
         for i in 0..n_vectors {
-            let x: Float = values[i * 3 + 0];
+            let x: Float = values[i * 3];
             let y: Float = values[i * 3 + 1];
             let z: Float = values[i * 3 + 2];
             p_values.push(Vector3f { x, y, z });
@@ -269,7 +269,7 @@ impl ParamSet {
         let n_normals: usize = values.len() / 3_usize;
         assert!(n_values % 3 == 0, "normal parameters need 3 coordinates");
         for i in 0..n_normals {
-            let x: Float = values[i * 3 + 0];
+            let x: Float = values[i * 3];
             let y: Float = values[i * 3 + 1];
             let z: Float = values[i * 3 + 2];
             p_values.push(Normal3f { x, y, z });
@@ -666,10 +666,10 @@ impl TextureParams {
             }
         }
         let mut val: Vec<Spectrum> = self.material_params.find_spectrum(n);
-        if val.len() == 0_usize {
+        if val.is_empty() {
             val = self.geom_params.find_spectrum(n);
         }
-        if val.len() == 0_usize {
+        if val.is_empty() {
             None
         } else {
             Some(Arc::new(ConstantTexture { value: val[0] }))
@@ -701,7 +701,7 @@ impl TextureParams {
                     "Ignoring excess values provided with parameter \"{}\"",
                     n.clone()
                 );
-            } else if s.len() != 0 {
+            } else if !s.is_empty() {
                 return Some(Arc::new(ConstantTexture { value: s[0] }));
             }
             name = self.material_params.find_texture(n);
@@ -721,10 +721,10 @@ impl TextureParams {
             }
         }
         let mut val: Vec<Float> = self.material_params.find_float(n);
-        if val.len() == 0_usize {
+        if val.is_empty() {
             val = self.geom_params.find_float(n);
         }
-        if val.len() == 0_usize {
+        if val.is_empty() {
             None
         } else {
             Some(Arc::new(ConstantTexture { value: val[0] }))
@@ -761,7 +761,7 @@ impl TextureParams {
 }
 
 /// Replaces a macro on the C++ side.
-pub fn lookup_one<T>(vec: &Vec<ParamSetItem<T>>, name: &str, d: T) -> T
+pub fn lookup_one<T>(vec: &[ParamSetItem<T>], name: &str, d: T) -> T
 where
     T: Clone,
 {

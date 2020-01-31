@@ -65,12 +65,7 @@ pub fn next_float_up(v: f32) -> f32 {
     if v.is_infinite() && v > 0.0 {
         v
     } else {
-        let new_v: f32;
-        if v == -0.0 {
-            new_v = 0.0;
-        } else {
-            new_v = v;
-        }
+        let new_v = if v == -0.0 { 0.0 } else { v };
         let mut ui: u32 = float_to_bits(new_v);
         if new_v >= 0.0 {
             ui += 1;
@@ -87,12 +82,7 @@ pub fn next_float_down(v: f32) -> f32 {
     if v.is_infinite() && v < 0.0 {
         v
     } else {
-        let new_v: f32;
-        if v == 0.0 {
-            new_v = -0.0;
-        } else {
-            new_v = v;
-        }
+        let new_v = if v == 0.0 { -0.0 } else { v };
         let mut ui: u32 = float_to_bits(new_v);
         if new_v > 0.0 {
             ui -= 1;
@@ -266,19 +256,15 @@ pub fn quadratic(a: Float, b: Float, c: Float, t0: &mut Float, t1: &mut Float) -
     } else {
         let root_discrim: f64 = discrim.sqrt();
         // compute quadratic _t_ values
-        let q: f64;
-        if b < 0.0 {
-            q = -0.5 * (b as f64 - root_discrim);
+        let q = if b < 0.0 {
+            -0.5 * (b as f64 - root_discrim)
         } else {
-            q = -0.5 * (b as f64 + root_discrim);
-        }
+            -0.5 * (b as f64 + root_discrim)
+        };
         *t0 = q as Float / a;
         *t1 = c / q as Float;
         if *t0 > *t1 {
-            // std::swap(*t0, *t1);
-            let swap = *t0;
-            *t0 = *t1;
-            *t1 = swap;
+            std::mem::swap(&mut (*t0), &mut (*t1))
         }
         true
     }
@@ -289,7 +275,7 @@ pub fn erf_inv(x: Float) -> Float {
     let mut w: Float = -((1.0 as Float - clamped_x) * (1.0 as Float + clamped_x)).ln();
     let mut p: Float;
     if w < 5.0 as Float {
-        w = w - 2.5 as Float;
+        w -= 2.5 as Float;
         p = 2.810_226_36e-08;
         p = 3.432_739_39e-07 + p * w;
         p = -3.523_387_7e-06 + p * w;
@@ -323,10 +309,7 @@ pub fn erf(x: Float) -> Float {
     let a5: Float = 1.061_405_429;
     let p: Float = 0.327_591_1;
     // save the sign of x
-    let mut sign: Float = 1.0;
-    if x < 0.0 as Float {
-        sign = -1.0;
-    }
+    let sign = if x < 0.0 as Float { -1.0 } else { 1.0 };
     let x: Float = x.abs();
     // A&S formula 7.1.26
     let t: Float = 1.0 as Float / (1.0 as Float + p * x);

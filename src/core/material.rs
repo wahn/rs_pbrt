@@ -119,21 +119,21 @@ impl Material {
     {
         // compute offset positions and evaluate displacement texture
         let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
-        si_eval.p = si.p.clone();
+        si_eval.p = si.p;
         si_eval.time = si.time;
-        si_eval.p_error = si.p_error.clone();
-        si_eval.wo = si.wo.clone();
-        si_eval.n = si.n.clone();
+        si_eval.p_error = si.p_error;
+        si_eval.wo = si.wo;
+        si_eval.n = si.n;
         if let Some(medium_interface) = &si.medium_interface {
-            Some(Arc::new(medium_interface.clone()));
+            Arc::new(medium_interface.clone());
         } else {
             si_eval.medium_interface = None
         }
-        si_eval.uv = si.uv.clone();
-        si_eval.dpdu = si.dpdu.clone();
-        si_eval.dpdv = si.dpdv.clone();
-        si_eval.dndu = si.dndu.clone();
-        si_eval.dndv = si.dndv.clone();
+        si_eval.uv = si.uv;
+        si_eval.dpdu = si.dpdu;
+        si_eval.dpdv = si.dpdv;
+        si_eval.dndu = si.dndu;
+        si_eval.dndv = si.dndv;
         let dudx: Float = *si.dudx.read().unwrap();
         si_eval.dudx = RwLock::new(dudx);
         let dvdx: Float = *si.dvdx.read().unwrap();
@@ -147,17 +147,17 @@ impl Material {
         let dpdy: Vector3f = *si.dpdy.read().unwrap();
         si_eval.dpdy = RwLock::new(dpdy);
         if let Some(primitive) = &si.primitive {
-            Some(Arc::new(primitive.clone()));
+            Arc::new(primitive.clone());
         } else {
             si_eval.primitive = None
         }
-        si_eval.shading.n = si.shading.n.clone();
-        si_eval.shading.dpdu = si.shading.dpdu.clone();
-        si_eval.shading.dpdv = si.shading.dpdv.clone();
-        si_eval.shading.dndu = si.shading.dndu.clone();
-        si_eval.shading.dndv = si.shading.dndv.clone();
+        si_eval.shading.n = si.shading.n;
+        si_eval.shading.dpdu = si.shading.dpdu;
+        si_eval.shading.dpdv = si.shading.dpdv;
+        si_eval.shading.dndu = si.shading.dndu;
+        si_eval.shading.dndv = si.shading.dndv;
         if let Some(bsdf) = &si.bsdf {
-            Some(Arc::new(bsdf.clone()));
+            Arc::new(bsdf.clone());
         } else {
             si_eval.bsdf = None
         }
@@ -167,7 +167,7 @@ impl Material {
         //     si_eval.bssrdf = None
         // }
         if let Some(shape) = &si.shape {
-            Some(Arc::new(shape.clone()));
+            Arc::new(shape.clone());
         } else {
             si_eval.shape = None
         }

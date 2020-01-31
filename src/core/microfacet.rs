@@ -439,8 +439,8 @@ fn beckmann_sample(
     slope_x = tmp;
 
     // 4. unstretch
-    slope_x = alpha_x * slope_x;
-    slope_y = alpha_y * slope_y;
+    slope_x *= alpha_x;
+    slope_y *= alpha_y;
 
     // 5. compute normal
     Vector3f {
@@ -494,14 +494,13 @@ fn trowbridge_reitz_sample_11(
 
     // sample slope_y
     let s: Float;
-    let new_u2: Float;
-    if u2 > 0.5 {
+    let new_u2 = if u2 > 0.5 {
         s = 1.0;
-        new_u2 = 2.0 * (u2 - 0.5);
+        2.0 * (u2 - 0.5)
     } else {
         s = -1.0;
-        new_u2 = 2.0 * (0.5 - u2);
-    }
+        2.0 * (0.5 - u2)
+    };
     let z: Float = (new_u2 * (new_u2 * (new_u2 * 0.27385 - 0.73369) + 0.46341))
         / (new_u2 * (new_u2 * (new_u2 * 0.093_073 + 0.309_420) - 1.0) + 0.597_999);
     *slope_y = s * z * (1.0 + *slope_x * *slope_x).sqrt();
@@ -536,8 +535,8 @@ fn trowbridge_reitz_sample(
     slope_x = tmp;
 
     // 4. unstretch
-    slope_x = alpha_x * slope_x;
-    slope_y = alpha_y * slope_y;
+    slope_x *= alpha_x;
+    slope_y *= alpha_y;
 
     // 5. compute normal
     Vector3f {
