@@ -82,7 +82,7 @@ impl Scene {
     pub fn intersect_tr(
         &self,
         ray: &mut Ray,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
     ) -> (Option<SurfaceInteraction>, Spectrum) {
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {

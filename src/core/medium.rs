@@ -274,7 +274,7 @@ pub enum Medium {
 }
 
 impl Medium {
-    pub fn tr(&self, r_world: &Ray, sampler: &mut Box<Sampler>) -> Spectrum {
+    pub fn tr(&self, r_world: &Ray, sampler: &mut Sampler) -> Spectrum {
         match self {
             Medium::Empty(_medium) => Spectrum::default(),
             Medium::GridDensity(medium) => medium.tr(r_world, sampler),
@@ -284,7 +284,7 @@ impl Medium {
     pub fn sample(
         &self,
         r_world: &Ray,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
     ) -> (Spectrum, Option<MediumInteraction>) {
         match self {
             Medium::Empty(_medium) => (Spectrum::default(), None),

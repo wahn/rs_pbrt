@@ -43,7 +43,7 @@ impl WhittedIntegrator {
         &self,
         ray: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
@@ -133,7 +133,7 @@ impl WhittedIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
@@ -197,7 +197,7 @@ impl WhittedIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {

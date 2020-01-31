@@ -60,7 +60,7 @@ impl VolPathIntegrator {
         &self,
         r: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         // arena: &mut Arena,
         _depth: i32,
     ) -> Spectrum {

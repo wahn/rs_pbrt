@@ -70,7 +70,7 @@ impl DirectLightingIntegrator {
         &self,
         ray: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
@@ -120,7 +120,7 @@ impl DirectLightingIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Box<Sampler> {
+    pub fn get_sampler(&self) -> &Sampler {
         &self.sampler
     }
     pub fn get_pixel_bounds(&self) -> Bounds2i {
@@ -131,7 +131,7 @@ impl DirectLightingIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
@@ -195,7 +195,7 @@ impl DirectLightingIntegrator {
         ray: &Ray,
         isect: &SurfaceInteraction,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {

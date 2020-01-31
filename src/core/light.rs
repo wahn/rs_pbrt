@@ -201,7 +201,7 @@ impl VisibilityTester {
     pub fn unoccluded(&self, scene: &Scene) -> bool {
         !scene.intersect_p(&mut self.p0.spawn_ray_to(&self.p1))
     }
-    pub fn tr(&self, scene: &Scene, sampler: &mut Box<Sampler>) -> Spectrum {
+    pub fn tr(&self, scene: &Scene, sampler: &mut Sampler) -> Spectrum {
         let mut ray: Ray = self.p0.spawn_ray_to(&self.p1);
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {

@@ -206,7 +206,7 @@ impl SamplerIntegrator {
                                     // send the tile through the channel to main thread
                                     pixel_tx
                                         .send(film_tile)
-                                        .expect(&format!("Failed to send tile"));
+                                        .unwrap_or_else(|_| panic!("Failed to send tile"));
                                 }
                             });
                         }
@@ -229,7 +229,7 @@ impl SamplerIntegrator {
         &self,
         ray: &mut Ray,
         scene: &Scene,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         depth: i32,
     ) -> Spectrum {
         match self {
@@ -251,7 +251,7 @@ impl SamplerIntegrator {
             SamplerIntegrator::Whitted(integrator) => integrator.get_camera(),
         }
     }
-    pub fn get_sampler(&self) -> &Box<Sampler> {
+    pub fn get_sampler(&self) -> &Sampler {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_sampler(),
             SamplerIntegrator::DirectLighting(integrator) => integrator.get_sampler(),
@@ -313,7 +313,7 @@ impl SamplerIntegrator {
 pub fn uniform_sample_all_lights(
     it: &SurfaceInteraction,
     scene: &Scene,
-    sampler: &mut Box<Sampler>,
+    sampler: &mut Sampler,
     n_light_samples: &Vec<i32>,
     handle_media: bool,
 ) -> Spectrum {
@@ -365,7 +365,7 @@ pub fn uniform_sample_all_lights(
 pub fn uniform_sample_one_light(
     it: &dyn Interaction,
     scene: &Scene,
-    sampler: &mut Box<Sampler>,
+    sampler: &mut Sampler,
     handle_media: bool,
     light_distrib: Option<&Distribution1D>,
 ) -> Spectrum {
@@ -415,7 +415,7 @@ pub fn estimate_direct(
     light: Arc<Light>,
     u_light: &Point2f,
     scene: &Scene,
-    sampler: &mut Box<Sampler>,
+    sampler: &mut Sampler,
     // TODO: arena
     handle_media: bool,
     specular: bool,
