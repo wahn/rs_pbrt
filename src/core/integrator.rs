@@ -77,12 +77,11 @@ impl SamplerIntegrator {
                 let y: i32 = (sample_extent.y + tile_size - 1) / tile_size;
                 let n_tiles: Point2i = Point2i { x, y };
                 // TODO: ProgressReporter reporter(nTiles.x * nTiles.y, "Rendering");
-                let num_cores: usize;
-                if num_threads == 0_u8 {
-                    num_cores = num_cpus::get();
+                let num_cores = if num_threads == 0_u8 {
+                    num_cpus::get()
                 } else {
-                    num_cores = num_threads as usize;
-                }
+                    num_threads as usize
+                };
                 println!("Rendering with {:?} thread(s) ...", num_cores);
                 {
                     let block_queue = BlockQueue::new(
@@ -98,7 +97,7 @@ impl SamplerIntegrator {
                     let sampler = &self.get_sampler();
                     let camera = &self.get_camera();
                     let film = &film;
-                    let pixel_bounds = self.get_pixel_bounds().clone();
+                    let pixel_bounds = self.get_pixel_bounds();
                     crossbeam::scope(|scope| {
                         let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
                         // spawn worker threads

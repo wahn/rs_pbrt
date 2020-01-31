@@ -700,14 +700,7 @@ where
     T: std::cmp::PartialOrd,
 {
     fn eq(&self, rhs: &Point2<T>) -> bool {
-        if self.x == rhs.x && self.y == rhs.y {
-            true
-        } else {
-            false
-        }
-    }
-    fn ne(&self, rhs: &Point2<T>) -> bool {
-        !self.eq(rhs)
+        self.x == rhs.x && self.y == rhs.y
     }
 }
 
@@ -1349,18 +1342,7 @@ where
     T: std::cmp::PartialOrd,
 {
     fn eq(&self, rhs: &Normal3<T>) -> bool {
-        if self.x == rhs.x && self.y == rhs.y && self.z == rhs.z {
-            true
-        } else {
-            false
-        }
-    }
-    fn ne(&self, rhs: &Normal3<T>) -> bool {
-        if self.x != rhs.x || self.y != rhs.y || self.z != rhs.z {
-            true
-        } else {
-            false
-        }
+        self.x == rhs.x && self.y == rhs.y && self.z == rhs.z
     }
 }
 
@@ -1508,14 +1490,14 @@ impl<T> Bounds2<T> {
 }
 
 impl Bounds2<Float> {
-    pub fn lerp(&self, t: &Point2f) -> Point2f {
+    pub fn lerp(&self, t: Point2f) -> Point2f {
         Point2f {
             x: lerp(t.x, self.p_min.x, self.p_max.x),
             y: lerp(t.y, self.p_min.y, self.p_max.y),
         }
     }
-    pub fn offset(&self, p: &Point2f) -> Vector2f {
-        let mut o: Vector2f = *p - self.p_min;
+    pub fn offset(&self, p: Point2f) -> Vector2f {
+        let mut o: Vector2f = p - self.p_min;
         if self.p_max.x > self.p_min.x {
             o.x /= self.p_max.x - self.p_min.x;
         }

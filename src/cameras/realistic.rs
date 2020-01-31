@@ -199,7 +199,7 @@ impl RealisticCamera {
             x: sample.p_film.x / self.film.full_resolution.x as Float,
             y: sample.p_film.y / self.film.full_resolution.y as Float,
         };
-        let p_film2: Point2f = self.film.get_physical_extent().lerp(&s);
+        let p_film2: Point2f = self.film.get_physical_extent().lerp(s);
         let p_film: Point3f = Point3f {
             x: -p_film2.x,
             y: p_film2.y,
@@ -662,7 +662,7 @@ impl RealisticCamera {
         let pupil_bounds: Bounds2f = self.exit_pupil_bounds[r_index];
         *sample_bounds_area = pupil_bounds.area();
         // generate sample point inside exit pupil bound
-        let p_lens: Point2f = pupil_bounds.lerp(&lens_sample);
+        let p_lens: Point2f = pupil_bounds.lerp(lens_sample);
         // return sample point rotated by angle of _p_film_ with $+x$ axis
         let sin_theta = if r_film != 0.0 as Float {
             p_film.y / r_film

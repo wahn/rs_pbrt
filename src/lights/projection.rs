@@ -354,7 +354,7 @@ impl ProjectionLight {
             return Spectrum::default();
         }
         if let Some(projection_map) = &self.projection_map {
-            let st: Point2f = Point2f::from(self.screen_bounds.offset(&Point2f { x: p.x, y: p.y }));
+            let st: Point2f = Point2f::from(self.screen_bounds.offset(Point2f { x: p.x, y: p.y }));
             projection_map.lookup_pnt_flt(&st, 0.0 as Float)
         } else {
             Spectrum::new(1.0 as Float)

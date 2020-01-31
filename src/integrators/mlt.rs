@@ -378,7 +378,7 @@ impl MLTIntegrator {
                 y: sample_bounds.p_max.y as Float,
             },
         };
-        *p_raster = sample_bounds_f.lerp(&sampler.get_2d());
+        *p_raster = sample_bounds_f.lerp(sampler.get_2d());
         let n_camera;
         let time;
         {
