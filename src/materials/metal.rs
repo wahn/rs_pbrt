@@ -130,7 +130,7 @@ impl MetalMaterial {
             mp.get_float_texture_or_null("vroughness");
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        Arc::new(Material::Metal(MetalMaterial::new(
+        Arc::new(Material::Metal(Box::new(MetalMaterial::new(
             eta,
             k,
             roughness,
@@ -138,7 +138,7 @@ impl MetalMaterial {
             v_roughness,
             bump_map,
             remap_roughness,
-        )))
+        ))))
     }
     // Material
     pub fn compute_scattering_functions(

@@ -46,13 +46,13 @@ impl PlasticMaterial {
         let roughness = mp.get_float_texture("roughness", 0.1 as Float);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        Arc::new(Material::Plastic(PlasticMaterial::new(
+        Arc::new(Material::Plastic(Box::new(PlasticMaterial::new(
             kd,
             ks,
             roughness,
             bump_map,
             remap_roughness,
-        )))
+        ))))
     }
     // Material
     pub fn compute_scattering_functions(

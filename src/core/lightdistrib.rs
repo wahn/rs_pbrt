@@ -212,7 +212,11 @@ impl SpatialLightDistribution {
                 x: radical_inverse(3, i as u64),
                 y: radical_inverse(4, i as u64),
             };
-            for j in 0..self.scene.lights.len() {
+            for (j, item) in light_contrib
+                .iter_mut()
+                .enumerate()
+                .take(self.scene.lights.len())
+            {
                 let mut pdf: Float = 0.0 as Float;
                 let mut wi: Vector3f = Vector3f::default();
                 let mut vis: VisibilityTester = VisibilityTester::default();
@@ -224,7 +228,7 @@ impl SpatialLightDistribution {
                     // those full weight but instead e.g. have an
                     // occluded shadow ray scale down the contribution
                     // by 10 or something.
-                    light_contrib[j] += li.y() / pdf;
+                    *item += li.y() / pdf;
                 }
             }
         }
@@ -236,16 +240,15 @@ impl SpatialLightDistribution {
         // probability.
         let sum_contrib: Float = light_contrib.iter().sum();
         let avg_contrib: Float = sum_contrib / (n_samples * light_contrib.len()) as Float;
-        let min_contrib: Float;
-        if avg_contrib > 0.0 as Float {
-            min_contrib = 0.001 * avg_contrib;
+        let min_contrib = if avg_contrib > 0.0 as Float {
+            0.001 * avg_contrib
         } else {
-            min_contrib = 1.0 as Float;
-        }
-        for i in 0..light_contrib.len() {
+            1.0 as Float
+        };
+        for item in &mut light_contrib {
             // println!("Voxel pi = {:?}, light {:?} contrib = {:?}",
             //          pi, i, light_contrib[i]);
-            light_contrib[i] = light_contrib[i].max(min_contrib);
+            *item = item.max(min_contrib);
         }
         // println!("Initialized light distribution in voxel pi= {:?}, avg_contrib = {:?}",
         //          pi, avg_contrib);
@@ -346,15 +349,10 @@ impl SpatialLightDistribution {
                 // above.)  Use an atomic compare/exchange to try to
                 // claim this entry for the current position.
                 let invalid: u64 = INVALID_PACKED_POS;
-                let success = match entry.packed_pos.compare_exchange_weak(
-                    invalid,
-                    packed_pos,
-                    Ordering::SeqCst,
-                    Ordering::Relaxed,
-                ) {
-                    Ok(_) => true,
-                    Err(_) => false,
-                };
+                let success = entry
+                    .packed_pos
+                    .compare_exchange_weak(invalid, packed_pos, Ordering::SeqCst, Ordering::Relaxed)
+                    .is_ok();
                 if success {
                     // Success; we've claimed this position for this
                     // voxel's distribution. Now compute the sampling

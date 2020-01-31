@@ -805,10 +805,10 @@ pub fn multiply_generator(c: &[u32], a: u32) -> u32 {
             break;
         }
         if a & 1 != 0 {
-            v = v ^ c[i];
+            v ^= c[i];
         }
         i += 1;
-        a = a >> 1;
+        a >>= 1;
     }
     v
 }
@@ -1025,7 +1025,7 @@ pub fn sobol_interval_to_index(m: u32, frame: u64, p: Point2i) -> u64 {
             // add flipped column m + c + 1.
             delta ^= VD_C_SOBOL_MATRICES[(m - 1) as usize][c as usize];
         }
-        frame = frame >> 1;
+        frame >>= 1;
         c += 1_i32;
     }
     // flipped b
@@ -1036,7 +1036,7 @@ pub fn sobol_interval_to_index(m: u32, frame: u64, p: Point2i) -> u64 {
             // add column 2 * m - c.
             index ^= VD_C_SOBOL_MATRICES_INV[(m - 1) as usize][c as usize];
         }
-        b = b >> 1;
+        b >>= 1;
         c += 1_i32;
     }
     index
@@ -1064,7 +1064,7 @@ pub fn sobol_sample_float(a: i64, dimension: i32, scramble: u32) -> Float {
         if a & 1 > 0 {
             v ^= SOBOL_MATRICES_32[i];
         }
-        a = a >> 1;
+        a >>= 1;
         i += 1_usize;
     }
     //#ifndef PBRT_HAVE_HEX_FP_CONSTANTS

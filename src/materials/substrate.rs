@@ -50,14 +50,14 @@ impl SubstrateMaterial {
             mp.get_float_texture("vroughness", 0.1);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        Arc::new(Material::Substrate(SubstrateMaterial::new(
+        Arc::new(Material::Substrate(Box::new(SubstrateMaterial::new(
             kd,
             ks,
             uroughness,
             vroughness,
             bump_map,
             remap_roughness,
-        )))
+        ))))
     }
     // Material
     pub fn compute_scattering_functions(

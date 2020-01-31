@@ -58,7 +58,7 @@ impl DisneyMaterial {
         let diff_trans = mp.get_float_texture("difftrans", 1.0);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
 
-        Arc::new(Material::Disney(DisneyMaterial {
+        Arc::new(Material::Disney(Box::new(DisneyMaterial {
             color,
             metallic,
             eta,
@@ -75,7 +75,7 @@ impl DisneyMaterial {
             diff_trans,
             bump_map,
             thin,
-        }))
+        })))
     }
     // Material
     pub fn compute_scattering_functions(

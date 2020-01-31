@@ -32,10 +32,10 @@ impl FourierMaterial {
         let bsdffile: String = mp.find_filename("bsdffile", String::new());
         if let Some(bsdf_table) = bsdf_state.loaded_bsdfs.get(&bsdffile.clone()) {
             // use the BSDF table found
-            Arc::new(Material::Fourier(FourierMaterial::new(
+            Arc::new(Material::Fourier(Box::new(FourierMaterial::new(
                 bsdf_table.clone(),
                 bump_map,
-            )))
+            ))))
         } else {
             // read BSDF table from file
             let mut bsdf_table: FourierBSDFTable = FourierBSDFTable::default();
@@ -46,10 +46,10 @@ impl FourierMaterial {
             );
             let bsdf_table_arc: Arc<FourierBSDFTable> = Arc::new(bsdf_table);
             // TODO: bsdf_state.loaded_bsdfs.insert(bsdffile.clone(), bsdf_table_arc.clone());
-            Arc::new(Material::Fourier(FourierMaterial::new(
+            Arc::new(Material::Fourier(Box::new(FourierMaterial::new(
                 bsdf_table_arc.clone(),
                 bump_map,
-            )))
+            ))))
         }
     }
     // Material

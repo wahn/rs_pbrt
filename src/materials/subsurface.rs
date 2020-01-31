@@ -103,7 +103,7 @@ impl SubsurfaceMaterial {
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
         // let start = PreciseTime::now();
         //let tmp =
-        Arc::new(Material::Subsurface(SubsurfaceMaterial::new(
+        Arc::new(Material::Subsurface(Box::new(SubsurfaceMaterial::new(
             scale,
             kr,
             kt,
@@ -115,7 +115,7 @@ impl SubsurfaceMaterial {
             roughv,
             bump_map,
             remap_roughness,
-        )))
+        ))))
         //;
         // let end = PreciseTime::now();
         // println!(

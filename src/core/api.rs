@@ -653,11 +653,11 @@ fn create_material(api_state: &ApiState, bsdf_state: &mut BsdfState) -> Option<A
                 mp.get_spectrum_texture("amount", Spectrum::new(0.5));
             if let Some(m1) = mat1 {
                 if let Some(m2) = mat2 {
-                    let mix = Arc::new(Material::Mix(MixMaterial::new(
+                    let mix = Arc::new(Material::Mix(Box::new(MixMaterial::new(
                         m1.clone(),
                         m2.clone(),
                         scale,
-                    )));
+                    ))));
                     return Some(mix);
                 }
             }
@@ -685,9 +685,9 @@ fn create_material(api_state: &ApiState, bsdf_state: &mut BsdfState) -> Option<A
     }
     let kd = Arc::new(ConstantTexture::new(Spectrum::new(0.5)));
     let sigma = Arc::new(ConstantTexture::new(0.0 as Float));
-    Some(Arc::new(Material::Matte(MatteMaterial::new(
+    Some(Arc::new(Material::Matte(Box::new(MatteMaterial::new(
         kd, sigma, None,
-    ))))
+    )))))
 }
 
 fn create_medium_interface(api_state: &ApiState) -> MediumInterface {

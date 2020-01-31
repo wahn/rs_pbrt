@@ -27,7 +27,9 @@ impl MirrorMaterial {
     pub fn create(mp: &mut TextureParams) -> Arc<Material> {
         let kr = mp.get_spectrum_texture("Kr", Spectrum::new(0.9 as Float));
         let bump_map = mp.get_float_texture_or_null("bumpmap");
-        Arc::new(Material::Mirror(MirrorMaterial::new(kr, bump_map)))
+        Arc::new(Material::Mirror(Box::new(MirrorMaterial::new(
+            kr, bump_map,
+        ))))
     }
     // Material
     pub fn compute_scattering_functions(

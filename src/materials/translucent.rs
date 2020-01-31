@@ -50,7 +50,7 @@ impl TranslucentMaterial {
         let roughness = mp.get_float_texture("roughness", 0.1 as Float);
         let bump_map = mp.get_float_texture_or_null("bumpmap");
         let remap_roughness: bool = mp.find_bool("remaproughness", true);
-        Arc::new(Material::Translucent(TranslucentMaterial::new(
+        Arc::new(Material::Translucent(Box::new(TranslucentMaterial::new(
             kd,
             ks,
             roughness,
@@ -58,7 +58,7 @@ impl TranslucentMaterial {
             transmit,
             bump_map,
             remap_roughness,
-        )))
+        ))))
     }
     // Material
     pub fn compute_scattering_functions(

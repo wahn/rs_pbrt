@@ -1231,7 +1231,7 @@ fn main() {
                                                             specular_color,
                                                         ));
                                                         let mirror = Arc::new(Material::Mirror(
-                                                            MirrorMaterial::new(kr, None),
+                                                            Box::new(MirrorMaterial::new(kr, None)),
                                                         ));
                                                         named_materials
                                                             .insert(node_name.clone(), mirror);
@@ -1264,7 +1264,7 @@ fn main() {
                                                             ));
                                                         let remap_roughness: bool = true;
                                                         let metal = Arc::new(Material::Metal(
-                                                            MetalMaterial::new(
+                                                            Box::new(MetalMaterial::new(
                                                                 eta,
                                                                 k,
                                                                 roughness,
@@ -1272,7 +1272,7 @@ fn main() {
                                                                 None,
                                                                 None,
                                                                 remap_roughness,
-                                                            ),
+                                                            )),
                                                         ));
                                                         named_materials
                                                             .insert(node_name.clone(), metal);
@@ -1284,9 +1284,10 @@ fn main() {
                                                     let sigma = Arc::new(ConstantTexture::new(
                                                         0.0 as Float,
                                                     ));
-                                                    let matte = Arc::new(Material::Matte(
-                                                        MatteMaterial::new(kd, sigma, None),
-                                                    ));
+                                                    let matte =
+                                                        Arc::new(Material::Matte(Box::new(
+                                                            MatteMaterial::new(kd, sigma, None),
+                                                        )));
                                                     named_materials
                                                         .insert(node_name.clone(), matte);
                                                 }

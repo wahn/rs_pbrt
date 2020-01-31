@@ -112,7 +112,7 @@ impl HairMaterial {
         let beta_m = mp.get_float_texture("beta_m", 0.3);
         let beta_n = mp.get_float_texture("beta_n", 0.3);
         let alpha = mp.get_float_texture("alpha", 2.0);
-        Arc::new(Material::Hair(HairMaterial::new(
+        Arc::new(Material::Hair(Box::new(HairMaterial::new(
             sigma_a,
             color,
             eumelanin,
@@ -121,7 +121,7 @@ impl HairMaterial {
             beta_m,
             beta_n,
             alpha,
-        )))
+        ))))
     }
     // Material
     pub fn compute_scattering_functions(

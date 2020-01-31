@@ -80,7 +80,7 @@ impl UberMaterial {
         let eta_option: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("eta");
         if let Some(ref eta) = eta_option {
-            Arc::new(Material::Uber(UberMaterial::new(
+            Arc::new(Material::Uber(Box::new(UberMaterial::new(
                 kd,
                 ks,
                 kr,
@@ -92,11 +92,11 @@ impl UberMaterial {
                 eta.clone(),
                 bump_map,
                 remap_roughness,
-            )))
+            ))))
         } else {
             let eta: Arc<dyn Texture<Float> + Send + Sync> =
                 mp.get_float_texture("index", 1.5 as Float);
-            Arc::new(Material::Uber(UberMaterial::new(
+            Arc::new(Material::Uber(Box::new(UberMaterial::new(
                 kd,
                 ks,
                 kr,
@@ -108,7 +108,7 @@ impl UberMaterial {
                 eta,
                 bump_map,
                 remap_roughness,
-            )))
+            ))))
         }
     }
     // Material

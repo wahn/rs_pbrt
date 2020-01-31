@@ -35,19 +35,19 @@ pub enum TransportMode {
 }
 
 pub enum Material {
-    Disney(DisneyMaterial),
-    Fourier(FourierMaterial),
-    Glass(GlassMaterial),
-    Hair(HairMaterial),
-    Matte(MatteMaterial),
-    Metal(MetalMaterial),
-    Mirror(MirrorMaterial),
-    Mix(MixMaterial),
-    Plastic(PlasticMaterial),
-    Substrate(SubstrateMaterial),
-    Subsurface(SubsurfaceMaterial),
-    Translucent(TranslucentMaterial),
-    Uber(UberMaterial),
+    Disney(Box<DisneyMaterial>),
+    Fourier(Box<FourierMaterial>),
+    Glass(Box<GlassMaterial>),
+    Hair(Box<HairMaterial>),
+    Matte(Box<MatteMaterial>),
+    Metal(Box<MetalMaterial>),
+    Mirror(Box<MirrorMaterial>),
+    Mix(Box<MixMaterial>),
+    Plastic(Box<PlasticMaterial>),
+    Substrate(Box<SubstrateMaterial>),
+    Subsurface(Box<SubsurfaceMaterial>),
+    Translucent(Box<TranslucentMaterial>),
+    Uber(Box<UberMaterial>),
 }
 
 /// **Material** defines the interface that material implementations

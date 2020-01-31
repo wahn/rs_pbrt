@@ -57,7 +57,7 @@ impl GlassMaterial {
         let eta_option: Option<Arc<dyn Texture<Float> + Send + Sync>> =
             mp.get_float_texture_or_null("eta");
         if let Some(ref eta) = eta_option {
-            Arc::new(Material::Glass(GlassMaterial::new(
+            Arc::new(Material::Glass(Box::new(GlassMaterial::new(
                 kr,
                 kt,
                 roughu,
@@ -65,11 +65,11 @@ impl GlassMaterial {
                 eta.clone(),
                 bump_map,
                 remap_roughness,
-            )))
+            ))))
         } else {
             let eta: Arc<dyn Texture<Float> + Send + Sync> =
                 mp.get_float_texture("index", 1.5 as Float);
-            Arc::new(Material::Glass(GlassMaterial::new(
+            Arc::new(Material::Glass(Box::new(GlassMaterial::new(
                 kr,
                 kt,
                 roughu,
@@ -77,7 +77,7 @@ impl GlassMaterial {
                 eta,
                 bump_map,
                 remap_roughness,
-            )))
+            ))))
         }
     }
     // Material
