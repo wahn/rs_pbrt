@@ -13,7 +13,7 @@ use crate::core::pbrt::INV_2_PI;
 /// Calculates an offset and four weights for Catmull-Rom spline
 /// interpolation.
 pub fn catmull_rom_weights(
-    nodes: &Vec<Float>,
+    nodes: &[Float],
     x: Float,
     offset: &mut i32,
     weights: &mut [Float; 4],
@@ -62,10 +62,10 @@ pub fn catmull_rom_weights(
 
 /// Importance sampling of 2D functions via spline interpolants.
 pub fn sample_catmull_rom_2d(
-    nodes1: &Vec<Float>,
-    nodes2: &Vec<Float>,
-    values: &Vec<Float>,
-    cdf: &Vec<Float>,
+    nodes1: &[Float],
+    nodes2: &[Float],
+    values: &[Float],
+    cdf: &[Float],
     alpha: Float,
     u: Float,
     fval: Option<&mut Float>,
@@ -81,13 +81,13 @@ pub fn sample_catmull_rom_2d(
         return 0.0 as Float;
     }
     // define a lambda function to interpolate table entries
-    let interpolate = |array: &Vec<Float>, idx: i32| -> Float {
+    let interpolate = |array: &[Float], idx: i32| -> Float {
         let mut value: Float = 0.0;
-        for i in 0..4 {
-            if weights[i] != 0.0 as Float {
+        for (i, weight) in weights.iter().enumerate() {
+            if *weight != 0.0 as Float {
                 let index: i32 = (offset + i as i32) * size2 + idx;
                 assert!(index >= 0);
-                value += array[index as usize] * weights[i];
+                value += array[index as usize] * *weight;
             }
         }
         value
@@ -122,16 +122,14 @@ pub fn sample_catmull_rom_2d(
     // invert definite integral over spline segment and return solution
 
     // set initial guess for $t$ by importance sampling a linear interpolant
-    let mut t: Float;
-    if f0 != f1 {
-        t = (f0
-            - (0.0 as Float)
-                .max(f0 * f0 + 2.0 as Float * u * (f1 - f0))
-                .sqrt())
-            / (f0 - f1);
+    let mut t = if f0 != f1 {
+        (f0 - (0.0 as Float)
+            .max(f0 * f0 + 2.0 as Float * u * (f1 - f0))
+            .sqrt())
+            / (f0 - f1)
     } else {
-        t = u / f0;
-    }
+        u / f0
+    };
     let mut a: Float = 0.0;
     let mut b: Float = 1.0;
     let mut f_hat;
@@ -177,13 +175,13 @@ pub fn sample_catmull_rom_2d(
 
 pub fn integrate_catmull_rom(
     n: i32,
-    x: &Vec<Float>,
+    x: &[Float],
     offset: usize,
-    values: &Vec<Float>,
+    values: &[Float],
     cdf: &mut Vec<Float>,
 ) -> Float {
     let mut sum: Float = 0.0;
-    cdf[offset + 0] = 0.0 as Float;
+    cdf[offset] = 0.0 as Float;
     for i in 0..(n - 1) as usize {
         // look up $x_i$ and function values of spline segment _i_
         let x0: Float = x[i];
@@ -231,7 +229,7 @@ pub fn fourier(a: &SmallVec<[Float; 128]>, si: usize, m: i32, cos_phi: f64) -> F
 /// position.
 pub fn sample_fourier(
     ak: &SmallVec<[Float; 128]>,
-    recip: &Vec<Float>,
+    recip: &[Float],
     m: i32,
     u: Float,
     pdf: &mut Float,

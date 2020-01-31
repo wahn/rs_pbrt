@@ -322,7 +322,7 @@ impl<'a> SurfaceInteraction<'a> {
                 wo: wo.normalize(),
                 n,
                 medium_interface: None,
-                uv: uv,
+                uv,
                 dpdu: *dpdu,
                 dpdv: *dpdv,
                 dndu: *dndu,
@@ -347,7 +347,7 @@ impl<'a> SurfaceInteraction<'a> {
                 wo: wo.normalize(),
                 n,
                 medium_interface: None,
-                uv: uv,
+                uv,
                 dpdu: *dpdu,
                 dpdv: *dpdv,
                 dndu: *dndu,
@@ -421,7 +421,7 @@ impl<'a> SurfaceInteraction<'a> {
         mode: TransportMode,
     ) {
         self.compute_differentials(ray);
-        if let Some(ref primitive) = self.primitive.clone() {
+        if let Some(ref primitive) = self.primitive {
             primitive.compute_scattering_functions(
                 self, // arena,
                 mode,
@@ -534,7 +534,7 @@ impl<'a> SurfaceInteraction<'a> {
         }
     }
     pub fn le(&self, w: &Vector3f) -> Spectrum {
-        if let Some(ref primitive) = self.primitive.clone() {
+        if let Some(ref primitive) = self.primitive {
             if let Some(area_light) = primitive.get_area_light() {
                 // create InteractionCommon from self
                 let interaction: InteractionCommon = InteractionCommon {
@@ -571,19 +571,19 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
         }
     }
     fn get_p(&self) -> Point3f {
-        self.p.clone()
+        self.p
     }
     fn get_time(&self) -> Float {
         self.time
     }
     fn get_p_error(&self) -> Vector3f {
-        self.p_error.clone()
+        self.p_error
     }
     fn get_wo(&self) -> Vector3f {
-        self.wo.clone()
+        self.wo
     }
     fn get_n(&self) -> Normal3f {
-        self.n.clone()
+        self.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
         if let Some(ref medium_interface) = self.medium_interface {
@@ -600,7 +600,7 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
         }
     }
     fn get_shading_n(&self) -> Option<Normal3f> {
-        Some(self.shading.n.clone())
+        Some(self.shading.n)
     }
     fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
         None
