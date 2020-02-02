@@ -99,12 +99,11 @@ impl DiffuseAreaLight {
     }
     pub fn power(&self) -> Spectrum {
         // return (twoSided ? 2 : 1) * Lemit * area * Pi;
-        let factor: Float;
-        if self.two_sided {
-            factor = 2.0 as Float;
+        let factor = if self.two_sided {
+            2.0 as Float
         } else {
-            factor = 1.0 as Float;
-        }
+            1.0 as Float
+        };
         self.l_emit * factor * self.area * PI
     }
     pub fn preprocess(&self, _scene: &Scene) {

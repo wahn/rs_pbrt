@@ -178,12 +178,12 @@ impl InfiniteAreaLight {
         texmap: String,
     ) -> Self {
         // read texel data from _texmap_ and initialize _Lmap_
-        if texmap != String::from("") {
-            let file = std::fs::File::open(texmap.clone()).unwrap();
+        if texmap != "" {
+            let file = std::fs::File::open(texmap).unwrap();
             let reader = BufReader::new(file);
             let img_result = image::hdr::HDRDecoder::with_strictness(reader, false);
             if img_result.is_ok() {
-                if let Some(hdr) = img_result.ok() {
+                if let Ok(hdr) = img_result {
                     let meta = hdr.metadata();
                     let resolution: Point2i = Point2i {
                         x: meta.width as i32,

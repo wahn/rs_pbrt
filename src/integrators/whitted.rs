@@ -122,7 +122,7 @@ impl WhittedIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Box<Sampler> {
+    pub fn get_sampler(&self) -> &Sampler {
         &self.sampler
     }
     pub fn get_pixel_bounds(&self) -> Bounds2i {

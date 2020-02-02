@@ -116,7 +116,7 @@ impl SpotLight {
                 p_error: iref.p_error,
                 wo: iref.wo,
                 n: iref.n,
-                medium_interface: Some(medium_interface1_arc.clone()),
+                medium_interface: Some(medium_interface1_arc),
             },
             p1: InteractionCommon {
                 p: self.p_light,
@@ -124,7 +124,7 @@ impl SpotLight {
                 p_error: Vector3f::default(),
                 wo: Vector3f::default(),
                 n: Normal3f::default(),
-                medium_interface: Some(medium_interface2_arc.clone()),
+                medium_interface: Some(medium_interface2_arc),
             },
         };
         self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)

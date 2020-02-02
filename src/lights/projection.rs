@@ -231,12 +231,12 @@ impl ProjectionLight {
         texname: String,
         fov: Float,
     ) -> Self {
-        if texname != String::from("") {
-            let file = std::fs::File::open(texname.clone()).unwrap();
+        if texname != "" {
+            let file = std::fs::File::open(texname).unwrap();
             let reader = BufReader::new(file);
             let img_result = image::hdr::HDRDecoder::with_strictness(reader, false);
             if img_result.is_ok() {
-                if let Some(hdr) = img_result.ok() {
+                if let Ok(hdr) = img_result {
                     let meta = hdr.metadata();
                     let resolution: Point2i = Point2i {
                         x: meta.width as i32,
@@ -265,9 +265,8 @@ impl ProjectionLight {
                         ));
                         let p_light: Point3f = light_to_world.transform_point(&Point3f::default());
                         let aspect: Float = resolution.x as Float / resolution.y as Float;
-                        let screen_bounds: Bounds2f;
-                        if aspect > 1.0 as Float {
-                            screen_bounds = Bounds2f {
+                        let screen_bounds = if aspect > 1.0 as Float {
+                            Bounds2f {
                                 p_min: Point2f {
                                     x: -aspect,
                                     y: -1.0 as Float,
@@ -276,9 +275,9 @@ impl ProjectionLight {
                                     x: aspect,
                                     y: 1.0 as Float,
                                 },
-                            };
+                            }
                         } else {
-                            screen_bounds = Bounds2f {
+                            Bounds2f {
                                 p_min: Point2f {
                                     x: -1.0 as Float,
                                     y: -1.0 as Float / aspect,
@@ -287,8 +286,8 @@ impl ProjectionLight {
                                     x: 1.0 as Float,
                                     y: 1.0 as Float / aspect,
                                 },
-                            };
-                        }
+                            }
+                        };
                         let hither: Float = 1e-3 as Float;
                         let yon: Float = 1e30 as Float;
                         let light_projection: Transform = Transform::perspective(fov, hither, yon);

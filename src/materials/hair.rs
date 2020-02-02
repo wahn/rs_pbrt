@@ -212,10 +212,10 @@ impl HairBSDF {
         assert!(h >= -1.0001 as Float && h <= 1.0001 as Float);
         let gamma_o: Float = clamp_t(h, -1.0 as Float, 1.0 as Float).asin();
         // compute longitudinal variance from $\beta_m$
-        assert!(
-            P_MAX >= 3_u8,
-            "Longitudinal variance code must be updated to handle low P_MAX"
-        );
+        // assert!(
+        //     P_MAX >= 3_u8,
+        //     "Longitudinal variance code must be updated to handle low P_MAX"
+        // );
         let mut v: [Float; (P_MAX + 1) as usize] = [0.0 as Float; (P_MAX + 1) as usize];
         let beta_m_2: Float = beta_m * beta_m;
         let beta_m_4: Float = beta_m_2 * beta_m_2;
@@ -227,7 +227,7 @@ impl HairBSDF {
         v[0] = f * f;
         v[1] = 0.25 as Float * v[0];
         v[2] = 4.0 as Float * v[0];
-        for p in 3..(P_MAX + 1) {
+        for p in 3..=P_MAX {
             // TODO: is there anything better here?
             v[p as usize] = v[2];
         }
@@ -290,10 +290,10 @@ impl HairBSDF {
         // compute $A_p$ PDF from individual $A_p$ terms
         let mut ap_pdf: [Float; (P_MAX + 1) as usize] = [0.0 as Float; (P_MAX + 1) as usize];
         let mut sum_y: Float = 0.0 as Float;
-        for i in 0..(P_MAX + 1) {
+        for i in 0..=P_MAX {
             sum_y += ap[i as usize].y();
         }
-        for i in 0..(P_MAX + 1) {
+        for i in 0..=P_MAX {
             ap_pdf[i as usize] = ap[i as usize].y() / sum_y;
         }
         ap_pdf
@@ -408,7 +408,7 @@ impl HairBSDF {
             )
             / (2.0 as Float * PI);
         if abs_cos_theta(wi) > 0.0 as Float {
-            fsum = fsum / abs_cos_theta(wi);
+            fsum /= abs_cos_theta(wi);
         }
         assert!(!fsum.y().is_infinite() && !fsum.y().is_nan());
         if let Some(sc) = self.sc_opt {
@@ -479,13 +479,12 @@ impl HairBSDF {
         let sin_gamma_t: Float = self.h / etap;
         assert!(sin_gamma_t >= -1.0001 as Float && sin_gamma_t <= 1.0001 as Float);
         let gamma_t: Float = clamp_t(sin_gamma_t, -1.0 as Float, 1.0 as Float).asin();
-        let dphi: Float;
-        if p < P_MAX as usize {
-            dphi = phi_fn(p as i32, self.gamma_o, gamma_t)
-                + sample_trimmed_logistic(u[0][1], self.s, -PI, PI);
+        let dphi = if p < P_MAX as usize {
+            phi_fn(p as i32, self.gamma_o, gamma_t)
+                + sample_trimmed_logistic(u[0][1], self.s, -PI, PI)
         } else {
-            dphi = 2.0 as Float * PI * u[0][1];
-        }
+            2.0 as Float * PI * u[0][1]
+        };
         // compute _wi_ from sampled hair scattering angles
         let phi_i: Float = phi_o + dphi;
         *wi = Vector3f {
@@ -662,15 +661,14 @@ fn mp(
 ) -> Float {
     let a: Float = cos_theta_i * cos_theta_o / v;
     let b: Float = sin_theta_i * sin_theta_o / v;
-    let mp: Float;
-    if v <= 0.1 as Float {
-        mp = (log_i0(a) - b - 1.0 as Float / v
+    let mp = if v <= 0.1 as Float {
+        (log_i0(a) - b - 1.0 as Float / v
             + 0.6931 as Float
             + (1.0 as Float / (2. as Float * v)).ln())
-        .exp();
+        .exp()
     } else {
-        mp = ((-b).exp() * i0(a)) / ((1.0 as Float / v).sinh() * 2.0 as Float * v);
-    }
+        ((-b).exp() * i0(a)) / ((1.0 as Float / v).sinh() * 2.0 as Float * v)
+    };
     mp
 }
 

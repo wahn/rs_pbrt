@@ -47,7 +47,7 @@ impl FourierMaterial {
             let bsdf_table_arc: Arc<FourierBSDFTable> = Arc::new(bsdf_table);
             // TODO: bsdf_state.loaded_bsdfs.insert(bsdffile.clone(), bsdf_table_arc.clone());
             Arc::new(Material::Fourier(Box::new(FourierMaterial::new(
-                bsdf_table_arc.clone(),
+                bsdf_table_arc,
                 bump_map,
             ))))
         }

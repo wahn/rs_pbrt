@@ -171,12 +171,12 @@ impl GonioPhotometricLight {
         i: &Spectrum,
         texname: String,
     ) -> Self {
-        if texname != String::from("") {
-            let file = std::fs::File::open(texname.clone()).unwrap();
+        if texname != "" {
+            let file = std::fs::File::open(texname).unwrap();
             let reader = BufReader::new(file);
             let img_result = image::hdr::HDRDecoder::with_strictness(reader, false);
             if img_result.is_ok() {
-                if let Some(hdr) = img_result.ok() {
+                if let Ok(hdr) = img_result {
                     let meta = hdr.metadata();
                     let resolution: Point2i = Point2i {
                         x: meta.width as i32,
