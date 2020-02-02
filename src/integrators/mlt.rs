@@ -102,7 +102,7 @@ impl MLTSampler {
     pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
         let mlt_sampler = MLTSampler {
             samples_per_pixel: self.samples_per_pixel,
-            rng: self.rng.clone(),
+            rng: self.rng,
             sigma: self.sigma,
             large_step_probability: self.large_step_probability,
             stream_count: self.stream_count,
@@ -114,10 +114,10 @@ impl MLTSampler {
             sample_index: self.sample_index,
             current_pixel: self.current_pixel,
             current_pixel_sample_index: self.current_pixel_sample_index,
-            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
-            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
-            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
-            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
+            samples_1d_array_sizes: self.samples_1d_array_sizes.to_vec(),
+            samples_2d_array_sizes: self.samples_2d_array_sizes.to_vec(),
+            sample_array_1d: self.sample_array_1d.to_vec(),
+            sample_array_2d: self.sample_array_2d.to_vec(),
             array_1d_offset: self.array_1d_offset,
             array_2d_offset: self.array_2d_offset,
         };
@@ -343,11 +343,11 @@ impl MLTIntegrator {
         &self,
         scene: &Scene,
         light_distr: &Arc<Distribution1D>,
-        sampler: &mut Box<Sampler>,
+        sampler: &mut Sampler,
         depth: u32,
         p_raster: &mut Point2f,
     ) -> Spectrum {
-        match sampler.deref_mut() {
+        match sampler {
             Sampler::MLT(mlt_sampler) => mlt_sampler.start_stream(CAMERA_STREAM_INDEX as i32),
             _ => panic!("MLTSampler needed."),
         }
@@ -397,7 +397,7 @@ impl MLTIntegrator {
             return Spectrum::default();
         }
         // generate a light subpath with exactly _s_ vertices
-        match sampler.deref_mut() {
+        match sampler {
             Sampler::MLT(mlt_sampler) => mlt_sampler.start_stream(LIGHT_STREAM_INDEX as i32),
             _ => panic!("MLTSampler needed."),
         }
@@ -418,7 +418,7 @@ impl MLTIntegrator {
             return Spectrum::default();
         }
         // execute connection strategy and return the radiance estimate
-        match sampler.deref_mut() {
+        match sampler {
             Sampler::MLT(mlt_sampler) => mlt_sampler.start_stream(CONNECTION_STREAM_INDEX as i32),
             _ => panic!("MLTSampler needed."),
         }
@@ -437,19 +437,14 @@ impl MLTIntegrator {
         ) * (n_strategies as Float)
     }
     pub fn render(&self, scene: &Scene, num_threads: u8) {
-        let num_cores: usize;
-        if num_threads == 0_u8 {
-            num_cores = num_cpus::get();
-        } else {
-            num_cores = num_threads as usize;
-        }
+        let num_cores = if num_threads == 0_u8 { num_cpus::get() } else { num_threads as usize };
         if let Some(light_distr) = compute_light_power_distribution(scene) {
             println!("Generating bootstrap paths ...");
             // generate bootstrap samples and compute normalization constant $b$
             let n_bootstrap_samples: u32 = self.n_bootstrap * (self.max_depth + 1);
             let mut bootstrap_weights: Vec<Float> =
                 vec![0.0 as Float; n_bootstrap_samples as usize];
-            if scene.lights.len() > 0 {
+            if !scene.lights.is_empty() {
                 // TODO: ProgressReporter progress(nBootstrap / 256, "Generating bootstrap paths");
                 // let chunk_size: u32 = clamp_t(integrator.n_bootstrap / 128, 1, 8192);
                 let chunk_size: usize = (n_bootstrap_samples / num_cores as u32) as usize;
@@ -464,7 +459,7 @@ impl MLTIntegrator {
                         for (b, band) in bands.into_iter().enumerate() {
                             let band_tx = band_tx.clone();
                             scope.spawn(move |_| {
-                                for (w, weight) in band.into_iter().enumerate() {
+                                for (w, weight) in band.iter_mut().enumerate() {
                                     let rng_index: u64 = ((b * chunk_size) + w) as u64;
                                     let depth: u32 =
                                         (rng_index % (integrator.max_depth + 1) as u64) as u32;
@@ -483,7 +478,7 @@ impl MLTIntegrator {
                                 }
                             });
                             // send progress through the channel to main thread
-                            band_tx.send(b).expect(&format!("Failed to send progress"));
+                            band_tx.send(b).unwrap_or_else(|_| panic!("Failed to send progress"));
                         }
                         // spawn thread to report progress
                         scope.spawn(move |_| {
@@ -501,7 +496,7 @@ impl MLTIntegrator {
             let film: Arc<Film> = self.get_camera().get_film();
             let n_total_mutations: u64 =
                 self.mutations_per_pixel as u64 * film.get_sample_bounds().area() as u64;
-            if scene.lights.len() > 0 {
+            if !scene.lights.is_empty() {
                 // TODO: let progress_frequency = 32768;
                 // TODO: ProgressReporter progress(nTotalMutations / progressFrequency,
                 //                           "Rendering");
@@ -517,7 +512,7 @@ impl MLTIntegrator {
                 // for i in 0..n_chains {
                 let ivec: Vec<u32> = (0..n_chains).collect();
                 ivec.par_iter().for_each_with(sender, |s, &i| {
-                    s.send(i).expect(&format!("Failed to send chain"));
+                    s.send(i).unwrap_or_else(|_| panic!("Failed to send chain"));
                     let n_chain_mutations: u64 = ((i as u64 + 1) * n_total_mutations
                         / n_chains as u64)
                         .min(n_total_mutations)

@@ -53,7 +53,7 @@ impl DirectLightingIntegrator {
         if self.strategy == LightStrategy::UniformSampleAll {
             // compute number of samples to use for each light
             for li in 0..scene.lights.len() {
-                let ref light = scene.lights[li];
+                let light = &scene.lights[li];
                 self.n_light_samples
                     .push(self.sampler.round_count(light.get_n_samples()));
             }
@@ -85,7 +85,7 @@ impl DirectLightingIntegrator {
             //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
             let wo: Vector3f = isect.wo;
             l += isect.le(&wo);
-            if scene.lights.len() > 0 {
+            if !scene.lights.is_empty() {
                 // compute direct lighting for _DirectLightingIntegrator_ integrator
                 if self.strategy == LightStrategy::UniformSampleAll {
                     l += uniform_sample_all_lights(
