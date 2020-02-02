@@ -2748,12 +2748,12 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                         two_sided,
                     ))));
                 area_lights.push(area_light.clone());
-                let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
+                let geo_prim = Arc::new(Primitive::Geometric(Box::new(GeometricPrimitive::new(
                     shape.clone(),
                     material.clone(),
                     Some(area_light.clone()),
                     Some(Arc::new(mi.clone())),
-                )));
+                ))));
                 prims.push(geo_prim.clone());
             }
         }
@@ -2766,12 +2766,12 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
         for i in 0..shapes.len() {
             let shape = &shapes[i];
             let material = &materials[i];
-            let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
+            let geo_prim = Arc::new(Primitive::Geometric(Box::new(GeometricPrimitive::new(
                 shape.clone(),
                 material.clone(),
                 None,
                 Some(Arc::new(mi.clone())),
-            )));
+            ))));
             prims.push(geo_prim.clone());
         }
         // animated?
@@ -2783,18 +2783,17 @@ pub fn pbrt_shape(api_state: &mut ApiState, bsdf_state: &mut BsdfState, params: 
                 api_state.render_options.transform_end_time,
             );
             if prims.len() > 1 {
-                let bvh: Arc<Primitive> = Arc::new(Primitive::BVH(BVHAccel::new(
+                let bvh: Arc<Primitive> = Arc::new(Primitive::BVH(Box::new(BVHAccel::new(
                     prims.clone(),
                     4,
                     SplitMethod::SAH,
-                )));
+                ))));
                 prims.clear();
                 prims.push(bvh);
             }
             if let Some(primitive) = prims.pop() {
-                let geo_prim = Arc::new(Primitive::Transformed(TransformedPrimitive::new(
-                    primitive,
-                    animated_object_to_world,
+                let geo_prim = Arc::new(Primitive::Transformed(Box::new(
+                    TransformedPrimitive::new(primitive, animated_object_to_world),
                 )));
                 prims.push(geo_prim);
             }
@@ -2973,20 +2972,19 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
                     .render_options
                     .accelerator_params
                     .find_one_int("maxnodeprims", 4);
-                let accelerator: Arc<Primitive> = Arc::new(Primitive::BVH(BVHAccel::new(
-                    instance_vec.clone(),
-                    max_prims_in_node as usize,
-                    split_method,
-                )));
+                let accelerator: Arc<Primitive> =
+                    Arc::new(Primitive::BVH(Box::new(BVHAccel::new(
+                        instance_vec.clone(),
+                        max_prims_in_node as usize,
+                        split_method,
+                    ))));
                 instance_vec.clear();
                 instance_vec.push(accelerator);
             } else if api_state.render_options.accelerator_name == "kdtree" {
                 // println!("TODO: CreateKdTreeAccelerator");
                 // WARNING: Use BVHAccel for now !!!
-                let accelerator: Arc<Primitive> = Arc::new(Primitive::BVH(BVHAccel::new(
-                    instance_vec.clone(),
-                    4,
-                    SplitMethod::SAH,
+                let accelerator: Arc<Primitive> = Arc::new(Primitive::BVH(Box::new(
+                    BVHAccel::new(instance_vec.clone(), 4, SplitMethod::SAH),
                 )));
                 instance_vec.clear();
                 instance_vec.push(accelerator);
@@ -3004,9 +3002,8 @@ pub fn pbrt_object_instance(api_state: &mut ApiState, params: ParamSet) {
             &api_state.cur_transform.t[1],
             api_state.render_options.transform_end_time,
         );
-        let prim: Arc<Primitive> = Arc::new(Primitive::Transformed(TransformedPrimitive::new(
-            instance_vec[0].clone(),
-            animated_instance_to_world,
+        let prim: Arc<Primitive> = Arc::new(Primitive::Transformed(Box::new(
+            TransformedPrimitive::new(instance_vec[0].clone(), animated_instance_to_world),
         )));
         api_state.render_options.primitives.push(prim);
     } else {

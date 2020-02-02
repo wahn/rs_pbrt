@@ -24,10 +24,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn new(
-        aggregate: Arc<Primitive>,
-        lights: Vec<Arc<Light>>,
-    ) -> Self {
+    pub fn new(aggregate: Arc<Primitive>, lights: Vec<Arc<Light>>) -> Self {
         let world_bound: Bounds3f = aggregate.world_bound();
         let scene: Scene = Scene {
             lights: Vec::new(),

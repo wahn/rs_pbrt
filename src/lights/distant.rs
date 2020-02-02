@@ -139,7 +139,13 @@ impl DistantLight {
         *pdf_dir = 1.0 as Float;
         self.l
     }
-    pub fn pdf_le(&self, _ray: &Ray, _n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
+    pub fn pdf_le(
+        &self,
+        _ray: &Ray,
+        _n_light: &Normal3f,
+        pdf_pos: &mut Float,
+        pdf_dir: &mut Float,
+    ) {
         let world_radius: Float = *self.world_radius.read().unwrap();
         *pdf_pos = 1.0 as Float / (PI * world_radius * world_radius);
         *pdf_dir = 0.0 as Float;

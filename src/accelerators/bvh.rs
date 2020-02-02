@@ -197,11 +197,11 @@ impl BVHAccel {
             split_method = SplitMethod::SAH;
         }
         let max_prims_in_node: i32 = ps.find_one_int("maxnodeprims", 4);
-        Primitive::BVH(BVHAccel::new(
+        Primitive::BVH(Box::new(BVHAccel::new(
             prims,
             max_prims_in_node as usize,
             split_method,
-        ))
+        )))
     }
     pub fn recursive_build<'a>(
         bvh: Arc<BVHAccel>,

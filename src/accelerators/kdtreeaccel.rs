@@ -242,14 +242,14 @@ impl KdTreeAccel {
         let empty_bonus: Float = ps.find_one_float("emptybonus", 0.5 as Float);
         let max_prims: i32 = ps.find_one_int("maxprims", 1);
         let max_depth: i32 = ps.find_one_int("maxdepth", -1);
-        Primitive::KdTree(KdTreeAccel::new(
+        Primitive::KdTree(Box::new(KdTreeAccel::new(
             prims,
             isect_cost,
             trav_cost,
             empty_bonus,
             max_prims,
             max_depth,
-        ))
+        )))
     }
     pub fn build_tree(
         &mut self,

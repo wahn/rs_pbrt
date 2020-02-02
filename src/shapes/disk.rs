@@ -148,16 +148,7 @@ impl Disk {
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
         let si: SurfaceInteraction = SurfaceInteraction::new(
-            &p_hit,
-            &p_error,
-            uv_hit,
-            &wo,
-            &dpdu,
-            &dpdv,
-            &dndu,
-            &dndv,
-            ray.time,
-            None,
+            &p_hit, &p_error, uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
         );
         let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
         if let Some(ref shape) = si.shape {

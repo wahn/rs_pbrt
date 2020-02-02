@@ -1106,12 +1106,12 @@ fn main() {
                                                     let shape = &shapes[i];
                                                     let shidx = shidxs_tri[i];
                                                     let geo_prim = Arc::new(Primitive::Geometric(
-                                                        GeometricPrimitive::new(
+                                                        Box::new(GeometricPrimitive::new(
                                                             shape.clone(),
                                                             None,
                                                             None,
                                                             Some(Arc::new(mi.clone())),
-                                                        ),
+                                                        )),
                                                     ));
                                                     prims.push((shidx, geo_prim.clone()));
                                                 }
@@ -1140,12 +1140,12 @@ fn main() {
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let geo_prim = Arc::new(Primitive::Geometric(
-                                                        GeometricPrimitive::new(
+                                                        Box::new(GeometricPrimitive::new(
                                                             shape.clone(),
                                                             None,
                                                             None,
                                                             Some(Arc::new(mi.clone())),
-                                                        ),
+                                                        )),
                                                     ));
                                                     prims.push((shidx, geo_prim.clone()));
                                                 }
@@ -1174,12 +1174,12 @@ fn main() {
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let geo_prim = Arc::new(Primitive::Geometric(
-                                                        GeometricPrimitive::new(
+                                                        Box::new(GeometricPrimitive::new(
                                                             shape.clone(),
                                                             None,
                                                             None,
                                                             Some(Arc::new(mi.clone())),
-                                                        ),
+                                                        )),
                                                     ));
                                                     prims.push((shidx, geo_prim.clone()));
                                                 }
@@ -1210,12 +1210,12 @@ fn main() {
                                                 for i in 0..shapes.len() {
                                                     let shape = &shapes[i];
                                                     let geo_prim = Arc::new(Primitive::Geometric(
-                                                        GeometricPrimitive::new(
+                                                        Box::new(GeometricPrimitive::new(
                                                             shape.clone(),
                                                             None,
                                                             None,
                                                             Some(Arc::new(mi.clone())),
-                                                        ),
+                                                        )),
                                                     ));
                                                     prims.push((shidx, geo_prim.clone()));
                                                 }

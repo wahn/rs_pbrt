@@ -4237,12 +4237,12 @@ fn main() -> std::io::Result<()> {
         let shape = &render_options.shapes[shape_idx];
         let shape_material = &render_options.shape_materials[shape_idx];
         let shape_light = &render_options.shape_lights[shape_idx];
-        let geo_prim = Arc::new(Primitive::Geometric(GeometricPrimitive::new(
+        let geo_prim = Arc::new(Primitive::Geometric(Box::new(GeometricPrimitive::new(
             shape.clone(),
             Some(shape_material.clone()),
             shape_light.clone(),
             None,
-        )));
+        ))));
         render_options.primitives.push(geo_prim.clone());
     }
     println!("number of lights = {:?}", render_options.lights.len());

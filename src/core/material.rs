@@ -111,10 +111,8 @@ impl Material {
     }
     /// Computing the effect of bump mapping at the point being shaded
     /// given a particular displacement texture.
-    pub fn bump(
-        d: &Arc<dyn Texture<Float> + Send + Sync>,
-        si: &mut SurfaceInteraction,
-    ) where
+    pub fn bump(d: &Arc<dyn Texture<Float> + Send + Sync>, si: &mut SurfaceInteraction)
+    where
         Self: Sized,
     {
         // compute offset positions and evaluate displacement texture

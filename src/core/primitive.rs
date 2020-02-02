@@ -19,10 +19,10 @@ use crate::core::transform::{AnimatedTransform, Transform};
 // see primitive.h
 
 pub enum Primitive {
-    Geometric(GeometricPrimitive),
-    Transformed(TransformedPrimitive),
-    BVH(BVHAccel),
-    KdTree(KdTreeAccel),
+    Geometric(Box<GeometricPrimitive>),
+    Transformed(Box<TransformedPrimitive>),
+    BVH(Box<BVHAccel>),
+    KdTree(Box<KdTreeAccel>),
 }
 
 impl Primitive {

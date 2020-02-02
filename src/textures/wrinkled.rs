@@ -14,11 +14,7 @@ pub struct WrinkledTexture {
 }
 
 impl WrinkledTexture {
-    pub fn new(
-        mapping: Box<TextureMapping3D>,
-        octaves: i32,
-        omega: Float,
-    ) -> Self {
+    pub fn new(mapping: Box<TextureMapping3D>, octaves: i32, omega: Float) -> Self {
         WrinkledTexture {
             mapping,
             omega,
