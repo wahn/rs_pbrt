@@ -444,13 +444,11 @@ impl Bsdf {
                 pdf += self.bxdfs[i].pdf(&wo, &wi);
             }
         }
-        let mut v: Float = 0.0 as Float;
-        let v = if matching_comps > 0 {
+        if matching_comps > 0 {
             pdf / matching_comps as Float
         } else {
             0.0 as Float
-        };
-        v
+        }
     }
 }
 
@@ -803,14 +801,8 @@ impl SpecularTransmission {
     ) -> Spectrum {
         // figure out which $\eta$ is incident and which is transmitted
         let entering: bool = cos_theta(wo) > 0.0;
-        let mut eta_i: Float = self.eta_b;
-        if entering {
-            eta_i = self.eta_a;
-        }
-        let mut eta_t: Float = self.eta_a;
-        if entering {
-            eta_t = self.eta_b;
-        }
+        let eta_i = if entering { self.eta_a } else { self.eta_b };
+        let eta_t = if entering { self.eta_b } else { self.eta_a };
         // compute ray direction for specular transmission
         if !refract(
             wo,
@@ -916,18 +908,8 @@ impl FresnelSpecular {
 
             // figure out which $\eta$ is incident and which is transmitted
             let entering: bool = cos_theta(wo) > 0.0 as Float;
-            let eta_i: Float;
-            if entering {
-                eta_i = self.eta_a;
-            } else {
-                eta_i = self.eta_b;
-            }
-            let eta_t: Float;
-            if entering {
-                eta_t = self.eta_b;
-            } else {
-                eta_t = self.eta_a;
-            }
+            let eta_i = if entering { self.eta_a } else { self.eta_b };
+            let eta_t = if entering { self.eta_b } else { self.eta_a };
             // compute ray direction for specular transmission
             if !refract(
                 wo,
@@ -1093,25 +1075,25 @@ impl OrenNayar {
         let sin_theta_i: Float = sin_theta(wi);
         let sin_theta_o: Float = sin_theta(wo);
         // compute cosine term of Oren-Nayar model
-        let mut max_cos: Float = 0.0 as Float;
-        if sin_theta_i > 1.0e-4 && sin_theta_o > 1.0e-4 {
+        let max_cos = if sin_theta_i > 1.0e-4 && sin_theta_o > 1.0e-4 {
             let sin_phi_i: Float = sin_phi(wi);
             let cos_phi_i: Float = cos_phi(wi);
             let sin_phi_o: Float = sin_phi(wo);
             let cos_phi_o: Float = cos_phi(wo);
             let d_cos: Float = cos_phi_i * cos_phi_o + sin_phi_i * sin_phi_o;
-            max_cos = d_cos.max(0.0 as Float);
-        }
+            d_cos.max(0.0 as Float)
+        } else {
+            0.0 as Float
+        };
         // compute sine and tangent terms of Oren-Nayar model
         let sin_alpha: Float;
-        let tan_beta: Float;
-        if abs_cos_theta(wi) > abs_cos_theta(wo) {
+        let tan_beta = if abs_cos_theta(wi) > abs_cos_theta(wo) {
             sin_alpha = sin_theta_o;
-            tan_beta = sin_theta_i / abs_cos_theta(wi);
+            sin_theta_i / abs_cos_theta(wi)
         } else {
             sin_alpha = sin_theta_i;
-            tan_beta = sin_theta_o / abs_cos_theta(wo);
-        }
+            sin_theta_o / abs_cos_theta(wo)
+        };
         if let Some(sc) = self.sc_opt {
             sc * self.r * Spectrum::new(INV_PI * (self.a + self.b * max_cos * sin_alpha * tan_beta))
         } else {
@@ -1538,10 +1520,10 @@ impl FourierBSDF {
         }
         // accumulate weighted sums of nearby $a_k$ coefficients
         let mut m_max: i32 = 0;
-        for b in 0..4 {
-            for a in 0..4 {
+        for (b, weight_o) in weights_o.iter().enumerate() {
+            for (a, weight_i) in weights_i.iter().enumerate() {
                 // add contribution of _(a, b)_ to $a_k$ values
-                let weight: Float = weights_i[a] * weights_o[b];
+                let weight: Float = weight_i * weight_o;
                 if weight != 0.0 as Float {
                     let mut m: i32 = 0;
                     let a_idx: i32 =
@@ -1559,18 +1541,10 @@ impl FourierBSDF {
         }
         // evaluate Fourier expansion for angle $\phi$
         let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));
-        let mut scale: Float = 0.0 as Float;
-        if mu_i != 0.0 as Float {
-            scale = 1.0 as Float / mu_i.abs();
-        }
+        let mut scale = if mu_i != 0.0 as Float { 1.0 as Float / mu_i.abs() } else { 0.0 as Float };
         // update _scale_ to account for adjoint light transport
         if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
-            let eta: Float;
-            if mu_i > 0.0 as Float {
-                eta = 1.0 as Float / self.bsdf_table.eta;
-            } else {
-                eta = self.bsdf_table.eta;
-            }
+            let eta = if mu_i > 0.0 as Float { 1.0 as Float / self.bsdf_table.eta } else { self.bsdf_table.eta };
             scale *= eta * eta;
         }
         if self.bsdf_table.n_channels == 1_i32 {
@@ -1583,7 +1557,7 @@ impl FourierBSDF {
             // compute and return RGB colors for tabulated BSDF
             let r: Float = fourier(
                 &ak,
-                (1_i32 * self.bsdf_table.m_max) as usize,
+                self.bsdf_table.m_max as usize,
                 m_max,
                 cos_phi as f64,
             );
@@ -1647,10 +1621,10 @@ impl FourierBSDF {
         }
         // accumulate weighted sums of nearby $a_k$ coefficients
         let mut m_max: i32 = 0;
-        for b in 0..4 {
-            for a in 0..4 {
+        for (b, weight_o) in weights_o.iter().enumerate() {
+            for (a, weight_i) in weights_i.iter().enumerate() {
                 // add contribution of _(a, b)_ to $a_k$ values
-                let weight: Float = weights_i[a] * weights_o[b];
+                let weight: Float = weight_i * weight_o;
                 if weight != 0.0 as Float {
                     let mut m: i32 = 0;
                     let a_idx =
@@ -1703,18 +1677,10 @@ impl FourierBSDF {
         // we normalize again here.
         *wi = wi.normalize();
         // evaluate remaining Fourier expansions for angle $\phi$
-        let mut scale: Float = 0.0 as Float;
-        if mu_i != 0.0 as Float {
-            scale = 1.0 as Float / mu_i.abs();
-        }
+        let mut scale = if mu_i != 0.0 as Float { 1.0 as Float / mu_i.abs() } else { 0.0 as Float };
         // update _scale_ to account for adjoint light transport
         if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
-            let eta: Float;
-            if mu_i > 0.0 as Float {
-                eta = 1.0 as Float / self.bsdf_table.eta;
-            } else {
-                eta = self.bsdf_table.eta;
-            }
+            let eta = if mu_i > 0.0 as Float { 1.0 as Float / self.bsdf_table.eta } else { self.bsdf_table.eta };
             scale *= eta * eta;
         }
         if self.bsdf_table.n_channels == 1_i32 {
@@ -1727,7 +1693,7 @@ impl FourierBSDF {
             // compute and return RGB colors for tabulated BSDF
             let r: Float = fourier(
                 &ak,
-                (1_i32 * self.bsdf_table.m_max) as usize,
+                self.bsdf_table.m_max as usize,
                 m_max,
                 cos_phi as f64,
             );
@@ -1771,9 +1737,9 @@ impl FourierBSDF {
             ak.push(0.0 as Float); // initialize with 0
         }
         let mut m_max: i32 = 0;
-        for o in 0..4 {
-            for i in 0..4 {
-                let weight: Float = weights_i[i] * weights_o[o];
+         for (o, weight_o) in weights_o.iter().enumerate() {
+             for (i, weight_i) in weights_i.iter().enumerate() {
+                let weight: Float = weight_i * weight_o;
                 if weight == 0.0 as Float {
                     continue;
                 }
@@ -1789,11 +1755,11 @@ impl FourierBSDF {
         }
         // evaluate probability of sampling _wi_
         let mut rho: Float = 0.0;
-        for o in 0..4 {
-            if weights_o[o] == 0.0 as Float {
+        for (o, weight_o) in weights_o.iter().enumerate() {
+            if *weight_o == 0.0 as Float {
                 continue;
             }
-            rho += weights_o[o]
+            rho += weight_o
                 * self.bsdf_table.cdf[(offset_o as usize + o) * self.bsdf_table.n_mu as usize
                     + self.bsdf_table.n_mu as usize
                     - 1 as usize]
@@ -1979,7 +1945,7 @@ pub fn fr_conductor(cos_theta_i: Float, eta_i: Spectrum, eta_t: Spectrum, k: Spe
     let eta_2: Spectrum = eta * eta;
     let eta_k2: Spectrum = eta_k * eta_k;
     let t0: Spectrum = eta_2 - eta_k2 - Spectrum::new(sin_theta_i2);
-    let a2_plus_b2: Spectrum = (t0 * t0 + eta_2 * eta_k2 * Spectrum::new(4 as Float)).sqrt();
+    let a2_plus_b2: Spectrum = (t0 * t0 + eta_2 * eta_k2 * Spectrum::new(4.0 as Float)).sqrt();
     let t1: Spectrum = a2_plus_b2 + Spectrum::new(cos_theta_i2);
     let a: Spectrum = ((a2_plus_b2 + t0) * 0.5 as Float).sqrt();
     let t2: Spectrum = a * 2.0 as Float * cos_theta_i;
