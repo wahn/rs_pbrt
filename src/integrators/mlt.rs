@@ -437,7 +437,11 @@ impl MLTIntegrator {
         ) * (n_strategies as Float)
     }
     pub fn render(&self, scene: &Scene, num_threads: u8) {
-        let num_cores = if num_threads == 0_u8 { num_cpus::get() } else { num_threads as usize };
+        let num_cores = if num_threads == 0_u8 {
+            num_cpus::get()
+        } else {
+            num_threads as usize
+        };
         if let Some(light_distr) = compute_light_power_distribution(scene) {
             println!("Generating bootstrap paths ...");
             // generate bootstrap samples and compute normalization constant $b$
@@ -478,7 +482,9 @@ impl MLTIntegrator {
                                 }
                             });
                             // send progress through the channel to main thread
-                            band_tx.send(b).unwrap_or_else(|_| panic!("Failed to send progress"));
+                            band_tx
+                                .send(b)
+                                .unwrap_or_else(|_| panic!("Failed to send progress"));
                         }
                         // spawn thread to report progress
                         scope.spawn(move |_| {

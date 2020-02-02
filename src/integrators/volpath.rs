@@ -141,7 +141,7 @@ impl VolPathIntegrator {
                     }
                     // compute scattering functions and skip over medium boundaries
                     let mode: TransportMode = TransportMode::Radiance;
-                    isect.compute_scattering_functions(&mut ray, true, mode);
+                    isect.compute_scattering_functions(&ray, true, mode);
                     if let Some(ref _bsdf) = isect.bsdf {
                         // we are fine (for below)
                     } else {
@@ -286,7 +286,7 @@ impl VolPathIntegrator {
                     if sampler.get_1d() < q {
                         break;
                     }
-                    beta = beta / (1.0 as Float - q);
+                    beta /= 1.0 as Float - q;
                     assert!(!(beta.y().is_infinite()));
                 }
             } else {
@@ -345,7 +345,7 @@ impl VolPathIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Box<Sampler> {
+    pub fn get_sampler(&self) -> &Sampler {
         &self.sampler
     }
     pub fn get_pixel_bounds(&self) -> Bounds2i {

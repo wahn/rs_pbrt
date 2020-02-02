@@ -45,7 +45,7 @@ impl SPPMIntegrator {
         initial_search_radius: Float,
         write_frequency: i32,
     ) -> Self {
-        let photons_per_iteration = if !(photons_per_iteration > 0_i32) {
+        let photons_per_iteration = if photons_per_iteration <= 0_i32 {
             let film: Arc<Film> = camera.get_film();
             film.cropped_pixel_bounds.area()
         } else {
@@ -61,12 +61,11 @@ impl SPPMIntegrator {
         }
     }
     pub fn render(&self, scene: &Scene, num_threads: u8) {
-        let num_cores: usize;
-        if num_threads == 0_u8 {
-            num_cores = num_cpus::get();
+        let num_cores = if num_threads == 0_u8 {
+            num_cpus::get()
         } else {
-            num_cores = num_threads as usize;
-        }
+            num_threads as usize
+        };
         println!("Rendering with {:?} thread(s) ...", num_cores);
         // TODO: ProfilePhase p(Prof::IntegratorRender);
 
@@ -189,7 +188,7 @@ impl SPPMIntegrator {
                                                     let mode: TransportMode =
                                                         TransportMode::Radiance;
                                                     isect.compute_scattering_functions(
-                                                        &mut ray, // arena,
+                                                        &ray, // arena,
                                                         true, mode,
                                                     );
                                                     if let Some(bsdf) = &isect.bsdf {
@@ -289,7 +288,7 @@ impl SPPMIntegrator {
                                         // send progress through the channel to main thread
                                         pixel_tx
                                             .send(tile_bq)
-                                            .expect(&format!("Failed to send progress"));
+                                            .unwrap_or_else(|_| panic!("Failed to send progress"));
                                     }
                                 });
                             }
@@ -329,8 +328,7 @@ impl SPPMIntegrator {
                     // compute grid bounds for SPPM visible points
                     let mut max_radius: Float = 0.0 as Float;
                     // println!("Compute grid bounds for SPPM visible points ...");
-                    for i in 0..n_pixels as usize {
-                        let pixel = &pixels[i];
+                    for pixel in pixels.iter().take(n_pixels as usize) {
                         if pixel.vp.beta.is_black() {
                             continue;
                         }
@@ -366,7 +364,7 @@ impl SPPMIntegrator {
                             for (b, band) in bands.into_iter().enumerate() {
                                 let band_tx = band_tx.clone();
                                 scope.spawn(move |_| {
-                                    for pixel in band.into_iter() {
+                                    for pixel in band.iter_mut() {
                                         // for pixel_index in 0..n_pixels as usize {
                                         // let pixel = &pixels[pixel_index];
                                         if !pixel.vp.beta.is_black() {
@@ -396,9 +394,9 @@ impl SPPMIntegrator {
                                                 &grid_res,
                                                 &mut p_max,
                                             );
-                                            for z in p_min.z..(p_max.z + 1) {
-                                                for y in p_min.y..(p_max.y + 1) {
-                                                    for x in p_min.x..(p_max.x + 1) {
+                                            for z in p_min.z..=p_max.z {
+                                                for y in p_min.y..=p_max.y {
+                                                    for x in p_min.x..=p_max.x {
                                                         // add visible point to grid cell $(x, y, z)$
                                                         let h: usize = hash(
                                                             &Point3i { x, y, z },
@@ -421,7 +419,9 @@ impl SPPMIntegrator {
                                     }
                                 });
                                 // send progress through the channel to main thread
-                                band_tx.send(b).expect(&format!("Failed to send progress"));
+                                band_tx
+                                    .send(b)
+                                    .unwrap_or_else(|_| panic!("Failed to send progress"));
                             }
                             // spawn thread to report progress
                             scope.spawn(move |_| {
@@ -459,7 +459,7 @@ impl SPPMIntegrator {
                         for (b, band) in bands.into_iter().enumerate() {
                             let band_tx = band_tx.clone();
                             scope.spawn(move |_| {
-                                for photon_index in band.into_iter() {
+                                for photon_index in band.iter() {
                                     // for photon_index in 0..integrator.photons_per_iteration as usize {
                                     // MemoryArena &arena = photonShootArenas[ThreadIndex];
                                     // follow photon path for _photon_index_
@@ -475,7 +475,7 @@ impl SPPMIntegrator {
                                     let light_num: usize = light_distr
                                         .sample_discrete(light_sample, light_pdf_opt.as_mut());
                                     if let Some(light_pdf) = light_pdf_opt {
-                                        let ref light = scene.lights[light_num];
+                                        let light = &scene.lights[light_num];
                                         // compute sample values for photon ray leaving light source
                                         let u_light_0: Point2f = Point2f {
                                             x: radical_inverse(halton_dim as u16, halton_index),
@@ -564,12 +564,10 @@ impl SPPMIntegrator {
                                                         );
                                                         if !grid_once[h].is_none() {
                                                             let mut opt = grid_once[h].get();
-                                                            loop {
+                                                            while let Some(node) = opt {
                                                                 // deal with linked list
-                                                                if let Some(node) = opt {
-                                                                    let pixel = node.pixel;
-                                                                    let radius: Float =
-                                                                        pixel.radius;
+                                                                let pixel = node.pixel;
+                                                                let radius: Float = pixel.radius;
                                                                     if pnt3_distance_squared(
                                                                         &pixel.vp.p,
                                                                         &isect.p,
@@ -612,11 +610,7 @@ impl SPPMIntegrator {
                                                                         // update opt
                                                                         opt = node.next.get();
                                                                     }
-                                                                } else {
-                                                                    // done
-                                                                    break;
-                                                                }
-                                                            }
+                                                        }
                                                         }
                                                     }
                                                 }
@@ -625,7 +619,7 @@ impl SPPMIntegrator {
                                                 // compute BSDF at photon intersection point
                                                 let mode: TransportMode = TransportMode::Importance;
                                                 isect.compute_scattering_functions(
-                                                    &mut photon_ray, // arena,
+                                                    &photon_ray, // arena,
                                                     true,
                                                     mode,
                                                 );
@@ -690,7 +684,7 @@ impl SPPMIntegrator {
                                 }
                             });
                             // send progress through the channel to main thread
-                            band_tx.send(b).expect(&format!("Failed to send progress"));
+                            band_tx.send(b).unwrap_or_else(|_| panic!("Failed to send progress"));
                         }
                         // spawn thread to report progress
                         scope.spawn(move |_| {
@@ -715,7 +709,7 @@ impl SPPMIntegrator {
                             for (b, band) in bands.into_iter().enumerate() {
                                 let band_tx = band_tx.clone();
                                 scope.spawn(move |_| {
-                                    for p in band.into_iter() {
+                                    for p in band.iter_mut() {
                                         // let mut p = &mut pixels[i];
                                         let p_m = p.m.load(atomic::Ordering::Relaxed);
                                         if p_m > 0_i32 {
@@ -743,7 +737,7 @@ impl SPPMIntegrator {
                                     }
                                 });
                                 // send progress through the channel to main thread
-                                band_tx.send(b).expect(&format!("Failed to send progress"));
+                                band_tx.send(b).unwrap_or_else(|_| panic!("Failed to send progress"));
                             }
                             // spawn thread to report progress
                             scope.spawn(move |_| {
