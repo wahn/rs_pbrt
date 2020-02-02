@@ -1489,8 +1489,8 @@ pub fn blackbody(lambda: &[Float], n: usize, t: Float, le: &mut Vec<Float>) {
     let c: Float = 299_792_458.0 as Float;
     let h: Float = 6.626_069_57e-34 as Float;
     let kb: Float = 1.380_648_8e-23 as Float;
-    for i in 0..n {
-        let lambda_i: Float = lambda[i];
+    for item in lambda.iter().take(n) {
+        let lambda_i: Float = *item;
         let l: Float = (lambda_i as f64 * 1.0e-9 as f64) as Float;
         let lambda5: Float = (l * l) * (l * l) * l;
         let e: Float = ((h * c) / (l * kb * t)).exp();
@@ -1506,8 +1506,8 @@ pub fn blackbody_normalized(lambda: &[Float], n: usize, t: Float, le: &mut Vec<F
     let lambda_max: [Float; 1] = [2.897_772_1e-3 as Float / t * 1.0e9 as Float];
     let mut max_l: Vec<Float> = Vec::new();
     blackbody(&lambda_max, 1, t, &mut max_l);
-    for i in 0..n {
-        le[i] /= max_l[0];
+    for item in le.iter_mut().take(n) {
+        *item /= max_l[0];
     }
 }
 
@@ -1531,7 +1531,7 @@ impl RGBSpectrum {
     pub fn rgb(r: Float, g: Float, b: Float) -> RGBSpectrum {
         RGBSpectrum { c: [r, g, b] }
     }
-    pub fn from_srgb(rgb: &[u8; 3]) -> RGBSpectrum {
+    pub fn from_srgb(rgb: [u8; 3]) -> RGBSpectrum {
         fn as_float(v: u8) -> Float {
             v as Float / 255.0
         }
@@ -1576,7 +1576,7 @@ impl RGBSpectrum {
     pub fn from_sampled(lambda: &[Float], v: &[Float], n: i32) -> RGBSpectrum {
         // sort samples if unordered, use sorted for returned spectrum
         if !spectrum_samples_sorted(lambda, v, n) {
-            panic!("TODO: if !spectrum_samples_sorted(...) {...}");
+            panic!("TODO: if !spectrum_samples_sorted(...)");
             // std::vector<Float> slambda(&lambda[0], &lambda[n]);
             // std::vector<Float> sv(&v[0], &v[n]);
             // SortSpectrumSamples(&slambda[0], &sv[0], n);

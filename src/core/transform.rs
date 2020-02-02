@@ -143,21 +143,21 @@ impl Matrix4x4 {
             // choose pivot
             for j in 0..4 {
                 if ipiv[j] != 1 {
-                    for k in 0..4 {
-                        if ipiv[k] == 0 {
+                    for (k, item) in ipiv.iter().enumerate().take(4) {
+                        if *item == 0 {
                             let abs: Float = (minv.m[j][k]).abs();
                             if abs >= big {
                                 big = abs;
                                 irow = j;
                                 icol = k;
                             }
-                        } else if ipiv[k] > 1 {
+                        } else if *item > 1 {
                             println!("Singular matrix in MatrixInvert");
                         }
                     }
                 }
             }
-            ipiv[icol] = ipiv[icol] + 1;
+            ipiv[icol] += 1;
             // swap rows _irow_ and _icol_ for pivot
             if irow != icol {
                 for k in 0..4 {
@@ -176,7 +176,7 @@ impl Matrix4x4 {
             let pivinv: Float = 1.0 / minv.m[icol][icol];
             minv.m[icol][icol] = 1.0;
             for j in 0..4 {
-                minv.m[icol][j] = minv.m[icol][j] * pivinv;
+                minv.m[icol][j] *= pivinv;
             }
             // subtract this row from others to zero out their columns
             for j in 0..4 {
@@ -184,7 +184,7 @@ impl Matrix4x4 {
                     let save: Float = minv.m[j][icol];
                     minv.m[j][icol] = 0.0;
                     for k in 0..4 {
-                        minv.m[j][k] = minv.m[j][k] - (minv.m[icol][k] * save);
+                        minv.m[j][k] -= minv.m[icol][k] * save;
                     }
                 }
             }
@@ -195,9 +195,7 @@ impl Matrix4x4 {
             if indxr[j] != indxc[j] {
                 for k in 0..4 {
                     // C++: std::swap(minv[k][indxr[j]], minv[k][indxc[j]]);
-                    let swap = minv.m[k][indxr[j]];
-                    minv.m[k][indxr[j]] = minv.m[k][indxc[j]];
-                    minv.m[k][indxc[j]] = swap;
+                    minv.m[k].swap(indxr[j], indxc[j])
                 }
             }
         }
@@ -215,16 +213,6 @@ impl PartialEq for Matrix4x4 {
             }
         }
         true
-    }
-    fn ne(&self, rhs: &Matrix4x4) -> bool {
-        for i in 0..4 {
-            for j in 0..4 {
-                if self.m[i][j] != rhs.m[i][j] {
-                    return true;
-                }
-            }
-        }
-        false
     }
 }
 
@@ -896,9 +884,6 @@ impl PartialEq for Transform {
     fn eq(&self, rhs: &Transform) -> bool {
         rhs.m == self.m && rhs.m_inv == self.m_inv
     }
-    fn ne(&self, rhs: &Transform) -> bool {
-        rhs.m != self.m || rhs.m_inv != self.m_inv
-    }
 }
 
 impl Mul for Transform {
@@ -951,8 +936,8 @@ impl AnimatedTransform {
         end_time: Float,
     ) -> Self {
         let mut at: AnimatedTransform = AnimatedTransform::default();
-        at.start_transform = start_transform.clone();
-        at.end_transform = end_transform.clone();
+        at.start_transform = *start_transform;
+        at.end_transform = *end_transform;
         at.start_time = start_time;
         at.end_time = end_time;
         at.actually_animated = *start_transform != *end_transform;
@@ -2068,7 +2053,7 @@ impl AnimatedTransform {
         t.y = m.m[1][3];
         t.z = m.m[2][3];
         // compute new transformation matrix _m_ without translation
-        let mut matrix: Matrix4x4 = m.clone();
+        let mut matrix: Matrix4x4 = *m;
         for i in 0..3 {
             matrix.m[i][3] = 0.0;
             matrix.m[3][i] = 0.0;
@@ -2077,7 +2062,7 @@ impl AnimatedTransform {
         // extract rotation _r_ from transformation matrix
         let mut norm: Float;
         let mut count: u8 = 0;
-        let mut r: Matrix4x4 = matrix.clone();
+        let mut r: Matrix4x4 = matrix;
         loop {
             // compute next matrix _rnext_ in series
             let mut rnext: Matrix4x4 = Matrix4x4::default();
@@ -2095,7 +2080,7 @@ impl AnimatedTransform {
                     + (r.m[i][2] - rnext.m[i][2]).abs();
                 norm = norm.max(n);
             }
-            r = rnext.clone();
+            r = rnext;
             count += 1;
             if count >= 100 || norm <= 0.0001 {
                 break;
@@ -2103,7 +2088,7 @@ impl AnimatedTransform {
         }
         // XXX TODO FIXME deal with flip...
         let transform: Transform = Transform {
-            m: r.clone(),
+            m: r,
             m_inv: Matrix4x4::inverse(&r.clone()),
         };
         *rquat = Quaternion::new(transform);
@@ -2181,7 +2166,7 @@ impl AnimatedTransform {
         if !self.actually_animated {
             return self.start_transform.transform_bounds(b);
         }
-        if self.has_rotation == false {
+        if !self.has_rotation {
             return bnd3_union_bnd3(
                 &self.start_transform.transform_bounds(b),
                 &self.end_transform.transform_bounds(b),
@@ -2226,9 +2211,9 @@ impl AnimatedTransform {
                 8_usize,
             );
             // expand bounding box for any motion derivative zeros found
-            for i in 0..zeros.len() {
+            for item in &zeros {
                 let pz: Point3f =
-                    self.transform_point(lerp(zeros[i], self.start_time, self.end_time), p);
+                    self.transform_point(lerp(*item, self.start_time, self.end_time), p);
                 bounds = bnd3_union_pnt3(&bounds, &pz);
             }
         }
@@ -2374,7 +2359,7 @@ pub fn interval_find_zeros(
             if f_newton == 0.0 as Float || f_prime_newton == 0.0 as Float {
                 break;
             }
-            t_newton = t_newton - f_newton / f_prime_newton;
+            t_newton -= f_newton / f_prime_newton;
         }
         if t_newton >= t_interval.low - 1e-3 as Float && t_newton < t_interval.high + 1e-3 as Float
         {

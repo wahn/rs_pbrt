@@ -15,10 +15,10 @@ pub struct LanczosSincFilter {
 }
 
 impl LanczosSincFilter {
-    pub fn new(radius: &Vector2f, tau: Float) -> Self {
+    pub fn new(radius: Vector2f, tau: Float) -> Self {
         LanczosSincFilter {
             tau,
-            radius: *radius,
+            radius,
             inv_radius: Vector2f {
                 x: 1.0 / radius.x,
                 y: 1.0 / radius.y,
@@ -30,7 +30,7 @@ impl LanczosSincFilter {
         let yw: Float = ps.find_one_float("ywidth", 4.0);
         let tau: Float = ps.find_one_float("tau", 3.0);
         let sinc_filter: Box<Filter> = Box::new(Filter::LanczosSinc(LanczosSincFilter::new(
-            &Vector2f { x: xw, y: yw },
+            Vector2f { x: xw, y: yw },
             tau,
         )));
         sinc_filter

@@ -99,7 +99,7 @@
 //!     let yw: Float = 4.0;
 //!     let radius: Vector2f = Vector2f { x: xw, y: yw };
 //!     let tau: Float = 3.0;
-//!     let sinc_filter = LanczosSincFilter::new(&radius, tau);
+//!     let sinc_filter = LanczosSincFilter::new(radius, tau);
 //!
 //!     println!("sinc_filter = {:?}", sinc_filter);
 //! }

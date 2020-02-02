@@ -353,30 +353,10 @@ pub fn grad(x: i32, y: i32, z: i32, dx: Float, dy: Float, dz: Float) -> Float {
     let mut h: u8 =
         NOISE_PERM[NOISE_PERM[NOISE_PERM[x as usize] as usize + y as usize] as usize + z as usize];
     h &= 15_u8;
-    let u: Float;
-    if h < 8_u8 || h == 12_u8 || h == 13_u8 {
-        u = dx;
-    } else {
-        u = dy;
-    }
-    let v: Float;
-    if h < 4_u8 || h == 12_u8 || h == 13_u8 {
-        v = dy;
-    } else {
-        v = dz;
-    }
-    let ret_u: Float;
-    if h & 1_u8 > 0_u8 {
-        ret_u = -u;
-    } else {
-        ret_u = u;
-    }
-    let ret_v: Float;
-    if h & 2_u8 > 0_u8 {
-        ret_v = -v;
-    } else {
-        ret_v = v;
-    }
+    let u = if h < 8_u8 || h == 12_u8 || h == 13_u8 { dx } else { dy };
+    let v = if h < 4_u8 || h == 12_u8 || h == 13_u8 { dy } else { dz };
+    let ret_u = if h & 1_u8 > 0_u8 { -u } else { u };
+    let ret_v = if h & 2_u8 > 0_u8 { -v } else { v };
     ret_u + ret_v
 }
 

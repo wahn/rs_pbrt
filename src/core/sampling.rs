@@ -26,19 +26,19 @@ impl Distribution1D {
         // compute integral of step function at $x_i$
         let mut cdf: Vec<Float> = Vec::with_capacity(n + 1);
         cdf.push(0.0 as Float);
-        for i in 1..(n + 1) {
+        for i in 1..=n {
             let previous: Float = cdf[i - 1];
             cdf.push(previous + f[i - 1] / n as Float);
         }
         // transform step function integral into CDF
         let func_int: Float = cdf[n];
         if func_int == 0.0 as Float {
-            for i in 1..(n + 1) {
-                cdf[i] = i as Float / n as Float;
+            for (i, item) in cdf.iter_mut().enumerate().skip(1).take(n) {
+                *item = i as Float / n as Float;
             }
         } else {
-            for i in 1..(n + 1) {
-                cdf[i] /= func_int;
+            for item in cdf.iter_mut().skip(1).take(n) {
+                *item /= func_int;
             }
         }
         Distribution1D {
@@ -90,11 +90,11 @@ impl Distribution1D {
         }
         assert!(!du.is_nan());
         // compute PDF for sampled offset
-        if pdf.is_some() {
+        if let Some(value) = pdf {
             if self.func_int > 0.0 as Float {
-                *pdf.unwrap() = self.func[offset] / self.func_int;
+                *value = self.func[offset] / self.func_int;
             } else {
-                *pdf.unwrap() = 0.0;
+                *value = 0.0;
             }
         }
         // return $x\in{}[0,1)$ corresponding to sample
@@ -128,11 +128,11 @@ impl Distribution1D {
             0 as isize,
             self.cdf.len() as isize - 2_isize,
         ) as usize;
-        if pdf.is_some() {
+        if let Some(value) = pdf {
             if self.func_int > 0.0 as Float {
-                *pdf.unwrap() = self.func[offset] / (self.func_int * self.func.len() as Float);
+                *value = self.func[offset] / (self.func_int * self.func.len() as Float);
             } else {
-                *pdf.unwrap() = 0.0;
+                *value = 0.0;
             }
         }
         // TODO: if (uRemapped)
@@ -236,12 +236,7 @@ pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
 pub fn stratified_sample_1d(samp: &mut [Float], n_samples: i32, rng: &mut Rng, jitter: bool) {
     let inv_n_samples: Float = 1.0 as Float / n_samples as Float;
     for i in 0..n_samples {
-        let delta: Float;
-        if jitter {
-            delta = rng.uniform_float();
-        } else {
-            delta = 0.5 as Float;
-        }
+        let delta = if jitter { rng.uniform_float() } else { 0.5 as Float };
         samp[i as usize] =
             ((i as Float + delta) * inv_n_samples as Float).min(FLOAT_ONE_MINUS_EPSILON);
     }
@@ -253,18 +248,8 @@ pub fn stratified_sample_2d(samp: &mut [Point2f], nx: i32, ny: i32, rng: &mut Rn
     let mut samp_idx: usize = 0;
     for y in 0..ny {
         for x in 0..nx {
-            let jx: Float;
-            if jitter {
-                jx = rng.uniform_float();
-            } else {
-                jx = 0.5 as Float;
-            }
-            let jy: Float;
-            if jitter {
-                jy = rng.uniform_float();
-            } else {
-                jy = 0.5 as Float;
-            }
+            let jx = if jitter { rng.uniform_float() } else { 0.5 as Float };
+            let jy = if jitter { rng.uniform_float() } else { 0.5 as Float };
             samp[samp_idx].x = ((x as Float + jx) * dx).min(FLOAT_ONE_MINUS_EPSILON);
             samp[samp_idx].y = ((y as Float + jy) * dy).min(FLOAT_ONE_MINUS_EPSILON);
             samp_idx += 1;
