@@ -32,7 +32,7 @@ impl Default for Quaternion {
 
 impl Quaternion {
     pub fn new(t: Transform) -> Self {
-        let m: Matrix4x4 = t.m.clone();
+        let m: Matrix4x4 = t.m;
         let trace: Float = m.m[0][0] + m.m[1][1] + m.m[2][2];
         // if (trace > 0.f) {
         if trace > 0.0 {
@@ -53,10 +53,7 @@ impl Quaternion {
             // compute largest of $x$, $y$, or $z$, then remaining components
             let nxt: [usize; 3] = [1, 2, 0];
             let mut q: [Float; 3] = [0.0; 3];
-            let mut i: usize = 0;
-            if m.m[1][1] > m.m[0][0] {
-                i = 1;
-            }
+            let mut i = if m.m[1][1] > m.m[0][0] { 1 } else { 0 };
             if m.m[2][2] > m.m[i][i] {
                 i = 2;
             }

@@ -79,10 +79,10 @@ pub struct FourierBSDFTable {
 }
 
 impl FourierBSDFTable {
-    pub fn read(&mut self, filename: &String) -> bool {
+    pub fn read(&mut self, filename: &str) -> bool {
         let path = Path::new(&filename);
         let result = File::open(path);
-        if !result.is_ok() {
+        if result.is_err() {
             println!("ERROR: Unable to open tabulated BSDF file {:?}", filename);
             return false;
         }
@@ -119,7 +119,7 @@ impl FourierBSDFTable {
                                 || n_bases != 1_i32
                             {
                                 panic!(
-                                    "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                                    "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version.", filename
                                 );
                             }
                             // self.mu
@@ -177,22 +177,23 @@ impl FourierBSDFTable {
                             }
                         } else {
                             panic!(
-                                "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                                "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version.", filename
                             );
                         }
                     } else {
                         panic!(
-                            "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                            "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version.", filename
                         );
                     }
                 } else {
                     panic!(
-                        "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                        "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version.", filename
                     );
                 }
             } else {
                 panic!(
-                    "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version."
+                    "ERROR: Tabulated BSDF file {:?} has an incompatible file format or version.",
+                    filename
                 );
             }
         }
@@ -343,8 +344,9 @@ impl Bsdf {
                 }
             }
         }
-        if bxdf.is_some() {
-            let bxdf = bxdf.unwrap();
+
+        if let Some(value) = bxdf {
+            let bxdf = value;
             // TODO: println!("BSDF::Sample_f chose comp = {:?} /
             // matching = {:?}, bxdf: {:?}", comp, matching_comps,
             // bxdf);
@@ -443,9 +445,11 @@ impl Bsdf {
             }
         }
         let mut v: Float = 0.0 as Float;
-        if matching_comps > 0 {
-            v = pdf / matching_comps as Float;
-        }
+        let v = if matching_comps > 0 {
+            pdf / matching_comps as Float
+        } else {
+            0.0 as Float
+        };
         v
     }
 }
