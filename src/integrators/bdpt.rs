@@ -147,19 +147,19 @@ impl<'a> Interaction for EndpointInteraction<'a> {
         }
     }
     fn get_p(&self) -> Point3f {
-        self.p.clone()
+        self.p
     }
     fn get_time(&self) -> Float {
         self.time
     }
     fn get_p_error(&self) -> Vector3f {
-        self.p_error.clone()
+        self.p_error
     }
     fn get_wo(&self) -> Vector3f {
-        self.wo.clone()
+        self.wo
     }
     fn get_n(&self) -> Normal3f {
-        self.n.clone()
+        self.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
         None
@@ -622,13 +622,12 @@ impl<'a> Vertex<'a> {
         let mut w: Vector3f = v.p() - self.p();
         let inv_dist2: Float = 1.0 as Float / w.length_squared();
         w *= inv_dist2.sqrt();
-        let mut pdf: Float = 0.0;
-        if self.is_infinite_light() {
+        let mut pdf = if self.is_infinite_light() {
             // compute planar sampling density for infinite light sources
             let mut world_center: Point3f = Point3f::default();
             let mut world_radius: Float = 0.0;
             Bounds3f::bounding_sphere(&scene.world_bound(), &mut world_center, &mut world_radius);
-            pdf = 1.0 as Float / (PI * world_radius * world_radius);
+            1.0 as Float / (PI * world_radius * world_radius)
         } else {
             assert!(self.is_light());
             if self.vertex_type == VertexType::Light {
@@ -651,7 +650,7 @@ impl<'a> Vertex<'a> {
                             &mut pdf_pos,
                             &mut pdf_dir,
                         );
-                        pdf = pdf_dir * inv_dist2;
+                        return pdf_dir * inv_dist2;
                     }
                 }
             } else if let Some(ref si) = self.si {
@@ -674,11 +673,12 @@ impl<'a> Vertex<'a> {
                             &mut pdf_pos,
                             &mut pdf_dir,
                         );
-                        pdf = pdf_dir * inv_dist2;
+                        return pdf_dir * inv_dist2;
                     }
                 }
             }
-        }
+            0.0
+        };
         if v.is_on_surface() {
             pdf *= nrm_abs_dot_vec3(&v.ng(), &w);
         }
@@ -837,14 +837,13 @@ impl BDPTIntegrator {
         // TODO: Allocate buffers for debug visualization
         // ...
         // render and write the output image to disk
-        if scene.lights.len() > 0 {
+        if !scene.lights.is_empty() {
             let samples_per_pixel: i64 = self.sampler.get_samples_per_pixel();
-            let num_cores: usize;
-            if num_threads == 0_u8 {
-                num_cores = num_cpus::get();
+            let num_cores = if num_threads == 0_u8 {
+                num_cpus::get()
             } else {
-                num_cores = num_threads as usize;
-            }
+                num_threads as usize
+            };
             println!("Rendering with {:?} thread(s) ...", num_cores);
             {
                 let block_queue = BlockQueue::new(
@@ -960,8 +959,8 @@ impl BDPTIntegrator {
                                             let mut l: Spectrum = Spectrum::new(0.0 as Float);
                                             // println!("n_camera = {:?}", n_camera);
                                             // println!("n_light = {:?}", n_light);
-                                            for t in 1..n_camera + 1 {
-                                                for s in 0..n_light + 1 {
+                                            for t in 1..=n_camera {
+                                                for s in 0..=n_light {
                                                     // int depth = t + s - 2;
                                                     let depth: isize = (t + s) as isize - 2;
                                                     if (s == 1 && t == 1)
@@ -1023,7 +1022,7 @@ impl BDPTIntegrator {
                                 // send the tile through the channel to main thread
                                 pixel_tx
                                     .send(film_tile)
-                                    .expect(&format!("Failed to send tile"));
+                                    .unwrap_or_else(|_| panic!("Failed to send tile"));
                             }
                         });
                     }
@@ -1045,7 +1044,7 @@ impl BDPTIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Box<Sampler> {
+    pub fn get_sampler(&self) -> &Sampler {
         &self.sampler
     }
 }
@@ -1076,7 +1075,7 @@ pub fn correct_shading_normal(
 
 pub fn generate_camera_subpath<'a>(
     scene: &'a Scene,
-    sampler: &mut Box<Sampler>,
+    sampler: &mut Sampler,
     max_depth: u32,
     camera: &'a Arc<Camera>,
     p_film: Point2f,
@@ -1106,7 +1105,7 @@ pub fn generate_camera_subpath<'a>(
     (
         random_walk(
             scene,
-            &mut ray,
+            &ray,
             sampler,
             &mut beta,
             pdf_dir,
@@ -1121,7 +1120,7 @@ pub fn generate_camera_subpath<'a>(
 
 pub fn generate_light_subpath<'a>(
     scene: &'a Scene,
-    sampler: &mut Box<Sampler>,
+    sampler: &mut Sampler,
     max_depth: u32,
     time: Float,
     light_distr: &Arc<Distribution1D>,
@@ -1136,7 +1135,7 @@ pub fn generate_light_subpath<'a>(
     // sample initial ray for light subpath
     let mut light_pdf: Option<Float> = Some(0.0 as Float);
     let light_num: usize = light_distr.sample_discrete(sampler.get_1d(), light_pdf.as_mut());
-    let ref light = scene.lights[light_num];
+    let light = &scene.lights[light_num];
     let mut ray: Ray = Ray::default();
     let mut n_light: Normal3f = Normal3f::default();
     let mut pdf_pos: Float = 0.0 as Float;
@@ -1171,7 +1170,7 @@ pub fn generate_light_subpath<'a>(
         // light is done in random_walk !!!
         n_vertices = random_walk(
             scene,
-            &mut ray,
+            &ray,
             sampler,
             &mut beta,
             pdf_dir,
@@ -1198,7 +1197,7 @@ pub fn generate_light_subpath<'a>(
 pub fn random_walk<'a>(
     scene: &'a Scene,
     ray: &Ray,
-    sampler: &mut Box<Sampler>,
+    sampler: &mut Sampler,
     beta: &mut Spectrum,
     pdf: Float,
     max_depth: u32,
@@ -1278,7 +1277,7 @@ pub fn random_walk<'a>(
         } else {
             if !found_intersection {
                 // capture escaped rays when tracing from the camera
-                if mode.clone() == TransportMode::Radiance {
+                if mode == TransportMode::Radiance {
                     let vertex: Vertex = Vertex::create_light_interaction(
                         EndpointInteraction::new_ray(&ray),
                         &beta,
@@ -1294,30 +1293,30 @@ pub fn random_walk<'a>(
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
                 isect.compute_scattering_functions(&ray /*, arena, */, true, mode.clone());
-                let isect_wo: Vector3f = isect.wo.clone();
-                let isect_shading_n: Normal3f = isect.shading.n.clone();
-                if !isect.bsdf.is_some() {
+                let isect_wo: Vector3f = isect.wo;
+                let isect_shading_n: Normal3f = isect.shading.n;
+                if isect.bsdf.is_none() {
                     let new_ray = isect.spawn_ray(&ray.d);
                     ray = new_ray;
                     continue;
                 }
                 // initialize _vertex_ with surface intersection information
                 let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
-                si_eval.p = isect.p.clone();
+                si_eval.p = isect.p;
                 si_eval.time = isect.time;
-                si_eval.p_error = isect.p_error.clone();
-                si_eval.wo = isect.wo.clone();
-                si_eval.n = isect.n.clone();
+                si_eval.p_error = isect.p_error;
+                si_eval.wo = isect.wo;
+                si_eval.n = isect.n;
                 if let Some(medium_interface) = &isect.medium_interface {
                     si_eval.medium_interface = Some(medium_interface.clone());
                 } else {
                     si_eval.medium_interface = None
                 }
-                si_eval.uv = isect.uv.clone();
-                si_eval.dpdu = isect.dpdu.clone();
-                si_eval.dpdv = isect.dpdv.clone();
-                si_eval.dndu = isect.dndu.clone();
-                si_eval.dndv = isect.dndv.clone();
+                si_eval.uv = isect.uv;
+                si_eval.dpdu = isect.dpdu;
+                si_eval.dpdv = isect.dpdv;
+                si_eval.dndu = isect.dndu;
+                si_eval.dndv = isect.dndv;
                 let dudx: Float = *isect.dudx.read().unwrap();
                 si_eval.dudx = RwLock::new(dudx);
                 let dvdx: Float = *isect.dvdx.read().unwrap();
@@ -1331,15 +1330,15 @@ pub fn random_walk<'a>(
                 let dpdy: Vector3f = *isect.dpdy.read().unwrap();
                 si_eval.dpdy = RwLock::new(dpdy);
                 if let Some(primitive) = &isect.primitive {
-                    si_eval.primitive = Some(primitive.clone());
+                    si_eval.primitive = Some(primitive);
                 } else {
                     si_eval.primitive = None
                 }
-                si_eval.shading.n = isect.shading.n.clone();
-                si_eval.shading.dpdu = isect.shading.dpdu.clone();
-                si_eval.shading.dpdv = isect.shading.dpdv.clone();
-                si_eval.shading.dndu = isect.shading.dndu.clone();
-                si_eval.shading.dndv = isect.shading.dndv.clone();
+                si_eval.shading.n = isect.shading.n;
+                si_eval.shading.dpdu = isect.shading.dpdu;
+                si_eval.shading.dpdv = isect.shading.dpdv;
+                si_eval.shading.dndu = isect.shading.dndu;
+                si_eval.shading.dndv = isect.shading.dndv;
                 if let Some(bsdf) = &isect.bsdf {
                     si_eval.bsdf = Some(bsdf.clone());
                 } else {
@@ -1351,7 +1350,7 @@ pub fn random_walk<'a>(
                 //     si_eval.bssrdf = None
                 // }
                 if let Some(shape) = &isect.shape {
-                    si_eval.shape = Some(shape.clone());
+                    si_eval.shape = Some(shape);
                 } else {
                     si_eval.shape = None
                 }
@@ -1397,8 +1396,7 @@ pub fn random_walk<'a>(
                         pdf_rev = 0.0 as Float;
                         pdf_fwd = 0.0 as Float;
                     }
-                    *beta *=
-                        Spectrum::new(correct_shading_normal(&isect, &isect_wo, &wi, mode.clone()));
+                    *beta *= Spectrum::new(correct_shading_normal(&isect, &isect_wo, &wi, mode));
                     // println!(
                     //     "Random walk beta after shading normal correction {:?}",
                     //     beta
@@ -1428,7 +1426,7 @@ pub fn random_walk<'a>(
     bounces
 }
 
-pub fn g<'a>(scene: &'a Scene, sampler: &mut Box<Sampler>, v0: &Vertex, v1: &Vertex) -> Spectrum {
+pub fn g<'a>(scene: &'a Scene, sampler: &mut Sampler, v0: &Vertex, v1: &Vertex) -> Spectrum {
     // Vector3f d = v0.p() - v1.p();
     let mut d: Vector3f = v0.p() - v1.p();
     let mut g: Float = 1.0 / d.length_squared();
@@ -1524,8 +1522,8 @@ pub fn g<'a>(scene: &'a Scene, sampler: &mut Box<Sampler>, v0: &Vertex, v1: &Ver
 
 pub fn mis_weight<'a>(
     scene: &'a Scene,
-    light_vertices: &'a Vec<Vertex<'a>>,
-    camera_vertices: &'a Vec<Vertex<'a>>,
+    light_vertices: &[Vertex<'a>],
+    camera_vertices: &[Vertex<'a>],
     sampled: &Vertex,
     s: usize,
     t: usize,
@@ -1570,11 +1568,11 @@ pub fn mis_weight<'a>(
                 light = Some(light_arc);
             }
             let new_ei: EndpointInteraction = EndpointInteraction {
-                p: lv_ei.p.clone(),
+                p: lv_ei.p,
                 time: lv_ei.time,
-                p_error: lv_ei.p_error.clone(),
-                wo: lv_ei.wo.clone(),
-                n: lv_ei.n.clone(),
+                p_error: lv_ei.p_error,
+                wo: lv_ei.wo,
+                n: lv_ei.n,
                 medium_interface,
                 camera,
                 light,
@@ -1591,11 +1589,11 @@ pub fn mis_weight<'a>(
                 phase = Some(phase_arc.clone());
             }
             let new_mi: MediumInteraction = MediumInteraction {
-                p: lv_mi.p.clone(),
+                p: lv_mi.p,
                 time: lv_mi.time,
-                p_error: lv_mi.p_error.clone(),
-                wo: lv_mi.wo.clone(),
-                n: lv_mi.n.clone(),
+                p_error: lv_mi.p_error,
+                wo: lv_mi.wo,
+                n: lv_mi.n,
                 medium_interface,
                 phase,
             };
@@ -1608,24 +1606,24 @@ pub fn mis_weight<'a>(
             }
             if let Some(primitive) = &lv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: lv_si.p.clone(),
+                    p: lv_si.p,
                     time: lv_si.time,
-                    p_error: lv_si.p_error.clone(),
-                    wo: lv_si.wo.clone(),
-                    n: lv_si.n.clone(),
+                    p_error: lv_si.p_error,
+                    wo: lv_si.wo,
+                    n: lv_si.n,
                     medium_interface,
-                    primitive: Some(primitive.clone()),
+                    primitive: Some(primitive),
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
             } else {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: lv_si.p.clone(),
+                    p: lv_si.p,
                     time: lv_si.time,
-                    p_error: lv_si.p_error.clone(),
-                    wo: lv_si.wo.clone(),
-                    n: lv_si.n.clone(),
+                    p_error: lv_si.p_error,
+                    wo: lv_si.wo,
+                    n: lv_si.n,
                     medium_interface,
                     primitive: None,
                     bsdf: lv_si.bsdf.clone(),
@@ -1663,11 +1661,11 @@ pub fn mis_weight<'a>(
                 light = Some(light_arc);
             }
             let new_ei: EndpointInteraction = EndpointInteraction {
-                p: lv_ei.p.clone(),
+                p: lv_ei.p,
                 time: lv_ei.time,
-                p_error: lv_ei.p_error.clone(),
-                wo: lv_ei.wo.clone(),
-                n: lv_ei.n.clone(),
+                p_error: lv_ei.p_error,
+                wo: lv_ei.wo,
+                n: lv_ei.n,
                 medium_interface,
                 camera,
                 light,
@@ -1684,11 +1682,11 @@ pub fn mis_weight<'a>(
                 phase = Some(phase_arc.clone());
             }
             let new_mi: MediumInteraction = MediumInteraction {
-                p: lv_mi.p.clone(),
+                p: lv_mi.p,
                 time: lv_mi.time,
-                p_error: lv_mi.p_error.clone(),
-                wo: lv_mi.wo.clone(),
-                n: lv_mi.n.clone(),
+                p_error: lv_mi.p_error,
+                wo: lv_mi.wo,
+                n: lv_mi.n,
                 medium_interface,
                 phase,
             };
@@ -1701,24 +1699,24 @@ pub fn mis_weight<'a>(
             }
             if let Some(primitive) = &lv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: lv_si.p.clone(),
+                    p: lv_si.p,
                     time: lv_si.time,
-                    p_error: lv_si.p_error.clone(),
-                    wo: lv_si.wo.clone(),
-                    n: lv_si.n.clone(),
+                    p_error: lv_si.p_error,
+                    wo: lv_si.wo,
+                    n: lv_si.n,
                     medium_interface,
-                    primitive: Some(primitive.clone()),
+                    primitive: Some(primitive),
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
             } else {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: lv_si.p.clone(),
+                    p: lv_si.p,
                     time: lv_si.time,
-                    p_error: lv_si.p_error.clone(),
-                    wo: lv_si.wo.clone(),
-                    n: lv_si.n.clone(),
+                    p_error: lv_si.p_error,
+                    wo: lv_si.wo,
+                    n: lv_si.n,
                     medium_interface,
                     primitive: None,
                     bsdf: lv_si.bsdf.clone(),
@@ -1760,11 +1758,11 @@ pub fn mis_weight<'a>(
                 light = Some(light_arc);
             }
             let new_ei: EndpointInteraction = EndpointInteraction {
-                p: cv_ei.p.clone(),
+                p: cv_ei.p,
                 time: cv_ei.time,
-                p_error: cv_ei.p_error.clone(),
-                wo: cv_ei.wo.clone(),
-                n: cv_ei.n.clone(),
+                p_error: cv_ei.p_error,
+                wo: cv_ei.wo,
+                n: cv_ei.n,
                 medium_interface,
                 camera,
                 light,
@@ -1781,11 +1779,11 @@ pub fn mis_weight<'a>(
                 phase = Some(phase_arc.clone());
             }
             let new_mi: MediumInteraction = MediumInteraction {
-                p: cv_mi.p.clone(),
+                p: cv_mi.p,
                 time: cv_mi.time,
-                p_error: cv_mi.p_error.clone(),
-                wo: cv_mi.wo.clone(),
-                n: cv_mi.n.clone(),
+                p_error: cv_mi.p_error,
+                wo: cv_mi.wo,
+                n: cv_mi.n,
                 medium_interface,
                 phase,
             };
@@ -1798,24 +1796,24 @@ pub fn mis_weight<'a>(
             }
             if let Some(primitive) = &cv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: cv_si.p.clone(),
+                    p: cv_si.p,
                     time: cv_si.time,
-                    p_error: cv_si.p_error.clone(),
-                    wo: cv_si.wo.clone(),
-                    n: cv_si.n.clone(),
+                    p_error: cv_si.p_error,
+                    wo: cv_si.wo,
+                    n: cv_si.n,
                     medium_interface,
-                    primitive: Some(primitive.clone()),
+                    primitive: Some(primitive),
                     bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
             } else {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: cv_si.p.clone(),
+                    p: cv_si.p,
                     time: cv_si.time,
-                    p_error: cv_si.p_error.clone(),
-                    wo: cv_si.wo.clone(),
-                    n: cv_si.n.clone(),
+                    p_error: cv_si.p_error,
+                    wo: cv_si.wo,
+                    n: cv_si.n,
                     medium_interface,
                     primitive: None,
                     bsdf: cv_si.bsdf.clone(),
@@ -1856,11 +1854,11 @@ pub fn mis_weight<'a>(
                 light = Some(light_arc);
             }
             let new_ei: EndpointInteraction = EndpointInteraction {
-                p: lv_ei.p.clone(),
+                p: lv_ei.p,
                 time: lv_ei.time,
-                p_error: lv_ei.p_error.clone(),
-                wo: lv_ei.wo.clone(),
-                n: lv_ei.n.clone(),
+                p_error: lv_ei.p_error,
+                wo: lv_ei.wo,
+                n: lv_ei.n,
                 medium_interface,
                 camera,
                 light,
@@ -1877,11 +1875,11 @@ pub fn mis_weight<'a>(
                 phase = Some(phase_arc.clone());
             }
             let new_mi: MediumInteraction = MediumInteraction {
-                p: lv_mi.p.clone(),
+                p: lv_mi.p,
                 time: lv_mi.time,
-                p_error: lv_mi.p_error.clone(),
-                wo: lv_mi.wo.clone(),
-                n: lv_mi.n.clone(),
+                p_error: lv_mi.p_error,
+                wo: lv_mi.wo,
+                n: lv_mi.n,
                 medium_interface,
                 phase,
             };
@@ -1894,24 +1892,24 @@ pub fn mis_weight<'a>(
             }
             if let Some(primitive) = &lv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: lv_si.p.clone(),
+                    p: lv_si.p,
                     time: lv_si.time,
-                    p_error: lv_si.p_error.clone(),
-                    wo: lv_si.wo.clone(),
-                    n: lv_si.n.clone(),
+                    p_error: lv_si.p_error,
+                    wo: lv_si.wo,
+                    n: lv_si.n,
                     medium_interface,
-                    primitive: Some(primitive.clone()),
+                    primitive: Some(primitive),
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
                 si = Some(new_si);
             } else {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: lv_si.p.clone(),
+                    p: lv_si.p,
                     time: lv_si.time,
-                    p_error: lv_si.p_error.clone(),
-                    wo: lv_si.wo.clone(),
-                    n: lv_si.n.clone(),
+                    p_error: lv_si.p_error,
+                    wo: lv_si.wo,
+                    n: lv_si.n,
                     medium_interface,
                     primitive: None,
                     bsdf: lv_si.bsdf.clone(),
@@ -1968,11 +1966,11 @@ pub fn mis_weight<'a>(
                     light = Some(light_arc);
                 }
                 let new_ei: EndpointInteraction = EndpointInteraction {
-                    p: cv_ei.p.clone(),
+                    p: cv_ei.p,
                     time: cv_ei.time,
-                    p_error: cv_ei.p_error.clone(),
-                    wo: cv_ei.wo.clone(),
-                    n: cv_ei.n.clone(),
+                    p_error: cv_ei.p_error,
+                    wo: cv_ei.wo,
+                    n: cv_ei.n,
                     medium_interface,
                     camera,
                     light,
@@ -1989,11 +1987,11 @@ pub fn mis_weight<'a>(
                     phase = Some(phase_arc.clone());
                 }
                 let new_mi: MediumInteraction = MediumInteraction {
-                    p: cv_mi.p.clone(),
+                    p: cv_mi.p,
                     time: cv_mi.time,
-                    p_error: cv_mi.p_error.clone(),
-                    wo: cv_mi.wo.clone(),
-                    n: cv_mi.n.clone(),
+                    p_error: cv_mi.p_error,
+                    wo: cv_mi.wo,
+                    n: cv_mi.n,
                     medium_interface,
                     phase,
                 };
@@ -2005,11 +2003,11 @@ pub fn mis_weight<'a>(
                     medium_interface = Some(medium_interface_arc.clone());
                 }
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: cv_si.p.clone(),
+                    p: cv_si.p,
                     time: cv_si.time,
-                    p_error: cv_si.p_error.clone(),
-                    wo: cv_si.wo.clone(),
-                    n: cv_si.n.clone(),
+                    p_error: cv_si.p_error,
+                    wo: cv_si.wo,
+                    n: cv_si.n,
                     medium_interface,
                     bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
@@ -2068,11 +2066,11 @@ pub fn mis_weight<'a>(
                     light = Some(light_arc);
                 }
                 let new_ei: EndpointInteraction = EndpointInteraction {
-                    p: lv_ei.p.clone(),
+                    p: lv_ei.p,
                     time: lv_ei.time,
-                    p_error: lv_ei.p_error.clone(),
-                    wo: lv_ei.wo.clone(),
-                    n: lv_ei.n.clone(),
+                    p_error: lv_ei.p_error,
+                    wo: lv_ei.wo,
+                    n: lv_ei.n,
                     medium_interface,
                     camera,
                     light,
@@ -2089,11 +2087,11 @@ pub fn mis_weight<'a>(
                     phase = Some(phase_arc.clone());
                 }
                 let new_mi: MediumInteraction = MediumInteraction {
-                    p: lv_mi.p.clone(),
+                    p: lv_mi.p,
                     time: lv_mi.time,
-                    p_error: lv_mi.p_error.clone(),
-                    wo: lv_mi.wo.clone(),
-                    n: lv_mi.n.clone(),
+                    p_error: lv_mi.p_error,
+                    wo: lv_mi.wo,
+                    n: lv_mi.n,
                     medium_interface,
                     phase,
                 };
@@ -2105,11 +2103,11 @@ pub fn mis_weight<'a>(
                     medium_interface = Some(medium_interface_arc.clone());
                 }
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    p: lv_si.p.clone(),
+                    p: lv_si.p,
                     time: lv_si.time,
-                    p_error: lv_si.p_error.clone(),
-                    wo: lv_si.wo.clone(),
-                    n: lv_si.n.clone(),
+                    p_error: lv_si.p_error,
+                    wo: lv_si.wo,
+                    n: lv_si.n,
                     medium_interface,
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
@@ -2221,13 +2219,13 @@ pub fn mis_weight<'a>(
 
 pub fn connect_bdpt<'a>(
     scene: &'a Scene,
-    light_vertices: &'a Vec<Vertex<'a>>,
-    camera_vertices: &'a Vec<Vertex<'a>>,
+    light_vertices: &[Vertex<'a>],
+    camera_vertices: &[Vertex<'a>],
     s: usize,
     t: usize,
     light_distr: &Arc<Distribution1D>,
     camera: &'a Arc<Camera>,
-    sampler: &mut Box<Sampler>,
+    sampler: &mut Sampler,
     p_raster: &mut Point2f,
     mis_weight_opt: Option<&mut Float>,
 ) -> Spectrum {
@@ -2460,9 +2458,8 @@ pub fn connect_bdpt<'a>(
     // ReportValue(pathLength, s + t - 2);
 
     // compute MIS weight for connection strategy
-    let mut mis_weight_flt: Float = 0.0 as Float;
-    if !l.is_black() {
-        mis_weight_flt = mis_weight(
+    let mis_weight_flt = if !l.is_black() {
+        mis_weight(
             scene,
             light_vertices,
             camera_vertices,
@@ -2470,8 +2467,10 @@ pub fn connect_bdpt<'a>(
             s,
             t,
             light_distr,
-        );
-    }
+        )
+    } else {
+        0.0 as Float
+    };
     // if mis_weight_flt > 0.0 {
     //     println!(
     //         "MIS weight for (s,t) = ({:?}, {:?}) connection: {:?}",

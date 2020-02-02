@@ -66,7 +66,7 @@ impl AOIntegrator {
         };
         if let Some(mut isect) = scene.intersect(&mut ray) {
             let mode: TransportMode = TransportMode::Radiance;
-            isect.compute_scattering_functions(&mut ray, true, mode);
+            isect.compute_scattering_functions(&ray, true, mode);
             // if (!isect.bsdf) {
             //     VLOG(2) << "Skipping intersection due to null bsdf";
             //     ray = isect.SpawnRay(ray.d);
@@ -79,17 +79,16 @@ impl AOIntegrator {
             let t: Vector3f = nrm_cross_vec3(&isect.n, &s);
             let u_opt: Option<&[Point2f]> = sampler.get_2d_array(self.n_samples);
             if let Some(u) = u_opt {
-                for i in 0..self.n_samples as usize {
+                for item in u.iter().take(self.n_samples as usize) {
                     // Vector3f wi;
                     let mut wi: Vector3f;
-                    let pdf: Float;
-                    if self.cos_sample {
-                        wi = cosine_sample_hemisphere(u[i]);
-                        pdf = cosine_hemisphere_pdf(wi.z.abs());
+                    let pdf = if self.cos_sample {
+                        wi = cosine_sample_hemisphere(*item);
+                        cosine_hemisphere_pdf(wi.z.abs())
                     } else {
-                        wi = uniform_sample_hemisphere(u[i]);
-                        pdf = uniform_hemisphere_pdf();
-                    }
+                        wi = uniform_sample_hemisphere(*item);
+                        uniform_hemisphere_pdf()
+                    };
                     // transform wi from local frame to world space.
                     wi = Vector3f {
                         x: s.x * wi.x + t.x * wi.y + n.x * wi.z,
@@ -108,7 +107,7 @@ impl AOIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Box<Sampler> {
+    pub fn get_sampler(&self) -> &Sampler {
         &self.sampler
     }
     pub fn get_pixel_bounds(&self) -> Bounds2i {

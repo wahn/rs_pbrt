@@ -1541,10 +1541,18 @@ impl FourierBSDF {
         }
         // evaluate Fourier expansion for angle $\phi$
         let y: Float = (0.0 as Float).max(fourier(&ak, 0_usize, m_max, cos_phi as f64));
-        let mut scale = if mu_i != 0.0 as Float { 1.0 as Float / mu_i.abs() } else { 0.0 as Float };
+        let mut scale = if mu_i != 0.0 as Float {
+            1.0 as Float / mu_i.abs()
+        } else {
+            0.0 as Float
+        };
         // update _scale_ to account for adjoint light transport
         if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
-            let eta = if mu_i > 0.0 as Float { 1.0 as Float / self.bsdf_table.eta } else { self.bsdf_table.eta };
+            let eta = if mu_i > 0.0 as Float {
+                1.0 as Float / self.bsdf_table.eta
+            } else {
+                self.bsdf_table.eta
+            };
             scale *= eta * eta;
         }
         if self.bsdf_table.n_channels == 1_i32 {
@@ -1555,12 +1563,7 @@ impl FourierBSDF {
             }
         } else {
             // compute and return RGB colors for tabulated BSDF
-            let r: Float = fourier(
-                &ak,
-                self.bsdf_table.m_max as usize,
-                m_max,
-                cos_phi as f64,
-            );
+            let r: Float = fourier(&ak, self.bsdf_table.m_max as usize, m_max, cos_phi as f64);
             let b: Float = fourier(
                 &ak,
                 (2_i32 * self.bsdf_table.m_max) as usize,
@@ -1677,10 +1680,18 @@ impl FourierBSDF {
         // we normalize again here.
         *wi = wi.normalize();
         // evaluate remaining Fourier expansions for angle $\phi$
-        let mut scale = if mu_i != 0.0 as Float { 1.0 as Float / mu_i.abs() } else { 0.0 as Float };
+        let mut scale = if mu_i != 0.0 as Float {
+            1.0 as Float / mu_i.abs()
+        } else {
+            0.0 as Float
+        };
         // update _scale_ to account for adjoint light transport
         if self.mode == TransportMode::Radiance && (mu_i * mu_o) > 0.0 as Float {
-            let eta = if mu_i > 0.0 as Float { 1.0 as Float / self.bsdf_table.eta } else { self.bsdf_table.eta };
+            let eta = if mu_i > 0.0 as Float {
+                1.0 as Float / self.bsdf_table.eta
+            } else {
+                self.bsdf_table.eta
+            };
             scale *= eta * eta;
         }
         if self.bsdf_table.n_channels == 1_i32 {
@@ -1691,12 +1702,7 @@ impl FourierBSDF {
             }
         } else {
             // compute and return RGB colors for tabulated BSDF
-            let r: Float = fourier(
-                &ak,
-                self.bsdf_table.m_max as usize,
-                m_max,
-                cos_phi as f64,
-            );
+            let r: Float = fourier(&ak, self.bsdf_table.m_max as usize, m_max, cos_phi as f64);
             let b: Float = fourier(
                 &ak,
                 (2_i32 * self.bsdf_table.m_max) as usize,
@@ -1737,8 +1743,8 @@ impl FourierBSDF {
             ak.push(0.0 as Float); // initialize with 0
         }
         let mut m_max: i32 = 0;
-         for (o, weight_o) in weights_o.iter().enumerate() {
-             for (i, weight_i) in weights_i.iter().enumerate() {
+        for (o, weight_o) in weights_o.iter().enumerate() {
+            for (i, weight_i) in weights_i.iter().enumerate() {
                 let weight: Float = weight_i * weight_o;
                 if weight == 0.0 as Float {
                     continue;

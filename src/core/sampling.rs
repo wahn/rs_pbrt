@@ -236,7 +236,11 @@ pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
 pub fn stratified_sample_1d(samp: &mut [Float], n_samples: i32, rng: &mut Rng, jitter: bool) {
     let inv_n_samples: Float = 1.0 as Float / n_samples as Float;
     for i in 0..n_samples {
-        let delta = if jitter { rng.uniform_float() } else { 0.5 as Float };
+        let delta = if jitter {
+            rng.uniform_float()
+        } else {
+            0.5 as Float
+        };
         samp[i as usize] =
             ((i as Float + delta) * inv_n_samples as Float).min(FLOAT_ONE_MINUS_EPSILON);
     }
@@ -248,8 +252,16 @@ pub fn stratified_sample_2d(samp: &mut [Point2f], nx: i32, ny: i32, rng: &mut Rn
     let mut samp_idx: usize = 0;
     for y in 0..ny {
         for x in 0..nx {
-            let jx = if jitter { rng.uniform_float() } else { 0.5 as Float };
-            let jy = if jitter { rng.uniform_float() } else { 0.5 as Float };
+            let jx = if jitter {
+                rng.uniform_float()
+            } else {
+                0.5 as Float
+            };
+            let jy = if jitter {
+                rng.uniform_float()
+            } else {
+                0.5 as Float
+            };
             samp[samp_idx].x = ((x as Float + jx) * dx).min(FLOAT_ONE_MINUS_EPSILON);
             samp[samp_idx].y = ((y as Float + jy) * dy).min(FLOAT_ONE_MINUS_EPSILON);
             samp_idx += 1;
