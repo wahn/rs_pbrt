@@ -737,7 +737,9 @@ impl SPPMIntegrator {
                                     }
                                 });
                                 // send progress through the channel to main thread
-                                band_tx.send(b).unwrap_or_else(|_| panic!("Failed to send progress"));
+                                band_tx
+                                    .send(b)
+                                    .unwrap_or_else(|_| panic!("Failed to send progress"));
                             }
                             // spawn thread to report progress
                             scope.spawn(move |_| {

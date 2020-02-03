@@ -47,8 +47,8 @@ impl SDVertex {
         &self,
         p: &mut SmallVec<[Point3f; 128]>,
         vi: i32,
-        faces: &Vec<Arc<SDFace>>,
-        verts: &Vec<Arc<SDVertex>>,
+        faces: &[Arc<SDFace>],
+        verts: &[Arc<SDVertex>],
     ) {
         if !self.boundary {
             // get one-ring vertices for interior vertex
@@ -90,7 +90,7 @@ impl SDVertex {
             }
         }
     }
-    pub fn valence(&self, vi: i32, faces: &Vec<Arc<SDFace>>) -> i32 {
+    pub fn valence(&self, vi: i32, faces: &[Arc<SDFace>]) -> i32 {
         let mut fi: i32 = self.start_face;
         if !self.boundary {
             // compute valence of interior vertex
@@ -273,13 +273,13 @@ pub fn loop_subdivide(
     world_to_object: &Transform,
     reverse_orientation: bool,
     n_levels: i32,
-    vertex_indices: &Vec<i32>,
-    p: &Vec<Point3f>,
+    vertex_indices: &[i32],
+    p: &[Point3f],
 ) -> Arc<TriangleMesh> {
     // allocate _LoopSubdiv_ vertices and faces
     let mut verts: Vec<Arc<SDVertex>> = Vec::with_capacity(p.len());
-    for i in 0..p.len() {
-        verts.push(Arc::new(SDVertex::new(p[i])));
+    for item in p {
+        verts.push(Arc::new(SDVertex::new(*item)));
     }
     let n_faces: usize = vertex_indices.len() / 3;
     let mut faces: Vec<Arc<SDFace>> = Vec::with_capacity(n_faces);
@@ -336,8 +336,8 @@ pub fn loop_subdivide(
         }
     }
     // finish vertex initialization
-    for vi in 0..p.len() {
-        let start_face = verts[vi].start_face;
+    for (vi, mut vert) in verts.iter_mut().enumerate().take(p.len()) {
+        let start_face = vert.start_face;
         let mut fi = start_face;
         loop {
             fi = faces[fi as usize].next_face(vi as i32);
@@ -345,8 +345,8 @@ pub fn loop_subdivide(
                 break;
             }
         }
-        let valence = verts[vi].valence(vi as i32, &faces);
-        if let Some(v) = Arc::get_mut(&mut verts[vi]) {
+        let valence = vert.valence(vi as i32, &faces);
+        if let Some(v) = Arc::get_mut(&mut vert) {
             v.boundary = fi == -1_i32;
             if !v.boundary && valence == 6 {
                 v.regular = true;
@@ -363,8 +363,8 @@ pub fn loop_subdivide(
         let mut new_faces: Vec<Arc<SDFace>> = Vec::new();
         let mut new_vertices: Vec<Arc<SDVertex>> = Vec::new();
         // allocate next level of children in mesh tree
-        for vi in 0..verts.len() {
-            if let Some(vertex) = Arc::get_mut(&mut verts[vi]) {
+        for mut vert in &mut verts {
+            if let Some(vertex) = Arc::get_mut(&mut vert) {
                 let ci = new_vertices.len();
                 vertex.child = ci as i32;
                 new_vertices.push(Arc::new(SDVertex::default()));
@@ -374,8 +374,8 @@ pub fn loop_subdivide(
                 }
             }
         }
-        for fi in 0..faces.len() {
-            if let Some(face) = Arc::get_mut(&mut faces[fi]) {
+        for mut face in &mut faces {
+            if let Some(face) = Arc::get_mut(&mut face) {
                 for k in 0..4 {
                     let ci = new_faces.len();
                     new_faces.push(Arc::new(SDFace::default()));
@@ -453,10 +453,10 @@ pub fn loop_subdivide(
             }
         }
         // update even vertex face pointers
-        for vi in 0..verts.len() {
+        for (vi, mut vert) in verts.iter_mut().enumerate() {
             let mut ci = -1_i32;
             let mut face_child = -1_i32;
-            if let Some(vertex) = Arc::get_mut(&mut verts[vi]) {
+            if let Some(vertex) = Arc::get_mut(&mut vert) {
                 let start_face = vertex.start_face as usize;
                 let face = faces[start_face].clone();
                 let vert_num: usize = face.vnum(vi as i32) as usize;
@@ -514,9 +514,8 @@ pub fn loop_subdivide(
             }
         }
         // update face vertex pointers
-        for fi in 0..faces.len() {
+        for face in &faces {
             let mut nvi = -1_i32;
-            let face = faces[fi].clone();
             for j in 0..3_usize {
                 // update child vertex pointer to new even vertex
                 let ci = face.children[j] as usize;
@@ -594,17 +593,17 @@ pub fn loop_subdivide(
         );
         if !vertex.boundary {
             // compute tangents of interior face
-            for j in 0..valence as usize {
-                s += Vector3f::from(p_ring[j])
+            for (j, item) in p_ring.iter().enumerate().take(valence as usize) {
+                s += Vector3f::from(*item)
                     * (2.0 as Float * PI * j as Float / valence as Float).cos();
-                t += Vector3f::from(p_ring[j])
+                t += Vector3f::from(*item)
                     * (2.0 as Float * PI * j as Float / valence as Float).sin();
             }
         } else {
             // compute tangents of boundary face
             s = p_ring[(valence - 1) as usize] - p_ring[0_usize];
             if valence == 2_i32 {
-                t = Vector3f::from(p_ring[0] + p_ring[1] - vertex.p * 2.0 as Float);
+                t = p_ring[0] + p_ring[1] - vertex.p * 2.0 as Float;
             } else if valence == 3_i32 {
                 t = p_ring[1] - vertex.p;
             } else if valence == 4_i32 {
@@ -619,10 +618,15 @@ pub fn loop_subdivide(
             } else {
                 let theta: Float = PI / (valence - 1) as Float;
                 t = Vector3f::from((p_ring[0] + p_ring[(valence - 1) as usize]) * theta.sin());
-                for k in 1..(valence - 1) as usize {
+                for (k, item) in p_ring
+                    .iter()
+                    .enumerate()
+                    .take((valence - 1) as usize)
+                    .skip(1)
+                {
                     let wt: Float =
                         (2.0 as Float * theta.cos() - 2.0 as Float) * (k as Float * theta).sin();
-                    t += Vector3f::from(p_ring[k] * wt);
+                    t += Vector3f::from(*item * wt);
                 }
                 t = -t;
             }
@@ -633,22 +637,22 @@ pub fn loop_subdivide(
     let ntris: usize = faces.len();
     let mut vertex_indices: Vec<u32> = Vec::with_capacity(3 * ntris);
     let tot_verts: usize = verts.len();
-    for i in 0..ntris {
+    for face in faces.iter().take(ntris) {
         for j in 0..3_usize {
-            vertex_indices.push(faces[i].v[j] as u32);
+            vertex_indices.push(face.v[j] as u32);
         }
     }
     // transform mesh vertices to world space
     let mut p_ws: Vec<Point3f> = Vec::new();
     let n_vertices: usize = p_limit.len();
-    for i in 0..n_vertices {
-        p_ws.push(object_to_world.transform_point(&p_limit[i]));
+    for item in p_limit.iter().take(n_vertices) {
+        p_ws.push(object_to_world.transform_point(item));
     }
     // transform normals to world space
     let mut n_ws: Vec<Normal3f> = Vec::new();
     let n_normals: usize = ns.len();
-    for i in 0..n_normals {
-        n_ws.push(object_to_world.transform_normal(&ns[i]));
+    for item in ns.iter().take(n_normals) {
+        n_ws.push(object_to_world.transform_normal(item));
     }
     Arc::new(TriangleMesh::new(
         *object_to_world,
@@ -670,8 +674,8 @@ fn weight_one_ring(
     vert: Arc<SDVertex>,
     beta: Float,
     vi: i32,
-    faces: &Vec<Arc<SDFace>>,
-    verts: &Vec<Arc<SDVertex>>,
+    faces: &[Arc<SDFace>],
+    verts: &[Arc<SDVertex>],
 ) -> Point3f {
     // put _vert_ one-ring in _p_ring_
     let valence: i32 = vert.valence(vi, faces);
@@ -691,8 +695,8 @@ fn weight_boundary(
     vert: Arc<SDVertex>,
     beta: Float,
     vi: i32,
-    faces: &Vec<Arc<SDFace>>,
-    verts: &Vec<Arc<SDVertex>>,
+    faces: &[Arc<SDFace>],
+    verts: &[Arc<SDVertex>],
 ) -> Point3f {
     // put _vert_ one-ring in _p_ring_
     let valence: i32 = vert.valence(vi, faces);

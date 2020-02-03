@@ -277,12 +277,11 @@ impl Curve {
             // compute $v$ coordinate of curve intersection point
             let pt_curve_dist: Float = pt_curve_dist2.sqrt();
             let edge_func: Float = dpcdw.x * -pc.y + pc.x * dpcdw.y;
-            let v: Float;
-            if edge_func > 0.0 as Float {
-                v = 0.5 as Float + pt_curve_dist / hit_width;
+            let v: Float = if edge_func > 0.0 as Float {
+                0.5 as Float + pt_curve_dist / hit_width
             } else {
-                v = 0.5 as Float - pt_curve_dist / hit_width;
-            }
+                0.5 as Float - pt_curve_dist / hit_width
+            };
 
             // compute hit _t_ and partial derivatives for curve intersection
             // if (t_hit != nullptr) {
@@ -584,7 +583,7 @@ pub fn create_curve_shape(
     }
     let mut n: Vec<Normal3f> = params.find_normal3f("N");
     if !n.is_empty() {
-        if curve_type_string != String::from("ribbon") {
+        if curve_type_string != "ribbon" {
             println!("WARNING: Curve normals are only used with \"ribbon\" type curves.");
             n = Vec::new();
         } else if n.len() != 2_usize {
@@ -673,9 +672,6 @@ fn log2(v: Float) -> i32 {
 
     // (With an additional add so get round-to-nearest rather than
     // round down.)
-    let mut one_or_zero: i32 = 0_i32;
-    if (1 << 22) > 0 {
-        one_or_zero = 1_i32;
-    }
+    let one_or_zero = if (1 << 22) > 0 { 1_i32 } else { 0_i32 };
     (bits >> 23) - 127 + (bits & one_or_zero)
 }
