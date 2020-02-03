@@ -178,17 +178,12 @@ impl UberMaterial {
             let mut bxdf_idx: usize = 0;
             if !t.is_black() {
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
-                        t,
-                        1.0,
-                        1.0,
-                        mode.clone(),
-                        Some(sc),
-                    ));
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::SpecTrans(SpecularTransmission::new(t, 1.0, 1.0, mode, Some(sc)));
                     bxdf_idx += 1;
                 } else {
                     bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::SpecTrans(SpecularTransmission::new(t, 1.0, 1.0, mode.clone(), None));
+                        Bxdf::SpecTrans(SpecularTransmission::new(t, 1.0, 1.0, mode, None));
                     bxdf_idx += 1;
                 }
             }
@@ -246,16 +241,11 @@ impl UberMaterial {
             }
             if !kt.is_black() {
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
-                        kt,
-                        1.0,
-                        e,
-                        mode.clone(),
-                        Some(sc),
-                    ));
+                    bsdf.bxdfs[bxdf_idx] =
+                        Bxdf::SpecTrans(SpecularTransmission::new(kt, 1.0, e, mode, Some(sc)));
                 } else {
                     bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::SpecTrans(SpecularTransmission::new(kt, 1.0, e, mode.clone(), None));
+                        Bxdf::SpecTrans(SpecularTransmission::new(kt, 1.0, e, mode, None));
                 }
             }
         }

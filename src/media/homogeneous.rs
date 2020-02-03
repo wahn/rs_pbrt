@@ -42,8 +42,7 @@ impl HomogeneousMedium {
         let dist: Float = -((1.0 as Float - sampler.get_1d()).ln()) / self.sigma_t[channel];
         let t: Float = (dist / ray.d.length()).min(ray.t_max);
         let sampled_medium: bool = t < ray.t_max;
-        let mut mi_opt: Option<MediumInteraction> = None;
-        if sampled_medium {
+        let mi_opt = if sampled_medium {
             let mi: MediumInteraction = MediumInteraction::new(
                 &ray.position(t),
                 &(-ray.d),
@@ -55,16 +54,17 @@ impl HomogeneousMedium {
                 )))),
                 Some(Arc::new(HenyeyGreenstein { g: self.g })),
             );
-            mi_opt = Some(mi);
-        }
+            Some(mi)
+        } else {
+            None
+        };
         // compute the transmittance and sampling density
         let tr: Spectrum = (-self.sigma_t * t.min(f32::MAX) * ray.d.length()).exp();
-        let density: Spectrum;
-        if sampled_medium {
-            density = self.sigma_t * tr;
+        let density = if sampled_medium {
+            self.sigma_t * tr
         } else {
-            density = tr;
-        }
+            tr
+        };
         let mut pdf: Float = 0.0 as Float;
         for i in 0..3 {
             // TODO: Spectrum::nSamples

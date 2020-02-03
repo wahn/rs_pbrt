@@ -48,7 +48,7 @@ impl GridDensityMedium {
             ny,
             nz,
             world_to_medium: Transform::inverse(medium_to_world),
-            density: d.clone(),
+            density: d,
             sigma_t: (*sigma_s + *sigma_a)[0],
             inv_max_density: 1.0 as Float / max_density,
         }

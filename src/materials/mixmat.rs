@@ -86,12 +86,9 @@ impl MixMaterial {
         // find next empty slot
         if let Some(bsdf) = &si.bsdf {
             for bxdf_idx in 0..8 {
-                match &bsdf.bxdfs[bxdf_idx] {
-                    Bxdf::Empty(_bxdf) => {
-                        last_idx = bxdf_idx;
-                        break;
-                    }
-                    _ => {}
+                if let Bxdf::Empty(_bxdf) = &bsdf.bxdfs[bxdf_idx] {
+                    last_idx = bxdf_idx;
+                    break;
                 }
             }
         }
@@ -99,8 +96,8 @@ impl MixMaterial {
         if si2.bsdf.is_some() {
             let bxdfs: [Bxdf; 8] = si2.bsdf.unwrap().bxdfs;
             if let Some(bsdf) = &mut si.bsdf {
-                for bxdf_idx in 0..8 {
-                    bsdf.bxdfs[bxdf_idx + last_idx] = match &bxdfs[bxdf_idx] {
+                for (bxdf_idx, item) in bxdfs.iter().enumerate() {
+                    bsdf.bxdfs[bxdf_idx + last_idx] = match item {
                         Bxdf::Empty(_bxdf) => break,
                         Bxdf::SpecRefl(bxdf) => {
                             let fresnel = match &bxdf.fresnel {

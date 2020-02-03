@@ -73,7 +73,7 @@ impl SubsurfaceMaterial {
         let name: String = mp.find_string("name", String::from(""));
         let found: bool = get_medium_scattering_properties(&name, &mut sig_a, &mut sig_s);
         let mut g: Float = mp.find_float("g", 0.0 as Float);
-        if name != String::from("") {
+        if name != "" {
             if !found {
                 println!(
                     "WARNING: Named material {:?} not found.  Using defaults.",
