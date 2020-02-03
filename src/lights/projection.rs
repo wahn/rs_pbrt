@@ -134,7 +134,7 @@ impl ProjectionLight {
                     let max_aniso: Float = 8.0 as Float;
                     let wrap_mode: ImageWrap = ImageWrap::Repeat;
                     let projection_map = Arc::new(MipMap::new(
-                        &resolution,
+                        resolution,
                         &texels[..],
                         do_trilinear,
                         max_aniso,

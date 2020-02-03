@@ -121,7 +121,7 @@ impl InfiniteAreaLight {
                     let max_aniso: Float = 8.0 as Float;
                     let wrap_mode: ImageWrap = ImageWrap::Repeat;
                     let lmap = Arc::new(MipMap::new(
-                        &resolution,
+                        resolution,
                         &texels[..],
                         do_trilinear,
                         max_aniso,
@@ -143,7 +143,7 @@ impl InfiniteAreaLight {
                         for u in 0..width {
                             let up: Float = (u as Float + 0.5 as Float) / width as Float;
                             let st: Point2f = Point2f { x: up, y: vp };
-                            img.push(lmap.lookup_pnt_flt(&st, fwidth).y() * sin_theta);
+                            img.push(lmap.lookup_pnt_flt(st, fwidth).y() * sin_theta);
                         }
                     }
                     let distribution: Arc<Distribution2D> =

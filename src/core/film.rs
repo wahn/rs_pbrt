@@ -537,7 +537,7 @@ impl Film {
         let mut offset;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            assert!(pnt2_inside_exclusive(&p, &self.cropped_pixel_bounds));
+            assert!(pnt2_inside_exclusive(p, &self.cropped_pixel_bounds));
             let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
             offset = ((p.x - self.cropped_pixel_bounds.p_min.x)
                 + (p.y - self.cropped_pixel_bounds.p_min.y) * width) as usize;
