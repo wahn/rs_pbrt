@@ -84,12 +84,7 @@ impl HaltonSampler {
         let mut base_scales: Point2i = Point2i::default();
         let mut base_exponents: Point2i = Point2i::default();
         for i in 0..2 {
-            let base: i32;
-            if i == 0 {
-                base = 2;
-            } else {
-                base = 3;
-            }
+            let base = if i == 0 { 2 } else { 3 };
             let mut scale: i32 = 1_i32;
             let mut exp: i32 = 0_i32;
             while scale < res[i].min(K_MAX_RESOLUTION) {
@@ -147,10 +142,10 @@ impl HaltonSampler {
             array_end_dim: self.array_end_dim,
             current_pixel: self.current_pixel,
             current_pixel_sample_index: self.current_pixel_sample_index,
-            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
-            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
-            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
-            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
+            samples_1d_array_sizes: self.samples_1d_array_sizes.to_vec(),
+            samples_2d_array_sizes: self.samples_2d_array_sizes.to_vec(),
+            sample_array_1d: self.sample_array_1d.to_vec(),
+            sample_array_2d: self.sample_array_2d.to_vec(),
             array_1d_offset: self.array_1d_offset,
             array_2d_offset: self.array_2d_offset,
         };
@@ -179,14 +174,11 @@ impl HaltonSampler {
                     y: mod_t(self.current_pixel[1], K_MAX_RESOLUTION),
                 };
                 for i in 0..2 {
-                    let dim_offset: u64;
-                    if i == 0 {
-                        dim_offset =
-                            inverse_radical_inverse(2, pm[i] as u64, self.base_exponents[i] as u64);
+                    let dim_offset = if i == 0 {
+                        inverse_radical_inverse(2, pm[i] as u64, self.base_exponents[i] as u64)
                     } else {
-                        dim_offset =
-                            inverse_radical_inverse(3, pm[i] as u64, self.base_exponents[i] as u64);
-                    }
+                        inverse_radical_inverse(3, pm[i] as u64, self.base_exponents[i] as u64)
+                    };
                     *offset_for_current_pixel += dim_offset
                         * (self.sample_stride / self.base_scales[i] as u64) as u64
                         * self.mult_inverse[i as usize] as u64;

@@ -34,7 +34,10 @@ impl MaxMinDistSampler {
         let mut samples_per_pixel: i64 = samples_per_pixel;
         let c_index: i32 = log_2_int_i64(samples_per_pixel) as i32;
         if c_index as usize >= 17_usize {
-            panic!("No more than {} samples per pixel are supported with MaxMinDistSampler.");
+            panic!(
+                "No more than {} samples per pixel are supported with MaxMinDistSampler.",
+                c_index
+            );
             //     Warning(
             //         "No more than %d samples per pixel are supported with "
             //             "MaxMinDistSampler. Rounding down.",
@@ -86,13 +89,13 @@ impl MaxMinDistSampler {
             samples_2d: self.samples_2d.clone(),
             current_1d_dimension: self.current_1d_dimension,
             current_2d_dimension: self.current_2d_dimension,
-            rng: self.rng.clone(),
+            rng: self.rng,
             current_pixel: self.current_pixel,
             current_pixel_sample_index: self.current_pixel_sample_index,
-            samples_1d_array_sizes: self.samples_1d_array_sizes.iter().cloned().collect(),
-            samples_2d_array_sizes: self.samples_2d_array_sizes.iter().cloned().collect(),
-            sample_array_1d: self.sample_array_1d.iter().cloned().collect(),
-            sample_array_2d: self.sample_array_2d.iter().cloned().collect(),
+            samples_1d_array_sizes: self.samples_1d_array_sizes.to_vec(),
+            samples_2d_array_sizes: self.samples_2d_array_sizes.to_vec(),
+            sample_array_1d: self.sample_array_1d.to_vec(),
+            sample_array_2d: self.sample_array_2d.to_vec(),
             array_1d_offset: self.array_1d_offset,
             array_2d_offset: self.array_2d_offset,
         };
