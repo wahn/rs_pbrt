@@ -44,7 +44,7 @@ where
     ) -> ImageTexture<T> {
         let path = Path::new(&filename);
         let img_result: ImageResult<DynamicImage> = image::open(path);
-        if !img_result.is_ok() {
+        if img_result.is_err() {
             panic!("Error reading \"{}\"", filename);
         }
         let buf = img_result.unwrap();

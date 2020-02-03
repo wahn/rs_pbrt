@@ -7,9 +7,7 @@ use crate::core::geometry::{
     pnt3_permute, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3, vec3_max_component,
     vec3_max_dimension, vec3_permute,
 };
-use crate::core::geometry::{
-    Bounds3f, Normal3, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f,
-};
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::material::Material;
 use crate::core::pbrt::gamma;
@@ -119,7 +117,7 @@ impl Triangle {
             ]
         } else {
             [
-                self.mesh.uv[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize],
+                self.mesh.uv[self.mesh.vertex_indices[(self.id * 3) as usize] as usize],
                 self.mesh.uv[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize],
                 self.mesh.uv[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize],
             ]
@@ -127,8 +125,7 @@ impl Triangle {
     }
     // Shape
     pub fn object_bound(&self) -> Bounds3f {
-        let p0: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
         let p1: Point3f =
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
         let p2: Point3f =
@@ -142,8 +139,7 @@ impl Triangle {
         )
     }
     pub fn world_bound(&self) -> Bounds3f {
-        let p0: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
         let p1: Point3f =
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
         let p2: Point3f =
@@ -152,8 +148,7 @@ impl Triangle {
     }
     pub fn intersect(&self, ray: &Ray) -> Option<(SurfaceInteraction, Float)> {
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
         let p1: &Point3f =
             &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
         let p2: &Point3f =
@@ -302,12 +297,13 @@ impl Triangle {
         let degenerate_uv: bool = determinant.abs() < 1e-8 as Float;
         // Vector3f dpdu, dpdv;
         let mut dpdu: Vector3f = Vector3f::default();
-        let mut dpdv: Vector3f = Vector3f::default();
-        if !degenerate_uv {
+        let mut dpdv: Vector3f = if !degenerate_uv {
             let invdet: Float = 1.0 / determinant;
             dpdu = (dp02 * duv12.y - dp12 * duv02.y) * invdet;
-            dpdv = (dp02 * -duv12.x + dp12 * duv02.x) * invdet;
-        }
+            (dp02 * -duv12.x + dp12 * duv02.x) * invdet
+        } else {
+            Vector3f::default()
+        };
         if degenerate_uv || vec3_cross_vec3(&dpdu, &dpdv).length_squared() == 0.0 {
             // handle zero determinant for triangle partial derivative matrix
             vec3_coordinate_system(
@@ -365,10 +361,10 @@ impl Triangle {
             // compute shading normal _ns_ for triangle
             let mut ns: Normal3f;
             if !self.mesh.n.is_empty() {
-                let n0 = self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+                let n0 = self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
                 let n1 = self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
                 let n2 = self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
-                ns = Normal3::from(n0) * b0 + Normal3::from(n1) * b1 + Normal3::from(n2) * b2;
+                ns = n0 * b0 + n1 * b1 + n2 * b2;
                 if ns.length_squared() > 0.0 {
                     ns = ns.normalize();
                 } else {
@@ -380,7 +376,7 @@ impl Triangle {
             // compute shading tangent _ss_ for triangle
             let mut ss: Vector3f;
             if !self.mesh.s.is_empty() {
-                let s0 = self.mesh.s[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+                let s0 = self.mesh.s[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
                 let s1 = self.mesh.s[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
                 let s2 = self.mesh.s[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
                 ss = s0 * b0 + s1 * b1 + s2 * b2;
@@ -407,16 +403,12 @@ impl Triangle {
                 // compute deltas for triangle partial derivatives of normal
                 let duv02: Vector2f = uv[0] - uv[2];
                 let duv12: Vector2f = uv[1] - uv[2];
-                let dn1: Normal3f = Normal3::from(
-                    self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize],
-                ) - Normal3::from(
-                    self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize],
-                );
-                let dn2: Normal3f = Normal3::from(
-                    self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize],
-                ) - Normal3::from(
-                    self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize],
-                );
+                let dn1: Normal3f = self.mesh.n
+                    [self.mesh.vertex_indices[(self.id * 3) as usize] as usize]
+                    - self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+                let dn2: Normal3f = self.mesh.n
+                    [self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize]
+                    - self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
                 let determinant: Float = duv02.x * duv12.y - duv02.y * duv12.x;
                 let degenerate_uv: bool = determinant.abs() < 1e-8;
                 if degenerate_uv {
@@ -446,8 +438,7 @@ impl Triangle {
         // TODO: ProfilePhase p(Prof::TriIntersectP);
         // TODO: ++nTests;
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
         let p1: &Point3f =
             &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
         let p2: &Point3f =
@@ -658,8 +649,7 @@ impl Triangle {
     }
     pub fn area(&self) -> Float {
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
         let p1: Point3f =
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
         let p2: Point3f =
@@ -669,8 +659,7 @@ impl Triangle {
     pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let b: Point2f = uniform_sample_triangle(u);
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize];
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
         let p1: Point3f =
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
         let p2: Point3f =
@@ -682,13 +671,12 @@ impl Triangle {
         // ensure correct orientation of the geometric normal; follow
         // the same approach as was used in Triangle::Intersect().
         if !self.mesh.n.is_empty() {
-            let ns: Normal3f = Normal3f::from(
-                self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 0] as usize] * b[0]
-                    + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize]
-                        * b[1]
-                    + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize]
-                        * (1.0 as Float - b[0] - b[1]),
-            );
+            let ns: Normal3f = self.mesh.n
+                [self.mesh.vertex_indices[(self.id * 3) as usize] as usize]
+                * b[0]
+                + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize] * b[1]
+                + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize]
+                    * (1.0 as Float - b[0] - b[1]);
             it.n = nrm_faceforward_nrm(&it.n, &ns);
         } else if self.reverse_orientation ^ self.transform_swaps_handedness {
             it.n *= -1.0 as Float;

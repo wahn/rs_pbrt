@@ -661,15 +661,14 @@ fn mp(
 ) -> Float {
     let a: Float = cos_theta_i * cos_theta_o / v;
     let b: Float = sin_theta_i * sin_theta_o / v;
-    let mp = if v <= 0.1 as Float {
+    if v <= 0.1 as Float {
         (log_i0(a) - b - 1.0 as Float / v
             + 0.6931 as Float
             + (1.0 as Float / (2. as Float * v)).ln())
         .exp()
     } else {
         ((-b).exp() * i0(a)) / ((1.0 as Float / v).sinh() * 2.0 as Float * v)
-    };
-    mp
+    }
 }
 
 #[inline]
