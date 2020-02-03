@@ -8,7 +8,7 @@ use crate::core::pbrt::Float;
 
 // see nurbs.cpp
 
-pub fn knot_offset(knot: &Vec<Float>, order: i32, np: i32, t: Float) -> usize {
+pub fn knot_offset(knot: &[Float], order: i32, np: i32, t: Float) -> usize {
     let first_knot: usize = (order - 1_i32) as usize;
     let mut knot_offset: usize = first_knot;
     while t > knot[knot_offset + 1_usize] {
@@ -30,7 +30,7 @@ pub struct Homogeneous3 {
 
 pub fn nurbs_evaluate(
     order: i32,
-    knot: &Vec<Float>,
+    knot: &[Float],
     cp: &SmallVec<[Homogeneous3; 128]>,
     cp_start: i32,
     np: i32,
@@ -63,7 +63,7 @@ pub fn nurbs_evaluate(
                 cp_work[j as usize].w * alpha + cp_work[(j + 1) as usize].w * one_minus_alpha;
         }
     }
-    alpha = (knot[knot_offset + 1] - t) / (knot[knot_offset + 1] - knot[knot_offset + 0]);
+    alpha = (knot[knot_offset + 1] - t) / (knot[knot_offset + 1] - knot[knot_offset]);
     assert!(alpha >= 0.0 as Float && alpha <= 1.0 as Float);
     let one_minus_alpha: Float = 1.0 as Float - alpha;
     let val: Homogeneous3 = Homogeneous3 {
@@ -73,7 +73,7 @@ pub fn nurbs_evaluate(
         w: cp_work[0].w * alpha + cp_work[1].w * one_minus_alpha,
     };
     if let Some(deriv) = deriv_opt {
-        let factor: Float = (order - 1) as Float / (knot[knot_offset + 1] - knot[knot_offset + 0]);
+        let factor: Float = (order - 1) as Float / (knot[knot_offset + 1] - knot[knot_offset]);
         let delta: Homogeneous3 = Homogeneous3 {
             x: (cp_work[1].x - cp_work[0].x) * factor,
             y: (cp_work[1].y - cp_work[0].y) * factor,
@@ -89,14 +89,14 @@ pub fn nurbs_evaluate(
 
 pub fn nurbs_evaluate_surface(
     u_order: i32,
-    u_knot: &Vec<Float>,
+    u_knot: &[Float],
     ucp: i32,
     u: Float,
     v_order: i32,
-    v_knot: &Vec<Float>,
+    v_knot: &[Float],
     vcp: i32,
     v: Float,
-    cp: &Vec<Homogeneous3>,
+    cp: &[Homogeneous3],
     dpdu_opt: Option<&mut Vector3f>,
     dpdv_opt: Option<&mut Vector3f>,
 ) -> Point3f {

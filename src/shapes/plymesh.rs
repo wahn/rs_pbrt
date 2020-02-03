@@ -2,6 +2,7 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::fs::File;
+use std::hash::BuildHasher;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::string::String;
@@ -20,18 +21,18 @@ use crate::core::transform::Transform;
 use crate::shapes::triangle::{Triangle, TriangleMesh};
 use crate::textures::constant::ConstantTexture;
 
-pub fn create_ply_mesh(
+pub fn create_ply_mesh<S: BuildHasher>(
     o2w: &Transform,
     w2o: &Transform,
     reverse_orientation: bool,
     params: &ParamSet,
-    float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>>>,
-    search_directory: Option<&Box<PathBuf>>,
+    float_textures: Arc<HashMap<String, Arc<dyn Texture<Float> + Send + Sync>, S>>,
+    search_directory: Option<&PathBuf>,
 ) -> Vec<Arc<Shape>> {
     let mut filename: String = params.find_one_string("filename", String::new());
     if let Some(ref search_directory) = search_directory {
         let mut path_buf: PathBuf = PathBuf::from("/");
-        path_buf.push(search_directory.as_ref());
+        path_buf.push(search_directory);
         path_buf.push(filename);
         filename = String::from(path_buf.to_str().unwrap());
     }
@@ -222,21 +223,21 @@ pub fn create_ply_mesh(
         assert!(n.len() == p.len());
         // transform normals to world space
         let n_normals: usize = n.len();
-        for i in 0..n_normals {
-            n_ws.push(o2w.transform_normal(&n[i]));
+        for item in n.iter().take(n_normals) {
+            n_ws.push(o2w.transform_normal(item));
         }
     }
     // transform mesh vertices to world space
     let mut p_ws: Vec<Point3f> = Vec::new();
     let n_vertices: usize = p.len();
-    for i in 0..n_vertices {
-        p_ws.push(o2w.transform_point(&p[i]));
+    for item in p.iter().take(n_vertices) {
+        p_ws.push(o2w.transform_point(item));
     }
     let s_ws: Vec<Vector3f> = Vec::new();
     // look up an alpha texture, if applicable
     let mut alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
     let alpha_tex_name: String = params.find_texture("alpha");
-    if alpha_tex_name != String::from("") {
+    if alpha_tex_name != "" {
         alpha_tex = match float_textures.get(alpha_tex_name.as_str()) {
             Some(float_texture) => Some(float_texture.clone()),
             None => {
@@ -252,7 +253,7 @@ pub fn create_ply_mesh(
     }
     let mut shadow_alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
     let shadow_alpha_tex_name: String = params.find_texture("shadowalpha");
-    if shadow_alpha_tex_name != String::from("") {
+    if shadow_alpha_tex_name != "" {
         shadow_alpha_tex = match float_textures.get(shadow_alpha_tex_name.as_str()) {
             Some(float_texture) => Some(float_texture.clone()),
             None => {
