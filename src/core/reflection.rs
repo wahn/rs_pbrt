@@ -422,7 +422,7 @@ impl Bsdf {
             // println!("Overall f = {:?}, pdf = {:?}, ratio = {:?}", f, *pdf, ratio);
             f
         } else {
-            panic!("CHECK_NOTNULL(bxdf)");
+            Spectrum::default()
         }
     }
     pub fn pdf(&self, wo_world: &Vector3f, wi_world: &Vector3f, bsdf_flags: u8) -> Float {

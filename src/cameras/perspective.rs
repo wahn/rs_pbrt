@@ -163,8 +163,6 @@ impl PerspectiveCamera {
                 screen.p_max.x = sw[1];
                 screen.p_min.y = sw[2];
                 screen.p_max.y = sw[3];
-            } else {
-                panic!("\"screenwindow\" should have four values");
             }
         }
         let fov: Float = params.find_one_float("fov", 90.0);

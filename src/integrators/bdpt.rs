@@ -426,9 +426,7 @@ impl<'a> Vertex<'a> {
                     Spectrum::default()
                 }
             }
-            _ => {
-                panic!("Vertex::f(): Unimplemented");
-            }
+            _ => Spectrum::default(),
         }
     }
     pub fn is_connectible(&self) -> bool {
@@ -612,8 +610,6 @@ impl<'a> Vertex<'a> {
                     pdf_flt = phase.p(&wp, &wn);
                 }
             }
-        } else {
-            panic!("Vertex::Pdf(): Unimplemented");
         }
         // return probability per unit area at vertex _next_
         self.convert_density(pdf_flt, next)

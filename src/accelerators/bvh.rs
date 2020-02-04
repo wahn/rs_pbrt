@@ -445,7 +445,7 @@ impl BVHAccel {
         loop {
             let node: &LinearBVHNode = &self.nodes[current_node_index as usize];
             // check ray against BVH node
-            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
+            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, &dir_is_neg);
             if intersects {
                 if node.n_primitives > 0 {
                     // intersect ray with primitives in leaf BVH node
@@ -511,7 +511,7 @@ impl BVHAccel {
         let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
         loop {
             let node: &LinearBVHNode = &self.nodes[current_node_index as usize];
-            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, dir_is_neg);
+            let intersects: bool = node.bounds.intersect_p(ray, &inv_dir, &dir_is_neg);
             if intersects {
                 // process BVH node _node_ for traversal
                 if node.n_primitives > 0 {

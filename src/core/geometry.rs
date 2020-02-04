@@ -1732,7 +1732,7 @@ impl Bounds3<Float> {
         *hitt1 = t1;
         true
     }
-    pub fn intersect_p(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: [u8; 3]) -> bool {
+    pub fn intersect_p(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: &[u8; 3]) -> bool {
         // check for ray intersection against $x$ and $y$ slabs
         let mut t_min: Float = (self[dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
         let mut t_max: Float = (self[1_u8 - dir_is_neg[0]].x - ray.o.x) * inv_dir.x;

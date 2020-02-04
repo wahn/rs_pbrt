@@ -97,7 +97,7 @@ impl SamplerIntegrator {
                     let sampler = &self.get_sampler();
                     let camera = &self.get_camera();
                     let film = &film;
-                    let pixel_bounds = self.get_pixel_bounds();
+                    let pixel_bounds = &self.get_pixel_bounds();
                     crossbeam::scope(|scope| {
                         let (pixel_tx, pixel_rx) = crossbeam_channel::bounded(num_cores);
                         // spawn worker threads

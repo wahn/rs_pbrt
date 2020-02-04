@@ -57,7 +57,7 @@ impl PathIntegrator {
     }
     pub fn li(
         &self,
-        r: &mut Ray,
+        r: &Ray,
         scene: &Scene,
         sampler: &mut Sampler,
         // arena: &mut Arena,
@@ -240,11 +240,7 @@ impl PathIntegrator {
                                         specular_bounce =
                                             (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
                                         ray = pi.spawn_ray(&wi);
-                                    } else {
-                                        panic!("no pi.bsdf found");
                                     }
-                                } else {
-                                    panic!("bssrdf.sample_s() did return (s, None)");
                                 }
                             }
                         }
