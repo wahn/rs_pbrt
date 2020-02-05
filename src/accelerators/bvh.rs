@@ -442,7 +442,7 @@ impl BVHAccel {
         let mut to_visit_offset: u32 = 0;
         let mut current_node_index: u32 = 0;
         let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
-        let mut si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction::default());
+        let mut si: Option<Rc<SurfaceInteraction>> = None;
         loop {
             let node: &LinearBVHNode = &self.nodes[current_node_index as usize];
             // check ray against BVH node
@@ -456,7 +456,7 @@ impl BVHAccel {
                             self.primitives[node.offset as usize + i as usize].intersect(ray)
                         {
                             // TODO: CHECK_GE(...)
-                            si = isect.clone();
+                            si = Some(isect.clone());
                             hit = true;
                         }
                     }
@@ -487,7 +487,7 @@ impl BVHAccel {
             }
         }
         if hit {
-            Some(si)
+            Some(si.unwrap())
         } else {
             None
         }
