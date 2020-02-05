@@ -1,7 +1,7 @@
 // std
 use std::mem;
 use std::rc::Rc;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 // pbrt
 use crate::core::geometry::{
     bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, pnt3_abs, pnt3_distance_squared,
@@ -9,7 +9,7 @@ use crate::core::geometry::{
     vec3_max_dimension, vec3_permute,
 };
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
-use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
+use crate::core::interaction::{Interaction, InteractionCommon, Shading, SurfaceInteraction};
 use crate::core::material::Material;
 use crate::core::pbrt::gamma;
 use crate::core::pbrt::Float;
@@ -296,7 +296,6 @@ impl Triangle {
         let dp12: Vector3f = *p1 - *p2;
         let determinant: Float = duv02.x * duv12.y - duv02.y * duv12.x;
         let degenerate_uv: bool = determinant.abs() < 1e-8 as Float;
-        // Vector3f dpdu, dpdv;
         let mut dpdu: Vector3f = Vector3f::default();
         let mut dpdv: Vector3f = if !degenerate_uv {
             let invdet: Float = 1.0 / determinant;
@@ -349,13 +348,15 @@ impl Triangle {
         let dndu: Normal3f = Normal3f::default();
         let dndv: Normal3f = Normal3f::default();
         let wo: Vector3f = -ray.d;
-        let mut si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction::new(
-            &p_hit, &p_error, uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
-        ));
         // override surface normal in _isect_ for triangle
-        let surface_normal: Normal3f = Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
-        Rc::get_mut(&mut si).unwrap().n = surface_normal;
-        Rc::get_mut(&mut si).unwrap().shading.n = surface_normal;
+        let mut surface_normal: Normal3f = Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
+        let mut shading: Shading = Shading {
+            n: surface_normal,
+            dpdu,
+            dpdv,
+            dndu,
+            dndv,
+        };
         if !self.mesh.n.is_empty() || !self.mesh.s.is_empty() {
             // initialize _Triangle_ shading geometry
 
@@ -369,10 +370,10 @@ impl Triangle {
                 if ns.length_squared() > 0.0 {
                     ns = ns.normalize();
                 } else {
-                    ns = si.n;
+                    ns = surface_normal;
                 }
             } else {
-                ns = si.n;
+                ns = surface_normal;
             }
             // compute shading tangent _ss_ for triangle
             let mut ss: Vector3f;
@@ -384,10 +385,10 @@ impl Triangle {
                 if ss.length_squared() > 0.0 {
                     ss = ss.normalize();
                 } else {
-                    ss = si.dpdu.normalize();
+                    ss = dpdu.normalize();
                 }
             } else {
-                ss = si.dpdu.normalize();
+                ss = dpdu.normalize();
             }
             // compute shading bitangent _ts_ for triangle and adjust _ss_
             let mut ts: Vector3f = vec3_cross_nrm(&ss, &ns);
@@ -424,15 +425,37 @@ impl Triangle {
                 dndu = Normal3f::default();
                 dndv = Normal3f::default();
             }
-            Rc::get_mut(&mut si).unwrap().set_shading_geometry(&ss, &ts, &dndu, &dndv, true);
+            shading.n = Normal3f::from(vec3_cross_vec3(&ss, &ts)).normalize();
+            surface_normal = nrm_faceforward_nrm(&surface_normal, &shading.n);
+            shading.dpdu = ss;
+            shading.dpdv = ts;
+            shading.dndu = dndu;
+            shading.dndv = dndv;
         }
-        // ensure correct orientation of the geometric normal
-        if !self.mesh.n.is_empty() {
-            Rc::get_mut(&mut si).unwrap().n = nrm_faceforward_nrm(&si.n, &si.shading.n);
-        } else if self.reverse_orientation ^ self.transform_swaps_handedness {
-            Rc::get_mut(&mut si).unwrap().shading.n = -si.n;
-            Rc::get_mut(&mut si).unwrap().n = -si.n;
-        }
+        let si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction {
+            p: p_hit,
+            time: ray.time,
+            p_error,
+            wo,
+            n: surface_normal,
+            medium_interface: None,
+            uv: uv_hit,
+            dpdu,
+            dpdv,
+            dndu,
+            dndv,
+            dpdx: RwLock::new(Vector3f::default()),
+            dpdy: RwLock::new(Vector3f::default()),
+            dudx: RwLock::new(0.0 as Float),
+            dvdx: RwLock::new(0.0 as Float),
+            dudy: RwLock::new(0.0 as Float),
+            dvdy: RwLock::new(0.0 as Float),
+            primitive: None,
+            shading,
+            bsdf: None,
+            bssrdf: None,
+            shape: None,
+        });
         Some((si, t as Float))
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
