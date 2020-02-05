@@ -1,5 +1,6 @@
 // std
 use std::borrow::Borrow;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 // use crate::core::bssrdf::Bssrdf;
@@ -7,7 +8,7 @@ use crate::core::camera::Camera;
 use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 use crate::core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use crate::core::integrator::uniform_sample_one_light;
-use crate::core::interaction::Interaction;
+use crate::core::interaction::{Interaction, SurfaceInteraction};
 use crate::core::lightdistrib::create_light_sample_distribution;
 use crate::core::lightdistrib::LightDistribution;
 use crate::core::material::TransportMode;
@@ -103,7 +104,7 @@ impl PathIntegrator {
                 }
                 // compute scattering functions and skip over medium boundaries
                 let mode: TransportMode = TransportMode::Radiance;
-                isect.compute_scattering_functions(&ray, true, mode);
+                Rc::get_mut(&mut isect).unwrap().compute_scattering_functions(&ray, true, mode);
                 if let Some(ref _bsdf) = isect.bsdf {
                     // we are fine (for below)
                 } else {
@@ -120,9 +121,10 @@ impl PathIntegrator {
                     if let Some(ref bsdf) = isect.bsdf {
                         if bsdf.num_components(bsdf_flags) > 0 {
                             // TODO: ++total_paths;
+                            let it: &SurfaceInteraction = isect.borrow();
                             let ld: Spectrum = beta
                                 * uniform_sample_one_light(
-                                    &isect,
+                                    it,
                                     scene,
                                     sampler,
                                     false,

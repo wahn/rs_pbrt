@@ -1,5 +1,6 @@
 // std
 use std;
+use std::rc::Rc;
 use std::sync::Arc;
 // others
 // use time::PreciseTime;
@@ -421,7 +422,7 @@ impl BVHAccel {
             Bounds3f::default()
         }
     }
-    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<Rc<SurfaceInteraction>> {
         if self.nodes.is_empty() {
             return None;
         }
@@ -441,7 +442,7 @@ impl BVHAccel {
         let mut to_visit_offset: u32 = 0;
         let mut current_node_index: u32 = 0;
         let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
-        let mut si: SurfaceInteraction = SurfaceInteraction::default();
+        let mut si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction::default());
         loop {
             let node: &LinearBVHNode = &self.nodes[current_node_index as usize];
             // check ray against BVH node
@@ -455,7 +456,7 @@ impl BVHAccel {
                             self.primitives[node.offset as usize + i as usize].intersect(ray)
                         {
                             // TODO: CHECK_GE(...)
-                            si = isect;
+                            si = isect.clone();
                             hit = true;
                         }
                     }

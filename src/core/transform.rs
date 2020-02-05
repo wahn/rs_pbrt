@@ -56,6 +56,7 @@
 use std;
 use std::f32::consts::PI;
 use std::ops::{Add, Mul};
+use std::rc::Rc;
 use std::sync::RwLock;
 // pbrt
 use crate::core::geometry::{
@@ -832,7 +833,7 @@ impl Transform {
             medium: r.medium.clone(),
         }
     }
-    pub fn transform_surface_interaction(&self, si: &SurfaceInteraction) -> SurfaceInteraction {
+    pub fn transform_surface_interaction(&self, si: &mut Rc<SurfaceInteraction>) {
         let mut ret: SurfaceInteraction = SurfaceInteraction::default();
         // transform _p_ and _pError_ in _SurfaceInteraction_
         ret.p = self.transform_point_with_abs_error(&si.p, &si.p_error, &mut ret.p_error);
@@ -876,7 +877,7 @@ impl Transform {
         ret.primitive = None; // TODO? si.primitive;
         ret.shading.n = nrm_faceforward_nrm(&ret.shading.n, &ret.n);
         // TODO: ret.faceIndex = si.faceIndex;
-        ret
+        *si = Rc::new(ret);
     }
 }
 

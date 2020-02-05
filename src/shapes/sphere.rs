@@ -1,5 +1,6 @@
 // std
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::efloat::quadratic_efloat;
@@ -100,7 +101,7 @@ impl Sphere {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(&self.object_bound())
     }
-    pub fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, r: &Ray) -> Option<(Rc<SurfaceInteraction>, Float)> {
         // transform _Ray_ to object space
         let mut o_err: Vector3f = Vector3f::default();
         let mut d_err: Vector3f = Vector3f::default();
@@ -253,17 +254,17 @@ impl Sphere {
         // initialize _SurfaceInteraction_ from parametric information
         let uv_hit: Point2f = Point2f { x: u, y: v };
         let wo: Vector3f = -ray.d;
-        let si: SurfaceInteraction = SurfaceInteraction::new(
+        let mut si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction::new(
             &p_hit, &p_error, uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
-        );
-        let mut isect: SurfaceInteraction = self.object_to_world.transform_surface_interaction(&si);
-        if let Some(ref shape) = si.shape {
-            isect.shape = Some(shape.clone());
-        }
-        if let Some(primitive) = si.primitive {
-            isect.primitive = Some(primitive.clone());
-        }
-        Some((isect, t_shape_hit.v as Float))
+        ));
+        self.object_to_world.transform_surface_interaction(&mut si);
+        // if let Some(ref shape) = si.shape {
+        //     isect.shape = Some(shape.clone());
+        // }
+        // if let Some(primitive) = si.primitive {
+        //     isect.primitive = Some(primitive.clone());
+        // }
+        Some((si, t_shape_hit.v as Float))
     }
     pub fn intersect_p(&self, r: &Ray) -> bool {
         // transform _Ray_ to object space

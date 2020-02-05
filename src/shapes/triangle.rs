@@ -1,5 +1,6 @@
 // std
 use std::mem;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
@@ -146,7 +147,7 @@ impl Triangle {
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
         bnd3_union_pnt3(&Bounds3f::new(p0, p1), &p2)
     }
-    pub fn intersect(&self, ray: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, ray: &Ray) -> Option<(Rc<SurfaceInteraction>, Float)> {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
         let p1: &Point3f =
@@ -348,13 +349,13 @@ impl Triangle {
         let dndu: Normal3f = Normal3f::default();
         let dndv: Normal3f = Normal3f::default();
         let wo: Vector3f = -ray.d;
-        let mut si: SurfaceInteraction = SurfaceInteraction::new(
+        let mut si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction::new(
             &p_hit, &p_error, uv_hit, &wo, &dpdu, &dpdv, &dndu, &dndv, ray.time, None,
-        );
+        ));
         // override surface normal in _isect_ for triangle
         let surface_normal: Normal3f = Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
-        si.n = surface_normal;
-        si.shading.n = surface_normal;
+        Rc::get_mut(&mut si).unwrap().n = surface_normal;
+        Rc::get_mut(&mut si).unwrap().shading.n = surface_normal;
         if !self.mesh.n.is_empty() || !self.mesh.s.is_empty() {
             // initialize _Triangle_ shading geometry
 
@@ -423,14 +424,14 @@ impl Triangle {
                 dndu = Normal3f::default();
                 dndv = Normal3f::default();
             }
-            si.set_shading_geometry(&ss, &ts, &dndu, &dndv, true);
+            Rc::get_mut(&mut si).unwrap().set_shading_geometry(&ss, &ts, &dndu, &dndv, true);
         }
         // ensure correct orientation of the geometric normal
         if !self.mesh.n.is_empty() {
-            si.n = nrm_faceforward_nrm(&si.n, &si.shading.n);
+            Rc::get_mut(&mut si).unwrap().n = nrm_faceforward_nrm(&si.n, &si.shading.n);
         } else if self.reverse_orientation ^ self.transform_swaps_handedness {
-            si.shading.n = -si.n;
-            si.n = -si.n;
+            Rc::get_mut(&mut si).unwrap().shading.n = -si.n;
+            Rc::get_mut(&mut si).unwrap().n = -si.n;
         }
         Some((si, t as Float))
     }

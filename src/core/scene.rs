@@ -4,6 +4,7 @@
 //!
 
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Bounds3f, Ray, Vector3f};
@@ -52,7 +53,7 @@ impl Scene {
     pub fn world_bound(&self) -> Bounds3f {
         self.world_bound
     }
-    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<Rc<SurfaceInteraction>> {
         // TODO: ++nIntersectionTests;
         assert_ne!(
             ray.d,
@@ -80,7 +81,7 @@ impl Scene {
         &self,
         ray: &mut Ray,
         sampler: &mut Sampler,
-    ) -> (Option<SurfaceInteraction>, Spectrum) {
+    ) -> (Option<Rc<SurfaceInteraction>>, Spectrum) {
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {
             // bool hit_surface = Intersect(ray, isect);

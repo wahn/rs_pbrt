@@ -1,4 +1,5 @@
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
@@ -66,7 +67,7 @@ impl AOIntegrator {
         };
         if let Some(mut isect) = scene.intersect(&mut ray) {
             let mode: TransportMode = TransportMode::Radiance;
-            isect.compute_scattering_functions(&ray, true, mode);
+            Rc::get_mut(&mut isect).unwrap().compute_scattering_functions(&ray, true, mode);
             // if (!isect.bsdf) {
             //     VLOG(2) << "Skipping intersection due to null bsdf";
             //     ray = isect.SpawnRay(ray.d);

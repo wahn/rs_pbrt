@@ -219,7 +219,7 @@ impl VisibilityTester {
                         }
                     }
                 }
-                if let Some(mi_arc) = isect.medium_interface {
+                if let Some(mi_arc) = &isect.medium_interface {
                     medium_interface = Some(mi_arc.clone());
                 }
                 it.p = isect.p;

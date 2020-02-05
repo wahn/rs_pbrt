@@ -1,4 +1,5 @@
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
@@ -144,8 +145,8 @@ impl Curve {
         u0: Float,
         u1: Float,
         depth: i32,
-    ) -> Option<(SurfaceInteraction, Float)> {
-        let mut hit: Option<(SurfaceInteraction, Float)> = None;
+    ) -> Option<(Rc<SurfaceInteraction>, Float)> {
+        let mut hit: Option<(Rc<SurfaceInteraction>, Float)> = None;
         let ray_length: Float = ray.d.length();
 
         if depth > 0_i32 {
@@ -319,7 +320,7 @@ impl Curve {
                 }
                 dpdv = ray_to_object.transform_vector(&dpdv_plane);
             }
-            let si: SurfaceInteraction = SurfaceInteraction::new(
+            let mut si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction::new(
                 &ray.position(pc.z),
                 &p_error,
                 Point2f { x: u, y: v },
@@ -330,16 +331,15 @@ impl Curve {
                 &Normal3f::default(),
                 ray.time,
                 None,
-            );
-            let mut isect: SurfaceInteraction =
-                self.object_to_world.transform_surface_interaction(&si);
-            if let Some(ref shape) = si.shape {
-                isect.shape = Some(shape.clone());
-            }
+            ));
+            self.object_to_world.transform_surface_interaction(&mut si);
+            // if let Some(ref shape) = si.shape {
+            //     isect.shape = Some(shape.clone());
+            // }
             // }
             // TODO: ++n_hits;
             // return true;
-            hit = Some((isect, t_hit));
+            hit = Some((si, t_hit));
         }
         hit
     }
@@ -365,7 +365,7 @@ impl Curve {
         // in C++: Bounds3f Shape::WorldBound() const { return (*ObjectToWorld)(ObjectBound()); }
         self.object_to_world.transform_bounds(&self.object_bound())
     }
-    pub fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, r: &Ray) -> Option<(Rc<SurfaceInteraction>, Float)> {
         // TODO: ProfilePhase p(isect ? Prof::CurveIntersect : Prof::CurveIntersectP);
         // TODO: ++nTests;
         // transform _Ray_ to object space

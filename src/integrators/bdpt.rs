@@ -1,5 +1,6 @@
 // std
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 // pbrt
 use crate::blockqueue::BlockQueue;
@@ -1216,7 +1217,7 @@ pub fn random_walk<'a>(
         //     bounces, beta, pdf_fwd, pdf_rev
         // );
         let mut mi_opt: Option<MediumInteraction> = None;
-        let mut si_opt: Option<SurfaceInteraction> = None;
+        let mut si_opt: Option<Rc<SurfaceInteraction>> = None;
         // trace a ray and sample the medium, if any
         let found_intersection: bool;
         if let Some(isect) = scene.intersect(&mut ray) {
@@ -1288,7 +1289,7 @@ pub fn random_walk<'a>(
             if let Some(mut isect) = si_opt {
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
-                isect.compute_scattering_functions(&ray /*, arena, */, true, mode.clone());
+                Rc::get_mut(&mut isect).unwrap().compute_scattering_functions(&ray, true, mode);
                 let isect_wo: Vector3f = isect.wo;
                 let isect_shading_n: Normal3f = isect.shading.n;
                 if isect.bsdf.is_none() {

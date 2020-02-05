@@ -124,7 +124,7 @@ impl TabulatedBssrdf {
         }
         pdf
     }
-    pub fn sample_sp(
+    fn sample_sp(
         &self,
         scene: &Scene,
         u1: Float,
@@ -247,13 +247,13 @@ impl TabulatedBssrdf {
                             si_eval.shading.dpdv = si.shading.dpdv;
                             si_eval.shading.dndu = si.shading.dndu;
                             si_eval.shading.dndv = si.shading.dndv;
-                            if let Some(bsdf) = si.bsdf {
-                                si_eval.bsdf = Some(bsdf);
+                            if let Some(bsdf) = &si.bsdf {
+                                si_eval.bsdf = Some(bsdf.clone());
                             } else {
                                 si_eval.bsdf = None
                             }
-                            if let Some(bssrdf) = si.bssrdf {
-                                si_eval.bssrdf = Some(bssrdf);
+                            if let Some(bssrdf) = &si.bssrdf {
+                                si_eval.bssrdf = Some(bssrdf.clone());
                             } else {
                                 si_eval.bssrdf = None
                             }

@@ -1,4 +1,5 @@
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
@@ -58,7 +59,9 @@ impl WhittedIntegrator {
 
             // compute scattering functions for surface interaction
             let mode: TransportMode = TransportMode::Radiance;
-            isect.compute_scattering_functions(ray /* arena, */, false, mode);
+            Rc::get_mut(&mut isect)
+                .unwrap()
+                .compute_scattering_functions(ray, false, mode);
             // if (!isect.bsdf)
             if let Some(ref _bsdf) = isect.bsdf {
             } else {

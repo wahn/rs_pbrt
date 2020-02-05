@@ -1,4 +1,6 @@
 // std
+use std::borrow::Borrow;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
@@ -80,7 +82,9 @@ impl DirectLightingIntegrator {
         if let Some(mut isect) = scene.intersect(ray) {
             // compute scattering functions for surface interaction
             let mode: TransportMode = TransportMode::Radiance;
-            isect.compute_scattering_functions(ray /* arena, */, false, mode);
+            Rc::get_mut(&mut isect)
+                .unwrap()
+                .compute_scattering_functions(ray, false, mode);
             // if (!isect.bsdf)
             //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
             let wo: Vector3f = isect.wo;
@@ -96,7 +100,8 @@ impl DirectLightingIntegrator {
                         false,
                     );
                 } else {
-                    l += uniform_sample_one_light(&isect, scene, sampler, false, None);
+                    let it: &SurfaceInteraction = isect.borrow();
+                    l += uniform_sample_one_light(it, scene, sampler, false, None);
                 }
             }
             if ((depth + 1_i32) as u32) < self.max_depth {

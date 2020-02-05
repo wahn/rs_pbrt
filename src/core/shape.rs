@@ -6,6 +6,8 @@
 //! the underlying shape. This makes it possible to separate the
 //! geometric and the shading subsystem of pbrt.
 
+// std
+use std::rc::Rc;
 // pbrt
 use crate::core::geometry::{Bounds3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -46,7 +48,7 @@ impl Shape {
             Shape::Trngl(shape) => shape.world_bound(),
         }
     }
-    pub fn intersect(&self, r: &Ray) -> Option<(SurfaceInteraction, Float)> {
+    pub fn intersect(&self, r: &Ray) -> Option<(Rc<SurfaceInteraction>, Float)> {
         match self {
             Shape::Crv(shape) => shape.intersect(r),
             Shape::Clndr(shape) => shape.intersect(r),

@@ -1,5 +1,7 @@
 // std
+use std::borrow::Borrow;
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::Arc;
 // others
 use atom::*;
@@ -16,7 +18,7 @@ use crate::core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f,
 };
 use crate::core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
-use crate::core::interaction::Interaction;
+use crate::core::interaction::{Interaction, SurfaceInteraction};
 use crate::core::lowdiscrepancy::radical_inverse;
 use crate::core::material::TransportMode;
 use crate::core::parallel::AtomicFloat;
@@ -187,10 +189,11 @@ impl SPPMIntegrator {
                                                     // compute BSDF at SPPM camera ray intersection
                                                     let mode: TransportMode =
                                                         TransportMode::Radiance;
-                                                    isect.compute_scattering_functions(
-                                                        &ray, // arena,
-                                                        true, mode,
-                                                    );
+                                                    Rc::get_mut(&mut isect)
+                                                        .unwrap()
+                                                        .compute_scattering_functions(
+                                                            &ray, true, mode,
+                                                        );
                                                     if let Some(bsdf) = &isect.bsdf {
                                                         // accumulate direct illumination
                                                         // at SPPM camera ray intersection
@@ -198,9 +201,11 @@ impl SPPMIntegrator {
                                                         if depth == 0 || specular_bounce {
                                                             pixel.1 += beta * isect.le(&wo);
                                                         }
+                                                        let it: &SurfaceInteraction =
+                                                            isect.borrow();
                                                         pixel.1 += beta
                                                             * uniform_sample_one_light(
-                                                                &isect,
+                                                                it,
                                                                 scene,
                                                                 &mut tile_sampler
                                                                     .clone_with_seed(0_u64),
@@ -618,11 +623,11 @@ impl SPPMIntegrator {
 
                                                 // compute BSDF at photon intersection point
                                                 let mode: TransportMode = TransportMode::Importance;
-                                                isect.compute_scattering_functions(
-                                                    &photon_ray, // arena,
-                                                    true,
-                                                    mode,
-                                                );
+                                                Rc::get_mut(&mut isect)
+                                                    .unwrap()
+                                                    .compute_scattering_functions(
+                                                        &photon_ray, true, mode,
+                                                    );
                                                 if let Some(ref photon_bsdf) = isect.bsdf {
                                                     // sample BSDF _fr_ and direction _wi_ for reflected photon
                                                     let mut wi: Vector3f = Vector3f::default();

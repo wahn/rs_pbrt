@@ -1,5 +1,6 @@
 // std
 use std;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::bnd3_union_bnd3;
@@ -471,7 +472,7 @@ impl KdTreeAccel {
     pub fn world_bound(&self) -> Bounds3f {
         self.bounds
     }
-    pub fn intersect(&self, ray: &mut Ray) -> Option<SurfaceInteraction> {
+    pub fn intersect(&self, ray: &mut Ray) -> Option<Rc<SurfaceInteraction>> {
         // TODO: ProfilePhase p(Prof::AccelIntersect);
         if self.nodes.is_empty() {
             return None;
@@ -492,7 +493,7 @@ impl KdTreeAccel {
         let mut todo_pos: usize = 0;
         // traverse kd-tree nodes in order for ray
         let mut hit: bool = false;
-        let mut si: SurfaceInteraction = SurfaceInteraction::default();
+        let mut si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction::default());
         let mut node_idx: usize = 0;
         let mut node_opt: Option<&KdAccelNode> = self.nodes.get(node_idx);
         while let Some(node) = node_opt {
@@ -553,7 +554,7 @@ impl KdTreeAccel {
                     let p: &Arc<Primitive> = &self.primitives[one_primitive as usize];
                     // check one primitive inside leaf node
                     if let Some(isect) = p.intersect(ray) {
-                        si = isect;
+                        si = isect.clone();
                         hit = true;
                     }
                 } else {
