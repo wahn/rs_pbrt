@@ -11,6 +11,8 @@
 // 5. Lights with type LA_SUN have a position but point always to the origin
 //    TODO: use an empty (compass) object as target
 
+// command line options
+use structopt::StructOpt;
 // std
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -20,7 +22,6 @@ use std::io::Read;
 use std::mem;
 use std::path::Path;
 use std::sync::Arc;
-use structopt::StructOpt;
 // pbrt
 use pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
 use pbrt::core::camera::Camera;

@@ -9,8 +9,8 @@ struct PbrtParser;
 // parser
 use pest::Parser;
 
-// getopts
-use getopts::Options;
+// command line options
+use structopt::StructOpt;
 // pbrt
 use pbrt::core::api::{
     pbrt_accelerator, pbrt_active_transform_all, pbrt_active_transform_end_time,
@@ -36,13 +36,15 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-fn print_usage(program: &str, opts: Options) {
-    let brief = format!("Usage: {} [options]", program);
-    print!("{}", opts.usage(&brief));
-}
-
-fn print_version(program: &str) {
-    println!("{} {}", program, VERSION);
+/// Parse a PBRT scene file (extension .pbrt) and render it.
+#[derive(StructOpt)]
+struct Cli {
+    /// use specified number of threads for rendering
+    #[structopt(short = "t", long = "nthreads", default_value = "0")]
+    nthreads: u8,
+    /// The path to the file to read
+    #[structopt(parse(from_os_str))]
+    path: std::path::PathBuf,
 }
 
 // Accelerator
@@ -848,59 +850,17 @@ fn parse_file(
 
 fn main() {
     // handle command line options
-    let args: Vec<String> = env::args().collect();
-    let program = args[0].clone();
-    let mut opts = Options::new();
-    opts.optflag("h", "help", "print this help menu");
-    opts.optopt("i", "", "parse an input file", "FILE");
-    opts.optopt(
-        "t",
-        "nthreads",
-        "use specified number of threads for rendering",
-        "NUM",
+    let args = Cli::from_args();
+    let number_of_threads: u8 = args.nthreads;
+    let num_cores = num_cpus::get();
+    println!("pbrt version {} [Detected {} cores]", VERSION, num_cores);
+    println!("Copyright (c) 2016-2019 Jan Douglas Bert Walter.");
+    println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
+    let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
+    parse_file(
+        args.path.into_os_string().into_string().unwrap(),
+        &mut api_state,
+        &mut bsdf_state,
+        "",
     );
-    opts.optflag("v", "version", "print version number");
-    let matches = match opts.parse(&args[1..]) {
-        Ok(m) => m,
-        Err(f) => panic!(f.to_string()),
-    };
-    if matches.opt_present("h") {
-        print_usage(&program, opts);
-    } else if matches.opt_present("i") {
-        let mut number_of_threads: u8 = 0_u8;
-        if matches.opt_present("t") {
-            let nthreads = matches.opt_str("t");
-            match nthreads {
-                Some(x) => {
-                    let number_result = x.parse::<u8>();
-                    assert!(
-                        !number_result.is_err(),
-                        "ERROR: 8 bit unsigned integer expected"
-                    );
-                    let num_threads: u8 = number_result.unwrap();
-                    println!("nthreads = {:?}", num_threads);
-                    number_of_threads = num_threads;
-                }
-                None => panic!("No argument for number of threads given."),
-            }
-        }
-        let infile = matches.opt_str("i");
-        match infile {
-            Some(x) => {
-                let num_cores = num_cpus::get();
-                println!("pbrt version {} [Detected {} cores]", VERSION, num_cores);
-                println!("Copyright (c) 2016-2019 Jan Douglas Bert Walter.");
-                println!(
-                    "Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob."
-                );
-                let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
-                parse_file(x, &mut api_state, &mut bsdf_state, "");
-            }
-            None => panic!("No input file name."),
-        }
-    } else if matches.opt_present("v") {
-        print_version(&program);
-    } else {
-        print_usage(&program, opts);
-    }
 }
