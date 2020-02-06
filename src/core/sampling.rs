@@ -211,6 +211,7 @@ pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) 
 }
 
 /// Cosine-weighted hemisphere sampling using Malley's method.
+#[inline]
 pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
     let d: Point2f = concentric_sample_disk(u);
     let z: Float = (0.0 as Float)
@@ -220,11 +221,13 @@ pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
 }
 
 /// Returns a weight of cos_theta / PI.
+#[inline]
 pub fn cosine_hemisphere_pdf(cos_theta: Float) -> Float {
     cos_theta * INV_PI
 }
 
 /// Reducing the variance according to Veach's heuristic.
+#[inline]
 pub fn power_heuristic(nf: u8, f_pdf: Float, ng: u8, g_pdf: Float) -> Float {
     let f: Float = nf as Float * f_pdf;
     let g: Float = ng as Float * g_pdf;
