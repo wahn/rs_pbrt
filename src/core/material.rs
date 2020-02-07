@@ -2,7 +2,8 @@
 //! material implementations must provide.
 
 //std
-use std::sync::{Arc, RwLock};
+use std::cell::Cell;
+use std::sync::Arc;
 // pbrt
 use crate::core::geometry::vec3_cross_vec3;
 use crate::core::geometry::{Normal3f, Vector2f, Vector3f};
@@ -132,18 +133,12 @@ impl Material {
         si_eval.dpdv = si.dpdv;
         si_eval.dndu = si.dndu;
         si_eval.dndv = si.dndv;
-        let dudx: Float = *si.dudx.read().unwrap();
-        si_eval.dudx = RwLock::new(dudx);
-        let dvdx: Float = *si.dvdx.read().unwrap();
-        si_eval.dvdx = RwLock::new(dvdx);
-        let dudy: Float = *si.dudy.read().unwrap();
-        si_eval.dudy = RwLock::new(dudy);
-        let dvdy: Float = *si.dvdy.read().unwrap();
-        si_eval.dvdy = RwLock::new(dvdy);
-        let dpdx: Vector3f = *si.dpdx.read().unwrap();
-        si_eval.dpdx = RwLock::new(dpdx);
-        let dpdy: Vector3f = *si.dpdy.read().unwrap();
-        si_eval.dpdy = RwLock::new(dpdy);
+        si_eval.dudx = Cell::new(si.dudx.get());
+        si_eval.dvdx = Cell::new(si.dvdx.get());
+        si_eval.dudy = Cell::new(si.dudy.get());
+        si_eval.dvdy = Cell::new(si.dvdy.get());
+        si_eval.dpdx = Cell::new(si.dpdx.get());
+        si_eval.dpdy = Cell::new(si.dpdy.get());
         if let Some(primitive) = &si.primitive {
             Arc::new(primitive.clone());
         } else {
@@ -170,9 +165,7 @@ impl Material {
             si_eval.shape = None
         }
         // shift _si_eval_ _du_ in the $u$ direction
-        let dudx: Float = *si.dudx.read().unwrap();
-        let dudy: Float = *si.dudy.read().unwrap();
-        let mut du: Float = 0.5 as Float * (dudx.abs() + dudy.abs());
+        let mut du: Float = 0.5 as Float * (si.dudx.get().abs() + si.dudy.get().abs());
         // The most common reason for du to be zero is for ray that start from
         // light sources, where no differentials are available. In this case,
         // we try to choose a small enough du so that we still get a decently
@@ -191,9 +184,7 @@ impl Material {
             .normalize();
         let u_displace: Float = d.evaluate(&si_eval);
         // shift _si_eval_ _dv_ in the $v$ direction
-        let dvdx: Float = *si.dvdx.read().unwrap();
-        let dvdy: Float = *si.dvdy.read().unwrap();
-        let mut dv: Float = 0.5 as Float * (dvdx.abs() + dvdy.abs());
+        let mut dv: Float = 0.5 as Float * (si.dvdx.get().abs() + si.dvdy.get().abs());
         if dv == 00 as Float {
             dv = 0.0005 as Float;
         }

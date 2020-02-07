@@ -1,7 +1,8 @@
 // std
+use std::cell::Cell;
 use std::f32::consts::PI;
 use std::rc::Rc;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
@@ -1289,7 +1290,9 @@ pub fn random_walk<'a>(
             if let Some(mut isect) = si_opt {
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
-                Rc::get_mut(&mut isect).unwrap().compute_scattering_functions(&ray, true, mode);
+                Rc::get_mut(&mut isect)
+                    .unwrap()
+                    .compute_scattering_functions(&ray, true, mode);
                 let isect_wo: Vector3f = isect.wo;
                 let isect_shading_n: Normal3f = isect.shading.n;
                 if isect.bsdf.is_none() {
@@ -1314,18 +1317,12 @@ pub fn random_walk<'a>(
                 si_eval.dpdv = isect.dpdv;
                 si_eval.dndu = isect.dndu;
                 si_eval.dndv = isect.dndv;
-                let dudx: Float = *isect.dudx.read().unwrap();
-                si_eval.dudx = RwLock::new(dudx);
-                let dvdx: Float = *isect.dvdx.read().unwrap();
-                si_eval.dvdx = RwLock::new(dvdx);
-                let dudy: Float = *isect.dudy.read().unwrap();
-                si_eval.dudy = RwLock::new(dudy);
-                let dvdy: Float = *isect.dvdy.read().unwrap();
-                si_eval.dvdy = RwLock::new(dvdy);
-                let dpdx: Vector3f = *isect.dpdx.read().unwrap();
-                si_eval.dpdx = RwLock::new(dpdx);
-                let dpdy: Vector3f = *isect.dpdy.read().unwrap();
-                si_eval.dpdy = RwLock::new(dpdy);
+                si_eval.dudx = Cell::new(isect.dudx.get());
+                si_eval.dvdx = Cell::new(isect.dvdx.get());
+                si_eval.dudy = Cell::new(isect.dudy.get());
+                si_eval.dvdy = Cell::new(isect.dvdy.get());
+                si_eval.dpdx = Cell::new(isect.dpdx.get());
+                si_eval.dpdy = Cell::new(isect.dpdy.get());
                 if let Some(primitive) = &isect.primitive {
                     si_eval.primitive = Some(primitive);
                 } else {

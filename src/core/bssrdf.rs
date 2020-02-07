@@ -4,8 +4,11 @@
 
 //std
 use std;
+use std::borrow::Borrow;
+use std::cell::Cell;
 use std::f32::consts::PI;
-use std::sync::{Arc, RwLock};
+use std::rc::Rc;
+use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_nrm, nrm_dot_vec3, pnt3_distance, vec3_dot_nrm, vec3_dot_vec3,
@@ -189,7 +192,7 @@ impl TabulatedBssrdf {
 
         // accumulate chain of intersections along ray
         // IntersectionChain *ptr = chain;
-        let mut chain: Vec<SurfaceInteraction> = Vec::new();
+        let mut chain: Vec<Rc<SurfaceInteraction>> = Vec::new();
         let mut n_found: usize = 0;
         loop {
             let mut r: Ray = base.spawn_ray_to_pnt(&p_target);
@@ -213,55 +216,7 @@ impl TabulatedBssrdf {
                             //         IntersectionChain *next = ARENA_ALLOC(arena, IntersectionChain)();
                             //         ptr->next = next;
                             //         ptr = next;
-                            let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
-                            si_eval.p = si.p;
-                            si_eval.time = si.time;
-                            si_eval.p_error = si.p_error;
-                            si_eval.wo = si.wo;
-                            si_eval.n = si.n;
-                            if let Some(medium_interface) = &si.medium_interface {
-                                Arc::new(medium_interface.clone());
-                            } else {
-                                si_eval.medium_interface = None
-                            }
-                            si_eval.uv = si.uv;
-                            si_eval.dpdu = si.dpdu;
-                            si_eval.dpdv = si.dpdv;
-                            si_eval.dndu = si.dndu;
-                            si_eval.dndv = si.dndv;
-                            let dudx: Float = *si.dudx.read().unwrap();
-                            si_eval.dudx = RwLock::new(dudx);
-                            let dvdx: Float = *si.dvdx.read().unwrap();
-                            si_eval.dvdx = RwLock::new(dvdx);
-                            let dudy: Float = *si.dudy.read().unwrap();
-                            si_eval.dudy = RwLock::new(dudy);
-                            let dvdy: Float = *si.dvdy.read().unwrap();
-                            si_eval.dvdy = RwLock::new(dvdy);
-                            let dpdx: Vector3f = *si.dpdx.read().unwrap();
-                            si_eval.dpdx = RwLock::new(dpdx);
-                            let dpdy: Vector3f = *si.dpdy.read().unwrap();
-                            si_eval.dpdy = RwLock::new(dpdy);
-                            si_eval.primitive = Some(geo_prim);
-                            si_eval.shading.n = si.shading.n;
-                            si_eval.shading.dpdu = si.shading.dpdu;
-                            si_eval.shading.dpdv = si.shading.dpdv;
-                            si_eval.shading.dndu = si.shading.dndu;
-                            si_eval.shading.dndv = si.shading.dndv;
-                            if let Some(bsdf) = &si.bsdf {
-                                si_eval.bsdf = Some(bsdf.clone());
-                            } else {
-                                si_eval.bsdf = None
-                            }
-                            if let Some(bssrdf) = &si.bssrdf {
-                                si_eval.bssrdf = Some(bssrdf.clone());
-                            } else {
-                                si_eval.bssrdf = None
-                            }
-                            if let Some(shape) = &si.shape {
-                                si_eval.shape = Some(shape.clone());
-                            } else {
-                                si_eval.shape = None
-                            }
+                            let si_eval: Rc<SurfaceInteraction> = si.clone();
                             chain.push(si_eval);
                             n_found += 1;
                         }
@@ -299,18 +254,12 @@ impl TabulatedBssrdf {
         pi.dpdv = selected_si.dpdv;
         pi.dndu = selected_si.dndu;
         pi.dndv = selected_si.dndv;
-        let dpdx: Vector3f = *selected_si.dpdx.read().unwrap();
-        pi.dpdx = RwLock::new(dpdx);
-        let dpdy: Vector3f = *selected_si.dpdy.read().unwrap();
-        pi.dpdy = RwLock::new(dpdy);
-        let dudx: Float = *selected_si.dudx.read().unwrap();
-        pi.dudx = RwLock::new(dudx);
-        let dvdx: Float = *selected_si.dvdx.read().unwrap();
-        pi.dvdx = RwLock::new(dvdx);
-        let dudy: Float = *selected_si.dudy.read().unwrap();
-        pi.dudy = RwLock::new(dudy);
-        let dvdy: Float = *selected_si.dvdy.read().unwrap();
-        pi.dvdy = RwLock::new(dvdy);
+        pi.dudx = Cell::new(selected_si.dudx.get());
+        pi.dvdx = Cell::new(selected_si.dvdx.get());
+        pi.dudy = Cell::new(selected_si.dudy.get());
+        pi.dvdy = Cell::new(selected_si.dvdy.get());
+        pi.dpdx = Cell::new(selected_si.dpdx.get());
+        pi.dpdy = Cell::new(selected_si.dpdy.get());
 
         pi.shading = selected_si.shading;
         // no primitive!
@@ -326,8 +275,8 @@ impl TabulatedBssrdf {
         }
         // no shape!
         // compute sample PDF and return the spatial BSSRDF term $\sp$
-        *pdf = self.pdf_sp(selected_si) / n_found as Float;
-        self.sp(selected_si)
+        *pdf = self.pdf_sp(chain[selected].borrow()) / n_found as Float;
+        self.sp(chain[selected].borrow())
     }
     pub fn sr(&self, r: Float) -> Spectrum {
         let mut sr: Spectrum = Spectrum::default();

@@ -106,17 +106,13 @@ impl UVMapping2D {
         dstdy: &mut Vector2f,
     ) -> Point2f {
         // compute texture differentials for 2D identity mapping
-        let dudx: Float = *si.dudx.read().unwrap();
-        let dvdx: Float = *si.dvdx.read().unwrap();
         *dstdx = Vector2f {
-            x: dudx * self.su,
-            y: dvdx * self.sv,
+            x: si.dudx.get() * self.su,
+            y: si.dvdx.get() * self.sv,
         };
-        let dudy: Float = *si.dudy.read().unwrap();
-        let dvdy: Float = *si.dvdy.read().unwrap();
         *dstdy = Vector2f {
-            x: dudy * self.su,
-            y: dvdy * self.sv,
+            x: si.dudy.get() * self.su,
+            y: si.dvdy.get() * self.sv,
         };
         Point2f {
             x: si.uv[0] * self.su + self.du,
@@ -160,11 +156,9 @@ impl SphericalMapping2D {
         let st: Point2f = self.sphere(&si.p);
         // compute texture coordinate differentials for sphere $(u,v)$ mapping
         let delta: Float = 0.1;
-        let dpdx: Vector3f = *si.dpdx.read().unwrap();
-        let st_delta_x: Point2f = self.sphere(&(si.p + dpdx * delta));
+        let st_delta_x: Point2f = self.sphere(&(si.p + si.dpdx.get() * delta));
         *dstdx = (st_delta_x - st) / delta;
-        let dpdy: Vector3f = *si.dpdy.read().unwrap();
-        let st_delta_y: Point2f = self.sphere(&(si.p + dpdy * delta));
+        let st_delta_y: Point2f = self.sphere(&(si.p + si.dpdy.get() * delta));
         *dstdy = (st_delta_y - st) / delta;
         // handle sphere mapping discontinuity for coordinate differentials
         if (*dstdx)[1] > 0.5 as Float {
@@ -210,16 +204,14 @@ impl CylindricalMapping2D {
         let st: Point2f = self.cylinder(&si.p);
         // compute texture coordinate differentials for cylinder $(u,v)$ mapping
         let delta: Float = 0.01;
-        let dpdx: Vector3f = *si.dpdx.read().unwrap();
-        let st_delta_x: Point2f = self.cylinder(&(si.p + dpdx * delta));
+        let st_delta_x: Point2f = self.cylinder(&(si.p + si.dpdx.get() * delta));
         *dstdx = (st_delta_x - st) / delta;
         if (*dstdx)[1] > 0.5 as Float {
             (*dstdx)[1] = 1.0 as Float - (*dstdx)[1];
         } else if (*dstdx)[1] < -0.5 as Float {
             (*dstdx)[1] = -((*dstdx)[1] + 1.0 as Float);
         }
-        let dpdy: Vector3f = *si.dpdy.read().unwrap();
-        let st_delta_y: Point2f = self.cylinder(&(si.p + dpdy * delta));
+        let st_delta_y: Point2f = self.cylinder(&(si.p + si.dpdy.get() * delta));
         *dstdy = (st_delta_y - st) / delta;
         if (*dstdy)[1] > 0.5 as Float {
             (*dstdy)[1] = 1.0 as Float - (*dstdy)[1];
@@ -250,15 +242,13 @@ impl PlanarMapping2D {
             y: si.p.y,
             z: si.p.z,
         };
-        let dpdx: Vector3f = *si.dpdx.read().unwrap();
         *dstdx = Vector2f {
-            x: vec3_dot_vec3(&dpdx, &self.vs),
-            y: vec3_dot_vec3(&dpdx, &self.vt),
+            x: vec3_dot_vec3(&si.dpdx.get(), &self.vs),
+            y: vec3_dot_vec3(&si.dpdx.get(), &self.vt),
         };
-        let dpdy: Vector3f = *si.dpdy.read().unwrap();
         *dstdy = Vector2f {
-            x: vec3_dot_vec3(&dpdy, &self.vs),
-            y: vec3_dot_vec3(&dpdy, &self.vt),
+            x: vec3_dot_vec3(&si.dpdy.get(), &self.vs),
+            y: vec3_dot_vec3(&si.dpdy.get(), &self.vt),
         };
         Point2f {
             x: self.ds + vec3_dot_vec3(&vec, &self.vs),
@@ -287,10 +277,8 @@ impl IdentityMapping3D {
         dpdy: &mut Vector3f,
     ) -> Point3f {
         let world_to_texture = self.get_world_to_texture();
-        let si_dpdx: Vector3f = *si.dpdx.read().unwrap();
-        *dpdx = world_to_texture.transform_vector(&si_dpdx);
-        let si_dpdy: Vector3f = *si.dpdy.read().unwrap();
-        *dpdy = world_to_texture.transform_vector(&si_dpdy);
+        *dpdx = world_to_texture.transform_vector(&si.dpdx.get());
+        *dpdy = world_to_texture.transform_vector(&si.dpdy.get());
         world_to_texture.transform_point(&si.p)
     }
 }

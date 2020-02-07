@@ -54,10 +54,10 @@
 
 // std
 use std;
+use std::cell::Cell;
 use std::f32::consts::PI;
 use std::ops::{Add, Mul};
 use std::rc::Rc;
-use std::sync::RwLock;
 // pbrt
 use crate::core::geometry::{
     bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3,
@@ -852,18 +852,12 @@ impl Transform {
         ret.shading.dpdv = self.transform_vector(&si.shading.dpdv);
         ret.shading.dndu = self.transform_normal(&si.shading.dndu);
         ret.shading.dndv = self.transform_normal(&si.shading.dndv);
-        let dudx: Float = *si.dudx.read().unwrap();
-        ret.dudx = RwLock::new(dudx);
-        let dvdx: Float = *si.dvdx.read().unwrap();
-        ret.dvdx = RwLock::new(dvdx);
-        let dudy: Float = *si.dudy.read().unwrap();
-        ret.dudy = RwLock::new(dudy);
-        let dvdy: Float = *si.dvdy.read().unwrap();
-        ret.dvdy = RwLock::new(dvdy);
-        let dpdx: Vector3f = *si.dpdx.read().unwrap();
-        ret.dpdx = RwLock::new(self.transform_vector(&dpdx));
-        let dpdy: Vector3f = *si.dpdy.read().unwrap();
-        ret.dpdy = RwLock::new(self.transform_vector(&dpdy));
+        ret.dudx = Cell::new(si.dudx.get());
+        ret.dvdx = Cell::new(si.dvdx.get());
+        ret.dudy = Cell::new(si.dudy.get());
+        ret.dvdy = Cell::new(si.dvdy.get());
+        ret.dpdx = Cell::new(si.dpdx.get());
+        ret.dpdy = Cell::new(si.dpdy.get());
         // if let Some(bsdf) = &si.bsdf {
         //     if let Some(mut bsdf2) = ret.bsdf {
         //         for bxdf_idx in 0..8 {

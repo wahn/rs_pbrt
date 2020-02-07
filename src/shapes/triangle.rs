@@ -1,7 +1,8 @@
 // std
+use std::cell::Cell;
 use std::mem;
 use std::rc::Rc;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
     bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, pnt3_abs, pnt3_distance_squared,
@@ -349,7 +350,8 @@ impl Triangle {
         let dndv: Normal3f = Normal3f::default();
         let wo: Vector3f = -ray.d;
         // override surface normal in _isect_ for triangle
-        let mut surface_normal: Normal3f = Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
+        let mut surface_normal: Normal3f =
+            Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
         let mut shading: Shading = Shading {
             n: surface_normal,
             dpdu,
@@ -444,12 +446,12 @@ impl Triangle {
             dpdv,
             dndu,
             dndv,
-            dpdx: RwLock::new(Vector3f::default()),
-            dpdy: RwLock::new(Vector3f::default()),
-            dudx: RwLock::new(0.0 as Float),
-            dvdx: RwLock::new(0.0 as Float),
-            dudy: RwLock::new(0.0 as Float),
-            dvdy: RwLock::new(0.0 as Float),
+            dpdx: Cell::new(Vector3f::default()),
+            dpdy: Cell::new(Vector3f::default()),
+            dudx: Cell::new(0.0 as Float),
+            dvdx: Cell::new(0.0 as Float),
+            dudy: Cell::new(0.0 as Float),
+            dvdy: Cell::new(0.0 as Float),
             primitive: None,
             shading,
             bsdf: None,
