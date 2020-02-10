@@ -524,7 +524,7 @@ impl Film {
             &buffer,
             width,
             height,
-            image::RGB(8),
+            image::ColorType::Rgb8,
         )
         .unwrap();
     }
