@@ -94,11 +94,13 @@ pub fn next_float_down(v: f32) -> f32 {
 }
 
 /// Error propagation.
+#[inline]
 pub fn gamma(n: i32) -> Float {
     (n as Float * MACHINE_EPSILON) / (1.0 - n as Float * MACHINE_EPSILON)
 }
 
 /// Is used to write sRGB-compatible 8-bit image files.
+#[inline]
 pub fn gamma_correct(value: Float) -> Float {
     if value <= 0.003_130_8 {
         12.92 * value
@@ -108,6 +110,7 @@ pub fn gamma_correct(value: Float) -> Float {
 }
 
 /// Clamp the given value *val* to lie between the values *low* and *high*.
+#[inline]
 pub fn clamp_t<T>(val: T, low: T, high: T) -> T
 where
     T: PartialOrd,

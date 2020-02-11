@@ -116,7 +116,7 @@ impl<'a> FilmTile<'a> {
         // loop over filter support and add sample to pixel arrays
 
         // precompute $x$ and $y$ filter table offsets
-        let mut ifx: SmallVec<[usize; 128]> =
+        let mut ifx: SmallVec<[usize; 16]> =
             SmallVec::with_capacity(p1.x as usize - p0.x as usize);
         for x in p0.x..p1.x {
             let fx: Float = ((x as Float - p_film_discrete.x)
@@ -125,7 +125,7 @@ impl<'a> FilmTile<'a> {
                 .abs();
             ifx.push(fx.floor().min(self.filter_table_size as Float - 1.0) as usize);
         }
-        let mut ify: SmallVec<[usize; 128]> =
+        let mut ify: SmallVec<[usize; 16]> =
             SmallVec::with_capacity(p1.y as usize - p0.y as usize);
         for y in p0.y..p1.y {
             let fy: Float = ((y as Float - p_film_discrete.y)
