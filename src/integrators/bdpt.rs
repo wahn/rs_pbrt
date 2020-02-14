@@ -686,7 +686,7 @@ impl<'a> Vertex<'a> {
         &self,
         scene: &Scene,
         v: &Vertex,
-        light_distr: &Arc<Distribution1D>,
+        light_distr: Box<Distribution1D>,
     ) -> Float {
         let mut w: Vector3f = v.p() - self.p();
         if w.length_squared() == 0.0 as Float {
@@ -695,7 +695,7 @@ impl<'a> Vertex<'a> {
         w = w.normalize();
         if self.is_infinite_light() {
             // return solid angle density for infinite light sources
-            return infinite_light_density(scene, &light_distr, &w);
+            return infinite_light_density(scene, light_distr, &w);
         } else {
             // return solid angle density for non-infinite light sources
             //         Float pdf_pos, pdf_dir, pdf_choice = 0;
@@ -935,7 +935,7 @@ impl BDPTIntegrator {
                                                 p = p_new;
                                                 time = time_new;
                                             }
-                                            let light_distr: Arc<Distribution1D> =
+                                            let light_distr: Box<Distribution1D> =
                                                 light_distribution.lookup(&p);
                                             let mut light_vertices: Vec<Vertex> =
                                                 Vec::with_capacity(
@@ -948,7 +948,7 @@ impl BDPTIntegrator {
                                                     &mut tile_sampler,
                                                     integrator.max_depth + 1,
                                                     time,
-                                                    &light_distr,
+                                                    light_distr.clone(),
                                                     // light_to_index,
                                                     &mut light_vertices,
                                                 );
@@ -980,7 +980,7 @@ impl BDPTIntegrator {
                                                         &camera_vertices,
                                                         s,
                                                         t,
-                                                        &light_distr,
+                                                        light_distr.clone(),
                                                         camera,
                                                         &mut tile_sampler,
                                                         &mut p_film_new,
@@ -1121,7 +1121,7 @@ pub fn generate_light_subpath<'a>(
     sampler: &mut Sampler,
     max_depth: u32,
     time: Float,
-    light_distr: &Arc<Distribution1D>,
+    light_distr: Box<Distribution1D>,
     // TODO: light_to_index
     path: &mut Vec<Vertex<'a>>,
 ) -> usize {
@@ -1521,7 +1521,7 @@ pub fn mis_weight<'a>(
     sampled: &Vertex,
     s: usize,
     t: usize,
-    light_pdf: &Arc<Distribution1D>,
+    light_pdf: Box<Distribution1D>,
 ) -> Float {
     if s + t == 2 as usize {
         return 1.0 as Float;
@@ -1937,7 +1937,7 @@ pub fn mis_weight<'a>(
             }
         } else if t > 1 {
             overwrite.pdf_rev =
-                overwrite.pdf_light_origin(scene, &camera_vertices[t - 2], &light_pdf);
+                overwrite.pdf_light_origin(scene, &camera_vertices[t - 2], light_pdf);
         }
     }
     // update reverse density of vertex $\pt{}_{t-2}$
@@ -2217,7 +2217,7 @@ pub fn connect_bdpt<'a>(
     camera_vertices: &[Vertex<'a>],
     s: usize,
     t: usize,
-    light_distr: &Arc<Distribution1D>,
+    light_distr: Box<Distribution1D>,
     camera: &'a Arc<Camera>,
     sampler: &mut Sampler,
     p_raster: &mut Point2f,
@@ -2388,7 +2388,7 @@ pub fn connect_bdpt<'a>(
                     0.0 as Float,
                 );
                 sampled.pdf_fwd =
-                    sampled.pdf_light_origin(scene, &camera_vertices[t - 1], light_distr);
+                    sampled.pdf_light_origin(scene, &camera_vertices[t - 1], light_distr.clone());
                 l = camera_vertices[t - 1].beta
                     * camera_vertices[t - 1].f(&sampled, TransportMode::Radiance)
                     * sampled.beta;
@@ -2481,7 +2481,7 @@ pub fn connect_bdpt<'a>(
 
 pub fn infinite_light_density<'a>(
     scene: &'a Scene,
-    light_distr: &Arc<Distribution1D>,
+    light_distr: Box<Distribution1D>,
     // const std::unordered_map<const Light *, size_t> &lightToDistrIndex,
     w: &Vector3f,
 ) -> Float {

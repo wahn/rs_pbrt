@@ -342,7 +342,7 @@ impl MLTIntegrator {
     pub fn l(
         &self,
         scene: &Scene,
-        light_distr: &Arc<Distribution1D>,
+        light_distr: Box<Distribution1D>,
         sampler: &mut Sampler,
         depth: u32,
         p_raster: &mut Point2f,
@@ -409,7 +409,7 @@ impl MLTIntegrator {
                 sampler,
                 s,
                 time,
-                &light_distr,
+                light_distr.clone(),
                 // light_to_index,
                 &mut light_vertices,
             );
@@ -428,7 +428,7 @@ impl MLTIntegrator {
             &camera_vertices,
             s as usize,
             t as usize,
-            &light_distr,
+            light_distr,
             // light_to_index,
             &self.camera,
             sampler,
@@ -477,7 +477,13 @@ impl MLTIntegrator {
                                         )));
                                     let mut p_raster: Point2f = Point2f::default();
                                     *weight = integrator
-                                        .l(scene, &light_distr, &mut sampler, depth, &mut p_raster)
+                                        .l(
+                                            scene,
+                                            light_distr.clone(),
+                                            &mut sampler,
+                                            depth,
+                                            &mut p_raster,
+                                        )
                                         .y();
                                 }
                             });
@@ -538,8 +544,13 @@ impl MLTIntegrator {
                         N_SAMPLE_STREAMS as i32,
                     )));
                     let mut p_current: Point2f = Point2f::default();
-                    let mut l_current: Spectrum =
-                        self.l(scene, &light_distr, &mut sampler, depth, &mut p_current);
+                    let mut l_current: Spectrum = self.l(
+                        scene,
+                        light_distr.clone(),
+                        &mut sampler,
+                        depth,
+                        &mut p_current,
+                    );
                     // run the Markov chain for _n_chain_mutations_ steps
                     for _j in 0..n_chain_mutations {
                         match sampler.deref_mut() {
@@ -547,8 +558,13 @@ impl MLTIntegrator {
                             _ => panic!("MLTSampler needed."),
                         }
                         let mut p_proposed: Point2f = Point2f::default();
-                        let l_proposed: Spectrum =
-                            self.l(scene, &light_distr, &mut sampler, depth, &mut p_proposed);
+                        let l_proposed: Spectrum = self.l(
+                            scene,
+                            light_distr.clone(),
+                            &mut sampler,
+                            depth,
+                            &mut p_proposed,
+                        );
                         // compute acceptance probability for proposed sample
                         let accept: Float = (1.0 as Float).min(l_proposed.y() / l_current.y());
                         // splat both current and proposed samples to _film_

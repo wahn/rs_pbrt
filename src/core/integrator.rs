@@ -360,7 +360,7 @@ pub fn uniform_sample_one_light(
     scene: &Scene,
     sampler: &mut Sampler,
     handle_media: bool,
-    light_distrib: Option<&Distribution1D>,
+    light_distrib: Option<&Box<Distribution1D>>,
 ) -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
 
@@ -571,7 +571,7 @@ pub fn estimate_direct(
 
 /// The light to start each photon path from is chosen according to a
 /// PDF defined by the lights' respective powers.
-pub fn compute_light_power_distribution(scene: &Scene) -> Option<Arc<Distribution1D>> {
+pub fn compute_light_power_distribution(scene: &Scene) -> Option<Box<Distribution1D>> {
     if scene.lights.is_empty() {
         return None;
     }
@@ -580,5 +580,5 @@ pub fn compute_light_power_distribution(scene: &Scene) -> Option<Arc<Distributio
         let light = &scene.lights[li];
         light_power.push(light.power().y());
     }
-    Some(Arc::new(Distribution1D::new(light_power)))
+    Some(Box::new(Distribution1D::new(light_power)))
 }

@@ -31,7 +31,7 @@ pub struct VolPathIntegrator {
     pub max_depth: u32,
     pub rr_threshold: Float,           // 1.0
     pub light_sample_strategy: String, // "spatial"
-    pub light_distribution: Option<Arc<LightDistribution>>,
+    pub light_distribution: Option<Box<LightDistribution>>,
 }
 
 impl VolPathIntegrator {
@@ -114,14 +114,14 @@ impl VolPathIntegrator {
                         // TODO: ++volumeInteractions;
                         // handle scattering at point in medium for volumetric path tracer
                         if let Some(ref light_distribution) = self.light_distribution {
-                            let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
+                            let distrib: Box<Distribution1D> = light_distribution.lookup(&mi_p);
                             l += beta
                                 * uniform_sample_one_light(
                                     &mi as &dyn Interaction,
                                     scene,
                                     sampler,
                                     true,
-                                    Some(Arc::borrow(&distrib)),
+                                    Some(&distrib),
                                 );
                             let mut wi: Vector3f = Vector3f::default();
                             phase.sample_p(&(-ray.d), &mut wi, sampler.get_2d());
@@ -153,7 +153,7 @@ impl VolPathIntegrator {
                         continue;
                     }
                     if let Some(ref light_distribution) = self.light_distribution {
-                        let light_distrib: Arc<Distribution1D> =
+                        let light_distrib: Box<Distribution1D> =
                             light_distribution.lookup(&isect.p);
                         // Sample illumination from lights to find
                         // attenuated path contribution.
@@ -164,7 +164,7 @@ impl VolPathIntegrator {
                                 scene,
                                 sampler,
                                 true,
-                                Some(Arc::borrow(&light_distrib)),
+                                Some(&light_distrib),
                             );
                         if let Some(ref bsdf) = isect.bsdf {
                             // Sample BSDF to get new path direction
@@ -235,7 +235,7 @@ impl VolPathIntegrator {
                                     beta *= s / pdf;
                                     if let Some(pi) = pi_opt {
                                         // account for the direct subsurface scattering component
-                                        let distrib: Arc<Distribution1D> =
+                                        let distrib: Box<Distribution1D> =
                                             light_distribution.lookup(&pi.p);
                                         l += beta
                                             * uniform_sample_one_light(
@@ -243,7 +243,7 @@ impl VolPathIntegrator {
                                                 scene,
                                                 sampler,
                                                 true,
-                                                Some(Arc::borrow(&distrib)),
+                                                Some(&distrib),
                                             );
                                         // account for the indirect subsurface scattering component
                                         let mut wi: Vector3f = Vector3f::default();
@@ -317,14 +317,14 @@ impl VolPathIntegrator {
                         // TODO: ++volumeInteractions;
                         // handle scattering at point in medium for volumetric path tracer
                         if let Some(ref light_distribution) = self.light_distribution {
-                            let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
+                            let distrib: Box<Distribution1D> = light_distribution.lookup(&mi_p);
                             l += beta
                                 * uniform_sample_one_light(
                                     &mi as &dyn Interaction,
                                     scene,
                                     sampler,
                                     true,
-                                    Some(Arc::borrow(&distrib)),
+                                    Some(&distrib),
                                 );
                             let mut wi: Vector3f = Vector3f::default();
                             phase.sample_p(&(-ray.d), &mut wi, sampler.get_2d());
