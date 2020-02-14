@@ -292,29 +292,13 @@ impl SpatialLightDistribution {
         // http://zimbry.blogspot.ch/2011/09/better-bit-mixing-improving-on.html
         let mut hash: u64 = packed_pos;
         hash ^= hash >> 31;
-        // hash *= 0x7fb5d329728ea185;
         let (mul, _overflow) = hash.overflowing_mul(0x7fb5_d329_728e_a185);
         hash = mul;
         hash ^= hash >> 27;
-        // hash *= 0x81dadef4bc2dd44d;
         let (mul, _overflow) = hash.overflowing_mul(0x81da_def4_bc2d_d44d);
         hash = mul;
         hash ^= hash >> 33;
         hash %= self.hash_table_size as u64;
-        // // hash ^= hash >> 31;
-        // let (shr, _overflow) = hash.overflowing_shr(31);
-        // hash ^= shr;
-        // // hash ^= hash >> 27;
-        // let (shr, _overflow) = hash.overflowing_shr(27);
-        // hash ^= shr;
-        // // hash ^= hash >> 33;
-        // let (shr, _overflow) = hash.overflowing_shr(33);
-        // hash ^= shr;
-        // // hash %= self.hash_table_size as u64;
-        // let (rem, _overflow) = hash.overflowing_rem(self.hash_table_size as u64);
-        // hash = rem;
-        // BELOW: comparison is useless due to type limits
-        // assert!(hash >= 0_u64, "hash needs to be greater or equal zero");
         // Now, see if the hash table already has an entry for the
         // voxel. We'll use quadratic probing when the hash table
         // entry is already used for another value; step stores the
