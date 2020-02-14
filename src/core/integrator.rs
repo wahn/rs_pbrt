@@ -360,7 +360,7 @@ pub fn uniform_sample_one_light(
     scene: &Scene,
     sampler: &mut Sampler,
     handle_media: bool,
-    light_distrib: Option<&Box<Distribution1D>>,
+    light_distrib: Option<&Distribution1D>,
 ) -> Spectrum {
     // TODO: ProfilePhase p(Prof::DirectLighting);
 
