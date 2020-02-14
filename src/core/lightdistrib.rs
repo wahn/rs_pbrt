@@ -3,7 +3,6 @@
 // std
 use atomic::{Atomic, Ordering};
 use std;
-use std::sync::atomic::AtomicPtr;
 use std::sync::{Arc, RwLock};
 // pbrt
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f};
@@ -41,7 +40,7 @@ impl LightDistribution {
 #[derive(Debug, Default)]
 struct HashEntry {
     packed_pos: Atomic<u64>,
-    // distribution: RwLock<Option<Box<Distribution1D>>>,
+    distribution: RwLock<Option<Box<Distribution1D>>>,
 }
 
 /// The simplest possible implementation of LightDistribution: this
@@ -149,7 +148,7 @@ impl SpatialLightDistribution {
         for _i in 0..hash_table_size {
             let hash_entry: HashEntry = HashEntry {
                 packed_pos: Atomic::new(INVALID_PACKED_POS),
-                // distribution: RwLock::new(None),
+                distribution: RwLock::new(None),
             };
             hash_table.push(hash_entry);
         }
@@ -314,11 +313,11 @@ impl SpatialLightDistribution {
             if entry_packed_pos == packed_pos {
                 // Yes! Most of the time, there should already by a light
                 // sampling distribution available.
-                // let option: Option<Box<Distribution1D>> = *entry.distribution.read().unwrap();
-                // if let Some(dist) = option {
-                //     // We have a valid sampling distribution.
-                //     return dist;
-                // }
+                let option: &Option<Box<Distribution1D>> = &*entry.distribution.read().unwrap();
+                if let Some(ref dist) = *option {
+                    // We have a valid sampling distribution.
+                    return dist.clone();
+                }
             } else if entry_packed_pos != INVALID_PACKED_POS {
                 // The hash table entry we're checking has already
                 // been allocated for another voxel. Advance to the
@@ -344,8 +343,8 @@ impl SpatialLightDistribution {
                     // distribution and add it to the hash table.
                     let dist: Distribution1D = self.compute_distribution(&pi);
                     let box_dist: Box<Distribution1D> = Box::new(dist);
-                    // let mut distribution = entry.distribution.write().unwrap();
-                    // *distribution = Some(box_dist.clone());
+                    let mut distribution = entry.distribution.write().unwrap();
+                    *distribution = Some(box_dist.clone());
                     return box_dist;
                 }
             }
