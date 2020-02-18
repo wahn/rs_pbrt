@@ -54,7 +54,7 @@ pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 struct Cli {
     /// samples per pixel
     #[structopt(short = "s", long = "samples", default_value = "16")]
-    samples: u8,
+    samples: u16,
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
@@ -237,7 +237,7 @@ fn make_scene(primitives: &Vec<Arc<Primitive>>, lights: Vec<Arc<Light>>) -> Scen
 fn main() -> std::io::Result<()> {
     // handle command line options
     let args = Cli::from_args();
-    let samples_per_pixel: u8 = args.samples;
+    let samples_per_pixel: u16 = args.samples;
     // default values
     let mut node_name: String = String::from(""); // no default name
     let mut filter_name: String = String::from("box");
