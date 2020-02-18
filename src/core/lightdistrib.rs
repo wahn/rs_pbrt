@@ -28,7 +28,7 @@ pub enum LightDistribution {
 }
 
 impl LightDistribution {
-    pub fn lookup(&self, p: &Point3f) -> Box<Distribution1D> {
+    pub fn lookup(&self, p: &Point3f) -> Arc<Distribution1D> {
         match self {
             LightDistribution::Uniform(distribution) => distribution.lookup(p),
             LightDistribution::Power(distribution) => distribution.lookup(p),
@@ -40,7 +40,7 @@ impl LightDistribution {
 #[derive(Debug, Default)]
 struct HashEntry {
     packed_pos: Atomic<u64>,
-    distribution: RwLock<Option<Box<Distribution1D>>>,
+    distribution: RwLock<Option<Arc<Distribution1D>>>,
 }
 
 /// The simplest possible implementation of LightDistribution: this
@@ -51,14 +51,14 @@ struct HashEntry {
 /// used for the PathIntegrator and the VolPathIntegrator in the
 /// printed book, though without the UniformLightDistribution class.)
 pub struct UniformLightDistribution {
-    pub distrib: Box<Distribution1D>,
+    pub distrib: Arc<Distribution1D>,
 }
 
 impl UniformLightDistribution {
     pub fn new(scene: &Scene) -> Self {
         let prob: Vec<Float> = vec![1.0 as Float; scene.lights.len()];
         UniformLightDistribution {
-            distrib: Box::new(Distribution1D::new(prob)),
+            distrib: Arc::new(Distribution1D::new(prob)),
         }
     }
 
@@ -67,7 +67,7 @@ impl UniformLightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
     /// point.
-    pub fn lookup(&self, _p: &Point3f) -> Box<Distribution1D> {
+    pub fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
         self.distrib.clone()
     }
 }
@@ -83,7 +83,7 @@ impl UniformLightDistribution {
 /// for the BDPT integrator and MLT integrator in the printed book,
 /// though also without the PowerLightDistribution class.)
 pub struct PowerLightDistribution {
-    pub distrib: Option<Box<Distribution1D>>,
+    pub distrib: Option<Arc<Distribution1D>>,
 }
 
 impl PowerLightDistribution {
@@ -98,13 +98,13 @@ impl PowerLightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
     /// point.
-    pub fn lookup(&self, _p: &Point3f) -> Box<Distribution1D> {
+    pub fn lookup(&self, _p: &Point3f) -> Arc<Distribution1D> {
         if let Some(distrib) = &self.distrib {
             distrib.clone()
         } else {
             // WARNING: this should only happen if scene.lights.is_empty()
             let prob: Vec<Float> = Vec::new();
-            Box::new(Distribution1D::new(prob))
+            Arc::new(Distribution1D::new(prob))
         }
     }
 }
@@ -117,7 +117,7 @@ impl PowerLightDistribution {
 pub struct SpatialLightDistribution {
     pub scene: Scene,
     pub n_voxels: [i32; 3],
-    hash_table: Box<Vec<HashEntry>>,
+    hash_table: Arc<Vec<HashEntry>>,
     pub hash_table_size: usize,
 }
 
@@ -155,7 +155,7 @@ impl SpatialLightDistribution {
         SpatialLightDistribution {
             scene: scene.clone(),
             n_voxels,
-            hash_table: Box::new(hash_table),
+            hash_table: Arc::new(hash_table),
             hash_table_size,
         }
     }
@@ -261,7 +261,7 @@ impl SpatialLightDistribution {
     /// Given a point |p| in space, this method returns a (hopefully
     /// effective) sampling distribution for light sources at that
     /// point.
-    pub fn lookup(&self, p: &Point3f) -> Box<Distribution1D> {
+    pub fn lookup(&self, p: &Point3f) -> Arc<Distribution1D> {
         // TODO: ProfilePhase _(Prof::LightDistribLookup);
         // TODO: ++nLookups;
 
@@ -313,7 +313,7 @@ impl SpatialLightDistribution {
             if entry_packed_pos == packed_pos {
                 // Yes! Most of the time, there should already by a light
                 // sampling distribution available.
-                let option: &Option<Box<Distribution1D>> = &*entry.distribution.read().unwrap();
+                let option: &Option<Arc<Distribution1D>> = &*entry.distribution.read().unwrap();
                 if let Some(ref dist) = *option {
                     // We have a valid sampling distribution.
                     return dist.clone();
@@ -342,7 +342,7 @@ impl SpatialLightDistribution {
                     // voxel's distribution. Now compute the sampling
                     // distribution and add it to the hash table.
                     let dist: Distribution1D = self.compute_distribution(&pi);
-                    let box_dist: Box<Distribution1D> = Box::new(dist);
+                    let box_dist: Arc<Distribution1D> = Arc::new(dist);
                     let mut distribution = entry.distribution.write().unwrap();
                     *distribution = Some(box_dist.clone());
                     return box_dist;
@@ -361,17 +361,17 @@ const INVALID_PACKED_POS: u64 = 0xffff_ffff_ffff_ffff;
 pub fn create_light_sample_distribution(
     name: String,
     scene: &Scene,
-) -> Option<Box<LightDistribution>> {
+) -> Option<Arc<LightDistribution>> {
     if name == "uniform" || scene.lights.len() == 1 {
-        Some(Box::new(LightDistribution::Uniform(
+        Some(Arc::new(LightDistribution::Uniform(
             UniformLightDistribution::new(scene),
         )))
     } else if name == "power" {
-        Some(Box::new(LightDistribution::Power(
+        Some(Arc::new(LightDistribution::Power(
             PowerLightDistribution::new(scene),
         )))
     } else if name == "spatial" {
-        Some(Box::new(LightDistribution::Spatial(
+        Some(Arc::new(LightDistribution::Spatial(
             SpatialLightDistribution::new(scene, 64),
         )))
     } else {
@@ -379,7 +379,7 @@ pub fn create_light_sample_distribution(
             "Light sample distribution type \"{:?}\" unknown. Using \"spatial\".",
             name
         );
-        Some(Box::new(LightDistribution::Spatial(
+        Some(Arc::new(LightDistribution::Spatial(
             SpatialLightDistribution::new(scene, 64),
         )))
     }

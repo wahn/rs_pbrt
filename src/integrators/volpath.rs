@@ -31,7 +31,7 @@ pub struct VolPathIntegrator {
     pub max_depth: u32,
     pub rr_threshold: Float,           // 1.0
     pub light_sample_strategy: String, // "spatial"
-    pub light_distribution: Option<Box<LightDistribution>>,
+    pub light_distribution: Option<Arc<LightDistribution>>,
 }
 
 impl VolPathIntegrator {
@@ -114,7 +114,7 @@ impl VolPathIntegrator {
                         // TODO: ++volumeInteractions;
                         // handle scattering at point in medium for volumetric path tracer
                         if let Some(ref light_distribution) = self.light_distribution {
-                            let distrib: Box<Distribution1D> = light_distribution.lookup(&mi_p);
+                            let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
                             l += beta
                                 * uniform_sample_one_light(
                                     &mi as &dyn Interaction,
@@ -153,7 +153,7 @@ impl VolPathIntegrator {
                         continue;
                     }
                     if let Some(ref light_distribution) = self.light_distribution {
-                        let light_distrib: Box<Distribution1D> =
+                        let light_distrib: Arc<Distribution1D> =
                             light_distribution.lookup(&isect.p);
                         // Sample illumination from lights to find
                         // attenuated path contribution.
@@ -235,7 +235,7 @@ impl VolPathIntegrator {
                                     beta *= s / pdf;
                                     if let Some(pi) = pi_opt {
                                         // account for the direct subsurface scattering component
-                                        let distrib: Box<Distribution1D> =
+                                        let distrib: Arc<Distribution1D> =
                                             light_distribution.lookup(&pi.p);
                                         l += beta
                                             * uniform_sample_one_light(
@@ -317,7 +317,7 @@ impl VolPathIntegrator {
                         // TODO: ++volumeInteractions;
                         // handle scattering at point in medium for volumetric path tracer
                         if let Some(ref light_distribution) = self.light_distribution {
-                            let distrib: Box<Distribution1D> = light_distribution.lookup(&mi_p);
+                            let distrib: Arc<Distribution1D> = light_distribution.lookup(&mi_p);
                             l += beta
                                 * uniform_sample_one_light(
                                     &mi as &dyn Interaction,

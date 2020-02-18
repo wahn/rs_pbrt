@@ -30,7 +30,7 @@ pub struct PathIntegrator {
     max_depth: u32,
     rr_threshold: Float,           // 1.0
     light_sample_strategy: String, // "spatial"
-    light_distribution: Option<Box<LightDistribution>>,
+    light_distribution: Option<Arc<LightDistribution>>,
 }
 
 impl PathIntegrator {
@@ -114,7 +114,7 @@ impl PathIntegrator {
                     continue;
                 }
                 if let Some(ref light_distribution) = self.light_distribution {
-                    let distrib: Box<Distribution1D> = light_distribution.lookup(&isect.p);
+                    let distrib: Arc<Distribution1D> = light_distribution.lookup(&isect.p);
                     // Sample illumination from lights to find path contribution.
                     // (But skip this for perfectly specular BSDFs.)
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8);
@@ -210,7 +210,7 @@ impl PathIntegrator {
                                 beta *= s / pdf;
                                 if let Some(pi) = pi_opt {
                                     // account for the direct subsurface scattering component
-                                    let distrib: Box<Distribution1D> =
+                                    let distrib: Arc<Distribution1D> =
                                         light_distribution.lookup(&pi.p);
                                     l += beta
                                         * uniform_sample_one_light(

@@ -686,7 +686,7 @@ impl<'a> Vertex<'a> {
         &self,
         scene: &Scene,
         v: &Vertex,
-        light_distr: Box<Distribution1D>,
+        light_distr: Arc<Distribution1D>,
     ) -> Float {
         let mut w: Vector3f = v.p() - self.p();
         if w.length_squared() == 0.0 as Float {
@@ -935,7 +935,7 @@ impl BDPTIntegrator {
                                                 p = p_new;
                                                 time = time_new;
                                             }
-                                            let light_distr: Box<Distribution1D> =
+                                            let light_distr: Arc<Distribution1D> =
                                                 light_distribution.lookup(&p);
                                             let mut light_vertices: Vec<Vertex> =
                                                 Vec::with_capacity(
@@ -1121,7 +1121,7 @@ pub fn generate_light_subpath<'a>(
     sampler: &mut Sampler,
     max_depth: u32,
     time: Float,
-    light_distr: Box<Distribution1D>,
+    light_distr: Arc<Distribution1D>,
     // TODO: light_to_index
     path: &mut Vec<Vertex<'a>>,
 ) -> usize {
@@ -1521,7 +1521,7 @@ pub fn mis_weight<'a>(
     sampled: &Vertex,
     s: usize,
     t: usize,
-    light_pdf: Box<Distribution1D>,
+    light_pdf: Arc<Distribution1D>,
 ) -> Float {
     if s + t == 2 as usize {
         return 1.0 as Float;
@@ -2217,7 +2217,7 @@ pub fn connect_bdpt<'a>(
     camera_vertices: &[Vertex<'a>],
     s: usize,
     t: usize,
-    light_distr: Box<Distribution1D>,
+    light_distr: Arc<Distribution1D>,
     camera: &'a Arc<Camera>,
     sampler: &mut Sampler,
     p_raster: &mut Point2f,
@@ -2481,7 +2481,7 @@ pub fn connect_bdpt<'a>(
 
 pub fn infinite_light_density<'a>(
     scene: &'a Scene,
-    light_distr: Box<Distribution1D>,
+    light_distr: Arc<Distribution1D>,
     // const std::unordered_map<const Light *, size_t> &lightToDistrIndex,
     w: &Vector3f,
 ) -> Float {

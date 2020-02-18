@@ -342,7 +342,7 @@ impl MLTIntegrator {
     pub fn l(
         &self,
         scene: &Scene,
-        light_distr: Box<Distribution1D>,
+        light_distr: Arc<Distribution1D>,
         sampler: &mut Sampler,
         depth: u32,
         p_raster: &mut Point2f,
