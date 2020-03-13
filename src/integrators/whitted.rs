@@ -1,5 +1,4 @@
 // std
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
@@ -50,7 +49,8 @@ impl WhittedIntegrator {
     ) -> Spectrum {
         let mut l: Spectrum = Spectrum::default();
         // find closest ray intersection or return background radiance
-        if let Some(mut isect) = scene.intersect(ray) {
+        let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+        if scene.intersect(ray, &mut isect) {
             // compute emitted and reflected light at ray intersection point
 
             // initialize common variables for Whitted integrator
@@ -59,9 +59,7 @@ impl WhittedIntegrator {
 
             // compute scattering functions for surface interaction
             let mode: TransportMode = TransportMode::Radiance;
-            Rc::get_mut(&mut isect)
-                .unwrap()
-                .compute_scattering_functions(ray, false, mode);
+            isect.compute_scattering_functions(ray, false, mode);
             // if (!isect.bsdf)
             if let Some(ref _bsdf) = isect.bsdf {
             } else {

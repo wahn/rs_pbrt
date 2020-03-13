@@ -1,7 +1,6 @@
 // std
 use std::borrow::Borrow;
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::Arc;
 // others
 use atom::*;
@@ -183,17 +182,17 @@ impl SPPMIntegrator {
                                             let mut specular_bounce: bool = false;
                                             for depth in 0..integrator.max_depth {
                                                 // TODO: ++totalPhotonSurfaceInteractions;
-                                                if let Some(mut isect) = scene.intersect(&mut ray) {
+                                                let mut isect: SurfaceInteraction =
+                                                    SurfaceInteraction::default();
+                                                if scene.intersect(&mut ray, &mut isect) {
                                                     // process SPPM camera ray intersection
 
                                                     // compute BSDF at SPPM camera ray intersection
                                                     let mode: TransportMode =
                                                         TransportMode::Radiance;
-                                                    Rc::get_mut(&mut isect)
-                                                        .unwrap()
-                                                        .compute_scattering_functions(
-                                                            &ray, true, mode,
-                                                        );
+                                                    isect.compute_scattering_functions(
+                                                        &ray, true, mode,
+                                                    );
                                                     if let Some(bsdf) = &isect.bsdf {
                                                         // accumulate direct illumination
                                                         // at SPPM camera ray intersection
@@ -542,9 +541,8 @@ impl SPPMIntegrator {
                                         }
                                         // follow photon path through scene and record intersections
                                         for depth in 0..integrator.max_depth {
-                                            if let Some(mut isect) =
-                                                scene.intersect(&mut photon_ray)
-                                            {
+					    let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+					    if scene.intersect(&mut photon_ray, &mut isect) {
                                                 // TODO: ++totalPhotonSurfaceInteractions;
                                                 if depth > 0 {
                                                     // add photon contribution to nearby visible points
@@ -623,11 +621,7 @@ impl SPPMIntegrator {
 
                                                 // compute BSDF at photon intersection point
                                                 let mode: TransportMode = TransportMode::Importance;
-                                                Rc::get_mut(&mut isect)
-                                                    .unwrap()
-                                                    .compute_scattering_functions(
-                                                        &photon_ray, true, mode,
-                                                    );
+						isect.compute_scattering_functions(&photon_ray, true, mode);
                                                 if let Some(ref photon_bsdf) = isect.bsdf {
                                                     // sample BSDF _fr_ and direction _wi_ for reflected photon
                                                     let mut wi: Vector3f = Vector3f::default();

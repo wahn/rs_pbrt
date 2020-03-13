@@ -531,12 +531,16 @@ pub fn estimate_direct(
             let mut found_surface_interaction: bool = false;
             // add light contribution from material sampling
             let mut li: Spectrum = Spectrum::default();
+            let mut light_isect: SurfaceInteraction = SurfaceInteraction::default();
+            let mut tr_spectrum: Spectrum = Spectrum::default();
             if handle_media {
-                let (light_isect_opt, tr_spectrum) = scene.intersect_tr(&mut ray, sampler);
+                let hit_surface: bool =
+                    scene.intersect_tr(&mut ray, sampler, &mut light_isect, &mut tr_spectrum);
                 tr = tr_spectrum; // copy return value
-                if let Some(ref light_isect) = light_isect_opt {
+                if hit_surface {
                     found_surface_interaction = true;
-                    if let Some(primitive) = &light_isect.primitive {
+                    if let Some(primitive_raw) = light_isect.primitive {
+                        let primitive = unsafe { &*primitive_raw };
                         if let Some(area_light) = primitive.get_area_light() {
                             let pa = &*area_light as *const _ as *const usize;
                             let pl = &*light as *const _ as *const usize;
@@ -546,9 +550,10 @@ pub fn estimate_direct(
                         }
                     }
                 }
-            } else if let Some(ref light_isect) = scene.intersect(&mut ray) {
+            } else if scene.intersect(&mut ray, &mut light_isect) {
                 found_surface_interaction = true;
-                if let Some(primitive) = &light_isect.primitive {
+                if let Some(primitive_raw) = light_isect.primitive {
+                    let primitive = unsafe { &*primitive_raw };
                     if let Some(area_light) = primitive.get_area_light() {
                         let pa = &*area_light as *const _ as *const usize;
                         let pl = &*light as *const _ as *const usize;

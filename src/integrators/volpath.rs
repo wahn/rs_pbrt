@@ -1,6 +1,5 @@
 // std
 use std::borrow::Borrow;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 // use crate::core::bssrdf::Bssrdf;
@@ -90,7 +89,8 @@ impl VolPathIntegrator {
         loop {
             let mut mi_opt: Option<MediumInteraction> = None;
             // intersect _ray_ with scene and store intersection in _isect_
-            if let Some(mut isect) = scene.intersect(&mut ray) {
+            let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+            if scene.intersect(&mut ray, &mut isect) {
                 // sample the participating medium, if present
                 if let Some(ref medium) = ray.medium {
                     let (spectrum, option) = medium.sample(&ray, sampler);
@@ -142,9 +142,7 @@ impl VolPathIntegrator {
                     }
                     // compute scattering functions and skip over medium boundaries
                     let mode: TransportMode = TransportMode::Radiance;
-                    Rc::get_mut(&mut isect)
-                        .unwrap()
-                        .compute_scattering_functions(&ray, true, mode);
+                    isect.compute_scattering_functions(&ray, true, mode);
                     if let Some(ref _bsdf) = isect.bsdf {
                         // we are fine (for below)
                     } else {

@@ -437,7 +437,9 @@ impl MLTIntegrator {
         ) * (n_strategies as Float)
     }
     pub fn render(&self, scene: &Scene, num_threads: u8) {
-        let num_cores = if num_threads == 0_u8 {
+        let mut num_cores: usize; // TMP
+        // let num_cores = if num_threads == 0_u8 {
+        let num_cores_init = if num_threads == 0_u8 { // TMP
             num_cpus::get()
         } else {
             num_threads as usize
@@ -445,6 +447,7 @@ impl MLTIntegrator {
         if let Some(light_distr) = compute_light_power_distribution(scene) {
             println!("Generating bootstrap paths ...");
             // generate bootstrap samples and compute normalization constant $b$
+            num_cores = 1; // TMP: disable multi-threading
             let n_bootstrap_samples: u32 = self.n_bootstrap * (self.max_depth + 1);
             let mut bootstrap_weights: Vec<Float> =
                 vec![0.0 as Float; n_bootstrap_samples as usize];
@@ -505,6 +508,7 @@ impl MLTIntegrator {
             let bootstrap: Distribution1D = Distribution1D::new(bootstrap_weights);
             let b: Float = bootstrap.func_int * (self.max_depth + 1) as Float;
             // run _n_chains_ Markov chains in parallel
+            num_cores = num_cores_init; // TMP: re-enable multi-threading
             let film: Arc<Film> = self.get_camera().get_film();
             let n_total_mutations: u64 =
                 self.mutations_per_pixel as u64 * film.get_sample_bounds().area() as u64;

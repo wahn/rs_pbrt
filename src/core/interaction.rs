@@ -274,7 +274,7 @@ pub struct SurfaceInteraction<'a> {
     pub dvdx: Cell<Float>,
     pub dudy: Cell<Float>,
     pub dvdy: Cell<Float>,
-    pub primitive: Option<&'a Primitive>,
+    pub primitive: Option<*const Primitive>,
     pub shading: Shading,
     pub bsdf: Option<Bsdf>,
     pub bssrdf: Option<TabulatedBssrdf>,
@@ -422,7 +422,8 @@ impl<'a> SurfaceInteraction<'a> {
         mode: TransportMode,
     ) {
         self.compute_differentials(ray);
-        if let Some(ref primitive) = self.primitive {
+        if let Some(primitive_raw) = self.primitive {
+	    let primitive = unsafe { &*primitive_raw };
             primitive.compute_scattering_functions(
                 self, // arena,
                 mode,
@@ -511,7 +512,8 @@ impl<'a> SurfaceInteraction<'a> {
         }
     }
     pub fn le(&self, w: &Vector3f) -> Spectrum {
-        if let Some(ref primitive) = self.primitive {
+        if let Some(primitive_raw) = self.primitive {
+	    let primitive = unsafe { &*primitive_raw };
             if let Some(area_light) = primitive.get_area_light() {
                 // create InteractionCommon from self
                 let interaction: InteractionCommon = InteractionCommon {

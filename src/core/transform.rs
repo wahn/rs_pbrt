@@ -57,7 +57,6 @@ use std;
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::ops::{Add, Mul};
-use std::rc::Rc;
 // pbrt
 use crate::core::geometry::{
     bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3,
@@ -833,7 +832,7 @@ impl Transform {
             medium: r.medium.clone(),
         }
     }
-    pub fn transform_surface_interaction(&self, si: &mut Rc<SurfaceInteraction>) {
+    pub fn transform_surface_interaction(&self, si: &mut SurfaceInteraction) {
         let mut ret: SurfaceInteraction = SurfaceInteraction::default();
         // transform _p_ and _pError_ in _SurfaceInteraction_
         ret.p = self.transform_point_with_abs_error(&si.p, &si.p_error, &mut ret.p_error);
@@ -871,7 +870,7 @@ impl Transform {
         ret.primitive = None; // TODO? si.primitive;
         ret.shading.n = nrm_faceforward_nrm(&ret.shading.n, &ret.n);
         // TODO: ret.faceIndex = si.faceIndex;
-        *si = Rc::new(ret);
+        *si = ret;
     }
 }
 

@@ -6,7 +6,7 @@
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
-use crate::core::interaction::{Interaction, InteractionCommon};
+use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::medium::MediumInterface;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampler::Sampler;
@@ -207,9 +207,11 @@ impl VisibilityTester {
         loop {
             let mut it: InteractionCommon = InteractionCommon::default();
             let mut medium_interface: Option<Arc<MediumInterface>> = None;
-            if let Some(isect) = scene.intersect(&mut ray) {
+            let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+            if scene.intersect(&mut ray, &mut isect) {
                 // handle opaque surface along ray's path
-                if let Some(primitive) = isect.primitive {
+                if let Some(primitive_raw) = isect.primitive {
+		    let primitive = unsafe { &*primitive_raw };
                     if let Some(_material) = primitive.get_material() {
                         return Spectrum::default();
                     } else {

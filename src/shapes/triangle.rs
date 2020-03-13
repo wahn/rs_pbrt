@@ -1,7 +1,6 @@
 // std
 use std::cell::Cell;
 use std::mem;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
@@ -148,7 +147,7 @@ impl Triangle {
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
         bnd3_union_pnt3(&Bounds3f::new(p0, p1), &p2)
     }
-    pub fn intersect(&self, ray: &Ray) -> Option<(Rc<SurfaceInteraction>, Float)> {
+    pub fn intersect(&self, ray: &Ray, t_hit: &mut Float, isect: &mut SurfaceInteraction) -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
         let p1: &Point3f =
@@ -217,11 +216,11 @@ impl Triangle {
         }
         // perform triangle edge and determinant tests
         if (e0 < 0.0 || e1 < 0.0 || e2 < 0.0) && (e0 > 0.0 || e1 > 0.0 || e2 > 0.0) {
-            return None;
+            return false;
         }
         let det: Float = e0 + e1 + e2;
         if det == 0.0 {
-            return None;
+            return false;
         }
         // compute scaled hit distance to triangle and test against ray $t$ range
         p0t.z *= sz;
@@ -229,9 +228,9 @@ impl Triangle {
         p2t.z *= sz;
         let t_scaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
         if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max * det) {
-            return None;
+            return false;
         } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max * det) {
-            return None;
+            return false;
         }
         // compute barycentric coordinates and $t$ value for triangle intersection
         let inv_det: Float = 1.0 / det;
@@ -286,7 +285,7 @@ impl Triangle {
         let delta_t: Float =
             3.0 * (gamma(3) * max_e * max_zt + delta_e * max_zt + delta_z * max_e) * inv_det.abs();
         if t <= delta_t {
-            return None;
+            return false;
         }
         // compute triangle partial derivatives
         let uv: [Point2f; 3] = self.get_uvs();
@@ -342,7 +341,7 @@ impl Triangle {
                 None,
             );
             if alpha_mask.evaluate(&isect_local) == 0.0 as Float {
-                return None;
+                return false;
             }
         }
         // fill in _SurfaceInteraction_ from triangle hit
@@ -434,31 +433,30 @@ impl Triangle {
             shading.dndu = dndu;
             shading.dndv = dndv;
         }
-        let si: Rc<SurfaceInteraction> = Rc::new(SurfaceInteraction {
-            p: p_hit,
-            time: ray.time,
-            p_error,
-            wo,
-            n: surface_normal,
-            medium_interface: None,
-            uv: uv_hit,
-            dpdu,
-            dpdv,
-            dndu,
-            dndv,
-            dpdx: Cell::new(Vector3f::default()),
-            dpdy: Cell::new(Vector3f::default()),
-            dudx: Cell::new(0.0 as Float),
-            dvdx: Cell::new(0.0 as Float),
-            dudy: Cell::new(0.0 as Float),
-            dvdy: Cell::new(0.0 as Float),
-            primitive: None,
-            shading,
-            bsdf: None,
-            bssrdf: None,
-            shape: None,
-        });
-        Some((si, t as Float))
+        isect.p = p_hit;
+        isect.time = ray.time;
+        isect.p_error = p_error;
+        isect.wo = wo;
+        isect.n = surface_normal;
+        isect.medium_interface = None;
+        isect.uv = uv_hit;
+        isect.dpdu = dpdu;
+        isect.dpdv = dpdv;
+        isect.dndu = dndu;
+        isect.dndv = dndv;
+        isect.dpdx = Cell::new(Vector3f::default());
+        isect.dpdy = Cell::new(Vector3f::default());
+        isect.dudx = Cell::new(0.0 as Float);
+        isect.dvdx = Cell::new(0.0 as Float);
+        isect.dudy = Cell::new(0.0 as Float);
+        isect.dvdy = Cell::new(0.0 as Float);
+        isect.primitive = None;
+        isect.shading = shading;
+        isect.bsdf = None;
+        // isect.bssrdf = None;
+        isect.shape = None;
+        *t_hit = t;
+        true
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
         // TODO: ProfilePhase p(Prof::TriIntersectP);
@@ -746,7 +744,9 @@ impl Triangle {
         // ignore any alpha textures used for trimming the shape when
         // performing this intersection. Hack for the "San Miguel"
         // scene, where this is used to make an invisible area light.
-        if let Some((isect_light, _t_hit)) = self.intersect(&ray) {
+        let mut t_hit: Float = 0.0;
+        let mut isect_light: SurfaceInteraction = SurfaceInteraction::default(); 
+        if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
             let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.p)
                 / (nrm_abs_dot_vec3(&isect_light.n, &-(*wi)) * self.area());

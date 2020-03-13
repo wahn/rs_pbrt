@@ -1,6 +1,5 @@
 // std
 use std;
-use std::rc::Rc;
 use std::sync::Arc;
 // others
 // use time::PreciseTime;
@@ -422,9 +421,9 @@ impl BVHAccel {
             Bounds3f::default()
         }
     }
-    pub fn intersect(&self, ray: &mut Ray) -> Option<Rc<SurfaceInteraction>> {
+    pub fn intersect(&self, ray: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
         if self.nodes.is_empty() {
-            return None;
+            return false;
         }
         // TODO: ProfilePhase p(Prof::AccelIntersect);
         let mut hit: bool = false;
@@ -442,7 +441,6 @@ impl BVHAccel {
         let mut to_visit_offset: u32 = 0;
         let mut current_node_index: u32 = 0;
         let mut nodes_to_visit: [u32; 64] = [0_u32; 64];
-        let mut si: Option<Rc<SurfaceInteraction>> = None;
         loop {
             let node: &LinearBVHNode = &self.nodes[current_node_index as usize];
             // check ray against BVH node
@@ -452,11 +450,9 @@ impl BVHAccel {
                     // intersect ray with primitives in leaf BVH node
                     for i in 0..node.n_primitives {
                         // see primitive.h GeometricPrimitive::Intersect() ...
-                        if let Some(isect) =
-                            self.primitives[node.offset as usize + i as usize].intersect(ray)
+                        if self.primitives[node.offset as usize + i as usize].intersect(ray, isect)
                         {
                             // TODO: CHECK_GE(...)
-                            si = Some(isect.clone());
                             hit = true;
                         }
                     }
@@ -487,9 +483,9 @@ impl BVHAccel {
             }
         }
         if hit {
-            Some(si.unwrap())
+            true
         } else {
-            None
+            false
         }
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {

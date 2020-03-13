@@ -1,11 +1,10 @@
 // std
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
 use crate::core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm};
 use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
-use crate::core::interaction::Interaction;
+use crate::core::interaction::{Interaction, SurfaceInteraction};
 use crate::core::material::TransportMode;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampler::Sampler;
@@ -65,9 +64,10 @@ impl AOIntegrator {
             differential: r.differential,
             medium: r.medium.clone(),
         };
-        if let Some(mut isect) = scene.intersect(&mut ray) {
+        let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+        if scene.intersect(&mut ray, &mut isect) {
             let mode: TransportMode = TransportMode::Radiance;
-            Rc::get_mut(&mut isect).unwrap().compute_scattering_functions(&ray, true, mode);
+            isect.compute_scattering_functions(&ray, true, mode);
             // if (!isect.bsdf) {
             //     VLOG(2) << "Skipping intersection due to null bsdf";
             //     ray = isect.SpawnRay(ray.d);

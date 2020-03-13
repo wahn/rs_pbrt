@@ -2,8 +2,6 @@
 //! geometry processing and shading subsystems of pbrt.
 
 // std
-use std::borrow::Borrow;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::accelerators::bvh::BVHAccel;
@@ -36,20 +34,19 @@ impl Primitive {
             Primitive::KdTree(primitive) => primitive.world_bound(),
         }
     }
-    pub fn intersect(&self, ray: &mut Ray) -> Option<Rc<SurfaceInteraction>> {
+    pub fn intersect(&self, ray: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
         match self {
-            Primitive::Geometric(primitive) => {
-                let isect_opt = primitive.intersect(ray);
-                if let Some(mut isect_rc) = isect_opt {
-                    Rc::get_mut(&mut isect_rc).unwrap().primitive = Some(self);
-                    Some(isect_rc)
-                } else {
-                    isect_opt
+            Primitive::Geometric(primitive) =>
+            {
+                let hit_surface: bool = primitive.intersect(ray, isect);
+                if hit_surface {
+                    isect.primitive = Some(self);
                 }
+                hit_surface
             }
-            Primitive::Transformed(primitive) => primitive.intersect(ray),
-            Primitive::BVH(primitive) => primitive.intersect(ray),
-            Primitive::KdTree(primitive) => primitive.intersect(ray),
+            Primitive::Transformed(primitive) => primitive.intersect(ray, isect),
+            Primitive::BVH(primitive) => primitive.intersect(ray, isect),
+            Primitive::KdTree(primitive) => primitive.intersect(ray, isect),
         }
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
@@ -155,23 +152,22 @@ impl GeometricPrimitive {
     pub fn world_bound(&self) -> Bounds3f {
         self.shape.world_bound()
     }
-    pub fn intersect(&self, ray: &mut Ray) -> Option<Rc<SurfaceInteraction>> {
-        if let Some((mut isect_rc, t_hit)) = self.shape.intersect(ray) {
-            // isect.primitive = Some(self);
+    pub fn intersect(&self, ray: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
+        let mut t_hit: Float = 0.0;
+        if self.shape.intersect(ray, &mut t_hit, isect) {
+            // TODO: isect.primitive
             ray.t_max = t_hit;
-            let it: &SurfaceInteraction = isect_rc.borrow();
-            assert!(nrm_dot_nrm(&it.n, &it.shading.n) >= 0.0 as Float);
+            // let it: &SurfaceInteraction = isect_rc.borrow();
+            assert!(nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0 as Float);
             // initialize _SurfaceInteraction::mediumInterface_ after
             // _Shape_ intersection
             if let Some(ref medium_interface) = self.medium_interface {
                 if medium_interface.is_medium_transition() {
-                    Rc::get_mut(&mut isect_rc).unwrap().medium_interface =
-                        Some(medium_interface.clone());
+                    isect.medium_interface = Some(medium_interface.clone());
                 } else if let Some(ref medium_arc) = ray.medium {
                     let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
                     let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
-                    Rc::get_mut(&mut isect_rc).unwrap().medium_interface =
-                        Some(Arc::new(MediumInterface::new(inside, outside)));
+                    isect.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
                 }
                 // print!("medium_interface = {{inside = ");
                 // if let Some(ref inside) = medium_interface.inside {
@@ -185,9 +181,9 @@ impl GeometricPrimitive {
                 //     println!("0x0}}")
                 // }
             }
-            Some(isect_rc)
+            true
         } else {
-            None
+            false
         }
     }
     pub fn intersect_p(&self, r: &Ray) -> bool {
@@ -226,17 +222,17 @@ impl TransformedPrimitive {
         self.primitive_to_world
             .motion_bounds(&self.primitive.world_bound())
     }
-    pub fn intersect(&self, r: &mut Ray) -> Option<Rc<SurfaceInteraction>> {
+    pub fn intersect(&self, r: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
         // compute _ray_ after transformation by _self.primitive_to_world_
         let mut interpolated_prim_to_world: Transform = Transform::default();
         self.primitive_to_world
             .interpolate(r.time, &mut interpolated_prim_to_world);
         let mut ray: Ray = Transform::inverse(&interpolated_prim_to_world).transform_ray(&*r);
-        if let Some(mut isect) = self.primitive.intersect(&mut ray) {
+        if self.primitive.intersect(&mut ray, isect) {
             r.t_max = ray.t_max;
             // transform instance's intersection data to world space
             if !interpolated_prim_to_world.is_identity() {
-                interpolated_prim_to_world.transform_surface_interaction(&mut isect);
+                interpolated_prim_to_world.transform_surface_interaction(isect);
                 // let new_isect = interpolated_prim_to_world.transform_surface_interaction(isect);
                 // assert!(nrm_dot_nrm(&new_isect.n, &new_isect.shading.n) >= 0.0 as Float);
                 // let mut is: SurfaceInteraction = SurfaceInteraction::new(
@@ -262,11 +258,11 @@ impl TransformedPrimitive {
                 // is.shading.dpdv = new_isect.shading.dpdv;
                 // is.shading.dndu = new_isect.shading.dndu;
                 // is.shading.dndv = new_isect.shading.dndv;
-                return Some(isect);
+                return true;
             }
-            None
+            false
         } else {
-            None
+            false
         }
     }
     pub fn intersect_p(&self, r: &Ray) -> bool {

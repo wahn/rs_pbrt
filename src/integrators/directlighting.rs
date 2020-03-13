@@ -1,6 +1,5 @@
 // std
 use std::borrow::Borrow;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
@@ -79,12 +78,11 @@ impl DirectLightingIntegrator {
         // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
         let mut l: Spectrum = Spectrum::new(0.0 as Float);
         // find closest ray intersection or return background radiance
-        if let Some(mut isect) = scene.intersect(ray) {
+        let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+        if scene.intersect(ray, &mut isect) {
             // compute scattering functions for surface interaction
             let mode: TransportMode = TransportMode::Radiance;
-            Rc::get_mut(&mut isect)
-                .unwrap()
-                .compute_scattering_functions(ray, false, mode);
+            isect.compute_scattering_functions(ray, false, mode);
             // if (!isect.bsdf)
             //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
             let wo: Vector3f = isect.wo;

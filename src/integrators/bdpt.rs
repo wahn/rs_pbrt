@@ -1,7 +1,6 @@
 // std
 use std::cell::Cell;
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::blockqueue::BlockQueue;
@@ -469,7 +468,8 @@ impl<'a> Vertex<'a> {
             return true;
         } else if self.vertex_type == VertexType::Surface {
             if let Some(ref si) = self.si {
-                if let Some(primitive) = &si.primitive {
+                if let Some(primitive_raw) = si.primitive {
+                    let primitive = unsafe { &*primitive_raw };
                     if let Some(_area_light) = primitive.get_area_light() {
                         return true;
                     }
@@ -534,7 +534,8 @@ impl<'a> Vertex<'a> {
             }
             return le;
         } else if let Some(ref si) = self.si {
-            if let Some(primitive) = &si.primitive {
+            if let Some(primitive_raw) = si.primitive {
+                let primitive = unsafe { &*primitive_raw };
                 if let Some(light) = primitive.get_area_light() {
                     let mut iref: InteractionCommon = InteractionCommon::default();
                     iref.p = si.p;
@@ -652,7 +653,8 @@ impl<'a> Vertex<'a> {
                     }
                 }
             } else if let Some(ref si) = self.si {
-                if let Some(primitive) = &si.primitive {
+                if let Some(primitive_raw) = si.primitive {
+                    let primitive = unsafe { &*primitive_raw };
                     if let Some(area_light) = primitive.get_area_light() {
                         // compute sampling density for
                         // non-infinite light sources
@@ -740,7 +742,8 @@ impl<'a> Vertex<'a> {
             } else {
                 // area light from primitive
                 if let Some(ref si) = self.si {
-                    if let Some(primitive) = &si.primitive {
+                    if let Some(primitive_raw) = si.primitive {
+                        let primitive = unsafe { &*primitive_raw };
                         if let Some(area_light) = primitive.get_area_light() {
                             // find area light in light vector
                             for i in 0..scene.lights.len() {
@@ -1218,11 +1221,10 @@ pub fn random_walk<'a>(
         //     bounces, beta, pdf_fwd, pdf_rev
         // );
         let mut mi_opt: Option<MediumInteraction> = None;
-        let mut si_opt: Option<Rc<SurfaceInteraction>> = None;
         // trace a ray and sample the medium, if any
         let found_intersection: bool;
-        if let Some(isect) = scene.intersect(&mut ray) {
-            si_opt = Some(isect);
+        let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+        if scene.intersect(&mut ray, &mut isect) {
             found_intersection = true;
         } else {
             found_intersection = false;
@@ -1286,13 +1288,10 @@ pub fn random_walk<'a>(
                     bounces += 1;
                 }
                 break;
-            }
-            if let Some(mut isect) = si_opt {
+            } else {
                 // compute scattering functions for _mode_ and skip over medium
                 // boundaries
-                Rc::get_mut(&mut isect)
-                    .unwrap()
-                    .compute_scattering_functions(&ray, true, mode);
+                isect.compute_scattering_functions(&ray, true, mode);
                 let isect_wo: Vector3f = isect.wo;
                 let isect_shading_n: Normal3f = isect.shading.n;
                 if isect.bsdf.is_none() {
@@ -1323,7 +1322,7 @@ pub fn random_walk<'a>(
                 si_eval.dvdy = Cell::new(isect.dvdy.get());
                 si_eval.dpdx = Cell::new(isect.dpdx.get());
                 si_eval.dpdy = Cell::new(isect.dpdy.get());
-                if let Some(primitive) = &isect.primitive {
+                if let Some(primitive) = isect.primitive {
                     si_eval.primitive = Some(primitive);
                 } else {
                     si_eval.primitive = None
@@ -1598,7 +1597,7 @@ pub fn mis_weight<'a>(
             if let Some(ref medium_interface_arc) = lv_si.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
-            if let Some(primitive) = &lv_si.primitive {
+            if let Some(primitive) = lv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
                     p: lv_si.p,
                     time: lv_si.time,
@@ -1691,7 +1690,7 @@ pub fn mis_weight<'a>(
             if let Some(ref medium_interface_arc) = lv_si.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
-            if let Some(primitive) = &lv_si.primitive {
+            if let Some(primitive) = lv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
                     p: lv_si.p,
                     time: lv_si.time,
@@ -1788,7 +1787,7 @@ pub fn mis_weight<'a>(
             if let Some(ref medium_interface_arc) = cv_si.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
-            if let Some(primitive) = &cv_si.primitive {
+            if let Some(primitive) = cv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
                     p: cv_si.p,
                     time: cv_si.time,
@@ -1884,7 +1883,7 @@ pub fn mis_weight<'a>(
             if let Some(ref medium_interface_arc) = lv_si.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
-            if let Some(primitive) = &lv_si.primitive {
+            if let Some(primitive) = lv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
                     p: lv_si.p,
                     time: lv_si.time,
