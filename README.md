@@ -17,14 +17,23 @@ https://www.janwalter.org/doc/rust/pbrt/index.html
 ## Usage
 
 ```shell
-> cargo run --release -- -h
-Usage: target/release/rs_pbrt [options]
+> cargo build --release --no-default-features
+> ./target/release/rs_pbrt --help
+pbrt 0.8.1
+Parse a PBRT scene file (extension .pbrt) and render it
 
-Options:
-    -h, --help          print this help menu
-    -i FILE             parse an input file
-    -t, --nthreads NUM  use specified number of threads for rendering
-    -v, --version       print version number
+USAGE:
+    rs_pbrt [OPTIONS] <path>
+
+FLAGS:
+    -h, --help       Prints help information
+    -V, --version    Prints version information
+
+OPTIONS:
+    -t, --nthreads <nthreads>    use specified number of threads for rendering [default: 0]
+
+ARGS:
+    <path>    The path to the file to read
 ```
 
 ## Test Scenes
