@@ -204,7 +204,7 @@ impl SpatialLightDistribution {
                     z: 0.0,
                 },
                 n: Normal3f::default(),
-                medium_interface: Some(Arc::new(MediumInterface::default())),
+                medium_interface: None,
             };
             // Use the next two Halton dimensions to sample a point on the
             // light source.
