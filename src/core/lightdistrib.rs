@@ -10,7 +10,6 @@ use crate::core::integrator::compute_light_power_distribution;
 use crate::core::interaction::InteractionCommon;
 use crate::core::light::VisibilityTester;
 use crate::core::lowdiscrepancy::radical_inverse;
-use crate::core::medium::MediumInterface;
 use crate::core::pbrt::clamp_t;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampling::Distribution1D;
