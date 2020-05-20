@@ -1,4 +1,5 @@
 // std
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::RwLock;
 // pbrt
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
@@ -55,7 +56,7 @@ pub struct HaltonSampler {
     pub sample_stride: u64,
     pub mult_inverse: [i64; 2],
     pub pixel_for_offset: RwLock<Point2i>,
-    pub offset_for_current_pixel: RwLock<u64>,
+    pub offset_for_current_pixel: AtomicU64,
     pub sample_at_pixel_center: bool, // default: false
     // inherited from class GlobalSampler (see sampler.h)
     pub dimension: i64,
@@ -108,7 +109,7 @@ impl HaltonSampler {
             sample_stride,
             mult_inverse,
             pixel_for_offset: RwLock::new(Point2i::default()),
-            offset_for_current_pixel: RwLock::new(0_u64),
+            offset_for_current_pixel: AtomicU64::new(0_u64),
             sample_at_pixel_center,
             dimension: 0_i64,
             interval_sample_index: 0_u64,
@@ -126,7 +127,7 @@ impl HaltonSampler {
     }
     pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
         let pixel_for_offset: Point2i = *self.pixel_for_offset.read().unwrap();
-        let offset_for_current_pixel: u64 = *self.offset_for_current_pixel.read().unwrap();
+        let offset_for_current_pixel: u64 = self.offset_for_current_pixel.load(Ordering::Relaxed);
         let halton_sampler = HaltonSampler {
             samples_per_pixel: self.samples_per_pixel,
             base_scales: self.base_scales,
@@ -134,7 +135,7 @@ impl HaltonSampler {
             sample_stride: self.sample_stride,
             mult_inverse: self.mult_inverse,
             pixel_for_offset: RwLock::new(pixel_for_offset),
-            offset_for_current_pixel: RwLock::new(offset_for_current_pixel),
+            offset_for_current_pixel: AtomicU64::new(offset_for_current_pixel),
             sample_at_pixel_center: self.sample_at_pixel_center,
             dimension: self.dimension,
             interval_sample_index: self.interval_sample_index,
@@ -166,8 +167,8 @@ impl HaltonSampler {
         let pixel_for_offset: Point2i = *self.pixel_for_offset.read().unwrap();
         if self.current_pixel != pixel_for_offset {
             // compute Halton sample offset for _self.current_pixel_
-            let mut offset_for_current_pixel = self.offset_for_current_pixel.write().unwrap();
-            *offset_for_current_pixel = 0_u64;
+            self.offset_for_current_pixel
+                .store(0_u64, Ordering::Relaxed);
             if self.sample_stride > 1_u64 {
                 let pm: Point2i = Point2i {
                     x: mod_t(self.current_pixel[0], K_MAX_RESOLUTION),
@@ -179,16 +180,24 @@ impl HaltonSampler {
                     } else {
                         inverse_radical_inverse(3, pm[i] as u64, self.base_exponents[i] as u64)
                     };
-                    *offset_for_current_pixel += dim_offset
-                        * (self.sample_stride / self.base_scales[i] as u64) as u64
-                        * self.mult_inverse[i as usize] as u64;
+                    self.offset_for_current_pixel.fetch_add(
+                        dim_offset
+                            * (self.sample_stride / self.base_scales[i] as u64) as u64
+                            * self.mult_inverse[i as usize] as u64,
+                        Ordering::SeqCst,
+                    );
                 }
-                *offset_for_current_pixel %= self.sample_stride as u64;
+                let offset_for_current_pixel: u64 =
+                    self.offset_for_current_pixel.load(Ordering::Relaxed);
+                self.offset_for_current_pixel.store(
+                    offset_for_current_pixel % self.sample_stride as u64,
+                    Ordering::Relaxed,
+                );
             }
             let mut pixel_for_offset = self.pixel_for_offset.write().unwrap();
             *pixel_for_offset = self.current_pixel;
         }
-        let offset_for_current_pixel: u64 = *self.offset_for_current_pixel.read().unwrap();
+        let offset_for_current_pixel: u64 = self.offset_for_current_pixel.load(Ordering::Relaxed);
         offset_for_current_pixel + sample_num * self.sample_stride
     }
     pub fn sample_dimension(&self, index: u64, dim: i64) -> Float {
