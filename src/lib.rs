@@ -20,11 +20,6 @@
 //! [render_bdpt]: integrators/bdpt/struct.BDPTIntegrator.html#method.render
 //! [render_mlt]: integrators/mlt/struct.MLTIntegrator.html#method.render
 //! [render_sppm]: integrators/sppm/struct.SPPMIntegrator.html#method.render
-extern crate jemallocator;
-
-#[global_allocator]
-static ALLOC: jemallocator::Jemalloc = jemallocator::Jemalloc;
-
 pub mod accelerators;
 pub mod blockqueue;
 pub mod cameras;
