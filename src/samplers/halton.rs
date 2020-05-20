@@ -1,6 +1,5 @@
 // std
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::RwLock;
+use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 // pbrt
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
 use crate::core::lowdiscrepancy::{
@@ -55,7 +54,8 @@ pub struct HaltonSampler {
     pub base_exponents: Point2i,
     pub sample_stride: u64,
     pub mult_inverse: [i64; 2],
-    pub pixel_for_offset: RwLock<Point2i>,
+    pub pixel_for_offset_x: AtomicI32,
+    pub pixel_for_offset_y: AtomicI32,
     pub offset_for_current_pixel: AtomicU64,
     pub sample_at_pixel_center: bool, // default: false
     // inherited from class GlobalSampler (see sampler.h)
@@ -108,7 +108,8 @@ impl HaltonSampler {
             base_exponents,
             sample_stride,
             mult_inverse,
-            pixel_for_offset: RwLock::new(Point2i::default()),
+            pixel_for_offset_x: AtomicI32::new(0_i32),
+            pixel_for_offset_y: AtomicI32::new(0_i32),
             offset_for_current_pixel: AtomicU64::new(0_u64),
             sample_at_pixel_center,
             dimension: 0_i64,
@@ -126,7 +127,8 @@ impl HaltonSampler {
         }
     }
     pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
-        let pixel_for_offset: Point2i = *self.pixel_for_offset.read().unwrap();
+        let pixel_for_offset_x: i32 = self.pixel_for_offset_x.load(Ordering::Relaxed);
+        let pixel_for_offset_y: i32 = self.pixel_for_offset_y.load(Ordering::Relaxed);
         let offset_for_current_pixel: u64 = self.offset_for_current_pixel.load(Ordering::Relaxed);
         let halton_sampler = HaltonSampler {
             samples_per_pixel: self.samples_per_pixel,
@@ -134,7 +136,8 @@ impl HaltonSampler {
             base_exponents: self.base_exponents,
             sample_stride: self.sample_stride,
             mult_inverse: self.mult_inverse,
-            pixel_for_offset: RwLock::new(pixel_for_offset),
+            pixel_for_offset_x: AtomicI32::new(pixel_for_offset_x),
+            pixel_for_offset_y: AtomicI32::new(pixel_for_offset_y),
             offset_for_current_pixel: AtomicU64::new(offset_for_current_pixel),
             sample_at_pixel_center: self.sample_at_pixel_center,
             dimension: self.dimension,
@@ -164,8 +167,11 @@ impl HaltonSampler {
         )))
     }
     pub fn get_index_for_sample(&self, sample_num: u64) -> u64 {
-        let pixel_for_offset: Point2i = *self.pixel_for_offset.read().unwrap();
-        if self.current_pixel != pixel_for_offset {
+        let pixel_for_offset_x: i32 = self.pixel_for_offset_x.load(Ordering::Relaxed);
+        let pixel_for_offset_y: i32 = self.pixel_for_offset_y.load(Ordering::Relaxed);
+        if self.current_pixel[0] != pixel_for_offset_x
+            || self.current_pixel[1] != pixel_for_offset_y
+        {
             // compute Halton sample offset for _self.current_pixel_
             self.offset_for_current_pixel
                 .store(0_u64, Ordering::Relaxed);
@@ -194,8 +200,8 @@ impl HaltonSampler {
                     Ordering::Relaxed,
                 );
             }
-            let mut pixel_for_offset = self.pixel_for_offset.write().unwrap();
-            *pixel_for_offset = self.current_pixel;
+            self.pixel_for_offset_x.store(self.current_pixel[0], Ordering::Relaxed);
+            self.pixel_for_offset_y.store(self.current_pixel[1], Ordering::Relaxed);
         }
         let offset_for_current_pixel: u64 = self.offset_for_current_pixel.load(Ordering::Relaxed);
         offset_for_current_pixel + sample_num * self.sample_stride
