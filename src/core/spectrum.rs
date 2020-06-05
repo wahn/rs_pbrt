@@ -1576,7 +1576,7 @@ impl RGBSpectrum {
     pub fn from_sampled(lambda: &[Float], v: &[Float], n: i32) -> RGBSpectrum {
         // sort samples if unordered, use sorted for returned spectrum
         if !spectrum_samples_sorted(lambda, v, n) {
-            panic!("TODO: if !spectrum_samples_sorted(...)");
+            // print!("TODO: if !spectrum_samples_sorted(...)");
             // std::vector<Float> slambda(&lambda[0], &lambda[n]);
             // std::vector<Float> sv(&v[0], &v[n]);
             // SortSpectrumSamples(&slambda[0], &sv[0], n);
@@ -1785,22 +1785,22 @@ impl Zero for RGBSpectrum {
 impl Index<usize> for RGBSpectrum {
     type Output = Float;
     fn index(&self, index: usize) -> &Float {
+        // panic!("Check failed: i >= 0 && i <= 2")
         match index {
             0 => &self.c[0],
             1 => &self.c[1],
-            2 => &self.c[2],
-            _ => panic!("Check failed: i >= 0 && i <= 2"),
+            _ => &self.c[2],
         }
     }
 }
 
 impl IndexMut<usize> for RGBSpectrum {
     fn index_mut(&mut self, index: usize) -> &mut Float {
+        // panic!("Check failed: i >= 0 && i <= 2")
         match index {
             0 => &mut self.c[0],
             1 => &mut self.c[1],
-            2 => &mut self.c[2],
-            _ => panic!("Check failed: i >= 0 && i <= 2"),
+            _ => &mut self.c[2],
         }
     }
 }
