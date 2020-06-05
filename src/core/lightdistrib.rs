@@ -116,7 +116,7 @@ impl PowerLightDistribution {
 pub struct SpatialLightDistribution {
     pub scene: Scene,
     pub n_voxels: [i32; 3],
-    hash_table: Arc<Vec<HashEntry>>,
+    hash_table: Box<[HashEntry]>,
     pub hash_table_size: usize,
 }
 
@@ -154,7 +154,7 @@ impl SpatialLightDistribution {
         SpatialLightDistribution {
             scene: scene.clone(),
             n_voxels,
-            hash_table: Arc::new(hash_table),
+            hash_table: hash_table.into_boxed_slice(),
             hash_table_size,
         }
     }
