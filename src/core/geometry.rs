@@ -225,20 +225,20 @@ impl<T> Vector2<T> {
 impl<T> Index<u8> for Vector2<T> {
     type Output = T;
     fn index(&self, index: u8) -> &T {
+        // panic!("Check failed: i >= 0 && i <= 1")
         match index {
             0 => &self.x,
-            1 => &self.y,
-            _ => panic!("Check failed: i >= 0 && i <= 1"),
+            _ => &self.y,
         }
     }
 }
 
 impl<T> IndexMut<u8> for Vector2<T> {
     fn index_mut(&mut self, index: u8) -> &mut T {
+        // panic!("Check failed: i >= 0 && i <= 1")
         match index {
             0 => &mut self.x,
-            1 => &mut self.y,
-            _ => panic!("Check failed: i >= 0 && i <= 1"),
+            _ => &mut self.y,
         }
     }
 }
@@ -382,7 +382,6 @@ impl<T> Vector3<T> {
 impl Vector3<Float> {
     /// Compute a new vector pointing in the same direction but with unit
     /// length.
-    #[inline]
     pub fn normalize(&self) -> Vector3<Float> {
         *self / self.length()
     }
@@ -443,7 +442,6 @@ where
     T: Copy + Mul<T, Output = T>,
 {
     type Output = Vector3<T>;
-    #[inline]
     fn mul(self, rhs: T) -> Vector3<T>
     where
         T: Copy + Mul<T, Output = T>,
@@ -511,28 +509,27 @@ where
 impl<T> Index<u8> for Vector3<T> {
     type Output = T;
     fn index(&self, index: u8) -> &T {
+        // panic!("Check failed: i >= 0 && i <= 2")
         match index {
             0 => &self.x,
             1 => &self.y,
-            2 => &self.z,
-            _ => panic!("Check failed: i >= 0 && i <= 2"),
+            _ => &self.z,
         }
     }
 }
 
 impl<T> IndexMut<u8> for Vector3<T> {
     fn index_mut(&mut self, index: u8) -> &mut T {
+        // panic!("Check failed: i >= 0 && i <= 2"),
         match index {
             0 => &mut self.x,
             1 => &mut self.y,
-            2 => &mut self.z,
-            _ => panic!("Check failed: i >= 0 && i <= 2"),
+            _ => &mut self.z,
         }
     }
 }
 
 impl<T> From<Point3<T>> for Vector3<T> {
-    #[inline]
     fn from(p: Point3<T>) -> Self {
         Vector3::<T> {
             x: p.x,
@@ -556,7 +553,6 @@ impl<T> From<Normal3<T>> for Vector3<T> {
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
 /// codirectional.
-#[inline]
 pub fn vec3_dot_vec3<T>(v1: &Vector3<T>, v2: &Vector3<T>) -> T
 where
     T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
@@ -576,7 +572,6 @@ where
 }
 
 /// Computes the absolute value of the dot product.
-#[inline]
 pub fn vec3_abs_dot_vec3<T>(v1: &Vector3<T>, v2: &Vector3<T>) -> T
 where
     T: num::Float,
@@ -594,7 +589,6 @@ where
 
 /// Given two vectors in 3D, the cross product is a vector that is
 /// perpendicular to both of them.
-#[inline]
 pub fn vec3_cross_vec3(v1: &Vector3f, v2: &Vector3f) -> Vector3f {
     let v1x: f64 = v1.x as f64;
     let v1y: f64 = v1.y as f64;
@@ -611,7 +605,6 @@ pub fn vec3_cross_vec3(v1: &Vector3f, v2: &Vector3f) -> Vector3f {
 
 /// Given a vectors and a normal in 3D, the cross product is a vector
 /// that is perpendicular to both of them.
-#[inline]
 pub fn vec3_cross_nrm(v1: &Vector3f, v2: &Normal3f) -> Vector3f {
     let v1x: f64 = v1.x as f64;
     let v1y: f64 = v1.y as f64;
@@ -670,7 +663,6 @@ where
 }
 
 /// Construct a local coordinate system given only a single 3D vector.
-#[inline]
 pub fn vec3_coordinate_system(v1: &Vector3f, v2: &mut Vector3f, v3: &mut Vector3f) {
     if v1.x.abs() > v1.y.abs() {
         *v2 = Vector3f {
@@ -795,23 +787,21 @@ where
 
 impl<T> Index<u8> for Point2<T> {
     type Output = T;
-    #[inline]
     fn index(&self, index: u8) -> &T {
+        // panic!("Check failed: i >= 0 && i <= 1")
         match index {
             0 => &self.x,
-            1 => &self.y,
-            _ => panic!("Check failed: i >= 0 && i <= 1"),
+            _ => &self.y,
         }
     }
 }
 
 impl<T> IndexMut<u8> for Point2<T> {
-    #[inline]
     fn index_mut(&mut self, index: u8) -> &mut T {
+        // panic!("Check failed: i >= 0 && i <= 1")
         match index {
             0 => &mut self.x,
-            1 => &mut self.y,
-            _ => panic!("Check failed: i >= 0 && i <= 1"),
+            _ => &mut self.y,
         }
     }
 }
@@ -1054,22 +1044,22 @@ impl DivAssign<Float> for Point3<f32> {
 impl<T> Index<u8> for Point3<T> {
     type Output = T;
     fn index(&self, index: u8) -> &T {
+        // panic!("Check failed: i >= 0 && i <= 2")
         match index {
             0 => &self.x,
             1 => &self.y,
-            2 => &self.z,
-            _ => panic!("Check failed: i >= 0 && i <= 2"),
+            _ => &self.z,
         }
     }
 }
 
 impl<T> IndexMut<u8> for Point3<T> {
     fn index_mut(&mut self, index: u8) -> &mut T {
+        // panic!("Check failed: i >= 0 && i <= 2")
         match index {
             0 => &mut self.x,
             1 => &mut self.y,
-            2 => &mut self.z,
-            _ => panic!("Check failed: i >= 0 && i <= 2"),
+            _ => &mut self.z,
         }
     }
 }
@@ -1234,7 +1224,6 @@ pub struct Normal3<T> {
 impl Normal3<Float> {
     /// Compute a new normal pointing in the same direction but with unit
     /// length.
-    #[inline]
     pub fn normalize(&self) -> Normal3<Float> {
         *self / self.length()
     }
@@ -1313,22 +1302,22 @@ where
 impl<T> Index<u8> for Normal3<T> {
     type Output = T;
     fn index(&self, index: u8) -> &T {
+        // panic!("Check failed: i >= 0 && i <= 2")
         match index {
             0 => &self.x,
             1 => &self.y,
-            2 => &self.z,
-            _ => panic!("Check failed: i >= 0 && i <= 2"),
+            _ => &self.z,
         }
     }
 }
 
 impl<T> IndexMut<u8> for Normal3<T> {
     fn index_mut(&mut self, index: u8) -> &mut T {
+        // panic!("Check failed: i >= 0 && i <= 2")
         match index {
             0 => &mut self.x,
             1 => &mut self.y,
-            2 => &mut self.z,
-            _ => panic!("Check failed: i >= 0 && i <= 2"),
+            _ => &mut self.z,
         }
     }
 }
@@ -1384,7 +1373,6 @@ impl<T> From<Vector3<T>> for Normal3<T> {
 
 /// Given a normal and a vector in 3D, the cross product is a vector
 /// that is perpendicular to both of them.
-#[inline]
 pub fn nrm_cross_vec3(n1: &Normal3f, v2: &Vector3f) -> Vector3f {
     let n1x: f64 = n1.x as f64;
     let n1y: f64 = n1.y as f64;
@@ -1744,7 +1732,6 @@ impl Bounds3<Float> {
         *hitt1 = t1;
         true
     }
-    #[inline]
     pub fn intersect_p(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: &[u8; 3]) -> bool {
         // check for ray intersection against $x$ and $y$ slabs
         let mut t_min: Float = (self[dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
@@ -1783,12 +1770,11 @@ impl Bounds3<Float> {
 
 impl<T> Index<u8> for Bounds3<T> {
     type Output = Point3<T>;
-    #[inline]
     fn index(&self, i: u8) -> &Point3<T> {
+        // panic!("Invalid index!")
         match i {
             0 => &self.p_min,
-            1 => &self.p_max,
-            _ => panic!("Invalid index!"),
+            _ => &self.p_max,
         }
     }
 }
