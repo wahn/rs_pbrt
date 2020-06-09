@@ -6,6 +6,7 @@
 use std::ops::{Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub};
 // others
 use num::Zero;
+use strum_macros::EnumIter;
 // pbrt
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, find_interval, lerp};
@@ -1517,6 +1518,14 @@ pub enum SpectrumType {
     Illuminant,
 }
 
+#[derive(EnumIter, Debug, Copy, Clone)]
+#[repr(u8)]
+pub enum RGBEnum {
+    Red = 0,
+    Green = 1,
+    Blue = 2,
+}
+
 #[derive(Debug, Default, Copy, Clone)]
 pub struct RGBSpectrum {
     pub c: [Float; 3],
@@ -1782,25 +1791,23 @@ impl Zero for RGBSpectrum {
     }
 }
 
-impl Index<usize> for RGBSpectrum {
+impl Index<RGBEnum> for RGBSpectrum {
     type Output = Float;
-    fn index(&self, index: usize) -> &Float {
-        // panic!("Check failed: i >= 0 && i <= 2")
+    fn index(&self, index: RGBEnum) -> &Float {
         match index {
-            0 => &self.c[0],
-            1 => &self.c[1],
-            _ => &self.c[2],
+            RGBEnum::Red => &self.c[0],
+            RGBEnum::Green => &self.c[1],
+            RGBEnum::Blue => &self.c[2],
         }
     }
 }
 
-impl IndexMut<usize> for RGBSpectrum {
-    fn index_mut(&mut self, index: usize) -> &mut Float {
-        // panic!("Check failed: i >= 0 && i <= 2")
+impl IndexMut<RGBEnum> for RGBSpectrum {
+    fn index_mut(&mut self, index: RGBEnum) -> &mut Float {
         match index {
-            0 => &mut self.c[0],
-            1 => &mut self.c[1],
-            _ => &mut self.c[2],
+            RGBEnum::Red => &mut self.c[0],
+            RGBEnum::Green => &mut self.c[1],
+            RGBEnum::Blue => &mut self.c[2],
         }
     }
 }

@@ -8,6 +8,8 @@ use std::borrow::Borrow;
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::Arc;
+// other
+use strum::IntoEnumIterator;
 // pbrt
 use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_nrm, nrm_dot_vec3, pnt3_distance, vec3_dot_nrm, vec3_dot_vec3,
@@ -25,6 +27,7 @@ use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{cos_theta, fr_dielectric};
 use crate::core::reflection::{Bsdf, Bxdf, BxdfType};
 use crate::core::scene::Scene;
+use crate::core::spectrum::RGBEnum;
 
 pub struct TabulatedBssrdf {
     // BSSRDF Protected Data
@@ -56,12 +59,20 @@ impl TabulatedBssrdf {
     ) -> Self {
         let sigma_t: Spectrum = *sigma_a + *sigma_s;
         let mut rho: Spectrum = Spectrum::new(0.0 as Float);
-        for c in 0..3 {
-            if sigma_t[c] != 0.0 as Float {
-                rho.c[c] = sigma_s[c] / sigma_t[c];
-            } else {
-                rho.c[c] = 0.0 as Float;
-            }
+        if sigma_t[RGBEnum::Red] != 0.0 as Float {
+            rho[RGBEnum::Red] = sigma_s[RGBEnum::Red] / sigma_t[RGBEnum::Red];
+        } else {
+            rho[RGBEnum::Red] = 0.0 as Float;
+        }
+        if sigma_t[RGBEnum::Green] != 0.0 as Float {
+            rho[RGBEnum::Green] = sigma_s[RGBEnum::Green] / sigma_t[RGBEnum::Green];
+        } else {
+            rho[RGBEnum::Green] = 0.0 as Float;
+        }
+        if sigma_t[RGBEnum::Blue] != 0.0 as Float {
+            rho[RGBEnum::Blue] = sigma_s[RGBEnum::Blue] / sigma_t[RGBEnum::Blue];
+        } else {
+            rho[RGBEnum::Blue] = 0.0 as Float;
         }
         let ns: Normal3f = po.shading.n;
         let ss: Vector3f = po.shading.dpdu.normalize();
@@ -117,7 +128,7 @@ impl TabulatedBssrdf {
         let axis_prob: [Float; 3] = [0.25 as Float, 0.25 as Float, 0.5 as Float];
         let ch_prob: Float = 1.0 as Float / 3.0 as Float;
         for axis in 0..3_usize {
-            for ch in 0..3_usize {
+            for ch in RGBEnum::iter() {
                 pdf += self.pdf_sr(ch, r_proj[axis])
                     * n_local[axis as u8].abs()
                     * ch_prob
@@ -160,16 +171,21 @@ impl TabulatedBssrdf {
             u1 = (u1 - 0.75 as Float) * 4.0 as Float;
         }
         // choose spectral channel for BSSRDF sampling
-        let ch: usize = clamp_t((u1 * 3.0 as Float) as usize, 0_usize, 2_usize);
+        let ch: u8 = clamp_t((u1 * 3.0 as Float) as u8, 0_u8, 2_u8);
+        let ch_enum: RGBEnum = match ch {
+            0 => RGBEnum::Red,
+            1 => RGBEnum::Green,
+            _ => RGBEnum::Blue,
+        };
         u1 = u1 * 3.0 as Float - ch as Float;
         // sample BSSRDF profile in polar coordinates
-        let r: Float = self.sample_sr(ch, u2.x);
+        let r: Float = self.sample_sr(ch_enum, u2.x);
         if r < 0.0 as Float {
             return Spectrum::default();
         }
         let phi: Float = 2.0 as Float * PI * u2.y;
         // compute BSSRDF profile bounds and intersection height
-        let r_max: Float = self.sample_sr(ch, 0.999 as Float);
+        let r_max: Float = self.sample_sr(ch_enum, 0.999 as Float);
         if r >= r_max {
             return Spectrum::default();
         }
@@ -210,7 +226,7 @@ impl TabulatedBssrdf {
                 base.medium_interface = None;
                 // append admissible intersection to _IntersectionChain_
                 if let Some(geo_prim_raw) = si.primitive {
-		    let geo_prim = unsafe { &*geo_prim_raw };
+                    let geo_prim = unsafe { &*geo_prim_raw };
                     if let Some(material) = geo_prim.get_material() {
                         //     if (ptr->si.primitive->GetMaterial() == this->material) {
                         if Arc::ptr_eq(&material, &self.material) {
@@ -325,7 +341,7 @@ impl TabulatedBssrdf {
         sr *= self.sigma_t * self.sigma_t;
         sr.clamp(0.0 as Float, std::f32::INFINITY as Float)
     }
-    pub fn pdf_sr(&self, ch: usize, r: Float) -> Float {
+    pub fn pdf_sr(&self, ch: RGBEnum, r: Float) -> Float {
         // convert $r$ into unitless optical radius $r_{\roman{optical}}$
         let r_optical: Float = r * self.sigma_t[ch];
         // compute spline weights to interpolate BSSRDF density on channel _ch_
@@ -335,7 +351,7 @@ impl TabulatedBssrdf {
         let mut radius_weights: [Float; 4] = [0.0 as Float; 4];
         if !catmull_rom_weights(
             &self.table.rho_samples,
-            self.rho.c[ch],
+            self.rho[ch],
             &mut rho_offset,
             &mut rho_weights,
         ) || !catmull_rom_weights(
@@ -371,7 +387,7 @@ impl TabulatedBssrdf {
         }
         (0.0 as Float).max(sr * self.sigma_t[ch] * self.sigma_t[ch] / rho_eff)
     }
-    pub fn sample_sr(&self, ch: usize, u: Float) -> Float {
+    pub fn sample_sr(&self, ch: RGBEnum, u: Float) -> Float {
         if self.sigma_t[ch] == 0.0 as Float {
             return -1.0 as Float;
         }

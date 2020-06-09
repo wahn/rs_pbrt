@@ -21,6 +21,8 @@ ply-rs = "0.1.2"
 rayon = "1.3"
 smallvec = "1.4.0"
 structopt = "0.3.14"
+strum = "0.18.0"
+strum_macros = "0.18.0"
 typed-arena = "2.0.1"
 
 [[bin]]

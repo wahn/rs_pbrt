@@ -1,12 +1,15 @@
 // std
 use std::f32;
 use std::sync::Arc;
+// other
+use strum::IntoEnumIterator;
 // pbrt
 use crate::core::geometry::Ray;
 use crate::core::interaction::MediumInteraction;
 use crate::core::medium::{HenyeyGreenstein, Medium};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampler::Sampler;
+use crate::core::spectrum::RGBEnum;
 
 // see homogeneous.h
 
@@ -39,7 +42,12 @@ impl HomogeneousMedium {
         // TODO: ProfilePhase _(Prof::MediumSample);
         // sample a channel and distance along the ray
         let channel: usize = ((sampler.get_1d() * 3.0 as Float) as usize).min(2_usize);
-        let dist: Float = -((1.0 as Float - sampler.get_1d()).ln()) / self.sigma_t[channel];
+        let channel_rgb: RGBEnum = match channel {
+            0 => RGBEnum::Red,
+            1 => RGBEnum::Green,
+            _ => RGBEnum::Blue,
+        };
+        let dist: Float = -((1.0 as Float - sampler.get_1d()).ln()) / self.sigma_t[channel_rgb];
         let t: Float = (dist / ray.d.length()).min(ray.t_max);
         let sampled_medium: bool = t < ray.t_max;
         let mi_opt = if sampled_medium {
@@ -66,7 +74,7 @@ impl HomogeneousMedium {
             tr
         };
         let mut pdf: Float = 0.0 as Float;
-        for i in 0..3 {
+        for i in RGBEnum::iter() {
             // TODO: Spectrum::nSamples
             pdf += density[i];
         }

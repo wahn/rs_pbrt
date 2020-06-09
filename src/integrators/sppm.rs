@@ -25,6 +25,7 @@ use crate::core::pbrt::{clamp_t, lerp};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::{Bsdf, BxdfType};
 use crate::core::scene::Scene;
+use crate::core::spectrum::RGBEnum;
 use crate::samplers::halton::HaltonSampler;
 
 /// Stochastic Progressive Photon Mapping
@@ -602,8 +603,18 @@ impl SPPMIntegrator {
                                                                                     bsdf_flags,
                                                                                 );
                                                                             for i in 0..3 {
+                                                                                let rgb_i: RGBEnum =
+                                                                                    match i {
+                                                                                        0 =>
+                                                                                            RGBEnum::Red,
+                                                                                        1 =>
+                                                                                            RGBEnum::Green,
+                                                                                        _ =>
+                                                                                            RGBEnum::Blue,
+                                                                                    };
+                                                                                let phi_i: Float = phi[rgb_i];
                                                                                 pixel.phi[i]
-                                                                                    .add(phi[i]);
+                                                                                    .add(phi_i);
                                                                             }
                                                                             pixel.m.fetch_add(
                                                                                 1_i32,
@@ -719,7 +730,11 @@ impl SPPMIntegrator {
                                                 p.radius * (n_new / (p.n + p_m as Float)).sqrt();
                                             let mut phi: Spectrum = Spectrum::default();
                                             for j in 0..3 {
-                                                phi[j] = Float::from(&p.phi[j]);
+                                                match j {
+                                                    0 => { phi[RGBEnum::Red] = Float::from(&p.phi[j]); },
+                                                    1 => { phi[RGBEnum::Green] = Float::from(&p.phi[j]); },
+                                                    _ => { phi[RGBEnum::Blue] = Float::from(&p.phi[j]); },
+                                                }
                                             }
                                             p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new)
                                                 / (p.radius * p.radius);

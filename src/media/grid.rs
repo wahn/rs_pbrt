@@ -8,6 +8,7 @@ use crate::core::medium::{HenyeyGreenstein, Medium};
 use crate::core::pbrt::lerp;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampler::Sampler;
+use crate::core::spectrum::RGBEnum;
 use crate::core::transform::Transform;
 
 // see grid.h
@@ -49,7 +50,7 @@ impl GridDensityMedium {
             nz,
             world_to_medium: Transform::inverse(medium_to_world),
             density: d,
-            sigma_t: (*sigma_s + *sigma_a)[0],
+            sigma_t: (*sigma_s + *sigma_a)[RGBEnum::Red],
             inv_max_density: 1.0 as Float / max_density,
         }
     }
