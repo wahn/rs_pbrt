@@ -16,7 +16,7 @@ use crate::core::bssrdf::TabulatedBssrdf;
 use crate::core::geometry::{
     nrm_faceforward_nrm, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm, vec3_dot_vec3,
 };
-use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f, XYZEnum};
 use crate::core::material::TransportMode;
 use crate::core::medium::{HenyeyGreenstein, Medium, MediumInterface};
 use crate::core::pbrt::SHADOW_EPSILON;
@@ -423,7 +423,7 @@ impl<'a> SurfaceInteraction<'a> {
     ) {
         self.compute_differentials(ray);
         if let Some(primitive_raw) = self.primitive {
-	    let primitive = unsafe { &*primitive_raw };
+            let primitive = unsafe { &*primitive_raw };
             primitive.compute_scattering_functions(
                 self, // arena,
                 mode,
@@ -474,16 +474,16 @@ impl<'a> SurfaceInteraction<'a> {
                     // compute $(u,v)$ offsets at auxiliary points
 
                     // choose two dimensions to use for ray offset computation
-                    let mut dim: [u8; 2] = [0_u8; 2];
+                    let mut dim: [XYZEnum; 2] = [XYZEnum::X; 2];
                     if self.n.x.abs() > self.n.y.abs() && self.n.x.abs() > self.n.z.abs() {
-                        dim[0] = 1;
-                        dim[1] = 2;
+                        dim[0] = XYZEnum::Y;
+                        dim[1] = XYZEnum::Z;
                     } else if self.n.y.abs() > self.n.z.abs() {
-                        dim[0] = 0;
-                        dim[1] = 2;
+                        dim[0] = XYZEnum::X;
+                        dim[1] = XYZEnum::Z;
                     } else {
-                        dim[0] = 0;
-                        dim[1] = 1;
+                        dim[0] = XYZEnum::X;
+                        dim[1] = XYZEnum::Y;
                     }
 
                     // initialize _a_, _bx_, and _by_ matrices for offset computation
@@ -513,7 +513,7 @@ impl<'a> SurfaceInteraction<'a> {
     }
     pub fn le(&self, w: &Vector3f) -> Spectrum {
         if let Some(primitive_raw) = self.primitive {
-	    let primitive = unsafe { &*primitive_raw };
+            let primitive = unsafe { &*primitive_raw };
             if let Some(area_light) = primitive.get_area_light() {
                 // create InteractionCommon from self
                 let interaction: InteractionCommon = InteractionCommon {

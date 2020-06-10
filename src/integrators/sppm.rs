@@ -5,6 +5,7 @@ use std::sync::Arc;
 // others
 use atom::*;
 use atomic::Atomic;
+use strum::IntoEnumIterator;
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
@@ -15,6 +16,7 @@ use crate::core::geometry::{
 };
 use crate::core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f,
+    XYZEnum,
 };
 use crate::core::integrator::{compute_light_power_distribution, uniform_sample_one_light};
 use crate::core::interaction::{Interaction, SurfaceInteraction};
@@ -352,9 +354,9 @@ impl SPPMIntegrator {
                     let max_diag: Float = vec3_max_component(&diag);
                     let base_grid_res: i32 = (max_diag / max_radius).floor() as i32;
                     assert!(base_grid_res > 0_i32);
-                    for i in 0..3 as usize {
-                        grid_res[i] = ((base_grid_res as Float * diag[i as u8] / max_diag).floor()
-                            as i32)
+                    for i in XYZEnum::iter() {
+                        grid_res[i as usize] = ((base_grid_res as Float * diag[i] / max_diag)
+                            .floor() as i32)
                             .max(1);
                     }
                     // add visible points to SPPM grid
@@ -731,9 +733,16 @@ impl SPPMIntegrator {
                                             let mut phi: Spectrum = Spectrum::default();
                                             for j in 0..3 {
                                                 match j {
-                                                    0 => { phi[RGBEnum::Red] = Float::from(&p.phi[j]); },
-                                                    1 => { phi[RGBEnum::Green] = Float::from(&p.phi[j]); },
-                                                    _ => { phi[RGBEnum::Blue] = Float::from(&p.phi[j]); },
+                                                    0 => {
+                                                        phi[RGBEnum::Red] = Float::from(&p.phi[j]);
+                                                    }
+                                                    1 => {
+                                                        phi[RGBEnum::Green] =
+                                                            Float::from(&p.phi[j]);
+                                                    }
+                                                    _ => {
+                                                        phi[RGBEnum::Blue] = Float::from(&p.phi[j]);
+                                                    }
                                                 }
                                             }
                                             p.tau = (p.tau + p.vp.beta * phi) * (r_new * r_new)
@@ -865,7 +874,7 @@ impl<'p> SPPMPixelListNode<'p> {
 fn to_grid(p: &Point3f, bounds: &Bounds3f, grid_res: &[i32; 3], pi: &mut Point3i) -> bool {
     let mut in_bounds: bool = true;
     let pg: Vector3f = bounds.offset(p);
-    for i in 0..3 as u8 {
+    for i in XYZEnum::iter() {
         (*pi)[i] = (grid_res[i as usize] as Float * pg[i]) as i32;
         in_bounds &= (*pi)[i] >= 0 && (*pi)[i] < grid_res[i as usize];
         (*pi)[i] = clamp_t((*pi)[i], 0, grid_res[i as usize] - 1);

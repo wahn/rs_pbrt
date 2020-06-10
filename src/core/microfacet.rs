@@ -7,7 +7,7 @@
 use std::f32::consts::PI;
 // pbrt
 use crate::core::geometry::{spherical_direction, vec3_abs_dot_vec3};
-use crate::core::geometry::{Point2f, Vector3f};
+use crate::core::geometry::{Point2f, Vector3f, XYEnum};
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{erf, erf_inv};
 use crate::core::reflection::{
@@ -163,18 +163,19 @@ impl BeckmannDistribution {
             let tan_2_theta: Float;
             let mut phi: Float;
             if self.alpha_x == self.alpha_y {
-                let log_sample: Float = (1.0 as Float - u[0]).ln();
+                let log_sample: Float = (1.0 as Float - u[XYEnum::X]).ln();
                 assert!(!log_sample.is_infinite());
                 tan_2_theta = -self.alpha_x * self.alpha_x * log_sample;
-                phi = u[1] * 2.0 as Float * PI;
+                phi = u[XYEnum::Y] * 2.0 as Float * PI;
             } else {
                 // compute _tan_2_theta_ and _phi_ for anisotropic
                 // Beckmann distribution
-                let log_sample: Float = (1.0 as Float - u[0]).ln();
+                let log_sample: Float = (1.0 as Float - u[XYEnum::X]).ln();
                 assert!(!log_sample.is_infinite());
-                phi = (self.alpha_y / self.alpha_x * (2.0 as Float * PI * u[1] + 0.5 * PI).tan())
-                    .atan();
-                if u[1] > 0.5 as Float {
+                phi = (self.alpha_y / self.alpha_x
+                    * (2.0 as Float * PI * u[XYEnum::Y] + 0.5 * PI).tan())
+                .atan();
+                if u[XYEnum::Y] > 0.5 as Float {
                     phi += PI;
                 }
                 let sin_phi: Float = phi.sin();
@@ -198,9 +199,15 @@ impl BeckmannDistribution {
             let mut wh: Vector3f;
             let flip: bool = wo.z < 0.0 as Float;
             if flip {
-                wh = beckmann_sample(&-(*wo), self.alpha_x, self.alpha_y, u[0], u[1]);
+                wh = beckmann_sample(
+                    &-(*wo),
+                    self.alpha_x,
+                    self.alpha_y,
+                    u[XYEnum::X],
+                    u[XYEnum::Y],
+                );
             } else {
-                wh = beckmann_sample(wo, self.alpha_x, self.alpha_y, u[0], u[1]);
+                wh = beckmann_sample(wo, self.alpha_x, self.alpha_y, u[XYEnum::X], u[XYEnum::Y]);
             }
             if flip {
                 wh = -wh;
@@ -292,13 +299,15 @@ impl TrowbridgeReitzDistribution {
         let mut wh: Vector3f;
         if !self.sample_visible_area {
             let cos_theta;
-            let mut phi: Float = (2.0 * PI) * u[1];
+            let mut phi: Float = (2.0 * PI) * u[XYEnum::Y];
             if self.alpha_x == self.alpha_y {
-                let tan_theta2: Float = self.alpha_x * self.alpha_x * u[0] / (1.0 - u[0]);
+                let tan_theta2: Float =
+                    self.alpha_x * self.alpha_x * u[XYEnum::X] / (1.0 - u[XYEnum::X]);
                 cos_theta = 1.0 / (1.0 + tan_theta2).sqrt();
             } else {
-                phi = (self.alpha_y / self.alpha_x * (2.0 * PI * u[1] + 0.5 * PI).tan()).atan();
-                if u[1] > 0.5 {
+                phi = (self.alpha_y / self.alpha_x * (2.0 * PI * u[XYEnum::Y] + 0.5 * PI).tan())
+                    .atan();
+                if u[XYEnum::Y] > 0.5 {
                     phi += PI;
                 }
                 let sin_phi: Float = phi.sin();
@@ -307,7 +316,7 @@ impl TrowbridgeReitzDistribution {
                 let alphay2: Float = self.alpha_y * self.alpha_y;
                 let alpha2: Float =
                     1.0 / (cos_phi * cos_phi / alphax2 + sin_phi * sin_phi / alphay2);
-                let tan_theta2: Float = alpha2 * u[0] / (1.0 - u[0]);
+                let tan_theta2: Float = alpha2 * u[XYEnum::X] / (1.0 - u[XYEnum::X]);
                 cos_theta = 1.0 / (1.0 + tan_theta2).sqrt();
             }
             let sin_theta: Float = (0.0 as Float).max(1.0 - cos_theta * cos_theta).sqrt();
@@ -318,10 +327,22 @@ impl TrowbridgeReitzDistribution {
         } else {
             let flip: bool = wo.z < 0.0;
             if flip {
-                wh = trowbridge_reitz_sample(&-(*wo), self.alpha_x, self.alpha_y, u[0], u[1]);
+                wh = trowbridge_reitz_sample(
+                    &-(*wo),
+                    self.alpha_x,
+                    self.alpha_y,
+                    u[XYEnum::X],
+                    u[XYEnum::Y],
+                );
                 wh = -wh;
             } else {
-                wh = trowbridge_reitz_sample(wo, self.alpha_x, self.alpha_y, u[0], u[1]);
+                wh = trowbridge_reitz_sample(
+                    wo,
+                    self.alpha_x,
+                    self.alpha_y,
+                    u[XYEnum::X],
+                    u[XYEnum::Y],
+                );
             }
         }
         wh

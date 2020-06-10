@@ -1,7 +1,9 @@
 // std
 use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
+// others
+use strum::IntoEnumIterator;
 // pbrt
-use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
+use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i, XYEnum};
 use crate::core::lowdiscrepancy::{
     compute_radical_inverse_permutations, inverse_radical_inverse, radical_inverse,
     scrambled_radical_inverse,
@@ -84,8 +86,8 @@ impl HaltonSampler {
         let res: Vector2i = sample_bounds.p_max - sample_bounds.p_min;
         let mut base_scales: Point2i = Point2i::default();
         let mut base_exponents: Point2i = Point2i::default();
-        for i in 0..2 {
-            let base = if i == 0 { 2 } else { 3 };
+        for i in XYEnum::iter() {
+            let base = if (i as u8) == 0 { 2 } else { 3 };
             let mut scale: i32 = 1_i32;
             let mut exp: i32 = 0_i32;
             while scale < res[i].min(K_MAX_RESOLUTION) {
@@ -96,11 +98,13 @@ impl HaltonSampler {
             base_exponents[i] = exp;
         }
         // compute stride in samples for visiting each pixel area
-        let sample_stride: u64 = base_scales[0] as u64 * base_scales[1] as u64;
+        let sample_stride: u64 = base_scales[XYEnum::X] as u64 * base_scales[XYEnum::Y] as u64;
         // compute multiplicative inverses for _baseScales_
         let mult_inverse: [i64; 2] = [
-            multiplicative_inverse(base_scales[1] as i64, base_scales[0] as i64) as i64,
-            multiplicative_inverse(base_scales[0] as i64, base_scales[1] as i64) as i64,
+            multiplicative_inverse(base_scales[XYEnum::Y] as i64, base_scales[XYEnum::X] as i64)
+                as i64,
+            multiplicative_inverse(base_scales[XYEnum::X] as i64, base_scales[XYEnum::Y] as i64)
+                as i64,
         ];
         HaltonSampler {
             samples_per_pixel,
@@ -169,19 +173,19 @@ impl HaltonSampler {
     pub fn get_index_for_sample(&self, sample_num: u64) -> u64 {
         let pixel_for_offset_x: i32 = self.pixel_for_offset_x.load(Ordering::Relaxed);
         let pixel_for_offset_y: i32 = self.pixel_for_offset_y.load(Ordering::Relaxed);
-        if self.current_pixel[0] != pixel_for_offset_x
-            || self.current_pixel[1] != pixel_for_offset_y
+        if self.current_pixel[XYEnum::X] != pixel_for_offset_x
+            || self.current_pixel[XYEnum::Y] != pixel_for_offset_y
         {
             // compute Halton sample offset for _self.current_pixel_
             self.offset_for_current_pixel
                 .store(0_u64, Ordering::Relaxed);
             if self.sample_stride > 1_u64 {
                 let pm: Point2i = Point2i {
-                    x: mod_t(self.current_pixel[0], K_MAX_RESOLUTION),
-                    y: mod_t(self.current_pixel[1], K_MAX_RESOLUTION),
+                    x: mod_t(self.current_pixel[XYEnum::X], K_MAX_RESOLUTION),
+                    y: mod_t(self.current_pixel[XYEnum::Y], K_MAX_RESOLUTION),
                 };
-                for i in 0..2 {
-                    let dim_offset = if i == 0 {
+                for i in XYEnum::iter() {
+                    let dim_offset = if (i as u8) == 0 {
                         inverse_radical_inverse(2, pm[i] as u64, self.base_exponents[i] as u64)
                     } else {
                         inverse_radical_inverse(3, pm[i] as u64, self.base_exponents[i] as u64)
@@ -200,8 +204,10 @@ impl HaltonSampler {
                     Ordering::Relaxed,
                 );
             }
-            self.pixel_for_offset_x.store(self.current_pixel[0], Ordering::Relaxed);
-            self.pixel_for_offset_y.store(self.current_pixel[1], Ordering::Relaxed);
+            self.pixel_for_offset_x
+                .store(self.current_pixel[XYEnum::X], Ordering::Relaxed);
+            self.pixel_for_offset_y
+                .store(self.current_pixel[XYEnum::Y], Ordering::Relaxed);
         }
         let offset_for_current_pixel: u64 = self.offset_for_current_pixel.load(Ordering::Relaxed);
         offset_for_current_pixel + sample_num * self.sample_stride
@@ -211,9 +217,9 @@ impl HaltonSampler {
             return 0.5 as Float;
         }
         if dim == 0 {
-            radical_inverse(dim as u16, index >> self.base_exponents[0] as u64)
+            radical_inverse(dim as u16, index >> self.base_exponents[XYEnum::X] as u64)
         } else if dim == 1 {
-            radical_inverse(dim as u16, index / self.base_scales[1] as u64)
+            radical_inverse(dim as u16, index / self.base_scales[XYEnum::Y] as u64)
         } else {
             scrambled_radical_inverse(dim as u16, index, self.permutation_for_dimension(dim))
         }

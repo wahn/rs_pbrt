@@ -13,7 +13,7 @@ Accelerator "bvh"
 ##  "float cropwindow" [ 0.3 0.7 0.5 0.7 ]
 ##  "integer outlierrejection_k" [ 10 ]
 ##Sampler "random" "integer pixelsamples" [8]
-Sampler "halton" "integer pixelsamples" [8]
+Sampler "halton" "integer pixelsamples" [128]
 ##Sampler "sobol" "integer pixelsamples" [8]
 ##Sampler "02sequence" "integer pixelsamples" [8]
 ##Sampler "maxmindist" "integer pixelsamples" [8]

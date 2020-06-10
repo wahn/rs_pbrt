@@ -3,7 +3,7 @@ use std;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::bnd3_union_bnd3;
-use crate::core::geometry::{Bounds3f, Ray, Vector3f};
+use crate::core::geometry::{Bounds3f, Ray, Vector3f, XYZEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::light::Light;
 use crate::core::material::Material;
@@ -302,6 +302,11 @@ impl KdTreeAccel {
         }
         // choose split axis position for interior node
         let mut best_axis: i32 = -1;
+        let mut best_axis_i: XYZEnum = match best_axis {
+            0 => XYZEnum::X,
+            1 => XYZEnum::Y,
+            _ => XYZEnum::Z,
+        };
         let mut best_offset: i32 = -1;
         let mut best_cost: Float = std::f32::INFINITY;
         let old_cost: Float = self.isect_cost as Float * n_primitives as Float;
@@ -310,6 +315,11 @@ impl KdTreeAccel {
         let d: Vector3f = node_bounds.p_max - node_bounds.p_min;
         // choose which axis to split along
         let mut axis: u8 = node_bounds.maximum_extent();
+        let mut axis_i: XYZEnum = match axis {
+            0 => XYZEnum::X,
+            1 => XYZEnum::Y,
+            _ => XYZEnum::Z,
+        };
         let mut retries: u8 = 0;
         // avoid 'goto retrySplit;'
         loop {
@@ -319,8 +329,8 @@ impl KdTreeAccel {
             for (i, item) in prim_nums.iter().enumerate().take(n_primitives) {
                 let pn: usize = *item;
                 let bounds: &Bounds3f = &all_prim_bounds[pn];
-                edges[axis as usize][2 * i] = BoundEdge::new(bounds.p_min[axis], pn, true);
-                edges[axis as usize][2 * i + 1] = BoundEdge::new(bounds.p_max[axis], pn, false);
+                edges[axis as usize][2 * i] = BoundEdge::new(bounds.p_min[axis_i], pn, true);
+                edges[axis as usize][2 * i + 1] = BoundEdge::new(bounds.p_max[axis_i], pn, false);
             }
             // sort _edges_ for _axis_
             edges[axis as usize].sort_unstable_by(|e0, e1| {
@@ -343,20 +353,30 @@ impl KdTreeAccel {
                     n_above -= 1;
                 }
                 let edge_t: Float = edges[axis as usize][i].t;
-                if edge_t > node_bounds.p_min[axis] && edge_t < node_bounds.p_max[axis] {
+                if edge_t > node_bounds.p_min[axis_i] && edge_t < node_bounds.p_max[axis_i] {
                     // compute cost for split at _i_th edge
 
                     // compute child surface areas for split at _edge_t_
                     let other_axis_0: u8 = (axis + 1) % 3;
                     let other_axis_1: u8 = (axis + 2) % 3;
+                    let other_axis_0_i: XYZEnum = match other_axis_0 {
+                        0 => XYZEnum::X,
+                        1 => XYZEnum::Y,
+                        _ => XYZEnum::Z,
+                    };
+                    let other_axis_1_i: XYZEnum = match other_axis_1 {
+                        0 => XYZEnum::X,
+                        1 => XYZEnum::Y,
+                        _ => XYZEnum::Z,
+                    };
                     let below_sa: Float = 2.0 as Float
-                        * (d[other_axis_0] * d[other_axis_1]
-                            + (edge_t - node_bounds.p_min[axis])
-                                * (d[other_axis_0] + d[other_axis_1]));
+                        * (d[other_axis_0_i] * d[other_axis_1_i]
+                            + (edge_t - node_bounds.p_min[axis_i])
+                                * (d[other_axis_0_i] + d[other_axis_1_i]));
                     let above_sa: Float = 2.0 as Float
-                        * (d[other_axis_0] * d[other_axis_1]
-                            + (node_bounds.p_max[axis] - edge_t)
-                                * (d[other_axis_0] + d[other_axis_1]));
+                        * (d[other_axis_0_i] * d[other_axis_1_i]
+                            + (node_bounds.p_max[axis_i] - edge_t)
+                                * (d[other_axis_0_i] + d[other_axis_1_i]));
                     let p_below: Float = below_sa * inv_total_sa;
                     let p_above: Float = above_sa * inv_total_sa;
                     let eb = if n_above == 0 || n_below == 0 {
@@ -372,6 +392,11 @@ impl KdTreeAccel {
                     if cost < best_cost {
                         best_cost = cost;
                         best_axis = axis as i32;
+                        best_axis_i = match best_axis {
+                            0 => XYZEnum::X,
+                            1 => XYZEnum::Y,
+                            _ => XYZEnum::Z,
+                        };
                         best_offset = i as i32;
                     }
                 }
@@ -390,6 +415,11 @@ impl KdTreeAccel {
             if best_axis == -1 && retries < 2 {
                 retries += 1;
                 axis = (axis + 1) % 3;
+                axis_i = match axis {
+                    0 => XYZEnum::X,
+                    1 => XYZEnum::Y,
+                    _ => XYZEnum::Z,
+                };
             // goto retrySplit;
             } else {
                 break;
@@ -428,8 +458,8 @@ impl KdTreeAccel {
         let t_split: Float = edges[best_axis as usize][best_offset as usize].t;
         let mut bounds0: Bounds3f = *node_bounds;
         let mut bounds1: Bounds3f = *node_bounds;
-        bounds0.p_max[best_axis as u8] = t_split;
-        bounds1.p_min[best_axis as u8] = t_split;
+        bounds0.p_max[best_axis_i] = t_split;
+        bounds1.p_min[best_axis_i] = t_split;
         // copy prims0
         let mut prim_nums: Vec<usize> = Vec::with_capacity(prims0.len());
         for i in 0..prims0.len() {
@@ -504,10 +534,15 @@ impl KdTreeAccel {
 
                 // compute parametric distance along ray to split plane
                 let axis: u8 = node.split_axis() as u8;
-                let t_plane: Float = (node.split_pos() - ray.o[axis]) * inv_dir[axis];
+                let axis_i: XYZEnum = match axis {
+                    0 => XYZEnum::X,
+                    1 => XYZEnum::Y,
+                    _ => XYZEnum::Z,
+                };
+                let t_plane: Float = (node.split_pos() - ray.o[axis_i]) * inv_dir[axis_i];
                 // get node children pointers for ray
-                let below_first: bool = (ray.o[axis] < node.split_pos())
-                    || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
+                let below_first: bool = (ray.o[axis_i] < node.split_pos())
+                    || (ray.o[axis_i] == node.split_pos() && ray.d[axis_i] <= 0.0 as Float);
                 let first_child: Option<&KdAccelNode>;
                 let second_child: Option<&KdAccelNode>;
                 let first_idx: usize;
@@ -652,10 +687,15 @@ impl KdTreeAccel {
 
                 // compute parametric distance along ray to split plane
                 let axis: u8 = node.split_axis() as u8;
-                let t_plane: Float = (node.split_pos() - ray.o[axis]) * inv_dir[axis];
+                let axis_i: XYZEnum = match axis {
+                    0 => XYZEnum::X,
+                    1 => XYZEnum::Y,
+                    _ => XYZEnum::Z,
+                };
+                let t_plane: Float = (node.split_pos() - ray.o[axis_i]) * inv_dir[axis_i];
                 // get node children pointers for ray
-                let below_first: bool = (ray.o[axis] < node.split_pos())
-                    || (ray.o[axis] == node.split_pos() && ray.d[axis] <= 0.0 as Float);
+                let below_first: bool = (ray.o[axis_i] < node.split_pos())
+                    || (ray.o[axis_i] == node.split_pos() && ray.d[axis_i] <= 0.0 as Float);
                 let first_child: Option<&KdAccelNode>;
                 let second_child: Option<&KdAccelNode>;
                 let first_idx: usize;

@@ -9,7 +9,7 @@ use half::f16;
 use openexr::{FrameBufferMut, InputFile, PixelType};
 // pbrt
 use crate::core::geometry::{spherical_phi, spherical_theta, vec3_coordinate_system};
-use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f, XYEnum};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{LightFlags, VisibilityTester};
 use crate::core::medium::MediumInterface;
@@ -311,8 +311,8 @@ impl InfiniteAreaLight {
             return Spectrum::default();
         }
         // convert infinite light sample point to direction
-        let theta: Float = uv[1] * PI;
-        let phi: Float = uv[0] * 2.0 as Float * PI;
+        let theta: Float = uv[XYEnum::Y] * PI;
+        let phi: Float = uv[XYEnum::X] * 2.0 as Float * PI;
         let cos_theta: Float = theta.cos();
         let sin_theta: Float = theta.sin();
         let sin_phi: Float = phi.sin();
@@ -425,8 +425,8 @@ impl InfiniteAreaLight {
         if map_pdf == 0.0 as Float {
             return Spectrum::default();
         }
-        let theta: Float = uv[1] * PI;
-        let phi: Float = uv[0] * 2.0 as Float * PI;
+        let theta: Float = uv[XYEnum::Y] * PI;
+        let phi: Float = uv[XYEnum::X] * 2.0 as Float * PI;
         let cos_theta: Float = theta.cos();
         let sin_theta: Float = theta.sin();
         let sin_phi: Float = phi.sin();

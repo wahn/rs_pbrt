@@ -1,5 +1,5 @@
 // pbrt
-use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i};
+use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i, XYEnum};
 use crate::core::lowdiscrepancy::{sobol_interval_to_index, sobol_sample};
 use crate::core::paramset::ParamSet;
 use crate::core::pbrt::Float;
@@ -125,9 +125,13 @@ impl SobolSampler {
         let mut s: Float = sobol_sample(index as i64, dim as i32, 0_u64);
         // remap Sobol$'$ dimensions used for pixel samples
         if dim == 0 || dim == 1 {
-            s = s * self.resolution as Float + self.sample_bounds.p_min[dim as u8] as Float;
+            let dim_i: XYEnum = match dim {
+                0 => XYEnum::X,
+                _ => XYEnum::Y,
+            };
+            s = s * self.resolution as Float + self.sample_bounds.p_min[dim_i] as Float;
             s = clamp_t(
-                s - self.current_pixel[dim as u8] as Float,
+                s - self.current_pixel[dim_i] as Float,
                 0.0 as Float,
                 FLOAT_ONE_MINUS_EPSILON,
             );

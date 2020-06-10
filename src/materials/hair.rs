@@ -3,7 +3,7 @@ use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::{Point2f, Vector3f};
+use crate::core::geometry::{Point2f, Vector3f, XYEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::paramset::TextureParams;
@@ -164,7 +164,7 @@ impl HairMaterial {
             }
             sig_a = HairBSDF::sigma_a_from_concentration(ce, cp);
         }
-        let h: Float = -1.0 as Float + 2.0 as Float * si.uv[1];
+        let h: Float = -1.0 as Float + 2.0 as Float * si.uv[XYEnum::Y];
         si.bsdf = Some(Bsdf::new(si, 1.0));
         if let Some(bsdf) = &mut si.bsdf {
             let bxdf_idx: usize = 0;
@@ -432,26 +432,31 @@ impl HairBSDF {
         let cos_theta_o: Float = (0.0 as Float).max(x).sqrt();
         let phi_o: Float = wo.z.atan2(wo.y);
         // derive four random samples from _sample_
-        let mut u: [Point2f; 2] = [demux_float(sample[0]), demux_float(sample[1])];
+        let mut u: [Point2f; 2] = [
+            demux_float(sample[XYEnum::X]),
+            demux_float(sample[XYEnum::Y]),
+        ];
         // determine which term $p$ to sample for hair scattering
         let ap_pdf: [Float; (P_MAX + 1) as usize] = self.compute_ap_pdf(cos_theta_o);
         let mut p: usize = 0;
         for i in 0..P_MAX {
             p = i as usize; // store index in p for later
-            if u[0][0] < ap_pdf[p] {
+            if u[0][XYEnum::X] < ap_pdf[p] {
                 break;
             }
-            u[0][0] -= ap_pdf[p];
+            u[0][XYEnum::X] -= ap_pdf[p];
         }
         // sample $M_p$ to compute $\thetai$
-        u[1][0] = u[1][0].max(1e-5 as Float);
+        u[1][XYEnum::X] = u[1][XYEnum::X].max(1e-5 as Float);
         let cos_theta: Float = 1.0 as Float
             + self.v[p]
-                * (u[1][0] + (1.0 as Float - u[1][0]) * (-2.0 as Float / self.v[p]).exp()).ln();
+                * (u[1][XYEnum::X]
+                    + (1.0 as Float - u[1][XYEnum::X]) * (-2.0 as Float / self.v[p]).exp())
+                .ln();
         let x: Float = 1.0 as Float - (cos_theta * cos_theta);
         assert!(x >= -1e-4);
         let sin_theta: Float = (0.0 as Float).max(x).sqrt();
-        let cos_phi: Float = (2.0 as Float * PI * u[1][1]).cos();
+        let cos_phi: Float = (2.0 as Float * PI * u[1][XYEnum::Y]).cos();
         let mut sin_theta_i: Float = -cos_theta * sin_theta_o + sin_theta * cos_phi * cos_theta_o;
         let x: Float = 1.0 as Float - (sin_theta_i * sin_theta_i);
         assert!(x >= -1e-4);
@@ -481,9 +486,9 @@ impl HairBSDF {
         let gamma_t: Float = clamp_t(sin_gamma_t, -1.0 as Float, 1.0 as Float).asin();
         let dphi = if p < P_MAX as usize {
             phi_fn(p as i32, self.gamma_o, gamma_t)
-                + sample_trimmed_logistic(u[0][1], self.s, -PI, PI)
+                + sample_trimmed_logistic(u[0][XYEnum::Y], self.s, -PI, PI)
         } else {
-            2.0 as Float * PI * u[0][1]
+            2.0 as Float * PI * u[0][XYEnum::Y]
         };
         // compute _wi_ from sampled hair scattering angles
         let phi_i: Float = phi_o + dphi;

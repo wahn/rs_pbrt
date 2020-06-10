@@ -8,7 +8,7 @@
 use std::f32::consts::PI;
 // pbrt
 use crate::core::geometry::{spherical_phi, spherical_theta, vec3_dot_vec3};
-use crate::core::geometry::{Point2f, Point3f, Vector2f, Vector3f};
+use crate::core::geometry::{Point2f, Point3f, Vector2f, Vector3f, XYEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, lerp, log_2};
@@ -115,8 +115,8 @@ impl UVMapping2D {
             y: si.dvdy.get() * self.sv,
         };
         Point2f {
-            x: si.uv[0] * self.su + self.du,
-            y: si.uv[1] * self.sv + self.dv,
+            x: si.uv[XYEnum::X] * self.su + self.du,
+            y: si.uv[XYEnum::Y] * self.sv + self.dv,
         }
     }
 }
@@ -161,15 +161,15 @@ impl SphericalMapping2D {
         let st_delta_y: Point2f = self.sphere(&(si.p + si.dpdy.get() * delta));
         *dstdy = (st_delta_y - st) / delta;
         // handle sphere mapping discontinuity for coordinate differentials
-        if (*dstdx)[1] > 0.5 as Float {
-            (*dstdx)[1] = 1.0 as Float - (*dstdx)[1];
-        } else if (*dstdx)[1] < -0.5 as Float {
-            (*dstdx)[1] = -((*dstdx)[1] + 1.0 as Float);
+        if (*dstdx)[XYEnum::Y] > 0.5 as Float {
+            (*dstdx)[XYEnum::Y] = 1.0 as Float - (*dstdx)[XYEnum::Y];
+        } else if (*dstdx)[XYEnum::Y] < -0.5 as Float {
+            (*dstdx)[XYEnum::Y] = -((*dstdx)[XYEnum::Y] + 1.0 as Float);
         }
-        if (*dstdy)[1] > 0.5 as Float {
-            (*dstdy)[1] = 1.0 as Float - (*dstdy)[1];
-        } else if (*dstdy)[1] < -0.5 as Float {
-            (*dstdy)[1] = -((*dstdy)[1] + 1.0 as Float);
+        if (*dstdy)[XYEnum::Y] > 0.5 as Float {
+            (*dstdy)[XYEnum::Y] = 1.0 as Float - (*dstdy)[XYEnum::Y];
+        } else if (*dstdy)[XYEnum::Y] < -0.5 as Float {
+            (*dstdy)[XYEnum::Y] = -((*dstdy)[XYEnum::Y] + 1.0 as Float);
         }
         st
     }
@@ -206,17 +206,17 @@ impl CylindricalMapping2D {
         let delta: Float = 0.01;
         let st_delta_x: Point2f = self.cylinder(&(si.p + si.dpdx.get() * delta));
         *dstdx = (st_delta_x - st) / delta;
-        if (*dstdx)[1] > 0.5 as Float {
-            (*dstdx)[1] = 1.0 as Float - (*dstdx)[1];
-        } else if (*dstdx)[1] < -0.5 as Float {
-            (*dstdx)[1] = -((*dstdx)[1] + 1.0 as Float);
+        if (*dstdx)[XYEnum::Y] > 0.5 as Float {
+            (*dstdx)[XYEnum::Y] = 1.0 as Float - (*dstdx)[XYEnum::Y];
+        } else if (*dstdx)[XYEnum::Y] < -0.5 as Float {
+            (*dstdx)[XYEnum::Y] = -((*dstdx)[XYEnum::Y] + 1.0 as Float);
         }
         let st_delta_y: Point2f = self.cylinder(&(si.p + si.dpdy.get() * delta));
         *dstdy = (st_delta_y - st) / delta;
-        if (*dstdy)[1] > 0.5 as Float {
-            (*dstdy)[1] = 1.0 as Float - (*dstdy)[1];
-        } else if (*dstdy)[1] < -0.5 as Float {
-            (*dstdy)[1] = -((*dstdy)[1] + 1.0 as Float);
+        if (*dstdy)[XYEnum::Y] > 0.5 as Float {
+            (*dstdy)[XYEnum::Y] = 1.0 as Float - (*dstdy)[XYEnum::Y];
+        } else if (*dstdy)[XYEnum::Y] < -0.5 as Float {
+            (*dstdy)[XYEnum::Y] = -((*dstdy)[XYEnum::Y] + 1.0 as Float);
         }
         st
     }

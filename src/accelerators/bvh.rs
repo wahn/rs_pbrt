@@ -6,7 +6,7 @@ use std::sync::Arc;
 use typed_arena::Arena;
 // pbrt
 use crate::core::geometry::{bnd3_union_bnd3, bnd3_union_pnt3};
-use crate::core::geometry::{Bounds3f, Point3f, Ray, Vector3f};
+use crate::core::geometry::{Bounds3f, Point3f, Ray, Vector3f, XYZEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::light::Light;
 use crate::core::material::Material;
@@ -237,9 +237,14 @@ impl BVHAccel {
                 centroid_bounds = bnd3_union_pnt3(&centroid_bounds, &item.centroid);
             }
             let dim: u8 = centroid_bounds.maximum_extent();
+            let dim_i: XYZEnum = match dim {
+                0 => XYZEnum::X,
+                1 => XYZEnum::Y,
+                _ => XYZEnum::Z,
+            };
             // partition primitives into two sets and build children
             let mut mid: usize = (start + end) / 2_usize;
-            if centroid_bounds.p_max[dim] == centroid_bounds.p_min[dim] {
+            if centroid_bounds.p_max[dim_i] == centroid_bounds.p_min[dim_i] {
                 // create leaf _BVHBuildNode_
                 let first_prim_offset: usize = ordered_prims.len();
                 for item in primitive_info.iter().take(end).skip(start) {
@@ -261,8 +266,8 @@ impl BVHAccel {
                         if n_primitives <= 2 {
                             mid = (start + end) / 2;
                             if start != end - 1
-                                && primitive_info[end - 1].centroid[dim]
-                                    < primitive_info[start].centroid[dim]
+                                && primitive_info[end - 1].centroid[dim_i]
+                                    < primitive_info[start].centroid[dim_i]
                             {
                                 primitive_info.swap(start, end - 1);
                             }
@@ -273,7 +278,7 @@ impl BVHAccel {
                             // initialize _BucketInfo_ for SAH partition buckets
                             for item in primitive_info.iter().take(end).skip(start) {
                                 let mut b: usize = (n_buckets as Float
-                                    * centroid_bounds.offset(&item.centroid)[dim])
+                                    * centroid_bounds.offset(&item.centroid)[dim_i])
                                     as usize;
                                 if b == n_buckets {
                                     b = n_buckets - 1;
@@ -322,7 +327,7 @@ impl BVHAccel {
                                     Vec<BVHPrimitiveInfo>,
                                 ) = primitive_info[start..end].iter().partition(|&pi| {
                                     let mut b: usize = (n_buckets as Float
-                                        * centroid_bounds.offset(&pi.centroid)[dim])
+                                        * centroid_bounds.offset(&pi.centroid)[dim_i])
                                         as usize;
                                     if b == n_buckets {
                                         b = n_buckets - 1;

@@ -178,6 +178,8 @@ use std::ops::{
 use std::sync::Arc;
 // others
 use num;
+use strum::IntoEnumIterator;
+use strum_macros::EnumIter;
 // pbrt
 use crate::core::medium::Medium;
 use crate::core::pbrt::Float;
@@ -194,6 +196,28 @@ pub type Vector2i = Vector2<i32>;
 pub type Vector3f = Vector3<Float>;
 pub type Vector3i = Vector3<i32>;
 pub type Normal3f = Normal3<Float>;
+
+#[derive(EnumIter, Debug, Copy, Clone)]
+#[repr(u8)]
+pub enum XYEnum {
+    X = 0,
+    Y = 1,
+}
+
+#[derive(EnumIter, Debug, Copy, Clone)]
+#[repr(u8)]
+pub enum MinMaxEnum {
+    Min = 0,
+    Max = 1,
+}
+
+#[derive(EnumIter, Debug, Copy, Clone)]
+#[repr(u8)]
+pub enum XYZEnum {
+    X = 0,
+    Y = 1,
+    Z = 2,
+}
 
 #[derive(Debug, Default, Copy, Clone)]
 pub struct Vector2<T> {
@@ -222,22 +246,20 @@ impl<T> Vector2<T> {
     }
 }
 
-impl<T> Index<u8> for Vector2<T> {
+impl<T> Index<XYEnum> for Vector2<T> {
     type Output = T;
-    fn index(&self, index: u8) -> &T {
-        // panic!("Check failed: i >= 0 && i <= 1")
+    fn index(&self, index: XYEnum) -> &T {
         match index {
-            0 => &self.x,
+            XYEnum::X => &self.x,
             _ => &self.y,
         }
     }
 }
 
-impl<T> IndexMut<u8> for Vector2<T> {
-    fn index_mut(&mut self, index: u8) -> &mut T {
-        // panic!("Check failed: i >= 0 && i <= 1")
+impl<T> IndexMut<XYEnum> for Vector2<T> {
+    fn index_mut(&mut self, index: XYEnum) -> &mut T {
         match index {
-            0 => &mut self.x,
+            XYEnum::X => &mut self.x,
             _ => &mut self.y,
         }
     }
@@ -506,24 +528,22 @@ where
     }
 }
 
-impl<T> Index<u8> for Vector3<T> {
+impl<T> Index<XYZEnum> for Vector3<T> {
     type Output = T;
-    fn index(&self, index: u8) -> &T {
-        // panic!("Check failed: i >= 0 && i <= 2")
+    fn index(&self, index: XYZEnum) -> &T {
         match index {
-            0 => &self.x,
-            1 => &self.y,
+            XYZEnum::X => &self.x,
+            XYZEnum::Y => &self.y,
             _ => &self.z,
         }
     }
 }
 
-impl<T> IndexMut<u8> for Vector3<T> {
-    fn index_mut(&mut self, index: u8) -> &mut T {
-        // panic!("Check failed: i >= 0 && i <= 2"),
+impl<T> IndexMut<XYZEnum> for Vector3<T> {
+    fn index_mut(&mut self, index: XYZEnum) -> &mut T {
         match index {
-            0 => &mut self.x,
-            1 => &mut self.y,
+            XYZEnum::X => &mut self.x,
+            XYZEnum::Y => &mut self.y,
             _ => &mut self.z,
         }
     }
@@ -785,22 +805,20 @@ where
     }
 }
 
-impl<T> Index<u8> for Point2<T> {
+impl<T> Index<XYEnum> for Point2<T> {
     type Output = T;
-    fn index(&self, index: u8) -> &T {
-        // panic!("Check failed: i >= 0 && i <= 1")
+    fn index(&self, index: XYEnum) -> &T {
         match index {
-            0 => &self.x,
+            XYEnum::X => &self.x,
             _ => &self.y,
         }
     }
 }
 
-impl<T> IndexMut<u8> for Point2<T> {
-    fn index_mut(&mut self, index: u8) -> &mut T {
-        // panic!("Check failed: i >= 0 && i <= 1")
+impl<T> IndexMut<XYEnum> for Point2<T> {
+    fn index_mut(&mut self, index: XYEnum) -> &mut T {
         match index {
-            0 => &mut self.x,
+            XYEnum::X => &mut self.x,
             _ => &mut self.y,
         }
     }
@@ -1041,24 +1059,22 @@ impl DivAssign<Float> for Point3<f32> {
     }
 }
 
-impl<T> Index<u8> for Point3<T> {
+impl<T> Index<XYZEnum> for Point3<T> {
     type Output = T;
-    fn index(&self, index: u8) -> &T {
-        // panic!("Check failed: i >= 0 && i <= 2")
+    fn index(&self, index: XYZEnum) -> &T {
         match index {
-            0 => &self.x,
-            1 => &self.y,
+            XYZEnum::X => &self.x,
+            XYZEnum::Y => &self.y,
             _ => &self.z,
         }
     }
 }
 
-impl<T> IndexMut<u8> for Point3<T> {
-    fn index_mut(&mut self, index: u8) -> &mut T {
-        // panic!("Check failed: i >= 0 && i <= 2")
+impl<T> IndexMut<XYZEnum> for Point3<T> {
+    fn index_mut(&mut self, index: XYZEnum) -> &mut T {
         match index {
-            0 => &mut self.x,
-            1 => &mut self.y,
+            XYZEnum::X => &mut self.x,
+            XYZEnum::Y => &mut self.y,
             _ => &mut self.z,
         }
     }
@@ -1164,7 +1180,7 @@ pub fn pnt3_offset_ray_origin(
     }
     let mut po: Point3f = *p + offset;
     // round offset point _po_ away from _p_
-    for i in 0..3 {
+    for i in XYZEnum::iter() {
         if offset[i] > 0.0 as Float {
             po[i] = next_float_up(po[i]);
         } else if offset[i] < 0.0 as Float {
@@ -1299,24 +1315,22 @@ where
     }
 }
 
-impl<T> Index<u8> for Normal3<T> {
+impl<T> Index<XYZEnum> for Normal3<T> {
     type Output = T;
-    fn index(&self, index: u8) -> &T {
-        // panic!("Check failed: i >= 0 && i <= 2")
+    fn index(&self, index: XYZEnum) -> &T {
         match index {
-            0 => &self.x,
-            1 => &self.y,
+            XYZEnum::X => &self.x,
+            XYZEnum::Y => &self.y,
             _ => &self.z,
         }
     }
 }
 
-impl<T> IndexMut<u8> for Normal3<T> {
-    fn index_mut(&mut self, index: u8) -> &mut T {
-        // panic!("Check failed: i >= 0 && i <= 2")
+impl<T> IndexMut<XYZEnum> for Normal3<T> {
+    fn index_mut(&mut self, index: XYZEnum) -> &mut T {
         match index {
-            0 => &mut self.x,
-            1 => &mut self.y,
+            XYZEnum::X => &mut self.x,
+            XYZEnum::Y => &mut self.y,
             _ => &mut self.z,
         }
     }
@@ -1707,7 +1721,7 @@ impl Bounds3<Float> {
     pub fn intersect_b(&self, ray: &Ray, hitt0: &mut Float, hitt1: &mut Float) -> bool {
         let mut t0: Float = 0.0;
         let mut t1: Float = ray.t_max;
-        for i in 0..3 {
+        for i in XYZEnum::iter() {
             // update interval for _i_th bounding box slab
             let inv_ray_dir: Float = 1.0 as Float / ray.d[i];
             let mut t_near: Float = (self.p_min[i] - ray.o[i]) * inv_ray_dir;
@@ -1733,11 +1747,35 @@ impl Bounds3<Float> {
         true
     }
     pub fn intersect_p(&self, ray: &Ray, inv_dir: &Vector3f, dir_is_neg: &[u8; 3]) -> bool {
+        let dir_is_neg_0: MinMaxEnum = match dir_is_neg[0] {
+            0 => MinMaxEnum::Min,
+            _ => MinMaxEnum::Max,
+        };
+        let dir_is_not_neg_0: MinMaxEnum = match dir_is_neg[0] {
+            0 => MinMaxEnum::Max,
+            _ => MinMaxEnum::Min,
+        };
+        let dir_is_neg_1: MinMaxEnum = match dir_is_neg[1] {
+            0 => MinMaxEnum::Min,
+            _ => MinMaxEnum::Max,
+        };
+        let dir_is_not_neg_1: MinMaxEnum = match dir_is_neg[1] {
+            0 => MinMaxEnum::Max,
+            _ => MinMaxEnum::Min,
+        };
+        let dir_is_neg_2: MinMaxEnum = match dir_is_neg[2] {
+            0 => MinMaxEnum::Min,
+            _ => MinMaxEnum::Max,
+        };
+        let dir_is_not_neg_2: MinMaxEnum = match dir_is_neg[2] {
+            0 => MinMaxEnum::Max,
+            _ => MinMaxEnum::Min,
+        };
         // check for ray intersection against $x$ and $y$ slabs
-        let mut t_min: Float = (self[dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
-        let mut t_max: Float = (self[1_u8 - dir_is_neg[0]].x - ray.o.x) * inv_dir.x;
-        let ty_min: Float = (self[dir_is_neg[1]].y - ray.o.y) * inv_dir.y;
-        let mut ty_max: Float = (self[1_u8 - dir_is_neg[1]].y - ray.o.y) * inv_dir.y;
+        let mut t_min: Float = (self[dir_is_neg_0].x - ray.o.x) * inv_dir.x;
+        let mut t_max: Float = (self[dir_is_not_neg_0].x - ray.o.x) * inv_dir.x;
+        let ty_min: Float = (self[dir_is_neg_1].y - ray.o.y) * inv_dir.y;
+        let mut ty_max: Float = (self[dir_is_not_neg_1].y - ray.o.y) * inv_dir.y;
         // update _t_max_ and _ty_max_ to ensure robust bounds intersection
         t_max *= 1.0 + 2.0 * gamma(3_i32);
         ty_max *= 1.0 + 2.0 * gamma(3_i32);
@@ -1751,8 +1789,8 @@ impl Bounds3<Float> {
             t_max = ty_max;
         }
         // check for ray intersection against $z$ slab
-        let tz_min: Float = (self[dir_is_neg[2]].z - ray.o.z) * inv_dir.z;
-        let mut tz_max: Float = (self[1_u8 - dir_is_neg[2]].z - ray.o.z) * inv_dir.z;
+        let tz_min: Float = (self[dir_is_neg_2].z - ray.o.z) * inv_dir.z;
+        let mut tz_max: Float = (self[dir_is_not_neg_2].z - ray.o.z) * inv_dir.z;
         // update _tz_max_ to ensure robust bounds intersection
         tz_max *= 1.0 + 2.0 * gamma(3_i32);
         if t_min > tz_max || tz_min > t_max {
@@ -1768,12 +1806,11 @@ impl Bounds3<Float> {
     }
 }
 
-impl<T> Index<u8> for Bounds3<T> {
+impl<T> Index<MinMaxEnum> for Bounds3<T> {
     type Output = Point3<T>;
-    fn index(&self, i: u8) -> &Point3<T> {
-        // panic!("Invalid index!")
+    fn index(&self, i: MinMaxEnum) -> &Point3<T> {
         match i {
-            0 => &self.p_min,
+            MinMaxEnum::Min => &self.p_min,
             _ => &self.p_max,
         }
     }

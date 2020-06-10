@@ -4,7 +4,7 @@ use std::sync::Arc;
 use num::Zero;
 
 use crate::core::geometry::{spherical_direction, vec3_abs_dot_vec3, vec3_dot_vec3};
-use crate::core::geometry::{Point2f, Vector3f};
+use crate::core::geometry::{Point2f, Vector3f, XYEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
 use crate::core::microfacet::{MicrofacetDistribution, TrowbridgeReitzDistribution};
@@ -522,10 +522,10 @@ impl DisneyClearCoat {
         let alpha2 = self.gloss * self.gloss;
         let cos_theta = Float::sqrt(Float::max(
             0.0,
-            (1.0 - Float::powf(alpha2, 1.0 - u[0])) / (1.0 - alpha2),
+            (1.0 - Float::powf(alpha2, 1.0 - u[XYEnum::X])) / (1.0 - alpha2),
         ));
         let sin_theta = Float::sqrt(Float::max(0.0, 1.0 - cos_theta * cos_theta));
-        let phi = 2.0 * f32::consts::PI * u[1];
+        let phi = 2.0 * f32::consts::PI * u[XYEnum::Y];
         let mut wh = spherical_direction(sin_theta, cos_theta, phi);
         if !vec3_same_hemisphere_vec3(wo, &wh) {
             wh = -wh;

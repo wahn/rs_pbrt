@@ -8,7 +8,7 @@ use crate::core::geometry::{
     nrm_abs_dot_vec3, pnt3_distance, pnt3_distance_squared, pnt3_offset_ray_origin,
     spherical_direction_vec3, vec3_coordinate_system, vec3_cross_vec3, vec3_dot_vec3,
 };
-use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f, XYEnum};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::material::Material;
 use crate::core::pbrt::Float;
@@ -424,11 +424,11 @@ impl Sphere {
         let sin_theta_max2: Float =
             self.radius * self.radius / pnt3_distance_squared(&iref.p, &p_center);
         let cos_theta_max: Float = (0.0 as Float).max(1.0 as Float - sin_theta_max2).sqrt();
-        let cos_theta: Float = (1.0 as Float - u[0]) + u[0] * cos_theta_max;
+        let cos_theta: Float = (1.0 as Float - u[XYEnum::X]) + u[XYEnum::X] * cos_theta_max;
         let sin_theta: Float = (0.0 as Float)
             .max(1.0 as Float - cos_theta * cos_theta)
             .sqrt();
-        let phi: Float = u[1] * 2.0 as Float * PI;
+        let phi: Float = u[XYEnum::Y] * 2.0 as Float * PI;
         // compute angle $\alpha$ from center of sphere to sampled point on surface
         let dc: Float = pnt3_distance(&iref.p, &p_center);
         let ds: Float = dc * cos_theta
@@ -479,7 +479,7 @@ impl Sphere {
             // performing this intersection. Hack for the "San Miguel"
             // scene, where this is used to make an invisible area light.
             let mut t_hit: Float = 0.0;
-            let mut isect_light: SurfaceInteraction = SurfaceInteraction::default(); 
+            let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
             if self.intersect(&ray, &mut t_hit, &mut isect_light) {
                 // convert light sample weight to solid angle measure
                 let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.p)

@@ -8,13 +8,13 @@ use std::borrow::Borrow;
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::Arc;
-// other
+// others
 use strum::IntoEnumIterator;
 // pbrt
 use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_nrm, nrm_dot_vec3, pnt3_distance, vec3_dot_nrm, vec3_dot_vec3,
 };
-use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f, XYZEnum};
 use crate::core::interaction::{InteractionCommon, SurfaceInteraction};
 use crate::core::interpolation::{
     catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d,
@@ -127,12 +127,12 @@ impl TabulatedBssrdf {
         let mut pdf: Float = 0.0;
         let axis_prob: [Float; 3] = [0.25 as Float, 0.25 as Float, 0.5 as Float];
         let ch_prob: Float = 1.0 as Float / 3.0 as Float;
-        for axis in 0..3_usize {
+        for axis in XYZEnum::iter() {
             for ch in RGBEnum::iter() {
-                pdf += self.pdf_sr(ch, r_proj[axis])
-                    * n_local[axis as u8].abs()
+                pdf += self.pdf_sr(ch, r_proj[axis as usize])
+                    * n_local[axis].abs()
                     * ch_prob
-                    * axis_prob[axis];
+                    * axis_prob[axis as usize];
             }
         }
         pdf

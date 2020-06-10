@@ -1,7 +1,7 @@
 // std
 use std::f32;
 use std::sync::Arc;
-// other
+// others
 use strum::IntoEnumIterator;
 // pbrt
 use crate::core::geometry::Ray;

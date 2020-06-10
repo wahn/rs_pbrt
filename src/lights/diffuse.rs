@@ -4,7 +4,7 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system};
-use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
+use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f, XYEnum};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{LightFlags, VisibilityTester};
 use crate::core::medium::{Medium, MediumInterface};
@@ -139,11 +139,12 @@ impl DiffuseAreaLight {
             // choose a side to sample and then remap u[0] to [0,1]
             // before applying cosine-weighted hemisphere sampling for
             // the chosen side.
-            if u[0] < 0.5 as Float {
-                u[0] = (u[0] * 2.0 as Float).min(FLOAT_ONE_MINUS_EPSILON);
+            if u[XYEnum::X] < 0.5 as Float {
+                u[XYEnum::X] = (u[XYEnum::X] * 2.0 as Float).min(FLOAT_ONE_MINUS_EPSILON);
                 w = cosine_sample_hemisphere(u);
             } else {
-                u[0] = ((u[0] - 0.5 as Float) * 2.0 as Float).min(FLOAT_ONE_MINUS_EPSILON);
+                u[XYEnum::X] =
+                    ((u[XYEnum::X] - 0.5 as Float) * 2.0 as Float).min(FLOAT_ONE_MINUS_EPSILON);
                 w = cosine_sample_hemisphere(u);
                 w.z *= -1.0 as Float;
             }

@@ -1,11 +1,13 @@
 //! Various probability distributions for sampling light sources.
 
 // std
-use atomic::{Atomic, Ordering};
 use std;
 use std::sync::{Arc, RwLock};
+// others
+use atomic::{Atomic, Ordering};
+use strum::IntoEnumIterator;
 // pbrt
-use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f};
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f, XYZEnum};
 use crate::core::integrator::compute_light_power_distribution;
 use crate::core::interaction::InteractionCommon;
 use crate::core::light::VisibilityTester;
@@ -128,18 +130,23 @@ impl SpatialLightDistribution {
         // roughly cube shaped.
         let b: Bounds3f = scene.world_bound();
         let diag: Vector3f = b.diagonal();
-        let bmax: Float = diag[b.maximum_extent()];
+        let bmax_i: XYZEnum = match b.maximum_extent() {
+            0 => XYZEnum::X,
+            1 => XYZEnum::Y,
+            _ => XYZEnum::Z,
+        };
+        let bmax: Float = diag[bmax_i];
         let mut n_voxels: [i32; 3] = [0_i32; 3];
-        for i in 0..3 {
-            n_voxels[i] = std::cmp::max(
+        for i in XYZEnum::iter() {
+            n_voxels[i as usize] = std::cmp::max(
                 1 as i32,
-                (diag[i as u8] / bmax * max_voxels as Float).round() as i32,
+                (diag[i] / bmax * max_voxels as Float).round() as i32,
             );
             // in the Lookup() method, we require that 20 or fewer
             // bits be sufficient to represent each coordinate
             // value. It's fairly hard to imagine that this would ever
             // be a problem.
-            assert!(n_voxels[i] < (1 << 20));
+            assert!(n_voxels[i as usize] < (1 << 20));
         }
         let hash_table_size: usize = (4 as i32 * n_voxels[0] * n_voxels[1] * n_voxels[2]) as usize;
         let mut hash_table: Vec<HashEntry> = Vec::with_capacity(hash_table_size);
@@ -164,14 +171,14 @@ impl SpatialLightDistribution {
         // Compute the world-space bounding box of the voxel
         // corresponding to |pi|.
         let p0: Point3f = Point3f {
-            x: pi[0] as Float / self.n_voxels[0] as Float,
-            y: pi[1] as Float / self.n_voxels[1] as Float,
-            z: pi[2] as Float / self.n_voxels[2] as Float,
+            x: pi[XYZEnum::X] as Float / self.n_voxels[0] as Float,
+            y: pi[XYZEnum::Y] as Float / self.n_voxels[1] as Float,
+            z: pi[XYZEnum::Z] as Float / self.n_voxels[2] as Float,
         };
         let p1: Point3f = Point3f {
-            x: (pi[0] + 1) as Float / self.n_voxels[0] as Float,
-            y: (pi[1] + 1) as Float / self.n_voxels[1] as Float,
-            z: (pi[2] + 1) as Float / self.n_voxels[2] as Float,
+            x: (pi[XYZEnum::X] + 1) as Float / self.n_voxels[0] as Float,
+            y: (pi[XYZEnum::Y] + 1) as Float / self.n_voxels[1] as Float,
+            z: (pi[XYZEnum::Z] + 1) as Float / self.n_voxels[2] as Float,
         };
         let voxel_bounds: Bounds3f = Bounds3f {
             p_min: self.scene.world_bound().lerp(&p0),
@@ -268,7 +275,7 @@ impl SpatialLightDistribution {
         // point |p| with respect to the overall voxel grid.
         let offset: Vector3f = self.scene.world_bound().offset(&p); // offset in [0,1].
         let mut pi: Point3i = Point3i::default();
-        for i in 0..3 {
+        for i in XYZEnum::iter() {
             // the clamp should almost never be necessary, but is
             // there to be robust to computed intersection points
             // being slightly outside the scene bounds due to
@@ -280,7 +287,9 @@ impl SpatialLightDistribution {
             );
         }
         // pack the 3D integer voxel coordinates into a single 64-bit value.
-        let packed_pos: u64 = ((pi[0] as u64) << 40) | ((pi[1] as u64) << 20) | (pi[2] as u64);
+        let packed_pos: u64 = ((pi[XYZEnum::X] as u64) << 40)
+            | ((pi[XYZEnum::Y] as u64) << 20)
+            | (pi[XYZEnum::Z] as u64);
         assert_ne!(packed_pos, INVALID_PACKED_POS);
         // Compute a hash value from the packed voxel coordinates. We
         // could just take packed_Pos mod the hash table size, but

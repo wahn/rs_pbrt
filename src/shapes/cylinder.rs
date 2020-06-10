@@ -7,7 +7,7 @@ use crate::core::efloat::EFloat;
 use crate::core::geometry::{
     nrm_abs_dot_vec3, pnt3_distance_squared, vec3_cross_vec3, vec3_dot_vec3,
 };
-use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
+use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f, XYEnum};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::material::Material;
 use crate::core::pbrt::Float;
@@ -332,8 +332,8 @@ impl Cylinder {
         (self.z_max - self.z_min) * self.radius * self.phi_max
     }
     pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
-        let z: Float = lerp(u[0], self.z_min, self.z_max);
-        let phi: Float = u[1] * self.phi_max;
+        let z: Float = lerp(u[XYEnum::X], self.z_min, self.z_max);
+        let phi: Float = u[XYEnum::Y] * self.phi_max;
         let mut p_obj: Point3f = Point3f {
             x: self.radius * phi.cos(),
             y: self.radius * phi.sin(),
@@ -398,7 +398,7 @@ impl Cylinder {
         // performing this intersection. Hack for the "San Miguel"
         // scene, where this is used to make an invisible area light.
         let mut t_hit: Float = 0.0;
-        let mut isect_light: SurfaceInteraction = SurfaceInteraction::default(); 
+        let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
             let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.p)

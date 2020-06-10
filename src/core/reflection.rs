@@ -21,7 +21,7 @@ use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_vec3, nrm_faceforward_vec3, vec3_abs_dot_vec3, vec3_dot_nrm,
     vec3_dot_vec3,
 };
-use crate::core::geometry::{Normal3f, Point2f, Vector3f};
+use crate::core::geometry::{Normal3f, Point2f, Vector3f, XYEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::interpolation::{
     catmull_rom_weights, fourier, sample_catmull_rom_2d, sample_fourier,
@@ -320,7 +320,7 @@ impl Bsdf {
             return Spectrum::default();
         }
         let comp: u8 = std::cmp::min(
-            (u[0] * matching_comps as Float).floor() as u8,
+            (u[XYEnum::X] * matching_comps as Float).floor() as u8,
             matching_comps - 1_u8,
         );
         // get _BxDF_ pointer for chosen component
@@ -353,8 +353,9 @@ impl Bsdf {
 
             // remap _BxDF_ sample _u_ to $[0,1)^2$
             let u_remapped: Point2f = Point2f {
-                x: (u[0] * matching_comps as Float - comp as Float).min(FLOAT_ONE_MINUS_EPSILON),
-                y: u[1],
+                x: (u[XYEnum::X] * matching_comps as Float - comp as Float)
+                    .min(FLOAT_ONE_MINUS_EPSILON),
+                y: u[XYEnum::Y],
             };
             // sample chosen _BxDF_
             let mut wi: Vector3f = Vector3f::default();
@@ -885,7 +886,7 @@ impl FresnelSpecular {
     ) -> Spectrum {
         let ct: Float = cos_theta(wo);
         let f: Float = fr_dielectric(ct, self.eta_a, self.eta_b);
-        if sample[0] < f {
+        if sample[XYEnum::X] < f {
             // compute specular reflection for _FresnelSpecular_
 
             // compute perfect specular reflection direction
@@ -1430,15 +1431,15 @@ impl FresnelBlend {
         _sampled_type: &mut u8,
     ) -> Spectrum {
         let mut u: Point2f = sample;
-        if u[0] < 0.5 as Float {
-            u[0] = Float::min(2.0 * u[0], FLOAT_ONE_MINUS_EPSILON);
+        if u[XYEnum::X] < 0.5 as Float {
+            u[XYEnum::X] = Float::min(2.0 * u[XYEnum::X], FLOAT_ONE_MINUS_EPSILON);
             // cosine-sample the hemisphere, flipping the direction if necessary
             *wi = cosine_sample_hemisphere(u);
             if wo.z < 0.0 as Float {
                 wi.z *= -1.0 as Float;
             }
         } else {
-            u[0] = Float::min(2.0 * (u[0] - 0.5 as Float), FLOAT_ONE_MINUS_EPSILON);
+            u[XYEnum::X] = Float::min(2.0 * (u[XYEnum::X] - 0.5 as Float), FLOAT_ONE_MINUS_EPSILON);
             // sample microfacet orientation $\wh$ and reflected direction $\wi$
             if let Some(ref distribution) = self.distribution {
                 let wh: Vector3f = distribution.sample_wh(wo, u);
@@ -1596,7 +1597,7 @@ impl FourierBSDF {
             &self.bsdf_table.a0,
             &self.bsdf_table.cdf,
             mu_o,
-            sample[1],
+            sample[XYEnum::Y],
             None,
             Some(&mut pdf_mu),
         );
@@ -1650,7 +1651,7 @@ impl FourierBSDF {
             &ak,
             &self.bsdf_table.recip,
             m_max,
-            sample[0],
+            sample[XYEnum::X],
             &mut pdf_phi,
             &mut phi,
         );

@@ -7,7 +7,9 @@ use crate::core::camera::{Camera, CameraSample};
 use crate::core::film::Film;
 use crate::core::floatfile::read_float_file;
 use crate::core::geometry::{bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2};
-use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point3f, Ray, RayDifferential, Vector3f};
+use crate::core::geometry::{
+    Bounds2f, Normal3f, Point2f, Point3f, Ray, RayDifferential, Vector3f, XYEnum,
+};
 use crate::core::interaction::InteractionCommon;
 use crate::core::light::VisibilityTester;
 use crate::core::lowdiscrepancy::radical_inverse;
@@ -526,7 +528,7 @@ impl RealisticCamera {
         // wide.22mm.dat),
         let mut found_focus_ray: bool = false;
         for scale in scale_factors.iter() {
-            lu = scale * bounds.p_max[0];
+            lu = scale * bounds.p_max[XYEnum::X];
             if self.trace_lenses_from_film(
                 &Ray {
                     o: Point3f {

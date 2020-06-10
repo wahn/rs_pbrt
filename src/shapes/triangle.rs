@@ -8,7 +8,9 @@ use crate::core::geometry::{
     pnt3_permute, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3, vec3_max_component,
     vec3_max_dimension, vec3_permute,
 };
-use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
+use crate::core::geometry::{
+    Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f, XYEnum,
+};
 use crate::core::interaction::{Interaction, InteractionCommon, Shading, SurfaceInteraction};
 use crate::core::material::Material;
 use crate::core::pbrt::gamma;
@@ -611,12 +613,13 @@ impl Triangle {
             let duv12: Vector2f = uv[1] - uv[2];
             let dp02: Vector3f = *p0 - *p2;
             let dp12: Vector3f = *p1 - *p2;
-            let determinant: Float = duv02[0] * duv12[1] - duv02[1] * duv12[0];
+            let determinant: Float =
+                duv02[XYEnum::X] * duv12[XYEnum::Y] - duv02[XYEnum::Y] * duv12[XYEnum::X];
             let degenerate_uv: bool = determinant.abs() < 1e-8 as Float;
             if !degenerate_uv {
                 let invdet: Float = 1.0 as Float / determinant;
-                dpdu = (dp02 * duv12[1] - dp12 * duv02[1]) * invdet;
-                dpdv = (dp02 * -duv12[0] + dp12 * duv02[0]) * invdet;
+                dpdu = (dp02 * duv12[XYEnum::Y] - dp12 * duv02[XYEnum::Y]) * invdet;
+                dpdv = (dp02 * -duv12[XYEnum::X] + dp12 * duv02[XYEnum::X]) * invdet;
             }
             if degenerate_uv || vec3_cross_vec3(&dpdu, &dpdv).length_squared() == 0.0 {
                 // handle zero determinant for triangle partial derivative matrix
@@ -689,7 +692,9 @@ impl Triangle {
         let p2: Point3f =
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
         let mut it: InteractionCommon = InteractionCommon::default();
-        it.p = p0 * b[0] + p1 * b[1] + p2 * (1.0 as Float - b[0] - b[1]);
+        it.p = p0 * b[XYEnum::X]
+            + p1 * b[XYEnum::Y]
+            + p2 * (1.0 as Float - b[XYEnum::X] - b[XYEnum::Y]);
         // compute surface normal for sampled point on triangle
         it.n = Normal3f::from(vec3_cross_vec3(&(p1 - p0), &(p2 - p0))).normalize();
         // ensure correct orientation of the geometric normal; follow
@@ -697,18 +702,19 @@ impl Triangle {
         if !self.mesh.n.is_empty() {
             let ns: Normal3f = self.mesh.n
                 [self.mesh.vertex_indices[(self.id * 3) as usize] as usize]
-                * b[0]
-                + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize] * b[1]
+                * b[XYEnum::X]
+                + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize]
+                    * b[XYEnum::Y]
                 + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize]
-                    * (1.0 as Float - b[0] - b[1]);
+                    * (1.0 as Float - b[XYEnum::X] - b[XYEnum::Y]);
             it.n = nrm_faceforward_nrm(&it.n, &ns);
         } else if self.reverse_orientation ^ self.transform_swaps_handedness {
             it.n *= -1.0 as Float;
         }
         // compute error bounds for sampled point on triangle
-        let p_abs_sum: Point3f = pnt3_abs(&(p0 * b[0]))
-            + pnt3_abs(&(p1 * b[1]))
-            + pnt3_abs(&(p2 * (1.0 as Float - b[0] - b[1])));
+        let p_abs_sum: Point3f = pnt3_abs(&(p0 * b[XYEnum::X]))
+            + pnt3_abs(&(p1 * b[XYEnum::Y]))
+            + pnt3_abs(&(p2 * (1.0 as Float - b[XYEnum::X] - b[XYEnum::Y])));
         it.p_error = Vector3f {
             x: p_abs_sum.x,
             y: p_abs_sum.y,
@@ -745,7 +751,7 @@ impl Triangle {
         // performing this intersection. Hack for the "San Miguel"
         // scene, where this is used to make an invisible area light.
         let mut t_hit: Float = 0.0;
-        let mut isect_light: SurfaceInteraction = SurfaceInteraction::default(); 
+        let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
             let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.p)

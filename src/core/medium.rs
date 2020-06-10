@@ -6,7 +6,7 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{spherical_direction_vec3, vec3_coordinate_system, vec3_dot_vec3};
-use crate::core::geometry::{Point2f, Ray, Vector3f};
+use crate::core::geometry::{Point2f, Ray, Vector3f, XYEnum};
 use crate::core::interaction::MediumInteraction;
 use crate::core::pbrt::INV_4_PI;
 use crate::core::pbrt::{Float, Spectrum};
@@ -307,10 +307,10 @@ impl HenyeyGreenstein {
         // TODO: ProfilePhase _(Prof::PhaseFuncSampling);
         // compute $\cos \theta$ for Henyey--Greenstein sample
         let cos_theta = if self.g.abs() < 1e-3 as Float {
-            1.0 as Float - 2.0 as Float * u[0]
+            1.0 as Float - 2.0 as Float * u[XYEnum::X]
         } else {
             let sqr_term: Float = (1.0 as Float - self.g * self.g)
-                / (1.0 as Float - self.g + 2.0 as Float * self.g * u[0]);
+                / (1.0 as Float - self.g + 2.0 as Float * self.g * u[XYEnum::X]);
 
             (1.0 as Float + self.g * self.g - sqr_term * sqr_term) / (2.0 as Float * self.g)
         };
@@ -318,7 +318,7 @@ impl HenyeyGreenstein {
         let sin_theta: Float = (0.0 as Float)
             .max(1.0 as Float - cos_theta * cos_theta)
             .sqrt();
-        let phi: Float = 2.0 as Float * PI * u[1];
+        let phi: Float = 2.0 as Float * PI * u[XYEnum::Y];
         let mut v1: Vector3f = Vector3f::default();
         let mut v2: Vector3f = Vector3f::default();
         vec3_coordinate_system(wo, &mut v1, &mut v2);

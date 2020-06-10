@@ -4,7 +4,7 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::{Point2f, Vector2f, Vector3f};
+use crate::core::geometry::{Point2f, Vector2f, Vector3f, XYEnum};
 use crate::core::pbrt::clamp_t;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{INV_2_PI, INV_4_PI, INV_PI, PI_OVER_2, PI_OVER_4};
@@ -174,21 +174,22 @@ impl Distribution2D {
     pub fn sample_continuous(&self, u: Point2f, pdf: &mut Float) -> Point2f {
         let mut pdfs: [Float; 2] = [0.0 as Float; 2];
         let mut v: usize = 0_usize;
-        let d1: Float = self
-            .p_marginal
-            .sample_continuous(u[1], Some(&mut (pdfs[1])), Some(&mut v));
-        let d0: Float = self.p_conditional_v[v].sample_continuous(u[0], Some(&mut (pdfs[0])), None);
+        let d1: Float =
+            self.p_marginal
+                .sample_continuous(u[XYEnum::Y], Some(&mut (pdfs[1])), Some(&mut v));
+        let d0: Float =
+            self.p_conditional_v[v].sample_continuous(u[XYEnum::X], Some(&mut (pdfs[0])), None);
         *pdf = pdfs[0] * pdfs[1];
         Point2f { x: d0, y: d1 }
     }
     pub fn pdf(&self, p: Point2f) -> Float {
         let iu: usize = clamp_t(
-            (p[0] * self.p_conditional_v[0].count() as Float) as usize,
+            (p[XYEnum::X] * self.p_conditional_v[0].count() as Float) as usize,
             0_usize,
             self.p_conditional_v[0].count() - 1_usize,
         );
         let iv: usize = clamp_t(
-            (p[1] * self.p_marginal.count() as Float) as usize,
+            (p[XYEnum::Y] * self.p_marginal.count() as Float) as usize,
             0_usize,
             self.p_marginal.count() - 1_usize,
         );
@@ -309,9 +310,9 @@ pub fn latin_hypercube(samples: &mut [Point2f], n_samples: u32, rng: &mut Rng) {
 
 /// Uniformly sample rays in a hemisphere. Choose a direction.
 pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
-    let z: Float = u[0_u8];
+    let z: Float = u[XYEnum::X];
     let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
-    let phi: Float = 2.0 as Float * PI * u[1_u8];
+    let phi: Float = 2.0 as Float * PI * u[XYEnum::Y];
     Vector3f {
         x: r * phi.cos(),
         y: r * phi.sin(),
@@ -327,9 +328,9 @@ pub fn uniform_hemisphere_pdf() -> Float {
 
 /// Uniformly sample rays in a full sphere. Choose a direction.
 pub fn uniform_sample_sphere(u: Point2f) -> Vector3f {
-    let z: Float = 1.0 as Float - 2.0 as Float * u[0];
+    let z: Float = 1.0 as Float - 2.0 as Float * u[XYEnum::X];
     let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
-    let phi: Float = 2.0 as Float * PI * u[1];
+    let phi: Float = 2.0 as Float * PI * u[XYEnum::Y];
     Vector3f {
         x: r * phi.cos(),
         y: r * phi.sin(),
@@ -374,9 +375,9 @@ pub fn uniform_cone_pdf(cos_theta_max: Float) -> Float {
 
 /// Samples in a cone of directions about the (0, 0, 1) axis.
 pub fn uniform_sample_cone(u: Point2f, cos_theta_max: Float) -> Vector3f {
-    let cos_theta: Float = (1.0 as Float - u[0]) + u[0] * cos_theta_max;
+    let cos_theta: Float = (1.0 as Float - u[XYEnum::X]) + u[XYEnum::X] * cos_theta_max;
     let sin_theta: Float = (1.0 as Float - cos_theta * cos_theta).sqrt();
-    let phi: Float = u[1] * 2.0 as Float * PI;
+    let phi: Float = u[XYEnum::Y] * 2.0 as Float * PI;
     Vector3f {
         x: phi.cos() * sin_theta,
         y: phi.sin() * sin_theta,
@@ -387,9 +388,9 @@ pub fn uniform_sample_cone(u: Point2f, cos_theta_max: Float) -> Vector3f {
 /// Uniformly distributing samples over isosceles right triangles
 /// actually works for any triangle.
 pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
-    let su0: Float = u[0].sqrt();
+    let su0: Float = u[XYEnum::X].sqrt();
     Point2f {
         x: 1.0 as Float - su0,
-        y: u[1] * su0,
+        y: u[XYEnum::Y] * su0,
     }
 }
