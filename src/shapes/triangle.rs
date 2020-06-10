@@ -613,13 +613,16 @@ impl Triangle {
             let duv12: Vector2f = uv[1] - uv[2];
             let dp02: Vector3f = *p0 - *p2;
             let dp12: Vector3f = *p1 - *p2;
-            let determinant: Float =
-                duv02[XYEnum::X] * duv12[XYEnum::Y] - duv02[XYEnum::Y] * duv12[XYEnum::X];
+            let duv02x = duv02[XYEnum::X];
+            let duv02y = duv02[XYEnum::Y];
+            let duv12x = duv12[XYEnum::X];
+            let duv12y = duv12[XYEnum::Y];
+            let determinant: Float = duv02x * duv12y - duv02y * duv12x;
             let degenerate_uv: bool = determinant.abs() < 1e-8 as Float;
             if !degenerate_uv {
                 let invdet: Float = 1.0 as Float / determinant;
-                dpdu = (dp02 * duv12[XYEnum::Y] - dp12 * duv02[XYEnum::Y]) * invdet;
-                dpdv = (dp02 * -duv12[XYEnum::X] + dp12 * duv02[XYEnum::X]) * invdet;
+                dpdu = (dp02 * duv12y - dp12 * duv02y) * invdet;
+                dpdv = (dp02 * -duv12x + dp12 * duv02x) * invdet;
             }
             if degenerate_uv || vec3_cross_vec3(&dpdu, &dpdv).length_squared() == 0.0 {
                 // handle zero determinant for triangle partial derivative matrix
@@ -692,9 +695,9 @@ impl Triangle {
         let p2: Point3f =
             self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
         let mut it: InteractionCommon = InteractionCommon::default();
-        it.p = p0 * b[XYEnum::X]
-            + p1 * b[XYEnum::Y]
-            + p2 * (1.0 as Float - b[XYEnum::X] - b[XYEnum::Y]);
+        let bx = b[XYEnum::X];
+        let by = b[XYEnum::Y];
+        it.p = p0 * bx + p1 * by + p2 * (1.0 as Float - bx - by);
         // compute surface normal for sampled point on triangle
         it.n = Normal3f::from(vec3_cross_vec3(&(p1 - p0), &(p2 - p0))).normalize();
         // ensure correct orientation of the geometric normal; follow
@@ -702,19 +705,18 @@ impl Triangle {
         if !self.mesh.n.is_empty() {
             let ns: Normal3f = self.mesh.n
                 [self.mesh.vertex_indices[(self.id * 3) as usize] as usize]
-                * b[XYEnum::X]
-                + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize]
-                    * b[XYEnum::Y]
+                * bx
+                + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize] * by
                 + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize]
-                    * (1.0 as Float - b[XYEnum::X] - b[XYEnum::Y]);
+                    * (1.0 as Float - bx - by);
             it.n = nrm_faceforward_nrm(&it.n, &ns);
         } else if self.reverse_orientation ^ self.transform_swaps_handedness {
             it.n *= -1.0 as Float;
         }
         // compute error bounds for sampled point on triangle
-        let p_abs_sum: Point3f = pnt3_abs(&(p0 * b[XYEnum::X]))
-            + pnt3_abs(&(p1 * b[XYEnum::Y]))
-            + pnt3_abs(&(p2 * (1.0 as Float - b[XYEnum::X] - b[XYEnum::Y])));
+        let p_abs_sum: Point3f = pnt3_abs(&(p0 * bx))
+            + pnt3_abs(&(p1 * by))
+            + pnt3_abs(&(p2 * (1.0 as Float - bx - by)));
         it.p_error = Vector3f {
             x: p_abs_sum.x,
             y: p_abs_sum.y,
