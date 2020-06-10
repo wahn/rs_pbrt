@@ -678,12 +678,13 @@ impl Triangle {
         self.object_to_world
     }
     pub fn area(&self) -> Float {
+        let idx1: usize = (self.id * 3) as usize;
+        let idx2: usize = idx1 + 1;
+        let idx3: usize = idx2 + 1;
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[idx1] as usize];
+        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[idx2] as usize];
+        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[idx3] as usize];
         0.5 as Float * vec3_cross_vec3(&(p1 - p0), &(p2 - p0)).length()
     }
     pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
