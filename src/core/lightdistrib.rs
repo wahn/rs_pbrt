@@ -2,8 +2,9 @@
 
 // std
 use std;
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 // others
+use atom::AtomSetOnce;
 use atomic::{Atomic, Ordering};
 use strum::IntoEnumIterator;
 // pbrt
@@ -38,10 +39,10 @@ impl LightDistribution {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 struct HashEntry {
     packed_pos: Atomic<u64>,
-    distribution: RwLock<Option<Arc<Distribution1D>>>,
+    distribution: AtomSetOnce<Arc<Distribution1D>>,
 }
 
 /// The simplest possible implementation of LightDistribution: this
@@ -154,7 +155,7 @@ impl SpatialLightDistribution {
         for _i in 0..hash_table_size {
             let hash_entry: HashEntry = HashEntry {
                 packed_pos: Atomic::new(INVALID_PACKED_POS),
-                distribution: RwLock::new(None),
+                distribution: AtomSetOnce::empty(),
             };
             hash_table.push(hash_entry);
         }
@@ -321,10 +322,28 @@ impl SpatialLightDistribution {
             if entry_packed_pos == packed_pos {
                 // Yes! Most of the time, there should already by a light
                 // sampling distribution available.
-                let option: &Option<Arc<Distribution1D>> = &*entry.distribution.read().unwrap();
-                if let Some(ref dist) = *option {
+                let option: Option<Arc<Distribution1D>> = entry.distribution.dup();
+                if option.is_none() {
+                    // Rarely, another thread will have already done a
+                    // lookup at this point, found that there isn't a
+                    // sampling distribution, and will already be
+                    // computing the distribution for the point. In
+                    // this case, we spin until the sampling
+                    // distribution is ready. We assume that this is a
+                    // rare case, so don't do anything more
+                    // sophisticated than spinning.
+                    loop {
+                        let option2: &Option<Arc<Distribution1D>> = &entry.distribution.dup();
+                        if option2.is_some() {
+                            if let Some(ref dist) = *option2 {
+                                // We have a valid sampling distribution.
+                                return dist.clone();
+                            }
+                        }
+                    }
+                } else {
                     // We have a valid sampling distribution.
-                    return dist.clone();
+                    return option.as_ref().unwrap().clone();
                 }
             } else if entry_packed_pos != INVALID_PACKED_POS {
                 // The hash table entry we're checking has already
@@ -350,10 +369,9 @@ impl SpatialLightDistribution {
                     // voxel's distribution. Now compute the sampling
                     // distribution and add it to the hash table.
                     let dist: Distribution1D = self.compute_distribution(&pi);
-                    let box_dist: Arc<Distribution1D> = Arc::new(dist);
-                    let mut distribution = entry.distribution.write().unwrap();
-                    *distribution = Some(box_dist.clone());
-                    return box_dist;
+                    let arc_dist: Arc<Distribution1D> = Arc::new(dist);
+                    entry.distribution.set_if_none(arc_dist.clone());
+                    return arc_dist.clone();
                 }
             }
         }
