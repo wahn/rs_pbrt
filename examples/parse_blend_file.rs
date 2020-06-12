@@ -1452,6 +1452,7 @@ fn read_mesh(
     is_smooth: bool,
     builder: &mut SceneDescriptionBuilder,
 ) {
+    let mut instances: Vec<Transform> = Vec::with_capacity(u8::MAX as usize);
     let mut triangle_colors: Vec<Spectrum> = Vec::with_capacity(loops.len() * 2);
     if vertex_colors.len() != 0_usize {
         // let n_vertex_colors: usize = vertex_colors.len() / 4;
@@ -1480,113 +1481,125 @@ fn read_mesh(
         }
     }
     if let Some(o2w) = object_to_world_hm.get(base_name) {
-        *object_to_world = *o2w;
+        // one instance
+        instances.push(*o2w);
     } else {
-        println!(
-            "WARNING: looking up object_to_world by name ({:?}) failed",
-            base_name
-        );
-    }
-    let world_to_object: Transform = Transform::inverse(&object_to_world);
-    let n_triangles: usize = vertex_indices.len() / 3;
-    // transform mesh vertices to world space
-    let mut p_ws: Vec<Point3f> = Vec::with_capacity(p.len());
-    let mut n_vertices: usize = p.len();
-    for i in 0..n_vertices {
-        p_ws.push(object_to_world.transform_point(&p[i]));
-    }
-    let mut n_ws: Vec<Normal3f> = Vec::with_capacity(n.len());
-    if is_smooth {
-        // println!("  is_smooth = {}", is_smooth);
-        assert!(n.len() == p.len());
-        if !n.is_empty() {
-            for i in 0..n_vertices {
-                n_ws.push(object_to_world.transform_normal(&n[i]));
+        // potentially many instances
+        let mut counter: u8 = 0;
+        let mut search_name: String;
+        loop {
+            counter += 1;
+            search_name = base_name.to_string() + &counter.to_string();
+            if let Some(o2w) = object_to_world_hm.get(&search_name) {
+                instances.push(*o2w);
+            } else {
+                break;
             }
         }
     }
-    let s: Vec<Vector3f> = Vec::new();
-    let mut uv: Vec<Point2f> = Vec::with_capacity(uvs.len());
-    let mut new_vertex_indices: Vec<u32> = Vec::with_capacity(vertex_indices.len());
-    if !uvs.is_empty() {
-        let mut p_ws_vi: Vec<Point3f> = Vec::with_capacity(vertex_indices.len());
-        let mut vertex_counter: u32 = 0;
-        for vi in &vertex_indices {
-            p_ws_vi.push(p_ws[*vi as usize]);
-            new_vertex_indices.push(vertex_counter);
-            vertex_counter += 1;
+    for o2w in instances {
+        *object_to_world = o2w;
+        let world_to_object: Transform = Transform::inverse(&object_to_world);
+        let n_triangles: usize = vertex_indices.len() / 3;
+        // transform mesh vertices to world space
+        let mut p_ws: Vec<Point3f> = Vec::with_capacity(p.len());
+        let mut n_vertices: usize = p.len();
+        for i in 0..n_vertices {
+            p_ws.push(object_to_world.transform_point(&p[i]));
         }
+        let mut n_ws: Vec<Normal3f> = Vec::with_capacity(n.len());
         if is_smooth {
-            let mut n_ws_vi: Vec<Normal3f> = Vec::with_capacity(vertex_indices.len());
-            for vi in &vertex_indices {
-                n_ws_vi.push(n_ws[*vi as usize]);
-            }
-            n_ws = n_ws_vi;
-        }
-        let mut new_uvs: Vec<Point2f> = Vec::with_capacity(uvs.len());
-        let mut loop_idx: usize = 0;
-        for poly in loops {
-            // triangle
-            if *poly == 3_u8 {
-                for _i in 0..3 {
-                    new_uvs.push(uvs[loop_idx]);
-                    loop_idx += 1;
+            // println!("  is_smooth = {}", is_smooth);
+            assert!(n.len() == p.len());
+            if !n.is_empty() {
+                for i in 0..n_vertices {
+                    n_ws.push(object_to_world.transform_normal(&n[i]));
                 }
             }
-            // quad
-            else if *poly == 4_u8 {
-                new_uvs.push(uvs[loop_idx + 0]);
-                new_uvs.push(uvs[loop_idx + 1]);
-                new_uvs.push(uvs[loop_idx + 2]);
-                new_uvs.push(uvs[loop_idx + 0]);
-                new_uvs.push(uvs[loop_idx + 2]);
-                new_uvs.push(uvs[loop_idx + 3]);
-                loop_idx += 4;
-            } else {
-                println!("WARNING: quads or triangles expected (poly = {})", poly)
+        }
+        let s: Vec<Vector3f> = Vec::new();
+        let mut uv: Vec<Point2f> = Vec::with_capacity(uvs.len());
+        let mut new_vertex_indices: Vec<u32> = Vec::with_capacity(vertex_indices.len());
+        if !uvs.is_empty() {
+            let mut p_ws_vi: Vec<Point3f> = Vec::with_capacity(vertex_indices.len());
+            let mut vertex_counter: u32 = 0;
+            for vi in &vertex_indices {
+                p_ws_vi.push(p_ws[*vi as usize]);
+                new_vertex_indices.push(vertex_counter);
+                vertex_counter += 1;
+            }
+            if is_smooth {
+                let mut n_ws_vi: Vec<Normal3f> = Vec::with_capacity(vertex_indices.len());
+                for vi in &vertex_indices {
+                    n_ws_vi.push(n_ws[*vi as usize]);
+                }
+                n_ws = n_ws_vi;
+            }
+            let mut new_uvs: Vec<Point2f> = Vec::with_capacity(uvs.len());
+            let mut loop_idx: usize = 0;
+            for poly in loops {
+                // triangle
+                if *poly == 3_u8 {
+                    for _i in 0..3 {
+                        new_uvs.push(uvs[loop_idx]);
+                        loop_idx += 1;
+                    }
+                }
+                // quad
+                else if *poly == 4_u8 {
+                    new_uvs.push(uvs[loop_idx + 0]);
+                    new_uvs.push(uvs[loop_idx + 1]);
+                    new_uvs.push(uvs[loop_idx + 2]);
+                    new_uvs.push(uvs[loop_idx + 0]);
+                    new_uvs.push(uvs[loop_idx + 2]);
+                    new_uvs.push(uvs[loop_idx + 3]);
+                    loop_idx += 4;
+                } else {
+                    println!("WARNING: quads or triangles expected (poly = {})", poly)
+                }
+            }
+            *uvs = new_uvs;
+            assert!(
+                uvs.len() == p_ws_vi.len(),
+                "{} != {}",
+                uvs.len(),
+                p_ws_vi.len()
+            );
+            p_ws = p_ws_vi;
+            n_vertices = p_ws.len();
+            for i in 0..n_vertices {
+                uv.push(uvs[i]);
             }
         }
-        *uvs = new_uvs;
-        assert!(
-            uvs.len() == p_ws_vi.len(),
-            "{} != {}",
-            uvs.len(),
-            p_ws_vi.len()
-        );
-        p_ws = p_ws_vi;
-        n_vertices = p_ws.len();
-        for i in 0..n_vertices {
-            uv.push(uvs[i]);
+        if new_vertex_indices.len() != 0 {
+            builder.add_mesh(
+                base_name.clone(),
+                *object_to_world,
+                world_to_object,
+                n_triangles.try_into().unwrap(),
+                new_vertex_indices.clone(),
+                n_vertices.try_into().unwrap(),
+                p_ws, // in world space
+                s,    // empty
+                n_ws, // in world space
+                uv,
+                triangle_colors.clone(),
+            );
+        } else {
+            builder.add_mesh(
+                base_name.clone(),
+                *object_to_world,
+                world_to_object,
+                n_triangles.try_into().unwrap(),
+                vertex_indices.clone(),
+                n_vertices.try_into().unwrap(),
+                p_ws, // in world space
+                s,    // empty
+                n_ws, // in world space
+                uv,
+                triangle_colors.clone(),
+            );
         }
-    }
-    if new_vertex_indices.len() != 0 {
-        builder.add_mesh(
-            base_name.clone(),
-            *object_to_world,
-            world_to_object,
-            n_triangles.try_into().unwrap(),
-            new_vertex_indices.clone(),
-            n_vertices.try_into().unwrap(),
-            p_ws, // in world space
-            s,    // empty
-            n_ws, // in world space
-            uv,
-            triangle_colors,
-        );
-    } else {
-        builder.add_mesh(
-            base_name.clone(),
-            *object_to_world,
-            world_to_object,
-            n_triangles.try_into().unwrap(),
-            vertex_indices.clone(),
-            n_vertices.try_into().unwrap(),
-            p_ws, // in world space
-            s,    // empty
-            n_ws, // in world space
-            uv,
-            triangle_colors,
-        );
     }
 }
 
@@ -1988,7 +2001,7 @@ fn main() -> std::io::Result<()> {
                         // read remaining bytes
                         let mut buffer = vec![0; (len - 8) as usize];
                         f.read(&mut buffer)?;
-                    // counter += (len - 8) as usize;
+                        // counter += (len - 8) as usize;
                     } else {
                         let mut buffer = [0; 4];
                         f.read(&mut buffer)?;
@@ -3847,7 +3860,7 @@ fn main() -> std::io::Result<()> {
                                         )
                                     }
                                 }
-                            // println!("  vertex_indices = {:?}", vertex_indices);
+                                // println!("  vertex_indices = {:?}", vertex_indices);
                             } else if types[type_id] == "MVert" {
                                 // println!("{}[{}] ({})", code, data_len, len);
                                 // println!("  SDNAnr = {}", sdna_nr);
@@ -3895,11 +3908,11 @@ fn main() -> std::io::Result<()> {
                                     // println!("    bweight = {}", buffer[skip_bytes]);
                                     skip_bytes += 1;
                                 }
-                            // for v in 0..data_len as usize {
-                            //     println!("  {}:", v + 1);
-                            //     println!("    co: {:?}", p[v]);
-                            //     println!("    no: {:?}", n[v]);
-                            // }
+                                // for v in 0..data_len as usize {
+                                //     println!("  {}:", v + 1);
+                                //     println!("    co: {:?}", p[v]);
+                                //     println!("    no: {:?}", n[v]);
+                                // }
                             } else if types[type_id] == "MLoop" {
                                 // println!("{}[{}] ({})", code, data_len, len);
                                 // println!("  SDNAnr = {}", sdna_nr);
@@ -3925,7 +3938,7 @@ fn main() -> std::io::Result<()> {
                                     // println!("    e = {}", e);
                                     skip_bytes += 4;
                                 }
-                            // println!("    loop_indices = {:?}", loop_indices);
+                                // println!("    loop_indices = {:?}", loop_indices);
                             } else if types[type_id] == "MLoopUV" {
                                 // println!("{}[{}] ({})", code, data_len, len);
                                 // println!("  SDNAnr = {}", sdna_nr);
@@ -3952,10 +3965,10 @@ fn main() -> std::io::Result<()> {
                                     // int flag
                                     skip_bytes += 4;
                                 }
-                            // for l in 0..data_len as usize {
-                            //     println!("  {}:", l + 1);
-                            //     println!("    uv: {:?}", uvs[l]);
-                            // }
+                                // for l in 0..data_len as usize {
+                                //     println!("  {}:", l + 1);
+                                //     println!("    uv: {:?}", uvs[l]);
+                                // }
                             } else if types[type_id] == "MLoopCol" {
                                 // println!("{}[{}] ({})", code, data_len, len);
                                 // println!("  SDNAnr = {}", sdna_nr);
