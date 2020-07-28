@@ -1,5 +1,4 @@
 // std
-use std::ops::DerefMut;
 use std::sync::Arc;
 use std::thread;
 // pbrt
@@ -99,7 +98,7 @@ impl MLTSampler {
             array_2d_offset: 0_usize,
         }
     }
-    pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
+    pub fn clone_with_seed(&self, _seed: u64) -> Arc<Sampler> {
         let mlt_sampler = MLTSampler {
             samples_per_pixel: self.samples_per_pixel,
             rng: self.rng,
@@ -122,7 +121,7 @@ impl MLTSampler {
             array_2d_offset: self.array_2d_offset,
         };
         let sampler = Sampler::MLT(mlt_sampler);
-        Box::new(sampler)
+        Arc::new(sampler)
     }
     pub fn start_iteration(&mut self) {
         self.current_iteration += 1;
@@ -470,8 +469,8 @@ impl MLTIntegrator {
                                     let rng_index: u64 = ((b * chunk_size) + w) as u64;
                                     let depth: u32 =
                                         (rng_index % (integrator.max_depth + 1) as u64) as u32;
-                                    let mut sampler: Box<Sampler> =
-                                        Box::new(Sampler::MLT(MLTSampler::new(
+                                    let mut sampler: Arc<Sampler> =
+                                        Arc::new(Sampler::MLT(MLTSampler::new(
                                             integrator.mutations_per_pixel as i64,
                                             rng_index,
                                             integrator.sigma,
@@ -483,7 +482,7 @@ impl MLTIntegrator {
                                         .l(
                                             scene,
                                             light_distr.clone(),
-                                            &mut sampler,
+                                            Arc::get_mut(&mut sampler).unwrap(),
                                             depth,
                                             &mut p_raster,
                                         )
@@ -540,7 +539,7 @@ impl MLTIntegrator {
                         bootstrap.sample_discrete(rng.uniform_float(), None);
                     let depth: u32 = bootstrap_index as u32 % (self.max_depth as u32 + 1);
                     // initialize local variables for selected state
-                    let mut sampler: Box<Sampler> = Box::new(Sampler::MLT(MLTSampler::new(
+                    let mut sampler: Arc<Sampler> = Arc::new(Sampler::MLT(MLTSampler::new(
                         self.mutations_per_pixel as i64,
                         bootstrap_index as u64,
                         self.sigma,
@@ -551,13 +550,13 @@ impl MLTIntegrator {
                     let mut l_current: Spectrum = self.l(
                         scene,
                         light_distr.clone(),
-                        &mut sampler,
+                        Arc::get_mut(&mut sampler).unwrap(),
                         depth,
                         &mut p_current,
                     );
                     // run the Markov chain for _n_chain_mutations_ steps
                     for _j in 0..n_chain_mutations {
-                        match sampler.deref_mut() {
+                        match Arc::get_mut(&mut sampler).unwrap() {
                             Sampler::MLT(mlt_sampler) => mlt_sampler.start_iteration(),
                             _ => panic!("MLTSampler needed."),
                         }
@@ -565,7 +564,7 @@ impl MLTIntegrator {
                         let l_proposed: Spectrum = self.l(
                             scene,
                             light_distr.clone(),
-                            &mut sampler,
+                            Arc::get_mut(&mut sampler).unwrap(),
                             depth,
                             &mut p_proposed,
                         );
@@ -583,13 +582,13 @@ impl MLTIntegrator {
                         if rng.uniform_float() < accept {
                             p_current = p_proposed;
                             l_current = l_proposed;
-                            match sampler.deref_mut() {
+                            match Arc::get_mut(&mut sampler).unwrap() {
                                 Sampler::MLT(mlt_sampler) => mlt_sampler.accept(),
                                 _ => panic!("MLTSampler needed."),
                             }
                         // TODO: ++acceptedMutations;
                         } else {
-                            match sampler.deref_mut() {
+                            match Arc::get_mut(&mut sampler).unwrap() {
                                 Sampler::MLT(mlt_sampler) => mlt_sampler.reject(),
                                 _ => panic!("MLTSampler needed."),
                             }

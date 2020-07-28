@@ -784,7 +784,7 @@ impl<'a> Vertex<'a> {
 /// Bidirectional Path Tracing (Global Illumination)
 pub struct BDPTIntegrator {
     pub camera: Arc<Camera>,
-    pub sampler: Box<Sampler>,
+    pub sampler: Arc<Sampler>,
     pub pixel_bounds: Bounds2i,
     // see bdpt.h
     pub max_depth: u32,
@@ -796,7 +796,7 @@ pub struct BDPTIntegrator {
 impl BDPTIntegrator {
     pub fn new(
         camera: Arc<Camera>,
-        sampler: Box<Sampler>,
+        sampler: Arc<Sampler>,
         pixel_bounds: Bounds2i,
         max_depth: u32,
         // visualize_strategies: bool,
@@ -873,7 +873,7 @@ impl BDPTIntegrator {
                                     y: y as i32,
                                 };
                                 let seed: i32 = tile.y * n_x_tiles + tile.x;
-                                let mut tile_sampler: Box<Sampler> =
+                                let mut tile_sampler: Arc<Sampler> =
                                     sampler.clone_with_seed(seed as u64);
                                 let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                                 let x1: i32 = std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
@@ -886,7 +886,9 @@ impl BDPTIntegrator {
                                 // println!("Starting image tile {:?}", tile_bounds);
                                 let mut film_tile = film.get_film_tile(&tile_bounds);
                                 for p_pixel in &tile_bounds {
-                                    tile_sampler.start_pixel(p_pixel);
+                                    Arc::get_mut(&mut tile_sampler)
+                                        .unwrap()
+                                        .start_pixel(p_pixel);
                                     if !pnt2_inside_exclusive(p_pixel, &integrator.pixel_bounds) {
                                         continue;
                                     }
@@ -912,10 +914,13 @@ impl BDPTIntegrator {
                                             )
                                         {
                                             // generate a single sample using BDPT
-                                            let p_film: Point2f = Point2f {
-                                                x: p_pixel.x as Float,
-                                                y: p_pixel.y as Float,
-                                            } + tile_sampler.get_2d();
+                                            let p_film: Point2f =
+                                                Point2f {
+                                                    x: p_pixel.x as Float,
+                                                    y: p_pixel.y as Float,
+                                                } + Arc::get_mut(&mut tile_sampler)
+                                                    .unwrap()
+                                                    .get_2d();
                                             // trace the camera subpath
                                             let mut camera_vertices: Vec<Vertex> =
                                                 Vec::with_capacity(
@@ -928,7 +933,7 @@ impl BDPTIntegrator {
                                                 let (n_camera_new, p_new, time_new) =
                                                     generate_camera_subpath(
                                                         scene,
-                                                        &mut tile_sampler,
+                                                        Arc::get_mut(&mut tile_sampler).unwrap(),
                                                         integrator.max_depth + 2,
                                                         camera,
                                                         p_film,
@@ -948,7 +953,7 @@ impl BDPTIntegrator {
                                             {
                                                 n_light = generate_light_subpath(
                                                     scene,
-                                                    &mut tile_sampler,
+                                                    Arc::get_mut(&mut tile_sampler).unwrap(),
                                                     integrator.max_depth + 1,
                                                     time,
                                                     light_distr.clone(),
@@ -985,7 +990,7 @@ impl BDPTIntegrator {
                                                         t,
                                                         light_distr.clone(),
                                                         camera,
-                                                        &mut tile_sampler,
+                                                        Arc::get_mut(&mut tile_sampler).unwrap(),
                                                         &mut p_film_new,
                                                         mis_weight.as_mut(),
                                                     );
@@ -1016,7 +1021,9 @@ impl BDPTIntegrator {
                                             //     l.y()
                                             // );
                                             film_tile.add_sample(p_film, &mut l, 1.0 as Float);
-                                            done = !tile_sampler.start_next_sample();
+                                            done = !Arc::get_mut(&mut tile_sampler)
+                                                .unwrap()
+                                                .start_next_sample();
                                         }
                                     }
                                 }

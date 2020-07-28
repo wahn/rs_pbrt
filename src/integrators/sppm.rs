@@ -89,7 +89,7 @@ impl SPPMIntegrator {
         // compute _light_distr_ for sampling lights proportional to power
         if let Some(light_distr) = compute_light_power_distribution(scene) {
             // perform _n_iterations_ of SPPM integration
-            let sampler: Box<HaltonSampler> = Box::new(HaltonSampler::new(
+            let sampler: Arc<HaltonSampler> = Arc::new(HaltonSampler::new(
                 self.n_iterations as i64,
                 &pixel_bounds,
                 false,
@@ -151,11 +151,17 @@ impl SPPMIntegrator {
                                         );
                                         for p_pixel in &tile_bounds {
                                             // prepare _tileSampler_ for _p_pixel_
-                                            tile_sampler.start_pixel(p_pixel);
-                                            tile_sampler.set_sample_number(iteration as i64);
+                                            Arc::get_mut(&mut tile_sampler)
+                                                .unwrap()
+                                                .start_pixel(p_pixel);
+                                            Arc::get_mut(&mut tile_sampler)
+                                                .unwrap()
+                                                .set_sample_number(iteration as i64);
                                             // generate camera ray for pixel for SPPM
                                             let camera_sample: CameraSample =
-                                                tile_sampler.get_camera_sample(p_pixel);
+                                                Arc::get_mut(&mut tile_sampler)
+                                                    .unwrap()
+                                                    .get_camera_sample(p_pixel);
                                             let mut ray: Ray = Ray::default();
                                             let mut beta: Spectrum = Spectrum::new(
                                                 self.get_camera().generate_ray_differential(
@@ -209,8 +215,8 @@ impl SPPMIntegrator {
                                                             * uniform_sample_one_light(
                                                                 it,
                                                                 scene,
-                                                                &mut tile_sampler
-                                                                    .clone_with_seed(0_u64),
+                                                                Arc::get_mut(&mut tile_sampler)
+                                                                    .unwrap(),
                                                                 false,
                                                                 None,
                                                             );
@@ -249,7 +255,9 @@ impl SPPMIntegrator {
                                                             let f: Spectrum = bsdf.sample_f(
                                                                 &wo,
                                                                 &mut wi,
-                                                                tile_sampler.get_2d(),
+                                                                Arc::get_mut(&mut tile_sampler)
+                                                                    .unwrap()
+                                                                    .get_2d(),
                                                                 &mut pdf,
                                                                 bsdf_flags,
                                                                 &mut sampled_type,
@@ -267,7 +275,9 @@ impl SPPMIntegrator {
                                                             if beta.y() < 0.25 as Float {
                                                                 let continue_prob: Float =
                                                                     (1.0 as Float).min(beta.y());
-                                                                if tile_sampler.get_1d()
+                                                                if Arc::get_mut(&mut tile_sampler)
+                                                                    .unwrap()
+                                                                    .get_1d()
                                                                     > continue_prob
                                                                 {
                                                                     break;
@@ -355,9 +365,8 @@ impl SPPMIntegrator {
                     let base_grid_res: i32 = (max_diag / max_radius).floor() as i32;
                     assert!(base_grid_res > 0_i32);
                     for i in XYZEnum::iter() {
-                        grid_res[i as usize] = ((base_grid_res as Float * diag[i] / max_diag)
-                            .floor() as i32)
-                            .max(1);
+                        grid_res[i as usize] =
+                            ((base_grid_res as Float * diag[i] / max_diag).floor() as i32).max(1);
                     }
                     // add visible points to SPPM grid
                     // println!("Add visible points to SPPM grid ...");

@@ -1,5 +1,6 @@
 // std
 use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
+use std::sync::Arc;
 // others
 use strum::IntoEnumIterator;
 // pbrt
@@ -130,7 +131,7 @@ impl HaltonSampler {
             array_2d_offset: 0_usize,
         }
     }
-    pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
+    pub fn clone_with_seed(&self, _seed: u64) -> Arc<Sampler> {
         let pixel_for_offset_x: i32 = self.pixel_for_offset_x.load(Ordering::Relaxed);
         let pixel_for_offset_y: i32 = self.pixel_for_offset_y.load(Ordering::Relaxed);
         let offset_for_current_pixel: u64 = self.offset_for_current_pixel.load(Ordering::Relaxed);
@@ -158,13 +159,13 @@ impl HaltonSampler {
             array_2d_offset: self.array_2d_offset,
         };
         let sampler = Sampler::Halton(halton_sampler);
-        Box::new(sampler)
+        Arc::new(sampler)
     }
-    pub fn create(params: &ParamSet, sample_bounds: &Bounds2i) -> Box<Sampler> {
+    pub fn create(params: &ParamSet, sample_bounds: &Bounds2i) -> Arc<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 16);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
         let sample_at_center: bool = params.find_one_bool("samplepixelcenter", false);
-        Box::new(Sampler::Halton(HaltonSampler::new(
+        Arc::new(Sampler::Halton(HaltonSampler::new(
             nsamp as i64,
             sample_bounds,
             sample_at_center,

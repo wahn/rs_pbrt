@@ -24,7 +24,7 @@ use crate::core::scene::Scene;
 pub struct VolPathIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,
-    pub sampler: Box<Sampler>,
+    pub sampler: Arc<Sampler>,
     pub pixel_bounds: Bounds2i,
     // see volpath.h
     pub max_depth: u32,
@@ -37,7 +37,7 @@ impl VolPathIntegrator {
     pub fn new(
         max_depth: u32,
         camera: Arc<Camera>,
-        sampler: Box<Sampler>,
+        sampler: Arc<Sampler>,
         pixel_bounds: Bounds2i,
         rr_threshold: Float,
         light_sample_strategy: String,

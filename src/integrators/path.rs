@@ -23,7 +23,7 @@ use crate::core::scene::Scene;
 pub struct PathIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,
-    pub sampler: Box<Sampler>,
+    pub sampler: Arc<Sampler>,
     pixel_bounds: Bounds2i,
     // see path.h
     max_depth: u32,
@@ -36,7 +36,7 @@ impl PathIntegrator {
     pub fn new(
         max_depth: u32,
         camera: Arc<Camera>,
-        sampler: Box<Sampler>,
+        sampler: Arc<Sampler>,
         pixel_bounds: Bounds2i,
         rr_threshold: Float,
         light_sample_strategy: String,

@@ -1,3 +1,5 @@
+// std
+use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Vector2i, XYEnum};
 use crate::core::lowdiscrepancy::{sobol_interval_to_index, sobol_sample};
@@ -77,7 +79,7 @@ impl SobolSampler {
             array_2d_offset: 0_usize,
         }
     }
-    pub fn clone_with_seed(&self, _seed: u64) -> Box<Sampler> {
+    pub fn clone_with_seed(&self, _seed: u64) -> Arc<Sampler> {
         let sobol_sampler = SobolSampler {
             samples_per_pixel: self.samples_per_pixel,
             sample_bounds: self.sample_bounds,
@@ -97,12 +99,12 @@ impl SobolSampler {
             array_2d_offset: self.array_2d_offset,
         };
         let sampler = Sampler::Sobol(sobol_sampler);
-        Box::new(sampler)
+        Arc::new(sampler)
     }
-    pub fn create(params: &ParamSet, sample_bounds: &Bounds2i) -> Box<Sampler> {
+    pub fn create(params: &ParamSet, sample_bounds: &Bounds2i) -> Arc<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 16);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-        Box::new(Sampler::Sobol(SobolSampler::new(
+        Arc::new(Sampler::Sobol(SobolSampler::new(
             nsamp as i64,
             sample_bounds,
         )))

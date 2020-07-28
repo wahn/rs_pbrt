@@ -18,7 +18,7 @@ use crate::core::scene::Scene;
 pub struct WhittedIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,
-    pub sampler: Box<Sampler>,
+    pub sampler: Arc<Sampler>,
     pixel_bounds: Bounds2i,
     // see whitted.h
     max_depth: u32,
@@ -28,7 +28,7 @@ impl WhittedIntegrator {
     pub fn new(
         max_depth: u32,
         camera: Arc<Camera>,
-        sampler: Box<Sampler>,
+        sampler: Arc<Sampler>,
         pixel_bounds: Bounds2i,
     ) -> Self {
         WhittedIntegrator {
