@@ -616,11 +616,7 @@ impl KdTreeAccel {
                 }
             }
         }
-        if hit {
-            true
-        } else {
-            false
-        }
+        hit
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
         // TODO: ProfilePhase p(Prof::AccelIntersectP);

@@ -1281,140 +1281,134 @@ pub fn random_walk<'a>(
                 // store new vertex
                 path.push(vertex);
             }
-        } else {
-            if !found_intersection {
-                // capture escaped rays when tracing from the camera
-                if mode == TransportMode::Radiance {
-                    let vertex: Vertex = Vertex::create_light_interaction(
-                        EndpointInteraction::new_ray(&ray),
-                        &beta,
-                        pdf_fwd,
-                    );
-                    // store new vertex
-                    path.push(vertex);
-                    bounces += 1;
-                }
-                break;
-            } else {
-                // compute scattering functions for _mode_ and skip over medium
-                // boundaries
-                isect.compute_scattering_functions(&ray, true, mode);
-                let isect_wo: Vector3f = isect.wo;
-                let isect_shading_n: Normal3f = isect.shading.n;
-                if isect.bsdf.is_none() {
-                    let new_ray = isect.spawn_ray(&ray.d);
-                    ray = new_ray;
-                    continue;
-                }
-                // initialize _vertex_ with surface intersection information
-                let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
-                si_eval.p = isect.p;
-                si_eval.time = isect.time;
-                si_eval.p_error = isect.p_error;
-                si_eval.wo = isect.wo;
-                si_eval.n = isect.n;
-                if let Some(medium_interface) = &isect.medium_interface {
-                    si_eval.medium_interface = Some(medium_interface.clone());
-                } else {
-                    si_eval.medium_interface = None
-                }
-                si_eval.uv = isect.uv;
-                si_eval.dpdu = isect.dpdu;
-                si_eval.dpdv = isect.dpdv;
-                si_eval.dndu = isect.dndu;
-                si_eval.dndv = isect.dndv;
-                si_eval.dudx = Cell::new(isect.dudx.get());
-                si_eval.dvdx = Cell::new(isect.dvdx.get());
-                si_eval.dudy = Cell::new(isect.dudy.get());
-                si_eval.dvdy = Cell::new(isect.dvdy.get());
-                si_eval.dpdx = Cell::new(isect.dpdx.get());
-                si_eval.dpdy = Cell::new(isect.dpdy.get());
-                if let Some(primitive) = isect.primitive {
-                    si_eval.primitive = Some(primitive);
-                } else {
-                    si_eval.primitive = None
-                }
-                si_eval.shading.n = isect.shading.n;
-                si_eval.shading.dpdu = isect.shading.dpdu;
-                si_eval.shading.dpdv = isect.shading.dpdv;
-                si_eval.shading.dndu = isect.shading.dndu;
-                si_eval.shading.dndv = isect.shading.dndv;
-                if let Some(bsdf) = &isect.bsdf {
-                    si_eval.bsdf = Some(bsdf.clone());
-                } else {
-                    si_eval.bsdf = None
-                }
-                // if let Some(bssrdf) = &isect.bssrdf {
-                //     si_eval.bssrdf = Some(bssrdf.clone());
-                // } else {
-                //     si_eval.bssrdf = None
-                // }
-                if let Some(shape) = &isect.shape {
-                    si_eval.shape = Some(shape);
-                } else {
-                    si_eval.shape = None
-                }
-                let mut vertex: Vertex = Vertex::create_surface_interaction(
-                    si_eval,
+        } else if !found_intersection {
+            // capture escaped rays when tracing from the camera
+            if mode == TransportMode::Radiance {
+                let vertex: Vertex = Vertex::create_light_interaction(
+                    EndpointInteraction::new_ray(&ray),
                     &beta,
                     pdf_fwd,
-                    &path[path.len() - 1],
                 );
+                // store new vertex
+                path.push(vertex);
                 bounces += 1;
-                if bounces as u32 >= max_depth {
+            }
+            break;
+        } else {
+            // compute scattering functions for _mode_ and skip over medium
+            // boundaries
+            isect.compute_scattering_functions(&ray, true, mode);
+            let isect_wo: Vector3f = isect.wo;
+            let isect_shading_n: Normal3f = isect.shading.n;
+            if isect.bsdf.is_none() {
+                let new_ray = isect.spawn_ray(&ray.d);
+                ray = new_ray;
+                continue;
+            }
+            // initialize _vertex_ with surface intersection information
+            let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
+            si_eval.p = isect.p;
+            si_eval.time = isect.time;
+            si_eval.p_error = isect.p_error;
+            si_eval.wo = isect.wo;
+            si_eval.n = isect.n;
+            if let Some(medium_interface) = &isect.medium_interface {
+                si_eval.medium_interface = Some(medium_interface.clone());
+            } else {
+                si_eval.medium_interface = None
+            }
+            si_eval.uv = isect.uv;
+            si_eval.dpdu = isect.dpdu;
+            si_eval.dpdv = isect.dpdv;
+            si_eval.dndu = isect.dndu;
+            si_eval.dndv = isect.dndv;
+            si_eval.dudx = Cell::new(isect.dudx.get());
+            si_eval.dvdx = Cell::new(isect.dvdx.get());
+            si_eval.dudy = Cell::new(isect.dudy.get());
+            si_eval.dvdy = Cell::new(isect.dvdy.get());
+            si_eval.dpdx = Cell::new(isect.dpdx.get());
+            si_eval.dpdy = Cell::new(isect.dpdy.get());
+            if let Some(primitive) = isect.primitive {
+                si_eval.primitive = Some(primitive);
+            } else {
+                si_eval.primitive = None
+            }
+            si_eval.shading.n = isect.shading.n;
+            si_eval.shading.dpdu = isect.shading.dpdu;
+            si_eval.shading.dpdv = isect.shading.dpdv;
+            si_eval.shading.dndu = isect.shading.dndu;
+            si_eval.shading.dndv = isect.shading.dndv;
+            if let Some(bsdf) = &isect.bsdf {
+                si_eval.bsdf = Some(bsdf.clone());
+            } else {
+                si_eval.bsdf = None
+            }
+            // if let Some(bssrdf) = &isect.bssrdf {
+            //     si_eval.bssrdf = Some(bssrdf.clone());
+            // } else {
+            //     si_eval.bssrdf = None
+            // }
+            if let Some(shape) = &isect.shape {
+                si_eval.shape = Some(shape);
+            } else {
+                si_eval.shape = None
+            }
+            let mut vertex: Vertex =
+                Vertex::create_surface_interaction(si_eval, &beta, pdf_fwd, &path[path.len() - 1]);
+            bounces += 1;
+            if bounces as u32 >= max_depth {
+                // store new vertex
+                path.push(vertex);
+                break;
+            }
+            if let Some(ref bsdf) = isect.bsdf {
+                // sample BSDF at current vertex and compute reverse probability
+                let mut wi: Vector3f = Vector3f::default();
+                let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
+                let mut sampled_type: u8 = u8::max_value(); // != 0
+                let f: Spectrum = bsdf.sample_f(
+                    &isect_wo,
+                    &mut wi,
+                    sampler.get_2d(),
+                    &mut pdf_fwd,
+                    bsdf_flags,
+                    &mut sampled_type,
+                );
+                // println!(
+                //     "Random walk sampled dir {:?} f: {:?}, pdf_fwd: {:?}",
+                //     wi, f, pdf_fwd
+                // );
+                if f.is_black() || pdf_fwd == 0.0 as Float {
                     // store new vertex
                     path.push(vertex);
                     break;
                 }
-                if let Some(ref bsdf) = isect.bsdf {
-                    // sample BSDF at current vertex and compute reverse probability
-                    let mut wi: Vector3f = Vector3f::default();
-                    let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
-                    let mut sampled_type: u8 = u8::max_value(); // != 0
-                    let f: Spectrum = bsdf.sample_f(
-                        &isect_wo,
-                        &mut wi,
-                        sampler.get_2d(),
-                        &mut pdf_fwd,
-                        bsdf_flags,
-                        &mut sampled_type,
-                    );
-                    // println!(
-                    //     "Random walk sampled dir {:?} f: {:?}, pdf_fwd: {:?}",
-                    //     wi, f, pdf_fwd
-                    // );
-                    if f.is_black() || pdf_fwd == 0.0 as Float {
-                        // store new vertex
-                        path.push(vertex);
-                        break;
-                    }
-                    *beta *= f * vec3_abs_dot_nrm(&wi, &isect_shading_n) / pdf_fwd;
-                    // println!("Random walk beta now {:?}", beta);
-                    pdf_rev = bsdf.pdf(&wi, &isect_wo, bsdf_flags);
-                    if (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8 {
-                        vertex.delta = true;
-                        pdf_rev = 0.0 as Float;
-                        pdf_fwd = 0.0 as Float;
-                    }
-                    *beta *= Spectrum::new(correct_shading_normal(&isect, &isect_wo, &wi, mode));
-                    // println!(
-                    //     "Random walk beta after shading normal correction {:?}",
-                    //     beta
-                    // );
-                    let new_ray = isect.spawn_ray(&wi);
-                    ray = new_ray;
+                *beta *= f * vec3_abs_dot_nrm(&wi, &isect_shading_n) / pdf_fwd;
+                // println!("Random walk beta now {:?}", beta);
+                pdf_rev = bsdf.pdf(&wi, &isect_wo, bsdf_flags);
+                if (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8 {
+                    vertex.delta = true;
+                    pdf_rev = 0.0 as Float;
+                    pdf_fwd = 0.0 as Float;
                 }
-                // compute reverse area density at preceding vertex
-                let new_pdf_rev: Float;
-                {
-                    let prev: &Vertex = &path[path.len() - 1];
-                    new_pdf_rev = vertex.convert_density(pdf_rev, prev);
-                }
-                let index: usize = path.len() - 1;
-                path[index].pdf_rev = new_pdf_rev;
-                // store new vertex
-                path.push(vertex);
+                *beta *= Spectrum::new(correct_shading_normal(&isect, &isect_wo, &wi, mode));
+                // println!(
+                //     "Random walk beta after shading normal correction {:?}",
+                //     beta
+                // );
+                let new_ray = isect.spawn_ray(&wi);
+                ray = new_ray;
             }
+            // compute reverse area density at preceding vertex
+            let new_pdf_rev: Float;
+            {
+                let prev: &Vertex = &path[path.len() - 1];
+                new_pdf_rev = vertex.convert_density(pdf_rev, prev);
+            }
+            let index: usize = path.len() - 1;
+            path[index].pdf_rev = new_pdf_rev;
+            // store new vertex
+            path.push(vertex);
         }
     }
     assert!(

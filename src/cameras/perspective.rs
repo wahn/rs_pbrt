@@ -156,13 +156,11 @@ impl PerspectiveCamera {
             screen.p_max.y = 1.0 / frame;
         }
         let sw: Vec<Float> = params.find_float("screenwindow");
-        if !sw.is_empty() {
-            if sw.len() == 4 {
-                screen.p_min.x = sw[0];
-                screen.p_max.x = sw[1];
-                screen.p_min.y = sw[2];
-                screen.p_max.y = sw[3];
-            }
+        if !sw.is_empty() && sw.len() == 4 {
+            screen.p_min.x = sw[0];
+            screen.p_max.x = sw[1];
+            screen.p_min.y = sw[2];
+            screen.p_max.y = sw[3];
         }
         let fov: Float = params.find_one_float("fov", 90.0);
         // let halffov: Float =

@@ -485,11 +485,7 @@ impl BVHAccel {
                 current_node_index = nodes_to_visit[to_visit_offset as usize];
             }
         }
-        if hit {
-            true
-        } else {
-            false
-        }
+        hit
     }
     pub fn intersect_p(&self, ray: &Ray) -> bool {
         if self.nodes.is_empty() {

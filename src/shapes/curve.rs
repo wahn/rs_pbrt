@@ -210,7 +210,7 @@ impl Curve {
                     }
                 }
             }
-            return false;
+            false
         } else {
             // intersect ray with curve segment
 
@@ -338,7 +338,7 @@ impl Curve {
             // }
             // }
             // TODO: ++n_hits;
-            return true;
+            true
         }
     }
     // Shape
