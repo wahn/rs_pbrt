@@ -1,9 +1,6 @@
 //! Structs and utility routines related to memory management.
 
-// std
-use std;
 // others
-use num;
 use std::ops::{Add, Index, IndexMut};
 
 // see memory.h

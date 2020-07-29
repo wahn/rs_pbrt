@@ -1,7 +1,6 @@
 //! Various probability distributions for sampling light sources.
 
 // std
-use std;
 use std::sync::Arc;
 // others
 use atom::AtomSetOnce;

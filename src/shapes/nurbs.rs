@@ -1,5 +1,3 @@
-// std
-use std;
 // others
 use smallvec::SmallVec;
 // pbrt

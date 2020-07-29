@@ -170,14 +170,12 @@
 //! ```
 
 // std
-use std;
 use std::f32::consts::PI;
 use std::ops::{
     Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
 };
 use std::sync::Arc;
 // others
-use num;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 // pbrt

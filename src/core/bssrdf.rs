@@ -3,7 +3,6 @@
 //! given incident differential irradiance at another point.
 
 //std
-use std;
 use std::borrow::Borrow;
 use std::cell::Cell;
 use std::f32::consts::PI;

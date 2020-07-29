@@ -4,10 +4,7 @@
 //! accelerate their operation.
 
 // std
-use std;
 use std::ops::{Add, AddAssign, Div, Mul};
-// others
-use num;
 // pbrt
 use crate::core::geometry::{Point2f, Point2i, Vector2f};
 use crate::core::memory::BlockedArray;

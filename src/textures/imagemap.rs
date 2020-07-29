@@ -4,7 +4,6 @@ use std::path::Path;
 use std::sync::Arc;
 // others
 use image::{DynamicImage, ImageResult};
-use num;
 // pbrt
 use crate::core::geometry::{Point2f, Point2i, Vector2f};
 use crate::core::interaction::SurfaceInteraction;

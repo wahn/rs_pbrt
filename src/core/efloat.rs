@@ -4,7 +4,6 @@
 //! analysis*.
 
 // std
-use std;
 use std::ops::{Add, Div, Mul, Sub};
 // pbrt
 use crate::core::pbrt::MACHINE_EPSILON;

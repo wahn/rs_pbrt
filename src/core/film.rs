@@ -10,14 +10,11 @@
 //!
 
 // std
-#[cfg(feature = "openexr")]
-use std;
 use std::ops::{DerefMut, Index};
 use std::path::Path;
 use std::sync::{Arc, RwLock, RwLockWriteGuard};
 
 // others
-use image;
 #[cfg(feature = "openexr")]
 use openexr::{FrameBuffer, Header, PixelType, ScanlineOutputFile};
 use smallvec::SmallVec;

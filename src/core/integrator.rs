@@ -2,7 +2,6 @@
 //! class that implements the **Integrator** interface.
 
 // std
-use std;
 use std::sync::Arc;
 // pbrt
 use crate::blockqueue::BlockQueue;

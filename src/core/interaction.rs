@@ -8,7 +8,6 @@
 //!
 
 // std
-use std;
 use std::cell::Cell;
 use std::sync::Arc;
 // pbrt

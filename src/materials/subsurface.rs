@@ -1,5 +1,4 @@
 //std
-use std;
 use std::sync::Arc;
 // others
 // use time::PreciseTime;

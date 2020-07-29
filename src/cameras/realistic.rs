@@ -1,5 +1,4 @@
 // std
-use std;
 use std::path::PathBuf;
 use std::sync::Arc;
 // pbrt

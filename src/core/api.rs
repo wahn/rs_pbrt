@@ -3,7 +3,6 @@
 //! *pbrt_*.
 
 // std
-use std;
 use std::collections::HashMap;
 use std::convert::TryInto;
 use std::path::PathBuf;

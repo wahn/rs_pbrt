@@ -1,5 +1,4 @@
 // std
-use std;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::bnd3_union_bnd3;

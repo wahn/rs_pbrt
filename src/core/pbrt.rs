@@ -2,11 +2,8 @@
 //! functions which can be used almost everywhere else in the code.
 
 // std
-use std;
 use std::f32::consts::PI;
 use std::ops::{Add, BitAnd, Div, Mul, Sub};
-// others
-use num;
 // pbrt
 use crate::core::spectrum::RGBSpectrum;
 

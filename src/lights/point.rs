@@ -1,5 +1,4 @@
 // std
-use std;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt

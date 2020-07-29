@@ -53,7 +53,6 @@
 //! dimensions.
 
 // std
-use std;
 use std::cell::Cell;
 use std::f32::consts::PI;
 use std::ops::{Add, Mul};

@@ -5,7 +5,6 @@
 //! its directional distribution.
 
 // std
-use std;
 use std::f32::consts::PI;
 use std::fs::File;
 use std::io::Read;
