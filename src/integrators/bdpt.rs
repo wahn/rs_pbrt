@@ -1052,8 +1052,8 @@ impl BDPTIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Sampler {
-        &self.sampler
+    pub fn get_sampler(&self) -> Arc<Sampler> {
+        self.sampler.clone()
     }
 }
 

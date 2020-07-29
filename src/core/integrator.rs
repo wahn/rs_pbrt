@@ -245,7 +245,7 @@ impl SamplerIntegrator {
             SamplerIntegrator::Whitted(integrator) => integrator.get_camera(),
         }
     }
-    pub fn get_sampler(&self) -> &Sampler {
+    pub fn get_sampler(&self) -> Arc<Sampler> {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_sampler(),
             SamplerIntegrator::DirectLighting(integrator) => integrator.get_sampler(),

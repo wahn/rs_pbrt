@@ -347,8 +347,8 @@ impl VolPathIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> &Sampler {
-        &self.sampler
+    pub fn get_sampler(&self) -> Arc<Sampler> {
+        self.sampler.clone()
     }
     pub fn get_pixel_bounds(&self) -> Bounds2i {
         self.pixel_bounds
