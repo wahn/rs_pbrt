@@ -209,6 +209,9 @@ impl MLTSampler {
         let x: Float = self.get_1d();
         Point2f { x, y }
     }
+    pub fn get_2d_sample(&self, array_idx: usize, idx: usize) -> Point2f {
+        self.sample_array_2d[array_idx][idx]
+    }
     pub fn reseed(&mut self, seed: u64) {
         self.rng.set_sequence(seed);
     }
@@ -271,10 +274,9 @@ impl MLTSampler {
         // return tuple
         (Some(ret1), Some(ret2))
     }
-    pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
-        let mut samples: Vec<Point2f> = Vec::new();
+    pub fn get_2d_array_idxs(&mut self, n: i32) -> (bool, usize, usize) {
         if self.array_2d_offset == self.sample_array_2d.len() {
-            return samples;
+            return (true, 0_usize, 0_usize);
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
         assert!(
@@ -284,10 +286,9 @@ impl MLTSampler {
             self.samples_per_pixel
         );
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
-        let end: usize = start + n as usize;
-        samples = self.sample_array_2d[self.array_2d_offset][start..end].to_vec();
+        let idx: usize = self.array_2d_offset;
         self.array_2d_offset += 1;
-        samples
+        (false, idx, start)
     }
     pub fn start_next_sample(&mut self) -> bool {
         // reset array offsets for next pixel sample

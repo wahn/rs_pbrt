@@ -73,6 +73,17 @@ impl Sampler {
             Sampler::ZeroTwoSequence(sampler) => sampler.get_2d(),
         }
     }
+    pub fn get_2d_sample(&self, array_idx: usize, idx: usize) -> Point2f {
+        match self {
+            Sampler::Halton(sampler) => sampler.get_2d_sample(array_idx, idx),
+            Sampler::MaxMinDist(sampler) => sampler.get_2d_sample(array_idx, idx),
+            Sampler::MLT(sampler) => sampler.get_2d_sample(array_idx, idx),
+            Sampler::Random(sampler) => sampler.get_2d_sample(array_idx, idx),
+            Sampler::Sobol(sampler) => sampler.get_2d_sample(array_idx, idx),
+            Sampler::Stratified(sampler) => sampler.get_2d_sample(array_idx, idx),
+            Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_sample(array_idx, idx),
+        }
+    }
     pub fn get_camera_sample(&mut self, p_raster: Point2i) -> CameraSample {
         let mut cs: CameraSample = CameraSample::default();
         cs.p_film = Point2f {
@@ -127,15 +138,15 @@ impl Sampler {
             Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_arrays(n),
         }
     }
-    pub fn get_2d_array_vec(&mut self, n: i32) -> Vec<Point2f> {
+    pub fn get_2d_array_idxs(&mut self, n: i32) -> (bool, usize, usize) {
         match self {
-            Sampler::Halton(sampler) => sampler.get_2d_array_vec(n),
-            Sampler::MaxMinDist(sampler) => sampler.get_2d_array_vec(n),
-            Sampler::MLT(sampler) => sampler.get_2d_array_vec(n),
-            Sampler::Random(sampler) => sampler.get_2d_array_vec(n),
-            Sampler::Sobol(sampler) => sampler.get_2d_array_vec(n),
-            Sampler::Stratified(sampler) => sampler.get_2d_array_vec(n),
-            Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_array_vec(n),
+            Sampler::Halton(sampler) => sampler.get_2d_array_idxs(n),
+            Sampler::MaxMinDist(sampler) => sampler.get_2d_array_idxs(n),
+            Sampler::MLT(sampler) => sampler.get_2d_array_idxs(n),
+            Sampler::Random(sampler) => sampler.get_2d_array_idxs(n),
+            Sampler::Sobol(sampler) => sampler.get_2d_array_idxs(n),
+            Sampler::Stratified(sampler) => sampler.get_2d_array_idxs(n),
+            Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_array_idxs(n),
         }
     }
     pub fn start_next_sample(&mut self) -> bool {

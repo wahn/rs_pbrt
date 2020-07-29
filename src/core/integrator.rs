@@ -315,9 +315,11 @@ pub fn uniform_sample_all_lights(
     for (j, n_samples) in n_light_samples.iter().enumerate().take(scene.lights.len()) {
         // accumulate contribution of _j_th light to _L_
         let light = &scene.lights[j];
-        let u_light_array: Vec<Point2f> = sampler.get_2d_array_vec(*n_samples);
-        let u_scattering_array: Vec<Point2f> = sampler.get_2d_array_vec(*n_samples);
-        if u_light_array.is_empty() || u_scattering_array.is_empty() {
+        let (u_light_array_is_empty, u_light_array_idx, u_light_array_start) =
+            sampler.get_2d_array_idxs(*n_samples);
+        let (u_scattering_array_is_empty, u_scattering_array_idx, u_scattering_array_start) =
+            sampler.get_2d_array_idxs(*n_samples);
+        if u_light_array_is_empty || u_scattering_array_is_empty {
             // use a single sample for illumination from _light_
             let u_light: Point2f = sampler.get_2d();
             let u_scattering: Point2f = sampler.get_2d();
@@ -335,11 +337,17 @@ pub fn uniform_sample_all_lights(
             // estimate direct lighting using sample arrays
             let mut ld: Spectrum = Spectrum::new(0.0);
             for k in 0..*n_samples {
+                let u_scattering_array_sample: Point2f = sampler.get_2d_sample(
+                    u_scattering_array_idx,
+                    u_scattering_array_start + k as usize,
+                );
+                let u_light_array_sample: Point2f =
+                    sampler.get_2d_sample(u_light_array_idx, u_light_array_start + k as usize);
                 ld += estimate_direct(
                     it,
-                    u_scattering_array[k as usize],
+                    u_scattering_array_sample,
                     light.clone(),
-                    u_light_array[k as usize],
+                    u_light_array_sample,
                     scene,
                     sampler,
                     handle_media,
