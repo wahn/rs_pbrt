@@ -19,7 +19,7 @@ https://www.janwalter.org/doc/rust/pbrt/index.html
 ```shell
 > cargo build --release --no-default-features
 > ./target/release/rs_pbrt --help
-pbrt 0.8.1
+pbrt 0.8.2
 Parse a PBRT scene file (extension .pbrt) and render it
 
 USAGE:
