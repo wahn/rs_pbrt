@@ -68,9 +68,9 @@ impl RandomSampler {
         }
         for i in 0..self.sample_array_2d.len() {
             for j in 0..self.sample_array_2d[i].len() {
-                // C++: call y first
-                let y = self.rng.uniform_float();
+                // C++: call x first
                 let x = self.rng.uniform_float();
+                let y = self.rng.uniform_float();
                 self.sample_array_2d[i][j].x = x;
                 self.sample_array_2d[i][j].y = y;
             }

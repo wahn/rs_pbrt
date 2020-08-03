@@ -204,9 +204,9 @@ impl MLTSampler {
         self.x[index as usize].value
     }
     pub fn get_2d(&mut self) -> Point2f {
-        // C++: call y first
-        let y: Float = self.get_1d();
+        // C++: call x first
         let x: Float = self.get_1d();
+        let y: Float = self.get_1d();
         Point2f { x, y }
     }
     pub fn get_2d_sample(&self, array_idx: usize, idx: usize) -> Point2f {
