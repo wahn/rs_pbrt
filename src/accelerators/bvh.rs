@@ -100,7 +100,7 @@ impl Default for BucketInfo {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct LinearBVHNode {
     bounds: Bounds3f,
     // in C++ a union { int primitivesOffset;     // leaf
