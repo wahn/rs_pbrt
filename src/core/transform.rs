@@ -834,11 +834,15 @@ impl Transform {
     pub fn transform_surface_interaction(&self, si: &mut SurfaceInteraction) {
         let mut ret: SurfaceInteraction = SurfaceInteraction::default();
         // transform _p_ and _pError_ in _SurfaceInteraction_
-        ret.p = self.transform_point_with_abs_error(&si.p, &si.p_error, &mut ret.p_error);
+        ret.common.p = self.transform_point_with_abs_error(
+            &si.common.p,
+            &si.common.p_error,
+            &mut ret.common.p_error,
+        );
         // transform remaining members of _SurfaceInteraction_
-        ret.n = self.transform_normal(&si.n).normalize();
-        ret.wo = self.transform_vector(&si.wo).normalize();
-        ret.time = si.time;
+        ret.common.n = self.transform_normal(&si.common.n).normalize();
+        ret.common.wo = self.transform_vector(&si.common.wo).normalize();
+        ret.common.time = si.common.time;
         ret.uv = si.uv;
         ret.shape = None; // TODO? si.shape;
         ret.dpdu = self.transform_vector(&si.dpdu);
@@ -867,7 +871,7 @@ impl Transform {
         // }
         // ret.bssrdf = si.bssrdf.clone();
         ret.primitive = None; // TODO? si.primitive;
-        ret.shading.n = nrm_faceforward_nrm(&ret.shading.n, &ret.n);
+        ret.shading.n = nrm_faceforward_nrm(&ret.shading.n, &ret.common.n);
         // TODO: ret.faceIndex = si.faceIndex;
         *si = ret;
     }

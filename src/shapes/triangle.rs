@@ -435,12 +435,12 @@ impl Triangle {
             shading.dndu = dndu;
             shading.dndv = dndv;
         }
-        isect.p = p_hit;
-        isect.time = ray.time;
-        isect.p_error = p_error;
-        isect.wo = wo;
-        isect.n = surface_normal;
-        isect.medium_interface = None;
+        isect.common.p = p_hit;
+        isect.common.time = ray.time;
+        isect.common.p_error = p_error;
+        isect.common.wo = wo;
+        isect.common.n = surface_normal;
+        isect.common.medium_interface = None;
         isect.uv = uv_hit;
         isect.dpdu = dpdu;
         isect.dpdv = dpdv;
@@ -757,8 +757,8 @@ impl Triangle {
         let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.p)
-                / (nrm_abs_dot_vec3(&isect_light.n, &-(*wi)) * self.area());
+            let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.common.p)
+                / (nrm_abs_dot_vec3(&isect_light.common.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;
             }

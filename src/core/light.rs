@@ -211,7 +211,7 @@ impl VisibilityTester {
             if scene.intersect(&mut ray, &mut isect) {
                 // handle opaque surface along ray's path
                 if let Some(primitive_raw) = isect.primitive {
-		    let primitive = unsafe { &*primitive_raw };
+                    let primitive = unsafe { &*primitive_raw };
                     if let Some(_material) = primitive.get_material() {
                         return Spectrum::default();
                     } else {
@@ -221,14 +221,14 @@ impl VisibilityTester {
                         }
                     }
                 }
-                if let Some(mi_arc) = &isect.medium_interface {
+                if let Some(mi_arc) = &isect.common.medium_interface {
                     medium_interface = Some(mi_arc.clone());
                 }
-                it.p = isect.p;
-                it.time = isect.time;
-                it.p_error = isect.p_error;
-                it.wo = isect.wo;
-                it.n = isect.n;
+                it.p = isect.common.p;
+                it.time = isect.common.time;
+                it.p_error = isect.common.p_error;
+                it.wo = isect.common.wo;
+                it.n = isect.common.n;
                 it.medium_interface = medium_interface;
             } else {
                 // update transmittance for current ray segment

@@ -118,12 +118,7 @@ pub struct Shading {
 #[derive(Default, Clone)]
 pub struct MediumInteraction {
     // Interaction Public Data
-    pub p: Point3f,
-    pub time: Float,
-    pub p_error: Vector3f,
-    pub wo: Vector3f,
-    pub n: Normal3f,
-    pub medium_interface: Option<Arc<MediumInterface>>,
+    pub common: InteractionCommon,
     // MediumInteraction Public Data
     pub phase: Option<Arc<HenyeyGreenstein>>,
 }
@@ -136,33 +131,25 @@ impl MediumInteraction {
         medium: Option<Arc<Medium>>,
         phase: Option<Arc<HenyeyGreenstein>>,
     ) -> Self {
+        let mut common: InteractionCommon = InteractionCommon::default();
+        common.p = *p;
+        common.time = time;
+        common.p_error = Vector3f::default();
+        common.wo = *wo;
+        common.n = Normal3f::default();
         if let Some(medium_arc) = medium {
             let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
             let outside: Option<Arc<Medium>> = Some(medium_arc);
-            MediumInteraction {
-                p: *p,
-                time,
-                p_error: Vector3f::default(),
-                wo: *wo,
-                n: Normal3f::default(),
-                medium_interface: Some(Arc::new(MediumInterface::new(inside, outside))),
-                phase,
-            }
+            common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+            MediumInteraction { common, phase }
         } else {
-            MediumInteraction {
-                p: *p,
-                time,
-                p_error: Vector3f::default(),
-                wo: *wo,
-                n: Normal3f::default(),
-                medium_interface: None,
-                phase,
-            }
+            common.medium_interface = None;
+            MediumInteraction { common, phase }
         }
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
-        if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
-            if let Some(ref medium_interface) = self.medium_interface {
+        if vec3_dot_nrm(w, &self.get_n()) > 0.0 as Float {
+            if let Some(ref medium_interface) = self.get_medium_interface() {
                 if let Some(ref outside_arc) = medium_interface.outside {
                     Some(outside_arc.clone())
                 } else {
@@ -171,7 +158,7 @@ impl MediumInteraction {
             } else {
                 None
             }
-        } else if let Some(ref medium_interface) = self.medium_interface {
+        } else if let Some(ref medium_interface) = self.get_medium_interface() {
             if let Some(ref inside_arc) = medium_interface.inside {
                 Some(inside_arc.clone())
             } else {
@@ -199,39 +186,40 @@ impl MediumInteraction {
 
 impl Interaction for MediumInteraction {
     fn is_surface_interaction(&self) -> bool {
-        self.n != Normal3f::default()
+        self.common.n != Normal3f::default()
     }
     fn is_medium_interaction(&self) -> bool {
         !self.is_surface_interaction()
     }
     fn spawn_ray(&self, d: &Vector3f) -> Ray {
-        let o: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, d);
+        let o: Point3f =
+            pnt3_offset_ray_origin(&self.common.p, &self.common.p_error, &self.common.n, d);
         Ray {
             o,
             d: *d,
             t_max: std::f32::INFINITY,
-            time: self.time,
+            time: self.common.time,
             differential: None,
             medium: self.get_medium(d),
         }
     }
     fn get_p(&self) -> Point3f {
-        self.p
+        self.common.p
     }
     fn get_time(&self) -> Float {
-        self.time
+        self.common.time
     }
     fn get_p_error(&self) -> Vector3f {
-        self.p_error
+        self.common.p_error
     }
     fn get_wo(&self) -> Vector3f {
-        self.wo
+        self.common.wo
     }
     fn get_n(&self) -> Normal3f {
-        self.n
+        self.common.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
-        if let Some(ref medium_interface) = self.medium_interface {
+        if let Some(ref medium_interface) = self.common.medium_interface {
             Some(medium_interface.clone())
         } else {
             None
@@ -255,12 +243,7 @@ impl Interaction for MediumInteraction {
 #[derive(Default)]
 pub struct SurfaceInteraction<'a> {
     // Interaction Public Data
-    pub p: Point3f,
-    pub time: Float,
-    pub p_error: Vector3f,
-    pub wo: Vector3f,
-    pub n: Normal3f,
-    pub medium_interface: Option<Arc<MediumInterface>>,
+    pub common: InteractionCommon,
     // SurfaceInteraction Public Data
     pub uv: Point2f,
     pub dpdu: Vector3f,
@@ -314,14 +297,16 @@ impl<'a> SurfaceInteraction<'a> {
                 shading.n *= -1.0 as Float;
             }
         }
+        let mut common: InteractionCommon = InteractionCommon::default();
+        common.p = *p;
+        common.time = time;
+        common.p_error = *p_error;
+        common.wo = wo.normalize();
+        common.n = n;
+        common.medium_interface = None;
         if let Some(ref shape) = sh {
             SurfaceInteraction {
-                p: *p,
-                time,
-                p_error: *p_error,
-                wo: wo.normalize(),
-                n,
-                medium_interface: None,
+                common,
                 uv,
                 dpdu: *dpdu,
                 dpdv: *dpdv,
@@ -341,12 +326,7 @@ impl<'a> SurfaceInteraction<'a> {
             }
         } else {
             SurfaceInteraction {
-                p: *p,
-                time,
-                p_error: *p_error,
-                wo: wo.normalize(),
-                n,
-                medium_interface: None,
+                common,
                 uv,
                 dpdu: *dpdu,
                 dpdv: *dpdv,
@@ -367,8 +347,8 @@ impl<'a> SurfaceInteraction<'a> {
         }
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
-        if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
-            if let Some(ref medium_interface) = self.medium_interface {
+        if vec3_dot_nrm(w, &self.common.n) > 0.0 as Float {
+            if let Some(ref medium_interface) = self.common.medium_interface {
                 if let Some(ref outside_arc) = medium_interface.outside {
                     Some(outside_arc.clone())
                 } else {
@@ -377,7 +357,7 @@ impl<'a> SurfaceInteraction<'a> {
             } else {
                 None
             }
-        } else if let Some(ref medium_interface) = self.medium_interface {
+        } else if let Some(ref medium_interface) = self.common.medium_interface {
             if let Some(ref inside_arc) = medium_interface.inside {
                 Some(inside_arc.clone())
             } else {
@@ -403,9 +383,9 @@ impl<'a> SurfaceInteraction<'a> {
             }
         }
         if orientation_is_authoritative {
-            self.n = nrm_faceforward_nrm(&self.n, &self.shading.n);
+            self.common.n = nrm_faceforward_nrm(&self.common.n, &self.shading.n);
         } else {
-            self.shading.n = nrm_faceforward_nrm(&self.shading.n, &self.n);
+            self.shading.n = nrm_faceforward_nrm(&self.shading.n, &self.common.n);
         }
         // initialize _shading_ partial derivative values
         self.shading.dpdu = *dpdus;
@@ -435,17 +415,20 @@ impl<'a> SurfaceInteraction<'a> {
             // estimate screen space change in $\pt{}$ and $(u,v)$
 
             // compute auxiliary intersection points with plane
+            let p = self.common.p;
             let d: Float = vec3_dot_vec3(
-                &Vector3f::from(self.n),
+                &Vector3f::from(self.common.n),
                 &Vector3f {
-                    x: self.p.x,
-                    y: self.p.y,
-                    z: self.p.z,
+                    x: p.x,
+                    y: p.y,
+                    z: p.z,
                 },
             );
-            let tx: Float =
-                -(vec3_dot_vec3(&Vector3f::from(self.n), &Vector3f::from(diff.rx_origin)) - d)
-                    / vec3_dot_vec3(&Vector3f::from(self.n), &diff.rx_direction);
+            let tx: Float = -(vec3_dot_vec3(
+                &Vector3f::from(self.common.n),
+                &Vector3f::from(diff.rx_origin),
+            ) - d)
+                / vec3_dot_vec3(&Vector3f::from(self.common.n), &diff.rx_direction);
             if tx.is_infinite() || tx.is_nan() {
                 self.dudx.set(0.0 as Float);
                 self.dvdx.set(0.0 as Float);
@@ -455,9 +438,11 @@ impl<'a> SurfaceInteraction<'a> {
                 self.dpdy.set(Vector3f::default());
             } else {
                 let px: Point3f = diff.rx_origin + diff.rx_direction * tx;
-                let ty: Float =
-                    -(vec3_dot_vec3(&Vector3f::from(self.n), &Vector3f::from(diff.ry_origin)) - d)
-                        / vec3_dot_vec3(&Vector3f::from(self.n), &diff.ry_direction);
+                let ty: Float = -(vec3_dot_vec3(
+                    &Vector3f::from(self.common.n),
+                    &Vector3f::from(diff.ry_origin),
+                ) - d)
+                    / vec3_dot_vec3(&Vector3f::from(self.common.n), &diff.ry_direction);
                 if ty.is_infinite() || ty.is_nan() {
                     self.dudx.set(0.0 as Float);
                     self.dvdx.set(0.0 as Float);
@@ -467,17 +452,19 @@ impl<'a> SurfaceInteraction<'a> {
                     self.dpdy.set(Vector3f::default());
                 } else {
                     let py: Point3f = diff.ry_origin + diff.ry_direction * ty;
-                    self.dpdx.set(px - self.p);
-                    self.dpdy.set(py - self.p);
+                    self.dpdx.set(px - self.common.p);
+                    self.dpdy.set(py - self.common.p);
 
                     // compute $(u,v)$ offsets at auxiliary points
 
                     // choose two dimensions to use for ray offset computation
                     let mut dim: [XYZEnum; 2] = [XYZEnum::X; 2];
-                    if self.n.x.abs() > self.n.y.abs() && self.n.x.abs() > self.n.z.abs() {
+                    if self.common.n.x.abs() > self.common.n.y.abs()
+                        && self.common.n.x.abs() > self.common.n.z.abs()
+                    {
                         dim[0] = XYZEnum::Y;
                         dim[1] = XYZEnum::Z;
-                    } else if self.n.y.abs() > self.n.z.abs() {
+                    } else if self.common.n.y.abs() > self.common.n.z.abs() {
                         dim[0] = XYZEnum::X;
                         dim[1] = XYZEnum::Z;
                     } else {
@@ -489,8 +476,14 @@ impl<'a> SurfaceInteraction<'a> {
                     let a0: [Float; 2] = [self.dpdu[dim[0]], self.dpdv[dim[0]]];
                     let a1: [Float; 2] = [self.dpdu[dim[1]], self.dpdv[dim[1]]];
                     let a: [[Float; 2]; 2] = [a0, a1];
-                    let bx: [Float; 2] = [px[dim[0]] - self.p[dim[0]], px[dim[1]] - self.p[dim[1]]];
-                    let by: [Float; 2] = [py[dim[0]] - self.p[dim[0]], py[dim[1]] - self.p[dim[1]]];
+                    let bx: [Float; 2] = [
+                        px[dim[0]] - self.common.p[dim[0]],
+                        px[dim[1]] - self.common.p[dim[1]],
+                    ];
+                    let by: [Float; 2] = [
+                        py[dim[0]] - self.common.p[dim[0]],
+                        py[dim[1]] - self.common.p[dim[1]],
+                    ];
                     if !solve_linear_system_2x2(a, bx, self.dudx.get_mut(), self.dvdx.get_mut()) {
                         self.dudx.set(0.0 as Float);
                         self.dvdx.set(0.0 as Float);
@@ -516,11 +509,11 @@ impl<'a> SurfaceInteraction<'a> {
             if let Some(area_light) = primitive.get_area_light() {
                 // create InteractionCommon from self
                 let interaction: InteractionCommon = InteractionCommon {
-                    p: self.p,
-                    time: self.time,
-                    p_error: self.p_error,
-                    wo: self.wo,
-                    n: self.n,
+                    p: self.common.p,
+                    time: self.common.time,
+                    p_error: self.common.p_error,
+                    wo: self.common.wo,
+                    n: self.common.n,
                     medium_interface: None,
                 };
                 return area_light.l(&interaction, w);
@@ -532,39 +525,40 @@ impl<'a> SurfaceInteraction<'a> {
 
 impl<'a> Interaction for SurfaceInteraction<'a> {
     fn is_surface_interaction(&self) -> bool {
-        self.n != Normal3f::default()
+        self.common.n != Normal3f::default()
     }
     fn is_medium_interaction(&self) -> bool {
         !self.is_surface_interaction()
     }
     fn spawn_ray(&self, d: &Vector3f) -> Ray {
-        let o: Point3f = pnt3_offset_ray_origin(&self.p, &self.p_error, &self.n, d);
+        let o: Point3f =
+            pnt3_offset_ray_origin(&self.common.p, &self.common.p_error, &self.common.n, d);
         Ray {
             o,
             d: *d,
             t_max: std::f32::INFINITY,
-            time: self.time,
+            time: self.common.time,
             differential: None,
             medium: self.get_medium(d),
         }
     }
     fn get_p(&self) -> Point3f {
-        self.p
+        self.common.p
     }
     fn get_time(&self) -> Float {
-        self.time
+        self.common.time
     }
     fn get_p_error(&self) -> Vector3f {
-        self.p_error
+        self.common.p_error
     }
     fn get_wo(&self) -> Vector3f {
-        self.wo
+        self.common.wo
     }
     fn get_n(&self) -> Normal3f {
-        self.n
+        self.common.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
-        if let Some(ref medium_interface) = self.medium_interface {
+        if let Some(ref medium_interface) = self.common.medium_interface {
             Some(medium_interface.clone())
         } else {
             None

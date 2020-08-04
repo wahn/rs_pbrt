@@ -108,7 +108,7 @@ impl VolPathIntegrator {
                     if bounces >= self.max_depth {
                         break;
                     }
-                    let mi_p = mi.p;
+                    let mi_p = mi.common.p;
                     // if mi.is_valid() {...}
                     if let Some(phase) = mi.clone().phase {
                         // TODO: ++volumeInteractions;
@@ -152,7 +152,7 @@ impl VolPathIntegrator {
                     }
                     if let Some(ref light_distribution) = self.light_distribution {
                         let light_distrib: Arc<Distribution1D> =
-                            light_distribution.lookup(&isect.p);
+                            light_distribution.lookup(&isect.common.p);
                         // Sample illumination from lights to find
                         // attenuated path contribution.
                         let it: &SurfaceInteraction = isect.borrow();
@@ -202,7 +202,7 @@ impl VolPathIntegrator {
                                 // scaling for refraction depending on
                                 // whether the ray is entering or leaving
                                 // the medium.
-                                if vec3_dot_nrm(&wo, &isect.n) > 0.0 as Float {
+                                if vec3_dot_nrm(&wo, &isect.common.n) > 0.0 as Float {
                                     eta_scale *= eta * eta;
                                 } else {
                                     eta_scale *= 1.0 as Float / (eta * eta);
@@ -234,7 +234,7 @@ impl VolPathIntegrator {
                                     if let Some(pi) = pi_opt {
                                         // account for the direct subsurface scattering component
                                         let distrib: Arc<Distribution1D> =
-                                            light_distribution.lookup(&pi.p);
+                                            light_distribution.lookup(&pi.common.p);
                                         l += beta
                                             * uniform_sample_one_light(
                                                 &pi,
@@ -250,7 +250,7 @@ impl VolPathIntegrator {
                                         let mut sampled_type: u8 = u8::max_value(); // != 0
                                         if let Some(ref bsdf) = pi.bsdf {
                                             let f: Spectrum = bsdf.sample_f(
-                                                &pi.wo,
+                                                &pi.common.wo,
                                                 &mut wi,
                                                 sampler.get_2d(),
                                                 &mut pdf,
@@ -309,7 +309,7 @@ impl VolPathIntegrator {
                     if bounces >= self.max_depth {
                         break;
                     }
-                    let mi_p = mi.p;
+                    let mi_p = mi.common.p;
                     // if mi.is_valid() {...}
                     if let Some(phase) = mi.clone().phase {
                         // TODO: ++volumeInteractions;

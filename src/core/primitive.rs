@@ -36,8 +36,7 @@ impl Primitive {
     }
     pub fn intersect(&self, ray: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
         match self {
-            Primitive::Geometric(primitive) =>
-            {
+            Primitive::Geometric(primitive) => {
                 let hit_surface: bool = primitive.intersect(ray, isect);
                 if hit_surface {
                     isect.primitive = Some(self);
@@ -91,9 +90,9 @@ impl Primitive {
                     );
                 }
                 assert!(
-                    nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0,
+                    nrm_dot_nrm(&isect.common.n, &isect.shading.n) >= 0.0,
                     "n: {:?} dot shading.n: {:?}",
-                    isect.n,
+                    isect.common.n,
                     isect.shading.n
                 );
             }
@@ -158,16 +157,17 @@ impl GeometricPrimitive {
             // TODO: isect.primitive
             ray.t_max = t_hit;
             // let it: &SurfaceInteraction = isect_rc.borrow();
-            assert!(nrm_dot_nrm(&isect.n, &isect.shading.n) >= 0.0 as Float);
+            assert!(nrm_dot_nrm(&isect.common.n, &isect.shading.n) >= 0.0 as Float);
             // initialize _SurfaceInteraction::mediumInterface_ after
             // _Shape_ intersection
             if let Some(ref medium_interface) = self.medium_interface {
                 if medium_interface.is_medium_transition() {
-                    isect.medium_interface = Some(medium_interface.clone());
+                    isect.common.medium_interface = Some(medium_interface.clone());
                 } else if let Some(ref medium_arc) = ray.medium {
                     let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
                     let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
-                    isect.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+                    isect.common.medium_interface =
+                        Some(Arc::new(MediumInterface::new(inside, outside)));
                 }
                 // print!("medium_interface = {{inside = ");
                 // if let Some(ref inside) = medium_interface.inside {

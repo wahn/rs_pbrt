@@ -237,7 +237,7 @@ impl SPPMIntegrator {
                                                                 && depth
                                                                     == integrator.max_depth - 1)
                                                         {
-                                                            pixel.2.p = isect.p;
+                                                            pixel.2.p = isect.common.p;
                                                             pixel.2.wo = wo;
                                                             pixel.2.bsdf = Some(bsdf.clone());
                                                             pixel.2.beta = beta;
@@ -561,7 +561,7 @@ impl SPPMIntegrator {
                                                     let mut photon_grid_index: Point3i =
                                                         Point3i::default();
                                                     if to_grid(
-                                                        &isect.p,
+                                                        &isect.common.p,
                                                         &grid_bounds,
                                                         &grid_res,
                                                         &mut photon_grid_index,
@@ -585,7 +585,7 @@ impl SPPMIntegrator {
                                                                 let radius: Float = pixel.radius;
                                                                     if pnt3_distance_squared(
                                                                         &pixel.vp.p,
-                                                                        &isect.p,
+                                                                        &isect.common.p,
                                                                     ) > radius * radius
                                                                     {
                                                                         // update opt

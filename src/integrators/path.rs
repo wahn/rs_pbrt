@@ -114,7 +114,7 @@ impl PathIntegrator {
                     continue;
                 }
                 if let Some(ref light_distribution) = self.light_distribution {
-                    let distrib: Arc<Distribution1D> = light_distribution.lookup(&isect.p);
+                    let distrib: Arc<Distribution1D> = light_distribution.lookup(&isect.common.p);
                     // Sample illumination from lights to find path contribution.
                     // (But skip this for perfectly specular BSDFs.)
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8 & !(BxdfType::BsdfSpecular as u8);
@@ -178,7 +178,7 @@ impl PathIntegrator {
                             // scaling for refraction depending on
                             // whether the ray is entering or leaving
                             // the medium.
-                            if vec3_dot_nrm(&wo, &isect.n) > 0.0 as Float {
+                            if vec3_dot_nrm(&wo, &isect.common.n) > 0.0 as Float {
                                 eta_scale *= eta * eta;
                             } else {
                                 eta_scale *= 1.0 as Float / (eta * eta);
@@ -211,7 +211,7 @@ impl PathIntegrator {
                                 if let Some(pi) = pi_opt {
                                     // account for the direct subsurface scattering component
                                     let distrib: Arc<Distribution1D> =
-                                        light_distribution.lookup(&pi.p);
+                                        light_distribution.lookup(&pi.common.p);
                                     l += beta
                                         * uniform_sample_one_light(
                                             &pi,
@@ -227,7 +227,7 @@ impl PathIntegrator {
                                     let mut sampled_type: u8 = u8::max_value(); // != 0
                                     if let Some(ref bsdf) = pi.bsdf {
                                         let f: Spectrum = bsdf.sample_f(
-                                            &pi.wo,
+                                            &pi.common.wo,
                                             &mut wi,
                                             sampler.get_2d(),
                                             &mut pdf,

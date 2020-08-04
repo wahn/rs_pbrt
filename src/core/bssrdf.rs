@@ -14,7 +14,7 @@ use crate::core::geometry::{
     nrm_cross_vec3, nrm_dot_nrm, nrm_dot_vec3, pnt3_distance, vec3_dot_nrm, vec3_dot_vec3,
 };
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f, XYZEnum};
-use crate::core::interaction::{InteractionCommon, SurfaceInteraction};
+use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::interpolation::{
     catmull_rom_weights, integrate_catmull_rom, sample_catmull_rom_2d,
 };
@@ -77,9 +77,9 @@ impl TabulatedBssrdf {
         let ss: Vector3f = po.shading.dpdu.normalize();
         if let Some(material) = material_opt {
             TabulatedBssrdf {
-                po_p: po.p,
-                po_time: po.time,
-                po_wo: po.wo,
+                po_p: po.get_p(),
+                po_time: po.get_time(),
+                po_wo: po.get_wo(),
                 eta,
                 ns,
                 ss,
@@ -101,20 +101,21 @@ impl TabulatedBssrdf {
         )
     }
     pub fn sp(&self, pi: &SurfaceInteraction) -> Spectrum {
-        self.sr(pnt3_distance(&self.po_p, &pi.p))
+        self.sr(pnt3_distance(&self.po_p, &pi.get_p()))
     }
     pub fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float {
         // express $\pti-\pto$ and $\bold{n}_i$ with respect to local coordinates at $\pto$
-        let d: Vector3f = self.po_p - pi.p;
+        let d: Vector3f = self.po_p - pi.get_p();
         let d_local: Vector3f = Vector3f {
             x: vec3_dot_vec3(&self.ss, &d),
             y: vec3_dot_vec3(&self.ts, &d),
             z: nrm_dot_vec3(&self.ns, &d),
         };
+        let pi_n = pi.get_n();
         let n_local: Normal3f = Normal3f {
-            x: vec3_dot_nrm(&self.ss, &pi.n),
-            y: vec3_dot_nrm(&self.ts, &pi.n),
-            z: nrm_dot_nrm(&self.ns, &pi.n),
+            x: vec3_dot_nrm(&self.ss, &pi_n),
+            y: vec3_dot_nrm(&self.ts, &pi_n),
+            z: nrm_dot_nrm(&self.ns, &pi_n),
         };
         // compute BSSRDF profile radius under projection along each axis
         let r_proj: [Float; 3] = [
@@ -216,11 +217,11 @@ impl TabulatedBssrdf {
             let mut si: SurfaceInteraction = SurfaceInteraction::default();
             if scene.intersect(&mut r, &mut si) {
                 // base = ptr->si;
-                base.p = si.p;
-                base.time = si.time;
-                base.p_error = si.p_error;
-                base.wo = si.wo;
-                base.n = si.n;
+                base.p = si.get_p();
+                base.time = si.get_time();
+                base.p_error = si.get_p_error();
+                base.wo = si.get_wo();
+                base.n = si.get_n();
                 // TODO: si.medium_interface;
                 base.medium_interface = None;
                 // append admissible intersection to _IntersectionChain_
@@ -255,15 +256,15 @@ impl TabulatedBssrdf {
         // while (selected-- > 0) chain = chain->next;
         // *pi = chain->si;
         let selected_si: &SurfaceInteraction = &chain[selected];
-        pi.p = selected_si.p;
-        pi.time = selected_si.time;
-        pi.p_error = selected_si.p_error;
-        pi.wo = selected_si.wo;
-        pi.n = selected_si.n;
-        if let Some(ref medium_interface) = selected_si.medium_interface {
-            pi.medium_interface = Some(medium_interface.clone());
+        pi.common.p = selected_si.get_p();
+        pi.common.time = selected_si.get_time();
+        pi.common.p_error = selected_si.get_p_error();
+        pi.common.wo = selected_si.get_wo();
+        pi.common.n = selected_si.get_n();
+        if let Some(ref medium_interface) = selected_si.get_medium_interface() {
+            pi.common.medium_interface = Some(medium_interface.clone());
         } else {
-            pi.medium_interface = None;
+            pi.common.medium_interface = None;
         }
         pi.uv = selected_si.uv;
         pi.dpdu = selected_si.dpdu;
@@ -428,7 +429,7 @@ impl TabulatedBssrdf {
             if let Some(bsdf) = &mut si.bsdf {
                 bsdf.bxdfs[0] = Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta));
             }
-            si.wo = Vector3f::from(si.shading.n);
+            si.common.wo = Vector3f::from(si.shading.n);
             (sp, Some(si))
         } else {
             (sp, None)

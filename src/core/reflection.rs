@@ -238,7 +238,7 @@ impl Bsdf {
         Bsdf {
             eta,
             ns: si.shading.n,
-            ng: si.n,
+            ng: si.common.n,
             ss,
             ts: nrm_cross_vec3(&si.shading.n, &ss),
             bxdfs: [

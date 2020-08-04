@@ -482,8 +482,8 @@ impl Sphere {
             let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
             if self.intersect(&ray, &mut t_hit, &mut isect_light) {
                 // convert light sample weight to solid angle measure
-                let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.p)
-                    / (nrm_abs_dot_vec3(&isect_light.n, &-(*wi)) * self.area());
+                let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.common.p)
+                    / (nrm_abs_dot_vec3(&isect_light.common.n, &-(*wi)) * self.area());
                 if pdf.is_infinite() {
                     pdf = 0.0 as Float;
                 }

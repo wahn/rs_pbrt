@@ -89,7 +89,7 @@ impl DirectLightingIntegrator {
             isect.compute_scattering_functions(ray, false, mode);
             // if (!isect.bsdf)
             //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
-            let wo: Vector3f = isect.wo;
+            let wo: Vector3f = isect.common.wo;
             l += isect.le(&wo);
             if !scene.lights.is_empty() {
                 // compute direct lighting for _DirectLightingIntegrator_ integrator
@@ -143,7 +143,7 @@ impl DirectLightingIntegrator {
         depth: i32,
     ) -> Spectrum {
         // compute specular reflection direction _wi_ and BSDF value
-        let wo: Vector3f = isect.wo;
+        let wo: Vector3f = isect.common.wo;
         let mut wi: Vector3f = Vector3f::default();
         let mut pdf: Float = 0.0 as Float;
         let ns: Normal3f = isect.shading.n;
@@ -173,8 +173,8 @@ impl DirectLightingIntegrator {
                     let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
                     // compute differential reflected directions
                     let diff: RayDifferential = RayDifferential {
-                        rx_origin: isect.p + isect.dpdx.get(),
-                        ry_origin: isect.p + isect.dpdy.get(),
+                        rx_origin: isect.common.p + isect.dpdx.get(),
+                        ry_origin: isect.common.p + isect.dpdy.get(),
                         rx_direction: wi - dwodx
                             + Vector3f::from(dndx * vec3_dot_nrm(&wo, &ns) + ns * ddndx)
                                 * 2.0 as Float,
@@ -202,7 +202,7 @@ impl DirectLightingIntegrator {
         // arena: &mut Arena,
         depth: i32,
     ) -> Spectrum {
-        let wo: Vector3f = isect.wo;
+        let wo: Vector3f = isect.common.wo;
         let mut wi: Vector3f = Vector3f::default();
         let mut pdf: Float = 0.0 as Float;
         // let p: Point3f = isect.p;
@@ -244,8 +244,8 @@ impl DirectLightingIntegrator {
                         - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns))
                         * ddndy;
                     let diff: RayDifferential = RayDifferential {
-                        rx_origin: isect.p + isect.dpdx.get(),
-                        ry_origin: isect.p + isect.dpdy.get(),
+                        rx_origin: isect.common.p + isect.dpdx.get(),
+                        ry_origin: isect.common.p + isect.dpdy.get(),
                         rx_direction: wi + dwodx * eta - Vector3f::from(dndx * mu + ns * dmudx),
                         ry_direction: wi + dwody * eta - Vector3f::from(dndy * mu + ns * dmudy),
                     };

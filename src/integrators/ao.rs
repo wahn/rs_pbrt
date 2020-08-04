@@ -44,7 +44,9 @@ impl AOIntegrator {
         }
     }
     pub fn preprocess(&mut self, _scene: &Scene) {
-        Arc::get_mut(&mut self.sampler).unwrap().request_2d_array(self.n_samples);
+        Arc::get_mut(&mut self.sampler)
+            .unwrap()
+            .request_2d_array(self.n_samples);
     }
     pub fn li(
         &self,
@@ -75,9 +77,9 @@ impl AOIntegrator {
             // }
             // compute coordinate frame based on true geometry, not
             // shading geometry.
-            let n: Normal3f = nrm_faceforward_vec3(&isect.n, &-ray.d);
+            let n: Normal3f = nrm_faceforward_vec3(&isect.common.n, &-ray.d);
             let s: Vector3f = isect.dpdu.normalize();
-            let t: Vector3f = nrm_cross_vec3(&isect.n, &s);
+            let t: Vector3f = nrm_cross_vec3(&isect.common.n, &s);
             let u_opt: Option<&[Point2f]> = sampler.get_2d_array(self.n_samples);
             if let Some(u) = u_opt {
                 for item in u.iter().take(self.n_samples as usize) {
