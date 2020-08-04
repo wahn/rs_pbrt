@@ -1164,14 +1164,7 @@ pub fn pnt3_offset_ray_origin(
     n: &Normal3f,
     w: &Vector3f,
 ) -> Point3f {
-    //     Float d = Dot(Abs(n), pError);
     let d: Float = nrm_dot_vec3(&nrm_abs(n), p_error);
-    // #ifdef PBRT_FLOAT_AS_DOUBLE
-    //     // We have tons of precision; for now bump up the offset a bunch just
-    //     // to be extra sure that we start on the right side of the surface
-    //     // (In case of any bugs in the epsilons code...)
-    //     d *= 1024.;
-    // #endif
     let mut offset: Vector3f = Vector3f::from(*n) * d;
     if vec3_dot_nrm(w, n) < 0.0 as Float {
         offset = -offset;
