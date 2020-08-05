@@ -675,7 +675,6 @@ fn mp(
     }
 }
 
-#[inline]
 fn i0(x: Float) -> Float {
     let mut val: Float = 0.0 as Float;
     let mut x2i: Float = 1.0 as Float;
@@ -693,7 +692,6 @@ fn i0(x: Float) -> Float {
     val
 }
 
-#[inline]
 fn log_i0(x: Float) -> Float {
     if x > 12.0 as Float {
         x + 0.5
@@ -728,12 +726,10 @@ fn ap(cos_theta_o: Float, eta: Float, h: Float, t: Spectrum) -> [Spectrum; (P_MA
     ap
 }
 
-#[inline]
 fn phi_fn(p: i32, gamma_o: Float, gamma_t: Float) -> Float {
     2.0 as Float * p as Float * gamma_t - 2.0 as Float * gamma_o + p as Float * PI
 }
 
-#[inline]
 fn logistic(x: Float, s: Float) -> Float {
     let x: Float = x.abs();
     let e: Float = (-x / s).exp();
@@ -741,20 +737,17 @@ fn logistic(x: Float, s: Float) -> Float {
     e / (s * (one_plus_e * one_plus_e))
 }
 
-#[inline]
 fn logistic_cdf(x: Float, s: Float) -> Float {
     let e: Float = (-x / s).exp();
     let one_plus_e: Float = 1.0 as Float + e;
     1.0 as Float / one_plus_e
 }
 
-#[inline]
 fn trimmed_logistic(x: Float, s: Float, a: Float, b: Float) -> Float {
     assert!(a < b);
     logistic(x, s) / (logistic_cdf(b, s) - logistic_cdf(a, s))
 }
 
-#[inline]
 fn np(phi: Float, p: i32, s: Float, gamma_o: Float, gamma_t: Float) -> Float {
     let mut dphi: Float = phi - phi_fn(p, gamma_o, gamma_t);
     // remap _dphi_ to $[-\pi,\pi]$

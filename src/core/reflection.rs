@@ -44,18 +44,15 @@ use crate::materials::hair::HairBSDF;
 /// R = R(0) + (1 - R(0)) (1 - cos theta)^5,
 ///
 /// where R(0) is the reflectance at normal indicence.
-#[inline]
 fn schlick_weight(cos_theta: Float) -> Float {
     let m = clamp_t(1.0 - cos_theta, 0.0, 1.0);
     (m * m) * (m * m) * m
 }
 
-#[inline]
 pub fn fr_schlick(r0: Float, cos_theta: Float) -> Float {
     lerp(schlick_weight(cos_theta), r0, 1.0)
 }
 
-#[inline]
 fn fr_schlick_spectrum(r0: Spectrum, cos_theta: Float) -> Spectrum {
     lerp(schlick_weight(cos_theta), r0, Spectrum::from(1.0))
 }
@@ -1962,7 +1959,6 @@ pub fn fr_conductor(cos_theta_i: Float, eta_i: Spectrum, eta_t: Spectrum, k: Spe
     (rp + rs) * Spectrum::new(0.5 as Float)
 }
 
-#[inline]
 fn pow5(v: Float) -> Float {
     (v * v) * (v * v) * v
 }

@@ -32,34 +32,22 @@ impl Rng {
     }
     pub fn set_sequence(&mut self, initseq: u64) {
         self.state = 0_u64;
-        let (shl, _overflow) = initseq.overflowing_shl(1);
-        self.inc = shl | 1;
+        self.inc = initseq.wrapping_shl(1) | 1;
         self.uniform_uint32();
-        let (add, _overflow) = self.state.overflowing_add(PCG32_DEFAULT_STATE);
-        self.state = add;
+        self.state = self.state.wrapping_add(PCG32_DEFAULT_STATE);
         self.uniform_uint32();
     }
     pub fn uniform_uint32(&mut self) -> u32 {
         let oldstate: u64 = self.state;
         // C++: state = oldstate * PCG32_MULT + inc;
-        let (mul, _overflow) = oldstate.overflowing_mul(PCG32_MULT);
-        let (add, _overflow) = mul.overflowing_add(self.inc);
-        self.state = add;
+        self.state = oldstate.wrapping_mul(PCG32_MULT).wrapping_add(self.inc);
         // C++: uint32_t xorshifted = (uint32_t)(((oldstate >> 18u) ^ oldstate) >> 27u);
-        let (shr, _overflow) = oldstate.overflowing_shr(18);
-        let combine = shr ^ oldstate;
-        let (shr, _overflow) = combine.overflowing_shr(27);
-        let xorshifted: u32 = shr as u32;
+        let xorshifted: u32 = (oldstate.wrapping_shr(18) ^ oldstate).wrapping_shr(27) as u32;
         // C++: uint32_t rot = (uint32_t)(oldstate >> 59u);
-        let (shr, _overflow) = oldstate.overflowing_shr(59);
-        let rot: u32 = shr as u32;
+        let rot: u32 = oldstate.wrapping_shr(59) as u32;
         // C++: return (xorshifted >> rot) | (xorshifted << ((~rot + 1u) & 31));
-        let (shr, _overflow) = xorshifted.overflowing_shr(rot);
-        // bitwise not in Rust is ! (not the ~ operator like in C)
-        let neg = !rot;
-        let (add, _overflow) = neg.overflowing_add(1_u32);
-        let (shl, _overflow) = xorshifted.overflowing_shl(add & 31);
-        shr | shl
+        xorshifted.wrapping_shr(rot)
+            | xorshifted.wrapping_shl(rot.wrapping_neg().wrapping_add(1_u32) & 31)
     }
     pub fn uniform_uint32_bounded(&mut self, b: u32) -> u32 {
         // bitwise not in Rust is ! (not the ~ operator like in C)

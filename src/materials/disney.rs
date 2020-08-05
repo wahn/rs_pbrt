@@ -613,20 +613,17 @@ impl DisneyMicrofacetDistribution {
 /// R = R(0) + (1 - R(0)) (1 - cos theta)^5,
 ///
 /// where R(0) is the reflectance at normal indicence.
-#[inline]
 fn schlick_weight(cos_theta: Float) -> Float {
     let m = clamp_t(1.0 - cos_theta, 0.0, 1.0);
     (m * m) * (m * m) * m
 }
 
-#[inline]
 // For a dielectric, R(0) = (eta - 1)^2 / (eta + 1)^2, assuming we're
 // coming from air.
 fn schlick_r0_from_eta(eta: Float) -> Float {
     sqr(eta - 1.0) / sqr(eta + 1.0)
 }
 
-#[inline]
 fn gtr1(cos_theta: Float, alpha: Float) -> Float {
     let alpha2 = alpha * alpha;
 
@@ -634,7 +631,6 @@ fn gtr1(cos_theta: Float, alpha: Float) -> Float {
         / (f32::consts::PI * Float::log10(alpha2) * (1.0 + (alpha2 - 1.0) * cos_theta * cos_theta))
 }
 
-#[inline]
 fn smith_g_ggx(cos_theta: Float, alpha: Float) -> Float {
     let alpha2 = alpha * alpha;
     let cos_theta2 = cos_theta * cos_theta;
@@ -642,7 +638,6 @@ fn smith_g_ggx(cos_theta: Float, alpha: Float) -> Float {
     1.0 / (cos_theta + Float::sqrt(alpha2 + cos_theta2 - alpha2 * cos_theta2))
 }
 
-#[inline]
 fn sqr(x: Float) -> Float {
     x * x
 }

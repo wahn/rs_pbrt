@@ -21,7 +21,6 @@ use crate::core::scene::Scene;
 use crate::core::transform::Transform;
 
 // see https://stackoverflow.com/questions/36008434/how-can-i-decode-f16-to-f32-using-only-the-stable-standard-library
-#[inline]
 #[cfg(feature = "openexr")]
 fn decode_f16(half: u16) -> f32 {
     let exp: u16 = half >> 10 & 0x1f;

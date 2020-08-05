@@ -300,11 +300,9 @@ impl SpatialLightDistribution {
         // http://zimbry.blogspot.ch/2011/09/better-bit-mixing-improving-on.html
         let mut hash: u64 = packed_pos;
         hash ^= hash >> 31;
-        let (mul, _overflow) = hash.overflowing_mul(0x7fb5_d329_728e_a185);
-        hash = mul;
+        hash = hash.wrapping_mul(0x7fb5_d329_728e_a185);
         hash ^= hash >> 27;
-        let (mul, _overflow) = hash.overflowing_mul(0x81da_def4_bc2d_d44d);
-        hash = mul;
+        hash = hash.wrapping_mul(0x81da_def4_bc2d_d44d);
         hash ^= hash >> 33;
         hash %= self.hash_table_size as u64;
         // Now, see if the hash table already has an entry for the
