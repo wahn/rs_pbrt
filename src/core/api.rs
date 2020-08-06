@@ -210,7 +210,7 @@ impl RenderOptions {
         let mut some_integrator: Option<Box<Integrator>> = None;
         let some_camera: Option<Arc<Camera>> = self.make_camera();
         if let Some(camera) = some_camera {
-            let some_sampler: Option<Arc<Sampler>> =
+            let some_sampler: Option<Box<Sampler>> =
                 make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
             if let Some(sampler) = some_sampler {
                 if self.integrator_name == "whitted" {
@@ -1645,8 +1645,8 @@ pub fn make_camera(
     some_camera
 }
 
-pub fn make_sampler(name: &str, param_set: &ParamSet, film: Arc<Film>) -> Option<Arc<Sampler>> {
-    let mut some_sampler: Option<Arc<Sampler>> = None;
+pub fn make_sampler(name: &str, param_set: &ParamSet, film: Arc<Film>) -> Option<Box<Sampler>> {
+    let mut some_sampler: Option<Box<Sampler>> = None;
     if name == "lowdiscrepancy" || name == "02sequence" {
         // CreateZeroTwoSequenceSampler
         let sampler = ZeroTwoSequenceSampler::create(param_set);

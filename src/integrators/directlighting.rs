@@ -25,7 +25,7 @@ pub enum LightStrategy {
 pub struct DirectLightingIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,
-    pub sampler: Arc<Sampler>,
+    pub sampler: Box<Sampler>,
     pixel_bounds: Bounds2i,
     // see directlighting.h
     strategy: LightStrategy,
@@ -38,7 +38,7 @@ impl DirectLightingIntegrator {
         strategy: LightStrategy,
         max_depth: u32,
         camera: Arc<Camera>,
-        sampler: Arc<Sampler>,
+        sampler: Box<Sampler>,
         pixel_bounds: Bounds2i,
     ) -> Self {
         DirectLightingIntegrator {
@@ -61,12 +61,8 @@ impl DirectLightingIntegrator {
             // request samples for sampling all lights
             for _i in 0..self.max_depth {
                 for j in 0..scene.lights.len() {
-                    Arc::get_mut(&mut self.sampler)
-                        .unwrap()
-                        .request_2d_array(self.n_light_samples[j]);
-                    Arc::get_mut(&mut self.sampler)
-                        .unwrap()
-                        .request_2d_array(self.n_light_samples[j]);
+                    self.sampler.request_2d_array(self.n_light_samples[j]);
+                    self.sampler.request_2d_array(self.n_light_samples[j]);
                 }
             }
         }
@@ -127,8 +123,8 @@ impl DirectLightingIntegrator {
     pub fn get_camera(&self) -> Arc<Camera> {
         self.camera.clone()
     }
-    pub fn get_sampler(&self) -> Arc<Sampler> {
-        self.sampler.clone()
+    pub fn get_sampler(&self) -> &Sampler {
+        &self.sampler
     }
     pub fn get_pixel_bounds(&self) -> Bounds2i {
         self.pixel_bounds

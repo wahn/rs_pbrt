@@ -1,5 +1,3 @@
-// std
-use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Point2f, Point2i};
 use crate::core::paramset::ParamSet;
@@ -38,7 +36,7 @@ impl RandomSampler {
             array_2d_offset: 0_usize,
         }
     }
-    pub fn clone_with_seed(&self, seed: u64) -> Arc<Sampler> {
+    pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
         let mut random_sampler = RandomSampler::new(self.samples_per_pixel);
         random_sampler.rng.set_sequence(seed);
         // manually copy remaining bits
@@ -51,12 +49,12 @@ impl RandomSampler {
         random_sampler.array_1d_offset = self.array_1d_offset;
         random_sampler.array_2d_offset = self.array_2d_offset;
         let sampler = Sampler::Random(random_sampler);
-        Arc::new(sampler)
+        Box::new(sampler)
     }
-    pub fn create(params: &ParamSet) -> Arc<Sampler> {
+    pub fn create(params: &ParamSet) -> Box<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 4);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-        Arc::new(Sampler::Random(RandomSampler::new(nsamp as i64)))
+        Box::new(Sampler::Random(RandomSampler::new(nsamp as i64)))
     }
     // Sampler
     pub fn start_pixel(&mut self, p: Point2i) {

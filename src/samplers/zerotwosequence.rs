@@ -1,5 +1,3 @@
-// std
-use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Point2f, Point2i};
 use crate::core::lowdiscrepancy::{sobol_2d, van_der_corput};
@@ -89,7 +87,7 @@ impl ZeroTwoSequenceSampler {
         }
         lds
     }
-    pub fn clone_with_seed(&self, seed: u64) -> Arc<Sampler> {
+    pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
         let mut zero_two_sampler = ZeroTwoSequenceSampler {
             samples_per_pixel: self.samples_per_pixel,
             n_sampled_dimensions: self.n_sampled_dimensions,
@@ -109,13 +107,13 @@ impl ZeroTwoSequenceSampler {
         };
         zero_two_sampler.reseed(seed);
         let sampler = Sampler::ZeroTwoSequence(zero_two_sampler);
-        Arc::new(sampler)
+        Box::new(sampler)
     }
-    pub fn create(params: &ParamSet) -> Arc<Sampler> {
+    pub fn create(params: &ParamSet) -> Box<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 16);
         let sd: i32 = params.find_one_int("dimensions", 4);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-        Arc::new(Sampler::ZeroTwoSequence(ZeroTwoSequenceSampler::new(
+        Box::new(Sampler::ZeroTwoSequence(ZeroTwoSequenceSampler::new(
             nsamp as i64,
             sd as i64,
         )))

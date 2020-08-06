@@ -1,5 +1,3 @@
-// std
-use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Point2f, Point2i};
 use crate::core::lowdiscrepancy::C_MAX_MIN_DIST;
@@ -83,7 +81,7 @@ impl MaxMinDistSampler {
         }
         mmds
     }
-    pub fn clone_with_seed(&self, seed: u64) -> Arc<Sampler> {
+    pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
         let mut mmds = MaxMinDistSampler {
             samples_per_pixel: self.samples_per_pixel,
             c_pixel: self.c_pixel,
@@ -103,13 +101,13 @@ impl MaxMinDistSampler {
         };
         mmds.reseed(seed);
         let sampler = Sampler::MaxMinDist(mmds);
-        Arc::new(sampler)
+        Box::new(sampler)
     }
-    pub fn create(params: &ParamSet) -> Arc<Sampler> {
+    pub fn create(params: &ParamSet) -> Box<Sampler> {
         let nsamp: i32 = params.find_one_int("pixelsamples", 16);
         let sd: i32 = params.find_one_int("dimensions", 4);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-        Arc::new(Sampler::MaxMinDist(MaxMinDistSampler::new(
+        Box::new(Sampler::MaxMinDist(MaxMinDistSampler::new(
             nsamp as i64,
             sd as i64,
         )))

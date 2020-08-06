@@ -2,8 +2,6 @@
 //! samplers but also provides some common functionality for use by
 //! **Sampler** implementations.
 
-// std
-use std::sync::Arc;
 // pbrt
 use crate::core::camera::CameraSample;
 use crate::core::geometry::{Point2f, Point2i};
@@ -29,7 +27,7 @@ pub enum Sampler {
 }
 
 impl Sampler {
-    pub fn clone_with_seed(&self, seed: u64) -> Arc<Sampler> {
+    pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
         match self {
             Sampler::Halton(sampler) => sampler.clone_with_seed(seed),
             Sampler::MaxMinDist(sampler) => sampler.clone_with_seed(seed),

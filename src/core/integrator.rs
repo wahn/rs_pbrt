@@ -102,7 +102,7 @@ impl SamplerIntegrator {
                         // spawn worker threads
                         for _ in 0..num_cores {
                             let pixel_tx = pixel_tx.clone();
-                            let mut tile_sampler: Arc<Sampler> =
+                            let mut tile_sampler: Box<Sampler> =
                                 sampler.clone_with_seed(0_u64);
                             scope.spawn(move |_| {
                                 while let Some((x, y)) = bq.next() {
@@ -111,7 +111,7 @@ impl SamplerIntegrator {
                                         y: y as i32,
                                     };
                                     let seed: i32 = tile.y * n_tiles.x + tile.x;
-                                    Arc::get_mut(&mut tile_sampler).unwrap().reseed(seed as u64);
+                                    tile_sampler.reseed(seed as u64);
                                     let x0: i32 = sample_bounds.p_min.x + tile.x * tile_size;
                                     let x1: i32 =
                                         std::cmp::min(x0 + tile_size, sample_bounds.p_max.x);
@@ -125,7 +125,7 @@ impl SamplerIntegrator {
                                     // println!("Starting image tile {:?}", tile_bounds);
                                     let mut film_tile = film.get_film_tile(&tile_bounds);
                                     for pixel in &tile_bounds {
-                                        Arc::get_mut(&mut tile_sampler).unwrap().start_pixel(pixel);
+                                        tile_sampler.start_pixel(pixel);
                                         if !pnt2_inside_exclusive(pixel, &pixel_bounds) {
                                             continue;
                                         }
@@ -136,7 +136,7 @@ impl SamplerIntegrator {
 
                                             // initialize _CameraSample_ for current sample
                                             let camera_sample: CameraSample =
-                                                Arc::get_mut(&mut tile_sampler).unwrap().get_camera_sample(pixel);
+                                                tile_sampler.get_camera_sample(pixel);
                                             // generate camera ray for current sample
                                             let mut ray: Ray = Ray::default();
                                             let ray_weight: Float = camera
@@ -158,7 +158,7 @@ impl SamplerIntegrator {
                                                 l = integrator.li(
                                                     &mut ray,
                                                     scene,
-                                                    Arc::get_mut(&mut tile_sampler).unwrap(), // &mut arena,
+                                                    &mut tile_sampler, // &mut arena,
                                                     0_i32,
                                                 );
                                             }
@@ -199,7 +199,7 @@ impl SamplerIntegrator {
                                                 &mut l,
                                                 ray_weight,
                                             );
-                                            done = !Arc::get_mut(&mut tile_sampler).unwrap().start_next_sample();
+                                            done = !tile_sampler.start_next_sample();
                                         } // arena is dropped here !
                                     }
                                     // send the tile through the channel to main thread
@@ -244,7 +244,7 @@ impl SamplerIntegrator {
             SamplerIntegrator::Whitted(integrator) => integrator.get_camera(),
         }
     }
-    pub fn get_sampler(&self) -> Arc<Sampler> {
+    pub fn get_sampler(&self) -> &Sampler {
         match self {
             SamplerIntegrator::AO(integrator) => integrator.get_sampler(),
             SamplerIntegrator::DirectLighting(integrator) => integrator.get_sampler(),

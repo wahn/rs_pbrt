@@ -1,5 +1,3 @@
-// std
-use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Point2f, Point2i};
 use crate::core::paramset::ParamSet;
@@ -65,7 +63,7 @@ impl StratifiedSampler {
         }
         ss
     }
-    pub fn clone_with_seed(&self, seed: u64) -> Arc<Sampler> {
+    pub fn clone_with_seed(&self, seed: u64) -> Box<Sampler> {
         let mut ss = StratifiedSampler {
             samples_per_pixel: self.samples_per_pixel,
             x_pixel_samples: self.x_pixel_samples,
@@ -87,15 +85,15 @@ impl StratifiedSampler {
         };
         ss.reseed(seed);
         let sampler = Sampler::Stratified(ss);
-        Arc::new(sampler)
+        Box::new(sampler)
     }
-    pub fn create(params: &ParamSet) -> Arc<Sampler> {
+    pub fn create(params: &ParamSet) -> Box<Sampler> {
         let jitter: bool = params.find_one_bool("jitter", true);
         let xsamp: i32 = params.find_one_int("xsamples", 4);
         let ysamp: i32 = params.find_one_int("ysamples", 4);
         let sd: i32 = params.find_one_int("dimensions", 4);
         // TODO: if (PbrtOptions.quickRender) nsamp = 1;
-        Arc::new(Sampler::Stratified(StratifiedSampler::new(
+        Box::new(Sampler::Stratified(StratifiedSampler::new(
             xsamp, ysamp, jitter, sd as i64,
         )))
     }
