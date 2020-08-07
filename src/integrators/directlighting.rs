@@ -83,8 +83,9 @@ impl DirectLightingIntegrator {
             // compute scattering functions for surface interaction
             let mode: TransportMode = TransportMode::Radiance;
             isect.compute_scattering_functions(ray, false, mode);
-            // if (!isect.bsdf)
-            //     return Li(isect.SpawnRay(ray.d), scene, sampler, arena, depth);
+            if isect.bsdf.is_none() {
+                return self.li(&mut isect.spawn_ray(&ray.d), scene, sampler, depth);
+            }
             let wo: Vector3f = isect.common.wo;
             l += isect.le(&wo);
             if !scene.lights.is_empty() {

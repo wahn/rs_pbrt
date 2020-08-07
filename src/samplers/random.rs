@@ -112,12 +112,7 @@ impl RandomSampler {
             return None;
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         self.array_2d_offset += 1;
@@ -128,12 +123,7 @@ impl RandomSampler {
             return (None, None);
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         self.array_2d_offset += 1;
@@ -143,12 +133,7 @@ impl RandomSampler {
             return (None, None);
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         self.array_2d_offset += 1;
@@ -161,12 +146,7 @@ impl RandomSampler {
             return (true, 0_usize, 0_usize);
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let idx: usize = self.array_2d_offset;
         self.array_2d_offset += 1;

@@ -160,12 +160,7 @@ impl MaxMinDistSampler {
     }
     pub fn get_1d(&mut self) -> Float {
         // TODO: ProfilePhase _(Prof::GetSample);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "current_pixel_sample_index = {}, samples_per_pixel = {}",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         if self.current_1d_dimension < self.samples_1d.len() as i32 {
             let sample: Float = self.samples_1d[self.current_1d_dimension as usize]
                 [self.current_pixel_sample_index as usize];
@@ -177,12 +172,7 @@ impl MaxMinDistSampler {
     }
     pub fn get_2d(&mut self) -> Point2f {
         // TODO: ProfilePhase _(Prof::GetSample);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "current_pixel_sample_index = {}, samples_per_pixel = {}",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         if self.current_2d_dimension < self.samples_2d.len() as i32 {
             let sample: Point2f = self.samples_2d[self.current_2d_dimension as usize]
                 [self.current_pixel_sample_index as usize];
@@ -213,12 +203,7 @@ impl MaxMinDistSampler {
             return None;
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         self.array_2d_offset += 1;
@@ -229,12 +214,7 @@ impl MaxMinDistSampler {
             return (None, None);
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         self.array_2d_offset += 1;
@@ -244,12 +224,7 @@ impl MaxMinDistSampler {
             return (None, None);
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let end: usize = start + n as usize;
         self.array_2d_offset += 1;
@@ -262,12 +237,7 @@ impl MaxMinDistSampler {
             return (true, 0_usize, 0_usize);
         }
         assert_eq!(self.samples_2d_array_sizes[self.array_2d_offset], n);
-        assert!(
-            self.current_pixel_sample_index < self.samples_per_pixel,
-            "self.current_pixel_sample_index ({}) < self.samples_per_pixel ({})",
-            self.current_pixel_sample_index,
-            self.samples_per_pixel
-        );
+        assert!(self.current_pixel_sample_index < self.samples_per_pixel);
         let start: usize = (self.current_pixel_sample_index * n as i64) as usize;
         let idx: usize = self.array_2d_offset;
         self.array_2d_offset += 1;
