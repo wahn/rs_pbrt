@@ -1,5 +1,4 @@
 // std
-use std::borrow::Borrow;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
@@ -99,8 +98,7 @@ impl DirectLightingIntegrator {
                         false,
                     );
                 } else {
-                    let it: &SurfaceInteraction = isect.borrow();
-                    l += uniform_sample_one_light(it, scene, sampler, false, None);
+                    l += uniform_sample_one_light(&isect, scene, sampler, false, None);
                 }
             }
             if ((depth + 1_i32) as u32) < self.max_depth {
