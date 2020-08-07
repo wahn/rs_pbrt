@@ -128,26 +128,26 @@ impl Triangle {
     }
     // Shape
     pub fn object_bound(&self) -> Bounds3f {
-        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
+        let p1: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
+        let p2: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
         bnd3_union_pnt3(
             &Bounds3f::new(
-                self.world_to_object.transform_point(&p0),
-                self.world_to_object.transform_point(&p1),
+                self.world_to_object.transform_point(p0),
+                self.world_to_object.transform_point(p1),
             ),
-            &self.world_to_object.transform_point(&p2),
+            &self.world_to_object.transform_point(p2),
         )
     }
     pub fn world_bound(&self) -> Bounds3f {
-        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
-        bnd3_union_pnt3(&Bounds3f::new(p0, p1), &p2)
+        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
+        let p1: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
+        let p2: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        bnd3_union_pnt3(&Bounds3f::new(*p0, *p1), p2)
     }
     pub fn intersect(&self, ray: &Ray, t_hit: &mut Float, isect: &mut SurfaceInteraction) -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
@@ -679,28 +679,27 @@ impl Triangle {
     }
     pub fn area(&self) -> Float {
         let idx1: usize = (self.id * 3) as usize;
-        let idx2: usize = idx1 + 1;
-        let idx3: usize = idx2 + 1;
+        let idx = &self.mesh.vertex_indices[idx1..(idx1 + 3)];
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[idx1] as usize];
-        let p1: Point3f = self.mesh.p[self.mesh.vertex_indices[idx2] as usize];
-        let p2: Point3f = self.mesh.p[self.mesh.vertex_indices[idx3] as usize];
-        0.5 as Float * vec3_cross_vec3(&(p1 - p0), &(p2 - p0)).length()
+        let p0: &Point3f = &self.mesh.p[idx[0] as usize];
+        let p1: &Point3f = &self.mesh.p[idx[1] as usize];
+        let p2: &Point3f = &self.mesh.p[idx[2] as usize];
+        0.5 as Float * vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0)).length()
     }
     pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let b: Point2f = uniform_sample_triangle(u);
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: Point3f = self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: Point3f =
-            self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
+        let p1: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
+        let p2: &Point3f =
+            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
         let mut it: InteractionCommon = InteractionCommon::default();
         let bx = b[XYEnum::X];
         let by = b[XYEnum::Y];
-        it.p = p0 * bx + p1 * by + p2 * (1.0 as Float - bx - by);
+        it.p = *p0 * bx + *p1 * by + *p2 * (1.0 as Float - bx - by);
         // compute surface normal for sampled point on triangle
-        it.n = Normal3f::from(vec3_cross_vec3(&(p1 - p0), &(p2 - p0))).normalize();
+        it.n = Normal3f::from(vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0))).normalize();
         // ensure correct orientation of the geometric normal; follow
         // the same approach as was used in Triangle::Intersect().
         if !self.mesh.n.is_empty() {
@@ -715,9 +714,9 @@ impl Triangle {
             it.n *= -1.0 as Float;
         }
         // compute error bounds for sampled point on triangle
-        let p_abs_sum: Point3f = pnt3_abs(&(p0 * bx))
-            + pnt3_abs(&(p1 * by))
-            + pnt3_abs(&(p2 * (1.0 as Float - bx - by)));
+        let p_abs_sum: Point3f = pnt3_abs(&(*p0 * bx))
+            + pnt3_abs(&(*p1 * by))
+            + pnt3_abs(&(*p2 * (1.0 as Float - bx - by)));
         it.p_error = Vector3f {
             x: p_abs_sum.x,
             y: p_abs_sum.y,
