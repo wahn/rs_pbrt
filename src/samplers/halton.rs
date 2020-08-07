@@ -264,8 +264,9 @@ impl HaltonSampler {
                 self.samples_2d_array_sizes[i] as usize * self.samples_per_pixel as usize;
             for j in 0..n_samples {
                 let idx: u64 = self.get_index_for_sample(j as u64);
-                self.sample_array_2d[i][j].x = self.sample_dimension(idx, dim);
-                self.sample_array_2d[i][j].y = self.sample_dimension(idx, dim + 1_i64);
+                let x = self.sample_dimension(idx, dim);
+                let y = self.sample_dimension(idx, dim + 1_i64);
+                self.sample_array_2d[i][j] = Point2f { x, y };
             }
             dim += 2_i64;
         }

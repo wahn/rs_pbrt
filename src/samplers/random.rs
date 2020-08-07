@@ -69,8 +69,7 @@ impl RandomSampler {
                 // C++: call x first
                 let x = self.rng.uniform_float();
                 let y = self.rng.uniform_float();
-                self.sample_array_2d[i][j].x = x;
-                self.sample_array_2d[i][j].y = y;
+                self.sample_array_2d[i][j] = Point2f { x, y };
             }
         }
         // Sampler::StartPixel(p);
