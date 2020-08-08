@@ -85,8 +85,8 @@ impl MaxMinDistSampler {
         let mut mmds = MaxMinDistSampler {
             samples_per_pixel: self.samples_per_pixel,
             c_pixel: self.c_pixel,
-            samples_1d: self.samples_1d.clone(),
-            samples_2d: self.samples_2d.clone(),
+            samples_1d: self.samples_1d.to_vec(),
+            samples_2d: self.samples_2d.to_vec(),
             current_1d_dimension: self.current_1d_dimension,
             current_2d_dimension: self.current_2d_dimension,
             rng: self.rng,
