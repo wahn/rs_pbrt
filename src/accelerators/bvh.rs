@@ -43,8 +43,8 @@ impl BVHPrimitiveInfo {
 #[derive(Debug)]
 pub struct BVHBuildNode<'a> {
     pub bounds: Bounds3f,
-    pub child1: Option<&'a mut BVHBuildNode<'a>>,
-    pub child2: Option<&'a mut BVHBuildNode<'a>>,
+    pub child1: Option<&'a BVHBuildNode<'a>>,
+    pub child2: Option<&'a BVHBuildNode<'a>>,
     pub split_axis: u8,
     pub first_prim_offset: usize,
     pub n_primitives: usize,
@@ -74,8 +74,8 @@ impl<'a> BVHBuildNode<'a> {
     pub fn init_interior(
         &mut self,
         axis: u8,
-        c0: &'a mut BVHBuildNode<'a>,
-        c1: &'a mut BVHBuildNode<'a>,
+        c0: &'a BVHBuildNode<'a>,
+        c1: &'a BVHBuildNode<'a>,
     ) {
         self.n_primitives = 0;
         self.bounds = bnd3_union_bnd3(&c0.bounds, &c1.bounds);
@@ -210,7 +210,7 @@ impl BVHAccel {
         end: usize,
         total_nodes: &mut usize,
         ordered_prims: &mut Vec<Arc<Primitive>>,
-    ) -> &'a mut BVHBuildNode<'a> {
+    ) -> &'a BVHBuildNode<'a> {
         assert_ne!(start, end);
         let node: &mut BVHBuildNode<'a> = arena.alloc(BVHBuildNode::default());
         *total_nodes += 1_usize;
@@ -383,7 +383,7 @@ impl BVHAccel {
         node
     }
     pub fn flatten_bvh_tree<'a>(
-        node: &mut BVHBuildNode<'a>,
+        node: &BVHBuildNode<'a>,
         nodes: &mut Vec<LinearBVHNode>,
         offset: &mut usize,
     ) -> usize {
@@ -401,10 +401,10 @@ impl BVHAccel {
             nodes[my_offset] = linear_node;
         } else {
             // interior
-            if let Some(ref mut child1) = node.child1 {
+            if let Some(ref child1) = node.child1 {
                 BVHAccel::flatten_bvh_tree(child1, nodes, offset);
             }
-            if let Some(ref mut child2) = node.child2 {
+            if let Some(ref child2) = node.child2 {
                 let linear_node = LinearBVHNode {
                     bounds: node.bounds,
                     offset: BVHAccel::flatten_bvh_tree(child2, nodes, offset) as i32,

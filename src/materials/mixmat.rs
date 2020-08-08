@@ -69,14 +69,14 @@ impl MixMaterial {
         );
         self.m1.compute_scattering_functions(
             si,
-            mode.clone(),
+            mode,
             allow_multiple_lobes,
             None,
             Some(s1),
         );
         self.m2.compute_scattering_functions(
             &mut si2,
-            mode.clone(),
+            mode,
             allow_multiple_lobes,
             None,
             Some(s2),

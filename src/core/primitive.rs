@@ -78,25 +78,21 @@ impl Primitive {
         mode: TransportMode,
         allow_multiple_lobes: bool,
     ) {
-        match self {
-            _ => {
-                if let Some(ref material) = self.get_material() {
-                    material.compute_scattering_functions(
-                        isect,
-                        mode,
-                        allow_multiple_lobes,
-                        self.get_material(),
-                        None,
-                    );
-                }
-                assert!(
-                    nrm_dot_nrm(&isect.common.n, &isect.shading.n) >= 0.0,
-                    "n: {:?} dot shading.n: {:?}",
-                    isect.common.n,
-                    isect.shading.n
-                );
-            }
+        if let Some(ref material) = self.get_material() {
+            material.compute_scattering_functions(
+                isect,
+                mode,
+                allow_multiple_lobes,
+                self.get_material(),
+                None,
+            );
         }
+        assert!(
+            nrm_dot_nrm(&isect.common.n, &isect.shading.n) >= 0.0,
+            "n: {:?} dot shading.n: {:?}",
+            isect.common.n,
+            isect.shading.n
+        );
     }
 }
 

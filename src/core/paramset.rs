@@ -356,7 +356,7 @@ impl ParamSet {
         for p in &param_set.point3fs {
             let mut values: Vec<Point3f> = Vec::new();
             for ix in 0..p.n_values {
-                values.push(p.values[ix].clone());
+                values.push(p.values[ix]);
             }
             self.point3fs.push(ParamSetItem::<Point3f> {
                 name: p.name.clone(),
@@ -371,7 +371,7 @@ impl ParamSet {
         for s in &param_set.spectra {
             let mut values: Vec<Spectrum> = Vec::new();
             for ix in 0..s.n_values {
-                values.push(s.values[ix].clone());
+                values.push(s.values[ix]);
             }
             self.spectra.push(ParamSetItem::<Spectrum> {
                 name: s.name.clone(),
@@ -641,8 +641,8 @@ impl TextureParams {
                 }
             }
         }
-        let mut val: Spectrum = self.material_params.find_one_spectrum(n.clone(), def);
-        val = self.geom_params.find_one_spectrum(n.clone(), val);
+        let mut val: Spectrum = self.material_params.find_one_spectrum(n, def);
+        val = self.geom_params.find_one_spectrum(n, val);
         Arc::new(ConstantTexture { value: val })
     }
     pub fn get_spectrum_texture_or_null(
@@ -697,10 +697,7 @@ impl TextureParams {
         if name == "" {
             let s: Vec<Float> = self.geom_params.find_float(n);
             if s.len() > 1 {
-                println!(
-                    "Ignoring excess values provided with parameter \"{}\"",
-                    n.clone()
-                );
+                println!("Ignoring excess values provided with parameter \"{}\"", n);
             } else if !s.is_empty() {
                 return Some(Arc::new(ConstantTexture { value: s[0] }));
             }

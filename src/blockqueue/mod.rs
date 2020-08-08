@@ -74,7 +74,7 @@ impl BlockQueue {
     }
     /// Check if the queue is empty
     pub fn is_empty(&self) -> bool {
-        self.next.load(Ordering::AcqRel) >= self.blocks.len()
+        self.next.load(Ordering::Acquire) >= self.blocks.len()
     }
 }
 

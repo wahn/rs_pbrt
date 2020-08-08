@@ -368,7 +368,7 @@ impl SpatialLightDistribution {
                     let dist: Distribution1D = self.compute_distribution(&pi);
                     let arc_dist: Arc<Distribution1D> = Arc::new(dist);
                     entry.distribution.set_if_none(arc_dist.clone());
-                    return arc_dist.clone();
+                    return arc_dist;
                 }
             }
         }

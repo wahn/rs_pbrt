@@ -326,7 +326,7 @@ impl<'a> SurfaceInteraction<'a> {
                 shading,
                 bsdf: None,
                 bssrdf: None,
-                shape: Some(shape.clone()),
+                shape: Some(shape),
             }
         } else {
             SurfaceInteraction {

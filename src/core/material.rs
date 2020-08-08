@@ -140,7 +140,7 @@ impl Material {
         si_eval.dpdx = Cell::new(si.dpdx.get());
         si_eval.dpdy = Cell::new(si.dpdy.get());
         if let Some(primitive) = &si.primitive {
-            Arc::new(primitive.clone());
+            Arc::new(*primitive);
         } else {
             si_eval.primitive = None
         }
@@ -160,7 +160,7 @@ impl Material {
         //     si_eval.bssrdf = None
         // }
         if let Some(shape) = &si.shape {
-            Arc::new(shape.clone());
+            Arc::new(shape);
         } else {
             si_eval.shape = None
         }

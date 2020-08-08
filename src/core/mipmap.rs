@@ -290,8 +290,8 @@ where
         let lod: Float = (0.0 as Float)
             .max(self.levels() as Float - 1.0 as Float + minor_length.log2() as Float);
         let ilod: usize = lod.floor() as usize;
-        let col2: T = self.ewa(ilod + 1, st.clone(), dst0.clone(), dst1.clone());
-        let col1: T = self.ewa(ilod, st.clone(), dst0.clone(), dst1.clone());
+        let col2: T = self.ewa(ilod + 1, st, *dst0, *dst1);
+        let col1: T = self.ewa(ilod, st, *dst0, *dst1);
         let ret: T = lerp(lod - ilod as Float, col1, col2);
         ret
     }
