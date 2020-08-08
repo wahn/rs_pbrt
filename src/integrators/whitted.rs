@@ -73,14 +73,7 @@ impl WhittedIntegrator {
                 let mut wi: Vector3f = Vector3f::default();
                 let mut pdf: Float = 0.0 as Float;
                 let mut visibility: VisibilityTester = VisibilityTester::default();
-                let it_common: InteractionCommon = InteractionCommon {
-                    p: isect.get_p(),
-                    time: isect.get_time(),
-                    p_error: isect.get_p_error(),
-                    wo: isect.get_wo(),
-                    n: isect.get_n(),
-                    medium_interface: isect.get_medium_interface(),
-                };
+                let it_common: &InteractionCommon = isect.get_common();
                 let li: Spectrum = light.sample_li(
                     &it_common,
                     sampler.get_2d(),

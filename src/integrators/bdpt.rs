@@ -151,6 +151,9 @@ impl<'a> Interaction for EndpointInteraction<'a> {
             medium: self.get_medium(d),
         }
     }
+    fn get_common(&self) -> &InteractionCommon {
+        &self.common
+    }
     fn get_p(&self) -> Point3f {
         self.common.p
     }

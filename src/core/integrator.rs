@@ -432,14 +432,7 @@ pub fn estimate_direct(
     let mut light_pdf: Float = 0.0 as Float;
     let mut scattering_pdf: Float = 0.0 as Float;
     let mut visibility: VisibilityTester = VisibilityTester::default();
-    let it_common: InteractionCommon = InteractionCommon {
-        p: it.get_p(),
-        time: it.get_time(),
-        p_error: it.get_p_error(),
-        wo: it.get_wo(),
-        n: it.get_n(),
-        medium_interface: it.get_medium_interface(),
-    };
+    let it_common: &InteractionCommon = it.get_common();
     let mut li: Spectrum = light.sample_li(
         &it_common,
         u_light,

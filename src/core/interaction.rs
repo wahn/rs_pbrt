@@ -31,6 +31,7 @@ pub trait Interaction {
     fn is_surface_interaction(&self) -> bool;
     fn is_medium_interaction(&self) -> bool;
     fn spawn_ray(&self, d: &Vector3f) -> Ray;
+    fn get_common(&self) -> &InteractionCommon;
     fn get_p(&self) -> Point3f;
     fn get_time(&self) -> Float;
     fn get_p_error(&self) -> Vector3f;
@@ -202,6 +203,9 @@ impl Interaction for MediumInteraction {
             differential: None,
             medium: self.get_medium(d),
         }
+    }
+    fn get_common(&self) -> &InteractionCommon {
+        &self.common
     }
     fn get_p(&self) -> Point3f {
         self.common.p
@@ -541,6 +545,9 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
             differential: None,
             medium: self.get_medium(d),
         }
+    }
+    fn get_common(&self) -> &InteractionCommon {
+        &self.common
     }
     fn get_p(&self) -> Point3f {
         self.common.p
