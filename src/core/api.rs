@@ -54,7 +54,7 @@ use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
 use crate::lights::distant::DistantLight;
 use crate::lights::goniometric::GonioPhotometricLight;
-// use crate::lights::infinite::InfiniteAreaLight;
+use crate::lights::infinite::InfiniteAreaLight;
 // use crate::lights::point::PointLight;
 // use crate::lights::projection::ProjectionLight;
 // use crate::lights::spot::SpotLight;
@@ -874,36 +874,36 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             &dir,
         ))));
         api_state.render_options.lights.push(distant_light);
-    // } else if api_state.param_set.name == "infinite" || api_state.param_set.name == "exinfinite" {
-    //     let l: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("L", Spectrum::new(1.0 as Float));
-    //     let sc: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-    //     let mut texmap: String = api_state
-    //         .param_set
-    //         .find_one_filename("mapname", String::from(""));
-    //     if texmap != "" {
-    //         if let Some(ref search_directory) = api_state.search_directory {
-    //             // texmap = AbsolutePath(ResolveFilename(texmap));
-    //             let mut path_buf: PathBuf = PathBuf::from("/");
-    //             path_buf.push(search_directory.as_ref());
-    //             path_buf.push(texmap);
-    //             texmap = String::from(path_buf.to_str().unwrap());
-    //         }
-    //     }
-    //     let n_samples: i32 = api_state.param_set.find_one_int("nsamples", 1 as i32);
-    //     // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
+    } else if api_state.param_set.name == "infinite" || api_state.param_set.name == "exinfinite" {
+        let l: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("L", Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+        let mut texmap: String = api_state
+            .param_set
+            .find_one_filename("mapname", String::from(""));
+        if texmap != "" {
+            if let Some(ref search_directory) = api_state.search_directory {
+                // texmap = AbsolutePath(ResolveFilename(texmap));
+                let mut path_buf: PathBuf = PathBuf::from("/");
+                path_buf.push(search_directory.as_ref());
+                path_buf.push(texmap);
+                texmap = String::from(path_buf.to_str().unwrap());
+            }
+        }
+        let n_samples: i32 = api_state.param_set.find_one_int("nsamples", 1 as i32);
+        // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
 
-    //     // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
-    //     let infinte_light = Arc::new(Light::InfiniteArea(Box::new(InfiniteAreaLight::new(
-    //         &api_state.cur_transform.t[0],
-    //         &(l * sc),
-    //         n_samples,
-    //         texmap,
-    //     ))));
-    //     api_state.render_options.lights.push(infinte_light);
+        // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
+        let infinte_light = Arc::new(Light::InfiniteArea(Box::new(InfiniteAreaLight::new(
+            &api_state.cur_transform.t[0],
+            &(l * sc),
+            n_samples,
+            texmap,
+        ))));
+        api_state.render_options.lights.push(infinte_light);
     } else {
         panic!("MakeLight: unknown name {}", api_state.param_set.name);
     }
