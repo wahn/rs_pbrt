@@ -32,14 +32,14 @@ pub trait Interaction {
     fn is_medium_interaction(&self) -> bool;
     fn spawn_ray(&self, d: &Vector3f) -> Ray;
     fn get_common(&self) -> &InteractionCommon;
-    fn get_p(&self) -> Point3f;
+    fn get_p(&self) -> &Point3f;
     fn get_time(&self) -> Float;
-    fn get_p_error(&self) -> Vector3f;
-    fn get_wo(&self) -> Vector3f;
-    fn get_n(&self) -> Normal3f;
+    fn get_p_error(&self) -> &Vector3f;
+    fn get_wo(&self) -> &Vector3f;
+    fn get_n(&self) -> &Normal3f;
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>>;
     fn get_bsdf(&self) -> Option<&Bsdf>;
-    fn get_shading_n(&self) -> Option<Normal3f>;
+    fn get_shading_n(&self) -> Option<&Normal3f>;
     fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>>;
 }
 
@@ -207,20 +207,20 @@ impl Interaction for MediumInteraction {
     fn get_common(&self) -> &InteractionCommon {
         &self.common
     }
-    fn get_p(&self) -> Point3f {
-        self.common.p
+    fn get_p(&self) -> &Point3f {
+        &self.common.p
     }
     fn get_time(&self) -> Float {
         self.common.time
     }
-    fn get_p_error(&self) -> Vector3f {
-        self.common.p_error
+    fn get_p_error(&self) -> &Vector3f {
+        &self.common.p_error
     }
-    fn get_wo(&self) -> Vector3f {
-        self.common.wo
+    fn get_wo(&self) -> &Vector3f {
+        &self.common.wo
     }
-    fn get_n(&self) -> Normal3f {
-        self.common.n
+    fn get_n(&self) -> &Normal3f {
+        &self.common.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
         if let Some(ref medium_interface) = self.common.medium_interface {
@@ -232,7 +232,7 @@ impl Interaction for MediumInteraction {
     fn get_bsdf(&self) -> Option<&Bsdf> {
         None
     }
-    fn get_shading_n(&self) -> Option<Normal3f> {
+    fn get_shading_n(&self) -> Option<&Normal3f> {
         None
     }
     fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
@@ -549,20 +549,20 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
     fn get_common(&self) -> &InteractionCommon {
         &self.common
     }
-    fn get_p(&self) -> Point3f {
-        self.common.p
+    fn get_p(&self) -> &Point3f {
+        &self.common.p
     }
     fn get_time(&self) -> Float {
         self.common.time
     }
-    fn get_p_error(&self) -> Vector3f {
-        self.common.p_error
+    fn get_p_error(&self) -> &Vector3f {
+        &self.common.p_error
     }
-    fn get_wo(&self) -> Vector3f {
-        self.common.wo
+    fn get_wo(&self) -> &Vector3f {
+        &self.common.wo
     }
-    fn get_n(&self) -> Normal3f {
-        self.common.n
+    fn get_n(&self) -> &Normal3f {
+        &self.common.n
     }
     fn get_medium_interface(&self) -> Option<Arc<MediumInterface>> {
         if let Some(ref medium_interface) = self.common.medium_interface {
@@ -578,8 +578,8 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
             None
         }
     }
-    fn get_shading_n(&self) -> Option<Normal3f> {
-        Some(self.shading.n)
+    fn get_shading_n(&self) -> Option<&Normal3f> {
+        Some(&self.shading.n)
     }
     fn get_phase(&self) -> Option<Arc<HenyeyGreenstein>> {
         None

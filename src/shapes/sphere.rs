@@ -468,7 +468,7 @@ impl Sphere {
             &iref.get_p(),
             &iref.get_p_error(),
             &iref.get_n(),
-            &(p_center - iref.get_p()),
+            &(p_center - *iref.get_p()),
         );
         if pnt3_distance_squared(&p_origin, &p_center) <= self.radius * self.radius {
             // return Shape::Pdf(ref, wi);

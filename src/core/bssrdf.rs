@@ -77,9 +77,9 @@ impl TabulatedBssrdf {
         let ss: Vector3f = po.shading.dpdu.normalize();
         if let Some(material) = material_opt {
             TabulatedBssrdf {
-                po_p: po.get_p(),
+                po_p: *po.get_p(),
                 po_time: po.get_time(),
-                po_wo: po.get_wo(),
+                po_wo: *po.get_wo(),
                 eta,
                 ns,
                 ss,
@@ -105,7 +105,7 @@ impl TabulatedBssrdf {
     }
     pub fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float {
         // express $\pti-\pto$ and $\bold{n}_i$ with respect to local coordinates at $\pto$
-        let d: Vector3f = self.po_p - pi.get_p();
+        let d: Vector3f = self.po_p - *pi.get_p();
         let d_local: Vector3f = Vector3f {
             x: vec3_dot_vec3(&self.ss, &d),
             y: vec3_dot_vec3(&self.ts, &d),
@@ -217,11 +217,11 @@ impl TabulatedBssrdf {
             let mut si: SurfaceInteraction = SurfaceInteraction::default();
             if scene.intersect(&mut r, &mut si) {
                 // base = ptr->si;
-                base.p = si.get_p();
+                base.p = *si.get_p();
                 base.time = si.get_time();
-                base.p_error = si.get_p_error();
-                base.wo = si.get_wo();
-                base.n = si.get_n();
+                base.p_error = *si.get_p_error();
+                base.wo = *si.get_wo();
+                base.n = *si.get_n();
                 // TODO: si.medium_interface;
                 base.medium_interface = None;
                 // append admissible intersection to _IntersectionChain_
@@ -256,11 +256,11 @@ impl TabulatedBssrdf {
         // while (selected-- > 0) chain = chain->next;
         // *pi = chain->si;
         let selected_si: &SurfaceInteraction = &chain[selected];
-        pi.common.p = selected_si.get_p();
+        pi.common.p = *selected_si.get_p();
         pi.common.time = selected_si.get_time();
-        pi.common.p_error = selected_si.get_p_error();
-        pi.common.wo = selected_si.get_wo();
-        pi.common.n = selected_si.get_n();
+        pi.common.p_error = *selected_si.get_p_error();
+        pi.common.wo = *selected_si.get_wo();
+        pi.common.n = *selected_si.get_n();
         if let Some(ref medium_interface) = selected_si.get_medium_interface() {
             pi.common.medium_interface = Some(medium_interface.clone());
         } else {
