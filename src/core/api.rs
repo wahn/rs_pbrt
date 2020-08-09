@@ -52,12 +52,12 @@ use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
-use crate::lights::distant::DistantLight;
-use crate::lights::goniometric::GonioPhotometricLight;
-use crate::lights::infinite::InfiniteAreaLight;
-use crate::lights::point::PointLight;
-use crate::lights::projection::ProjectionLight;
-use crate::lights::spot::SpotLight;
+// use crate::lights::distant::DistantLight;
+// use crate::lights::goniometric::GonioPhotometricLight;
+// use crate::lights::infinite::InfiniteAreaLight;
+// use crate::lights::point::PointLight;
+// use crate::lights::projection::ProjectionLight;
+// use crate::lights::spot::SpotLight;
 use crate::materials::disney::DisneyMaterial;
 use crate::materials::fourier::FourierMaterial;
 use crate::materials::glass::GlassMaterial;
@@ -726,186 +726,186 @@ fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
 
 fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     // MakeLight (api.cpp:591)
-    if api_state.param_set.name == "point" {
-        let i: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
-        let sc: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-        let p: Point3f = api_state
-            .param_set
-            .find_one_point3f("from", Point3f::default());
-        let l2w: Transform = Transform::translate(&Vector3f {
-            x: p.x,
-            y: p.y,
-            z: p.z,
-        }) * api_state.cur_transform.t[0];
-        let point_light = Arc::new(Light::Point(Box::new(PointLight::new(
-            &l2w,
-            medium_interface,
-            &(i * sc),
-        ))));
-        api_state.render_options.lights.push(point_light);
-    } else if api_state.param_set.name == "spot" {
-        // CreateSpotLight
-        let i: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
-        let sc: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-        let coneangle: Float = api_state
-            .param_set
-            .find_one_float("coneangle", 30.0 as Float);
-        let conedelta: Float = api_state
-            .param_set
-            .find_one_float("conedeltaangle", 5.0 as Float);
-        // compute spotlight world to light transformation
-        let from: Point3f = api_state.param_set.find_one_point3f(
-            "from",
-            Point3f {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        );
-        let to: Point3f = api_state.param_set.find_one_point3f(
-            "to",
-            Point3f {
-                x: 0.0,
-                y: 0.0,
-                z: 1.0,
-            },
-        );
-        let dir: Vector3f = (to - from).normalize();
-        let mut du: Vector3f = Vector3f::default();
-        let mut dv: Vector3f = Vector3f::default();
-        vec3_coordinate_system(&dir, &mut du, &mut dv);
-        let dir_to_z: Transform = Transform::new(
-            du.x, du.y, du.z, 0.0, dv.x, dv.y, dv.z, 0.0, dir.x, dir.y, dir.z, 0.0, 0.0, 0.0, 0.0,
-            1.0,
-        );
-        let light2world: Transform = api_state.cur_transform.t[0]
-            * Transform::translate(&Vector3f {
-                x: from.x,
-                y: from.y,
-                z: from.z,
-            })
-            * Transform::inverse(&dir_to_z);
-        let spot_light = Arc::new(Light::Spot(Box::new(SpotLight::new(
-            &light2world,
-            medium_interface,
-            &(i * sc),
-            coneangle,
-            coneangle - conedelta,
-        ))));
-        api_state.render_options.lights.push(spot_light);
-    } else if api_state.param_set.name == "goniometric" {
-        // CreateGoniometricLight
-        let i: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
-        let sc: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-        let texname: String = api_state
-            .param_set
-            .find_one_filename("mapname", String::from(""));
-        let projection_light = Arc::new(Light::GonioPhotometric(Box::new(
-            GonioPhotometricLight::new(
-                &api_state.cur_transform.t[0],
-                medium_interface,
-                &(i * sc),
-                texname,
-            ),
-        )));
-        api_state.render_options.lights.push(projection_light);
-    } else if api_state.param_set.name == "projection" {
-        // CreateProjectionLight
-        let i: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
-        let sc: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-        let fov: Float = api_state.param_set.find_one_float("fov", 45.0 as Float);
-        let texname: String = api_state
-            .param_set
-            .find_one_filename("mapname", String::from(""));
-        let projection_light = Arc::new(Light::Projection(Box::new(ProjectionLight::new(
-            &api_state.cur_transform.t[0],
-            medium_interface,
-            &(i * sc),
-            texname,
-            fov,
-        ))));
-        api_state.render_options.lights.push(projection_light);
-    } else if api_state.param_set.name == "distant" {
-        // CreateDistantLight
-        let l: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("L", Spectrum::new(1.0 as Float));
-        let sc: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-        let from: Point3f = api_state.param_set.find_one_point3f(
-            "from",
-            Point3f {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        );
-        let to: Point3f = api_state.param_set.find_one_point3f(
-            "to",
-            Point3f {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-        );
-        let dir: Vector3f = from - to;
-        // return std::make_shared<DistantLight>(light2world, L * sc, dir);
-        let distant_light = Arc::new(Light::Distant(Box::new(DistantLight::new(
-            &api_state.cur_transform.t[0],
-            &(l * sc),
-            &dir,
-        ))));
-        api_state.render_options.lights.push(distant_light);
-    } else if api_state.param_set.name == "infinite" || api_state.param_set.name == "exinfinite" {
-        let l: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("L", Spectrum::new(1.0 as Float));
-        let sc: Spectrum = api_state
-            .param_set
-            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-        let mut texmap: String = api_state
-            .param_set
-            .find_one_filename("mapname", String::from(""));
-        if texmap != "" {
-            if let Some(ref search_directory) = api_state.search_directory {
-                // texmap = AbsolutePath(ResolveFilename(texmap));
-                let mut path_buf: PathBuf = PathBuf::from("/");
-                path_buf.push(search_directory.as_ref());
-                path_buf.push(texmap);
-                texmap = String::from(path_buf.to_str().unwrap());
-            }
-        }
-        let n_samples: i32 = api_state.param_set.find_one_int("nsamples", 1 as i32);
-        // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
+    // if api_state.param_set.name == "point" {
+    //     let i: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+    //     let sc: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+    //     let p: Point3f = api_state
+    //         .param_set
+    //         .find_one_point3f("from", Point3f::default());
+    //     let l2w: Transform = Transform::translate(&Vector3f {
+    //         x: p.x,
+    //         y: p.y,
+    //         z: p.z,
+    //     }) * api_state.cur_transform.t[0];
+    //     let point_light = Arc::new(Light::Point(Box::new(PointLight::new(
+    //         &l2w,
+    //         medium_interface,
+    //         &(i * sc),
+    //     ))));
+    //     api_state.render_options.lights.push(point_light);
+    // } else if api_state.param_set.name == "spot" {
+    //     // CreateSpotLight
+    //     let i: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+    //     let sc: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+    //     let coneangle: Float = api_state
+    //         .param_set
+    //         .find_one_float("coneangle", 30.0 as Float);
+    //     let conedelta: Float = api_state
+    //         .param_set
+    //         .find_one_float("conedeltaangle", 5.0 as Float);
+    //     // compute spotlight world to light transformation
+    //     let from: Point3f = api_state.param_set.find_one_point3f(
+    //         "from",
+    //         Point3f {
+    //             x: 0.0,
+    //             y: 0.0,
+    //             z: 0.0,
+    //         },
+    //     );
+    //     let to: Point3f = api_state.param_set.find_one_point3f(
+    //         "to",
+    //         Point3f {
+    //             x: 0.0,
+    //             y: 0.0,
+    //             z: 1.0,
+    //         },
+    //     );
+    //     let dir: Vector3f = (to - from).normalize();
+    //     let mut du: Vector3f = Vector3f::default();
+    //     let mut dv: Vector3f = Vector3f::default();
+    //     vec3_coordinate_system(&dir, &mut du, &mut dv);
+    //     let dir_to_z: Transform = Transform::new(
+    //         du.x, du.y, du.z, 0.0, dv.x, dv.y, dv.z, 0.0, dir.x, dir.y, dir.z, 0.0, 0.0, 0.0, 0.0,
+    //         1.0,
+    //     );
+    //     let light2world: Transform = api_state.cur_transform.t[0]
+    //         * Transform::translate(&Vector3f {
+    //             x: from.x,
+    //             y: from.y,
+    //             z: from.z,
+    //         })
+    //         * Transform::inverse(&dir_to_z);
+    //     let spot_light = Arc::new(Light::Spot(Box::new(SpotLight::new(
+    //         &light2world,
+    //         medium_interface,
+    //         &(i * sc),
+    //         coneangle,
+    //         coneangle - conedelta,
+    //     ))));
+    //     api_state.render_options.lights.push(spot_light);
+    // } else if api_state.param_set.name == "goniometric" {
+    //     // CreateGoniometricLight
+    //     let i: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+    //     let sc: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+    //     let texname: String = api_state
+    //         .param_set
+    //         .find_one_filename("mapname", String::from(""));
+    //     let projection_light = Arc::new(Light::GonioPhotometric(Box::new(
+    //         GonioPhotometricLight::new(
+    //             &api_state.cur_transform.t[0],
+    //             medium_interface,
+    //             &(i * sc),
+    //             texname,
+    //         ),
+    //     )));
+    //     api_state.render_options.lights.push(projection_light);
+    // } else if api_state.param_set.name == "projection" {
+    //     // CreateProjectionLight
+    //     let i: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+    //     let sc: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+    //     let fov: Float = api_state.param_set.find_one_float("fov", 45.0 as Float);
+    //     let texname: String = api_state
+    //         .param_set
+    //         .find_one_filename("mapname", String::from(""));
+    //     let projection_light = Arc::new(Light::Projection(Box::new(ProjectionLight::new(
+    //         &api_state.cur_transform.t[0],
+    //         medium_interface,
+    //         &(i * sc),
+    //         texname,
+    //         fov,
+    //     ))));
+    //     api_state.render_options.lights.push(projection_light);
+    // } else if api_state.param_set.name == "distant" {
+    //     // CreateDistantLight
+    //     let l: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("L", Spectrum::new(1.0 as Float));
+    //     let sc: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+    //     let from: Point3f = api_state.param_set.find_one_point3f(
+    //         "from",
+    //         Point3f {
+    //             x: 0.0,
+    //             y: 0.0,
+    //             z: 0.0,
+    //         },
+    //     );
+    //     let to: Point3f = api_state.param_set.find_one_point3f(
+    //         "to",
+    //         Point3f {
+    //             x: 0.0,
+    //             y: 0.0,
+    //             z: 0.0,
+    //         },
+    //     );
+    //     let dir: Vector3f = from - to;
+    //     // return std::make_shared<DistantLight>(light2world, L * sc, dir);
+    //     let distant_light = Arc::new(Light::Distant(Box::new(DistantLight::new(
+    //         &api_state.cur_transform.t[0],
+    //         &(l * sc),
+    //         &dir,
+    //     ))));
+    //     api_state.render_options.lights.push(distant_light);
+    // } else if api_state.param_set.name == "infinite" || api_state.param_set.name == "exinfinite" {
+    //     let l: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("L", Spectrum::new(1.0 as Float));
+    //     let sc: Spectrum = api_state
+    //         .param_set
+    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+    //     let mut texmap: String = api_state
+    //         .param_set
+    //         .find_one_filename("mapname", String::from(""));
+    //     if texmap != "" {
+    //         if let Some(ref search_directory) = api_state.search_directory {
+    //             // texmap = AbsolutePath(ResolveFilename(texmap));
+    //             let mut path_buf: PathBuf = PathBuf::from("/");
+    //             path_buf.push(search_directory.as_ref());
+    //             path_buf.push(texmap);
+    //             texmap = String::from(path_buf.to_str().unwrap());
+    //         }
+    //     }
+    //     let n_samples: i32 = api_state.param_set.find_one_int("nsamples", 1 as i32);
+    //     // TODO: if (PbrtOptions.quickRender) nSamples = std::max(1, nSamples / 4);
 
-        // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
-        let infinte_light = Arc::new(Light::InfiniteArea(Box::new(InfiniteAreaLight::new(
-            &api_state.cur_transform.t[0],
-            &(l * sc),
-            n_samples,
-            texmap,
-        ))));
-        api_state.render_options.lights.push(infinte_light);
-    } else {
+    //     // return std::make_shared<InfiniteAreaLight>(light2world, L * sc, nSamples, texmap);
+    //     let infinte_light = Arc::new(Light::InfiniteArea(Box::new(InfiniteAreaLight::new(
+    //         &api_state.cur_transform.t[0],
+    //         &(l * sc),
+    //         n_samples,
+    //         texmap,
+    //     ))));
+    //     api_state.render_options.lights.push(infinte_light);
+    // } else {
         panic!("MakeLight: unknown name {}", api_state.param_set.name);
-    }
+    // }
 }
 
 fn make_medium(api_state: &mut ApiState) {

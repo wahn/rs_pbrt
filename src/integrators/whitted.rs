@@ -72,23 +72,19 @@ impl WhittedIntegrator {
             for light in &scene.lights {
                 let mut wi: Vector3f = Vector3f::default();
                 let mut pdf: Float = 0.0 as Float;
-                let mut visibility: VisibilityTester = VisibilityTester::default();
                 let it_common: &InteractionCommon = isect.get_common();
-                let li: Spectrum = light.sample_li(
-                    &it_common,
-                    sampler.get_2d(),
-                    &mut wi,
-                    &mut pdf,
-                    &mut visibility,
-                );
+                let (li, visibility_opt) =
+                    light.sample_li(&it_common, sampler.get_2d(), &mut wi, &mut pdf);
                 if li.is_black() || pdf == 0.0 as Float {
                     continue;
                 }
                 if let Some(ref bsdf) = isect.bsdf {
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
                     let f: Spectrum = bsdf.f(&wo, &wi, bsdf_flags);
-                    if !f.is_black() && visibility.unoccluded(scene) {
-                        l += f * li * vec3_abs_dot_nrm(&wi, &n) / pdf;
+                    if let Some(visibility) = visibility_opt {
+                        if !f.is_black() && visibility.unoccluded(scene) {
+                            l += f * li * vec3_abs_dot_nrm(&wi, &n) / pdf;
+                        }
                     }
                 } else {
                     panic!("no isect.bsdf found");

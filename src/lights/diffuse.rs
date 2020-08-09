@@ -67,27 +67,30 @@ impl DiffuseAreaLight {
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
-    ) -> Spectrum {
+    ) -> (Spectrum, Option<VisibilityTester>) {
         // TODO: ProfilePhase _(Prof::LightSample);
         let p_shape: InteractionCommon = self.shape.sample_with_ref_point(&iref, u, pdf);
         // TODO: iref.mediumInterface = mediumInterface;
         if *pdf == 0.0 as Float || (p_shape.p - iref.p).length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
-            return Spectrum::default();
+            return (Spectrum::default(), None);
         }
         let new_wi: Vector3f = (p_shape.p - iref.p).normalize();
         *wi = new_wi;
-        vis.p0 = InteractionCommon {
-            p: iref.p,
-            time: iref.time,
-            p_error: iref.p_error,
-            wo: iref.wo,
-            n: iref.n,
-            medium_interface: None,
-        };
-        vis.p1 = p_shape;
-        self.l(&vis.p1, &-new_wi)
+        (
+            self.l(&p_shape, &-new_wi),
+            Some(VisibilityTester {
+                p0: InteractionCommon {
+                    p: iref.p,
+                    time: iref.time,
+                    p_error: iref.p_error,
+                    wo: iref.wo,
+                    n: iref.n,
+                    medium_interface: None,
+                },
+                p1: p_shape,
+            }),
+        )
     }
     pub fn power(&self) -> Spectrum {
         // return (twoSided ? 2 : 1) * Lemit * area * Pi;
