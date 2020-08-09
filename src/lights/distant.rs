@@ -49,32 +49,33 @@ impl DistantLight {
         _u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
-    ) -> Spectrum {
+    ) -> (Spectrum, Option<VisibilityTester>) {
         // TODO: ProfilePhase _(Prof::LightSample);
         *wi = self.w_light;
         *pdf = 1.0 as Float;
         let p_outside: Point3f =
             iref.p + self.w_light * (2.0 as Float * *self.world_radius.read().unwrap());
-        *vis = VisibilityTester {
-            p0: InteractionCommon {
-                p: iref.p,
-                time: iref.time,
-                p_error: iref.p_error,
-                wo: iref.wo,
-                n: iref.n,
-                medium_interface: None,
-            },
-            p1: InteractionCommon {
-                p: p_outside,
-                time: iref.time,
-                p_error: Vector3f::default(),
-                wo: Vector3f::default(),
-                n: Normal3f::default(),
-                medium_interface: None,
-            },
-        };
-        self.l
+        (
+            self.l,
+            Some(VisibilityTester {
+                p0: InteractionCommon {
+                    p: iref.p,
+                    time: iref.time,
+                    p_error: iref.p_error,
+                    wo: iref.wo,
+                    n: iref.n,
+                    medium_interface: None,
+                },
+                p1: InteractionCommon {
+                    p: p_outside,
+                    time: iref.time,
+                    p_error: Vector3f::default(),
+                    wo: Vector3f::default(),
+                    n: Normal3f::default(),
+                    medium_interface: None,
+                },
+            }),
+        )
     }
     pub fn power(&self) -> Spectrum {
         let world_radius: Float = *self.world_radius.read().unwrap();

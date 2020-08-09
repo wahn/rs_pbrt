@@ -52,7 +52,7 @@ use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
-// use crate::lights::distant::DistantLight;
+ use crate::lights::distant::DistantLight;
 // use crate::lights::goniometric::GonioPhotometricLight;
 // use crate::lights::infinite::InfiniteAreaLight;
 // use crate::lights::point::PointLight;
@@ -841,38 +841,39 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     //         fov,
     //     ))));
     //     api_state.render_options.lights.push(projection_light);
-    // } else if api_state.param_set.name == "distant" {
-    //     // CreateDistantLight
-    //     let l: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("L", Spectrum::new(1.0 as Float));
-    //     let sc: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-    //     let from: Point3f = api_state.param_set.find_one_point3f(
-    //         "from",
-    //         Point3f {
-    //             x: 0.0,
-    //             y: 0.0,
-    //             z: 0.0,
-    //         },
-    //     );
-    //     let to: Point3f = api_state.param_set.find_one_point3f(
-    //         "to",
-    //         Point3f {
-    //             x: 0.0,
-    //             y: 0.0,
-    //             z: 0.0,
-    //         },
-    //     );
-    //     let dir: Vector3f = from - to;
-    //     // return std::make_shared<DistantLight>(light2world, L * sc, dir);
-    //     let distant_light = Arc::new(Light::Distant(Box::new(DistantLight::new(
-    //         &api_state.cur_transform.t[0],
-    //         &(l * sc),
-    //         &dir,
-    //     ))));
-    //     api_state.render_options.lights.push(distant_light);
+    // } else
+    if api_state.param_set.name == "distant" {
+        // CreateDistantLight
+        let l: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("L", Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+        let from: Point3f = api_state.param_set.find_one_point3f(
+            "from",
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let to: Point3f = api_state.param_set.find_one_point3f(
+            "to",
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let dir: Vector3f = from - to;
+        // return std::make_shared<DistantLight>(light2world, L * sc, dir);
+        let distant_light = Arc::new(Light::Distant(Box::new(DistantLight::new(
+            &api_state.cur_transform.t[0],
+            &(l * sc),
+            &dir,
+        ))));
+        api_state.render_options.lights.push(distant_light);
     // } else if api_state.param_set.name == "infinite" || api_state.param_set.name == "exinfinite" {
     //     let l: Spectrum = api_state
     //         .param_set
@@ -903,9 +904,9 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     //         texmap,
     //     ))));
     //     api_state.render_options.lights.push(infinte_light);
-    // } else {
+    } else {
         panic!("MakeLight: unknown name {}", api_state.param_set.name);
-    // }
+    }
 }
 
 fn make_medium(api_state: &mut ApiState) {

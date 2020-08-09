@@ -225,7 +225,7 @@ impl SpatialLightDistribution {
             {
                 let mut pdf: Float = 0.0 as Float;
                 let mut wi: Vector3f = Vector3f::default();
-                let (li, vis) =
+                let (li, _vis) =
                     self.scene.lights[j].sample_li(&intr, u, &mut wi, &mut pdf);
                 if pdf > 0.0 as Float {
                     // TODO: look at tracing shadow rays / computing

@@ -12,7 +12,7 @@ use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampler::Sampler;
 use crate::core::scene::Scene;
 use crate::lights::diffuse::DiffuseAreaLight;
-// use crate::lights::distant::DistantLight;
+use crate::lights::distant::DistantLight;
 // use crate::lights::goniometric::GonioPhotometricLight;
 // use crate::lights::infinite::InfiniteAreaLight;
 // use crate::lights::point::PointLight;
@@ -31,7 +31,7 @@ pub enum LightFlags {
 
 pub enum Light {
     DiffuseArea(Box<DiffuseAreaLight>),
-    // Distant(Box<DistantLight>),
+    Distant(Box<DistantLight>),
     // GonioPhotometric(Box<GonioPhotometricLight>),
     // InfiniteArea(Box<InfiniteAreaLight>),
     // Point(Box<PointLight>),
@@ -52,18 +52,18 @@ impl Light {
     ) -> (Spectrum, Option<VisibilityTester>) {
         match self {
             Light::DiffuseArea(light) => light.sample_li(iref, u, wi, pdf),
-            // Light::Distant(light) => light.sample_li(iref, u, wi, pdf, vis),
-            // Light::GonioPhotometric(light) => light.sample_li(iref, u, wi, pdf, vis),
-            // Light::InfiniteArea(light) => light.sample_li(iref, u, wi, pdf, vis),
-            // Light::Point(light) => light.sample_li(iref, u, wi, pdf, vis),
-            // Light::Projection(light) => light.sample_li(iref, u, wi, pdf, vis),
-            // Light::Spot(light) => light.sample_li(iref, u, wi, pdf, vis),
+            Light::Distant(light) => light.sample_li(iref, u, wi, pdf),
+            // Light::GonioPhotometric(light) => light.sample_li(iref, u, wi, pdf),
+            // Light::InfiniteArea(light) => light.sample_li(iref, u, wi, pdf),
+            // Light::Point(light) => light.sample_li(iref, u, wi, pdf),
+            // Light::Projection(light) => light.sample_li(iref, u, wi, pdf),
+            // Light::Spot(light) => light.sample_li(iref, u, wi, pdf),
         }
     }
     pub fn power(&self) -> Spectrum {
         match self {
             Light::DiffuseArea(light) => light.power(),
-            // Light::Distant(light) => light.power(),
+            Light::Distant(light) => light.power(),
             // Light::GonioPhotometric(light) => light.power(),
             // Light::InfiniteArea(light) => light.power(),
             // Light::Point(light) => light.power(),
@@ -74,7 +74,7 @@ impl Light {
     pub fn preprocess(&self, scene: &Scene) {
         match self {
             Light::DiffuseArea(light) => light.preprocess(scene),
-            // Light::Distant(light) => light.preprocess(scene),
+            Light::Distant(light) => light.preprocess(scene),
             // Light::GonioPhotometric(light) => light.preprocess(scene),
             // Light::InfiniteArea(light) => light.preprocess(scene),
             // Light::Point(light) => light.preprocess(scene),
@@ -85,7 +85,7 @@ impl Light {
     pub fn le(&self, ray: &mut Ray) -> Spectrum {
         match self {
             Light::DiffuseArea(light) => light.le(ray),
-            // Light::Distant(light) => light.le(ray),
+            Light::Distant(light) => light.le(ray),
             // Light::GonioPhotometric(light) => light.le(ray),
             // Light::InfiniteArea(light) => light.le(ray),
             // Light::Point(light) => light.le(ray),
@@ -96,7 +96,7 @@ impl Light {
     pub fn pdf_li(&self, iref: &dyn Interaction, wi: Vector3f) -> Float {
         match self {
             Light::DiffuseArea(light) => light.pdf_li(iref, wi),
-            // Light::Distant(light) => light.pdf_li(iref, wi),
+            Light::Distant(light) => light.pdf_li(iref, wi),
             // Light::GonioPhotometric(light) => light.pdf_li(iref, wi),
             // Light::InfiniteArea(light) => light.pdf_li(iref, wi),
             // Light::Point(light) => light.pdf_li(iref, wi),
@@ -118,7 +118,7 @@ impl Light {
             Light::DiffuseArea(light) => {
                 light.sample_le(u1, u2, time, ray, n_light, pdf_pos, pdf_dir)
             }
-            // Light::Distant(light) => light.sample_le(u1, u2, time, ray, n_light, pdf_pos, pdf_dir),
+            Light::Distant(light) => light.sample_le(u1, u2, time, ray, n_light, pdf_pos, pdf_dir),
             // Light::GonioPhotometric(light) => {
             //     light.sample_le(u1, u2, time, ray, n_light, pdf_pos, pdf_dir)
             // }
@@ -135,7 +135,7 @@ impl Light {
     pub fn pdf_le(&self, ray: &Ray, n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         match self {
             Light::DiffuseArea(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
-            // Light::Distant(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
+            Light::Distant(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
             // Light::GonioPhotometric(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
             // Light::InfiniteArea(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
             // Light::Point(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
@@ -146,7 +146,7 @@ impl Light {
     pub fn get_flags(&self) -> u8 {
         match self {
             Light::DiffuseArea(light) => light.get_flags(),
-            // Light::Distant(light) => light.get_flags(),
+            Light::Distant(light) => light.get_flags(),
             // Light::GonioPhotometric(light) => light.get_flags(),
             // Light::InfiniteArea(light) => light.get_flags(),
             // Light::Point(light) => light.get_flags(),
@@ -157,7 +157,7 @@ impl Light {
     pub fn get_n_samples(&self) -> i32 {
         match self {
             Light::DiffuseArea(light) => light.get_n_samples(),
-            // Light::Distant(light) => light.get_n_samples(),
+            Light::Distant(light) => light.get_n_samples(),
             // Light::GonioPhotometric(light) => light.get_n_samples(),
             // Light::InfiniteArea(light) => light.get_n_samples(),
             // Light::Point(light) => light.get_n_samples(),
