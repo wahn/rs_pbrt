@@ -54,30 +54,31 @@ impl PointLight {
         _u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
-    ) -> Spectrum {
+    ) -> (Spectrum, Option<VisibilityTester>) {
         // TODO: ProfilePhase _(Prof::LightSample);
         *wi = (self.p_light - iref.p).normalize();
         *pdf = 1.0 as Float;
-        *vis = VisibilityTester {
-            p0: InteractionCommon {
-                p: iref.p,
-                time: iref.time,
-                p_error: iref.p_error,
-                wo: iref.wo,
-                n: iref.n,
-                medium_interface: None,
-            },
-            p1: InteractionCommon {
-                p: self.p_light,
-                time: iref.time,
-                p_error: Vector3f::default(),
-                wo: Vector3f::default(),
-                n: Normal3f::default(),
-                medium_interface: None,
-            },
-        };
-        self.i / pnt3_distance_squared(&self.p_light, &iref.p)
+        (
+            self.i / pnt3_distance_squared(&self.p_light, &iref.p),
+            Some(VisibilityTester {
+                p0: InteractionCommon {
+                    p: iref.p,
+                    time: iref.time,
+                    p_error: iref.p_error,
+                    wo: iref.wo,
+                    n: iref.n,
+                    medium_interface: None,
+                },
+                p1: InteractionCommon {
+                    p: self.p_light,
+                    time: iref.time,
+                    p_error: Vector3f::default(),
+                    wo: Vector3f::default(),
+                    n: Normal3f::default(),
+                    medium_interface: None,
+                },
+            }),
+        )
     }
     pub fn power(&self) -> Spectrum {
         self.i * (4.0 as Float * PI)

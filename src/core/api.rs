@@ -55,7 +55,7 @@ use crate::lights::diffuse::DiffuseAreaLight;
 use crate::lights::distant::DistantLight;
 use crate::lights::goniometric::GonioPhotometricLight;
 use crate::lights::infinite::InfiniteAreaLight;
-// use crate::lights::point::PointLight;
+use crate::lights::point::PointLight;
 // use crate::lights::projection::ProjectionLight;
 // use crate::lights::spot::SpotLight;
 use crate::materials::disney::DisneyMaterial;
@@ -726,27 +726,27 @@ fn create_medium_interface(api_state: &ApiState) -> MediumInterface {
 
 fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     // MakeLight (api.cpp:591)
-    // if api_state.param_set.name == "point" {
-    //     let i: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("I", Spectrum::new(1.0 as Float));
-    //     let sc: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-    //     let p: Point3f = api_state
-    //         .param_set
-    //         .find_one_point3f("from", Point3f::default());
-    //     let l2w: Transform = Transform::translate(&Vector3f {
-    //         x: p.x,
-    //         y: p.y,
-    //         z: p.z,
-    //     }) * api_state.cur_transform.t[0];
-    //     let point_light = Arc::new(Light::Point(Box::new(PointLight::new(
-    //         &l2w,
-    //         medium_interface,
-    //         &(i * sc),
-    //     ))));
-    //     api_state.render_options.lights.push(point_light);
+    if api_state.param_set.name == "point" {
+        let i: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+        let p: Point3f = api_state
+            .param_set
+            .find_one_point3f("from", Point3f::default());
+        let l2w: Transform = Transform::translate(&Vector3f {
+            x: p.x,
+            y: p.y,
+            z: p.z,
+        }) * api_state.cur_transform.t[0];
+        let point_light = Arc::new(Light::Point(Box::new(PointLight::new(
+            &l2w,
+            medium_interface,
+            &(i * sc),
+        ))));
+        api_state.render_options.lights.push(point_light);
     // } else if api_state.param_set.name == "spot" {
     //     // CreateSpotLight
     //     let i: Spectrum = api_state
@@ -801,8 +801,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     //         coneangle - conedelta,
     //     ))));
     //     api_state.render_options.lights.push(spot_light);
-    // } else
-    if api_state.param_set.name == "goniometric" {
+    } else if api_state.param_set.name == "goniometric" {
         // CreateGoniometricLight
         let i: Spectrum = api_state
             .param_set
