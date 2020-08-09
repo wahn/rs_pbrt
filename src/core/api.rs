@@ -52,8 +52,8 @@ use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 use crate::lights::diffuse::DiffuseAreaLight;
- use crate::lights::distant::DistantLight;
-// use crate::lights::goniometric::GonioPhotometricLight;
+use crate::lights::distant::DistantLight;
+use crate::lights::goniometric::GonioPhotometricLight;
 // use crate::lights::infinite::InfiniteAreaLight;
 // use crate::lights::point::PointLight;
 // use crate::lights::projection::ProjectionLight;
@@ -801,26 +801,27 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     //         coneangle - conedelta,
     //     ))));
     //     api_state.render_options.lights.push(spot_light);
-    // } else if api_state.param_set.name == "goniometric" {
-    //     // CreateGoniometricLight
-    //     let i: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("I", Spectrum::new(1.0 as Float));
-    //     let sc: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-    //     let texname: String = api_state
-    //         .param_set
-    //         .find_one_filename("mapname", String::from(""));
-    //     let projection_light = Arc::new(Light::GonioPhotometric(Box::new(
-    //         GonioPhotometricLight::new(
-    //             &api_state.cur_transform.t[0],
-    //             medium_interface,
-    //             &(i * sc),
-    //             texname,
-    //         ),
-    //     )));
-    //     api_state.render_options.lights.push(projection_light);
+    // } else
+    if api_state.param_set.name == "goniometric" {
+        // CreateGoniometricLight
+        let i: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+        let texname: String = api_state
+            .param_set
+            .find_one_filename("mapname", String::from(""));
+        let projection_light = Arc::new(Light::GonioPhotometric(Box::new(
+            GonioPhotometricLight::new(
+                &api_state.cur_transform.t[0],
+                medium_interface,
+                &(i * sc),
+                texname,
+            ),
+        )));
+        api_state.render_options.lights.push(projection_light);
     // } else if api_state.param_set.name == "projection" {
     //     // CreateProjectionLight
     //     let i: Spectrum = api_state
@@ -841,8 +842,7 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
     //         fov,
     //     ))));
     //     api_state.render_options.lights.push(projection_light);
-    // } else
-    if api_state.param_set.name == "distant" {
+    } else if api_state.param_set.name == "distant" {
         // CreateDistantLight
         let l: Spectrum = api_state
             .param_set
