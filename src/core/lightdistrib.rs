@@ -10,10 +10,9 @@ use strum::IntoEnumIterator;
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f, XYZEnum};
 use crate::core::integrator::compute_light_power_distribution;
 use crate::core::interaction::InteractionCommon;
-use crate::core::light::VisibilityTester;
 use crate::core::lowdiscrepancy::radical_inverse;
 use crate::core::pbrt::clamp_t;
-use crate::core::pbrt::{Float, Spectrum};
+use crate::core::pbrt::Float;
 use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
 

@@ -57,7 +57,7 @@ use crate::lights::goniometric::GonioPhotometricLight;
 use crate::lights::infinite::InfiniteAreaLight;
 use crate::lights::point::PointLight;
 use crate::lights::projection::ProjectionLight;
-// use crate::lights::spot::SpotLight;
+use crate::lights::spot::SpotLight;
 use crate::materials::disney::DisneyMaterial;
 use crate::materials::fourier::FourierMaterial;
 use crate::materials::glass::GlassMaterial;
@@ -747,60 +747,60 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             &(i * sc),
         ))));
         api_state.render_options.lights.push(point_light);
-    // } else if api_state.param_set.name == "spot" {
-    //     // CreateSpotLight
-    //     let i: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("I", Spectrum::new(1.0 as Float));
-    //     let sc: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-    //     let coneangle: Float = api_state
-    //         .param_set
-    //         .find_one_float("coneangle", 30.0 as Float);
-    //     let conedelta: Float = api_state
-    //         .param_set
-    //         .find_one_float("conedeltaangle", 5.0 as Float);
-    //     // compute spotlight world to light transformation
-    //     let from: Point3f = api_state.param_set.find_one_point3f(
-    //         "from",
-    //         Point3f {
-    //             x: 0.0,
-    //             y: 0.0,
-    //             z: 0.0,
-    //         },
-    //     );
-    //     let to: Point3f = api_state.param_set.find_one_point3f(
-    //         "to",
-    //         Point3f {
-    //             x: 0.0,
-    //             y: 0.0,
-    //             z: 1.0,
-    //         },
-    //     );
-    //     let dir: Vector3f = (to - from).normalize();
-    //     let mut du: Vector3f = Vector3f::default();
-    //     let mut dv: Vector3f = Vector3f::default();
-    //     vec3_coordinate_system(&dir, &mut du, &mut dv);
-    //     let dir_to_z: Transform = Transform::new(
-    //         du.x, du.y, du.z, 0.0, dv.x, dv.y, dv.z, 0.0, dir.x, dir.y, dir.z, 0.0, 0.0, 0.0, 0.0,
-    //         1.0,
-    //     );
-    //     let light2world: Transform = api_state.cur_transform.t[0]
-    //         * Transform::translate(&Vector3f {
-    //             x: from.x,
-    //             y: from.y,
-    //             z: from.z,
-    //         })
-    //         * Transform::inverse(&dir_to_z);
-    //     let spot_light = Arc::new(Light::Spot(Box::new(SpotLight::new(
-    //         &light2world,
-    //         medium_interface,
-    //         &(i * sc),
-    //         coneangle,
-    //         coneangle - conedelta,
-    //     ))));
-    //     api_state.render_options.lights.push(spot_light);
+    } else if api_state.param_set.name == "spot" {
+        // CreateSpotLight
+        let i: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+        let coneangle: Float = api_state
+            .param_set
+            .find_one_float("coneangle", 30.0 as Float);
+        let conedelta: Float = api_state
+            .param_set
+            .find_one_float("conedeltaangle", 5.0 as Float);
+        // compute spotlight world to light transformation
+        let from: Point3f = api_state.param_set.find_one_point3f(
+            "from",
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 0.0,
+            },
+        );
+        let to: Point3f = api_state.param_set.find_one_point3f(
+            "to",
+            Point3f {
+                x: 0.0,
+                y: 0.0,
+                z: 1.0,
+            },
+        );
+        let dir: Vector3f = (to - from).normalize();
+        let mut du: Vector3f = Vector3f::default();
+        let mut dv: Vector3f = Vector3f::default();
+        vec3_coordinate_system(&dir, &mut du, &mut dv);
+        let dir_to_z: Transform = Transform::new(
+            du.x, du.y, du.z, 0.0, dv.x, dv.y, dv.z, 0.0, dir.x, dir.y, dir.z, 0.0, 0.0, 0.0, 0.0,
+            1.0,
+        );
+        let light2world: Transform = api_state.cur_transform.t[0]
+            * Transform::translate(&Vector3f {
+                x: from.x,
+                y: from.y,
+                z: from.z,
+            })
+            * Transform::inverse(&dir_to_z);
+        let spot_light = Arc::new(Light::Spot(Box::new(SpotLight::new(
+            &light2world,
+            medium_interface,
+            &(i * sc),
+            coneangle,
+            coneangle - conedelta,
+        ))));
+        api_state.render_options.lights.push(spot_light);
     } else if api_state.param_set.name == "goniometric" {
         // CreateGoniometricLight
         let i: Spectrum = api_state

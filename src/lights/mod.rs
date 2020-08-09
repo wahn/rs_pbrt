@@ -62,4 +62,4 @@ pub mod goniometric;
 pub mod infinite;
 pub mod point;
 pub mod projection;
-// pub mod spot;
+pub mod spot;

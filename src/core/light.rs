@@ -17,7 +17,7 @@ use crate::lights::goniometric::GonioPhotometricLight;
 use crate::lights::infinite::InfiniteAreaLight;
 use crate::lights::point::PointLight;
 use crate::lights::projection::ProjectionLight;
-// use crate::lights::spot::SpotLight;
+use crate::lights::spot::SpotLight;
 
 // see light.h
 
@@ -36,7 +36,7 @@ pub enum Light {
     InfiniteArea(Box<InfiniteAreaLight>),
     Point(Box<PointLight>),
     Projection(Box<ProjectionLight>),
-    // Spot(Box<SpotLight>),
+    Spot(Box<SpotLight>),
 }
 
 impl Light {
@@ -57,7 +57,7 @@ impl Light {
             Light::InfiniteArea(light) => light.sample_li(iref, u, wi, pdf),
             Light::Point(light) => light.sample_li(iref, u, wi, pdf),
             Light::Projection(light) => light.sample_li(iref, u, wi, pdf),
-            // Light::Spot(light) => light.sample_li(iref, u, wi, pdf),
+            Light::Spot(light) => light.sample_li(iref, u, wi, pdf),
         }
     }
     pub fn power(&self) -> Spectrum {
@@ -68,7 +68,7 @@ impl Light {
             Light::InfiniteArea(light) => light.power(),
             Light::Point(light) => light.power(),
             Light::Projection(light) => light.power(),
-            // Light::Spot(light) => light.power(),
+            Light::Spot(light) => light.power(),
         }
     }
     pub fn preprocess(&self, scene: &Scene) {
@@ -79,7 +79,7 @@ impl Light {
             Light::InfiniteArea(light) => light.preprocess(scene),
             Light::Point(light) => light.preprocess(scene),
             Light::Projection(light) => light.preprocess(scene),
-            // Light::Spot(light) => light.preprocess(scene),
+            Light::Spot(light) => light.preprocess(scene),
         }
     }
     pub fn le(&self, ray: &mut Ray) -> Spectrum {
@@ -90,7 +90,7 @@ impl Light {
             Light::InfiniteArea(light) => light.le(ray),
             Light::Point(light) => light.le(ray),
             Light::Projection(light) => light.le(ray),
-            // Light::Spot(light) => light.le(ray),
+            Light::Spot(light) => light.le(ray),
         }
     }
     pub fn pdf_li(&self, iref: &dyn Interaction, wi: Vector3f) -> Float {
@@ -101,7 +101,7 @@ impl Light {
             Light::InfiniteArea(light) => light.pdf_li(iref, wi),
             Light::Point(light) => light.pdf_li(iref, wi),
             Light::Projection(light) => light.pdf_li(iref, wi),
-            // Light::Spot(light) => light.pdf_li(iref, wi),
+            Light::Spot(light) => light.pdf_li(iref, wi),
         }
     }
     pub fn sample_le(
@@ -129,7 +129,7 @@ impl Light {
             Light::Projection(light) => {
                 light.sample_le(u1, u2, time, ray, n_light, pdf_pos, pdf_dir)
             }
-            // Light::Spot(light) => light.sample_le(u1, u2, time, ray, n_light, pdf_pos, pdf_dir),
+            Light::Spot(light) => light.sample_le(u1, u2, time, ray, n_light, pdf_pos, pdf_dir),
         }
     }
     pub fn pdf_le(&self, ray: &Ray, n_light: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
@@ -140,7 +140,7 @@ impl Light {
             Light::InfiniteArea(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
             Light::Point(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
             Light::Projection(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
-            // Light::Spot(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
+            Light::Spot(light) => light.pdf_le(ray, n_light, pdf_pos, pdf_dir),
         }
     }
     pub fn get_flags(&self) -> u8 {
@@ -151,7 +151,7 @@ impl Light {
             Light::InfiniteArea(light) => light.get_flags(),
             Light::Point(light) => light.get_flags(),
             Light::Projection(light) => light.get_flags(),
-            // Light::Spot(light) => light.get_flags(),
+            Light::Spot(light) => light.get_flags(),
         }
     }
     pub fn get_n_samples(&self) -> i32 {
@@ -162,7 +162,7 @@ impl Light {
             Light::InfiniteArea(light) => light.get_n_samples(),
             Light::Point(light) => light.get_n_samples(),
             Light::Projection(light) => light.get_n_samples(),
-            // Light::Spot(light) => light.get_n_samples(),
+            Light::Spot(light) => light.get_n_samples(),
         }
     }
     // AreaLight

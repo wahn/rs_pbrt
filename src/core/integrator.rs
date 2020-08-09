@@ -10,7 +10,7 @@ use crate::core::geometry::{pnt2_inside_exclusive, vec3_abs_dot_nrm};
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::light::is_delta_light;
-use crate::core::light::{Light, VisibilityTester};
+use crate::core::light::Light;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::BxdfType;
 use crate::core::sampler::Sampler;

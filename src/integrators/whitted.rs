@@ -5,7 +5,6 @@ use crate::core::camera::Camera;
 use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 use crate::core::geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
-use crate::core::light::VisibilityTester;
 use crate::core::material::TransportMode;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::BxdfType;
