@@ -56,7 +56,7 @@ use crate::lights::distant::DistantLight;
 use crate::lights::goniometric::GonioPhotometricLight;
 use crate::lights::infinite::InfiniteAreaLight;
 use crate::lights::point::PointLight;
-// use crate::lights::projection::ProjectionLight;
+use crate::lights::projection::ProjectionLight;
 // use crate::lights::spot::SpotLight;
 use crate::materials::disney::DisneyMaterial;
 use crate::materials::fourier::FourierMaterial;
@@ -821,26 +821,26 @@ fn make_light(api_state: &mut ApiState, medium_interface: &MediumInterface) {
             ),
         )));
         api_state.render_options.lights.push(projection_light);
-    // } else if api_state.param_set.name == "projection" {
-    //     // CreateProjectionLight
-    //     let i: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("I", Spectrum::new(1.0 as Float));
-    //     let sc: Spectrum = api_state
-    //         .param_set
-    //         .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
-    //     let fov: Float = api_state.param_set.find_one_float("fov", 45.0 as Float);
-    //     let texname: String = api_state
-    //         .param_set
-    //         .find_one_filename("mapname", String::from(""));
-    //     let projection_light = Arc::new(Light::Projection(Box::new(ProjectionLight::new(
-    //         &api_state.cur_transform.t[0],
-    //         medium_interface,
-    //         &(i * sc),
-    //         texname,
-    //         fov,
-    //     ))));
-    //     api_state.render_options.lights.push(projection_light);
+    } else if api_state.param_set.name == "projection" {
+        // CreateProjectionLight
+        let i: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("I", Spectrum::new(1.0 as Float));
+        let sc: Spectrum = api_state
+            .param_set
+            .find_one_spectrum("scale", Spectrum::new(1.0 as Float));
+        let fov: Float = api_state.param_set.find_one_float("fov", 45.0 as Float);
+        let texname: String = api_state
+            .param_set
+            .find_one_filename("mapname", String::from(""));
+        let projection_light = Arc::new(Light::Projection(Box::new(ProjectionLight::new(
+            &api_state.cur_transform.t[0],
+            medium_interface,
+            &(i * sc),
+            texname,
+            fov,
+        ))));
+        api_state.render_options.lights.push(projection_light);
     } else if api_state.param_set.name == "distant" {
         // CreateDistantLight
         let l: Spectrum = api_state
