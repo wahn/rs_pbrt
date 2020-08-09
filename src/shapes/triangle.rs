@@ -687,13 +687,13 @@ impl Triangle {
         0.5 as Float * vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0)).length()
     }
     pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+        let idx1: usize = (self.id * 3) as usize;
+        let idx = &self.mesh.vertex_indices[idx1..(idx1 + 3)];
         let b: Point2f = uniform_sample_triangle(u);
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let p0: &Point3f = &self.mesh.p[idx[0] as usize];
+        let p1: &Point3f = &self.mesh.p[idx[1] as usize];
+        let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         let mut it: InteractionCommon = InteractionCommon::default();
         let bx = b[XYEnum::X];
         let by = b[XYEnum::Y];
@@ -703,12 +703,9 @@ impl Triangle {
         // ensure correct orientation of the geometric normal; follow
         // the same approach as was used in Triangle::Intersect().
         if !self.mesh.n.is_empty() {
-            let ns: Normal3f = self.mesh.n
-                [self.mesh.vertex_indices[(self.id * 3) as usize] as usize]
-                * bx
-                + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize] * by
-                + self.mesh.n[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize]
-                    * (1.0 as Float - bx - by);
+            let ns: Normal3f = self.mesh.n[idx[0] as usize] * bx
+                + self.mesh.n[idx[1] as usize] * by
+                + self.mesh.n[idx[2] as usize] * (1.0 as Float - bx - by);
             it.n = nrm_faceforward_nrm(&it.n, &ns);
         } else if self.reverse_orientation ^ self.transform_swaps_handedness {
             it.n *= -1.0 as Float;
