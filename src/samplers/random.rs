@@ -9,16 +9,16 @@ use crate::core::sampler::Sampler;
 
 pub struct RandomSampler {
     pub samples_per_pixel: i64,
-    pub rng: Rng,
+    rng: Rng,
     // inherited from class Sampler (see sampler.h)
-    pub current_pixel: Point2i,
-    pub current_pixel_sample_index: i64,
-    pub samples_1d_array_sizes: Vec<i32>,
-    pub samples_2d_array_sizes: Vec<i32>,
-    pub sample_array_1d: Vec<Vec<Float>>,
-    pub sample_array_2d: Vec<Vec<Point2f>>,
-    pub array_1d_offset: usize,
-    pub array_2d_offset: usize,
+    current_pixel: Point2i,
+    current_pixel_sample_index: i64,
+    samples_1d_array_sizes: Vec<i32>,
+    samples_2d_array_sizes: Vec<i32>,
+    sample_array_1d: Vec<Vec<Float>>,
+    sample_array_2d: Vec<Vec<Point2f>>,
+    array_1d_offset: usize,
+    array_2d_offset: usize,
 }
 
 impl RandomSampler {

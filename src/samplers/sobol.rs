@@ -14,23 +14,23 @@ use crate::core::sobolmatrices::NUM_SOBOL_DIMENSIONS;
 
 pub struct SobolSampler {
     pub samples_per_pixel: i64,
-    pub sample_bounds: Bounds2i,
-    pub resolution: i32,
-    pub log_2_resolution: i32,
+    sample_bounds: Bounds2i,
+    resolution: i32,
+    log_2_resolution: i32,
     // inherited from class GlobalSampler (see sampler.h)
-    pub dimension: i64,
-    pub interval_sample_index: u64,
-    pub array_start_dim: i64,
-    pub array_end_dim: i64,
+    dimension: i64,
+    interval_sample_index: u64,
+    array_start_dim: i64,
+    array_end_dim: i64,
     // inherited from class Sampler (see sampler.h)
-    pub current_pixel: Point2i,
-    pub current_pixel_sample_index: i64,
-    pub samples_1d_array_sizes: Vec<i32>,
-    pub samples_2d_array_sizes: Vec<i32>,
-    pub sample_array_1d: Vec<Vec<Float>>,
-    pub sample_array_2d: Vec<Vec<Point2f>>,
-    pub array_1d_offset: usize,
-    pub array_2d_offset: usize,
+    current_pixel: Point2i,
+    current_pixel_sample_index: i64,
+    samples_1d_array_sizes: Vec<i32>,
+    samples_2d_array_sizes: Vec<i32>,
+    sample_array_1d: Vec<Vec<Float>>,
+    sample_array_2d: Vec<Vec<Point2f>>,
+    array_1d_offset: usize,
+    array_2d_offset: usize,
 }
 
 impl SobolSampler {
