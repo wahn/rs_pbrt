@@ -8,24 +8,24 @@ use crate::core::sampling::{latin_hypercube, shuffle, stratified_sample_1d, stra
 
 pub struct StratifiedSampler {
     pub samples_per_pixel: i64,
-    pub x_pixel_samples: i32,
-    pub y_pixel_samples: i32,
-    pub jitter_samples: bool,
+    x_pixel_samples: i32,
+    y_pixel_samples: i32,
+    jitter_samples: bool,
     // inherited from class PixelSampler (see sampler.h)
-    pub samples_1d: Vec<Vec<Float>>,
-    pub samples_2d: Vec<Vec<Point2f>>,
-    pub current_1d_dimension: i32,
-    pub current_2d_dimension: i32,
-    pub rng: Rng,
+    samples_1d: Vec<Vec<Float>>,
+    samples_2d: Vec<Vec<Point2f>>,
+    current_1d_dimension: i32,
+    current_2d_dimension: i32,
+    rng: Rng,
     // inherited from class Sampler (see sampler.h)
-    pub current_pixel: Point2i,
-    pub current_pixel_sample_index: i64,
-    pub samples_1d_array_sizes: Vec<i32>,
-    pub samples_2d_array_sizes: Vec<i32>,
-    pub sample_array_1d: Vec<Vec<Float>>,
-    pub sample_array_2d: Vec<Vec<Point2f>>,
-    pub array_1d_offset: usize,
-    pub array_2d_offset: usize,
+    current_pixel: Point2i,
+    current_pixel_sample_index: i64,
+    samples_1d_array_sizes: Vec<i32>,
+    samples_2d_array_sizes: Vec<i32>,
+    sample_array_1d: Vec<Vec<Float>>,
+    sample_array_2d: Vec<Vec<Point2f>>,
+    array_1d_offset: usize,
+    array_2d_offset: usize,
 }
 
 impl StratifiedSampler {

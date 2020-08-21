@@ -52,28 +52,28 @@ fn extended_gcd(a: u64, b: u64, x: &mut i64, y: &mut i64) {
 
 pub struct HaltonSampler {
     pub samples_per_pixel: i64,
-    pub base_scales: Point2i,
-    pub base_exponents: Point2i,
-    pub sample_stride: u64,
-    pub mult_inverse: [i64; 2],
-    pub pixel_for_offset_x: AtomicI32,
-    pub pixel_for_offset_y: AtomicI32,
-    pub offset_for_current_pixel: AtomicU64,
-    pub sample_at_pixel_center: bool, // default: false
+    base_scales: Point2i,
+    base_exponents: Point2i,
+    sample_stride: u64,
+    mult_inverse: [i64; 2],
+    pixel_for_offset_x: AtomicI32,
+    pixel_for_offset_y: AtomicI32,
+    offset_for_current_pixel: AtomicU64,
+    sample_at_pixel_center: bool, // default: false
     // inherited from class GlobalSampler (see sampler.h)
-    pub dimension: i64,
-    pub interval_sample_index: u64,
-    pub array_start_dim: i64,
-    pub array_end_dim: i64,
+    dimension: i64,
+    interval_sample_index: u64,
+    array_start_dim: i64,
+    array_end_dim: i64,
     // inherited from class Sampler (see sampler.h)
-    pub current_pixel: Point2i,
-    pub current_pixel_sample_index: i64,
-    pub samples_1d_array_sizes: Vec<i32>,
-    pub samples_2d_array_sizes: Vec<i32>,
-    pub sample_array_1d: Vec<Vec<Float>>,
-    pub sample_array_2d: Vec<Vec<Point2f>>,
-    pub array_1d_offset: usize,
-    pub array_2d_offset: usize,
+    current_pixel: Point2i,
+    current_pixel_sample_index: i64,
+    samples_1d_array_sizes: Vec<i32>,
+    samples_2d_array_sizes: Vec<i32>,
+    sample_array_1d: Vec<Vec<Float>>,
+    sample_array_2d: Vec<Vec<Point2f>>,
+    array_1d_offset: usize,
+    array_2d_offset: usize,
 }
 
 impl HaltonSampler {

@@ -10,7 +10,7 @@ use crate::core::geometry::{pnt2_inside_exclusive, vec3_abs_dot_nrm};
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::light::is_delta_light;
-use crate::core::light::{Light, VisibilityTester};
+use crate::core::light::Light;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::BxdfType;
 use crate::core::sampler::Sampler;
@@ -421,15 +421,8 @@ pub fn estimate_direct(
     let mut wi: Vector3f = Vector3f::default();
     let mut light_pdf: Float = 0.0 as Float;
     let mut scattering_pdf: Float = 0.0 as Float;
-    let mut visibility: VisibilityTester = VisibilityTester::default();
     let it_common: &InteractionCommon = it.get_common();
-    let mut li: Spectrum = light.sample_li(
-        &it_common,
-        u_light,
-        &mut wi,
-        &mut light_pdf,
-        &mut visibility,
-    );
+    let (mut li, visibility_opt) = light.sample_li(&it_common, u_light, &mut wi, &mut light_pdf);
     // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi:
     // {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
     if light_pdf > 0.0 as Float && !li.is_black() {
@@ -455,10 +448,12 @@ pub fn estimate_direct(
         }
         if !f.is_black() {
             // compute effect of visibility for light source sample
-            if handle_media {
-                li *= visibility.tr(scene, sampler);
-            } else if !visibility.unoccluded(scene) {
-                li = Spectrum::new(0.0 as Float);
+            if let Some(visibility) = visibility_opt {
+                if handle_media {
+                    li *= visibility.tr(scene, sampler);
+                } else if !visibility.unoccluded(scene) {
+                    li = Spectrum::new(0.0 as Float);
+                }
             }
             // add light's contribution to reflected radiance
             if !li.is_black() {

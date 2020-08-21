@@ -49,16 +49,15 @@ impl Light {
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
-    ) -> Spectrum {
+    ) -> (Spectrum, Option<VisibilityTester>) {
         match self {
-            Light::DiffuseArea(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::Distant(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::GonioPhotometric(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::InfiniteArea(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::Point(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::Projection(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::Spot(light) => light.sample_li(iref, u, wi, pdf, vis),
+            Light::DiffuseArea(light) => light.sample_li(iref, u, wi, pdf),
+            Light::Distant(light) => light.sample_li(iref, u, wi, pdf),
+            Light::GonioPhotometric(light) => light.sample_li(iref, u, wi, pdf),
+            Light::InfiniteArea(light) => light.sample_li(iref, u, wi, pdf),
+            Light::Point(light) => light.sample_li(iref, u, wi, pdf),
+            Light::Projection(light) => light.sample_li(iref, u, wi, pdf),
+            Light::Spot(light) => light.sample_li(iref, u, wi, pdf),
         }
     }
     pub fn power(&self) -> Spectrum {

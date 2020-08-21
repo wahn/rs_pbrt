@@ -11,22 +11,22 @@ use crate::core::sampling::shuffle;
 
 pub struct MaxMinDistSampler {
     pub samples_per_pixel: i64,
-    pub c_pixel: [u32; 32],
+    c_pixel: [u32; 32],
     // inherited from class PixelSampler (see sampler.h)
-    pub samples_1d: Vec<Vec<Float>>,
-    pub samples_2d: Vec<Vec<Point2f>>,
-    pub current_1d_dimension: i32,
-    pub current_2d_dimension: i32,
-    pub rng: Rng,
+    samples_1d: Vec<Vec<Float>>,
+    samples_2d: Vec<Vec<Point2f>>,
+    current_1d_dimension: i32,
+    current_2d_dimension: i32,
+    rng: Rng,
     // inherited from class Sampler (see sampler.h)
-    pub current_pixel: Point2i,
-    pub current_pixel_sample_index: i64,
-    pub samples_1d_array_sizes: Vec<i32>,
-    pub samples_2d_array_sizes: Vec<i32>,
-    pub sample_array_1d: Vec<Vec<Float>>,
-    pub sample_array_2d: Vec<Vec<Point2f>>,
-    pub array_1d_offset: usize,
-    pub array_2d_offset: usize,
+    current_pixel: Point2i,
+    current_pixel_sample_index: i64,
+    samples_1d_array_sizes: Vec<i32>,
+    samples_2d_array_sizes: Vec<i32>,
+    sample_array_1d: Vec<Vec<Float>>,
+    sample_array_2d: Vec<Vec<Point2f>>,
+    array_1d_offset: usize,
+    array_2d_offset: usize,
 }
 
 impl MaxMinDistSampler {
