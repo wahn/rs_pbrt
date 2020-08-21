@@ -172,7 +172,13 @@ pub fn make_perspective_camera(
             let camera_name: String = String::from("perspective");
             let mut camera_params: ParamSet = ParamSet::default();
             camera_params.add_float(String::from("fov"), fov);
-            some_camera = make_camera(&camera_name, &camera_params, animated_cam_to_world, film);
+            some_camera = make_camera(
+                &camera_name,
+                &camera_params,
+                animated_cam_to_world,
+                film,
+                0.0,
+            );
         }
     }
     some_camera

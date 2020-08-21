@@ -466,11 +466,13 @@ impl RenderOptions {
                     &self.camera_to_world.t[1],
                     self.transform_end_time,
                 );
+                let clipping_start: Float = 0.0; // ADDED
                 some_camera = make_camera(
                     &self.camera_name,
                     &self.camera_params,
                     animated_cam_to_world,
                     film,
+                    clipping_start,
                 );
             }
         }
@@ -1590,6 +1592,7 @@ pub fn make_camera(
     camera_params: &ParamSet,
     animated_cam_to_world: AnimatedTransform,
     film: Arc<Film>,
+    clipping_start: Float,
 ) -> Option<Arc<Camera>> {
     let mut some_camera: Option<Arc<Camera>> = None;
     let medium_interface: MediumInterface = MediumInterface::default();
@@ -1599,6 +1602,7 @@ pub fn make_camera(
             animated_cam_to_world,
             film,
             medium_interface.outside,
+            clipping_start,
         );
         some_camera = Some(camera);
     } else if camera_name == "orthographic" {

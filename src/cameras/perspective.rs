@@ -37,6 +37,8 @@ pub struct PerspectiveCamera {
     pub dx_camera: Vector3f,
     pub dy_camera: Vector3f,
     pub a: Float,
+    // extra parameters
+    clipping_start: Float, // ADDED
 }
 
 impl PerspectiveCamera {
@@ -50,6 +52,7 @@ impl PerspectiveCamera {
         fov: Float,
         film: Arc<Film>,
         medium: Option<Arc<Medium>>,
+        clipping_start: Float,
     ) -> Self {
         // see perspective.cpp
         let camera_to_screen: Transform = Transform::perspective(fov, 1e-2, 1000.0);
@@ -125,6 +128,7 @@ impl PerspectiveCamera {
             dx_camera,
             dy_camera,
             a,
+            clipping_start,
         }
     }
     pub fn create(
@@ -132,6 +136,7 @@ impl PerspectiveCamera {
         cam2world: AnimatedTransform,
         film: Arc<Film>,
         medium: Option<Arc<Medium>>,
+        clipping_start: Float,
     ) -> Arc<Camera> {
         let shutteropen: Float = params.find_one_float("shutteropen", 0.0);
         let shutterclose: Float = params.find_one_float("shutterclose", 1.0);
@@ -177,6 +182,7 @@ impl PerspectiveCamera {
             fov,
             film,
             medium,
+            clipping_start,
         ))))
     }
     // Camera
@@ -434,5 +440,9 @@ impl PerspectiveCamera {
     }
     pub fn get_film(&self) -> Arc<Film> {
         self.film.clone()
+    }
+    // ADDED
+    pub fn get_clipping_start(&self) -> Float {
+        self.clipping_start
     }
 }

@@ -89,6 +89,13 @@ impl Camera {
             Camera::Realistic(camera) => camera.get_film(),
         }
     }
+    // extra
+    pub fn get_clipping_start(&self) -> Float {
+        match self {
+            Camera::Perspective(camera) => camera.get_clipping_start(),
+            _ => 0.0 as Float,
+        }
+    }
 }
 
 #[derive(Debug, Default, Copy, Clone)]

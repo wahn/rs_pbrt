@@ -175,6 +175,7 @@ struct BlendCamera {
     pub lens: f32,
     pub angle_x: f32,
     pub angle_y: f32,
+    pub clipsta: f32,
 }
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -1676,6 +1677,7 @@ pub fn make_perspective_camera(
     yres: i32,
     fov: Float,
     animated_cam_to_world: AnimatedTransform,
+    clipsta: Float,
 ) -> Option<Arc<Camera>> {
     let mut some_camera: Option<Arc<Camera>> = None;
     let mut filter_params: ParamSet = ParamSet::default();
@@ -1692,7 +1694,13 @@ pub fn make_perspective_camera(
             let camera_name: String = String::from("perspective");
             let mut camera_params: ParamSet = ParamSet::default();
             camera_params.add_float(String::from("fov"), fov);
-            some_camera = make_camera(&camera_name, &camera_params, animated_cam_to_world, film);
+            some_camera = make_camera(
+                &camera_name,
+                &camera_params,
+                animated_cam_to_world,
+                film,
+                clipsta,
+            );
         }
     }
     some_camera
@@ -1704,13 +1712,20 @@ fn make_integrator(
     xres: i32,
     yres: i32,
     fov: Float,
+    clipsta: Float,
     animated_cam_to_world: AnimatedTransform,
     pixelsamples: i32,
     integrator_params: ParamSet,
 ) -> Option<Box<Integrator>> {
     let mut some_integrator: Option<Box<Integrator>> = None;
-    let some_camera: Option<Arc<Camera>> =
-        make_perspective_camera(filter_width, xres, yres, fov, animated_cam_to_world);
+    let some_camera: Option<Arc<Camera>> = make_perspective_camera(
+        filter_width,
+        xres,
+        yres,
+        fov,
+        animated_cam_to_world,
+        clipsta,
+    );
     if let Some(camera) = some_camera {
         let sampler_name: String = String::from("halton");
         let mut sampler_params: ParamSet = ParamSet::default();
@@ -2001,7 +2016,7 @@ fn main() -> std::io::Result<()> {
                         // read remaining bytes
                         let mut buffer = vec![0; (len - 8) as usize];
                         f.read(&mut buffer)?;
-                        // counter += (len - 8) as usize;
+                    // counter += (len - 8) as usize;
                     } else {
                         let mut buffer = [0; 4];
                         f.read(&mut buffer)?;
@@ -3173,11 +3188,11 @@ fn main() -> std::io::Result<()> {
                         // passepartalpha
                         skip_bytes += 4;
                         // clipsta
-                        // let mut clipsta_buf: [u8; 4] = [0_u8; 4];
-                        // for i in 0..4 as usize {
-                        //     clipsta_buf[i] = buffer[skip_bytes + i];
-                        // }
-                        // let clipsta: f32 = unsafe { mem::transmute(clipsta_buf) };
+                        let mut clipsta_buf: [u8; 4] = [0_u8; 4];
+                        for i in 0..4 as usize {
+                            clipsta_buf[i] = buffer[skip_bytes + i];
+                        }
+                        let clipsta: f32 = unsafe { mem::transmute(clipsta_buf) };
                         // println!("  clipsta = {}", clipsta);
                         skip_bytes += 4;
                         // clipend
@@ -3250,9 +3265,10 @@ fn main() -> std::io::Result<()> {
                         // println!("  shifty = {}", shifty);
                         // skip_bytes += 4;
                         let cam: BlendCamera = BlendCamera {
-                            lens: lens,
-                            angle_x: angle_x,
-                            angle_y: angle_y,
+                            lens,
+                            angle_x,
+                            angle_y,
+                            clipsta,
                         };
                         camera_hm.insert(base_name.clone(), cam);
                         // reset booleans
@@ -3860,7 +3876,7 @@ fn main() -> std::io::Result<()> {
                                         )
                                     }
                                 }
-                                // println!("  vertex_indices = {:?}", vertex_indices);
+                            // println!("  vertex_indices = {:?}", vertex_indices);
                             } else if types[type_id] == "MVert" {
                                 // println!("{}[{}] ({})", code, data_len, len);
                                 // println!("  SDNAnr = {}", sdna_nr);
@@ -3908,11 +3924,11 @@ fn main() -> std::io::Result<()> {
                                     // println!("    bweight = {}", buffer[skip_bytes]);
                                     skip_bytes += 1;
                                 }
-                                // for v in 0..data_len as usize {
-                                //     println!("  {}:", v + 1);
-                                //     println!("    co: {:?}", p[v]);
-                                //     println!("    no: {:?}", n[v]);
-                                // }
+                            // for v in 0..data_len as usize {
+                            //     println!("  {}:", v + 1);
+                            //     println!("    co: {:?}", p[v]);
+                            //     println!("    no: {:?}", n[v]);
+                            // }
                             } else if types[type_id] == "MLoop" {
                                 // println!("{}[{}] ({})", code, data_len, len);
                                 // println!("  SDNAnr = {}", sdna_nr);
@@ -3938,7 +3954,7 @@ fn main() -> std::io::Result<()> {
                                     // println!("    e = {}", e);
                                     skip_bytes += 4;
                                 }
-                                // println!("    loop_indices = {:?}", loop_indices);
+                            // println!("    loop_indices = {:?}", loop_indices);
                             } else if types[type_id] == "MLoopUV" {
                                 // println!("{}[{}] ({})", code, data_len, len);
                                 // println!("  SDNAnr = {}", sdna_nr);
@@ -3965,10 +3981,10 @@ fn main() -> std::io::Result<()> {
                                     // int flag
                                     skip_bytes += 4;
                                 }
-                                // for l in 0..data_len as usize {
-                                //     println!("  {}:", l + 1);
-                                //     println!("    uv: {:?}", uvs[l]);
-                                // }
+                            // for l in 0..data_len as usize {
+                            //     println!("  {}:", l + 1);
+                            //     println!("    uv: {:?}", uvs[l]);
+                            // }
                             } else if types[type_id] == "MLoopCol" {
                                 // println!("{}[{}] ({})", code, data_len, len);
                                 // println!("  SDNAnr = {}", sdna_nr);
@@ -4314,6 +4330,7 @@ fn main() -> std::io::Result<()> {
     let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(&it, 0.0, &it, 1.0);
     let aspect: Float = resolution_x as Float / resolution_y as Float;
     let mut fov: Float;
+    let mut clipsta: Float = 0.0;
     if aspect > 1.0 {
         fov = angle_y;
     } else {
@@ -4327,7 +4344,9 @@ fn main() -> std::io::Result<()> {
         } else {
             fov = 2.0 as Float * degrees(((aspect * 16.0 as Float) / cam.lens).atan());
         }
-        println!("fov[{}] overwritten", fov);
+        clipsta = cam.clipsta;
+        // println!("fov[{}] overwritten", fov);
+        // println!("clipsta[{}] overwritten", clipsta);
     }
     let frame: Float = resolution_x as Float / resolution_y as Float;
     let mut screen: Bounds2f = Bounds2f::default();
@@ -4380,6 +4399,7 @@ fn main() -> std::io::Result<()> {
             render_x as i32,
             render_y as i32,
             fov,
+            clipsta,
             animated_cam_to_world,
             args.samples as i32,
             integrator_params,
@@ -4406,6 +4426,7 @@ fn main() -> std::io::Result<()> {
             render_x as i32,
             render_y as i32,
             fov,
+            clipsta,
             animated_cam_to_world,
             args.samples as i32,
             integrator_params,

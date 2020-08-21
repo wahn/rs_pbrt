@@ -144,6 +144,13 @@ impl SamplerIntegrator {
                                     let mut l: Spectrum = Spectrum::new(0.0 as Float);
                                     let y: Float = l.y();
                                     if ray_weight > 0.0 {
+                                        // ADDED
+                                        let clipping_start: Float = camera.get_clipping_start();
+                                        if clipping_start > 0.0 as Float {
+                                            // adjust ray origin for near clipping
+                                            ray.o  = ray.position(clipping_start);
+                                        }
+                                        // ADDED
                                         l = integrator.li(
                                             &mut ray,
                                             scene,
