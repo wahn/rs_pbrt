@@ -1271,6 +1271,11 @@ impl MicrofacetTransmission {
             wh = -wh;
         }
 
+        // Same side?
+        if vec3_dot_vec3(wo, &wh) * vec3_dot_vec3(wi, &wh) > 0.0 as Float {
+            return Spectrum::zero();
+        }
+
         let f = self.fresnel.evaluate(vec3_dot_vec3(wo, &wh));
 
         let sqrt_denom = vec3_dot_vec3(wo, &wh) + eta * vec3_dot_vec3(wi, &wh);
@@ -1356,8 +1361,14 @@ impl MicrofacetTransmission {
         };
         let wh: Vector3f = (*wo + *wi * eta).normalize();
 
-        let sqrt_denom = vec3_dot_vec3(wo, &wh) + eta * vec3_dot_vec3(wi, &wh);
-        let dwh_dwi = ((eta * eta * vec3_dot_vec3(wi, &wh)) / (sqrt_denom * sqrt_denom)).abs();
+        let wo_dot_wh = vec3_dot_vec3(wo, &wh);
+        let wi_dot_wh = vec3_dot_vec3(wi, &wh);
+        if wo_dot_wh * wi_dot_wh > 0.0 as Float {
+            return 0.0 as Float;
+        }
+
+        let sqrt_denom = wo_dot_wh + eta * wi_dot_wh;
+        let dwh_dwi = ((eta * eta * wi_dot_wh) / (sqrt_denom * sqrt_denom)).abs();
 
         self.distribution.pdf(wo, &wh) * dwh_dwi
     }
