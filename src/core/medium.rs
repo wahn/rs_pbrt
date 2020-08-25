@@ -310,9 +310,9 @@ impl HenyeyGreenstein {
             1.0 as Float - 2.0 as Float * u[XYEnum::X]
         } else {
             let sqr_term: Float = (1.0 as Float - self.g * self.g)
-                / (1.0 as Float - self.g + 2.0 as Float * self.g * u[XYEnum::X]);
+                / (1.0 as Float + self.g - 2.0 as Float * self.g * u[XYEnum::X]);
 
-            (1.0 as Float + self.g * self.g - sqr_term * sqr_term) / (2.0 as Float * self.g)
+            -(1.0 as Float + self.g * self.g - sqr_term * sqr_term) / (2.0 as Float * self.g)
         };
         // compute direction _wi_ for Henyey--Greenstein sample
         let sin_theta: Float = (0.0 as Float)
@@ -322,8 +322,8 @@ impl HenyeyGreenstein {
         let mut v1: Vector3f = Vector3f::default();
         let mut v2: Vector3f = Vector3f::default();
         vec3_coordinate_system(wo, &mut v1, &mut v2);
-        *wi = spherical_direction_vec3(sin_theta, cos_theta, phi, &v1, &v2, &(-*wo));
-        phase_hg(-cos_theta, self.g)
+        *wi = spherical_direction_vec3(sin_theta, cos_theta, phi, &v1, &v2, &wo);
+        phase_hg(cos_theta, self.g)
     }
 }
 
