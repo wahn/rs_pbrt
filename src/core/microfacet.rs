@@ -95,8 +95,8 @@ pub struct BeckmannDistribution {
 impl BeckmannDistribution {
     pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> Self {
         BeckmannDistribution {
-            alpha_x,
-            alpha_y,
+            alpha_x: alpha_x.max(0.001 as Float),
+            alpha_y: alpha_y.max(0.001 as Float),
             sample_visible_area,
         }
     }
@@ -231,8 +231,8 @@ pub struct TrowbridgeReitzDistribution {
 impl TrowbridgeReitzDistribution {
     pub fn new(alpha_x: Float, alpha_y: Float, sample_visible_area: bool) -> Self {
         TrowbridgeReitzDistribution {
-            alpha_x,
-            alpha_y,
+            alpha_x: alpha_x.max(0.001 as Float),
+            alpha_y: alpha_y.max(0.001 as Float),
             sample_visible_area,
         }
     }
