@@ -1876,12 +1876,17 @@ pub fn sin_2_phi(w: &Vector3f) -> Float {
 /// Utility function to calculate the cosine of the angle between two
 /// vectors in the shading coordinate system.
 pub fn cos_d_phi(wa: &Vector3f, wb: &Vector3f) -> Float {
-    clamp_t(
-        (wa.x * wb.x + wa.y * wb.y)
-            / ((wa.x * wa.x + wa.y * wa.y) * (wb.x * wb.x + wb.y * wb.y)).sqrt(),
-        -1.0 as Float,
-        1.0 as Float,
-    )
+    let waxy: Float = wa.x * wa.x + wa.y * wa.y;
+    let wbxy: Float = wb.x * wb.x + wb.y * wb.y;
+    if waxy == 0.0 as Float || wbxy == 0.0 as Float {
+        1.0 as Float
+    } else {
+        clamp_t(
+            (wa.x * wb.x + wa.y * wb.y) / (waxy * wbxy).sqrt(),
+            -1.0 as Float,
+            1.0 as Float,
+        )
+    }
 }
 
 /// Computes the reflection direction given an incident direction and
