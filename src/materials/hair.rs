@@ -362,36 +362,36 @@ impl HairBSDF {
         let ap: [Spectrum; (P_MAX + 1) as usize] = ap(cos_theta_o, self.eta, self.h, t);
         let mut fsum: Spectrum = Spectrum::default();
         for p in 0..P_MAX {
-            // compute $\sin \thetai$ and $\cos \thetai$ terms accounting for scales
-            let sin_theta_ip: Float;
-            let mut cos_theta_ip: Float;
+            // compute $\sin \thetao$ and $\cos \thetao$ terms accounting for scales
+            let sin_theta_op: Float;
+            let mut cos_theta_op: Float;
             if p == 0 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[1] + cos_theta_i * self.sin_2k_alpha[1];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[1] - sin_theta_i * self.sin_2k_alpha[1];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[1] - cos_theta_o * self.sin_2k_alpha[1];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[1] + sin_theta_o * self.sin_2k_alpha[1];
             } else if p == 1 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[0] - cos_theta_i * self.sin_2k_alpha[0];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[0] + sin_theta_i * self.sin_2k_alpha[0];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[0] + cos_theta_o * self.sin_2k_alpha[0];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[0] - sin_theta_o * self.sin_2k_alpha[0];
             } else if p == 2 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[2] - cos_theta_i * self.sin_2k_alpha[2];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[2] + sin_theta_i * self.sin_2k_alpha[2];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[2] + cos_theta_o * self.sin_2k_alpha[2];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[2] - sin_theta_o * self.sin_2k_alpha[2];
             } else {
-                sin_theta_ip = sin_theta_i;
-                cos_theta_ip = cos_theta_i;
+                sin_theta_op = sin_theta_o;
+                cos_theta_op = cos_theta_o;
             }
-            // handle out-of-range $\cos \thetai$ from scale adjustment
-            cos_theta_ip = cos_theta_ip.abs();
+            // handle out-of-range $\cos \thetao$ from scale adjustment
+            cos_theta_op = cos_theta_op.abs();
             fsum += ap[p as usize]
                 * mp(
-                    cos_theta_ip,
-                    cos_theta_o,
-                    sin_theta_ip,
-                    sin_theta_o,
+                    cos_theta_i,
+                    cos_theta_op,
+                    sin_theta_i,
+                    sin_theta_op,
                     self.v[p as usize],
                 )
                 * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
@@ -445,6 +445,22 @@ impl HairBSDF {
             }
             u[0][XYEnum::X] -= ap_pdf[p];
         }
+        // rotate $\sin \thetao$ and $\cos \thetao$ to account for hair scale tilt
+        let sin_theta_op: Float;
+        let cos_theta_op: Float;
+        if p == 0 {
+            sin_theta_op = sin_theta_o * self.cos_2k_alpha[1] - cos_theta_o * self.sin_2k_alpha[1];
+            cos_theta_op = cos_theta_o * self.cos_2k_alpha[1] + sin_theta_o * self.sin_2k_alpha[1];
+        } else if p == 1 {
+            sin_theta_op = sin_theta_o * self.cos_2k_alpha[0] + cos_theta_o * self.sin_2k_alpha[0];
+            cos_theta_op = cos_theta_o * self.cos_2k_alpha[0] - sin_theta_o * self.sin_2k_alpha[0];
+        } else if p == 2 {
+            sin_theta_op = sin_theta_o * self.cos_2k_alpha[2] + cos_theta_o * self.sin_2k_alpha[2];
+            cos_theta_op = cos_theta_o * self.cos_2k_alpha[2] - sin_theta_o * self.sin_2k_alpha[2];
+        } else {
+            sin_theta_op = sin_theta_o;
+            cos_theta_op = cos_theta_o;
+        }
         // sample $M_p$ to compute $\thetai$
         u[1][XYEnum::X] = u[1][XYEnum::X].max(1e-5 as Float);
         let cos_theta: Float = 1.0 as Float
@@ -456,25 +472,10 @@ impl HairBSDF {
         assert!(x >= -1e-4);
         let sin_theta: Float = (0.0 as Float).max(x).sqrt();
         let cos_phi: Float = (2.0 as Float * PI * u[1][XYEnum::Y]).cos();
-        let mut sin_theta_i: Float = -cos_theta * sin_theta_o + sin_theta * cos_phi * cos_theta_o;
+        let sin_theta_i: Float = -cos_theta * sin_theta_op + sin_theta * cos_phi * cos_theta_op;
         let x: Float = 1.0 as Float - (sin_theta_i * sin_theta_i);
         assert!(x >= -1e-4);
-        let mut cos_theta_i: Float = (0.0 as Float).max(x).sqrt();
-        // update sampled $\sin \thetai$ and $\cos \thetai$ to account for scales
-        let mut sin_theta_ip: Float = sin_theta_i;
-        let mut cos_theta_ip: Float = cos_theta_i;
-        if p == 0_usize {
-            sin_theta_ip = sin_theta_i * self.cos_2k_alpha[1] - cos_theta_i * self.sin_2k_alpha[1];
-            cos_theta_ip = cos_theta_i * self.cos_2k_alpha[1] + sin_theta_i * self.sin_2k_alpha[1];
-        } else if p == 1_usize {
-            sin_theta_ip = sin_theta_i * self.cos_2k_alpha[0] + cos_theta_i * self.sin_2k_alpha[0];
-            cos_theta_ip = cos_theta_i * self.cos_2k_alpha[0] - sin_theta_i * self.sin_2k_alpha[0];
-        } else if p == 2_usize {
-            sin_theta_ip = sin_theta_i * self.cos_2k_alpha[2] + cos_theta_i * self.sin_2k_alpha[2];
-            cos_theta_ip = cos_theta_i * self.cos_2k_alpha[2] - sin_theta_i * self.sin_2k_alpha[2];
-        }
-        sin_theta_i = sin_theta_ip;
-        cos_theta_i = cos_theta_ip;
+        let cos_theta_i: Float = (0.0 as Float).max(x).sqrt();
 
         // sample $N_p$ to compute $\Delta\phi$
 
@@ -500,36 +501,37 @@ impl HairBSDF {
         // compute PDF for sampled hair scattering direction _wi_
         *pdf = 0.0 as Float;
         for p in 0..P_MAX {
-            // compute $\sin \thetai$ and $\cos \thetai$ terms accounting for scales
-            //     Float sin_theta_ip, cos_theta_ip;
+            // compute $\sin \thetao$ and $\cos \thetao$ terms accounting for scales
+            let sin_theta_op: Float;
+            let mut cos_theta_op: Float;
             if p == 0 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[1] + cos_theta_i * self.sin_2k_alpha[1];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[1] - sin_theta_i * self.sin_2k_alpha[1];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[1] - cos_theta_o * self.sin_2k_alpha[1];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[1] + sin_theta_o * self.sin_2k_alpha[1];
             } else if p == 1 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[0] - cos_theta_i * self.sin_2k_alpha[0];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[0] + sin_theta_i * self.sin_2k_alpha[0];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[0] + cos_theta_o * self.sin_2k_alpha[0];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[0] - sin_theta_o * self.sin_2k_alpha[0];
             } else if p == 2 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[2] - cos_theta_i * self.sin_2k_alpha[2];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[2] + sin_theta_i * self.sin_2k_alpha[2];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[2] + cos_theta_o * self.sin_2k_alpha[2];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[2] - sin_theta_o * self.sin_2k_alpha[2];
             } else {
-                sin_theta_ip = sin_theta_i;
-                cos_theta_ip = cos_theta_i;
+                sin_theta_op = sin_theta_o;
+                cos_theta_op = cos_theta_o;
             }
 
-            // handle out-of-range $\cos \thetai$ from scale adjustment
-            cos_theta_ip = cos_theta_ip.abs();
+            // handle out-of-range $\cos \thetao$ from scale adjustment
+            cos_theta_op = cos_theta_op.abs();
             *pdf += ap_pdf[p as usize]
                 * mp(
-                    cos_theta_ip,
-                    cos_theta_o,
-                    sin_theta_ip,
-                    sin_theta_o,
+                    cos_theta_i,
+                    cos_theta_op,
+                    sin_theta_i,
+                    sin_theta_op,
                     self.v[p as usize],
                 )
                 * np(dphi, p as i32, self.s, self.gamma_o, gamma_t);
@@ -574,36 +576,36 @@ impl HairBSDF {
         let phi: Float = phi_i - phi_o;
         let mut pdf: Float = 0.0 as Float;
         for p in 0..P_MAX {
-            // compute $\sin \thetai$ and $\cos \thetai$ terms accounting for scales
-            let sin_theta_ip: Float;
-            let mut cos_theta_ip: Float;
+            // compute $\sin \thetao$ and $\cos \thetao$ terms accounting for scales
+            let sin_theta_op: Float;
+            let mut cos_theta_op: Float;
             if p == 0 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[1] + cos_theta_i * self.sin_2k_alpha[1];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[1] - sin_theta_i * self.sin_2k_alpha[1];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[1] - cos_theta_o * self.sin_2k_alpha[1];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[1] + sin_theta_o * self.sin_2k_alpha[1];
             } else if p == 1 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[0] - cos_theta_i * self.sin_2k_alpha[0];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[0] + sin_theta_i * self.sin_2k_alpha[0];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[0] + cos_theta_o * self.sin_2k_alpha[0];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[0] - sin_theta_o * self.sin_2k_alpha[0];
             } else if p == 2 {
-                sin_theta_ip =
-                    sin_theta_i * self.cos_2k_alpha[2] - cos_theta_i * self.sin_2k_alpha[2];
-                cos_theta_ip =
-                    cos_theta_i * self.cos_2k_alpha[2] + sin_theta_i * self.sin_2k_alpha[2];
+                sin_theta_op =
+                    sin_theta_o * self.cos_2k_alpha[2] + cos_theta_o * self.sin_2k_alpha[2];
+                cos_theta_op =
+                    cos_theta_o * self.cos_2k_alpha[2] - sin_theta_o * self.sin_2k_alpha[2];
             } else {
-                sin_theta_ip = sin_theta_i;
-                cos_theta_ip = cos_theta_i;
+                sin_theta_op = sin_theta_o;
+                cos_theta_op = cos_theta_o;
             }
-            // handle out-of-range $\cos \thetai$ from scale adjustment
-            cos_theta_ip = cos_theta_ip.abs();
+            // handle out-of-range $\cos \thetao$ from scale adjustment
+            cos_theta_op = cos_theta_op.abs();
             pdf += ap_pdf[p as usize]
                 * mp(
-                    cos_theta_ip,
-                    cos_theta_o,
-                    sin_theta_ip,
-                    sin_theta_o,
+                    cos_theta_i,
+                    cos_theta_op,
+                    sin_theta_i,
+                    sin_theta_op,
                     self.v[p as usize],
                 )
                 * np(phi, p as i32, self.s, self.gamma_o, gamma_t);
