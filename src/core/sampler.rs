@@ -125,17 +125,6 @@ impl Sampler {
             Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_array(n),
         }
     }
-    pub fn get_2d_arrays(&mut self, n: i32) -> (Option<&[Point2f]>, Option<&[Point2f]>) {
-        match self {
-            Sampler::Halton(sampler) => sampler.get_2d_arrays(n),
-            Sampler::MaxMinDist(sampler) => sampler.get_2d_arrays(n),
-            Sampler::MLT(sampler) => sampler.get_2d_arrays(n),
-            Sampler::Random(sampler) => sampler.get_2d_arrays(n),
-            Sampler::Sobol(sampler) => sampler.get_2d_arrays(n),
-            Sampler::Stratified(sampler) => sampler.get_2d_arrays(n),
-            Sampler::ZeroTwoSequence(sampler) => sampler.get_2d_arrays(n),
-        }
-    }
     pub fn get_2d_array_idxs(&mut self, n: i32) -> (bool, usize, usize) {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d_array_idxs(n),
