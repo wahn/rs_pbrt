@@ -15,7 +15,7 @@ use crate::core::interaction::{Interaction, InteractionCommon, Shading, SurfaceI
 use crate::core::material::Material;
 use crate::core::pbrt::gamma;
 use crate::core::pbrt::Float;
-use crate::core::sampling::uniform_sample_triangle;
+// use crate::core::sampling::uniform_sample_triangle;
 use crate::core::texture::Texture;
 use crate::core::transform::Transform;
 
@@ -689,14 +689,18 @@ impl Triangle {
     pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let idx1: usize = (self.id * 3) as usize;
         let idx = &self.mesh.vertex_indices[idx1..(idx1 + 3)];
-        let b: Point2f = uniform_sample_triangle(u);
+        // avoid calling uniform_sample_triangle!!!
+        // let b: Point2f = uniform_sample_triangle(u);
+        let su0: Float = u[XYEnum::X].sqrt();
+        let bx: Float = 1.0 as Float - su0;
+        let by: Float = u[XYEnum::Y] * su0;
         // get triangle vertices in _p0_, _p1_, and _p2_
         let p0: &Point3f = &self.mesh.p[idx[0] as usize];
         let p1: &Point3f = &self.mesh.p[idx[1] as usize];
         let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         let mut it: InteractionCommon = InteractionCommon::default();
-        let bx = b[XYEnum::X];
-        let by = b[XYEnum::Y];
+        // let bx = b[XYEnum::X];
+        // let by = b[XYEnum::Y];
         it.p = *p0 * bx + *p1 * by + *p2 * (1.0 as Float - bx - by);
         // compute surface normal for sampled point on triangle
         it.n = Normal3f::from(vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0))).normalize();
@@ -719,7 +723,9 @@ impl Triangle {
             y: p_abs_sum.y,
             z: p_abs_sum.z,
         } * gamma(6);
-        *pdf = 1.0 as Float / self.area();
+        // avoid calling self.area()!!! *pdf = 1.0 as Float / self.area();
+        let area: Float = 0.5 as Float * vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0)).length();
+        *pdf = 1.0 as Float / area;
         it
     }
     pub fn sample_with_ref_point(
