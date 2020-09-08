@@ -301,13 +301,14 @@ impl InfiniteAreaLight {
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-    ) -> (Spectrum, Option<VisibilityTester>) {
+        vis: &mut VisibilityTester,
+    ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
         // find $(u,v)$ sample coordinates in infinite light texture
         let mut map_pdf: Float = 0.0 as Float;
         let uv: Point2f = self.distribution.sample_continuous(u, &mut map_pdf);
         if map_pdf == 0 as Float {
-            return (Spectrum::default(), None);
+            return Spectrum::default();
         }
         // convert infinite light sample point to direction
         let theta: Float = uv[XYEnum::Y] * PI;
@@ -334,27 +335,25 @@ impl InfiniteAreaLight {
             medium_interface = Some(mi_arc.clone());
         }
         // TODO: SpectrumType::Illuminant
-        (
-            self.lmap.lookup_pnt_flt(uv, 0.0 as Float),
-            Some(VisibilityTester {
-                p0: Some(Rc::new(InteractionCommon {
-                    p: iref.p,
-                    time: iref.time,
-                    p_error: iref.p_error,
-                    wo: iref.wo,
-                    n: iref.n,
-                    medium_interface,
-                })),
-                p1: Some(Rc::new(InteractionCommon {
-                    p: iref.p + *wi * (2.0 as Float * world_radius),
-                    time: iref.time,
-                    p_error: Vector3f::default(),
-                    wo: Vector3f::default(),
-                    n: Normal3f::default(),
-                    medium_interface: Some(Arc::new(MediumInterface::default())),
-                })),
-            }),
-        )
+        *vis = VisibilityTester {
+            p0: Some(Rc::new(InteractionCommon {
+                p: iref.p,
+                time: iref.time,
+                p_error: iref.p_error,
+                wo: iref.wo,
+                n: iref.n,
+                medium_interface,
+            })),
+            p1: Some(Rc::new(InteractionCommon {
+                p: iref.p + *wi * (2.0 as Float * world_radius),
+                time: iref.time,
+                p_error: Vector3f::default(),
+                wo: Vector3f::default(),
+                n: Normal3f::default(),
+                medium_interface: Some(Arc::new(MediumInterface::default())),
+            })),
+        };
+        self.lmap.lookup_pnt_flt(uv, 0.0 as Float)
     }
     /// Like directional lights, the total power from the infinite
     /// area light is related to the surface area of the scene. Like

@@ -11,9 +11,10 @@ use strum::IntoEnumIterator;
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Point3i, Vector3f, XYZEnum};
 use crate::core::integrator::compute_light_power_distribution;
 use crate::core::interaction::InteractionCommon;
+use crate::core::light::VisibilityTester;
 use crate::core::lowdiscrepancy::radical_inverse;
 use crate::core::pbrt::clamp_t;
-use crate::core::pbrt::Float;
+use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
 
@@ -225,7 +226,9 @@ impl SpatialLightDistribution {
             {
                 let mut pdf: Float = 0.0 as Float;
                 let mut wi: Vector3f = Vector3f::default();
-                let (li, _vis) = self.scene.lights[j].sample_li(intr.clone(), u, &mut wi, &mut pdf);
+                let mut vis: VisibilityTester = VisibilityTester::default();
+                let li: Spectrum =
+                    self.scene.lights[j].sample_li(intr.clone(), u, &mut wi, &mut pdf, &mut vis);
                 if pdf > 0.0 as Float {
                     // TODO: look at tracing shadow rays / computing
                     // beam transmittance. Probably shouldn't give

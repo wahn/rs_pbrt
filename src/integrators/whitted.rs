@@ -6,6 +6,7 @@ use crate::core::camera::Camera;
 use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
 use crate::core::geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
+use crate::core::light::VisibilityTester;
 use crate::core::material::TransportMode;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::reflection::BxdfType;
@@ -72,19 +73,23 @@ impl WhittedIntegrator {
             for light in &scene.lights {
                 let mut wi: Vector3f = Vector3f::default();
                 let mut pdf: Float = 0.0 as Float;
+                let mut visibility: VisibilityTester = VisibilityTester::default();
                 let it_common: Rc<InteractionCommon> = isect.get_common();
-                let (li, visibility_opt) =
-                    light.sample_li(it_common, sampler.get_2d(), &mut wi, &mut pdf);
+                let li: Spectrum = light.sample_li(
+                    it_common,
+                    sampler.get_2d(),
+                    &mut wi,
+                    &mut pdf,
+                    &mut visibility,
+                );
                 if li.is_black() || pdf == 0.0 as Float {
                     continue;
                 }
                 if let Some(ref bsdf) = isect.bsdf {
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
                     let f: Spectrum = bsdf.f(&wo, &wi, bsdf_flags);
-                    if let Some(visibility) = visibility_opt {
-                        if !f.is_black() && visibility.unoccluded(scene) {
-                            l += f * li * vec3_abs_dot_nrm(&wi, &n) / pdf;
-                        }
+                    if !f.is_black() && visibility.unoccluded(scene) {
+                        l += f * li * vec3_abs_dot_nrm(&wi, &n) / pdf;
                     }
                 } else {
                     panic!("no isect.bsdf found");

@@ -2316,6 +2316,7 @@ pub fn connect_bdpt<'a>(
             let mut wi: Vector3f = Vector3f::default();
             let mut pdf: Float = 0.0 as Float;
             let mut light_pdf: Option<Float> = Some(0.0 as Float);
+            let mut vis: VisibilityTester = VisibilityTester::default();
             let light_num: usize =
                 light_distr.sample_discrete(sampler.get_1d(), light_pdf.as_mut());
             //         const std::shared_ptr<Light> &light = scene.lights[light_num];
@@ -2356,38 +2357,34 @@ pub fn connect_bdpt<'a>(
                     }
                 }
             }
-            let (light_weight, vis_opt) = scene.lights[light_num].sample_li(
+            let light_weight: Spectrum = scene.lights[light_num].sample_li(
                 Rc::new(iref),
                 sampler.get_2d(),
                 &mut wi,
                 &mut pdf,
+                &mut vis,
             );
             if pdf > 0.0 as Float && !light_weight.is_black() {
-                if let Some(vis) = vis_opt {
-                    let ei: EndpointInteraction = EndpointInteraction::new_interaction_from_light(
-                        vis.p1.as_ref().unwrap().clone(),
-                        &scene.lights[light_num],
-                    );
-                    sampled = Vertex::create_light_interaction(
-                        ei,
-                        &(light_weight / (pdf * light_pdf.unwrap())),
-                        0.0 as Float,
-                    );
-                    sampled.pdf_fwd = sampled.pdf_light_origin(
-                        scene,
-                        &camera_vertices[t - 1],
-                        light_distr.clone(),
-                    );
-                    l = camera_vertices[t - 1].beta
-                        * camera_vertices[t - 1].f(&sampled, TransportMode::Radiance)
-                        * sampled.beta;
-                    if camera_vertices[t - 1].is_on_surface() {
-                        l *= Spectrum::new(vec3_abs_dot_nrm(&wi, &camera_vertices[t - 1].ns()));
-                    }
-                    // only check visibility if the path would carry radiance.
-                    if !l.is_black() {
-                        l *= vis.tr(scene, sampler);
-                    }
+                let ei: EndpointInteraction = EndpointInteraction::new_interaction_from_light(
+                    vis.p1.as_ref().unwrap().clone(),
+                    &scene.lights[light_num],
+                );
+                sampled = Vertex::create_light_interaction(
+                    ei,
+                    &(light_weight / (pdf * light_pdf.unwrap())),
+                    0.0 as Float,
+                );
+                sampled.pdf_fwd =
+                    sampled.pdf_light_origin(scene, &camera_vertices[t - 1], light_distr.clone());
+                l = camera_vertices[t - 1].beta
+                    * camera_vertices[t - 1].f(&sampled, TransportMode::Radiance)
+                    * sampled.beta;
+                if camera_vertices[t - 1].is_on_surface() {
+                    l *= Spectrum::new(vec3_abs_dot_nrm(&wi, &camera_vertices[t - 1].ns()));
+                }
+                // only check visibility if the path would carry radiance.
+                if !l.is_black() {
+                    l *= vis.tr(scene, sampler);
                 }
             }
         }
