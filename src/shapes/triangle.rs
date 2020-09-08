@@ -1,6 +1,7 @@
 // std
 use std::cell::Cell;
 use std::mem;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
@@ -435,12 +436,15 @@ impl Triangle {
             shading.dndu = dndu;
             shading.dndv = dndv;
         }
-        isect.common.p = p_hit;
-        isect.common.time = ray.time;
-        isect.common.p_error = p_error;
-        isect.common.wo = wo;
-        isect.common.n = surface_normal;
-        isect.common.medium_interface = None;
+        {
+            let mut common = Rc::get_mut(&mut isect.common).unwrap();
+            common.p = p_hit;
+            common.time = ray.time;
+            common.p_error = p_error;
+            common.wo = wo;
+            common.n = surface_normal;
+            common.medium_interface = None;
+        }
         isect.uv = uv_hit;
         isect.dpdu = dpdu;
         isect.dpdv = dpdv;
@@ -686,7 +690,7 @@ impl Triangle {
         let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         0.5 as Float * vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0)).length()
     }
-    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> Rc<InteractionCommon> {
         let idx1: usize = (self.id * 3) as usize;
         let idx = &self.mesh.vertex_indices[idx1..(idx1 + 3)];
         // avoid calling uniform_sample_triangle!!!
@@ -726,15 +730,15 @@ impl Triangle {
         // avoid calling self.area()!!! *pdf = 1.0 as Float / self.area();
         let area: Float = 0.5 as Float * vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0)).length();
         *pdf = 1.0 as Float / area;
-        it
+        Rc::new(it)
     }
     pub fn sample_with_ref_point(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         u: Point2f,
         pdf: &mut Float,
-    ) -> InteractionCommon {
-        let intr: InteractionCommon = self.sample(u, pdf);
+    ) -> Rc<InteractionCommon> {
+        let intr: Rc<InteractionCommon> = self.sample(u, pdf);
         let mut wi: Vector3f = intr.p - iref.p;
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;

@@ -1,4 +1,5 @@
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
@@ -504,17 +505,17 @@ impl Curve {
         }
         approx_length * avg_width
     }
-    pub fn sample(&self, _u: Point2f, _pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, _u: Point2f, _pdf: &mut Float) -> Rc<InteractionCommon> {
         println!("FATAL: Curve::sample not implemented.");
-        InteractionCommon::default()
+        Rc::new(InteractionCommon::default())
     }
     pub fn sample_with_ref_point(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         u: Point2f,
         pdf: &mut Float,
-    ) -> InteractionCommon {
-        let intr: InteractionCommon = self.sample(u, pdf);
+    ) -> Rc<InteractionCommon> {
+        let intr: Rc<InteractionCommon> = self.sample(u, pdf);
         let mut wi: Vector3f = intr.p - iref.p;
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;

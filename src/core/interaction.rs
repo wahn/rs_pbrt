@@ -9,6 +9,7 @@
 
 // std
 use std::cell::Cell;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::bssrdf::TabulatedBssrdf;
@@ -31,7 +32,7 @@ pub trait Interaction {
     fn is_surface_interaction(&self) -> bool;
     fn is_medium_interaction(&self) -> bool;
     fn spawn_ray(&self, d: &Vector3f) -> Ray;
-    fn get_common(&self) -> &InteractionCommon;
+    fn get_common(&self) -> Rc<InteractionCommon>;
     fn get_p(&self) -> &Point3f;
     fn get_time(&self) -> Float;
     fn get_p_error(&self) -> &Vector3f;
@@ -119,7 +120,7 @@ pub struct Shading {
 #[derive(Default, Clone)]
 pub struct MediumInteraction {
     // Interaction Public Data
-    pub common: InteractionCommon,
+    pub common: Rc<InteractionCommon>,
     // MediumInteraction Public Data
     pub phase: Option<Arc<HenyeyGreenstein>>,
 }
@@ -142,10 +143,16 @@ impl MediumInteraction {
             let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
             let outside: Option<Arc<Medium>> = Some(medium_arc);
             common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
-            MediumInteraction { common, phase }
+            MediumInteraction {
+                common: Rc::new(common),
+                phase,
+            }
         } else {
             common.medium_interface = None;
-            MediumInteraction { common, phase }
+            MediumInteraction {
+                common: Rc::new(common),
+                phase,
+            }
         }
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
@@ -204,8 +211,8 @@ impl Interaction for MediumInteraction {
             medium: self.get_medium(d),
         }
     }
-    fn get_common(&self) -> &InteractionCommon {
-        &self.common
+    fn get_common(&self) -> Rc<InteractionCommon> {
+        self.common.clone()
     }
     fn get_p(&self) -> &Point3f {
         &self.common.p
@@ -247,7 +254,7 @@ impl Interaction for MediumInteraction {
 #[derive(Default)]
 pub struct SurfaceInteraction<'a> {
     // Interaction Public Data
-    pub common: InteractionCommon,
+    pub common: Rc<InteractionCommon>,
     // SurfaceInteraction Public Data
     pub uv: Point2f,
     pub dpdu: Vector3f,
@@ -310,7 +317,7 @@ impl<'a> SurfaceInteraction<'a> {
         common.medium_interface = None;
         if let Some(ref shape) = sh {
             SurfaceInteraction {
-                common,
+                common: Rc::new(common),
                 uv,
                 dpdu: *dpdu,
                 dpdv: *dpdv,
@@ -330,7 +337,7 @@ impl<'a> SurfaceInteraction<'a> {
             }
         } else {
             SurfaceInteraction {
-                common,
+                common: Rc::new(common),
                 uv,
                 dpdu: *dpdu,
                 dpdv: *dpdv,
@@ -387,7 +394,8 @@ impl<'a> SurfaceInteraction<'a> {
             }
         }
         if orientation_is_authoritative {
-            self.common.n = nrm_faceforward_nrm(&self.common.n, &self.shading.n);
+            Rc::get_mut(&mut self.common).unwrap().n =
+                nrm_faceforward_nrm(&self.common.n, &self.shading.n);
         } else {
             self.shading.n = nrm_faceforward_nrm(&self.shading.n, &self.common.n);
         }
@@ -546,8 +554,8 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
             medium: self.get_medium(d),
         }
     }
-    fn get_common(&self) -> &InteractionCommon {
-        &self.common
+    fn get_common(&self) -> Rc<InteractionCommon> {
+        self.common.clone()
     }
     fn get_p(&self) -> &Point3f {
         &self.common.p

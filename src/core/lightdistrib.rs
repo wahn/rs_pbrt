@@ -1,6 +1,7 @@
 //! Various probability distributions for sampling light sources.
 
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // others
 use atom::AtomSetOnce;
@@ -199,7 +200,7 @@ impl SpatialLightDistribution {
                 z: radical_inverse(2, i as u64),
             });
             let time: Float = 0.0;
-            let intr: InteractionCommon = InteractionCommon {
+            let intr: Rc<InteractionCommon> = Rc::new(InteractionCommon {
                 p: po,
                 time,
                 p_error: Vector3f::default(),
@@ -210,7 +211,7 @@ impl SpatialLightDistribution {
                 },
                 n: Normal3f::default(),
                 medium_interface: None,
-            };
+            });
             // Use the next two Halton dimensions to sample a point on the
             // light source.
             let u: Point2f = Point2f {
@@ -224,8 +225,7 @@ impl SpatialLightDistribution {
             {
                 let mut pdf: Float = 0.0 as Float;
                 let mut wi: Vector3f = Vector3f::default();
-                let (li, _vis) =
-                    self.scene.lights[j].sample_li(&intr, u, &mut wi, &mut pdf);
+                let (li, _vis) = self.scene.lights[j].sample_li(intr.clone(), u, &mut wi, &mut pdf);
                 if pdf > 0.0 as Float {
                     // TODO: look at tracing shadow rays / computing
                     // beam transmittance. Probably shouldn't give

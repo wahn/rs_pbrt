@@ -1,5 +1,6 @@
 // std
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::{Camera, CameraSample};
@@ -377,7 +378,7 @@ impl PerspectiveCamera {
     }
     pub fn sample_wi(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
@@ -415,8 +416,6 @@ impl PerspectiveCamera {
             lens_intr.medium_interface = None;
         }
         // populate arguments and compute the importance value
-        vis.p0 = iref.clone();
-        vis.p1 = lens_intr.clone();
         *wi = lens_intr.p - iref.p;
         let dist: Float = wi.length();
         *wi /= dist;
@@ -430,7 +429,10 @@ impl PerspectiveCamera {
             1.0 as Float
         };
         *pdf = (dist * dist) / (nrm_abs_dot_vec3(&lens_intr.n, wi) * lens_area);
-        self.we(&lens_intr.spawn_ray(&-*wi), Some(p_raster))
+        let ray = lens_intr.spawn_ray(&-*wi);
+        vis.p0 = Some(iref.clone());
+        vis.p1 = Some(Rc::new(lens_intr));
+        self.we(&ray, Some(p_raster))
     }
     pub fn get_shutter_open(&self) -> Float {
         self.shutter_open

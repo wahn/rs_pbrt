@@ -3,6 +3,7 @@
 //! to the camera sensor.
 
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
@@ -45,7 +46,7 @@ impl Light {
     /// them.
     pub fn sample_li(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
@@ -192,16 +193,25 @@ pub fn is_delta_light(flags: u8) -> bool {
 /// objects, one for each end point of the shadow ray to be traced.
 #[derive(Default, Clone)]
 pub struct VisibilityTester {
-    pub p0: InteractionCommon, // TODO: private
-    pub p1: InteractionCommon, // TODO: private
+    pub p0: Option<Rc<InteractionCommon>>, // TODO: private
+    pub p1: Option<Rc<InteractionCommon>>, // TODO: private
 }
 
 impl VisibilityTester {
     pub fn unoccluded(&self, scene: &Scene) -> bool {
-        !scene.intersect_p(&mut self.p0.spawn_ray_to(&self.p1))
+        let mut ray: Ray = self
+            .p0
+            .as_ref()
+            .unwrap()
+            .spawn_ray_to(&self.p1.as_ref().unwrap());
+        !scene.intersect_p(&mut ray)
     }
     pub fn tr(&self, scene: &Scene, sampler: &mut Sampler) -> Spectrum {
-        let mut ray: Ray = self.p0.spawn_ray_to(&self.p1);
+        let mut ray: Ray = self
+            .p0
+            .as_ref()
+            .unwrap()
+            .spawn_ray_to(&self.p1.as_ref().unwrap());
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {
             let mut it: InteractionCommon = InteractionCommon::default();
@@ -236,7 +246,7 @@ impl VisibilityTester {
                 }
                 break;
             }
-            ray = it.spawn_ray_to(&self.p1);
+            ray = it.spawn_ray_to(&self.p1.as_ref().unwrap());
         }
         tr
     }

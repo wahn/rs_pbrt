@@ -3,6 +3,7 @@
 //! provide.
 
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::cameras::environment::EnvironmentCamera;
@@ -51,7 +52,7 @@ impl Camera {
     }
     pub fn sample_wi(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,

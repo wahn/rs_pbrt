@@ -1,5 +1,6 @@
 // std
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::pnt3_distance_squared;
@@ -50,7 +51,7 @@ impl PointLight {
     // Light
     pub fn sample_li(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         _u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
@@ -61,22 +62,22 @@ impl PointLight {
         (
             self.i / pnt3_distance_squared(&self.p_light, &iref.p),
             Some(VisibilityTester {
-                p0: InteractionCommon {
+                p0: Some(Rc::new(InteractionCommon {
                     p: iref.p,
                     time: iref.time,
                     p_error: iref.p_error,
                     wo: iref.wo,
                     n: iref.n,
                     medium_interface: None,
-                },
-                p1: InteractionCommon {
+                })),
+                p1: Some(Rc::new(InteractionCommon {
                     p: self.p_light,
                     time: iref.time,
                     p_error: Vector3f::default(),
                     wo: Vector3f::default(),
                     n: Normal3f::default(),
                     medium_interface: None,
-                },
+                })),
             }),
         )
     }

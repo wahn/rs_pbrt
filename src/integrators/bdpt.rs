@@ -1,6 +1,7 @@
 // std
 use std::cell::Cell;
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::blockqueue::BlockQueue;
@@ -31,7 +32,7 @@ use crate::core::scene::Scene;
 #[derive(Default)]
 pub struct EndpointInteraction<'a> {
     // Interaction Public Data
-    pub common: InteractionCommon,
+    pub common: Rc<InteractionCommon>,
     // EndpointInteraction Public Data
     pub camera: Option<&'a Arc<Camera>>,
     pub light: Option<&'a Arc<Light>>,
@@ -43,15 +44,18 @@ impl<'a> EndpointInteraction<'a> {
         common.p = *p;
         common.time = time;
         EndpointInteraction {
-            common,
+            common: Rc::new(common),
             ..Default::default()
         }
     }
-    pub fn new_interaction_from_camera(it: &InteractionCommon, camera: &'a Arc<Camera>) -> Self {
+    pub fn new_interaction_from_camera(it: Rc<InteractionCommon>, camera: &'a Arc<Camera>) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::new(&it.p, it.time);
-        ei.common.p_error = it.p_error;
-        ei.common.wo = it.wo;
-        ei.common.n = it.n;
+        {
+            let mut common = Rc::get_mut(&mut ei.common).unwrap();
+            common.p_error = it.p_error;
+            common.wo = it.wo;
+            common.n = it.n;
+        }
         ei.camera = Some(camera);
         ei
     }
@@ -60,14 +64,17 @@ impl<'a> EndpointInteraction<'a> {
         common.p = ray.o;
         common.time = ray.time;
         let mut ei: EndpointInteraction = EndpointInteraction {
-            common,
+            common: Rc::new(common),
             camera: Some(camera),
             ..Default::default()
         };
         if let Some(ref medium_arc) = ray.medium {
             let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
             let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
-            ei.common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+            {
+                let mut common = Rc::get_mut(&mut ei.common).unwrap();
+                common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+            }
         }
         ei
     }
@@ -76,27 +83,36 @@ impl<'a> EndpointInteraction<'a> {
         common.p = ray.o;
         common.time = ray.time;
         let mut ei: EndpointInteraction = EndpointInteraction {
-            common,
+            common: Rc::new(common),
             light: Some(light),
             ..Default::default()
         };
         if let Some(ref medium_arc) = ray.medium {
             let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
             let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
-            ei.common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+            {
+                let mut common = Rc::get_mut(&mut ei.common).unwrap();
+                common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+            }
         }
-        ei.common.n = *nl;
+        {
+            let mut common = Rc::get_mut(&mut ei.common).unwrap();
+            common.n = *nl;
+        }
         ei
     }
-    pub fn new_interaction_from_light(it: &InteractionCommon, light: &'a Arc<Light>) -> Self {
+    pub fn new_interaction_from_light(it: Rc<InteractionCommon>, light: &'a Arc<Light>) -> Self {
         let mut ei: EndpointInteraction = EndpointInteraction::default();
-        ei.common.p = it.p;
-        ei.common.time = it.time;
-        ei.common.p_error = it.p_error;
-        ei.common.wo = it.wo;
-        ei.common.n = it.n;
-        if let Some(ref medium_interface_arc) = it.medium_interface {
-            ei.common.medium_interface = Some(medium_interface_arc.clone());
+        {
+            let mut common = Rc::get_mut(&mut ei.common).unwrap();
+            common.p = it.p;
+            common.time = it.time;
+            common.p_error = it.p_error;
+            common.wo = it.wo;
+            common.n = it.n;
+            if let Some(ref medium_interface_arc) = it.medium_interface {
+                common.medium_interface = Some(medium_interface_arc.clone());
+            }
         }
         ei.light = Some(light);
         ei
@@ -106,14 +122,17 @@ impl<'a> EndpointInteraction<'a> {
         common.p = ray.position(1.0 as Float);
         common.time = ray.time;
         let mut ei: EndpointInteraction = EndpointInteraction {
-            common,
+            common: Rc::new(common),
             ..Default::default()
         };
-        ei.common.n = Normal3f::from(-ray.d);
-        if let Some(ref medium_arc) = ray.medium {
-            let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
-            let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
-            ei.common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+        {
+            let mut common = Rc::get_mut(&mut ei.common).unwrap();
+            common.n = Normal3f::from(-ray.d);
+            if let Some(ref medium_arc) = ray.medium {
+                let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
+                let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
+                common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+            }
         }
         ei
     }
@@ -151,8 +170,8 @@ impl<'a> Interaction for EndpointInteraction<'a> {
             medium: self.get_medium(d),
         }
     }
-    fn get_common(&self) -> &InteractionCommon {
-        &self.common
+    fn get_common(&self) -> Rc<InteractionCommon> {
+        self.common.clone()
     }
     fn get_p(&self) -> &Point3f {
         &self.common.p
@@ -232,7 +251,7 @@ impl<'a> Vertex<'a> {
     }
     pub fn create_camera_from_interaction(
         camera: &'a Arc<Camera>,
-        it: &InteractionCommon,
+        it: Rc<InteractionCommon>,
         beta: &Spectrum,
     ) -> Vertex<'a> {
         Vertex::new(
@@ -1312,16 +1331,7 @@ pub fn random_walk<'a>(
             }
             // initialize _vertex_ with surface intersection information
             let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
-            si_eval.common.p = isect.common.p;
-            si_eval.common.time = isect.common.time;
-            si_eval.common.p_error = isect.common.p_error;
-            si_eval.common.wo = isect.common.wo;
-            si_eval.common.n = isect.common.n;
-            if let Some(medium_interface) = &isect.common.medium_interface {
-                si_eval.common.medium_interface = Some(medium_interface.clone());
-            } else {
-                si_eval.common.medium_interface = None
-            }
+            si_eval.common = isect.get_common();
             si_eval.uv = isect.uv;
             si_eval.dpdu = isect.dpdu;
             si_eval.dpdv = isect.dpdv;
@@ -1437,85 +1447,46 @@ pub fn g<'a>(scene: &'a Scene, sampler: &mut Sampler, v0: &Vertex, v1: &Vertex) 
         g *= nrm_abs_dot_vec3(&v1.ns(), &d);
     }
     // VisibilityTester vis(v0.GetInteraction(), v1.GetInteraction());
-    let mut p0: InteractionCommon = InteractionCommon::default();
+    let mut p0: Rc<InteractionCommon> = Rc::new(InteractionCommon::default());
     match v0.vertex_type {
         VertexType::Medium => {
             if let Some(ref mi) = v0.mi {
-                p0.p = mi.common.p;
-                p0.time = mi.common.time;
-                p0.p_error = mi.common.p_error;
-                p0.wo = mi.common.wo;
-                p0.n = mi.common.n;
-                if let Some(ref medium_interface_arc) = mi.common.medium_interface {
-                    p0.medium_interface = Some(medium_interface_arc.clone())
-                }
+                p0 = mi.get_common();
             }
         }
         VertexType::Surface => {
             if let Some(ref si) = v0.si {
-                p0.p = si.common.p;
-                p0.time = si.common.time;
-                p0.p_error = si.common.p_error;
-                p0.wo = si.common.wo;
-                p0.n = si.common.n;
-                if let Some(ref medium_interface_arc) = si.common.medium_interface {
-                    p0.medium_interface = Some(medium_interface_arc.clone())
-                }
+                p0 = si.get_common();
             }
         }
         _ => {
             if let Some(ref ei) = v0.ei {
-                p0.p = ei.common.p;
-                p0.time = ei.common.time;
-                p0.p_error = ei.common.p_error;
-                p0.wo = ei.common.wo;
-                p0.n = ei.common.n;
-                if let Some(ref medium_interface_arc) = ei.common.medium_interface {
-                    p0.medium_interface = Some(medium_interface_arc.clone())
-                }
+                p0 = ei.get_common();
             }
         }
     }
-    let mut p1: InteractionCommon = InteractionCommon::default();
+    let mut p1: Rc<InteractionCommon> = Rc::new(InteractionCommon::default());
     match v1.vertex_type {
         VertexType::Medium => {
             if let Some(ref mi) = v1.mi {
-                p1.p = mi.common.p;
-                p1.time = mi.common.time;
-                p1.p_error = mi.common.p_error;
-                p1.wo = mi.common.wo;
-                p1.n = mi.common.n;
-                if let Some(ref medium_interface_arc) = mi.common.medium_interface {
-                    p1.medium_interface = Some(medium_interface_arc.clone())
-                }
+                p1 = mi.get_common();
             }
         }
         VertexType::Surface => {
             if let Some(ref si) = v1.si {
-                p1.p = si.common.p;
-                p1.time = si.common.time;
-                p1.p_error = si.common.p_error;
-                p1.wo = si.common.wo;
-                p1.n = si.common.n;
-                if let Some(ref medium_interface_arc) = si.common.medium_interface {
-                    p1.medium_interface = Some(medium_interface_arc.clone())
-                }
+                p1 = si.get_common();
             }
         }
         _ => {
             if let Some(ref ei) = v1.ei {
-                p1.p = ei.common.p;
-                p1.time = ei.common.time;
-                p1.p_error = ei.common.p_error;
-                p1.wo = ei.common.wo;
-                p1.n = ei.common.n;
-                if let Some(ref medium_interface_arc) = ei.common.medium_interface {
-                    p1.medium_interface = Some(medium_interface_arc.clone())
-                }
+                p1 = ei.get_common();
             }
         }
     }
-    let vis: VisibilityTester = VisibilityTester { p0, p1 };
+    let vis: VisibilityTester = VisibilityTester {
+        p0: Some(p0.clone()),
+        p1: Some(p1.clone()),
+    };
     vis.tr(scene, sampler) * g
 }
 
@@ -1574,7 +1545,7 @@ pub fn mis_weight<'a>(
             common.n = lv_ei.common.n;
             common.medium_interface = medium_interface;
             let new_ei: EndpointInteraction = EndpointInteraction {
-                common,
+                common: Rc::new(common),
                 camera,
                 light,
             };
@@ -1596,7 +1567,10 @@ pub fn mis_weight<'a>(
             common.wo = lv_mi.common.wo;
             common.n = lv_mi.common.n;
             common.medium_interface = medium_interface;
-            let new_mi: MediumInteraction = MediumInteraction { common, phase };
+            let new_mi: MediumInteraction = MediumInteraction {
+                common: Rc::new(common),
+                phase,
+            };
             mi = Some(new_mi);
         }
         if let Some(ref lv_si) = sampled.si {
@@ -1613,7 +1587,7 @@ pub fn mis_weight<'a>(
                 common.n = lv_si.common.n;
                 common.medium_interface = medium_interface;
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     primitive: Some(primitive),
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
@@ -1628,7 +1602,7 @@ pub fn mis_weight<'a>(
                 common.n = lv_si.common.n;
                 common.medium_interface = medium_interface;
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     primitive: None,
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
@@ -1672,7 +1646,7 @@ pub fn mis_weight<'a>(
             common.n = lv_ei.common.n;
             common.medium_interface = medium_interface;
             let new_ei: EndpointInteraction = EndpointInteraction {
-                common,
+                common: Rc::new(common),
                 camera,
                 light,
             };
@@ -1694,7 +1668,10 @@ pub fn mis_weight<'a>(
             common.wo = lv_mi.common.wo;
             common.n = lv_mi.common.n;
             common.medium_interface = medium_interface;
-            let new_mi: MediumInteraction = MediumInteraction { common, phase };
+            let new_mi: MediumInteraction = MediumInteraction {
+                common: Rc::new(common),
+                phase,
+            };
             mi = Some(new_mi);
         }
         if let Some(ref lv_si) = sampled.si {
@@ -1711,7 +1688,7 @@ pub fn mis_weight<'a>(
             common.medium_interface = medium_interface;
             if let Some(primitive) = lv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     primitive: Some(primitive),
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
@@ -1719,7 +1696,7 @@ pub fn mis_weight<'a>(
                 si = Some(new_si);
             } else {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     primitive: None,
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
@@ -1767,7 +1744,7 @@ pub fn mis_weight<'a>(
             common.n = cv_ei.common.n;
             common.medium_interface = medium_interface;
             let new_ei: EndpointInteraction = EndpointInteraction {
-                common,
+                common: Rc::new(common),
                 camera,
                 light,
             };
@@ -1789,7 +1766,10 @@ pub fn mis_weight<'a>(
             common.wo = cv_mi.common.wo;
             common.n = cv_mi.common.n;
             common.medium_interface = medium_interface;
-            let new_mi: MediumInteraction = MediumInteraction { common, phase };
+            let new_mi: MediumInteraction = MediumInteraction {
+                common: Rc::new(common),
+                phase,
+            };
             mi = Some(new_mi);
         }
         if let Some(ref cv_si) = camera_vertices[t - 1].si {
@@ -1806,7 +1786,7 @@ pub fn mis_weight<'a>(
             common.medium_interface = medium_interface;
             if let Some(primitive) = cv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     primitive: Some(primitive),
                     bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
@@ -1814,7 +1794,7 @@ pub fn mis_weight<'a>(
                 si = Some(new_si);
             } else {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     primitive: None,
                     bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
@@ -1861,7 +1841,7 @@ pub fn mis_weight<'a>(
             common.n = lv_ei.common.n;
             common.medium_interface = medium_interface;
             let new_ei: EndpointInteraction = EndpointInteraction {
-                common,
+                common: Rc::new(common),
                 camera,
                 light,
             };
@@ -1883,7 +1863,10 @@ pub fn mis_weight<'a>(
             common.wo = lv_mi.common.wo;
             common.n = lv_mi.common.n;
             common.medium_interface = medium_interface;
-            let new_mi: MediumInteraction = MediumInteraction { common, phase };
+            let new_mi: MediumInteraction = MediumInteraction {
+                common: Rc::new(common),
+                phase,
+            };
             mi = Some(new_mi);
         }
         if let Some(ref lv_si) = light_vertices[s - 1].si {
@@ -1900,7 +1883,7 @@ pub fn mis_weight<'a>(
             common.medium_interface = medium_interface;
             if let Some(primitive) = lv_si.primitive {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     primitive: Some(primitive),
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
@@ -1908,7 +1891,7 @@ pub fn mis_weight<'a>(
                 si = Some(new_si);
             } else {
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     primitive: None,
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
@@ -1971,7 +1954,7 @@ pub fn mis_weight<'a>(
                 common.n = cv_ei.common.n;
                 common.medium_interface = medium_interface;
                 let new_ei: EndpointInteraction = EndpointInteraction {
-                    common,
+                    common: Rc::new(common),
                     camera,
                     light,
                 };
@@ -1993,7 +1976,10 @@ pub fn mis_weight<'a>(
                 common.wo = cv_mi.common.wo;
                 common.n = cv_mi.common.n;
                 common.medium_interface = medium_interface;
-                let new_mi: MediumInteraction = MediumInteraction { common, phase };
+                let new_mi: MediumInteraction = MediumInteraction {
+                    common: Rc::new(common),
+                    phase,
+                };
                 mi = Some(new_mi);
             }
             if let Some(ref cv_si) = camera_vertices[t - 2].si {
@@ -2009,7 +1995,7 @@ pub fn mis_weight<'a>(
                 common.n = cv_si.common.n;
                 common.medium_interface = medium_interface;
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     bsdf: cv_si.bsdf.clone(),
                     ..Default::default()
                 };
@@ -2074,7 +2060,7 @@ pub fn mis_weight<'a>(
                 common.n = lv_ei.common.n;
                 common.medium_interface = medium_interface;
                 let new_ei: EndpointInteraction = EndpointInteraction {
-                    common,
+                    common: Rc::new(common),
                     camera,
                     light,
                 };
@@ -2096,7 +2082,10 @@ pub fn mis_weight<'a>(
                 common.wo = lv_mi.common.wo;
                 common.n = lv_mi.common.n;
                 common.medium_interface = medium_interface;
-                let new_mi: MediumInteraction = MediumInteraction { common, phase };
+                let new_mi: MediumInteraction = MediumInteraction {
+                    common: Rc::new(common),
+                    phase,
+                };
                 mi = Some(new_mi);
             }
             if let Some(ref lv_si) = light_vertices[s - 2].si {
@@ -2112,7 +2101,7 @@ pub fn mis_weight<'a>(
                 common.n = lv_si.common.n;
                 common.medium_interface = medium_interface;
                 let new_si: SurfaceInteraction = SurfaceInteraction {
-                    common,
+                    common: Rc::new(common),
                     bsdf: lv_si.bsdf.clone(),
                     ..Default::default()
                 };
@@ -2266,39 +2255,24 @@ pub fn connect_bdpt<'a>(
             light_vertices.len()
         );
         if light_vertices[s - 1].is_connectible() {
-            let mut iref: InteractionCommon = InteractionCommon::default();
+            let mut iref: Rc<InteractionCommon> = Rc::new(InteractionCommon::default());
             // qs.GetInteraction()
             match light_vertices[s - 1].vertex_type {
                 VertexType::Medium => {
                     if let Some(ref mi) = light_vertices[s - 1].mi {
-                        iref.p = mi.common.p;
-                        iref.time = mi.common.time;
-                        iref.p_error = mi.common.p_error;
-                        iref.wo = mi.common.wo;
-                        iref.n = mi.common.n;
-                        if let Some(ref medium_interface_arc) = mi.common.medium_interface {
-                            iref.medium_interface = Some(medium_interface_arc.clone())
-                        }
+                        iref = mi.get_common();
                     } else {
                     }
                 }
                 VertexType::Surface => {
                     if let Some(ref si) = light_vertices[s - 1].si {
-                        iref.p = si.common.p;
-                        iref.time = si.common.time;
-                        iref.p_error = si.common.p_error;
-                        iref.wo = si.common.wo;
-                        iref.n = si.common.n;
+                        iref = si.get_common();
                     } else {
                     }
                 }
                 _ => {
                     if let Some(ref ei) = light_vertices[s - 1].ei {
-                        iref.p = ei.common.p;
-                        iref.time = ei.common.time;
-                        iref.p_error = ei.common.p_error;
-                        iref.wo = ei.common.wo;
-                        iref.n = ei.common.n;
+                        iref = ei.get_common();
                     } else {
                     }
                 }
@@ -2307,7 +2281,7 @@ pub fn connect_bdpt<'a>(
             let mut pdf: Float = 0.0 as Float;
             let mut vis: VisibilityTester = VisibilityTester::default();
             let wi_color: Spectrum = camera.sample_wi(
-                &iref,
+                iref.clone(),
                 sampler.get_2d(),
                 &mut wi,
                 &mut pdf,
@@ -2316,8 +2290,11 @@ pub fn connect_bdpt<'a>(
             );
             if pdf > 0.0 as Float && !wi_color.is_black() {
                 // initialize dynamically sampled vertex and _L_ for $t=1$ case
-                sampled =
-                    Vertex::create_camera_from_interaction(camera, &vis.p1, &(wi_color / pdf));
+                sampled = Vertex::create_camera_from_interaction(
+                    camera,
+                    vis.p1.as_ref().unwrap().clone(),
+                    &(wi_color / pdf),
+                );
                 l = light_vertices[s - 1].beta
                     * light_vertices[s - 1].f(&sampled, TransportMode::Importance)
                     * sampled.beta;
@@ -2379,12 +2356,16 @@ pub fn connect_bdpt<'a>(
                     }
                 }
             }
-            let (light_weight, vis_opt) =
-                scene.lights[light_num].sample_li(&iref, sampler.get_2d(), &mut wi, &mut pdf);
+            let (light_weight, vis_opt) = scene.lights[light_num].sample_li(
+                Rc::new(iref),
+                sampler.get_2d(),
+                &mut wi,
+                &mut pdf,
+            );
             if pdf > 0.0 as Float && !light_weight.is_black() {
                 if let Some(vis) = vis_opt {
                     let ei: EndpointInteraction = EndpointInteraction::new_interaction_from_light(
-                        &vis.p1,
+                        vis.p1.as_ref().unwrap().clone(),
                         &scene.lights[light_num],
                     );
                     sampled = Vertex::create_light_interaction(

@@ -1,5 +1,6 @@
 // std
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{nrm_abs_dot_vec3, pnt3_distance_squared};
@@ -209,7 +210,7 @@ impl Disk {
             * 0.5 as Float
             * (self.radius * self.radius - self.inner_radius * self.inner_radius)
     }
-    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> Rc<InteractionCommon> {
         let pd: Point2f = concentric_sample_disk(u);
         let p_obj: Point3f = Point3f {
             x: pd.x * self.radius,
@@ -233,15 +234,15 @@ impl Disk {
             self.object_to_world
                 .transform_point_with_abs_error(&p_obj, &pt_error, &mut it.p_error);
         *pdf = 1.0 as Float / self.area();
-        it
+        Rc::new(it)
     }
     pub fn sample_with_ref_point(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         u: Point2f,
         pdf: &mut Float,
-    ) -> InteractionCommon {
-        let intr: InteractionCommon = self.sample(u, pdf);
+    ) -> Rc<InteractionCommon> {
+        let intr: Rc<InteractionCommon> = self.sample(u, pdf);
         let mut wi: Vector3f = intr.p - iref.p;
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
@@ -263,7 +264,7 @@ impl Disk {
         // performing this intersection. Hack for the "San Miguel"
         // scene, where this is used to make an invisible area light.
         let mut t_hit: Float = 0.0;
-        let mut isect_light: SurfaceInteraction = SurfaceInteraction::default(); 
+        let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
             let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.common.p)

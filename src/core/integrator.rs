@@ -2,6 +2,7 @@
 //! class that implements the **Integrator** interface.
 
 // std
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::blockqueue::BlockQueue;
@@ -148,7 +149,7 @@ impl SamplerIntegrator {
                                         let clipping_start: Float = camera.get_clipping_start();
                                         if clipping_start > 0.0 as Float {
                                             // adjust ray origin for near clipping
-                                            ray.o  = ray.position(clipping_start);
+                                            ray.o = ray.position(clipping_start);
                                         }
                                         // ADDED
                                         l = integrator.li(
@@ -421,8 +422,8 @@ pub fn estimate_direct(
     let mut wi: Vector3f = Vector3f::default();
     let mut light_pdf: Float = 0.0 as Float;
     let mut scattering_pdf: Float = 0.0 as Float;
-    let it_common: &InteractionCommon = it.get_common();
-    let (mut li, visibility_opt) = light.sample_li(&it_common, u_light, &mut wi, &mut light_pdf);
+    let it_common: Rc<InteractionCommon> = it.get_common();
+    let (mut li, visibility_opt) = light.sample_li(it_common, u_light, &mut wi, &mut light_pdf);
     // TODO: println!("EstimateDirect uLight: {:?} -> Li: {:?}, wi:
     // {:?}, pdf: {:?}", u_light, li, wi, light_pdf);
     if light_pdf > 0.0 as Float && !li.is_black() {

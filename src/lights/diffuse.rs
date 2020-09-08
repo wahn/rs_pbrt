@@ -1,5 +1,6 @@
 // std
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system};
@@ -63,13 +64,13 @@ impl DiffuseAreaLight {
     // Light
     pub fn sample_li(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
     ) -> (Spectrum, Option<VisibilityTester>) {
         // TODO: ProfilePhase _(Prof::LightSample);
-        let p_shape: InteractionCommon = self.shape.sample_with_ref_point(&iref, u, pdf);
+        let p_shape: Rc<InteractionCommon> = self.shape.sample_with_ref_point(iref.clone(), u, pdf);
         // TODO: iref.mediumInterface = mediumInterface;
         if *pdf == 0.0 as Float || (p_shape.p - iref.p).length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
@@ -80,15 +81,15 @@ impl DiffuseAreaLight {
         (
             self.l(&p_shape, &-new_wi),
             Some(VisibilityTester {
-                p0: InteractionCommon {
+                p0: Some(Rc::new(InteractionCommon {
                     p: iref.p,
                     time: iref.time,
                     p_error: iref.p_error,
                     wo: iref.wo,
                     n: iref.n,
                     medium_interface: None,
-                },
-                p1: p_shape,
+                })),
+                p1: Some(p_shape),
             }),
         )
     }
@@ -124,7 +125,7 @@ impl DiffuseAreaLight {
         // TODO: ProfilePhase _(Prof::LightSample);
 
         // sample a point on the area light's _Shape_, _p_shape_
-        let ic: InteractionCommon = self.shape.sample(u1, pdf_pos);
+        let ic: Rc<InteractionCommon> = self.shape.sample(u1, pdf_pos);
         // TODO: p_shape.mediumInterface = mediumInterface;
         *n_light = ic.n;
         // sample a cosine-weighted outgoing direction _w_ for area light
@@ -157,7 +158,7 @@ impl DiffuseAreaLight {
         self.l(&ic, &w)
     }
     pub fn pdf_le(&self, ray: &Ray, n: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
-        *pdf_pos = self.shape.pdf(&InteractionCommon::default());
+        *pdf_pos = self.shape.pdf(Rc::new(InteractionCommon::default()));
         if self.two_sided {
             *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(nrm_abs_dot_vec3(&n, &ray.d));
         } else {

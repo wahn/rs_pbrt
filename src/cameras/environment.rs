@@ -1,5 +1,6 @@
 // std
 use std::f32::consts::PI;
+use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::{Camera, CameraSample};
@@ -125,7 +126,7 @@ impl EnvironmentCamera {
     }
     pub fn sample_wi(
         &self,
-        _iref: &InteractionCommon,
+        _iref: Rc<InteractionCommon>,
         _u: Point2f,
         _wi: &mut Vector3f,
         _pdf: &mut Float,

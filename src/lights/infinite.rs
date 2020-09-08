@@ -1,6 +1,7 @@
 // std
 use std::f32::consts::PI;
 use std::io::BufReader;
+use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 // others
 #[cfg(feature = "openexr")]
@@ -296,7 +297,7 @@ impl InfiniteAreaLight {
     // Light
     pub fn sample_li(
         &self,
-        iref: &InteractionCommon,
+        iref: Rc<InteractionCommon>,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
@@ -336,22 +337,22 @@ impl InfiniteAreaLight {
         (
             self.lmap.lookup_pnt_flt(uv, 0.0 as Float),
             Some(VisibilityTester {
-                p0: InteractionCommon {
+                p0: Some(Rc::new(InteractionCommon {
                     p: iref.p,
                     time: iref.time,
                     p_error: iref.p_error,
                     wo: iref.wo,
                     n: iref.n,
                     medium_interface,
-                },
-                p1: InteractionCommon {
+                })),
+                p1: Some(Rc::new(InteractionCommon {
                     p: iref.p + *wi * (2.0 as Float * world_radius),
                     time: iref.time,
                     p_error: Vector3f::default(),
                     wo: Vector3f::default(),
                     n: Normal3f::default(),
                     medium_interface: Some(Arc::new(MediumInterface::default())),
-                },
+                })),
             }),
         )
     }
