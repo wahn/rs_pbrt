@@ -79,14 +79,7 @@ impl DiffuseAreaLight {
         }
         let new_wi: Vector3f = (p_shape.p - iref.p).normalize();
         *wi = new_wi;
-        vis.p0 = Some(Rc::new(InteractionCommon {
-            p: iref.p,
-            time: iref.time,
-            p_error: iref.p_error,
-            wo: iref.wo,
-            n: iref.n,
-            medium_interface: None,
-        }));
+        vis.p0 = Some(iref.clone());
         vis.p1 = Some(p_shape.clone());
         self.l(&p_shape, &-new_wi)
     }

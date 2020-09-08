@@ -85,19 +85,6 @@ impl SpotLight {
         // TODO: ProfilePhase _(Prof::LightSample);
         *wi = (self.p_light - iref.p).normalize();
         *pdf = 1.0 as Float;
-        // medium_interface1
-        let mut inside: Option<Arc<Medium>> = None;
-        let mut outside: Option<Arc<Medium>> = None;
-        if let Some(ref mi_arc) = iref.medium_interface {
-            if let Some(ref mi_inside_arc) = mi_arc.get_inside() {
-                inside = Some(mi_inside_arc.clone());
-            }
-            if let Some(ref mi_outside_arc) = mi_arc.get_outside() {
-                outside = Some(mi_outside_arc.clone());
-            }
-        }
-        let medium_interface1_arc: Arc<MediumInterface> =
-            Arc::new(MediumInterface::new(inside, outside));
         // medium_interface2
         let mut inside: Option<Arc<Medium>> = None;
         let mut outside: Option<Arc<Medium>> = None;
@@ -109,24 +96,15 @@ impl SpotLight {
         }
         let medium_interface2_arc: Arc<MediumInterface> =
             Arc::new(MediumInterface::new(inside, outside));
-        *vis = VisibilityTester {
-            p0: Some(Rc::new(InteractionCommon {
-                p: iref.p,
-                time: iref.time,
-                p_error: iref.p_error,
-                wo: iref.wo,
-                n: iref.n,
-                medium_interface: Some(medium_interface1_arc),
-            })),
-            p1: Some(Rc::new(InteractionCommon {
-                p: self.p_light,
-                time: iref.time,
-                p_error: Vector3f::default(),
-                wo: Vector3f::default(),
-                n: Normal3f::default(),
-                medium_interface: Some(medium_interface2_arc),
-            })),
-        };
+        vis.p0 = Some(iref.clone());
+        vis.p1 = Some(Rc::new(InteractionCommon {
+            p: self.p_light,
+            time: iref.time,
+            p_error: Vector3f::default(),
+            wo: Vector3f::default(),
+            n: Normal3f::default(),
+            medium_interface: Some(medium_interface2_arc),
+        }));
         self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
     }
     pub fn power(&self) -> Spectrum {

@@ -330,29 +330,16 @@ impl InfiniteAreaLight {
         }
         // return radiance value for infinite light direction
         let world_radius: Float = *self.world_radius.read().unwrap();
-        let mut medium_interface: Option<Arc<MediumInterface>> = None;
-        if let Some(ref mi_arc) = iref.medium_interface {
-            medium_interface = Some(mi_arc.clone());
-        }
         // TODO: SpectrumType::Illuminant
-        *vis = VisibilityTester {
-            p0: Some(Rc::new(InteractionCommon {
-                p: iref.p,
-                time: iref.time,
-                p_error: iref.p_error,
-                wo: iref.wo,
-                n: iref.n,
-                medium_interface,
-            })),
-            p1: Some(Rc::new(InteractionCommon {
-                p: iref.p + *wi * (2.0 as Float * world_radius),
-                time: iref.time,
-                p_error: Vector3f::default(),
-                wo: Vector3f::default(),
-                n: Normal3f::default(),
-                medium_interface: Some(Arc::new(MediumInterface::default())),
-            })),
-        };
+        vis.p0 = Some(iref.clone());
+        vis.p1 = Some(Rc::new(InteractionCommon {
+            p: iref.p + *wi * (2.0 as Float * world_radius),
+            time: iref.time,
+            p_error: Vector3f::default(),
+            wo: Vector3f::default(),
+            n: Normal3f::default(),
+            medium_interface: Some(Arc::new(MediumInterface::default())),
+        }));
         self.lmap.lookup_pnt_flt(uv, 0.0 as Float)
     }
     /// Like directional lights, the total power from the infinite
