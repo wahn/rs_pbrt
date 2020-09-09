@@ -14,7 +14,7 @@ use std::sync::Arc;
 // pbrt
 use crate::core::bssrdf::TabulatedBssrdf;
 use crate::core::geometry::{
-    nrm_faceforward_nrm, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrm, vec3_dot_vec3,
+    nrm_faceforward_nrm, pnt3_offset_ray_origin, vec3_cross_vec3, vec3_dot_nrmf, vec3_dot_vec3f,
 };
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f, XYZEnum};
 use crate::core::material::TransportMode;
@@ -94,7 +94,7 @@ impl InteractionCommon {
         }
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
-        if vec3_dot_nrm(w, &self.n) > 0.0 as Float {
+        if vec3_dot_nrmf(w, &self.n) > 0.0 as Float {
             if let Some(ref medium_interface_arc) = self.medium_interface {
                 medium_interface_arc.get_outside()
             } else {
@@ -156,7 +156,7 @@ impl MediumInteraction {
         }
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
-        if vec3_dot_nrm(w, &self.get_n()) > 0.0 as Float {
+        if vec3_dot_nrmf(w, &self.get_n()) > 0.0 as Float {
             if let Some(ref medium_interface) = self.get_medium_interface() {
                 if let Some(ref outside_arc) = medium_interface.outside {
                     Some(outside_arc.clone())
@@ -358,7 +358,7 @@ impl<'a> SurfaceInteraction<'a> {
         }
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
-        if vec3_dot_nrm(w, &self.common.n) > 0.0 as Float {
+        if vec3_dot_nrmf(w, &self.common.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.common.medium_interface {
                 if let Some(ref outside_arc) = medium_interface.outside {
                     Some(outside_arc.clone())
@@ -428,7 +428,7 @@ impl<'a> SurfaceInteraction<'a> {
 
             // compute auxiliary intersection points with plane
             let p = self.common.p;
-            let d: Float = vec3_dot_vec3(
+            let d: Float = vec3_dot_vec3f(
                 &Vector3f::from(self.common.n),
                 &Vector3f {
                     x: p.x,
@@ -436,11 +436,11 @@ impl<'a> SurfaceInteraction<'a> {
                     z: p.z,
                 },
             );
-            let tx: Float = -(vec3_dot_vec3(
+            let tx: Float = -(vec3_dot_vec3f(
                 &Vector3f::from(self.common.n),
                 &Vector3f::from(diff.rx_origin),
             ) - d)
-                / vec3_dot_vec3(&Vector3f::from(self.common.n), &diff.rx_direction);
+                / vec3_dot_vec3f(&Vector3f::from(self.common.n), &diff.rx_direction);
             if tx.is_infinite() || tx.is_nan() {
                 self.dudx.set(0.0 as Float);
                 self.dvdx.set(0.0 as Float);
@@ -450,11 +450,11 @@ impl<'a> SurfaceInteraction<'a> {
                 self.dpdy.set(Vector3f::default());
             } else {
                 let px: Point3f = diff.rx_origin + diff.rx_direction * tx;
-                let ty: Float = -(vec3_dot_vec3(
+                let ty: Float = -(vec3_dot_vec3f(
                     &Vector3f::from(self.common.n),
                     &Vector3f::from(diff.ry_origin),
                 ) - d)
-                    / vec3_dot_vec3(&Vector3f::from(self.common.n), &diff.ry_direction);
+                    / vec3_dot_vec3f(&Vector3f::from(self.common.n), &diff.ry_direction);
                 if ty.is_infinite() || ty.is_nan() {
                     self.dudx.set(0.0 as Float);
                     self.dvdx.set(0.0 as Float);

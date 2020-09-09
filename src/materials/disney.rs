@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use num::Zero;
 
-use crate::core::geometry::{spherical_direction, vec3_abs_dot_vec3, vec3_dot_vec3};
+use crate::core::geometry::{spherical_direction, vec3_abs_dot_vec3f, vec3_dot_vec3f};
 use crate::core::geometry::{Point2f, Vector3f, XYEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::material::{Material, TransportMode};
@@ -377,7 +377,7 @@ impl DisneyFakeSS {
             return Spectrum::from(0.0);
         }
         wh = wh.normalize();
-        let cos_theta_d = vec3_dot_vec3(wi, &wh);
+        let cos_theta_d = vec3_dot_vec3f(wi, &wh);
 
         // Fss90 used to "flatten" retroreflection based on roughness
         let fss90 = cos_theta_d * cos_theta_d * self.roughness;
@@ -421,7 +421,7 @@ impl DisneyRetro {
             return Spectrum::from(0.0);
         }
         wh = wh.normalize();
-        let cos_theta_d = vec3_dot_vec3(wi, &wh);
+        let cos_theta_d = vec3_dot_vec3f(wi, &wh);
         let fo = schlick_weight(abs_cos_theta(wo));
         let fi = schlick_weight(abs_cos_theta(wi));
         let rr = 2.0 * self.roughness * cos_theta_d * cos_theta_d;
@@ -456,7 +456,7 @@ impl DisneySheen {
             return Spectrum::from(0.0);
         }
         wh = wh.normalize();
-        let cos_theta_d = vec3_dot_vec3(wi, &wh);
+        let cos_theta_d = vec3_dot_vec3f(wi, &wh);
 
         if let Some(sc) = self.sc_opt {
             sc * self.r * schlick_weight(cos_theta_d)
@@ -497,7 +497,7 @@ impl DisneyClearCoat {
         // gtr1 distribution, which has even fatter tails than Trowbridge-Reitz
         // (which is GTR2).
         let dr = gtr1(abs_cos_theta(&wh), self.gloss);
-        let fr = fr_schlick(0.04, vec3_dot_vec3(wo, &wh));
+        let fr = fr_schlick(0.04, vec3_dot_vec3f(wo, &wh));
         // The geometric term always based on alpha = 0.25.
         let gr = smith_g_ggx(abs_cos_theta(wo), 0.25) * smith_g_ggx(abs_cos_theta(wi), 0.25);
 
@@ -560,7 +560,7 @@ impl DisneyClearCoat {
         // distribution for wh converted to a mesure with respect to the
         // surface normal.
         let dr = gtr1(abs_cos_theta(&wh), self.gloss);
-        dr * abs_cos_theta(&wh) / (4.0 * vec3_dot_vec3(wo, &wh))
+        dr * abs_cos_theta(&wh) / (4.0 * vec3_dot_vec3f(wo, &wh))
     }
     pub fn get_type(&self) -> u8 {
         BxdfType::BsdfReflection as u8 | BxdfType::BsdfGlossy as u8
@@ -593,7 +593,7 @@ impl DisneyMicrofacetDistribution {
     }
     pub fn pdf(&self, wo: &Vector3f, wh: &Vector3f) -> Float {
         if self.get_sample_visible_area() {
-            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3(wo, wh) / abs_cos_theta(wo)
+            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3f(wo, wh) / abs_cos_theta(wo)
         } else {
             self.d(wh) * abs_cos_theta(wh)
         }

@@ -12,7 +12,7 @@ use std::sync::Arc;
 use strum::IntoEnumIterator;
 // pbrt
 use crate::core::geometry::{
-    nrm_cross_vec3, nrm_dot_nrm, nrm_dot_vec3, pnt3_distance, vec3_dot_nrm, vec3_dot_vec3,
+    nrm_cross_vec3, nrm_dot_nrmf, nrm_dot_vec3f, pnt3_distancef, vec3_dot_nrmf, vec3_dot_vec3f,
 };
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f, XYZEnum};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -102,21 +102,21 @@ impl TabulatedBssrdf {
         )
     }
     pub fn sp(&self, pi: &SurfaceInteraction) -> Spectrum {
-        self.sr(pnt3_distance(&self.po_p, &pi.get_p()))
+        self.sr(pnt3_distancef(&self.po_p, &pi.get_p()))
     }
     pub fn pdf_sp(&self, pi: &SurfaceInteraction) -> Float {
         // express $\pti-\pto$ and $\bold{n}_i$ with respect to local coordinates at $\pto$
         let d: Vector3f = self.po_p - *pi.get_p();
         let d_local: Vector3f = Vector3f {
-            x: vec3_dot_vec3(&self.ss, &d),
-            y: vec3_dot_vec3(&self.ts, &d),
-            z: nrm_dot_vec3(&self.ns, &d),
+            x: vec3_dot_vec3f(&self.ss, &d),
+            y: vec3_dot_vec3f(&self.ts, &d),
+            z: nrm_dot_vec3f(&self.ns, &d),
         };
         let pi_n = pi.get_n();
         let n_local: Normal3f = Normal3f {
-            x: vec3_dot_nrm(&self.ss, &pi_n),
-            y: vec3_dot_nrm(&self.ts, &pi_n),
-            z: nrm_dot_nrm(&self.ns, &pi_n),
+            x: vec3_dot_nrmf(&self.ss, &pi_n),
+            y: vec3_dot_nrmf(&self.ts, &pi_n),
+            z: nrm_dot_nrmf(&self.ns, &pi_n),
         };
         // compute BSSRDF profile radius under projection along each axis
         let r_proj: [Float; 3] = [

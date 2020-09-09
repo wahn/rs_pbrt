@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::pnt3_distance_squared;
+use crate::core::geometry::pnt3_distance_squaredf;
 use crate::core::geometry::{Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{LightFlags, VisibilityTester};
@@ -105,7 +105,7 @@ impl SpotLight {
             n: Normal3f::default(),
             medium_interface: Some(medium_interface2_arc),
         }));
-        self.i * self.falloff(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
+        self.i * self.falloff(&-*wi) / pnt3_distance_squaredf(&self.p_light, &iref.p)
     }
     pub fn power(&self) -> Spectrum {
         self.i

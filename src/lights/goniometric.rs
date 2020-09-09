@@ -9,7 +9,7 @@ use half::f16;
 #[cfg(feature = "openexr")]
 use openexr::{FrameBufferMut, InputFile, PixelType};
 // pbrt
-use crate::core::geometry::{pnt3_distance_squared, spherical_phi, spherical_theta};
+use crate::core::geometry::{pnt3_distance_squaredf, spherical_phi, spherical_theta};
 use crate::core::geometry::{Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{LightFlags, VisibilityTester};
@@ -265,7 +265,7 @@ impl GonioPhotometricLight {
             n: Normal3f::default(),
             medium_interface: None,
         }));
-        self.i * self.scale(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
+        self.i * self.scale(&-*wi) / pnt3_distance_squaredf(&self.p_light, &iref.p)
     }
     pub fn power(&self) -> Spectrum {
         if let Some(mipmap) = &self.mipmap {

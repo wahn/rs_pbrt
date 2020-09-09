@@ -1,7 +1,7 @@
 // std
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::bnd3_union_bnd3;
+use crate::core::geometry::bnd3_union_bnd3f;
 use crate::core::geometry::{Bounds3f, Ray, Vector3f, XYZEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::light::Light;
@@ -180,7 +180,7 @@ impl KdTreeAccel {
         let mut prim_bounds: Vec<Bounds3f> = Vec::with_capacity(p_len);
         for item in p.iter().take(p_len) {
             let b: Bounds3f = item.world_bound();
-            bounds = bnd3_union_bnd3(&bounds, &b);
+            bounds = bnd3_union_bnd3f(&bounds, &b);
             prim_bounds.push(b);
         }
         // allocate working memory for kd-tree construction

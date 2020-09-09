@@ -5,9 +5,9 @@ use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
-    bnd3_union_pnt3, nrm_abs_dot_vec3, nrm_faceforward_nrm, pnt3_abs, pnt3_distance_squared,
-    pnt3_permute, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3, vec3_max_component,
-    vec3_max_dimension, vec3_permute,
+    bnd3_union_pnt3f, nrm_abs_dot_vec3f, nrm_faceforward_nrm, pnt3_abs, pnt3_distance_squaredf,
+    pnt3_permutef, vec3_coordinate_system, vec3_cross_nrm, vec3_cross_vec3, vec3_max_componentf,
+    vec3_max_dimensionf, vec3_permutef,
 };
 use crate::core::geometry::{
     Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f, XYEnum,
@@ -134,7 +134,7 @@ impl Triangle {
         let p0: &Point3f = &self.mesh.p[idx[0] as usize];
         let p1: &Point3f = &self.mesh.p[idx[1] as usize];
         let p2: &Point3f = &self.mesh.p[idx[2] as usize];
-        bnd3_union_pnt3(
+        bnd3_union_pnt3f(
             &Bounds3f::new(
                 self.world_to_object.transform_point(p0),
                 self.world_to_object.transform_point(p1),
@@ -148,7 +148,7 @@ impl Triangle {
         let p0: &Point3f = &self.mesh.p[idx[0] as usize];
         let p1: &Point3f = &self.mesh.p[idx[1] as usize];
         let p2: &Point3f = &self.mesh.p[idx[2] as usize];
-        bnd3_union_pnt3(&Bounds3f::new(*p0, *p1), p2)
+        bnd3_union_pnt3f(&Bounds3f::new(*p0, *p1), p2)
     }
     pub fn intersect(&self, ray: &Ray, t_hit: &mut Float, isect: &mut SurfaceInteraction) -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
@@ -177,7 +177,7 @@ impl Triangle {
                 z: ray.o.z,
             };
         // permute components of triangle vertices and ray direction
-        let kz: usize = vec3_max_dimension(&ray.d.abs());
+        let kz: usize = vec3_max_dimensionf(&ray.d.abs());
         let mut kx: usize = kz + 1;
         if kx == 3 {
             kx = 0;
@@ -186,10 +186,10 @@ impl Triangle {
         if ky == 3 {
             ky = 0;
         }
-        let d: Vector3f = vec3_permute(&ray.d, kx, ky, kz);
-        p0t = pnt3_permute(&p0t, kx, ky, kz);
-        p1t = pnt3_permute(&p1t, kx, ky, kz);
-        p2t = pnt3_permute(&p2t, kx, ky, kz);
+        let d: Vector3f = vec3_permutef(&ray.d, kx, ky, kz);
+        p0t = pnt3_permutef(&p0t, kx, ky, kz);
+        p1t = pnt3_permutef(&p1t, kx, ky, kz);
+        p2t = pnt3_permutef(&p2t, kx, ky, kz);
         // apply shear transformation to translated vertex positions
         let sx: Float = -d.x / d.z;
         let sy: Float = -d.y / d.z;
@@ -245,7 +245,7 @@ impl Triangle {
         // ensure that computed triangle $t$ is conservatively greater than zero
 
         // compute $\delta_z$ term for triangle $t$ error bounds
-        let max_zt: Float = vec3_max_component(
+        let max_zt: Float = vec3_max_componentf(
             &Vector3f {
                 x: p0t.z,
                 y: p1t.z,
@@ -255,7 +255,7 @@ impl Triangle {
         );
         let delta_z: Float = gamma(3_i32) * max_zt;
         // compute $\delta_x$ and $\delta_y$ terms for triangle $t$ error bounds
-        let max_xt: Float = vec3_max_component(
+        let max_xt: Float = vec3_max_componentf(
             &Vector3f {
                 x: p0t.x,
                 y: p1t.x,
@@ -263,7 +263,7 @@ impl Triangle {
             }
             .abs(),
         );
-        let max_yt: Float = vec3_max_component(
+        let max_yt: Float = vec3_max_componentf(
             &Vector3f {
                 x: p0t.y,
                 y: p1t.y,
@@ -277,7 +277,7 @@ impl Triangle {
         let delta_e: Float =
             2.0 * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
         // compute $\delta_t$ term for triangle $t$ error bounds and check _t_
-        let max_e: Float = vec3_max_component(
+        let max_e: Float = vec3_max_componentf(
             &Vector3f {
                 x: e0,
                 y: e1,
@@ -493,7 +493,7 @@ impl Triangle {
                 z: ray.o.z,
             };
         // permute components of triangle vertices and ray direction
-        let kz: usize = vec3_max_dimension(&ray.d.abs());
+        let kz: usize = vec3_max_dimensionf(&ray.d.abs());
         let mut kx: usize = kz + 1;
         if kx == 3 {
             kx = 0;
@@ -502,10 +502,10 @@ impl Triangle {
         if ky == 3 {
             ky = 0;
         }
-        let d: Vector3f = vec3_permute(&ray.d, kx, ky, kz);
-        p0t = pnt3_permute(&p0t, kx, ky, kz);
-        p1t = pnt3_permute(&p1t, kx, ky, kz);
-        p2t = pnt3_permute(&p2t, kx, ky, kz);
+        let d: Vector3f = vec3_permutef(&ray.d, kx, ky, kz);
+        p0t = pnt3_permutef(&p0t, kx, ky, kz);
+        p1t = pnt3_permutef(&p1t, kx, ky, kz);
+        p2t = pnt3_permutef(&p2t, kx, ky, kz);
         // apply shear transformation to translated vertex positions
         let sx: Float = -d.x / d.z;
         let sy: Float = -d.y / d.z;
@@ -561,7 +561,7 @@ impl Triangle {
         // ensure that computed triangle $t$ is conservatively greater than zero
 
         // compute $\delta_z$ term for triangle $t$ error bounds
-        let max_zt: Float = vec3_max_component(
+        let max_zt: Float = vec3_max_componentf(
             &Vector3f {
                 x: p0t.z,
                 y: p1t.z,
@@ -571,7 +571,7 @@ impl Triangle {
         );
         let delta_z: Float = gamma(3_i32) * max_zt;
         // compute $\delta_x$ and $\delta_y$ terms for triangle $t$ error bounds
-        let max_xt: Float = vec3_max_component(
+        let max_xt: Float = vec3_max_componentf(
             &Vector3f {
                 x: p0t.x,
                 y: p1t.x,
@@ -579,7 +579,7 @@ impl Triangle {
             }
             .abs(),
         );
-        let max_yt: Float = vec3_max_component(
+        let max_yt: Float = vec3_max_componentf(
             &Vector3f {
                 x: p0t.y,
                 y: p1t.y,
@@ -593,7 +593,7 @@ impl Triangle {
         let delta_e: Float =
             2.0 * (gamma(2) * max_xt * max_yt + delta_y * max_xt + delta_x * max_yt);
         // compute $\delta_t$ term for triangle $t$ error bounds and check _t_
-        let max_e: Float = vec3_max_component(
+        let max_e: Float = vec3_max_componentf(
             &Vector3f {
                 x: e0,
                 y: e1,
@@ -746,7 +746,7 @@ impl Triangle {
             wi = wi.normalize();
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
-            *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);
+            *pdf *= pnt3_distance_squaredf(&iref.p, &intr.p) / nrm_abs_dot_vec3f(&intr.n, &-wi);
             if (*pdf).is_infinite() {
                 *pdf = 0.0 as Float;
             }
@@ -763,8 +763,8 @@ impl Triangle {
         let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.common.p)
-                / (nrm_abs_dot_vec3(&isect_light.common.n, &-(*wi)) * self.area());
+            let mut pdf: Float = pnt3_distance_squaredf(&iref.get_p(), &isect_light.common.p)
+                / (nrm_abs_dot_vec3f(&isect_light.common.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;
             }

@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::{nrm_abs_dot_vec3, pnt3_distance_squared};
+use crate::core::geometry::{nrm_abs_dot_vec3f, pnt3_distance_squaredf};
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::material::Material;
@@ -250,7 +250,7 @@ impl Disk {
             wi = wi.normalize();
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
-            *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);
+            *pdf *= pnt3_distance_squaredf(&iref.p, &intr.p) / nrm_abs_dot_vec3f(&intr.n, &-wi);
             if (*pdf).is_infinite() {
                 *pdf = 0.0 as Float;
             }
@@ -267,8 +267,8 @@ impl Disk {
         let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.common.p)
-                / (nrm_abs_dot_vec3(&isect_light.common.n, &-(*wi)) * self.area());
+            let mut pdf: Float = pnt3_distance_squaredf(&iref.get_p(), &isect_light.common.p)
+                / (nrm_abs_dot_vec3f(&isect_light.common.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;
             }

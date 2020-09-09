@@ -3,7 +3,7 @@ use std::f32::consts::PI;
 use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::{nrm_abs_dot_vec3, nrm_dot_vec3, vec3_coordinate_system};
+use crate::core::geometry::{nrm_abs_dot_vec3f, nrm_dot_vec3f, vec3_coordinate_system};
 use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f, XYEnum};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{LightFlags, VisibilityTester};
@@ -150,9 +150,9 @@ impl DiffuseAreaLight {
     pub fn pdf_le(&self, ray: &Ray, n: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
         *pdf_pos = self.shape.pdf(Rc::new(InteractionCommon::default()));
         if self.two_sided {
-            *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(nrm_abs_dot_vec3(&n, &ray.d));
+            *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(nrm_abs_dot_vec3f(&n, &ray.d));
         } else {
-            *pdf_dir = cosine_hemisphere_pdf(nrm_dot_vec3(&n, &ray.d));
+            *pdf_dir = cosine_hemisphere_pdf(nrm_dot_vec3f(&n, &ray.d));
         }
     }
     pub fn get_flags(&self) -> u8 {
@@ -163,7 +163,7 @@ impl DiffuseAreaLight {
     }
     // AreaLight
     pub fn l(&self, intr: &InteractionCommon, w: &Vector3f) -> Spectrum {
-        if self.two_sided || nrm_dot_vec3(&intr.n, &w) > 0.0 as Float {
+        if self.two_sided || nrm_dot_vec3f(&intr.n, &w) > 0.0 as Float {
             self.l_emit
         } else {
             Spectrum::new(0.0 as Float)

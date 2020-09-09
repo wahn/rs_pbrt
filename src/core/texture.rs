@@ -7,7 +7,7 @@
 // std
 use std::f32::consts::PI;
 // pbrt
-use crate::core::geometry::{spherical_phi, spherical_theta, vec3_dot_vec3};
+use crate::core::geometry::{spherical_phi, spherical_theta, vec3_dot_vec3f};
 use crate::core::geometry::{Point2f, Point3f, Vector2f, Vector3f, XYEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::pbrt::Float;
@@ -243,16 +243,16 @@ impl PlanarMapping2D {
             z: si.common.p.z,
         };
         *dstdx = Vector2f {
-            x: vec3_dot_vec3(&si.dpdx.get(), &self.vs),
-            y: vec3_dot_vec3(&si.dpdx.get(), &self.vt),
+            x: vec3_dot_vec3f(&si.dpdx.get(), &self.vs),
+            y: vec3_dot_vec3f(&si.dpdx.get(), &self.vt),
         };
         *dstdy = Vector2f {
-            x: vec3_dot_vec3(&si.dpdy.get(), &self.vs),
-            y: vec3_dot_vec3(&si.dpdy.get(), &self.vt),
+            x: vec3_dot_vec3f(&si.dpdy.get(), &self.vs),
+            y: vec3_dot_vec3f(&si.dpdy.get(), &self.vt),
         };
         Point2f {
-            x: self.ds + vec3_dot_vec3(&vec, &self.vs),
-            y: self.dt + vec3_dot_vec3(&vec, &self.vt),
+            x: self.ds + vec3_dot_vec3f(&vec, &self.vs),
+            y: self.dt + vec3_dot_vec3f(&vec, &self.vt),
         }
     }
 }

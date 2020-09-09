@@ -2,7 +2,7 @@
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
-use crate::core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrm};
+use crate::core::geometry::{nrm_cross_vec3, nrm_faceforward_vec3, vec3_dot_nrmf};
 use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, SurfaceInteraction};
 use crate::core::material::TransportMode;
@@ -98,7 +98,7 @@ impl AOIntegrator {
                     };
                     let mut ray: Ray = isect.spawn_ray(&wi);
                     if !scene.intersect_p(&mut ray) {
-                        l += Spectrum::new(vec3_dot_nrm(&wi, &n) / (pdf * self.n_samples as Float));
+                        l += Spectrum::new(vec3_dot_nrmf(&wi, &n) / (pdf * self.n_samples as Float));
                     }
                 }
             }

@@ -7,7 +7,7 @@
 // std
 use std::ops::{Add, Div, Mul, Neg, Sub};
 // pbrt
-use crate::core::geometry::vec3_dot_vec3;
+use crate::core::geometry::vec3_dot_vec3f;
 use crate::core::geometry::Vector3f;
 use crate::core::pbrt::clamp_t;
 use crate::core::pbrt::Float;
@@ -179,7 +179,7 @@ pub fn quat_slerp(t: Float, q1: &Quaternion, q2: &Quaternion) -> Quaternion {
 
 /// The inner product of two quaterions.
 pub fn quat_dot_quat(q1: &Quaternion, q2: &Quaternion) -> Float {
-    vec3_dot_vec3(&q1.v, &q2.v) + q1.w * q2.w
+    vec3_dot_vec3f(&q1.v, &q2.v) + q1.w * q2.w
 }
 
 /// A quaternion can be normalized by dividing by its length.

@@ -3,7 +3,7 @@ use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
-use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
+use crate::core::geometry::{vec3_abs_dot_nrmf, vec3_dot_nrmf};
 use crate::core::geometry::{Bounds2i, Normal3f, Ray, RayDifferential, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::light::VisibilityTester;
@@ -89,7 +89,7 @@ impl WhittedIntegrator {
                     let bsdf_flags: u8 = BxdfType::BsdfAll as u8;
                     let f: Spectrum = bsdf.f(&wo, &wi, bsdf_flags);
                     if !f.is_black() && visibility.unoccluded(scene) {
-                        l += f * li * vec3_abs_dot_nrm(&wi, &n) / pdf;
+                        l += f * li * vec3_abs_dot_nrmf(&wi, &n) / pdf;
                     }
                 } else {
                     panic!("no isect.bsdf found");
@@ -149,7 +149,7 @@ impl WhittedIntegrator {
                 bsdf_flags,
                 &mut sampled_type,
             );
-            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(&wi, &ns) != 0.0 as Float {
+            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrmf(&wi, &ns) != 0.0 as Float {
                 // compute ray differential _rd_ for specular reflection
                 let mut rd: Ray = isect.spawn_ray(&wi);
                 if let Some(d) = ray.differential.iter().next() {
@@ -159,23 +159,23 @@ impl WhittedIntegrator {
                         + isect.shading.dndv * isect.dvdy.get();
                     let dwodx: Vector3f = -d.rx_direction - wo;
                     let dwody: Vector3f = -d.ry_direction - wo;
-                    let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
-                    let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
+                    let ddndx: Float = vec3_dot_nrmf(&dwodx, &ns) + vec3_dot_nrmf(&wo, &dndx);
+                    let ddndy: Float = vec3_dot_nrmf(&dwody, &ns) + vec3_dot_nrmf(&wo, &dndy);
                     // compute differential reflected directions
                     let diff: RayDifferential = RayDifferential {
                         rx_origin: isect.common.p + isect.dpdx.get(),
                         ry_origin: isect.common.p + isect.dpdy.get(),
                         rx_direction: wi - dwodx
-                            + Vector3f::from(dndx * vec3_dot_nrm(&wo, &ns) + ns * ddndx)
+                            + Vector3f::from(dndx * vec3_dot_nrmf(&wo, &ns) + ns * ddndx)
                                 * 2.0 as Float,
                         ry_direction: wi - dwody
-                            + Vector3f::from(dndy * vec3_dot_nrm(&wo, &ns) + ns * ddndy)
+                            + Vector3f::from(dndy * vec3_dot_nrmf(&wo, &ns) + ns * ddndy)
                                 * 2.0 as Float,
                     };
                     rd.differential = Some(diff);
                 }
                 f * self.li(&mut rd, scene, sampler, depth + 1)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf)
+                    * Spectrum::new(vec3_abs_dot_nrmf(&wi, &ns) / pdf)
             } else {
                 Spectrum::new(0.0)
             }
@@ -209,13 +209,13 @@ impl WhittedIntegrator {
                 bsdf_flags,
                 &mut sampled_type,
             );
-            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrm(&wi, &ns) != 0.0 as Float {
+            if pdf > 0.0 as Float && !f.is_black() && vec3_abs_dot_nrmf(&wi, &ns) != 0.0 as Float {
                 // compute ray differential _rd_ for specular transmission
                 let mut rd: Ray = isect.spawn_ray(&wi);
                 if let Some(d) = ray.differential.iter().next() {
                     let mut eta: Float = bsdf.eta;
                     let w: Vector3f = -wo;
-                    if vec3_dot_nrm(&wo, &ns) < 0.0 as Float {
+                    if vec3_dot_nrmf(&wo, &ns) < 0.0 as Float {
                         eta = 1.0 / eta;
                     }
                     let dndx: Normal3f = isect.shading.dndu * isect.dudx.get()
@@ -224,14 +224,14 @@ impl WhittedIntegrator {
                         + isect.shading.dndv * isect.dvdy.get();
                     let dwodx: Vector3f = -d.rx_direction - wo;
                     let dwody: Vector3f = -d.ry_direction - wo;
-                    let ddndx: Float = vec3_dot_nrm(&dwodx, &ns) + vec3_dot_nrm(&wo, &dndx);
-                    let ddndy: Float = vec3_dot_nrm(&dwody, &ns) + vec3_dot_nrm(&wo, &dndy);
-                    let mu: Float = eta * vec3_dot_nrm(&w, &ns) - vec3_dot_nrm(&wi, &ns);
+                    let ddndx: Float = vec3_dot_nrmf(&dwodx, &ns) + vec3_dot_nrmf(&wo, &dndx);
+                    let ddndy: Float = vec3_dot_nrmf(&dwody, &ns) + vec3_dot_nrmf(&wo, &dndy);
+                    let mu: Float = eta * vec3_dot_nrmf(&w, &ns) - vec3_dot_nrmf(&wi, &ns);
                     let dmudx: Float = (eta
-                        - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns))
+                        - (eta * eta * vec3_dot_nrmf(&w, &ns)) / vec3_dot_nrmf(&wi, &ns))
                         * ddndx;
                     let dmudy: Float = (eta
-                        - (eta * eta * vec3_dot_nrm(&w, &ns)) / vec3_dot_nrm(&wi, &ns))
+                        - (eta * eta * vec3_dot_nrmf(&w, &ns)) / vec3_dot_nrmf(&wi, &ns))
                         * ddndy;
                     let diff: RayDifferential = RayDifferential {
                         rx_origin: isect.common.p + isect.dpdx.get(),
@@ -242,7 +242,7 @@ impl WhittedIntegrator {
                     rd.differential = Some(diff);
                 }
                 f * self.li(&mut rd, scene, sampler, depth + 1)
-                    * Spectrum::new(vec3_abs_dot_nrm(&wi, &ns) / pdf)
+                    * Spectrum::new(vec3_abs_dot_nrmf(&wi, &ns) / pdf)
             } else {
                 Spectrum::new(0.0)
             }

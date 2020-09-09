@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::core::efloat::quadratic_efloat;
 use crate::core::efloat::EFloat;
 use crate::core::geometry::{
-    nrm_abs_dot_vec3, pnt3_distance_squared, vec3_cross_vec3, vec3_dot_vec3,
+    nrm_abs_dot_vec3f, pnt3_distance_squaredf, vec3_cross_vec3, vec3_dot_vec3f,
 };
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f, XYEnum};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -199,13 +199,13 @@ impl Cylinder {
             z: 0.0,
         };
         // compute coefficients for fundamental forms
-        let ec: Float = vec3_dot_vec3(&dpdu, &dpdu);
-        let fc: Float = vec3_dot_vec3(&dpdu, &dpdv);
-        let gc: Float = vec3_dot_vec3(&dpdv, &dpdv);
+        let ec: Float = vec3_dot_vec3f(&dpdu, &dpdu);
+        let fc: Float = vec3_dot_vec3f(&dpdu, &dpdv);
+        let gc: Float = vec3_dot_vec3f(&dpdv, &dpdv);
         let nc: Vector3f = vec3_cross_vec3(&dpdu, &dpdv).normalize();
-        let el: Float = vec3_dot_vec3(&nc, &d2_p_duu);
-        let fl: Float = vec3_dot_vec3(&nc, &d2_p_duv);
-        let gl: Float = vec3_dot_vec3(&nc, &d2_p_dvv);
+        let el: Float = vec3_dot_vec3f(&nc, &d2_p_duu);
+        let fl: Float = vec3_dot_vec3f(&nc, &d2_p_duv);
+        let gl: Float = vec3_dot_vec3f(&nc, &d2_p_dvv);
         // compute $\dndu$ and $\dndv$ from fundamental form coefficients
         let inv_egf2: Float = 1.0 / (ec * gc - fc * fc);
         let dndu = dpdu * (fl * fc - el * gc) * inv_egf2 + dpdv * (el * fc - fl * ec) * inv_egf2;
@@ -385,7 +385,7 @@ impl Cylinder {
             wi = wi.normalize();
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
-            *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);
+            *pdf *= pnt3_distance_squaredf(&iref.p, &intr.p) / nrm_abs_dot_vec3f(&intr.n, &-wi);
             if (*pdf).is_infinite() {
                 *pdf = 0.0 as Float;
             }
@@ -402,8 +402,8 @@ impl Cylinder {
         let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.common.p)
-                / (nrm_abs_dot_vec3(&isect_light.common.n, &-(*wi)) * self.area());
+            let mut pdf: Float = pnt3_distance_squaredf(&iref.get_p(), &isect_light.common.p)
+                / (nrm_abs_dot_vec3f(&isect_light.common.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;
             }

@@ -6,7 +6,7 @@ use std::sync::Arc;
 use crate::core::camera::{Camera, CameraSample};
 use crate::core::film::Film;
 use crate::core::floatfile::read_float_file;
-use crate::core::geometry::{bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2};
+use crate::core::geometry::{bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2f};
 use crate::core::geometry::{
     Bounds2f, Normal3f, Point2f, Point3f, Ray, RayDifferential, Vector3f, XYEnum,
 };
@@ -604,7 +604,7 @@ impl RealisticCamera {
                 z: self.lens_rear_z(),
             };
             // expand pupil bounds if ray makes it through the lens system
-            if pnt2_inside_bnd2(
+            if pnt2_inside_bnd2f(
                 Point2f {
                     x: p_rear.x,
                     y: p_rear.y,

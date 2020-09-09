@@ -7,7 +7,7 @@ use std::sync::Arc;
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
 use crate::core::geometry::{
-    nrm_abs_dot_vec3, pnt2_inside_exclusive, pnt3_offset_ray_origin, vec3_abs_dot_nrm, vec3_dot_nrm,
+    nrm_abs_dot_vec3f, pnt2_inside_exclusivei, pnt3_offset_ray_origin, vec3_abs_dot_nrmf, vec3_dot_nrmf,
 };
 use crate::core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector2i, Vector3f,
@@ -137,7 +137,7 @@ impl<'a> EndpointInteraction<'a> {
         ei
     }
     pub fn get_medium(&self, w: &Vector3f) -> Option<Arc<Medium>> {
-        if vec3_dot_nrm(w, &self.common.n) > 0.0 as Float {
+        if vec3_dot_nrmf(w, &self.common.n) > 0.0 as Float {
             if let Some(ref medium_interface) = self.common.medium_interface {
                 medium_interface.outside.clone()
             } else {
@@ -591,7 +591,7 @@ impl<'a> Vertex<'a> {
         let inv_dist_2: Float = 1.0 as Float / w.length_squared();
         let mut pdf: Float = pdf; // shadow
         if next.is_on_surface() {
-            pdf *= nrm_abs_dot_vec3(&next.ng(), &(w * inv_dist_2.sqrt()));
+            pdf *= nrm_abs_dot_vec3f(&next.ng(), &(w * inv_dist_2.sqrt()));
         }
         pdf * inv_dist_2
     }
@@ -710,7 +710,7 @@ impl<'a> Vertex<'a> {
             0.0
         };
         if v.is_on_surface() {
-            pdf *= nrm_abs_dot_vec3(&v.ng(), &w);
+            pdf *= nrm_abs_dot_vec3f(&v.ng(), &w);
         }
         pdf
     }
@@ -917,7 +917,7 @@ impl BDPTIntegrator {
                                 let mut film_tile = film.get_film_tile(&tile_bounds);
                                 for p_pixel in &tile_bounds {
                                     tile_sampler.start_pixel(p_pixel);
-                                    if !pnt2_inside_exclusive(p_pixel, &integrator.pixel_bounds) {
+                                    if !pnt2_inside_exclusivei(p_pixel, &integrator.pixel_bounds) {
                                         continue;
                                     }
                                     let mut done: bool = false;
@@ -1090,9 +1090,9 @@ pub fn correct_shading_normal(
 ) -> Float {
     if mode == TransportMode::Importance {
         let num: Float =
-            vec3_abs_dot_nrm(&wo, &isect.shading.n) * vec3_abs_dot_nrm(&wi, &isect.common.n);
+            vec3_abs_dot_nrmf(&wo, &isect.shading.n) * vec3_abs_dot_nrmf(&wi, &isect.common.n);
         let denom: Float =
-            vec3_abs_dot_nrm(&wo, &isect.common.n) * vec3_abs_dot_nrm(&wi, &isect.shading.n);
+            vec3_abs_dot_nrmf(&wo, &isect.common.n) * vec3_abs_dot_nrmf(&wi, &isect.shading.n);
         // wi is occasionally perpendicular to isect.shading.n; this
         // is fine, but we don't want to return an infinite or NaN
         // value in that case.
@@ -1192,7 +1192,7 @@ pub fn generate_light_subpath<'a>(
         let is_infinite_light: bool = vertex.is_infinite_light();
         path.push(vertex);
         let mut beta: Spectrum =
-            le * nrm_abs_dot_vec3(&n_light, &ray.d) / (light_pdf * pdf_pos * pdf_dir);
+            le * nrm_abs_dot_vec3f(&n_light, &ray.d) / (light_pdf * pdf_pos * pdf_dir);
         // println!(
         //     "Starting light subpath. Ray: {:?}, Le {:?}, beta {:?}, pdf_pos {:?}, pdf_dir {:?}",
         //     ray, le, beta, pdf_pos, pdf_dir
@@ -1216,7 +1216,7 @@ pub fn generate_light_subpath<'a>(
             if n_vertices > 0 {
                 path[1].pdf_fwd = pdf_pos;
                 if path[1].is_on_surface() {
-                    path[1].pdf_fwd *= vec3_abs_dot_nrm(&ray.d, &path[1].ng());
+                    path[1].pdf_fwd *= vec3_abs_dot_nrmf(&ray.d, &path[1].ng());
                 }
             }
             // set spatial density of _path[0]_ for infinite area light
@@ -1398,7 +1398,7 @@ pub fn random_walk<'a>(
                     path.push(vertex);
                     break;
                 }
-                *beta *= f * vec3_abs_dot_nrm(&wi, &isect_shading_n) / pdf_fwd;
+                *beta *= f * vec3_abs_dot_nrmf(&wi, &isect_shading_n) / pdf_fwd;
                 // println!("Random walk beta now {:?}", beta);
                 pdf_rev = bsdf.pdf(&wi, &isect_wo, bsdf_flags);
                 if (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8 {
@@ -1441,10 +1441,10 @@ pub fn g<'a>(scene: &'a Scene, sampler: &mut Sampler, v0: &Vertex, v1: &Vertex) 
     let mut g: Float = 1.0 / d.length_squared();
     d *= g.sqrt();
     if v0.is_on_surface() {
-        g *= nrm_abs_dot_vec3(&v0.ns(), &d);
+        g *= nrm_abs_dot_vec3f(&v0.ns(), &d);
     }
     if v1.is_on_surface() {
-        g *= nrm_abs_dot_vec3(&v1.ns(), &d);
+        g *= nrm_abs_dot_vec3f(&v1.ns(), &d);
     }
     // VisibilityTester vis(v0.GetInteraction(), v1.GetInteraction());
     let mut p0: Rc<InteractionCommon> = Rc::new(InteractionCommon::default());
@@ -2300,7 +2300,7 @@ pub fn connect_bdpt<'a>(
                     * sampled.beta;
                 // println!("l = {:?}", l);
                 if light_vertices[s - 1].is_on_surface() {
-                    l *= Spectrum::new(vec3_abs_dot_nrm(&wi, &light_vertices[s - 1].ns()));
+                    l *= Spectrum::new(vec3_abs_dot_nrmf(&wi, &light_vertices[s - 1].ns()));
                 }
                 assert!(!l.has_nans());
                 // only check visibility after we know that the path
@@ -2380,7 +2380,7 @@ pub fn connect_bdpt<'a>(
                     * camera_vertices[t - 1].f(&sampled, TransportMode::Radiance)
                     * sampled.beta;
                 if camera_vertices[t - 1].is_on_surface() {
-                    l *= Spectrum::new(vec3_abs_dot_nrm(&wi, &camera_vertices[t - 1].ns()));
+                    l *= Spectrum::new(vec3_abs_dot_nrmf(&wi, &camera_vertices[t - 1].ns()));
                 }
                 // only check visibility if the path would carry radiance.
                 if !l.is_black() {

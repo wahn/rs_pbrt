@@ -5,7 +5,7 @@ use std::sync::Arc;
 // pbrt
 use crate::core::camera::{Camera, CameraSample};
 use crate::core::film::Film;
-use crate::core::geometry::{nrm_abs_dot_vec3, vec3_dot_vec3};
+use crate::core::geometry::{nrm_abs_dot_vec3f, vec3_dot_vec3f};
 use crate::core::geometry::{
     Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Ray, RayDifferential, Vector3f,
 };
@@ -282,7 +282,7 @@ impl PerspectiveCamera {
         // interpolate camera matrix and check if $\w{}$ is forward-facing
         let mut c2w: Transform = Transform::default();
         self.camera_to_world.interpolate(ray.time, &mut c2w);
-        let cos_theta: Float = vec3_dot_vec3(
+        let cos_theta: Float = vec3_dot_vec3f(
             &ray.d,
             &c2w.transform_vector(&Vector3f {
                 x: 0.0 as Float,
@@ -333,7 +333,7 @@ impl PerspectiveCamera {
         // interpolate camera matrix and fail if $\w{}$ is not forward-facing
         let mut c2w: Transform = Transform::default();
         self.camera_to_world.interpolate(ray.time, &mut c2w);
-        let cos_theta: Float = vec3_dot_vec3(
+        let cos_theta: Float = vec3_dot_vec3f(
             &ray.d,
             &c2w.transform_vector(&Vector3f {
                 x: 0.0,
@@ -428,7 +428,7 @@ impl PerspectiveCamera {
         } else {
             1.0 as Float
         };
-        *pdf = (dist * dist) / (nrm_abs_dot_vec3(&lens_intr.n, wi) * lens_area);
+        *pdf = (dist * dist) / (nrm_abs_dot_vec3f(&lens_intr.n, wi) * lens_area);
         let ray = lens_intr.spawn_ray(&-*wi);
         vis.p0 = Some(iref.clone());
         vis.p1 = Some(Rc::new(lens_intr));

@@ -9,7 +9,7 @@ use half::f16;
 #[cfg(feature = "openexr")]
 use openexr::{FrameBufferMut, InputFile, PixelType};
 // pbrt
-use crate::core::geometry::{pnt2_inside_bnd2, pnt3_distance_squared};
+use crate::core::geometry::{pnt2_inside_bnd2f, pnt3_distance_squaredf};
 use crate::core::geometry::{Bounds2f, Normal3f, Point2f, Point2i, Point3f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon};
 use crate::core::light::{LightFlags, VisibilityTester};
@@ -348,7 +348,7 @@ impl ProjectionLight {
             y: wl.y,
             z: wl.z,
         });
-        if !pnt2_inside_bnd2(Point2f { x: p.x, y: p.y }, &self.screen_bounds) {
+        if !pnt2_inside_bnd2f(Point2f { x: p.x, y: p.y }, &self.screen_bounds) {
             return Spectrum::default();
         }
         if let Some(projection_map) = &self.projection_map {
@@ -378,7 +378,7 @@ impl ProjectionLight {
             n: Normal3f::default(),
             medium_interface: None,
         }));
-        self.i * self.projection(&-*wi) / pnt3_distance_squared(&self.p_light, &iref.p)
+        self.i * self.projection(&-*wi) / pnt3_distance_squaredf(&self.p_light, &iref.p)
     }
     pub fn power(&self) -> Spectrum {
         if let Some(projection_map) = &self.projection_map {

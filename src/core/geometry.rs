@@ -13,11 +13,11 @@
 //! differences in how they are treated.
 //!
 //! ```rust
-//! use pbrt::core::geometry::Point3;
+//! use pbrt::core::geometry::{Point3i, Point3f};
 //!
 //! fn main() {
-//!     let int_origin = Point3 { x: 0, y: 0, z: 0 };
-//!     let float_origin = Point3 {
+//!     let int_origin = Point3i { x: 0, y: 0, z: 0 };
+//!     let float_origin = Point3f {
 //!         x: 0.0,
 //!         y: 0.0,
 //!         z: 0.0,
@@ -36,11 +36,11 @@
 //! floating-point types.
 //!
 //! ```rust
-//! use pbrt::core::geometry::Vector3;
+//! use pbrt::core::geometry::{Vector3i, Vector3f};
 //!
 //! fn main() {
-//!     let int_null = Vector3 { x: 0, y: 0, z: 0 };
-//!     let float_null = Vector3 {
+//!     let int_null = Vector3i { x: 0, y: 0, z: 0 };
+//!     let float_null = Vector3f {
 //!         x: 0.0,
 //!         y: 0.0,
 //!         z: 0.0,
@@ -64,17 +64,15 @@
 //! applying transformations.
 //!
 //! ```rust
-//! use pbrt::core::geometry::Normal3;
+//! use pbrt::core::geometry::Normal3f;
 //!
 //! fn main() {
-//!     let int_null = Normal3 { x: 0, y: 0, z: 0 };
-//!     let float_null = Normal3 {
+//!     let float_null = Normal3f {
 //!         x: 0.0,
 //!         y: 0.0,
 //!         z: 0.0,
 //!     };
 //!
-//!     println!("int   {:?}", int_null);
 //!     println!("float {:?}", float_null);
 //! }
 //! ```
@@ -140,26 +138,26 @@
 //!
 //!
 //! ```rust
-//! use pbrt::core::geometry::{Bounds3, Point3};
+//! use pbrt::core::geometry::{Bounds3i, Bounds3f, Point3i, Point3f};
 //!
 //! fn main() {
-//!     let int_origin = Point3 { x: 0, y: 0, z: 0 };
-//!     let int_xyz111 = Point3 { x: 1, y: 1, z: 1 };
-//!     let float_origin = Point3 {
+//!     let int_origin = Point3i { x: 0, y: 0, z: 0 };
+//!     let int_xyz111 = Point3i { x: 1, y: 1, z: 1 };
+//!     let float_origin = Point3f {
 //!         x: 0.0,
 //!         y: 0.0,
 //!         z: 0.0,
 //!     };
-//!     let float_xyz111 = Point3 {
+//!     let float_xyz111 = Point3f {
 //!         x: 1.0,
 //!         y: 1.0,
 //!         z: 1.0,
 //!     };
-//!     let int_unit_cube = Bounds3 {
+//!     let int_unit_cube = Bounds3i {
 //!         p_min: int_origin,
 //!         p_max: int_xyz111,
 //!     };
-//!     let float_unit_cube = Bounds3 {
+//!     let float_unit_cube = Bounds3f {
 //!         p_min: float_origin,
 //!         p_max: float_xyz111,
 //!     };
@@ -171,9 +169,8 @@
 
 // std
 use std::f32::consts::PI;
-use std::ops::{
-    Add, AddAssign, Div, DivAssign, Index, IndexMut, Mul, MulAssign, Neg, Sub, SubAssign,
-};
+use std::ops;
+use std::ops::{Index, IndexMut};
 use std::sync::Arc;
 // others
 use strum::IntoEnumIterator;
@@ -185,15 +182,15 @@ use crate::core::pbrt::{clamp_t, gamma, lerp, next_float_down, next_float_up};
 
 // see geometry.h
 
-pub type Point2f = Point2<Float>;
-pub type Point2i = Point2<i32>;
-pub type Point3f = Point3<Float>;
-pub type Point3i = Point3<i32>;
-pub type Vector2f = Vector2<Float>;
-pub type Vector2i = Vector2<i32>;
-pub type Vector3f = Vector3<Float>;
-pub type Vector3i = Vector3<i32>;
-pub type Normal3f = Normal3<Float>;
+// pub type Point2f = Point2<Float>;
+// pub type Point2i = Point2<i32>;
+// pub type Point3f = Point3<Float>;
+// pub type Point3i = Point3<i32>;
+// pub type Vector2f = Vector2<Float>;
+// pub type Vector2i = Vector2<i32>;
+// pub type Vector3f = Vector3<Float>;
+// pub type Vector3i = Vector3<i32>;
+// pub type Normal3f = Normal3<Float>;
 
 #[derive(EnumIter, Debug, Copy, Clone)]
 #[repr(u8)]
@@ -218,35 +215,38 @@ pub enum XYZEnum {
 }
 
 #[derive(Debug, Default, Copy, Clone)]
-pub struct Vector2<T> {
-    pub x: T,
-    pub y: T,
+pub struct Vector2f {
+    pub x: Float,
+    pub y: Float,
 }
 
-impl<T> Vector2<T> {
-    pub fn has_nans(&self) -> bool
-    where
-        T: num::Float,
-    {
+impl Vector2f {
+    pub fn has_nans(&self) -> bool {
         self.x.is_nan() || self.y.is_nan()
     }
-    pub fn length_squared(&self) -> T
-    where
-        T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
-    {
+    pub fn length_squared(&self) -> Float {
         self.x * self.x + self.y * self.y
     }
-    pub fn length(&self) -> T
-    where
-        T: num::Float,
-    {
+    pub fn length(&self) -> Float {
         self.length_squared().sqrt()
     }
 }
 
-impl<T> Index<XYEnum> for Vector2<T> {
-    type Output = T;
-    fn index(&self, index: XYEnum) -> &T {
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Vector2i {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl Vector2i {
+    pub fn length_squared(&self) -> i32 {
+        self.x * self.x + self.y * self.y
+    }
+}
+
+impl Index<XYEnum> for Vector2f {
+    type Output = Float;
+    fn index(&self, index: XYEnum) -> &Float {
         match index {
             XYEnum::X => &self.x,
             _ => &self.y,
@@ -254,8 +254,18 @@ impl<T> Index<XYEnum> for Vector2<T> {
     }
 }
 
-impl<T> IndexMut<XYEnum> for Vector2<T> {
-    fn index_mut(&mut self, index: XYEnum) -> &mut T {
+impl Index<XYEnum> for Vector2i {
+    type Output = i32;
+    fn index(&self, index: XYEnum) -> &i32 {
+        match index {
+            XYEnum::X => &self.x,
+            _ => &self.y,
+        }
+    }
+}
+
+impl IndexMut<XYEnum> for Vector2f {
+    fn index_mut(&mut self, index: XYEnum) -> &mut Float {
         match index {
             XYEnum::X => &mut self.x,
             _ => &mut self.y,
@@ -263,90 +273,105 @@ impl<T> IndexMut<XYEnum> for Vector2<T> {
     }
 }
 
-impl<T> AddAssign<Vector2<T>> for Vector2<T>
-where
-    T: AddAssign,
-{
-    fn add_assign(&mut self, rhs: Vector2<T>) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-    }
-}
-
-impl<T> Add for Vector2<T>
-where
-    T: Copy + Add<T, Output = T>,
-{
-    type Output = Vector2<T>;
-    fn add(self, rhs: Vector2<T>) -> Vector2<T> {
-        Vector2::<T> {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
+impl IndexMut<XYEnum> for Vector2i {
+    fn index_mut(&mut self, index: XYEnum) -> &mut i32 {
+        match index {
+            XYEnum::X => &mut self.x,
+            _ => &mut self.y,
         }
     }
 }
 
-impl<T> SubAssign<Vector2<T>> for Vector2<T>
-where
-    T: SubAssign,
-{
-    fn sub_assign(&mut self, rhs: Vector2<T>) {
-        self.x -= rhs.x;
-        self.y -= rhs.y;
-    }
-}
+// impl<T> AddAssign<Vector2<T>> for Vector2<T>
+// where
+//     T: AddAssign,
+// {
+//     fn add_assign(&mut self, rhs: Vector2<T>) {
+//         self.x += rhs.x;
+//         self.y += rhs.y;
+//     }
+// }
 
-impl<T> Sub for Vector2<T>
-where
-    T: Copy + Sub<T, Output = T>,
-{
-    type Output = Vector2<T>;
-    fn sub(self, rhs: Vector2<T>) -> Vector2<T> {
-        Vector2::<T> {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
+// impl<T> Add for Vector2<T>
+// where
+//     T: Copy + Add<T, Output = T>,
+// {
+//     type Output = Vector2<T>;
+//     fn add(self, rhs: Vector2<T>) -> Vector2<T> {
+//         Vector2::<T> {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//         }
+//     }
+// }
 
-impl<T> MulAssign<T> for Vector2<T>
-where
-    T: Copy + MulAssign,
-{
-    fn mul_assign(&mut self, rhs: T) {
-        self.x *= rhs;
-        self.y *= rhs;
-    }
-}
+// impl<T> SubAssign<Vector2<T>> for Vector2<T>
+// where
+//     T: SubAssign,
+// {
+//     fn sub_assign(&mut self, rhs: Vector2<T>) {
+//         self.x -= rhs.x;
+//         self.y -= rhs.y;
+//     }
+// }
+
+// impl<T> Sub for Vector2<T>
+// where
+//     T: Copy + Sub<T, Output = T>,
+// {
+//     type Output = Vector2<T>;
+//     fn sub(self, rhs: Vector2<T>) -> Vector2<T> {
+//         Vector2::<T> {
+//             x: self.x - rhs.x,
+//             y: self.y - rhs.y,
+//         }
+//     }
+// }
+
+// impl<T> MulAssign<T> for Vector2<T>
+// where
+//     T: Copy + MulAssign,
+// {
+//     fn mul_assign(&mut self, rhs: T) {
+//         self.x *= rhs;
+//         self.y *= rhs;
+//     }
+// }
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl Div<Float> for Vector2<f32> {
-    type Output = Vector2<f32>;
-    fn div(self, rhs: Float) -> Vector2<f32> {
-        assert_ne!(rhs, 0.0 as Float);
-        let inv: Float = 1.0 as Float / rhs;
-        Vector2::<f32> {
-            x: self.x * inv,
-            y: self.y * inv,
-        }
-    }
-}
+// impl Div<Float> for Vector2<f32> {
+//     type Output = Vector2<f32>;
+//     fn div(self, rhs: Float) -> Vector2<f32> {
+//         assert_ne!(rhs, 0.0 as Float);
+//         let inv: Float = 1.0 as Float / rhs;
+//         Vector2::<f32> {
+//             x: self.x * inv,
+//             y: self.y * inv,
+//         }
+//     }
+// }
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl DivAssign<Float> for Vector2<f32> {
-    fn div_assign(&mut self, rhs: Float) {
-        assert_ne!(rhs, 0.0 as Float);
-        let inv: Float = 1.0 as Float / rhs;
-        self.x *= inv;
-        self.y *= inv;
+// impl DivAssign<Float> for Vector2<f32> {
+//     fn div_assign(&mut self, rhs: Float) {
+//         assert_ne!(rhs, 0.0 as Float);
+//         let inv: Float = 1.0 as Float / rhs;
+//         self.x *= inv;
+//         self.y *= inv;
+//     }
+// }
+
+impl From<Vector2f> for Point2f {
+    fn from(v: Vector2f) -> Self {
+        Point2f { x: v.x, y: v.y }
     }
 }
 
-impl<T> From<Vector2<T>> for Point2<T> {
-    fn from(v: Vector2<T>) -> Self {
-        Point2::<T> { x: v.x, y: v.y }
+impl From<Vector2i> for Point2i {
+    fn from(v: Vector2i) -> Self {
+        Point2i { x: v.x, y: v.y }
     }
 }
 
@@ -354,181 +379,209 @@ impl<T> From<Vector2<T>> for Point2<T> {
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
 /// codirectional.
-pub fn vec2_dot<T>(v1: &Vector2<T>, v2: &Vector2<T>) -> T
-where
-    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
-{
+pub fn vec2_dotf(v1: &Vector2f, v2: &Vector2f) -> Float {
+    v1.x * v2.x + v1.y * v2.y
+}
+
+/// Product of the Euclidean magnitudes of the two vectors and the
+/// cosine of the angle between them. A return value of zero means
+/// both vectors are orthogonal, a value if one means they are
+/// codirectional.
+pub fn vec2_doti(v1: &Vector2i, v2: &Vector2i) -> i32 {
     v1.x * v2.x + v1.y * v2.y
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq)]
-pub struct Vector3<T> {
-    pub x: T,
-    pub y: T,
-    pub z: T,
+pub struct Vector3f {
+    pub x: Float,
+    pub y: Float,
+    pub z: Float,
 }
 
-impl<T> Vector3<T> {
-    pub fn has_nans(&self) -> bool
-    where
-        T: num::Float,
-    {
+impl Vector3f {
+    pub fn has_nans(&self) -> bool {
         self.x.is_nan() || self.y.is_nan() || self.z.is_nan()
     }
-    pub fn abs(&self) -> Vector3<T>
-    where
-        T: num::Float,
-    {
-        Vector3::<T> {
+    pub fn abs(&self) -> Vector3f {
+        Vector3f {
             x: self.x.abs(),
             y: self.y.abs(),
             z: self.z.abs(),
         }
     }
-    pub fn length_squared(&self) -> T
-    where
-        T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
-    {
+    pub fn length_squared(&self) -> Float {
         self.x * self.x + self.y * self.y + self.z * self.z
     }
-    pub fn length(&self) -> T
-    where
-        T: num::Float,
-    {
+    pub fn length(&self) -> Float {
         self.length_squared().sqrt()
     }
-}
-
-impl Vector3<Float> {
     /// Compute a new vector pointing in the same direction but with unit
     /// length.
-    pub fn normalize(&self) -> Vector3<Float> {
+    pub fn normalize(&self) -> Vector3f {
         *self / self.length()
     }
 }
 
-impl<T> AddAssign<Vector3<T>> for Vector3<T>
-where
-    T: AddAssign,
-{
-    fn add_assign(&mut self, rhs: Vector3<T>) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-        self.z += rhs.z;
-    }
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct Vector3i {
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
 }
 
-impl<T> Add for Vector3<T>
-where
-    T: Copy + Add<T, Output = T>,
-{
-    type Output = Vector3<T>;
-    fn add(self, rhs: Vector3<T>) -> Vector3<T> {
-        Vector3::<T> {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
+impl Vector3i {
+    pub fn abs(&self) -> Vector3i {
+        Vector3i {
+            x: self.x.abs(),
+            y: self.y.abs(),
+            z: self.z.abs(),
         }
     }
-}
-
-impl<T> SubAssign<Vector3<T>> for Vector3<T>
-where
-    T: SubAssign,
-{
-    fn sub_assign(&mut self, rhs: Vector3<T>) {
-        self.x -= rhs.x;
-        self.y -= rhs.y;
-        self.z -= rhs.z;
+    pub fn length_squared(&self) -> i32 {
+        self.x * self.x + self.y * self.y + self.z * self.z
     }
 }
 
-impl<T> Sub for Vector3<T>
-where
-    T: Copy + Sub<T, Output = T>,
-{
-    type Output = Vector3<T>;
-    fn sub(self, rhs: Vector3<T>) -> Vector3<T> {
-        Vector3::<T> {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z,
-        }
-    }
-}
+// impl<T> AddAssign<Vector3<T>> for Vector3<T>
+// where
+//     T: AddAssign,
+// {
+//     fn add_assign(&mut self, rhs: Vector3<T>) {
+//         self.x += rhs.x;
+//         self.y += rhs.y;
+//         self.z += rhs.z;
+//     }
+// }
 
-impl<T> Mul<T> for Vector3<T>
-where
-    T: Copy + Mul<T, Output = T>,
-{
-    type Output = Vector3<T>;
-    fn mul(self, rhs: T) -> Vector3<T>
-    where
-        T: Copy + Mul<T, Output = T>,
-    {
-        Vector3::<T> {
-            x: self.x * rhs,
-            y: self.y * rhs,
-            z: self.z * rhs,
-        }
-    }
-}
+// impl<T> Add for Vector3<T>
+// where
+//     T: Copy + Add<T, Output = T>,
+// {
+//     type Output = Vector3<T>;
+//     fn add(self, rhs: Vector3<T>) -> Vector3<T> {
+//         Vector3::<T> {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//             z: self.z + rhs.z,
+//         }
+//     }
+// }
 
-impl<T> MulAssign<T> for Vector3<T>
-where
-    T: Copy + MulAssign,
-{
-    fn mul_assign(&mut self, rhs: T) {
-        self.x *= rhs;
-        self.y *= rhs;
-        self.z *= rhs;
-    }
-}
+// impl<T> SubAssign<Vector3<T>> for Vector3<T>
+// where
+//     T: SubAssign,
+// {
+//     fn sub_assign(&mut self, rhs: Vector3<T>) {
+//         self.x -= rhs.x;
+//         self.y -= rhs.y;
+//         self.z -= rhs.z;
+//     }
+// }
+
+// impl<T> Sub for Vector3<T>
+// where
+//     T: Copy + Sub<T, Output = T>,
+// {
+//     type Output = Vector3<T>;
+//     fn sub(self, rhs: Vector3<T>) -> Vector3<T> {
+//         Vector3::<T> {
+//             x: self.x - rhs.x,
+//             y: self.y - rhs.y,
+//             z: self.z - rhs.z,
+//         }
+//     }
+// }
+
+// impl<T> Mul<T> for Vector3<T>
+// where
+//     T: Copy + Mul<T, Output = T>,
+// {
+//     type Output = Vector3<T>;
+//     fn mul(self, rhs: T) -> Vector3<T>
+//     where
+//         T: Copy + Mul<T, Output = T>,
+//     {
+//         Vector3::<T> {
+//             x: self.x * rhs,
+//             y: self.y * rhs,
+//             z: self.z * rhs,
+//         }
+//     }
+// }
+
+// impl<T> MulAssign<T> for Vector3<T>
+// where
+//     T: Copy + MulAssign,
+// {
+//     fn mul_assign(&mut self, rhs: T) {
+//         self.x *= rhs;
+//         self.y *= rhs;
+//         self.z *= rhs;
+//     }
+// }
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl Div<Float> for Vector3<f32> {
-    type Output = Vector3<f32>;
-    fn div(self, rhs: Float) -> Vector3<f32> {
-        assert_ne!(rhs, 0.0 as Float);
-        let inv: Float = 1.0 as Float / rhs;
-        Vector3::<f32> {
-            x: self.x * inv,
-            y: self.y * inv,
-            z: self.z * inv,
-        }
-    }
-}
+// impl Div<Float> for Vector3<f32> {
+//     type Output = Vector3<f32>;
+//     fn div(self, rhs: Float) -> Vector3<f32> {
+//         assert_ne!(rhs, 0.0 as Float);
+//         let inv: Float = 1.0 as Float / rhs;
+//         Vector3::<f32> {
+//             x: self.x * inv,
+//             y: self.y * inv,
+//             z: self.z * inv,
+//         }
+//     }
+// }
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl DivAssign<Float> for Vector3<f32> {
-    fn div_assign(&mut self, rhs: Float) {
-        assert_ne!(rhs, 0.0 as Float);
-        let inv: Float = 1.0 as Float / rhs;
-        self.x *= inv;
-        self.y *= inv;
-        self.z *= inv;
-    }
-}
+// impl DivAssign<Float> for Vector3<f32> {
+//     fn div_assign(&mut self, rhs: Float) {
+//         assert_ne!(rhs, 0.0 as Float);
+//         let inv: Float = 1.0 as Float / rhs;
+//         self.x *= inv;
+//         self.y *= inv;
+//         self.z *= inv;
+//     }
+// }
 
-impl<T> Neg for Vector3<T>
-where
-    T: Copy + Neg<Output = T>,
-{
-    type Output = Vector3<T>;
-    fn neg(self) -> Vector3<T> {
-        Vector3::<T> {
-            x: -self.x,
-            y: -self.y,
-            z: -self.z,
-        }
-    }
-}
+impl_op!(-|a: Vector2f| -> Vector2f { Vector2f { x: -a.x, y: -a.y } });
 
-impl<T> Index<XYZEnum> for Vector3<T> {
-    type Output = T;
-    fn index(&self, index: XYZEnum) -> &T {
+impl_op!(-|a: Vector3f| -> Vector3f {
+    Vector3f {
+        x: -a.x,
+        y: -a.y,
+        z: -a.z,
+    }
+});
+
+impl_op!(-|a: Normal3f| -> Normal3f {
+    Normal3f {
+        x: -a.x,
+        y: -a.y,
+        z: -a.z,
+    }
+});
+
+// impl<T> Neg for Vector3<T>
+// where
+//     T: Copy + Neg<Output = T>,
+// {
+//     type Output = Vector3<T>;
+//     fn neg(self) -> Vector3<T> {
+//         Vector3::<T> {
+//             x: -self.x,
+//             y: -self.y,
+//             z: -self.z,
+//         }
+//     }
+// }
+
+impl Index<XYZEnum> for Vector3f {
+    type Output = Float;
+    fn index(&self, index: XYZEnum) -> &Float {
         match index {
             XYZEnum::X => &self.x,
             XYZEnum::Y => &self.y,
@@ -537,19 +590,30 @@ impl<T> Index<XYZEnum> for Vector3<T> {
     }
 }
 
-impl<T> IndexMut<XYZEnum> for Vector3<T> {
-    fn index_mut(&mut self, index: XYZEnum) -> &mut T {
+impl Index<XYZEnum> for Vector3i {
+    type Output = i32;
+    fn index(&self, index: XYZEnum) -> &i32 {
         match index {
-            XYZEnum::X => &mut self.x,
-            XYZEnum::Y => &mut self.y,
-            _ => &mut self.z,
+            XYZEnum::X => &self.x,
+            XYZEnum::Y => &self.y,
+            _ => &self.z,
         }
     }
 }
 
-impl<T> From<Point3<T>> for Vector3<T> {
-    fn from(p: Point3<T>) -> Self {
-        Vector3::<T> {
+// impl<T> IndexMut<XYZEnum> for Vector3<T> {
+//     fn index_mut(&mut self, index: XYZEnum) -> &mut T {
+//         match index {
+//             XYZEnum::X => &mut self.x,
+//             XYZEnum::Y => &mut self.y,
+//             _ => &mut self.z,
+//         }
+//     }
+// }
+
+impl From<Point3f> for Vector3f {
+    fn from(p: Point3f) -> Self {
+        Vector3f {
             x: p.x,
             y: p.y,
             z: p.z,
@@ -557,9 +621,9 @@ impl<T> From<Point3<T>> for Vector3<T> {
     }
 }
 
-impl<T> From<Normal3<T>> for Vector3<T> {
-    fn from(n: Normal3<T>) -> Self {
-        Vector3::<T> {
+impl From<Normal3f> for Vector3f {
+    fn from(n: Normal3f) -> Self {
+        Vector3f {
             x: n.x,
             y: n.y,
             z: n.z,
@@ -571,38 +635,52 @@ impl<T> From<Normal3<T>> for Vector3<T> {
 /// cosine of the angle between them. A return value of zero means
 /// both vectors are orthogonal, a value if one means they are
 /// codirectional.
-pub fn vec3_dot_vec3<T>(v1: &Vector3<T>, v2: &Vector3<T>) -> T
-where
-    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
-{
+pub fn vec3_dot_vec3f(v1: &Vector3f, v2: &Vector3f) -> Float {
+    v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
+}
+
+/// Product of the Euclidean magnitudes of the two vectors and the
+/// cosine of the angle between them. A return value of zero means
+/// both vectors are orthogonal, a value if one means they are
+/// codirectional.
+pub fn vec3_dot_vec3i(v1: &Vector3i, v2: &Vector3i) -> i32 {
     v1.x * v2.x + v1.y * v2.y + v1.z * v2.z
 }
 
 /// Product of the Euclidean magnitudes of a vector (and a normal) and
 /// the cosine of the angle between them. A return value of zero means
 /// both are orthogonal, a value if one means they are codirectional.
-pub fn vec3_dot_nrm<T>(v1: &Vector3<T>, n2: &Normal3<T>) -> T
-where
-    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
-{
+pub fn vec3_dot_nrmf(v1: &Vector3f, n2: &Normal3f) -> Float {
+    // DCHECK(!v1.HasNaNs() && !n2.HasNaNs());
+    v1.x * n2.x + v1.y * n2.y + v1.z * n2.z
+}
+
+/// Product of the Euclidean magnitudes of a vector (and a normal) and
+/// the cosine of the angle between them. A return value of zero means
+/// both are orthogonal, a value if one means they are codirectional.
+pub fn vec3_dot_nrmi(v1: &Vector3i, n2: &Normal3i) -> i32 {
     // DCHECK(!v1.HasNaNs() && !n2.HasNaNs());
     v1.x * n2.x + v1.y * n2.y + v1.z * n2.z
 }
 
 /// Computes the absolute value of the dot product.
-pub fn vec3_abs_dot_vec3<T>(v1: &Vector3<T>, v2: &Vector3<T>) -> T
-where
-    T: num::Float,
-{
-    vec3_dot_vec3(v1, v2).abs()
+pub fn vec3_abs_dot_vec3f(v1: &Vector3f, v2: &Vector3f) -> Float {
+    vec3_dot_vec3f(v1, v2).abs()
 }
 
 /// Computes the absolute value of the dot product.
-pub fn vec3_abs_dot_nrm<T>(v1: &Vector3<T>, n2: &Normal3<T>) -> T
-where
-    T: num::Float,
-{
-    vec3_dot_nrm(v1, n2).abs()
+pub fn vec3_abs_dot_vec3i(v1: &Vector3i, v2: &Vector3i) -> i32 {
+    vec3_dot_vec3i(v1, v2).abs()
+}
+
+/// Computes the absolute value of the dot product.
+pub fn vec3_abs_dot_nrmf(v1: &Vector3f, n2: &Normal3f) -> Float {
+    vec3_dot_nrmf(v1, n2).abs()
+}
+
+/// Computes the absolute value of the dot product.
+pub fn vec3_abs_dot_nrmi(v1: &Vector3i, n2: &Normal3i) -> i32 {
+    vec3_dot_nrmi(v1, n2).abs()
 }
 
 /// Given two vectors in 3D, the cross product is a vector that is
@@ -638,18 +716,32 @@ pub fn vec3_cross_nrm(v1: &Vector3f, v2: &Normal3f) -> Vector3f {
 }
 
 /// Return the largest coordinate value.
-pub fn vec3_max_component<T>(v: &Vector3<T>) -> T
-where
-    T: num::Float,
-{
+pub fn vec3_max_componentf(v: &Vector3f) -> Float {
+    v.x.max(v.y.max(v.z))
+}
+
+/// Return the largest coordinate value.
+pub fn vec3_max_componenti(v: &Vector3i) -> i32 {
     v.x.max(v.y.max(v.z))
 }
 
 /// Return the index of the component with the largest value.
-pub fn vec3_max_dimension<T>(v: &Vector3<T>) -> usize
-where
-    T: std::cmp::PartialOrd,
-{
+pub fn vec3_max_dimensionf(v: &Vector3f) -> usize {
+    if v.x > v.y {
+        if v.x > v.z {
+            0_usize
+        } else {
+            2_usize
+        }
+    } else if v.y > v.z {
+        1_usize
+    } else {
+        2_usize
+    }
+}
+
+/// Return the index of the component with the largest value.
+pub fn vec3_max_dimensioni(v: &Vector3i) -> usize {
     if v.x > v.y {
         if v.x > v.z {
             0_usize
@@ -665,15 +757,26 @@ where
 
 /// Permute the coordinate values according to the povided
 /// permutation.
-pub fn vec3_permute<T>(v: &Vector3<T>, x: usize, y: usize, z: usize) -> Vector3<T>
-where
-    T: Copy,
-{
-    let v3: [T; 3] = [v.x, v.y, v.z];
-    let xp: T = v3[x];
-    let yp: T = v3[y];
-    let zp: T = v3[z];
-    Vector3::<T> {
+pub fn vec3_permutef(v: &Vector3f, x: usize, y: usize, z: usize) -> Vector3f {
+    let v3: [Float; 3] = [v.x, v.y, v.z];
+    let xp: Float = v3[x];
+    let yp: Float = v3[y];
+    let zp: Float = v3[z];
+    Vector3f {
+        x: xp,
+        y: yp,
+        z: zp,
+    }
+}
+
+/// Permute the coordinate values according to the povided
+/// permutation.
+pub fn vec3_permutei(v: &Vector3i, x: usize, y: usize, z: usize) -> Vector3i {
+    let v3: [i32; 3] = [v.x, v.y, v.z];
+    let xp: i32 = v3[x];
+    let yp: i32 = v3[y];
+    let zp: i32 = v3[z];
+    Vector3i {
         x: xp,
         y: yp,
         z: zp,
@@ -699,113 +802,116 @@ pub fn vec3_coordinate_system(v1: &Vector3f, v2: &mut Vector3f, v3: &mut Vector3
 }
 
 #[derive(Debug, Default, Copy, Clone)]
-pub struct Point2<T> {
-    pub x: T,
-    pub y: T,
+pub struct Point2f {
+    pub x: Float,
+    pub y: Float,
 }
 
-impl<T> Point2<T> {
-    pub fn has_nans(&self) -> bool
-    where
-        T: num::Float,
-    {
+impl Point2f {
+    pub fn has_nans(&self) -> bool {
         self.x.is_nan() || self.y.is_nan()
     }
 }
 
-impl<T> PartialEq for Point2<T>
-where
-    T: std::cmp::PartialOrd,
-{
-    fn eq(&self, rhs: &Point2<T>) -> bool {
-        self.x == rhs.x && self.y == rhs.y
-    }
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Point2i {
+    pub x: i32,
+    pub y: i32,
 }
 
-impl<T> Add<Point2<T>> for Point2<T>
-where
-    T: Add<T, Output = T>,
-{
-    type Output = Point2<T>;
-    fn add(self, rhs: Point2<T>) -> Point2<T> {
-        Point2::<T> {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-        }
-    }
-}
+// impl<T> PartialEq for Point2<T>
+// where
+//     T: std::cmp::PartialOrd,
+// {
+//     fn eq(&self, rhs: &Point2<T>) -> bool {
+//         self.x == rhs.x && self.y == rhs.y
+//     }
+// }
 
-impl<T> Add<Vector2<T>> for Point2<T>
-where
-    T: Add<T, Output = T>,
-{
-    type Output = Point2<T>;
-    fn add(self, rhs: Vector2<T>) -> Point2<T> {
-        Point2::<T> {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-        }
-    }
-}
+// impl<T> Add<Point2<T>> for Point2<T>
+// where
+//     T: Add<T, Output = T>,
+// {
+//     type Output = Point2<T>;
+//     fn add(self, rhs: Point2<T>) -> Point2<T> {
+//         Point2::<T> {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//         }
+//     }
+// }
 
-impl<T> Sub<Point2<T>> for Point2<T>
-where
-    T: Sub<T, Output = T>,
-{
-    type Output = Vector2<T>;
-    fn sub(self, rhs: Point2<T>) -> Vector2<T> {
-        Vector2::<T> {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
+// impl<T> Add<Vector2<T>> for Point2<T>
+// where
+//     T: Add<T, Output = T>,
+// {
+//     type Output = Point2<T>;
+//     fn add(self, rhs: Vector2<T>) -> Point2<T> {
+//         Point2::<T> {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//         }
+//     }
+// }
 
-impl<T> Sub<Vector2<T>> for Point2<T>
-where
-    T: Sub<T, Output = T>,
-{
-    type Output = Point2<T>;
-    fn sub(self, rhs: Vector2<T>) -> Point2<T> {
-        Point2::<T> {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-        }
-    }
-}
+// impl<T> Sub<Point2<T>> for Point2<T>
+// where
+//     T: Sub<T, Output = T>,
+// {
+//     type Output = Vector2<T>;
+//     fn sub(self, rhs: Point2<T>) -> Vector2<T> {
+//         Vector2::<T> {
+//             x: self.x - rhs.x,
+//             y: self.y - rhs.y,
+//         }
+//     }
+// }
 
-impl<T> Mul<T> for Point2<T>
-where
-    T: Copy + Mul<T, Output = T>,
-{
-    type Output = Point2<T>;
-    fn mul(self, rhs: T) -> Point2<T>
-    where
-        T: Copy + Mul<T, Output = T>,
-    {
-        Point2::<T> {
-            x: self.x * rhs,
-            y: self.y * rhs,
-        }
-    }
-}
+// impl<T> Sub<Vector2<T>> for Point2<T>
+// where
+//     T: Sub<T, Output = T>,
+// {
+//     type Output = Point2<T>;
+//     fn sub(self, rhs: Vector2<T>) -> Point2<T> {
+//         Point2::<T> {
+//             x: self.x - rhs.x,
+//             y: self.y - rhs.y,
+//         }
+//     }
+// }
 
-impl<T> Neg for Vector2<T>
-where
-    T: Copy + Neg<Output = T>,
-{
-    type Output = Vector2<T>;
-    fn neg(self) -> Vector2<T> {
-        Vector2::<T> {
-            x: -self.x,
-            y: -self.y,
-        }
-    }
-}
+// impl<T> Mul<T> for Point2<T>
+// where
+//     T: Copy + Mul<T, Output = T>,
+// {
+//     type Output = Point2<T>;
+//     fn mul(self, rhs: T) -> Point2<T>
+//     where
+//         T: Copy + Mul<T, Output = T>,
+//     {
+//         Point2::<T> {
+//             x: self.x * rhs,
+//             y: self.y * rhs,
+//         }
+//     }
+// }
 
-impl<T> Index<XYEnum> for Point2<T> {
-    type Output = T;
-    fn index(&self, index: XYEnum) -> &T {
+// impl<T> Neg for Vector2<T>
+// where
+//     T: Copy + Neg<Output = T>,
+// {
+//     type Output = Vector2<T>;
+//     fn neg(self) -> Vector2<T> {
+//         Vector2::<T> {
+//             x: -self.x,
+//             y: -self.y,
+//         }
+//     }
+// }
+
+impl Index<XYEnum> for Point2f {
+    type Output = Float;
+    fn index(&self, index: XYEnum) -> &Float {
         match index {
             XYEnum::X => &self.x,
             _ => &self.y,
@@ -813,8 +919,27 @@ impl<T> Index<XYEnum> for Point2<T> {
     }
 }
 
-impl<T> IndexMut<XYEnum> for Point2<T> {
-    fn index_mut(&mut self, index: XYEnum) -> &mut T {
+impl Index<XYEnum> for Point2i {
+    type Output = i32;
+    fn index(&self, index: XYEnum) -> &i32 {
+        match index {
+            XYEnum::X => &self.x,
+            _ => &self.y,
+        }
+    }
+}
+
+impl IndexMut<XYEnum> for Point2f{
+    fn index_mut(&mut self, index: XYEnum) -> &mut Float {
+        match index {
+            XYEnum::X => &mut self.x,
+            _ => &mut self.y,
+        }
+    }
+}
+
+impl IndexMut<XYEnum> for Point2i {
+    fn index_mut(&mut self, index: XYEnum) -> &mut i32 {
         match index {
             XYEnum::X => &mut self.x,
             _ => &mut self.y,
@@ -823,44 +948,32 @@ impl<T> IndexMut<XYEnum> for Point2<T> {
 }
 
 /// Apply floor operation component-wise.
-pub fn pnt2_floor<T>(p: Point2<T>) -> Point2<T>
-where
-    T: num::Float,
-{
-    Point2 {
+pub fn pnt2_floor(p: Point2f) -> Point2f {
+    Point2f {
         x: p.x.floor(),
         y: p.y.floor(),
     }
 }
 
 /// Apply ceil operation component-wise.
-pub fn pnt2_ceil<T>(p: Point2<T>) -> Point2<T>
-where
-    T: num::Float,
-{
-    Point2 {
+pub fn pnt2_ceil(p: Point2f) -> Point2f {
+    Point2f {
         x: p.x.ceil(),
         y: p.y.ceil(),
     }
 }
 
 /// Apply std::cmp::min operation component-wise.
-pub fn pnt2_min_pnt2<T>(pa: Point2<T>, pb: Point2<T>) -> Point2<T>
-where
-    T: Ord,
-{
-    Point2 {
+pub fn pnt2_min_pnt2i(pa: Point2i, pb: Point2i) -> Point2i {
+    Point2i {
         x: std::cmp::min(pa.x, pb.x),
         y: std::cmp::min(pa.y, pb.y),
     }
 }
 
 /// Apply std::cmp::max operation component-wise.
-pub fn pnt2_max_pnt2<T>(pa: Point2<T>, pb: Point2<T>) -> Point2<T>
-where
-    T: Ord,
-{
-    Point2 {
+pub fn pnt2_max_pnt2i(pa: Point2i, pb: Point2i) -> Point2i {
+    Point2i {
         x: std::cmp::max(pa.x, pb.x),
         y: std::cmp::max(pa.y, pb.y),
     }
@@ -869,34 +982,35 @@ where
 /// Given a bounding box and a point, the **bnd2_union_pnt2()**
 /// function returns a new bounding box that encompasses that point as
 /// well as the original box.
-pub fn bnd2_union_pnt2<T>(b: &Bounds2<T>, p: Point2<T>) -> Bounds2<T>
-where
-    T: num::Float,
-{
-    let p_min: Point2<T> = Point2::<T> {
+pub fn bnd2_union_pnt2(b: &Bounds2f, p: Point2f) -> Bounds2f {
+    let p_min: Point2f = Point2f {
         x: b.p_min.x.min(p.x),
         y: b.p_min.y.min(p.y),
     };
-    let p_max: Point2<T> = Point2::<T> {
+    let p_max: Point2f = Point2f {
         x: b.p_max.x.max(p.x),
         y: b.p_max.y.max(p.y),
     };
-    Bounds2 { p_min, p_max }
+    Bounds2f { p_min, p_max }
 }
 
 /// Determine if a given point is inside the bounding box.
-pub fn pnt2_inside_bnd2<T>(pt: Point2<T>, b: &Bounds2<T>) -> bool
-where
-    T: PartialOrd,
-{
+pub fn pnt2_inside_bnd2f(pt: Point2f, b: &Bounds2f) -> bool {
+    pt.x >= b.p_min.x && pt.x <= b.p_max.x && pt.y >= b.p_min.y && pt.y <= b.p_max.y
+}
+
+/// Determine if a given point is inside the bounding box.
+pub fn pnt2_inside_bnd2i(pt: Point2i, b: &Bounds2i) -> bool {
     pt.x >= b.p_min.x && pt.x <= b.p_max.x && pt.y >= b.p_min.y && pt.y <= b.p_max.y
 }
 
 /// Is a 2D point inside a 2D bound?
-pub fn pnt2_inside_exclusive<T>(pt: Point2<T>, b: &Bounds2<T>) -> bool
-where
-    T: PartialOrd,
-{
+pub fn pnt2_inside_exclusivef(pt: Point2f, b: &Bounds2f) -> bool {
+    pt.x >= b.p_min.x && pt.x < b.p_max.x && pt.y >= b.p_min.y && pt.y < b.p_max.y
+}
+
+/// Is a 2D point inside a 2D bound?
+pub fn pnt2_inside_exclusivei(pt: Point2i, b: &Bounds2i) -> bool {
     pt.x >= b.p_min.x && pt.x < b.p_max.x && pt.y >= b.p_min.y && pt.y < b.p_max.y
 }
 
@@ -909,157 +1023,408 @@ pub fn bnd2_expand(b: &Bounds2f, delta: Float) -> Bounds2f {
 }
 
 #[derive(Debug, Default, Copy, Clone)]
-pub struct Point3<T> {
-    pub x: T,
-    pub y: T,
-    pub z: T,
+pub struct Point3f {
+    pub x: Float,
+    pub y: Float,
+    pub z: Float,
 }
 
-impl<T> Point3<T> {
-    pub fn has_nans(&self) -> bool
-    where
-        T: num::Float,
-    {
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Point3i {
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
+}
+
+impl Point3f {
+    pub fn has_nans(&self) -> bool {
         self.x.is_nan() || self.y.is_nan() || self.z.is_nan()
     }
 }
 
-impl<T> AddAssign<Point3<T>> for Point3<T>
-where
-    T: AddAssign,
-{
-    fn add_assign(&mut self, rhs: Point3<T>) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-        self.z += rhs.z;
-    }
-}
+// impl<T> AddAssign<Point3<T>> for Point3<T>
+// where
+//     T: AddAssign,
+// {
+//     fn add_assign(&mut self, rhs: Point3<T>) {
+//         self.x += rhs.x;
+//         self.y += rhs.y;
+//         self.z += rhs.z;
+//     }
+// }
 
-impl<T> Add<Point3<T>> for Point3<T>
-where
-    T: Add<T, Output = T>,
-{
-    type Output = Point3<T>;
-    fn add(self, rhs: Point3<T>) -> Point3<T> {
-        Point3::<T> {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
-        }
+impl_op_ex!(+|a: &Point3f, b: &Point3f| -> Point3f {
+    Point3f {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
     }
-}
+});
 
-impl<T> Add<Vector3<T>> for Point3<T>
-where
-    T: Add<T, Output = T>,
-{
-    type Output = Point3<T>;
-    fn add(self, rhs: Vector3<T>) -> Point3<T> {
-        Point3::<T> {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
-        }
+impl_op_ex!(+|a: &Point2i, b: &Point2i| -> Point2i {
+    Point2i {
+        x: a.x + b.x,
+        y: a.y + b.y,
     }
-}
+});
 
-impl<T> AddAssign<Vector3<T>> for Point3<T>
-where
-    T: AddAssign,
-{
-    fn add_assign(&mut self, rhs: Vector3<T>) {
-        self.x += rhs.x;
-        self.y += rhs.y;
-        self.z += rhs.z;
+impl_op_ex!(+|a: &Point2f, b: &Point2f| -> Point2f {
+    Point2f {
+        x: a.x + b.x,
+        y: a.y + b.y,
     }
-}
+});
 
-impl<T> Sub<Point3<T>> for Point3<T>
-where
-    T: Sub<T, Output = T>,
-{
-    type Output = Vector3<T>;
-    fn sub(self, rhs: Point3<T>) -> Vector3<T> {
-        Vector3::<T> {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z,
-        }
+impl_op_ex!(+|a: &Vector3f, b: &Vector3f| -> Vector3f {
+    Vector3f {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
     }
-}
+});
 
-impl<T> Sub<Vector3<T>> for Point3<T>
-where
-    T: Sub<T, Output = T>,
-{
-    type Output = Point3<T>;
-    fn sub(self, rhs: Vector3<T>) -> Point3<T> {
-        Point3::<T> {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z,
-        }
+impl_op_ex!(+|a: &Normal3f, b: &Normal3f| -> Normal3f {
+    Normal3f {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
     }
-}
+});
 
-impl<T> Mul<T> for Point3<T>
-where
-    T: Copy + Mul<T, Output = T>,
-{
-    type Output = Point3<T>;
-    fn mul(self, rhs: T) -> Point3<T>
-    where
-        T: Copy + Mul<T, Output = T>,
-    {
-        Point3::<T> {
-            x: self.x * rhs,
-            y: self.y * rhs,
-            z: self.z * rhs,
-        }
+impl_op_ex!(-|a: &Normal3f, b: &Normal3f| -> Normal3f {
+    Normal3f {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        z: a.z - b.z,
     }
-}
+});
 
-impl<T> MulAssign<T> for Point3<T>
-where
-    T: Copy + MulAssign,
-{
-    fn mul_assign(&mut self, rhs: T) {
-        self.x *= rhs;
-        self.y *= rhs;
-        self.z *= rhs;
+impl_op_ex!(-|a: &Vector3f, b: &Vector3f| -> Vector3f {
+    Vector3f {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        z: a.z - b.z,
     }
-}
+});
+
+impl_op_ex!(+|a: &Point3f, b: &Vector3f| -> Point3f {
+    Point3f {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
+    }
+});
+
+impl_op_ex!(+|a: &Point3i, b: &Vector3i| -> Point3i {
+    Point3i {
+        x: a.x + b.x,
+        y: a.y + b.y,
+        z: a.z + b.z,
+    }
+});
+
+impl_op_ex!(+|a: &Point2f, b: &Vector2f| -> Point2f {
+    Point2f {
+        x: a.x + b.x,
+        y: a.y + b.y,
+    }
+});
+
+impl_op_ex!(-|a: &Point3f, b: &Point3f| -> Vector3f {
+    Vector3f {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        z: a.z - b.z,
+    }
+});
+
+impl_op_ex!(-|a: &Point3i, b: &Point3i| -> Vector3i {
+    Vector3i {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        z: a.z - b.z,
+    }
+});
+
+impl_op_ex!(-|a: &Point2f, b: &Point2f| -> Vector2f {
+    Vector2f {
+        x: a.x - b.x,
+        y: a.y - b.y,
+    }
+});
+
+impl_op_ex!(-|a: &Point2i, b: &Point2i| -> Vector2i {
+    Vector2i {
+        x: a.x - b.x,
+        y: a.y - b.y,
+    }
+});
+
+impl_op_ex!(-|a: &Point2f, b: &Vector2f| -> Point2f {
+    Point2f {
+        x: a.x - b.x,
+        y: a.y - b.y,
+    }
+});
+
+impl_op_ex!(-|a: &Point2i, b: &Vector2i| -> Point2i {
+    Point2i {
+        x: a.x - b.x,
+        y: a.y - b.y,
+    }
+});
+
+impl_op_ex!(-|a: &Point3f, b: &Vector3f| -> Point3f {
+    Point3f {
+        x: a.x - b.x,
+        y: a.y - b.y,
+        z: a.z - b.z,
+    }
+});
+
+// impl<T> Add<Point3<T>> for Point3<T>
+// where
+//     T: Add<T, Output = T>,
+// {
+//     type Output = Point3<T>;
+//     fn add(self, rhs: Point3<T>) -> Point3<T> {
+//         Point3::<T> {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//             z: self.z + rhs.z,
+//         }
+//     }
+// }
+
+// impl<T> Add<Vector3<T>> for Point3<T>
+// where
+//     T: Add<T, Output = T>,
+// {
+//     type Output = Point3<T>;
+//     fn add(self, rhs: Vector3<T>) -> Point3<T> {
+//         Point3::<T> {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//             z: self.z + rhs.z,
+//         }
+//     }
+// }
+
+// impl<T> AddAssign<Vector3<T>> for Point3<T>
+// where
+//     T: AddAssign,
+// {
+//     fn add_assign(&mut self, rhs: Vector3<T>) {
+//         self.x += rhs.x;
+//         self.y += rhs.y;
+//         self.z += rhs.z;
+//     }
+// }
+
+// impl<T> Sub<Vector3<T>> for Point3<T>
+// where
+//     T: Sub<T, Output = T>,
+// {
+//     type Output = Point3<T>;
+//     fn sub(self, rhs: Vector3<T>) -> Point3<T> {
+//         Point3::<T> {
+//             x: self.x - rhs.x,
+//             y: self.y - rhs.y,
+//             z: self.z - rhs.z,
+//         }
+//     }
+// }
+
+impl_op_ex!(*|a: &Point2f, b: Float| -> Point2f {
+    Point2f {
+        x: a.x * b,
+        y: a.y * b,
+    }
+});
+
+impl_op_ex!(*|a: &Point3f, b: Float| -> Point3f {
+    Point3f {
+        x: a.x * b,
+        y: a.y * b,
+        z: a.z * b,
+    }
+});
+
+impl_op_ex!(*|a: &Normal3f, b: Float| -> Normal3f {
+    Normal3f {
+        x: a.x * b,
+        y: a.y * b,
+        z: a.z * b,
+    }
+});
+
+impl_op_ex!(*|a: &Vector3f, b: Float| -> Vector3f {
+    Vector3f {
+        x: a.x * b,
+        y: a.y * b,
+        z: a.z * b,
+    }
+});
+
+impl_op_ex!(/|a: &Point3f, b: Float| -> Point3f {
+    assert_ne!(b, 0.0 as Float);
+    let inv: Float = 1.0 as Float / b;
+    Point3f {
+        x: a.x * inv,
+        y: a.y * inv,
+        z: a.z * inv,
+    }
+});
+
+impl_op_ex!(/|a: &Vector3f, b: Float| -> Vector3f {
+    assert_ne!(b, 0.0 as Float);
+    let inv: Float = 1.0 as Float / b;
+    Vector3f {
+        x: a.x * inv,
+        y: a.y * inv,
+        z: a.z * inv,
+    }
+});
+
+impl_op_ex!(/|a: &Vector2f, b: Float| -> Vector2f {
+    assert_ne!(b, 0.0 as Float);
+    let inv: Float = 1.0 as Float / b;
+    Vector2f {
+        x: a.x * inv,
+        y: a.y * inv,
+    }
+});
+
+impl_op_ex!(/|a: &Normal3f, b: Float| -> Normal3f {
+    assert_ne!(b, 0.0 as Float);
+    let inv: Float = 1.0 as Float / b;
+    Normal3f {
+        x: a.x * inv,
+        y: a.y * inv,
+        z: a.z * inv,
+    }
+});
+
+// impl<T> Mul<T> for Point3<T>
+// where
+//     T: Copy + Mul<T, Output = T>,
+// {
+//     type Output = Point3<T>;
+//     fn mul(self, rhs: T) -> Point3<T>
+//     where
+//         T: Copy + Mul<T, Output = T>,
+//     {
+//         Point3::<T> {
+//             x: self.x * rhs,
+//             y: self.y * rhs,
+//             z: self.z * rhs,
+//         }
+//     }
+// }
+
+// impl<T> MulAssign<T> for Point3<T>
+// where
+//     T: Copy + MulAssign,
+// {
+//     fn mul_assign(&mut self, rhs: T) {
+//         self.x *= rhs;
+//         self.y *= rhs;
+//         self.z *= rhs;
+//     }
+// }
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl Div<Float> for Point3<f32> {
-    type Output = Point3<f32>;
-    fn div(self, rhs: Float) -> Point3<f32> {
-        assert_ne!(rhs, 0.0 as Float);
-        let inv: Float = 1.0 as Float / rhs;
-        Point3::<f32> {
-            x: self.x * inv,
-            y: self.y * inv,
-            z: self.z * inv,
-        }
-    }
-}
+// impl Div<Float> for Point3<f32> {
+//     type Output = Point3<f32>;
+//     fn div(self, rhs: Float) -> Point3<f32> {
+//         assert_ne!(rhs, 0.0 as Float);
+//         let inv: Float = 1.0 as Float / rhs;
+//         Point3::<f32> {
+//             x: self.x * inv,
+//             y: self.y * inv,
+//             z: self.z * inv,
+//         }
+//     }
+// }
+
+impl_op!(*= |a: &mut Point2f, b: Float| {
+    a.x *= b;
+    a.y *= b;
+});
+
+impl_op!(*= |a: &mut Point3f, b: Float| {
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+});
+
+impl_op!(+= |a: &mut Point3f, b: Point3f| {
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+});
+
+impl_op!(+= |a: &mut Point3f, b: Vector3f| {
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+});
+
+impl_op!(+= |a: &mut Vector3f, b: Vector3f| {
+    a.x += b.x;
+    a.y += b.y;
+    a.z += b.z;
+});
+
+impl_op!(*= |a: &mut Vector2f, b: Float| {
+    a.x *= b;
+    a.y *= b;
+});
+
+impl_op!(*= |a: &mut Vector3f, b: Float| {
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+});
+
+impl_op!(*= |a: &mut Normal3f, b: Float| {
+    a.x *= b;
+    a.y *= b;
+    a.z *= b;
+});
+
+impl_op!(/= |a: &mut Point3f, b: Float| {
+    assert_ne!(b, 0.0 as Float);
+    let inv: Float = 1.0 as Float / b;
+    a.x *= inv;
+    a.y *= inv;
+    a.z *= inv;
+});
+
+impl_op!(/= |a: &mut Vector3f, b: Float| {
+    assert_ne!(b, 0.0 as Float);
+    let inv: Float = 1.0 as Float / b;
+    a.x *= inv;
+    a.y *= inv;
+    a.z *= inv;
+});
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl DivAssign<Float> for Point3<f32> {
-    fn div_assign(&mut self, rhs: Float) {
-        assert_ne!(rhs, 0.0 as Float);
-        let inv: Float = 1.0 as Float / rhs;
-        self.x *= inv;
-        self.y *= inv;
-        self.z *= inv;
-    }
-}
+// impl DivAssign<Float> for Point3<f32> {
+//     fn div_assign(&mut self, rhs: Float) {
+//         assert_ne!(rhs, 0.0 as Float);
+//         let inv: Float = 1.0 as Float / rhs;
+//         self.x *= inv;
+//         self.y *= inv;
+//         self.z *= inv;
+//     }
+// }
 
-impl<T> Index<XYZEnum> for Point3<T> {
-    type Output = T;
-    fn index(&self, index: XYZEnum) -> &T {
+impl Index<XYZEnum> for Point3f {
+    type Output = Float;
+    fn index(&self, index: XYZEnum) -> &Float {
         match index {
             XYZEnum::X => &self.x,
             XYZEnum::Y => &self.y,
@@ -1068,8 +1433,29 @@ impl<T> Index<XYZEnum> for Point3<T> {
     }
 }
 
-impl<T> IndexMut<XYZEnum> for Point3<T> {
-    fn index_mut(&mut self, index: XYZEnum) -> &mut T {
+impl Index<XYZEnum> for Point3i {
+    type Output = i32;
+    fn index(&self, index: XYZEnum) -> &i32 {
+        match index {
+            XYZEnum::X => &self.x,
+            XYZEnum::Y => &self.y,
+            _ => &self.z,
+        }
+    }
+}
+
+impl IndexMut<XYZEnum> for Point3f {
+    fn index_mut(&mut self, index: XYZEnum) -> &mut Float {
+        match index {
+            XYZEnum::X => &mut self.x,
+            XYZEnum::Y => &mut self.y,
+            _ => &mut self.z,
+        }
+    }
+}
+
+impl IndexMut<XYZEnum> for Point3i {
+    fn index_mut(&mut self, index: XYZEnum) -> &mut i32 {
         match index {
             XYZEnum::X => &mut self.x,
             XYZEnum::Y => &mut self.y,
@@ -1080,15 +1466,26 @@ impl<T> IndexMut<XYZEnum> for Point3<T> {
 
 /// Permute the coordinate values according to the povided
 /// permutation.
-pub fn pnt3_permute<T>(v: &Point3<T>, x: usize, y: usize, z: usize) -> Point3<T>
-where
-    T: Copy,
-{
-    let v3: [T; 3] = [v.x, v.y, v.z];
-    let xp: T = v3[x];
-    let yp: T = v3[y];
-    let zp: T = v3[z];
-    Point3::<T> {
+pub fn pnt3_permutef(v: &Point3f, x: usize, y: usize, z: usize) -> Point3f {
+    let v3: [Float; 3] = [v.x, v.y, v.z];
+    let xp: Float = v3[x];
+    let yp: Float = v3[y];
+    let zp: Float = v3[z];
+    Point3f {
+        x: xp,
+        y: yp,
+        z: zp,
+    }
+}
+
+/// Permute the coordinate values according to the povided
+/// permutation.
+pub fn pnt3_permutei(v: &Point3i, x: usize, y: usize, z: usize) -> Point3i {
+    let v3: [i32; 3] = [v.x, v.y, v.z];
+    let xp: i32 = v3[x];
+    let yp: i32 = v3[y];
+    let zp: i32 = v3[z];
+    Point3i {
         x: xp,
         y: yp,
         z: zp,
@@ -1101,11 +1498,8 @@ pub fn pnt3_lerp(t: Float, p0: &Point3f, p1: &Point3f) -> Point3f {
 }
 
 /// Apply floor operation component-wise.
-pub fn pnt3_floor<T>(p: &Point3<T>) -> Point3<T>
-where
-    T: num::Float,
-{
-    Point3 {
+pub fn pnt3_floor(p: &Point3f) -> Point3f {
+    Point3f {
         x: p.x.floor(),
         y: p.y.floor(),
         z: p.z.floor(),
@@ -1113,11 +1507,8 @@ where
 }
 
 /// Apply ceil operation component-wise.
-pub fn pnt3_ceil<T>(p: &Point3<T>) -> Point3<T>
-where
-    T: num::Float,
-{
-    Point3 {
+pub fn pnt3_ceil(p: &Point3f) -> Point3f {
+    Point3f {
         x: p.x.ceil(),
         y: p.y.ceil(),
         z: p.z.ceil(),
@@ -1125,11 +1516,8 @@ where
 }
 
 /// Apply abs operation component-wise.
-pub fn pnt3_abs<T>(p: &Point3<T>) -> Point3<T>
-where
-    T: num::Float,
-{
-    Point3 {
+pub fn pnt3_abs(p: &Point3f) -> Point3f {
+    Point3f {
         x: p.x.abs(),
         y: p.y.abs(),
         z: p.z.abs(),
@@ -1138,19 +1526,13 @@ where
 
 /// The distance between two points is the length of the vector
 /// between them.
-pub fn pnt3_distance<T>(p1: &Point3<T>, p2: &Point3<T>) -> T
-where
-    T: num::Float + Sub<T, Output = T>,
-{
+pub fn pnt3_distancef(p1: &Point3f, p2: &Point3f) -> Float {
     (*p1 - *p2).length()
 }
 
 /// The distance squared between two points is the length of the
 /// vector between them squared.
-pub fn pnt3_distance_squared<T>(p1: &Point3<T>, p2: &Point3<T>) -> T
-where
-    T: num::Float + Sub<T, Output = T>,
-{
+pub fn pnt3_distance_squaredf(p1: &Point3f, p2: &Point3f) -> Float {
     (*p1 - *p2).length_squared()
 }
 
@@ -1164,9 +1546,9 @@ pub fn pnt3_offset_ray_origin(
     n: &Normal3f,
     w: &Vector3f,
 ) -> Point3f {
-    let d: Float = nrm_dot_vec3(&nrm_abs(n), p_error);
+    let d: Float = nrm_dot_vec3f(&nrm_absf(n), p_error);
     let mut offset: Vector3f = Vector3f::from(*n) * d;
-    if vec3_dot_nrm(w, n) < 0.0 as Float {
+    if vec3_dot_nrmf(w, n) < 0.0 as Float {
         offset = -offset;
     }
     let mut po: Point3f = *p + offset;
@@ -1221,94 +1603,107 @@ pub fn spherical_phi(v: &Vector3f) -> Float {
     }
 }
 
-#[derive(Debug, Default, Copy, Clone)]
-pub struct Normal3<T> {
-    pub x: T,
-    pub y: T,
-    pub z: T,
+#[derive(Debug, Default, Copy, Clone, PartialEq)]
+pub struct Normal3f {
+    pub x: Float,
+    pub y: Float,
+    pub z: Float,
 }
 
-impl Normal3<Float> {
+impl Normal3f {
+    pub fn length_squared(&self) -> Float {
+        self.x * self.x + self.y * self.y + self.z * self.z
+    }
+    pub fn length(&self) -> Float {
+        self.length_squared().sqrt()
+    }
     /// Compute a new normal pointing in the same direction but with unit
     /// length.
-    pub fn normalize(&self) -> Normal3<Float> {
+    pub fn normalize(&self) -> Normal3f {
         *self / self.length()
     }
 }
 
-impl<T> Add for Normal3<T>
-where
-    T: Copy + Add<T, Output = T>,
-{
-    type Output = Normal3<T>;
-    fn add(self, rhs: Normal3<T>) -> Normal3<T> {
-        Normal3::<T> {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
-        }
-    }
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Normal3i {
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
 }
 
-impl<T> Sub for Normal3<T>
-where
-    T: Copy + Sub<T, Output = T>,
-{
-    type Output = Normal3<T>;
-    fn sub(self, rhs: Normal3<T>) -> Normal3<T> {
-        Normal3::<T> {
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z,
-        }
-    }
-}
+// impl<T> Add for Normal3<T>
+// where
+//     T: Copy + Add<T, Output = T>,
+// {
+//     type Output = Normal3<T>;
+//     fn add(self, rhs: Normal3<T>) -> Normal3<T> {
+//         Normal3::<T> {
+//             x: self.x + rhs.x,
+//             y: self.y + rhs.y,
+//             z: self.z + rhs.z,
+//         }
+//     }
+// }
 
-impl<T> Mul<T> for Normal3<T>
-where
-    T: Copy + Mul<T, Output = T>,
-{
-    type Output = Normal3<T>;
-    fn mul(self, rhs: T) -> Normal3<T>
-    where
-        T: Copy + Mul<T, Output = T>,
-    {
-        Normal3::<T> {
-            x: self.x * rhs,
-            y: self.y * rhs,
-            z: self.z * rhs,
-        }
-    }
-}
+// impl<T> Sub for Normal3<T>
+// where
+//     T: Copy + Sub<T, Output = T>,
+// {
+//     type Output = Normal3<T>;
+//     fn sub(self, rhs: Normal3<T>) -> Normal3<T> {
+//         Normal3::<T> {
+//             x: self.x - rhs.x,
+//             y: self.y - rhs.y,
+//             z: self.z - rhs.z,
+//         }
+//     }
+// }
 
-impl<T> MulAssign<T> for Normal3<T>
-where
-    T: Copy + MulAssign,
-{
-    fn mul_assign(&mut self, rhs: T) {
-        self.x *= rhs;
-        self.y *= rhs;
-        self.z *= rhs;
-    }
-}
+// impl<T> Mul<T> for Normal3<T>
+// where
+//     T: Copy + Mul<T, Output = T>,
+// {
+//     type Output = Normal3<T>;
+//     fn mul(self, rhs: T) -> Normal3<T>
+//     where
+//         T: Copy + Mul<T, Output = T>,
+//     {
+//         Normal3::<T> {
+//             x: self.x * rhs,
+//             y: self.y * rhs,
+//             z: self.z * rhs,
+//         }
+//     }
+// }
 
-impl<T> Neg for Normal3<T>
-where
-    T: Copy + Neg<Output = T>,
-{
-    type Output = Normal3<T>;
-    fn neg(self) -> Normal3<T> {
-        Normal3::<T> {
-            x: -self.x,
-            y: -self.y,
-            z: -self.z,
-        }
-    }
-}
+// impl<T> MulAssign<T> for Normal3<T>
+// where
+//     T: Copy + MulAssign,
+// {
+//     fn mul_assign(&mut self, rhs: T) {
+//         self.x *= rhs;
+//         self.y *= rhs;
+//         self.z *= rhs;
+//     }
+// }
 
-impl<T> Index<XYZEnum> for Normal3<T> {
-    type Output = T;
-    fn index(&self, index: XYZEnum) -> &T {
+// impl<T> Neg for Normal3<T>
+// where
+//     T: Copy + Neg<Output = T>,
+// {
+//     type Output = Normal3<T>;
+//     fn neg(self) -> Normal3<T> {
+//         Normal3::<T> {
+//             x: -self.x,
+//             y: -self.y,
+//             z: -self.z,
+//         }
+//     }
+// }
+
+impl Index<XYZEnum> for Normal3f {
+    type Output = Float;
+    fn index(&self, index: XYZEnum) -> &Float {
         match index {
             XYZEnum::X => &self.x,
             XYZEnum::Y => &self.y,
@@ -1317,58 +1712,58 @@ impl<T> Index<XYZEnum> for Normal3<T> {
     }
 }
 
-impl<T> IndexMut<XYZEnum> for Normal3<T> {
-    fn index_mut(&mut self, index: XYZEnum) -> &mut T {
-        match index {
-            XYZEnum::X => &mut self.x,
-            XYZEnum::Y => &mut self.y,
-            _ => &mut self.z,
-        }
-    }
-}
+// impl<T> IndexMut<XYZEnum> for Normal3<T> {
+//     fn index_mut(&mut self, index: XYZEnum) -> &mut T {
+//         match index {
+//             XYZEnum::X => &mut self.x,
+//             XYZEnum::Y => &mut self.y,
+//             _ => &mut self.z,
+//         }
+//     }
+// }
 
-impl<T> Normal3<T> {
-    pub fn length_squared(&self) -> T
-    where
-        T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
-    {
-        self.x * self.x + self.y * self.y + self.z * self.z
-    }
-    pub fn length(&self) -> T
-    where
-        T: num::Float,
-    {
-        self.length_squared().sqrt()
-    }
-}
+// impl<T> Normal3<T> {
+//     pub fn length_squared(&self) -> T
+//     where
+//         T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
+//     {
+//         self.x * self.x + self.y * self.y + self.z * self.z
+//     }
+//     pub fn length(&self) -> T
+//     where
+//         T: num::Float,
+//     {
+//         self.length_squared().sqrt()
+//     }
+// }
 
-impl<T> PartialEq for Normal3<T>
-where
-    T: std::cmp::PartialOrd,
-{
-    fn eq(&self, rhs: &Normal3<T>) -> bool {
-        self.x == rhs.x && self.y == rhs.y && self.z == rhs.z
-    }
-}
+// impl<T> PartialEq for Normal3<T>
+// where
+//     T: std::cmp::PartialOrd,
+// {
+//     fn eq(&self, rhs: &Normal3<T>) -> bool {
+//         self.x == rhs.x && self.y == rhs.y && self.z == rhs.z
+//     }
+// }
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl Div<Float> for Normal3<f32> {
-    type Output = Normal3<f32>;
-    fn div(self, rhs: Float) -> Normal3<f32> {
-        assert_ne!(rhs, 0.0 as Float);
-        let inv: Float = 1.0 as Float / rhs;
-        Normal3::<f32> {
-            x: self.x * inv,
-            y: self.y * inv,
-            z: self.z * inv,
-        }
-    }
-}
+// impl Div<Float> for Normal3<f32> {
+//     type Output = Normal3<f32>;
+//     fn div(self, rhs: Float) -> Normal3<f32> {
+//         assert_ne!(rhs, 0.0 as Float);
+//         let inv: Float = 1.0 as Float / rhs;
+//         Normal3::<f32> {
+//             x: self.x * inv,
+//             y: self.y * inv,
+//             z: self.z * inv,
+//         }
+//     }
+// }
 
-impl<T> From<Vector3<T>> for Normal3<T> {
-    fn from(v: Vector3<T>) -> Self {
-        Normal3::<T> {
+impl From<Vector3f> for Normal3f {
+    fn from(v: Vector3f) -> Self {
+        Normal3f {
             x: v.x,
             y: v.y,
             z: v.z,
@@ -1396,37 +1791,54 @@ pub fn nrm_cross_vec3(n1: &Normal3f, v2: &Vector3f) -> Vector3f {
 /// normal) and the cosine of the angle between them. A return value
 /// of zero means both are orthogonal, a value if one means they are
 /// codirectional.
-pub fn nrm_dot_nrm<T>(n1: &Normal3<T>, n2: &Normal3<T>) -> T
-where
-    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
-{
+pub fn nrm_dot_nrmf(n1: &Normal3f, n2: &Normal3f) -> Float {
+    n1.x * n2.x + n1.y * n2.y + n1.z * n2.z
+}
+
+/// Product of the Euclidean magnitudes of a normal (and another
+/// normal) and the cosine of the angle between them. A return value
+/// of zero means both are orthogonal, a value if one means they are
+/// codirectional.
+pub fn nrm_dot_nrmi(n1: &Normal3i, n2: &Normal3i) -> i32 {
     n1.x * n2.x + n1.y * n2.y + n1.z * n2.z
 }
 
 /// Product of the Euclidean magnitudes of a normal (and a vector) and
 /// the cosine of the angle between them. A return value of zero means
 /// both are orthogonal, a value if one means they are codirectional.
-pub fn nrm_dot_vec3<T>(n1: &Normal3<T>, v2: &Vector3<T>) -> T
-where
-    T: Copy + Add<T, Output = T> + Mul<T, Output = T>,
-{
+pub fn nrm_dot_vec3f(n1: &Normal3f, v2: &Vector3f) -> Float {
+    n1.x * v2.x + n1.y * v2.y + n1.z * v2.z
+}
+
+/// Product of the Euclidean magnitudes of a normal (and a vector) and
+/// the cosine of the angle between them. A return value of zero means
+/// both are orthogonal, a value if one means they are codirectional.
+pub fn nrm_dot_vec3i(n1: &Normal3i, v2: &Vector3i) -> i32 {
     n1.x * v2.x + n1.y * v2.y + n1.z * v2.z
 }
 
 /// Computes the absolute value of the dot product.
-pub fn nrm_abs_dot_vec3<T>(n1: &Normal3<T>, v2: &Vector3<T>) -> T
-where
-    T: num::Float,
-{
-    nrm_dot_vec3(n1, v2).abs()
+pub fn nrm_abs_dot_vec3f(n1: &Normal3f, v2: &Vector3f) -> Float {
+    nrm_dot_vec3f(n1, v2).abs()
+}
+
+/// Computes the absolute value of the dot product.
+pub fn nrm_abs_dot_vec3i(n1: &Normal3i, v2: &Vector3i) -> i32 {
+    nrm_dot_vec3i(n1, v2).abs()
 }
 
 /// Return normal with the absolute value of each coordinate.
-pub fn nrm_abs<T>(n: &Normal3<T>) -> Normal3<T>
-where
-    T: num::Float,
-{
-    Normal3::<T> {
+pub fn nrm_absf(n: &Normal3f) -> Normal3f {
+    Normal3f {
+        x: n.x.abs(),
+        y: n.y.abs(),
+        z: n.z.abs(),
+    }
+}
+
+/// Return normal with the absolute value of each coordinate.
+pub fn nrm_absi(n: &Normal3i) -> Normal3i {
+    Normal3i {
         x: n.x.abs(),
         y: n.y.abs(),
         z: n.z.abs(),
@@ -1436,7 +1848,7 @@ where
 /// Flip a surface normal so that it lies in the same hemisphere as a
 /// given vector.
 pub fn nrm_faceforward_vec3(n: &Normal3f, v: &Vector3f) -> Normal3f {
-    if nrm_dot_vec3(n, v) < 0.0 as Float {
+    if nrm_dot_vec3f(n, v) < 0.0 as Float {
         -(*n)
     } else {
         *n
@@ -1446,55 +1858,38 @@ pub fn nrm_faceforward_vec3(n: &Normal3f, v: &Vector3f) -> Normal3f {
 /// Flip a surface normal so that it lies in the same hemisphere as a
 /// given normal.
 pub fn nrm_faceforward_nrm(n: &Normal3f, n2: &Normal3f) -> Normal3f {
-    if nrm_dot_nrm(n, n2) < 0.0 as Float {
+    if nrm_dot_nrmf(n, n2) < 0.0 as Float {
         -(*n)
     } else {
         *n
     }
 }
 
-pub type Bounds2f = Bounds2<Float>;
-pub type Bounds2i = Bounds2<i32>;
-pub type Bounds3f = Bounds3<Float>;
-pub type Bounds3i = Bounds3<i32>;
+// pub type Bounds2f = Bounds2<Float>;
+// pub type Bounds2i = Bounds2<i32>;
+// pub type Bounds3f = Bounds3<Float>;
+// pub type Bounds3i = Bounds3<i32>;
 
 #[derive(Debug, Default, Copy, Clone)]
-pub struct Bounds2<T> {
-    pub p_min: Point2<T>,
-    pub p_max: Point2<T>,
+pub struct Bounds2f {
+    pub p_min: Point2f,
+    pub p_max: Point2f,
 }
 
-impl<T> Bounds2<T> {
-    pub fn new(p1: Point2<T>, p2: Point2<T>) -> Self
-    where
-        T: Copy + Ord,
-    {
-        let p_min: Point2<T> = Point2::<T> {
-            x: std::cmp::min(p1.x, p2.x),
-            y: std::cmp::min(p1.y, p2.y),
-        };
-        let p_max: Point2<T> = Point2::<T> {
-            x: std::cmp::max(p1.x, p2.x),
-            y: std::cmp::max(p1.y, p2.y),
-        };
-        Bounds2::<T> { p_min, p_max }
-    }
-    pub fn diagonal(&self) -> Vector2<T>
-    where
-        T: Copy + Sub<T, Output = T>,
-    {
+#[derive(Debug, Default, Copy, Clone)]
+pub struct Bounds2i {
+    pub p_min: Point2i,
+    pub p_max: Point2i,
+}
+
+impl Bounds2f {
+    pub fn diagonal(&self) -> Vector2f {
         self.p_max - self.p_min
     }
-    pub fn area(&self) -> T
-    where
-        T: Copy + Sub<T, Output = T> + Mul<T, Output = T>,
-    {
-        let d: Vector2<T> = self.p_max - self.p_min;
+    pub fn area(&self) -> Float {
+        let d: Vector2f = self.p_max - self.p_min;
         d.x * d.y
     }
-}
-
-impl Bounds2<Float> {
     pub fn lerp(&self, t: Point2f) -> Point2f {
         Point2f {
             x: lerp(t.x, self.p_min.x, self.p_max.x),
@@ -1510,6 +1905,27 @@ impl Bounds2<Float> {
             o.y /= self.p_max.y - self.p_min.y;
         }
         o
+    }
+}
+
+impl Bounds2i {
+    pub fn new(p1: Point2i, p2: Point2i) -> Self {
+        let p_min: Point2i = Point2i {
+            x: std::cmp::min(p1.x, p2.x),
+            y: std::cmp::min(p1.y, p2.y),
+        };
+        let p_max: Point2i = Point2i {
+            x: std::cmp::max(p1.x, p2.x),
+            y: std::cmp::max(p1.y, p2.y),
+        };
+        Bounds2i { p_min, p_max }
+    }
+    pub fn diagonal(&self) -> Vector2i {
+        self.p_max - self.p_min
+    }
+    pub fn area(&self) -> i32 {
+        let d: Vector2i = self.p_max - self.p_min;
+        d.x * d.y
     }
 }
 
@@ -1555,16 +1971,13 @@ impl<'a> IntoIterator for &'a Bounds2i {
 /// The intersection of two bounding boxes can be found by computing
 /// the maximum of their two respective minimum coordinates and the
 /// minimum of their maximum coordinates.
-pub fn bnd2_intersect_bnd2<T>(b1: &Bounds2<T>, b2: &Bounds2<T>) -> Bounds2<T>
-where
-    T: Copy + Ord,
-{
-    Bounds2::<T> {
-        p_min: Point2::<T> {
+pub fn bnd2_intersect_bnd2i(b1: &Bounds2i, b2: &Bounds2i) -> Bounds2i {
+    Bounds2i {
+        p_min: Point2i {
             x: std::cmp::max(b1.p_min.x, b2.p_min.x),
             y: std::cmp::max(b1.p_min.y, b2.p_min.y),
         },
-        p_max: Point2::<T> {
+        p_max: Point2i {
             x: std::cmp::min(b1.p_max.x, b2.p_max.x),
             y: std::cmp::min(b1.p_max.y, b2.p_max.y),
         },
@@ -1572,19 +1985,25 @@ where
 }
 
 #[derive(Debug, Copy, Clone)]
-pub struct Bounds3<T> {
-    pub p_min: Point3<T>,
-    pub p_max: Point3<T>,
+pub struct Bounds3f {
+    pub p_min: Point3f,
+    pub p_max: Point3f,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Bounds3i {
+    pub p_min: Point3i,
+    pub p_max: Point3i,
 }
 
 // work around bug
 // https://github.com/rust-lang/rust/issues/40395
-impl Default for Bounds3<f32> {
-    fn default() -> Bounds3<f32> {
+impl Default for Bounds3f {
+    fn default() -> Bounds3f {
         let min_num: Float = std::f32::MIN;
         let max_num: Float = std::f32::MAX;
         // Bounds3f
-        Bounds3::<f32> {
+        Bounds3f {
             p_min: Point3f {
                 x: max_num,
                 y: max_num,
@@ -1599,69 +2018,54 @@ impl Default for Bounds3<f32> {
     }
 }
 
-impl<T> Bounds3<T> {
-    pub fn new(p1: Point3<T>, p2: Point3<T>) -> Self
-    where
-        T: num::Float,
-    {
-        let p_min: Point3<T> = Point3::<T> {
+impl Bounds3f {
+    pub fn new(p1: Point3f, p2: Point3f) -> Self {
+        let p_min: Point3f = Point3f {
             x: p1.x.min(p2.x),
             y: p1.y.min(p2.y),
             z: p1.z.min(p2.z),
         };
-        let p_max: Point3<T> = Point3::<T> {
+        let p_max: Point3f = Point3f {
             x: p1.x.max(p2.x),
             y: p1.y.max(p2.y),
             z: p1.z.max(p2.z),
         };
-        Bounds3::<T> { p_min, p_max }
+        Bounds3f { p_min, p_max }
     }
-    pub fn corner(&self, corner: u8) -> Point3<T>
-    where
-        T: Copy,
-    {
+    pub fn corner(&self, corner: u8) -> Point3f {
         // assert!(corner >= 0_u8);
         assert!(corner < 8_u8);
-        let x: T;
+        let x: Float;
         if corner & 1 == 0 {
             x = self.p_min.x;
         } else {
             x = self.p_max.x;
         }
-        let y: T;
+        let y: Float;
         if corner & 2 == 0 {
             y = self.p_min.y;
         } else {
             y = self.p_max.y;
         }
-        let z: T;
+        let z: Float;
         if corner & 4 == 0 {
             z = self.p_min.z;
         } else {
             z = self.p_max.z;
         }
-        Point3::<T> { x, y, z }
+        Point3f { x, y, z }
     }
-    pub fn diagonal(&self) -> Vector3<T>
-    where
-        T: Copy + Sub<T, Output = T>,
-    {
+    pub fn diagonal(&self) -> Vector3f {
         self.p_max - self.p_min
     }
-    pub fn surface_area(&self) -> T
-    where
-        T: Copy + Add<T, Output = T> + Sub<T, Output = T> + Mul<T, Output = T>,
-    {
-        let d: Vector3<T> = self.diagonal();
+    pub fn surface_area(&self) -> Float {
+        let d: Vector3f = self.diagonal();
         // 2 * (d.x * d.y + d.x * d.z + d.y * d.z)
-        let r: T = d.x * d.y + d.x * d.z + d.y * d.z;
+        let r: Float = d.x * d.y + d.x * d.z + d.y * d.z;
         r + r // avoid '2 *'
     }
-    pub fn maximum_extent(&self) -> u8
-    where
-        T: Copy + std::cmp::PartialOrd + Sub<T, Output = T>,
-    {
-        let d: Vector3<T> = self.diagonal();
+    pub fn maximum_extent(&self) -> u8 {
+        let d: Vector3f = self.diagonal();
         if d.x > d.y && d.x > d.z {
             0_u8
         } else if d.y > d.z {
@@ -1670,11 +2074,8 @@ impl<T> Bounds3<T> {
             2_u8
         }
     }
-    pub fn offset(&self, p: &Point3<T>) -> Vector3<T>
-    where
-        T: Copy + std::cmp::PartialOrd + Sub<T, Output = T> + DivAssign<T>,
-    {
-        let mut o: Vector3<T> = *p - self.p_min;
+    pub fn offset(&self, p: &Point3f) -> Vector3f {
+        let mut o: Vector3f = *p - self.p_min;
         if self.p_max.x > self.p_min.x {
             o.x /= self.p_max.x - self.p_min.x;
         }
@@ -1694,14 +2095,98 @@ impl<T> Bounds3<T> {
         let center_copy: Point3f = *center as Point3f;
         let is_inside: bool = pnt3_inside_bnd3(&center_copy, b);
         if is_inside {
-            *radius = pnt3_distance(&center_copy, &p_max);
+            *radius = pnt3_distancef(&center_copy, &p_max);
         } else {
             *radius = 0.0;
         }
     }
 }
 
-impl Bounds3<Float> {
+impl Bounds3i {
+    pub fn new(p1: Point3i, p2: Point3i) -> Self {
+        let p_min: Point3i = Point3i {
+            x: p1.x.min(p2.x),
+            y: p1.y.min(p2.y),
+            z: p1.z.min(p2.z),
+        };
+        let p_max: Point3i = Point3i {
+            x: p1.x.max(p2.x),
+            y: p1.y.max(p2.y),
+            z: p1.z.max(p2.z),
+        };
+        Bounds3i { p_min, p_max }
+    }
+    pub fn corner(&self, corner: u8) -> Point3i {
+        // assert!(corner >= 0_u8);
+        assert!(corner < 8_u8);
+        let x: i32;
+        if corner & 1 == 0 {
+            x = self.p_min.x;
+        } else {
+            x = self.p_max.x;
+        }
+        let y: i32;
+        if corner & 2 == 0 {
+            y = self.p_min.y;
+        } else {
+            y = self.p_max.y;
+        }
+        let z: i32;
+        if corner & 4 == 0 {
+            z = self.p_min.z;
+        } else {
+            z = self.p_max.z;
+        }
+        Point3i { x, y, z }
+    }
+    pub fn diagonal(&self) -> Vector3i {
+        self.p_max - self.p_min
+    }
+    pub fn surface_area(&self) -> i32 {
+        let d: Vector3i = self.diagonal();
+        // 2 * (d.x * d.y + d.x * d.z + d.y * d.z)
+        let r: i32 = d.x * d.y + d.x * d.z + d.y * d.z;
+        r + r // avoid '2 *'
+    }
+    pub fn maximum_extent(&self) -> u8 {
+        let d: Vector3i = self.diagonal();
+        if d.x > d.y && d.x > d.z {
+            0_u8
+        } else if d.y > d.z {
+            1_u8
+        } else {
+            2_u8
+        }
+    }
+    pub fn offset(&self, p: &Point3i) -> Vector3i {
+        let mut o: Vector3i = *p - self.p_min;
+        if self.p_max.x > self.p_min.x {
+            o.x /= self.p_max.x - self.p_min.x;
+        }
+        if self.p_max.y > self.p_min.y {
+            o.y /= self.p_max.y - self.p_min.y;
+        }
+        if self.p_max.z > self.p_min.z {
+            o.z /= self.p_max.z - self.p_min.z;
+        }
+        o
+    }
+    pub fn bounding_sphere(b: &Bounds3f, center: &mut Point3f, radius: &mut Float) {
+        let p_min: Point3f = b.p_min as Point3f;
+        let p_max: Point3f = b.p_max as Point3f;
+        let sum: Point3f = p_min + p_max;
+        *center = sum / 2.0;
+        let center_copy: Point3f = *center as Point3f;
+        let is_inside: bool = pnt3_inside_bnd3(&center_copy, b);
+        if is_inside {
+            *radius = pnt3_distancef(&center_copy, &p_max);
+        } else {
+            *radius = 0.0;
+        }
+    }
+}
+
+impl Bounds3f {
     pub fn lerp(&self, t: &Point3f) -> Point3f {
         Point3f {
             x: lerp(t.x, self.p_min.x as Float, self.p_max.x as Float),
@@ -1797,9 +2282,9 @@ impl Bounds3<Float> {
     }
 }
 
-impl<T> Index<MinMaxEnum> for Bounds3<T> {
-    type Output = Point3<T>;
-    fn index(&self, i: MinMaxEnum) -> &Point3<T> {
+impl Index<MinMaxEnum> for Bounds3f {
+    type Output = Point3f;
+    fn index(&self, i: MinMaxEnum) -> &Point3f {
         match i {
             MinMaxEnum::Min => &self.p_min,
             _ => &self.p_max,
@@ -1825,40 +2310,34 @@ impl<T> Index<MinMaxEnum> for Bounds3<T> {
 /// Given a bounding box and a point, the **bnd3_union_pnt3()**
 /// function returns a new bounding box that encompasses that point as
 /// well as the original box.
-pub fn bnd3_union_pnt3<T>(b: &Bounds3<T>, p: &Point3<T>) -> Bounds3<T>
-where
-    T: num::Float,
-{
-    let p_min: Point3<T> = Point3::<T> {
+pub fn bnd3_union_pnt3f(b: &Bounds3f, p: &Point3f) -> Bounds3f {
+    let p_min: Point3f = Point3f {
         x: b.p_min.x.min(p.x),
         y: b.p_min.y.min(p.y),
         z: b.p_min.z.min(p.z),
     };
-    let p_max: Point3<T> = Point3::<T> {
+    let p_max: Point3f = Point3f {
         x: b.p_max.x.max(p.x),
         y: b.p_max.y.max(p.y),
         z: b.p_max.z.max(p.z),
     };
-    Bounds3 { p_min, p_max }
+    Bounds3f { p_min, p_max }
 }
 
 /// Construct a new box that bounds the space encompassed by two other
 /// bounding boxes.
-pub fn bnd3_union_bnd3<T>(b1: &Bounds3<T>, b2: &Bounds3<T>) -> Bounds3<T>
-where
-    T: num::Float,
-{
-    let p_min: Point3<T> = Point3::<T> {
+pub fn bnd3_union_bnd3f(b1: &Bounds3f, b2: &Bounds3f) -> Bounds3f {
+    let p_min: Point3f = Point3f {
         x: b1.p_min.x.min(b2.p_min.x),
         y: b1.p_min.y.min(b2.p_min.y),
         z: b1.p_min.z.min(b2.p_min.z),
     };
-    let p_max: Point3<T> = Point3::<T> {
+    let p_max: Point3f = Point3f {
         x: b1.p_max.x.max(b2.p_max.x),
         y: b1.p_max.y.max(b2.p_max.y),
         z: b1.p_max.z.max(b2.p_max.z),
     };
-    Bounds3 { p_min, p_max }
+    Bounds3f { p_min, p_max }
 }
 
 /// Determine if a given point is inside the bounding box.

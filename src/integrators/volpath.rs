@@ -4,7 +4,7 @@ use std::sync::Arc;
 // pbrt
 // use crate::core::bssrdf::Bssrdf;
 use crate::core::camera::Camera;
-use crate::core::geometry::{vec3_abs_dot_nrm, vec3_dot_nrm};
+use crate::core::geometry::{vec3_abs_dot_nrmf, vec3_dot_nrmf};
 use crate::core::geometry::{Bounds2i, Point2f, Ray, Vector3f};
 use crate::core::integrator::uniform_sample_one_light;
 use crate::core::interaction::{Interaction, MediumInteraction, SurfaceInteraction};
@@ -182,7 +182,7 @@ impl VolPathIntegrator {
                             if f.is_black() || pdf == 0.0 as Float {
                                 break;
                             }
-                            beta *= (f * vec3_abs_dot_nrm(&wi, &isect.shading.n)) / pdf;
+                            beta *= (f * vec3_abs_dot_nrmf(&wi, &isect.shading.n)) / pdf;
                             assert!(
                                 !(beta.y().is_infinite()),
                                 "[{:#?}, {:?}] = ({:#?} * dot({:#?}, {:#?})) / {:?}",
@@ -202,7 +202,7 @@ impl VolPathIntegrator {
                                 // scaling for refraction depending on
                                 // whether the ray is entering or leaving
                                 // the medium.
-                                if vec3_dot_nrm(&wo, &isect.common.n) > 0.0 as Float {
+                                if vec3_dot_nrmf(&wo, &isect.common.n) > 0.0 as Float {
                                     eta_scale *= eta * eta;
                                 } else {
                                     eta_scale *= 1.0 as Float / (eta * eta);
@@ -260,7 +260,7 @@ impl VolPathIntegrator {
                                             if f.is_black() || pdf == 0.0 as Float {
                                                 break;
                                             }
-                                            beta *= f * vec3_abs_dot_nrm(&wi, &pi.shading.n) / pdf;
+                                            beta *= f * vec3_abs_dot_nrmf(&wi, &pi.shading.n) / pdf;
                                             assert!(!(beta.y().is_infinite()));
                                             specular_bounce = (sampled_type
                                                 & BxdfType::BsdfSpecular as u8)

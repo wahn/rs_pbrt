@@ -7,7 +7,7 @@ use std::sync::Arc;
 // pbrt
 use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
-use crate::core::geometry::{pnt2_inside_exclusive, vec3_abs_dot_nrm};
+use crate::core::geometry::{pnt2_inside_exclusivei, vec3_abs_dot_nrmf};
 use crate::core::geometry::{Bounds2i, Point2f, Point2i, Ray, Vector2i, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
 use crate::core::light::is_delta_light;
@@ -120,7 +120,7 @@ impl SamplerIntegrator {
                             let mut film_tile = film.get_film_tile(&tile_bounds);
                             for pixel in &tile_bounds {
                                 tile_sampler.start_pixel(pixel);
-                                if !pnt2_inside_exclusive(pixel, &pixel_bounds) {
+                                if !pnt2_inside_exclusivei(pixel, &pixel_bounds) {
                                     continue;
                                 }
                                 let mut done: bool = false;
@@ -436,7 +436,7 @@ pub fn estimate_direct(
             if let Some(ref bsdf) = it.get_bsdf() {
                 if let Some(shading_n) = it.get_shading_n() {
                     f = bsdf.f(&it.get_wo(), &wi, bsdf_flags)
-                        * Spectrum::new(vec3_abs_dot_nrm(&wi, &shading_n));
+                        * Spectrum::new(vec3_abs_dot_nrmf(&wi, &shading_n));
                     scattering_pdf = bsdf.pdf(&it.get_wo(), &wi, bsdf_flags);
                     // TODO: println!("  surf f*dot :{:?}, scatteringPdf: {:?}", f, scattering_pdf);
                 }
@@ -484,7 +484,7 @@ pub fn estimate_direct(
                         bsdf_flags,
                         &mut sampled_type,
                     );
-                    f *= Spectrum::new(vec3_abs_dot_nrm(&wi, &shading_n));
+                    f *= Spectrum::new(vec3_abs_dot_nrmf(&wi, &shading_n));
                     sampled_specular = (sampled_type & BxdfType::BsdfSpecular as u8) != 0_u8;
                 }
             } else {

@@ -3,8 +3,8 @@ use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
-    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, nrm_cross_vec3, nrm_dot_nrm, pnt3_distance,
-    pnt3_distance_squared, pnt3_lerp, vec2_dot, vec3_coordinate_system, vec3_cross_vec3,
+    bnd3_expand, bnd3_union_bnd3f, nrm_abs_dot_vec3f, nrm_cross_vec3, nrm_dot_nrmf, pnt3_distancef,
+    pnt3_distance_squaredf, pnt3_lerp, vec2_dotf, vec3_coordinate_system, vec3_cross_vec3,
 };
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -46,7 +46,7 @@ impl CurveCommon {
             let n0: Normal3f = norm[0].normalize();
             let n1: Normal3f = norm[1].normalize();
             let normal_angle: Float =
-                clamp_t(nrm_dot_nrm(&n0, &n1), 0.0 as Float, 1.0 as Float).acos();
+                clamp_t(nrm_dot_nrmf(&n0, &n1), 0.0 as Float, 1.0 as Float).acos();
             let inv_sin_normal_angle: Float = 1.0 as Float / normal_angle.sin();
             CurveCommon {
                 curve_type,
@@ -241,7 +241,7 @@ impl Curve {
             if denom == 0.0 as Float {
                 return false;
             }
-            let w: Float = vec2_dot(
+            let w: Float = vec2_dotf(
                 &-Vector2f {
                     x: cp[0].x,
                     y: cp[0].y,
@@ -260,7 +260,7 @@ impl Curve {
                 let sin1: Float =
                     (u * self.common.normal_angle).sin() * self.common.inv_sin_normal_angle;
                 n_hit = self.common.n[0] * sin0 + self.common.n[1] * sin1;
-                hit_width *= nrm_abs_dot_vec3(&n_hit, &ray.d) / ray_length;
+                hit_width *= nrm_abs_dot_vec3f(&n_hit, &ray.d) / ray_length;
             }
 
             // test intersection point against curve width
@@ -350,7 +350,7 @@ impl Curve {
         cp_obj[1] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_min, self.u_max);
         cp_obj[2] = blossom_bezier(&self.common.cp_obj, self.u_min, self.u_max, self.u_max);
         cp_obj[3] = blossom_bezier(&self.common.cp_obj, self.u_max, self.u_max, self.u_max);
-        let b: Bounds3f = bnd3_union_bnd3(
+        let b: Bounds3f = bnd3_union_bnd3f(
             &Bounds3f::new(cp_obj[0], cp_obj[1]),
             &Bounds3f::new(cp_obj[2], cp_obj[3]),
         );
@@ -501,7 +501,7 @@ impl Curve {
         let avg_width: Float = (width0 + width1) * 0.5 as Float;
         let mut approx_length: Float = 0.0 as Float;
         for i in 0..3 {
-            approx_length += pnt3_distance(&cp_obj[i], &cp_obj[i + 1]);
+            approx_length += pnt3_distancef(&cp_obj[i], &cp_obj[i + 1]);
         }
         approx_length * avg_width
     }
@@ -523,7 +523,7 @@ impl Curve {
             wi = wi.normalize();
             // convert from area measure, as returned by the Sample()
             // call above, to solid angle measure.
-            *pdf *= pnt3_distance_squared(&iref.p, &intr.p) / nrm_abs_dot_vec3(&intr.n, &-wi);
+            *pdf *= pnt3_distance_squaredf(&iref.p, &intr.p) / nrm_abs_dot_vec3f(&intr.n, &-wi);
             if (*pdf).is_infinite() {
                 *pdf = 0.0 as Float;
             }
@@ -540,8 +540,8 @@ impl Curve {
         let mut isect_light: SurfaceInteraction = SurfaceInteraction::default();
         if self.intersect(&ray, &mut t_hit, &mut isect_light) {
             // convert light sample weight to solid angle measure
-            let mut pdf: Float = pnt3_distance_squared(&iref.get_p(), &isect_light.common.p)
-                / (nrm_abs_dot_vec3(&isect_light.common.n, &-(*wi)) * self.area());
+            let mut pdf: Float = pnt3_distance_squaredf(&iref.get_p(), &isect_light.common.p)
+                / (nrm_abs_dot_vec3f(&isect_light.common.n, &-(*wi)) * self.area());
             if pdf.is_infinite() {
                 pdf = 0.0 as Float;
             }

@@ -343,6 +343,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "impl_ops"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "itoa"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -502,6 +507,7 @@ dependencies = [
  "crossbeam-channel 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "hexf 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.23.8 (registry+https://github.com/rust-lang/crates.io-index)",
+ "impl_ops 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num_cpus 1.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1123,6 +1129,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum hexf-impl 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "22eadcfadba76a730b2764eaa577d045f35e0ef5174b9c5b46adf1ee42b85e12"
 "checksum hexf-parse 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "79296f72d53a89096cbc9a88c9547ee8dfe793388674620e2207593d370550ac"
 "checksum image 0.23.8 (registry+https://github.com/rust-lang/crates.io-index)" = "543904170510c1b5fb65140485d84de4a57fddb2ed685481e9020ce3d2c9f64c"
+"checksum impl_ops 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "90f97a5f38dd3ccfbe7aa80f4a0c00930f21b922c74195be0201c51028f22dcf"
 "checksum itoa 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "501266b7edd0174f8530248f87f99c88fbe60ca4ef3dd486835b8d8d53136f7f"
 "checksum jpeg-decoder 0.1.18 (registry+https://github.com/rust-lang/crates.io-index)" = "0256f0aec7352539102a9efbcb75543227b7ab1117e0f95450023af730128451"
 "checksum lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"

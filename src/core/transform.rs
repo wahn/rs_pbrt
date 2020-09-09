@@ -59,11 +59,9 @@ use std::ops::{Add, Mul};
 use std::rc::Rc;
 // pbrt
 use crate::core::geometry::{
-    bnd3_union_bnd3, bnd3_union_pnt3, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3,
+    bnd3_union_bnd3f, bnd3_union_pnt3f, nrm_faceforward_nrm, vec3_cross_vec3, vec3_dot_vec3f,
 };
-use crate::core::geometry::{
-    Bounds3f, Normal3, Point3, Point3f, Ray, RayDifferential, Vector3, Vector3f,
-};
+use crate::core::geometry::{Bounds3f, Normal3f, Point3f, Ray, RayDifferential, Vector3f};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{clamp_t, gamma, lerp, radians};
@@ -499,7 +497,7 @@ impl Transform {
         };
         scale * persp_trans
     }
-    pub fn transform_point(&self, p: &Point3<Float>) -> Point3<Float> {
+    pub fn transform_point(&self, p: &Point3f) -> Point3f {
         let x: Float = p.x;
         let y: Float = p.y;
         let z: Float = p.z;
@@ -513,35 +511,35 @@ impl Transform {
             self.m.m[3][0] * x + self.m.m[3][1] * y + self.m.m[3][2] * z + self.m.m[3][3];
         assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
         if wp == 1.0 as Float {
-            Point3::<Float> {
+            Point3f {
                 x: xp,
                 y: yp,
                 z: zp,
             }
         } else {
             let inv: Float = 1.0 as Float / wp;
-            Point3::<Float> {
+            Point3f {
                 x: inv * xp,
                 y: inv * yp,
                 z: inv * zp,
             }
         }
     }
-    pub fn transform_vector(&self, v: &Vector3<Float>) -> Vector3<Float> {
+    pub fn transform_vector(&self, v: &Vector3f) -> Vector3f {
         let x: Float = v.x;
         let y: Float = v.y;
         let z: Float = v.z;
-        Vector3::<Float> {
+        Vector3f {
             x: self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z,
             y: self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z,
             z: self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z,
         }
     }
-    pub fn transform_normal(&self, n: &Normal3<Float>) -> Normal3<Float> {
+    pub fn transform_normal(&self, n: &Normal3f) -> Normal3f {
         let x: Float = n.x;
         let y: Float = n.y;
         let z: Float = n.z;
-        Normal3::<Float> {
+        Normal3f {
             x: self.m_inv.m[0][0] * x + self.m_inv.m[1][0] * y + self.m_inv.m[2][0] * z,
             y: self.m_inv.m[0][1] * x + self.m_inv.m[1][1] * y + self.m_inv.m[2][1] * z,
             z: self.m_inv.m[0][2] * x + self.m_inv.m[1][2] * y + self.m_inv.m[2][2] * z,
@@ -555,7 +553,7 @@ impl Transform {
         let length_squared: Float = d.length_squared();
         let mut t_max: Float = r.t_max;
         if length_squared > 0.0 as Float {
-            let dt: Float = vec3_dot_vec3(&d.abs(), &o_error) / length_squared;
+            let dt: Float = vec3_dot_vec3f(&d.abs(), &o_error) / length_squared;
             o += d * dt;
             t_max -= dt;
         }
@@ -613,7 +611,7 @@ impl Transform {
             z: b.p_min.z,
         });
         let mut ret: Bounds3f = Bounds3f { p_min: p, p_max: p };
-        ret = bnd3_union_pnt3(
+        ret = bnd3_union_pnt3f(
             &ret,
             &m.transform_point(&Point3f {
                 x: b.p_max.x,
@@ -621,7 +619,7 @@ impl Transform {
                 z: b.p_min.z,
             }),
         );
-        ret = bnd3_union_pnt3(
+        ret = bnd3_union_pnt3f(
             &ret,
             &m.transform_point(&Point3f {
                 x: b.p_min.x,
@@ -629,7 +627,7 @@ impl Transform {
                 z: b.p_min.z,
             }),
         );
-        ret = bnd3_union_pnt3(
+        ret = bnd3_union_pnt3f(
             &ret,
             &m.transform_point(&Point3f {
                 x: b.p_min.x,
@@ -637,7 +635,7 @@ impl Transform {
                 z: b.p_max.z,
             }),
         );
-        ret = bnd3_union_pnt3(
+        ret = bnd3_union_pnt3f(
             &ret,
             &m.transform_point(&Point3f {
                 x: b.p_min.x,
@@ -645,7 +643,7 @@ impl Transform {
                 z: b.p_max.z,
             }),
         );
-        ret = bnd3_union_pnt3(
+        ret = bnd3_union_pnt3f(
             &ret,
             &m.transform_point(&Point3f {
                 x: b.p_max.x,
@@ -653,7 +651,7 @@ impl Transform {
                 z: b.p_min.z,
             }),
         );
-        ret = bnd3_union_pnt3(
+        ret = bnd3_union_pnt3f(
             &ret,
             &m.transform_point(&Point3f {
                 x: b.p_max.x,
@@ -661,7 +659,7 @@ impl Transform {
                 z: b.p_max.z,
             }),
         );
-        ret = bnd3_union_pnt3(
+        ret = bnd3_union_pnt3f(
             &ret,
             &m.transform_point(&Point3f {
                 x: b.p_max.x,
@@ -671,11 +669,7 @@ impl Transform {
         );
         ret
     }
-    pub fn transform_point_with_error(
-        &self,
-        p: &Point3<Float>,
-        p_error: &mut Vector3<Float>,
-    ) -> Point3<Float> {
+    pub fn transform_point_with_error(&self, p: &Point3f, p_error: &mut Vector3f) -> Point3f {
         let x: Float = p.x;
         let y: Float = p.y;
         let z: Float = p.z;
@@ -701,21 +695,21 @@ impl Transform {
             + (self.m.m[2][1] * y).abs()
             + (self.m.m[2][2] * z).abs()
             + self.m.m[2][3].abs();
-        *p_error = Vector3::<Float> {
+        *p_error = Vector3f {
             x: x_abs_sum,
             y: y_abs_sum,
             z: z_abs_sum,
         } * gamma(3i32);
         assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
         if wp == 1. {
-            Point3::<Float> {
+            Point3f {
                 x: xp,
                 y: yp,
                 z: zp,
             }
         } else {
             let inv: Float = 1.0 as Float / wp;
-            Point3::<Float> {
+            Point3f {
                 x: inv * xp,
                 y: inv * yp,
                 z: inv * zp,
@@ -724,10 +718,10 @@ impl Transform {
     }
     pub fn transform_point_with_abs_error(
         &self,
-        pt: &Point3<Float>,
-        pt_error: &Vector3<Float>,
-        abs_error: &mut Vector3<Float>,
-    ) -> Point3<Float> {
+        pt: &Point3f,
+        pt_error: &Vector3f,
+        abs_error: &mut Vector3f,
+    ) -> Point3f {
         let x: Float = pt.x;
         let y: Float = pt.y;
         let z: Float = pt.z;
@@ -769,25 +763,21 @@ impl Transform {
                     + self.m.m[2][3].abs());
         assert!(wp != 0.0, "wp = {:?} != 0.0", wp);
         if wp == 1. {
-            Point3::<Float> {
+            Point3f {
                 x: xp,
                 y: yp,
                 z: zp,
             }
         } else {
             let inv: Float = 1.0 as Float / wp;
-            Point3::<Float> {
+            Point3f {
                 x: inv * xp,
                 y: inv * yp,
                 z: inv * zp,
             }
         }
     }
-    pub fn transform_vector_with_error(
-        &self,
-        v: &Vector3<Float>,
-        abs_error: &mut Vector3<Float>,
-    ) -> Vector3<Float> {
+    pub fn transform_vector_with_error(&self, v: &Vector3f, abs_error: &mut Vector3f) -> Vector3f {
         let x: Float = v.x;
         let y: Float = v.y;
         let z: Float = v.z;
@@ -804,7 +794,7 @@ impl Transform {
             * ((self.m.m[2][0] * v.x).abs()
                 + (self.m.m[2][1] * v.y).abs()
                 + (self.m.m[2][2] * v.z).abs());
-        Vector3::<Float> {
+        Vector3f {
             x: self.m.m[0][0] * x + self.m.m[0][1] * y + self.m.m[0][2] * z,
             y: self.m.m[1][0] * x + self.m.m[1][1] * y + self.m.m[1][2] * z,
             z: self.m.m[2][0] * x + self.m.m[2][1] * y + self.m.m[2][2] * z,
@@ -813,14 +803,14 @@ impl Transform {
     pub fn transform_ray_with_error(
         &self,
         r: &Ray,
-        o_error: &mut Vector3<Float>,
-        d_error: &mut Vector3<Float>,
+        o_error: &mut Vector3f,
+        d_error: &mut Vector3f,
     ) -> Ray {
         let mut o: Point3f = self.transform_point_with_error(&r.o, o_error);
         let d: Vector3f = self.transform_vector_with_error(&r.d, d_error);
         let length_squared: Float = d.length_squared();
         if length_squared > 0.0 {
-            let dt: Float = vec3_dot_vec3(&d.abs(), &*o_error) / length_squared;
+            let dt: Float = vec3_dot_vec3f(&d.abs(), &*o_error) / length_squared;
             o += d * dt;
         }
         Ray {
@@ -2141,7 +2131,7 @@ impl AnimatedTransform {
             t.transform_ray(r)
         }
     }
-    pub fn transform_point(&self, time: Float, p: &Point3<Float>) -> Point3<Float> {
+    pub fn transform_point(&self, time: Float, p: &Point3f) -> Point3f {
         if !self.actually_animated || time <= self.start_time {
             self.start_transform.transform_point(p)
         } else if time >= self.end_time {
@@ -2152,7 +2142,7 @@ impl AnimatedTransform {
             t.transform_point(p)
         }
     }
-    pub fn transform_vector(&self, time: Float, v: &Vector3<Float>) -> Vector3<Float> {
+    pub fn transform_vector(&self, time: Float, v: &Vector3f) -> Vector3f {
         if !self.actually_animated || time <= self.start_time {
             self.start_transform.transform_vector(v)
         } else if time >= self.end_time {
@@ -2168,7 +2158,7 @@ impl AnimatedTransform {
             return self.start_transform.transform_bounds(b);
         }
         if !self.has_rotation {
-            return bnd3_union_bnd3(
+            return bnd3_union_bnd3f(
                 &self.start_transform.transform_bounds(b),
                 &self.end_transform.transform_bounds(b),
             );
@@ -2176,7 +2166,7 @@ impl AnimatedTransform {
         // return motion bounds accounting for animated rotation
         let mut bounds: Bounds3f = Bounds3f::default();
         for corner in 0..8 {
-            bounds = bnd3_union_bnd3(&bounds, &self.bound_point_motion(&b.corner(corner)));
+            bounds = bnd3_union_bnd3f(&bounds, &self.bound_point_motion(&b.corner(corner)));
         }
         bounds
     }
@@ -2215,7 +2205,7 @@ impl AnimatedTransform {
             for item in &zeros {
                 let pz: Point3f =
                     self.transform_point(lerp(*item, self.start_time, self.end_time), p);
-                bounds = bnd3_union_pnt3(&bounds, &pz);
+                bounds = bnd3_union_pnt3f(&bounds, &pz);
             }
         }
         bounds

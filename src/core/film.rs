@@ -21,7 +21,7 @@ use smallvec::SmallVec;
 // pbrt
 use crate::core::filter::Filter;
 use crate::core::geometry::{
-    bnd2_intersect_bnd2, pnt2_ceil, pnt2_floor, pnt2_inside_exclusive, pnt2_max_pnt2, pnt2_min_pnt2,
+    bnd2_intersect_bnd2i, pnt2_ceil, pnt2_floor, pnt2_inside_exclusivei, pnt2_max_pnt2i, pnt2_min_pnt2i,
 };
 use crate::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2f};
 use crate::core::paramset::ParamSet;
@@ -107,8 +107,8 @@ impl<'a> FilmTile<'a> {
             x: p1f.x as i32 + 1,
             y: p1f.y as i32 + 1,
         };
-        p0 = pnt2_max_pnt2(p0, self.pixel_bounds.p_min);
-        p1 = pnt2_min_pnt2(p1, self.pixel_bounds.p_max);
+        p0 = pnt2_max_pnt2i(p0, self.pixel_bounds.p_min);
+        p1 = pnt2_min_pnt2i(p1, self.pixel_bounds.p_max);
 
         // loop over filter support and add sample to pixel arrays
 
@@ -327,7 +327,7 @@ impl Film {
             x: p_max.x.floor() as i32,
             y: p_max.y.floor() as i32,
         } + Point2i { x: 1, y: 1 };
-        let tile_pixel_bounds: Bounds2i = bnd2_intersect_bnd2(
+        let tile_pixel_bounds: Bounds2i = bnd2_intersect_bnd2i(
             &Bounds2i {
                 p_min: p0,
                 p_max: p1,
@@ -351,7 +351,7 @@ impl Film {
             let idx = tile.get_pixel_index(pixel.x, pixel.y);
             let tile_pixel = &tile.pixels[idx];
             // START let mut merge_pixel: &mut Pixel = self.get_pixel_mut(pixel);
-            assert!(pnt2_inside_exclusive(pixel, &self.cropped_pixel_bounds));
+            assert!(pnt2_inside_exclusivei(pixel, &self.cropped_pixel_bounds));
             let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
             let offset: i32 = (pixel.x - self.cropped_pixel_bounds.p_min.x)
                 + (pixel.y - self.cropped_pixel_bounds.p_min.y) * width;
@@ -413,7 +413,7 @@ impl Film {
             x: p.x as i32,
             y: p.y as i32,
         };
-        if !pnt2_inside_exclusive(pi, &self.cropped_pixel_bounds) {
+        if !pnt2_inside_exclusivei(pi, &self.cropped_pixel_bounds) {
             return;
         }
         if v.y() > self.max_sample_luminance {
@@ -440,7 +440,7 @@ impl Film {
         let mut offset;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            assert!(pnt2_inside_exclusive(p, &self.cropped_pixel_bounds));
+            assert!(pnt2_inside_exclusivei(p, &self.cropped_pixel_bounds));
             let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
             offset = ((p.x - self.cropped_pixel_bounds.p_min.x)
                 + (p.y - self.cropped_pixel_bounds.p_min.y) * width) as usize;
@@ -534,7 +534,7 @@ impl Film {
         let mut offset;
         for p in &self.cropped_pixel_bounds {
             // convert pixel XYZ color to RGB
-            assert!(pnt2_inside_exclusive(p, &self.cropped_pixel_bounds));
+            assert!(pnt2_inside_exclusivei(p, &self.cropped_pixel_bounds));
             let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
             offset = ((p.x - self.cropped_pixel_bounds.p_min.x)
                 + (p.y - self.cropped_pixel_bounds.p_min.y) * width) as usize;
@@ -645,7 +645,7 @@ impl Film {
         .unwrap();
     }
     // pub fn get_pixel<'a>(&self, p: &Point2i) -> &'a Pixel {
-    //     assert!(pnt2_inside_exclusive(p, &self.cropped_pixel_bounds));
+    //     assert!(pnt2_inside_exclusivei(p, &self.cropped_pixel_bounds));
     //     let width: i32 = self.cropped_pixel_bounds.p_max.x - self.cropped_pixel_bounds.p_min.x;
     //     let offset: i32 = (p.x - self.cropped_pixel_bounds.p_min.x)
     //         + (p.y - self.cropped_pixel_bounds.p_min.y) * width;

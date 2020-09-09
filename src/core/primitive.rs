@@ -7,7 +7,7 @@ use std::sync::Arc;
 // pbrt
 use crate::accelerators::bvh::BVHAccel;
 use crate::accelerators::kdtreeaccel::KdTreeAccel;
-use crate::core::geometry::nrm_dot_nrm;
+use crate::core::geometry::nrm_dot_nrmf;
 use crate::core::geometry::{Bounds3f, Ray};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::light::Light;
@@ -89,7 +89,7 @@ impl Primitive {
             );
         }
         assert!(
-            nrm_dot_nrm(&isect.common.n, &isect.shading.n) >= 0.0,
+            nrm_dot_nrmf(&isect.common.n, &isect.shading.n) >= 0.0,
             "n: {:?} dot shading.n: {:?}",
             isect.common.n,
             isect.shading.n
@@ -154,7 +154,7 @@ impl GeometricPrimitive {
             // TODO: isect.primitive
             ray.t_max = t_hit;
             // let it: &SurfaceInteraction = isect_rc.borrow();
-            assert!(nrm_dot_nrm(&isect.common.n, &isect.shading.n) >= 0.0 as Float);
+            assert!(nrm_dot_nrmf(&isect.common.n, &isect.shading.n) >= 0.0 as Float);
             // initialize _SurfaceInteraction::mediumInterface_ after
             // _Shape_ intersection
             if let Some(ref medium_interface) = self.medium_interface {
@@ -232,7 +232,7 @@ impl TransformedPrimitive {
             if !interpolated_prim_to_world.is_identity() {
                 interpolated_prim_to_world.transform_surface_interaction(isect);
                 // let new_isect = interpolated_prim_to_world.transform_surface_interaction(isect);
-                // assert!(nrm_dot_nrm(&new_isect.n, &new_isect.shading.n) >= 0.0 as Float);
+                // assert!(nrm_dot_nrmf(&new_isect.n, &new_isect.shading.n) >= 0.0 as Float);
                 // let mut is: SurfaceInteraction = SurfaceInteraction::new(
                 //     &new_isect.p,
                 //     &new_isect.p_error,

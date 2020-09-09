@@ -6,7 +6,7 @@
 // std
 use std::f32::consts::PI;
 // pbrt
-use crate::core::geometry::{spherical_direction, vec3_abs_dot_vec3};
+use crate::core::geometry::{spherical_direction, vec3_abs_dot_vec3f};
 use crate::core::geometry::{Point2f, Vector3f, XYEnum};
 use crate::core::pbrt::Float;
 use crate::core::pbrt::{erf, erf_inv};
@@ -148,7 +148,7 @@ impl BeckmannDistribution {
     }
     pub fn pdf(&self, wo: &Vector3f, wh: &Vector3f) -> Float {
         if self.get_sample_visible_area() {
-            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3(wo, wh) / abs_cos_theta(wo)
+            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3f(wo, wh) / abs_cos_theta(wo)
         } else {
             self.d(wh) * abs_cos_theta(wh)
         }
@@ -290,7 +290,7 @@ impl TrowbridgeReitzDistribution {
     }
     pub fn pdf(&self, wo: &Vector3f, wh: &Vector3f) -> Float {
         if self.get_sample_visible_area() {
-            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3(wo, wh) / abs_cos_theta(wo)
+            self.d(wh) * self.g1(wo) * vec3_abs_dot_vec3f(wo, wh) / abs_cos_theta(wo)
         } else {
             self.d(wh) * abs_cos_theta(wh)
         }

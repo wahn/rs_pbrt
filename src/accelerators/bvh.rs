@@ -4,7 +4,7 @@ use std::sync::Arc;
 // use time::PreciseTime;
 use typed_arena::Arena;
 // pbrt
-use crate::core::geometry::{bnd3_union_bnd3, bnd3_union_pnt3};
+use crate::core::geometry::{bnd3_union_bnd3f, bnd3_union_pnt3f};
 use crate::core::geometry::{Bounds3f, Point3f, Ray, Vector3f, XYZEnum};
 use crate::core::interaction::SurfaceInteraction;
 use crate::core::light::Light;
@@ -78,7 +78,7 @@ impl<'a> BVHBuildNode<'a> {
         c1: &'a BVHBuildNode<'a>,
     ) {
         self.n_primitives = 0;
-        self.bounds = bnd3_union_bnd3(&c0.bounds, &c1.bounds);
+        self.bounds = bnd3_union_bnd3f(&c0.bounds, &c1.bounds);
         self.child1 = Some(c0);
         self.child2 = Some(c1);
         self.split_axis = axis;
@@ -217,7 +217,7 @@ impl BVHAccel {
         // compute bounds of all primitives in BVH node
         let mut bounds: Bounds3f = Bounds3f::default();
         for item in primitive_info.iter().take(end).skip(start) {
-            bounds = bnd3_union_bnd3(&bounds, &item.bounds);
+            bounds = bnd3_union_bnd3f(&bounds, &item.bounds);
         }
         let n_primitives: usize = end - start;
         if n_primitives == 1 {
@@ -233,7 +233,7 @@ impl BVHAccel {
             // compute bound of primitive centroids, choose split dimension _dim_
             let mut centroid_bounds: Bounds3f = Bounds3f::default();
             for item in primitive_info.iter().take(end).skip(start) {
-                centroid_bounds = bnd3_union_pnt3(&centroid_bounds, &item.centroid);
+                centroid_bounds = bnd3_union_pnt3f(&centroid_bounds, &item.centroid);
             }
             let dim: u8 = centroid_bounds.maximum_extent();
             let dim_i: XYZEnum = match dim {
@@ -286,7 +286,7 @@ impl BVHAccel {
                                 assert!(b < n_buckets, "b < {}", n_buckets);
                                 buckets[b].count += 1;
                                 buckets[b].bounds =
-                                    bnd3_union_bnd3(&buckets[b].bounds, &item.bounds);
+                                    bnd3_union_bnd3f(&buckets[b].bounds, &item.bounds);
                             }
                             // compute costs for splitting after each bucket
                             let mut cost: [Float; 11] = [0.0; 11];
@@ -296,11 +296,11 @@ impl BVHAccel {
                                 let mut count0: usize = 0;
                                 let mut count1: usize = 0;
                                 for item in buckets.iter().take(i + 1) {
-                                    b0 = bnd3_union_bnd3(&b0, &item.bounds);
+                                    b0 = bnd3_union_bnd3f(&b0, &item.bounds);
                                     count0 += item.count;
                                 }
                                 for item in buckets.iter().take(n_buckets).skip(i + 1) {
-                                    b1 = bnd3_union_bnd3(&b1, &item.bounds);
+                                    b1 = bnd3_union_bnd3f(&b1, &item.bounds);
                                     count1 += item.count;
                                 }
                                 *cost_item = 1.0

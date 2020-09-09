@@ -5,7 +5,7 @@
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
-use crate::core::geometry::{spherical_direction_vec3, vec3_coordinate_system, vec3_dot_vec3};
+use crate::core::geometry::{spherical_direction_vec3, vec3_coordinate_system, vec3_dot_vec3f};
 use crate::core::geometry::{Point2f, Ray, Vector3f, XYEnum};
 use crate::core::interaction::MediumInteraction;
 use crate::core::pbrt::INV_4_PI;
@@ -301,7 +301,7 @@ pub struct HenyeyGreenstein {
 impl HenyeyGreenstein {
     pub fn p(&self, wo: &Vector3f, wi: &Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::PhaseFuncEvaluation);
-        phase_hg(vec3_dot_vec3(wo, wi), self.g)
+        phase_hg(vec3_dot_vec3f(wo, wi), self.g)
     }
     pub fn sample_p(&self, wo: &Vector3f, wi: &mut Vector3f, u: Point2f) -> Float {
         // TODO: ProfilePhase _(Prof::PhaseFuncSampling);

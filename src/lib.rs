@@ -20,6 +20,9 @@
 //! [render_bdpt]: integrators/bdpt/struct.BDPTIntegrator.html#method.render
 //! [render_mlt]: integrators/mlt/struct.MLTIntegrator.html#method.render
 //! [render_sppm]: integrators/sppm/struct.SPPMIntegrator.html#method.render
+
+#[macro_use] extern crate impl_ops;
+
 pub mod accelerators;
 pub mod blockqueue;
 pub mod cameras;

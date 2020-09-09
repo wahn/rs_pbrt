@@ -11,8 +11,8 @@ use crate::blockqueue::BlockQueue;
 use crate::core::camera::{Camera, CameraSample};
 use crate::core::film::Film;
 use crate::core::geometry::{
-    bnd3_expand, bnd3_union_bnd3, nrm_abs_dot_vec3, pnt3_distance_squared, vec3_abs_dot_nrm,
-    vec3_max_component,
+    bnd3_expand, bnd3_union_bnd3f, nrm_abs_dot_vec3f, pnt3_distance_squaredf, vec3_abs_dot_nrmf,
+    vec3_max_componentf,
 };
 use crate::core::geometry::{
     Bounds2i, Bounds3f, Normal3f, Point2f, Point2i, Point3f, Point3i, Ray, Vector2i, Vector3f,
@@ -260,7 +260,7 @@ impl SPPMIntegrator {
                                                             specular_bounce = sampled_type
                                                                 & (BxdfType::BsdfSpecular as u8)
                                                                 != 0_u8;
-                                                            beta *= f * vec3_abs_dot_nrm(
+                                                            beta *= f * vec3_abs_dot_nrmf(
                                                                 &wi,
                                                                 &isect.shading.n,
                                                             ) / pdf;
@@ -346,18 +346,17 @@ impl SPPMIntegrator {
                             },
                             pixel.radius,
                         );
-                        grid_bounds = bnd3_union_bnd3(&grid_bounds, &vp_bound);
+                        grid_bounds = bnd3_union_bnd3f(&grid_bounds, &vp_bound);
                         max_radius = max_radius.max(pixel.radius);
                     }
                     // compute resolution of SPPM grid in each dimension
                     let diag: Vector3f = grid_bounds.diagonal();
-                    let max_diag: Float = vec3_max_component(&diag);
+                    let max_diag: Float = vec3_max_componentf(&diag);
                     let base_grid_res: i32 = (max_diag / max_radius).floor() as i32;
                     assert!(base_grid_res > 0_i32);
                     for i in XYZEnum::iter() {
-                        grid_res[i as usize] = ((base_grid_res as Float * diag[i] / max_diag)
-                            .floor() as i32)
-                            .max(1);
+                        grid_res[i as usize] =
+                            ((base_grid_res as Float * diag[i] / max_diag).floor() as i32).max(1);
                     }
                     // add visible points to SPPM grid
                     // println!("Add visible points to SPPM grid ...");
@@ -535,7 +534,7 @@ impl SPPMIntegrator {
                                             break;
                                         }
                                         let mut beta: Spectrum = (le
-                                            * nrm_abs_dot_vec3(&n_light, &photon_ray.d))
+                                            * nrm_abs_dot_vec3f(&n_light, &photon_ray.d))
                                             / (light_pdf * pdf_pos * pdf_dir);
                                         if beta.is_black() {
                                             // println!("light[{}]: beta = {:?}", light_num, beta);
@@ -574,7 +573,7 @@ impl SPPMIntegrator {
                                                                 // deal with linked list
                                                                 let pixel = node.pixel;
                                                                 let radius: Float = pixel.radius;
-                                                                    if pnt3_distance_squared(
+                                                                    if pnt3_distance_squaredf(
                                                                         &pixel.vp.p,
                                                                         &isect.common.p,
                                                                     ) > radius * radius
@@ -667,7 +666,7 @@ impl SPPMIntegrator {
                                                     }
                                                     let bnew: Spectrum = beta
                                                         * fr
-                                                        * vec3_abs_dot_nrm(&wi, &isect.shading.n)
+                                                        * vec3_abs_dot_nrmf(&wi, &isect.shading.n)
                                                         / pdf;
                                                     // possibly terminate photon path with Russian roulette
                                                     let q: Float = (0.0 as Float)
