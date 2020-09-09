@@ -129,11 +129,11 @@ impl Triangle {
     }
     // Shape
     pub fn object_bound(&self) -> Bounds3f {
-        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let idx1: usize = (self.id * 3) as usize;
+        let idx = &self.mesh.vertex_indices[idx1..(idx1 + 3)];
+        let p0: &Point3f = &self.mesh.p[idx[0] as usize];
+        let p1: &Point3f = &self.mesh.p[idx[1] as usize];
+        let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         bnd3_union_pnt3(
             &Bounds3f::new(
                 self.world_to_object.transform_point(p0),
@@ -143,20 +143,20 @@ impl Triangle {
         )
     }
     pub fn world_bound(&self) -> Bounds3f {
-        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let idx1: usize = (self.id * 3) as usize;
+        let idx = &self.mesh.vertex_indices[idx1..(idx1 + 3)];
+        let p0: &Point3f = &self.mesh.p[idx[0] as usize];
+        let p1: &Point3f = &self.mesh.p[idx[1] as usize];
+        let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         bnd3_union_pnt3(&Bounds3f::new(*p0, *p1), p2)
     }
     pub fn intersect(&self, ray: &Ray, t_hit: &mut Float, isect: &mut SurfaceInteraction) -> bool {
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let idx1: usize = (self.id * 3) as usize;
+        let idx = &self.mesh.vertex_indices[idx1..(idx1 + 3)];
+        let p0: &Point3f = &self.mesh.p[idx[0] as usize];
+        let p1: &Point3f = &self.mesh.p[idx[1] as usize];
+        let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         // translate vertices based on ray origin
         let mut p0t: Point3f = *p0
             - Vector3f {
@@ -468,11 +468,11 @@ impl Triangle {
         // TODO: ProfilePhase p(Prof::TriIntersectP);
         // TODO: ++nTests;
         // get triangle vertices in _p0_, _p1_, and _p2_
-        let p0: &Point3f = &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize] as usize];
-        let p1: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 1] as usize];
-        let p2: &Point3f =
-            &self.mesh.p[self.mesh.vertex_indices[(self.id * 3) as usize + 2] as usize];
+        let idx1: usize = (self.id * 3) as usize;
+        let idx = &self.mesh.vertex_indices[idx1..(idx1 + 3)];
+        let p0: &Point3f = &self.mesh.p[idx[0] as usize];
+        let p1: &Point3f = &self.mesh.p[idx[1] as usize];
+        let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         // translate vertices based on ray origin
         let mut p0t: Point3f = *p0
             - Vector3f {
