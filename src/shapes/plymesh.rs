@@ -284,9 +284,6 @@ pub fn create_ply_mesh<S: BuildHasher>(
     let mut shapes: Vec<Arc<Shape>> = Vec::new();
     for id in 0..mesh.n_triangles {
         let triangle = Arc::new(Shape::Trngl(Triangle::new(
-            mesh.object_to_world,
-            mesh.world_to_object,
-            mesh.transform_swaps_handedness,
             mesh.clone(),
             id.try_into().unwrap(),
         )));

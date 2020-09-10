@@ -1902,9 +1902,6 @@ fn get_shapes_and_materials(
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                mesh.object_to_world,
-                mesh.world_to_object,
-                mesh.reverse_orientation,
                 mesh.clone(),
                 id.try_into().unwrap(),
             )));
@@ -1961,9 +1958,6 @@ fn get_shapes_and_materials(
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                mesh.object_to_world,
-                mesh.world_to_object,
-                mesh.reverse_orientation,
                 mesh.clone(),
                 id.try_into().unwrap(),
             )));
@@ -2148,9 +2142,6 @@ fn get_shapes_and_materials(
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
             let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                mesh.object_to_world,
-                mesh.world_to_object,
-                mesh.reverse_orientation,
                 mesh.clone(),
                 id.try_into().unwrap(),
             )));

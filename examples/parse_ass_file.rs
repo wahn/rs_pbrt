@@ -962,9 +962,6 @@ fn main() -> std::io::Result<()> {
                                     ));
                                     for id in 0..mesh.n_triangles {
                                         let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                                            mesh.object_to_world,
-                                            mesh.world_to_object,
-                                            mesh.reverse_orientation,
                                             mesh.clone(),
                                             id,
                                         )));

@@ -12,7 +12,6 @@ use crate::core::geometry::{
     Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f, XYEnum,
 };
 use crate::core::interaction::{Interaction, InteractionCommon, Shading, SurfaceInteraction};
-use crate::core::material::Material;
 use crate::core::pbrt::gamma;
 use crate::core::pbrt::Float;
 // use crate::core::sampling::uniform_sample_triangle;
@@ -85,30 +84,13 @@ impl TriangleMesh {
 pub struct Triangle {
     mesh: Arc<TriangleMesh>,
     pub id: u32,
-    // inherited from class Shape (see shape.h)
-    pub object_to_world: Transform,
-    pub world_to_object: Transform,
-    pub reverse_orientation: bool,
-    pub transform_swaps_handedness: bool,
-    pub material: Option<Arc<Material>>,
 }
 
 impl Triangle {
-    pub fn new(
-        object_to_world: Transform,
-        world_to_object: Transform,
-        reverse_orientation: bool,
-        mesh: Arc<TriangleMesh>,
-        tri_number: u32,
-    ) -> Self {
+    pub fn new(mesh: Arc<TriangleMesh>, tri_number: u32) -> Self {
         Triangle {
             mesh,
             id: tri_number,
-            object_to_world,
-            world_to_object,
-            reverse_orientation,
-            transform_swaps_handedness: false,
-            material: None,
         }
     }
     pub fn get_uvs(&self) -> [Point2f; 3] {
@@ -135,10 +117,10 @@ impl Triangle {
         let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         bnd3_union_pnt3f(
             &Bounds3f::new(
-                self.world_to_object.transform_point(p0),
-                self.world_to_object.transform_point(p1),
+                self.mesh.world_to_object.transform_point(p0),
+                self.mesh.world_to_object.transform_point(p1),
             ),
-            &self.world_to_object.transform_point(p2),
+            &self.mesh.world_to_object.transform_point(p2),
         )
     }
     pub fn world_bound(&self) -> Bounds3f {
@@ -671,13 +653,13 @@ impl Triangle {
         true
     }
     pub fn get_reverse_orientation(&self) -> bool {
-        self.reverse_orientation
+        self.mesh.reverse_orientation
     }
     pub fn get_transform_swaps_handedness(&self) -> bool {
-        self.transform_swaps_handedness
+        self.mesh.transform_swaps_handedness
     }
     pub fn get_object_to_world(&self) -> Transform {
-        self.object_to_world
+        self.mesh.object_to_world
     }
     pub fn area(&self) -> Float {
         let idx1: usize = (self.id * 3) as usize;
@@ -712,7 +694,7 @@ impl Triangle {
                 + self.mesh.n[idx[1] as usize] * by
                 + self.mesh.n[idx[2] as usize] * (1.0 as Float - bx - by);
             it_n = nrm_faceforward_nrm(&it_n, &ns);
-        } else if self.reverse_orientation ^ self.transform_swaps_handedness {
+        } else if self.mesh.reverse_orientation ^ self.mesh.transform_swaps_handedness {
             it_n *= -1.0 as Float;
         }
         // compute error bounds for sampled point on triangle
