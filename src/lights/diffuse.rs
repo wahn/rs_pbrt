@@ -98,7 +98,7 @@ impl DiffuseAreaLight {
     pub fn le(&self, _ray: &mut Ray) -> Spectrum {
         Spectrum::default()
     }
-    pub fn pdf_li(&self, iref: &dyn Interaction, wi: Vector3f) -> Float {
+    pub fn pdf_li(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         // TODO: ProfilePhase _(Prof::LightPdf);
         self.shape.pdf_with_ref_point(iref, &wi)
     }

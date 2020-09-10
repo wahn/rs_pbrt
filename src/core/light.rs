@@ -93,15 +93,15 @@ impl Light {
             Light::Spot(light) => light.le(ray),
         }
     }
-    pub fn pdf_li(&self, iref: &dyn Interaction, wi: Vector3f) -> Float {
+    pub fn pdf_li(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         match self {
-            Light::DiffuseArea(light) => light.pdf_li(iref, wi),
-            Light::Distant(light) => light.pdf_li(iref, wi),
-            Light::GonioPhotometric(light) => light.pdf_li(iref, wi),
-            Light::InfiniteArea(light) => light.pdf_li(iref, wi),
-            Light::Point(light) => light.pdf_li(iref, wi),
-            Light::Projection(light) => light.pdf_li(iref, wi),
-            Light::Spot(light) => light.pdf_li(iref, wi),
+            Light::DiffuseArea(light) => light.pdf_li(iref, &wi),
+            Light::Distant(light) => light.pdf_li(iref, &wi),
+            Light::GonioPhotometric(light) => light.pdf_li(iref, &wi),
+            Light::InfiniteArea(light) => light.pdf_li(iref, &wi),
+            Light::Point(light) => light.pdf_li(iref, &wi),
+            Light::Projection(light) => light.pdf_li(iref, &wi),
+            Light::Spot(light) => light.pdf_li(iref, &wi),
         }
     }
     pub fn sample_le(

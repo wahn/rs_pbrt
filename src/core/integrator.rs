@@ -503,7 +503,7 @@ pub fn estimate_direct(
         if !f.is_black() && scattering_pdf > 0.0 {
             // account for light contributions along sampled direction _wi_
             let weight = if !sampled_specular {
-                light_pdf = light.pdf_li(it, wi);
+                light_pdf = light.pdf_li(it, &wi);
                 if light_pdf == 0.0 {
                     return ld;
                 }

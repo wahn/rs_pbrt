@@ -382,12 +382,13 @@ pub fn uniform_sample_cone(u: Point2f, cos_theta_max: Float) -> Vector3f {
     }
 }
 
-/// Uniformly distributing samples over isosceles right triangles
-/// actually works for any triangle.
-pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
-    let su0: Float = u[XYEnum::X].sqrt();
-    Point2f {
-        x: 1.0 as Float - su0,
-        y: u[XYEnum::Y] * su0,
-    }
-}
+// Uniformly distributing samples over isosceles right triangles
+// actually works for any triangle.
+
+// pub fn uniform_sample_triangle(u: Point2f) -> Point2f {
+//     let su0: Float = u[XYEnum::X].sqrt();
+//     Point2f {
+//         x: 1.0 as Float - su0,
+//         y: u[XYEnum::Y] * su0,
+//     }
+// }

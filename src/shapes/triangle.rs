@@ -702,27 +702,26 @@ impl Triangle {
         let p0: &Point3f = &self.mesh.p[idx[0] as usize];
         let p1: &Point3f = &self.mesh.p[idx[1] as usize];
         let p2: &Point3f = &self.mesh.p[idx[2] as usize];
-        let mut it: InteractionCommon = InteractionCommon::default();
         // let bx = b[XYEnum::X];
         // let by = b[XYEnum::Y];
-        it.p = *p0 * bx + *p1 * by + *p2 * (1.0 as Float - bx - by);
+        let it_p = *p0 * bx + *p1 * by + *p2 * (1.0 as Float - bx - by);
         // compute surface normal for sampled point on triangle
-        it.n = Normal3f::from(vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0))).normalize();
+        let mut it_n = Normal3f::from(vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0))).normalize();
         // ensure correct orientation of the geometric normal; follow
         // the same approach as was used in Triangle::Intersect().
         if !self.mesh.n.is_empty() {
             let ns: Normal3f = self.mesh.n[idx[0] as usize] * bx
                 + self.mesh.n[idx[1] as usize] * by
                 + self.mesh.n[idx[2] as usize] * (1.0 as Float - bx - by);
-            it.n = nrm_faceforward_nrm(&it.n, &ns);
+            it_n = nrm_faceforward_nrm(&it_n, &ns);
         } else if self.reverse_orientation ^ self.transform_swaps_handedness {
-            it.n *= -1.0 as Float;
+            it_n *= -1.0 as Float;
         }
         // compute error bounds for sampled point on triangle
         let p_abs_sum: Point3f = pnt3_abs(&(*p0 * bx))
             + pnt3_abs(&(*p1 * by))
             + pnt3_abs(&(*p2 * (1.0 as Float - bx - by)));
-        it.p_error = Vector3f {
+        let it_p_error = Vector3f {
             x: p_abs_sum.x,
             y: p_abs_sum.y,
             z: p_abs_sum.z,
@@ -730,7 +729,14 @@ impl Triangle {
         // avoid calling self.area()!!! *pdf = 1.0 as Float / self.area();
         let area: Float = 0.5 as Float * vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0)).length();
         *pdf = 1.0 as Float / area;
-        Rc::new(it)
+        Rc::new(InteractionCommon {
+            p: it_p,
+            time: 0.0 as Float,
+            p_error: it_p_error,
+            wo: Vector3f::default(),
+            n: it_n,
+            medium_interface: None,
+        })
     }
     pub fn sample_with_ref_point(
         &self,

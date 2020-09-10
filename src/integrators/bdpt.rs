@@ -2478,7 +2478,7 @@ pub fn infinite_light_density<'a>(
         //     CHECK(lightToDistrIndex.find(light.get()) != lightToDistrIndex.end());
         //     size_t index = lightToDistrIndex.find(light.get())->second;
         let index: usize = 0; // TODO: calculate index (see above)
-        pdf += light.pdf_li(&SurfaceInteraction::default(), -(*w)) * light_distr.func[index];
+        pdf += light.pdf_li(&SurfaceInteraction::default(), &-(*w)) * light_distr.func[index];
     }
     // TODO: Old loop (without cache) !!!
     // for (size_t i = 0; i < scene.lights.size(); ++i)
