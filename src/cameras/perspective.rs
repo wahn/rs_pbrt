@@ -1,6 +1,5 @@
 // std
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::{Camera, CameraSample};
@@ -376,14 +375,15 @@ impl PerspectiveCamera {
         pdf_dir = 1.0 as Float / (self.a * cos_theta * cos_theta * cos_theta);
         (pdf_pos, pdf_dir)
     }
-    pub fn sample_wi(
+    pub fn sample_wi<'a, 'b>(
         &self,
-        iref: Rc<InteractionCommon>,
+        iref: &'a InteractionCommon,
+        lens_intr: &'b mut InteractionCommon,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         p_raster: &mut Point2f,
-        vis: &mut VisibilityTester,
+        vis: &mut VisibilityTester<'a, 'b>,
     ) -> Spectrum {
         // uniformly sample a lens interaction _lensIntr_
         let p_lens: Point2f = concentric_sample_disk(u) * self.lens_radius;
@@ -396,7 +396,6 @@ impl PerspectiveCamera {
             },
         );
         // Interaction lens_intr(p_lens_world, iref.time, medium);
-        let mut lens_intr: InteractionCommon = InteractionCommon::default();
         lens_intr.p = p_lens_world;
         lens_intr.time = iref.time;
         lens_intr.n = Normal3f::from(self.camera_to_world.transform_vector(
@@ -430,8 +429,8 @@ impl PerspectiveCamera {
         };
         *pdf = (dist * dist) / (nrm_abs_dot_vec3f(&lens_intr.n, wi) * lens_area);
         let ray = lens_intr.spawn_ray(&-*wi);
-        vis.p0 = Some(iref.clone());
-        vis.p1 = Some(Rc::new(lens_intr));
+        vis.p0 = Some(&iref);
+        vis.p1 = Some(lens_intr);
         self.we(&ray, Some(p_raster))
     }
     pub fn get_shutter_open(&self) -> Float {

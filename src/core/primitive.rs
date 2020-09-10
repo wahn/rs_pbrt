@@ -2,7 +2,6 @@
 //! geometry processing and shading subsystems of pbrt.
 
 // std
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::accelerators::bvh::BVHAccel;
@@ -159,13 +158,12 @@ impl GeometricPrimitive {
             // _Shape_ intersection
             if let Some(ref medium_interface) = self.medium_interface {
                 if medium_interface.is_medium_transition() {
-                    let mut common = Rc::get_mut(&mut isect.common).unwrap();
-                    common.medium_interface = Some(medium_interface.clone());
+                    isect.common.medium_interface = Some(medium_interface.clone());
                 } else if let Some(ref medium_arc) = ray.medium {
                     let inside: Option<Arc<Medium>> = Some(medium_arc.clone());
                     let outside: Option<Arc<Medium>> = Some(medium_arc.clone());
-                    let mut common = Rc::get_mut(&mut isect.common).unwrap();
-                    common.medium_interface = Some(Arc::new(MediumInterface::new(inside, outside)));
+                    isect.common.medium_interface =
+                        Some(Arc::new(MediumInterface::new(inside, outside)));
                 }
                 // print!("medium_interface = {{inside = ");
                 // if let Some(ref inside) = medium_interface.inside {

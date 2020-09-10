@@ -1,5 +1,4 @@
 // std
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::Camera;
@@ -71,12 +70,13 @@ impl WhittedIntegrator {
 
             // add contribution of each light source
             for light in &scene.lights {
+                let mut light_intr: InteractionCommon = InteractionCommon::default();
                 let mut wi: Vector3f = Vector3f::default();
                 let mut pdf: Float = 0.0 as Float;
                 let mut visibility: VisibilityTester = VisibilityTester::default();
-                let it_common: Rc<InteractionCommon> = isect.get_common();
                 let li: Spectrum = light.sample_li(
-                    it_common,
+                    &isect.common,
+                    &mut light_intr,
                     sampler.get_2d(),
                     &mut wi,
                     &mut pdf,

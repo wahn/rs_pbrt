@@ -2,8 +2,6 @@
 //! source of illumination so that some light is reflected from them
 //! to the camera sensor.
 
-// std
-use std::rc::Rc;
 // pbrt
 use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -42,22 +40,23 @@ impl Light {
     /// Returns the radiance arriving at a point at a certain time due
     /// to the light, assuming there are no occluding objects between
     /// them.
-    pub fn sample_li(
-        &self,
-        iref: Rc<InteractionCommon>,
+    pub fn sample_li<'a, 'b>(
+        &'b self,
+        iref: &'a InteractionCommon,
+        light_intr: &'b mut InteractionCommon,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
+        vis: &mut VisibilityTester<'a, 'b>,
     ) -> Spectrum {
         match self {
-            Light::DiffuseArea(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::Distant(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::GonioPhotometric(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::InfiniteArea(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::Point(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::Projection(light) => light.sample_li(iref, u, wi, pdf, vis),
-            Light::Spot(light) => light.sample_li(iref, u, wi, pdf, vis),
+            Light::DiffuseArea(light) => light.sample_li(iref, light_intr, u, wi, pdf, vis),
+            Light::Distant(light) => light.sample_li(iref, light_intr, u, wi, pdf, vis),
+            Light::GonioPhotometric(light) => light.sample_li(iref, light_intr, u, wi, pdf, vis),
+            Light::InfiniteArea(light) => light.sample_li(iref, light_intr, u, wi, pdf, vis),
+            Light::Point(light) => light.sample_li(iref, light_intr, u, wi, pdf, vis),
+            Light::Projection(light) => light.sample_li(iref, light_intr, u, wi, pdf, vis),
+            Light::Spot(light) => light.sample_li(iref, light_intr, u, wi, pdf, vis),
         }
     }
     pub fn power(&self) -> Spectrum {
@@ -191,12 +190,12 @@ pub fn is_delta_light(flags: u8) -> bool {
 /// VisibilityTesters are created by providing two Interaction
 /// objects, one for each end point of the shadow ray to be traced.
 #[derive(Default, Clone)]
-pub struct VisibilityTester {
-    pub p0: Option<Rc<InteractionCommon>>, // TODO: private
-    pub p1: Option<Rc<InteractionCommon>>, // TODO: private
+pub struct VisibilityTester<'a, 'b> {
+    pub p0: Option<&'a InteractionCommon>,
+    pub p1: Option<&'b InteractionCommon>,
 }
 
-impl VisibilityTester {
+impl<'a, 'b> VisibilityTester<'a, 'b> {
     pub fn unoccluded(&self, scene: &Scene) -> bool {
         let mut ray: Ray = self
             .p0

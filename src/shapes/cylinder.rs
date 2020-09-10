@@ -1,6 +1,5 @@
 // std
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::efloat::quadratic_efloat;
@@ -332,7 +331,7 @@ impl Cylinder {
     pub fn area(&self) -> Float {
         (self.z_max - self.z_min) * self.radius * self.phi_max
     }
-    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> Rc<InteractionCommon> {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let z: Float = lerp(u[XYEnum::X], self.z_min, self.z_max);
         let phi: Float = u[XYEnum::Y] * self.phi_max;
         let mut p_obj: Point3f = Point3f {
@@ -369,15 +368,15 @@ impl Cylinder {
             &mut it.p_error,
         );
         *pdf = 1.0 as Float / self.area();
-        Rc::new(it)
+        it
     }
     pub fn sample_with_ref_point(
         &self,
-        iref: Rc<InteractionCommon>,
+        iref: &InteractionCommon,
         u: Point2f,
         pdf: &mut Float,
-    ) -> Rc<InteractionCommon> {
-        let intr: Rc<InteractionCommon> = self.sample(u, pdf);
+    ) -> InteractionCommon {
+        let intr: InteractionCommon = self.sample(u, pdf);
         let mut wi: Vector3f = intr.p - iref.p;
         if wi.length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;

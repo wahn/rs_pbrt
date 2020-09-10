@@ -1,6 +1,5 @@
 // std
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::RwLock;
 // pbrt
 use crate::core::geometry::vec3_coordinate_system;
@@ -44,28 +43,24 @@ impl DistantLight {
         }
     }
     // Light
-    pub fn sample_li(
-        &self,
-        iref: Rc<InteractionCommon>,
+    pub fn sample_li<'a, 'b>(
+        &'b self,
+        iref: &'a InteractionCommon,
+        light_intr: &'b mut InteractionCommon,
         _u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
+        vis: &mut VisibilityTester<'a, 'b>,
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
         *wi = self.w_light;
         *pdf = 1.0 as Float;
         let p_outside: Point3f =
             iref.p + self.w_light * (2.0 as Float * *self.world_radius.read().unwrap());
-        vis.p0 = Some(iref.clone());
-        vis.p1 = Some(Rc::new(InteractionCommon {
-            p: p_outside,
-            time: iref.time,
-            p_error: Vector3f::default(),
-            wo: Vector3f::default(),
-            n: Normal3f::default(),
-            medium_interface: None,
-        }));
+        light_intr.p = p_outside;
+        light_intr.time = iref.time;
+        vis.p0 = Some(&iref);
+        vis.p1 = Some(light_intr);
         self.l
     }
     pub fn power(&self) -> Spectrum {

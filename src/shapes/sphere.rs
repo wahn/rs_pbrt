@@ -1,6 +1,5 @@
 // std
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::efloat::quadratic_efloat;
@@ -362,7 +361,7 @@ impl Sphere {
     pub fn area(&self) -> Float {
         self.phi_max * self.radius * (self.z_max - self.z_min)
     }
-    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> Rc<InteractionCommon> {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         let mut p_obj: Point3f = Point3f::default() + uniform_sample_sphere(u) * self.radius;
         let mut it: InteractionCommon = InteractionCommon::default();
         it.n = self
@@ -385,20 +384,20 @@ impl Sphere {
             &mut it.p_error,
         );
         *pdf = 1.0 as Float / self.area();
-        Rc::new(it)
+        it
     }
     pub fn sample_with_ref_point(
         &self,
-        iref: Rc<InteractionCommon>,
+        iref: &InteractionCommon,
         u: Point2f,
         pdf: &mut Float,
-    ) -> Rc<InteractionCommon> {
+    ) -> InteractionCommon {
         let p_center: Point3f = self.object_to_world.transform_point(&Point3f::default());
         // sample uniformly on sphere if $\pt{}$ is inside it
         let p_origin: Point3f =
             pnt3_offset_ray_origin(&iref.p, &iref.p_error, &iref.n, &(p_center - iref.p));
         if pnt3_distance_squaredf(&p_origin, &p_center) <= self.radius * self.radius {
-            let intr: Rc<InteractionCommon> = self.sample(u, pdf);
+            let intr: InteractionCommon = self.sample(u, pdf);
             let mut wi: Vector3f = intr.p - iref.p;
             if wi.length_squared() == 0.0 as Float {
                 *pdf = 0.0 as Float;
@@ -460,7 +459,7 @@ impl Sphere {
         }
         // uniform cone PDF.
         *pdf = 1.0 as Float / (2.0 as Float * PI * (1.0 as Float - cos_theta_max));
-        Rc::new(it)
+        it
     }
     pub fn pdf_with_ref_point(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {
         let p_center: Point3f = self.object_to_world.transform_point(&Point3f::default());

@@ -6,8 +6,6 @@
 //! the underlying shape. This makes it possible to separate the
 //! geometric and the shading subsystem of pbrt.
 
-//std
-use std::rc::Rc;
 // pbrt
 use crate::core::geometry::{Bounds3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
@@ -102,7 +100,7 @@ impl Shape {
             Shape::Trngl(shape) => shape.area(),
         }
     }
-    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> Rc<InteractionCommon> {
+    pub fn sample(&self, u: Point2f, pdf: &mut Float) -> InteractionCommon {
         match self {
             Shape::Crv(shape) => shape.sample(u, pdf),
             Shape::Clndr(shape) => shape.sample(u, pdf),
@@ -111,15 +109,15 @@ impl Shape {
             Shape::Trngl(shape) => shape.sample(u, pdf),
         }
     }
-    pub fn pdf(&self, _iref: Rc<InteractionCommon>) -> Float {
+    pub fn pdf(&self, _iref: &InteractionCommon) -> Float {
         1.0 as Float / self.area()
     }
     pub fn sample_with_ref_point(
         &self,
-        iref: Rc<InteractionCommon>,
+        iref: &InteractionCommon,
         u: Point2f,
         pdf: &mut Float,
-    ) -> Rc<InteractionCommon> {
+    ) -> InteractionCommon {
         match self {
             Shape::Crv(shape) => shape.sample_with_ref_point(iref, u, pdf),
             Shape::Clndr(shape) => shape.sample_with_ref_point(iref, u, pdf),

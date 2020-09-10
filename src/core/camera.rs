@@ -3,7 +3,6 @@
 //! provide.
 
 // std
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::cameras::environment::EnvironmentCamera;
@@ -50,20 +49,29 @@ impl Camera {
             Camera::Realistic(camera) => camera.pdf_we(ray),
         }
     }
-    pub fn sample_wi(
+    pub fn sample_wi<'a, 'b>(
         &self,
-        iref: Rc<InteractionCommon>,
+        iref: &'a InteractionCommon,
+        lens_intr: &'b mut InteractionCommon,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
         p_raster: &mut Point2f,
-        vis: &mut VisibilityTester,
+        vis: &mut VisibilityTester<'a, 'b>,
     ) -> Spectrum {
         match self {
-            Camera::Environment(camera) => camera.sample_wi(iref, u, wi, pdf, p_raster, vis),
-            Camera::Orthographic(camera) => camera.sample_wi(iref, u, wi, pdf, p_raster, vis),
-            Camera::Perspective(camera) => camera.sample_wi(iref, u, wi, pdf, p_raster, vis),
-            Camera::Realistic(camera) => camera.sample_wi(iref, u, wi, pdf, p_raster, vis),
+            Camera::Environment(camera) => {
+                camera.sample_wi(iref, lens_intr, u, wi, pdf, p_raster, vis)
+            }
+            Camera::Orthographic(camera) => {
+                camera.sample_wi(iref, lens_intr, u, wi, pdf, p_raster, vis)
+            }
+            Camera::Perspective(camera) => {
+                camera.sample_wi(iref, lens_intr, u, wi, pdf, p_raster, vis)
+            }
+            Camera::Realistic(camera) => {
+                camera.sample_wi(iref, lens_intr, u, wi, pdf, p_raster, vis)
+            }
         }
     }
     pub fn get_shutter_open(&self) -> Float {

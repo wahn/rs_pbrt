@@ -1,6 +1,5 @@
 // std
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{nrm_abs_dot_vec3f, nrm_dot_vec3f, vec3_coordinate_system};
@@ -62,26 +61,27 @@ impl DiffuseAreaLight {
         }
     }
     // Light
-    pub fn sample_li(
-        &self,
-        iref: Rc<InteractionCommon>,
+    pub fn sample_li<'a, 'b>(
+        &'b self,
+        iref: &'a InteractionCommon,
+        light_intr: &'b mut InteractionCommon,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
+        vis: &mut VisibilityTester<'a, 'b>,
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
-        let p_shape: Rc<InteractionCommon> = self.shape.sample_with_ref_point(iref.clone(), u, pdf);
+        *light_intr = self.shape.sample_with_ref_point(iref, u, pdf);
         // TODO: iref.mediumInterface = mediumInterface;
-        if *pdf == 0.0 as Float || (p_shape.p - iref.p).length_squared() == 0.0 as Float {
+        if *pdf == 0.0 as Float || (light_intr.p - iref.p).length_squared() == 0.0 as Float {
             *pdf = 0.0 as Float;
             return Spectrum::default();
         }
-        let new_wi: Vector3f = (p_shape.p - iref.p).normalize();
+        let new_wi: Vector3f = (light_intr.p - iref.p).normalize();
         *wi = new_wi;
-        vis.p0 = Some(iref.clone());
-        vis.p1 = Some(p_shape.clone());
-        self.l(&p_shape, &-new_wi)
+        vis.p0 = Some(&iref);
+        vis.p1 = Some(light_intr);
+        self.l(&light_intr, &-new_wi)
     }
     pub fn power(&self) -> Spectrum {
         // return (twoSided ? 2 : 1) * Lemit * area * Pi;
@@ -115,7 +115,7 @@ impl DiffuseAreaLight {
         // TODO: ProfilePhase _(Prof::LightSample);
 
         // sample a point on the area light's _Shape_, _p_shape_
-        let ic: Rc<InteractionCommon> = self.shape.sample(u1, pdf_pos);
+        let ic: InteractionCommon = self.shape.sample(u1, pdf_pos);
         // TODO: p_shape.mediumInterface = mediumInterface;
         *n_light = ic.n;
         // sample a cosine-weighted outgoing direction _w_ for area light
@@ -148,7 +148,7 @@ impl DiffuseAreaLight {
         self.l(&ic, &w)
     }
     pub fn pdf_le(&self, ray: &Ray, n: &Normal3f, pdf_pos: &mut Float, pdf_dir: &mut Float) {
-        *pdf_pos = self.shape.pdf(Rc::new(InteractionCommon::default()));
+        *pdf_pos = self.shape.pdf(&InteractionCommon::default());
         if self.two_sided {
             *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(nrm_abs_dot_vec3f(&n, &ray.d));
         } else {

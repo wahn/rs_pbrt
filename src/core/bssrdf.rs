@@ -6,7 +6,6 @@
 use std::borrow::Borrow;
 use std::cell::Cell;
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::Arc;
 // others
 use strum::IntoEnumIterator;
@@ -257,7 +256,16 @@ impl TabulatedBssrdf {
         // while (selected-- > 0) chain = chain->next;
         // *pi = chain->si;
         let selected_si: &SurfaceInteraction = &chain[selected];
-        pi.common = selected_si.get_common();
+        pi.common.p = selected_si.common.p;
+        pi.common.time = selected_si.common.time;
+        pi.common.p_error = selected_si.common.p_error;
+        pi.common.wo = selected_si.common.wo;
+        pi.common.n = selected_si.common.n;
+        if let Some(ref medium_interface) = selected_si.common.medium_interface {
+            pi.common.medium_interface = Some(medium_interface.clone());
+        } else {
+            pi.common.medium_interface = None;
+        }
         pi.uv = selected_si.uv;
         pi.dpdu = selected_si.dpdu;
         pi.dpdv = selected_si.dpdv;
@@ -421,8 +429,7 @@ impl TabulatedBssrdf {
             if let Some(bsdf) = &mut si.bsdf {
                 bsdf.bxdfs[0] = Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta));
             }
-            let common = Rc::get_mut(&mut si.common).unwrap();
-            common.wo = Vector3f::from(si.shading.n);
+            si.common.wo = Vector3f::from(si.shading.n);
             (sp, Some(si))
         } else {
             (sp, None)

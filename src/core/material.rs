@@ -3,12 +3,11 @@
 
 //std
 use std::cell::Cell;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::vec3_cross_vec3;
 use crate::core::geometry::{Normal3f, Vector2f, Vector3f};
-use crate::core::interaction::{Interaction, SurfaceInteraction};
+use crate::core::interaction::SurfaceInteraction;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::texture::Texture;
 use crate::materials::disney::DisneyMaterial;
@@ -119,7 +118,16 @@ impl Material {
     {
         // compute offset positions and evaluate displacement texture
         let mut si_eval: SurfaceInteraction = SurfaceInteraction::default();
-        si_eval.common = si.get_common();
+        si_eval.common.p = si.common.p;
+        si_eval.common.time = si.common.time;
+        si_eval.common.p_error = si.common.p_error;
+        si_eval.common.wo = si.common.wo;
+        si_eval.common.n = si.common.n;
+        if let Some(ref medium_interface) = si.common.medium_interface {
+            si_eval.common.medium_interface = Some(medium_interface.clone());
+        } else {
+            si_eval.common.medium_interface = None;
+        }
         si_eval.uv = si.uv;
         si_eval.dpdu = si.dpdu;
         si_eval.dpdv = si.dpdv;
@@ -166,16 +174,16 @@ impl Material {
             du = 0.0005 as Float;
         }
         {
-            let mut common = Rc::get_mut(&mut si_eval.common).unwrap();
-            common.p = si.common.p + si.shading.dpdu * du;
+            si_eval.common.p = si.common.p + si.shading.dpdu * du;
             si_eval.uv = si.uv
                 + Vector2f {
                     x: du,
                     y: 0.0 as Float,
                 };
-            common.n = (Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv))
-                + si.dndu * du)
-                .normalize();
+            si_eval.common.n =
+                (Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv))
+                    + si.dndu * du)
+                    .normalize();
         }
         let u_displace: Float = d.evaluate(&si_eval);
         // shift _si_eval_ _dv_ in the $v$ direction
@@ -184,16 +192,16 @@ impl Material {
             dv = 0.0005 as Float;
         }
         {
-            let mut common = Rc::get_mut(&mut si_eval.common).unwrap();
-            common.p = si.common.p + si.shading.dpdv * dv;
+            si_eval.common.p = si.common.p + si.shading.dpdv * dv;
             si_eval.uv = si.uv
                 + Vector2f {
                     x: 0.0 as Float,
                     y: dv,
                 };
-            common.n = (Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv))
-                + si.dndv * dv)
-                .normalize();
+            si_eval.common.n =
+                (Normal3f::from(vec3_cross_vec3(&si.shading.dpdu, &si.shading.dpdv))
+                    + si.dndv * dv)
+                    .normalize();
         }
         let v_displace: Float = d.evaluate(&si_eval);
         let displace: Float = d.evaluate(&si);

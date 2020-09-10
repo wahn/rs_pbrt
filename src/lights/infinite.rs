@@ -1,7 +1,6 @@
 // std
 use std::f32::consts::PI;
 use std::io::BufReader;
-use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 // others
 #[cfg(feature = "openexr")]
@@ -295,13 +294,14 @@ impl InfiniteAreaLight {
         }
     }
     // Light
-    pub fn sample_li(
-        &self,
-        iref: Rc<InteractionCommon>,
+    pub fn sample_li<'a, 'b>(
+        &'b self,
+        iref: &'a InteractionCommon,
+        light_intr: &'b mut InteractionCommon,
         u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
+        vis: &mut VisibilityTester<'a, 'b>,
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
         // find $(u,v)$ sample coordinates in infinite light texture
@@ -331,15 +331,10 @@ impl InfiniteAreaLight {
         // return radiance value for infinite light direction
         let world_radius: Float = *self.world_radius.read().unwrap();
         // TODO: SpectrumType::Illuminant
-        vis.p0 = Some(iref.clone());
-        vis.p1 = Some(Rc::new(InteractionCommon {
-            p: iref.p + *wi * (2.0 as Float * world_radius),
-            time: iref.time,
-            p_error: Vector3f::default(),
-            wo: Vector3f::default(),
-            n: Normal3f::default(),
-            medium_interface: Some(Arc::new(MediumInterface::default())),
-        }));
+        light_intr.p = iref.p + *wi * (2.0 as Float * world_radius);
+        light_intr.time = iref.time;
+        vis.p0 = Some(&iref);
+        vis.p1 = Some(light_intr);
         self.lmap.lookup_pnt_flt(uv, 0.0 as Float)
     }
     /// Like directional lights, the total power from the infinite

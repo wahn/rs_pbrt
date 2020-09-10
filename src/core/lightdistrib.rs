@@ -224,11 +224,18 @@ impl SpatialLightDistribution {
                 .enumerate()
                 .take(self.scene.lights.len())
             {
+                let mut light_intr: InteractionCommon = InteractionCommon::default();
                 let mut pdf: Float = 0.0 as Float;
                 let mut wi: Vector3f = Vector3f::default();
                 let mut vis: VisibilityTester = VisibilityTester::default();
-                let li: Spectrum =
-                    self.scene.lights[j].sample_li(intr.clone(), u, &mut wi, &mut pdf, &mut vis);
+                let li: Spectrum = self.scene.lights[j].sample_li(
+                    &intr,
+                    &mut light_intr,
+                    u,
+                    &mut wi,
+                    &mut pdf,
+                    &mut vis,
+                );
                 if pdf > 0.0 as Float {
                     // TODO: look at tracing shadow rays / computing
                     // beam transmittance. Probably shouldn't give

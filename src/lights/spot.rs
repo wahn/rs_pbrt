@@ -1,6 +1,5 @@
 // std
 use std::f32::consts::PI;
-use std::rc::Rc;
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::pnt3_distance_squaredf;
@@ -74,13 +73,14 @@ impl SpotLight {
         (delta * delta) * (delta * delta)
     }
     // Light
-    pub fn sample_li(
-        &self,
-        iref: Rc<InteractionCommon>,
+    pub fn sample_li<'a, 'b>(
+        &'b self,
+        iref: &'a InteractionCommon,
+        light_intr: &'b mut InteractionCommon,
         _u: Point2f,
         wi: &mut Vector3f,
         pdf: &mut Float,
-        vis: &mut VisibilityTester,
+        vis: &mut VisibilityTester<'a, 'b>,
     ) -> Spectrum {
         // TODO: ProfilePhase _(Prof::LightSample);
         *wi = (self.p_light - iref.p).normalize();
@@ -96,15 +96,11 @@ impl SpotLight {
         }
         let medium_interface2_arc: Arc<MediumInterface> =
             Arc::new(MediumInterface::new(inside, outside));
-        vis.p0 = Some(iref.clone());
-        vis.p1 = Some(Rc::new(InteractionCommon {
-            p: self.p_light,
-            time: iref.time,
-            p_error: Vector3f::default(),
-            wo: Vector3f::default(),
-            n: Normal3f::default(),
-            medium_interface: Some(medium_interface2_arc),
-        }));
+        light_intr.p = self.p_light;
+        light_intr.time = iref.time;
+        light_intr.medium_interface = Some(medium_interface2_arc);
+        vis.p0 = Some(&iref);
+        vis.p1 = Some(light_intr);
         self.i * self.falloff(&-*wi) / pnt3_distance_squaredf(&self.p_light, &iref.p)
     }
     pub fn power(&self) -> Spectrum {
