@@ -18,9 +18,9 @@ use crate::core::sampling::power_heuristic;
 use crate::core::sampling::Distribution1D;
 use crate::core::scene::Scene;
 use crate::integrators::ao::AOIntegrator;
-// use crate::integrators::bdpt::BDPTIntegrator;
+use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::DirectLightingIntegrator;
-// use crate::integrators::mlt::MLTIntegrator;
+use crate::integrators::mlt::MLTIntegrator;
 use crate::integrators::path::PathIntegrator;
 use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
@@ -29,8 +29,8 @@ use crate::integrators::whitted::WhittedIntegrator;
 // see integrator.h
 
 pub enum Integrator {
-    // BDPT(BDPTIntegrator),
-    // MLT(MLTIntegrator),
+    BDPT(BDPTIntegrator),
+    MLT(MLTIntegrator),
     SPPM(SPPMIntegrator),
     Sampler(SamplerIntegrator),
 }
@@ -38,8 +38,8 @@ pub enum Integrator {
 impl Integrator {
     pub fn render(&mut self, scene: &Scene, num_threads: u8) {
         match self {
-            // Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
-            // Integrator::MLT(integrator) => integrator.render(scene, num_threads),
+            Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
+            Integrator::MLT(integrator) => integrator.render(scene, num_threads),
             Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
             Integrator::Sampler(integrator) => integrator.render(scene, num_threads),
         }

@@ -6,7 +6,7 @@
 use crate::core::camera::CameraSample;
 use crate::core::geometry::{Point2f, Point2i};
 use crate::core::pbrt::Float;
-// use crate::integrators::mlt::MLTSampler;
+use crate::integrators::mlt::MLTSampler;
 use crate::samplers::halton::HaltonSampler;
 use crate::samplers::maxmin::MaxMinDistSampler;
 use crate::samplers::random::RandomSampler;
@@ -19,7 +19,7 @@ use crate::samplers::zerotwosequence::ZeroTwoSequenceSampler;
 pub enum Sampler {
     Halton(HaltonSampler),
     MaxMinDist(MaxMinDistSampler),
-    // MLT(MLTSampler),
+    MLT(MLTSampler),
     Random(RandomSampler),
     Sobol(SobolSampler),
     Stratified(StratifiedSampler),
@@ -31,7 +31,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.clone_with_seed(seed),
             Sampler::MaxMinDist(sampler) => sampler.clone_with_seed(seed),
-            // Sampler::MLT(sampler) => sampler.clone_with_seed(seed),
+            Sampler::MLT(sampler) => sampler.clone_with_seed(seed),
             Sampler::Random(sampler) => sampler.clone_with_seed(seed),
             Sampler::Sobol(sampler) => sampler.clone_with_seed(seed),
             Sampler::Stratified(sampler) => sampler.clone_with_seed(seed),
@@ -42,7 +42,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.start_pixel(p),
             Sampler::MaxMinDist(sampler) => sampler.start_pixel(p),
-            // Sampler::MLT(sampler) => sampler.start_pixel(p),
+            Sampler::MLT(sampler) => sampler.start_pixel(p),
             Sampler::Random(sampler) => sampler.start_pixel(p),
             Sampler::Sobol(sampler) => sampler.start_pixel(p),
             Sampler::Stratified(sampler) => sampler.start_pixel(p),
@@ -53,7 +53,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.get_1d(),
             Sampler::MaxMinDist(sampler) => sampler.get_1d(),
-            // Sampler::MLT(sampler) => sampler.get_1d(),
+            Sampler::MLT(sampler) => sampler.get_1d(),
             Sampler::Random(sampler) => sampler.get_1d(),
             Sampler::Sobol(sampler) => sampler.get_1d(),
             Sampler::Stratified(sampler) => sampler.get_1d(),
@@ -64,7 +64,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d(),
             Sampler::MaxMinDist(sampler) => sampler.get_2d(),
-            // Sampler::MLT(sampler) => sampler.get_2d(),
+            Sampler::MLT(sampler) => sampler.get_2d(),
             Sampler::Random(sampler) => sampler.get_2d(),
             Sampler::Sobol(sampler) => sampler.get_2d(),
             Sampler::Stratified(sampler) => sampler.get_2d(),
@@ -75,7 +75,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d_sample(array_idx, idx),
             Sampler::MaxMinDist(sampler) => sampler.get_2d_sample(array_idx, idx),
-            // Sampler::MLT(sampler) => sampler.get_2d_sample(array_idx, idx),
+            Sampler::MLT(sampler) => sampler.get_2d_sample(array_idx, idx),
             Sampler::Random(sampler) => sampler.get_2d_sample(array_idx, idx),
             Sampler::Sobol(sampler) => sampler.get_2d_sample(array_idx, idx),
             Sampler::Stratified(sampler) => sampler.get_2d_sample(array_idx, idx),
@@ -96,7 +96,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.request_2d_array(n),
             Sampler::MaxMinDist(sampler) => sampler.request_2d_array(n),
-            // Sampler::MLT(sampler) => sampler.request_2d_array(n),
+            Sampler::MLT(sampler) => sampler.request_2d_array(n),
             Sampler::Random(sampler) => sampler.request_2d_array(n),
             Sampler::Sobol(sampler) => sampler.request_2d_array(n),
             Sampler::Stratified(sampler) => sampler.request_2d_array(n),
@@ -107,7 +107,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.round_count(count),
             Sampler::MaxMinDist(sampler) => sampler.round_count(count),
-            // Sampler::MLT(sampler) => sampler.round_count(count),
+            Sampler::MLT(sampler) => sampler.round_count(count),
             Sampler::Random(sampler) => sampler.round_count(count),
             Sampler::Sobol(sampler) => sampler.round_count(count),
             Sampler::Stratified(sampler) => sampler.round_count(count),
@@ -118,7 +118,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d_array(n),
             Sampler::MaxMinDist(sampler) => sampler.get_2d_array(n),
-            // Sampler::MLT(sampler) => sampler.get_2d_array(n),
+            Sampler::MLT(sampler) => sampler.get_2d_array(n),
             Sampler::Random(sampler) => sampler.get_2d_array(n),
             Sampler::Sobol(sampler) => sampler.get_2d_array(n),
             Sampler::Stratified(sampler) => sampler.get_2d_array(n),
@@ -129,7 +129,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.get_2d_array_idxs(n),
             Sampler::MaxMinDist(sampler) => sampler.get_2d_array_idxs(n),
-            // Sampler::MLT(sampler) => sampler.get_2d_array_idxs(n),
+            Sampler::MLT(sampler) => sampler.get_2d_array_idxs(n),
             Sampler::Random(sampler) => sampler.get_2d_array_idxs(n),
             Sampler::Sobol(sampler) => sampler.get_2d_array_idxs(n),
             Sampler::Stratified(sampler) => sampler.get_2d_array_idxs(n),
@@ -140,7 +140,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.start_next_sample(),
             Sampler::MaxMinDist(sampler) => sampler.start_next_sample(),
-            // Sampler::MLT(sampler) => sampler.start_next_sample(),
+            Sampler::MLT(sampler) => sampler.start_next_sample(),
             Sampler::Random(sampler) => sampler.start_next_sample(),
             Sampler::Sobol(sampler) => sampler.start_next_sample(),
             Sampler::Stratified(sampler) => sampler.start_next_sample(),
@@ -151,7 +151,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.reseed(seed),
             Sampler::MaxMinDist(sampler) => sampler.reseed(seed),
-            // Sampler::MLT(sampler) => sampler.reseed(seed),
+            Sampler::MLT(sampler) => sampler.reseed(seed),
             Sampler::Random(sampler) => sampler.reseed(seed),
             Sampler::Sobol(sampler) => sampler.reseed(seed),
             Sampler::Stratified(sampler) => sampler.reseed(seed),
@@ -162,7 +162,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.get_current_pixel(),
             Sampler::MaxMinDist(sampler) => sampler.get_current_pixel(),
-            // Sampler::MLT(sampler) => sampler.get_current_pixel(),
+            Sampler::MLT(sampler) => sampler.get_current_pixel(),
             Sampler::Random(sampler) => sampler.get_current_pixel(),
             Sampler::Sobol(sampler) => sampler.get_current_pixel(),
             Sampler::Stratified(sampler) => sampler.get_current_pixel(),
@@ -173,7 +173,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.get_current_sample_number(),
             Sampler::MaxMinDist(sampler) => sampler.get_current_sample_number(),
-            // Sampler::MLT(sampler) => sampler.get_current_sample_number(),
+            Sampler::MLT(sampler) => sampler.get_current_sample_number(),
             Sampler::Random(sampler) => sampler.get_current_sample_number(),
             Sampler::Sobol(sampler) => sampler.get_current_sample_number(),
             Sampler::Stratified(sampler) => sampler.get_current_sample_number(),
@@ -184,7 +184,7 @@ impl Sampler {
         match self {
             Sampler::Halton(sampler) => sampler.get_samples_per_pixel(),
             Sampler::MaxMinDist(sampler) => sampler.get_samples_per_pixel(),
-            // Sampler::MLT(sampler) => sampler.get_samples_per_pixel(),
+            Sampler::MLT(sampler) => sampler.get_samples_per_pixel(),
             Sampler::Random(sampler) => sampler.get_samples_per_pixel(),
             Sampler::Sobol(sampler) => sampler.get_samples_per_pixel(),
             Sampler::Stratified(sampler) => sampler.get_samples_per_pixel(),
