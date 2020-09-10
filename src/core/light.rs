@@ -4,11 +4,9 @@
 
 // std
 use std::rc::Rc;
-use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{Normal3f, Point2f, Ray, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
-use crate::core::medium::MediumInterface;
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::sampler::Sampler;
 use crate::core::scene::Scene;
@@ -215,8 +213,6 @@ impl VisibilityTester {
             .spawn_ray_to(&self.p1.as_ref().unwrap());
         let mut tr: Spectrum = Spectrum::new(1.0 as Float);
         loop {
-            let mut it: InteractionCommon = InteractionCommon::default();
-            let mut medium_interface: Option<Arc<MediumInterface>> = None;
             let mut isect: SurfaceInteraction = SurfaceInteraction::default();
             if scene.intersect(&mut ray, &mut isect) {
                 // handle opaque surface along ray's path
@@ -231,15 +227,6 @@ impl VisibilityTester {
                         }
                     }
                 }
-                if let Some(mi_arc) = &isect.common.medium_interface {
-                    medium_interface = Some(mi_arc.clone());
-                }
-                it.p = isect.common.p;
-                it.time = isect.common.time;
-                it.p_error = isect.common.p_error;
-                it.wo = isect.common.wo;
-                it.n = isect.common.n;
-                it.medium_interface = medium_interface;
             } else {
                 // update transmittance for current ray segment
                 if let Some(ref medium_arc) = ray.medium {
@@ -247,7 +234,7 @@ impl VisibilityTester {
                 }
                 break;
             }
-            ray = it.spawn_ray_to(&self.p1.as_ref().unwrap());
+            ray = isect.common.spawn_ray_to(&self.p1.as_ref().unwrap());
         }
         tr
     }

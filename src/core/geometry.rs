@@ -1527,13 +1527,13 @@ pub fn pnt3_abs(p: &Point3f) -> Point3f {
 /// The distance between two points is the length of the vector
 /// between them.
 pub fn pnt3_distancef(p1: &Point3f, p2: &Point3f) -> Float {
-    (*p1 - *p2).length()
+    (p1 - p2).length()
 }
 
 /// The distance squared between two points is the length of the
 /// vector between them squared.
 pub fn pnt3_distance_squaredf(p1: &Point3f, p2: &Point3f) -> Float {
-    (*p1 - *p2).length_squared()
+    (p1 - p2).length_squared()
 }
 
 /// When tracing spawned rays leaving the intersection point p, we
