@@ -316,7 +316,7 @@ pub fn uniform_sample_all_lights(
             l += estimate_direct(
                 it,
                 u_scattering,
-                light.clone(),
+                light,
                 u_light,
                 scene,
                 sampler,
@@ -336,7 +336,7 @@ pub fn uniform_sample_all_lights(
                 ld += estimate_direct(
                     it,
                     u_scattering_array_sample,
-                    light.clone(),
+                    light,
                     u_light_array_sample,
                     scene,
                     sampler,
@@ -389,7 +389,7 @@ pub fn uniform_sample_one_light(
     estimate_direct(
         it,
         u_scattering,
-        light.clone(),
+        light,
         u_light,
         scene,
         sampler,
@@ -402,7 +402,7 @@ pub fn uniform_sample_one_light(
 pub fn estimate_direct(
     it: &dyn Interaction,
     u_scattering: Point2f,
-    light: Arc<Light>,
+    light: &Light,
     u_light: Point2f,
     scene: &Scene,
     sampler: &mut Sampler,
