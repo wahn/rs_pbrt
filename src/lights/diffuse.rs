@@ -77,11 +77,10 @@ impl DiffuseAreaLight {
             *pdf = 0.0 as Float;
             return Spectrum::default();
         }
-        let new_wi: Vector3f = (light_intr.p - iref.p).normalize();
-        *wi = new_wi;
+        *wi = (light_intr.p - iref.p).normalize();
         vis.p0 = Some(&iref);
         vis.p1 = Some(light_intr);
-        self.l(&light_intr, &-new_wi)
+        self.l(&light_intr, &-*wi)
     }
     pub fn power(&self) -> Spectrum {
         // return (twoSided ? 2 : 1) * Lemit * area * Pi;

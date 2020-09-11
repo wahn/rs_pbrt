@@ -684,9 +684,9 @@ impl Triangle {
         let p2: &Point3f = &self.mesh.p[idx[2] as usize];
         // let bx = b[XYEnum::X];
         // let by = b[XYEnum::Y];
-        let it_p = *p0 * bx + *p1 * by + *p2 * (1.0 as Float - bx - by);
+        let it_p = p0 * bx + p1 * by + p2 * (1.0 as Float - bx - by);
         // compute surface normal for sampled point on triangle
-        let mut it_n = Normal3f::from(vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0))).normalize();
+        let mut it_n = Normal3f::from(vec3_cross_vec3(&(p1 - p0), &(p2 - p0))).normalize();
         // ensure correct orientation of the geometric normal; follow
         // the same approach as was used in Triangle::Intersect().
         if !self.mesh.n.is_empty() {
@@ -698,16 +698,16 @@ impl Triangle {
             it_n *= -1.0 as Float;
         }
         // compute error bounds for sampled point on triangle
-        let p_abs_sum: Point3f = pnt3_abs(&(*p0 * bx))
-            + pnt3_abs(&(*p1 * by))
-            + pnt3_abs(&(*p2 * (1.0 as Float - bx - by)));
+        let p_abs_sum: Point3f = pnt3_abs(&(p0 * bx))
+            + pnt3_abs(&(p1 * by))
+            + pnt3_abs(&(p2 * (1.0 as Float - bx - by)));
         let it_p_error = Vector3f {
             x: p_abs_sum.x,
             y: p_abs_sum.y,
             z: p_abs_sum.z,
         } * gamma(6);
         // avoid calling self.area()!!! *pdf = 1.0 as Float / self.area();
-        let area: Float = 0.5 as Float * vec3_cross_vec3(&(*p1 - *p0), &(*p2 - *p0)).length();
+        let area: Float = 0.5 as Float * vec3_cross_vec3(&(p1 - p0), &(p2 - p0)).length();
         *pdf = 1.0 as Float / area;
         InteractionCommon {
             p: it_p,
