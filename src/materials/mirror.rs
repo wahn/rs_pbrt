@@ -55,13 +55,15 @@ impl MirrorMaterial {
             .clamp(0.0 as Float, std::f32::INFINITY as Float);
         si.bsdf = Some(Bsdf::new(si, 1.0));
         if let Some(bsdf) = &mut si.bsdf {
-            let bxdf_idx: usize = 0;
             let fresnel = Fresnel::NoOp(FresnelNoOp {});
             if use_scale {
-                bsdf.bxdfs[bxdf_idx] =
-                    Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, Some(sc)));
+                bsdf.add(Bxdf::SpecRefl(SpecularReflection::new(
+                    r,
+                    fresnel,
+                    Some(sc),
+                )));
             } else {
-                bsdf.bxdfs[bxdf_idx] = Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, None));
+                bsdf.add(Bxdf::SpecRefl(SpecularReflection::new(r, fresnel, None)));
             }
         }
     }

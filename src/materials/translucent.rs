@@ -103,28 +103,31 @@ impl TranslucentMaterial {
         let mut rough: Float = self.roughness.evaluate(si);
         si.bsdf = Some(Bsdf::new(si, eta));
         if let Some(bsdf) = &mut si.bsdf {
-            let mut bxdf_idx: usize = 0;
             if !kd.is_black() {
                 if !r.is_black() {
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::LambertianRefl(LambertianReflection::new(r * kd, Some(sc)));
-                        bxdf_idx += 1;
+                        bsdf.add(Bxdf::LambertianRefl(LambertianReflection::new(
+                            r * kd,
+                            Some(sc),
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::LambertianRefl(LambertianReflection::new(r * kd, None));
-                        bxdf_idx += 1;
+                        bsdf.add(Bxdf::LambertianRefl(LambertianReflection::new(
+                            r * kd,
+                            None,
+                        )));
                     }
                 }
                 if !t.is_black() {
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::LambertianTrans(LambertianTransmission::new(t * kd, Some(sc)));
-                        bxdf_idx += 1;
+                        bsdf.add(Bxdf::LambertianTrans(LambertianTransmission::new(
+                            t * kd,
+                            Some(sc),
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::LambertianTrans(LambertianTransmission::new(t * kd, None));
-                        bxdf_idx += 1;
+                        bsdf.add(Bxdf::LambertianTrans(LambertianTransmission::new(
+                            t * kd,
+                            None,
+                        )));
                     }
                 }
             }
@@ -141,21 +144,19 @@ impl TranslucentMaterial {
                         eta_t: eta,
                     });
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                        bsdf.add(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
                             r * ks,
                             distrib,
                             fresnel,
                             Some(sc),
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                        bsdf.add(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
                             r * ks,
                             distrib,
                             fresnel,
                             None,
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     }
                 }
                 let distrib = MicrofacetDistribution::TrowbridgeReitz(
@@ -163,23 +164,23 @@ impl TranslucentMaterial {
                 );
                 if !t.is_black() {
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        bsdf.add(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                             t * ks,
                             distrib,
                             1.0,
                             eta,
                             mode,
                             Some(sc),
-                        ));
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        bsdf.add(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                             t * ks,
                             distrib,
                             1.0,
                             eta,
                             mode,
                             None,
-                        ));
+                        )));
                     }
                 }
             }

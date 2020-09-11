@@ -174,27 +174,29 @@ impl UberMaterial {
             si.bsdf = Some(Bsdf::new(si, e));
         }
         if let Some(bsdf) = &mut si.bsdf {
-            let mut bxdf_idx: usize = 0;
             if !t.is_black() {
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::SpecTrans(SpecularTransmission::new(t, 1.0, 1.0, mode, Some(sc)));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::SpecTrans(SpecularTransmission::new(
+                        t,
+                        1.0,
+                        1.0,
+                        mode,
+                        Some(sc),
+                    )));
                 } else {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::SpecTrans(SpecularTransmission::new(t, 1.0, 1.0, mode, None));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::SpecTrans(SpecularTransmission::new(
+                        t, 1.0, 1.0, mode, None,
+                    )));
                 }
             }
             if !kd.is_black() {
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::LambertianRefl(LambertianReflection::new(kd, Some(sc)));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::LambertianRefl(LambertianReflection::new(
+                        kd,
+                        Some(sc),
+                    )));
                 } else {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::LambertianRefl(LambertianReflection::new(kd, None));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::LambertianRefl(LambertianReflection::new(kd, None)));
                 }
             }
             if !ks.is_black() {
@@ -210,17 +212,16 @@ impl UberMaterial {
                     TrowbridgeReitzDistribution::new(u_rough, v_rough, true),
                 );
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                    bsdf.add(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
                         ks,
                         distrib,
                         fresnel,
                         Some(sc),
-                    ));
-                    bxdf_idx += 1;
+                    )));
                 } else {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::MicrofacetRefl(MicrofacetReflection::new(ks, distrib, fresnel, None));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                        ks, distrib, fresnel, None,
+                    )));
                 }
             }
             if !kr.is_black() {
@@ -229,22 +230,28 @@ impl UberMaterial {
                     eta_t: e,
                 });
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::SpecRefl(SpecularReflection::new(kr, fresnel, Some(sc)));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::SpecRefl(SpecularReflection::new(
+                        kr,
+                        fresnel,
+                        Some(sc),
+                    )));
                 } else {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::SpecRefl(SpecularReflection::new(kr, fresnel, None));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::SpecRefl(SpecularReflection::new(kr, fresnel, None)));
                 }
             }
             if !kt.is_black() {
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::SpecTrans(SpecularTransmission::new(kt, 1.0, e, mode, Some(sc)));
+                    bsdf.add(Bxdf::SpecTrans(SpecularTransmission::new(
+                        kt,
+                        1.0,
+                        e,
+                        mode,
+                        Some(sc),
+                    )));
                 } else {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::SpecTrans(SpecularTransmission::new(kt, 1.0, e, mode, None));
+                    bsdf.add(Bxdf::SpecTrans(SpecularTransmission::new(
+                        kt, 1.0, e, mode, None,
+                    )));
                 }
             }
         }

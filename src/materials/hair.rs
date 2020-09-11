@@ -166,11 +166,10 @@ impl HairMaterial {
         let h: Float = -1.0 as Float + 2.0 as Float * si.uv[XYEnum::Y];
         si.bsdf = Some(Bsdf::new(si, 1.0));
         if let Some(bsdf) = &mut si.bsdf {
-            let bxdf_idx: usize = 0;
             if use_scale {
-                bsdf.bxdfs[bxdf_idx] = Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, Some(sc)));
+                bsdf.add(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, Some(sc))));
             } else {
-                bsdf.bxdfs[bxdf_idx] = Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, None));
+                bsdf.add(Bxdf::Hair(HairBSDF::new(h, e, sig_a, bm, bn, a, None)));
             }
         }
     }

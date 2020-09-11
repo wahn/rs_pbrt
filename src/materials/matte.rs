@@ -69,20 +69,17 @@ impl MatteMaterial {
         );
         si.bsdf = Some(Bsdf::new(si, 1.0));
         if let Some(bsdf) = &mut si.bsdf {
-            let bxdf_idx: usize = 0;
             if !r.is_black() {
                 if sig == 0.0 {
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::LambertianRefl(LambertianReflection::new(r, Some(sc)));
+                        bsdf.add(Bxdf::LambertianRefl(LambertianReflection::new(r, Some(sc))));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::LambertianRefl(LambertianReflection::new(r, None));
+                        bsdf.add(Bxdf::LambertianRefl(LambertianReflection::new(r, None)));
                     }
                 } else if use_scale {
-                    bsdf.bxdfs[bxdf_idx] = Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, Some(sc)));
+                    bsdf.add(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, Some(sc))));
                 } else {
-                    bsdf.bxdfs[bxdf_idx] = Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, None));
+                    bsdf.add(Bxdf::OrenNayarRefl(OrenNayar::new(r, sig, None)));
                 }
             }
         }

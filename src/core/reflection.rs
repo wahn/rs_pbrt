@@ -37,6 +37,8 @@ use crate::materials::disney::{
 };
 use crate::materials::hair::HairBSDF;
 
+const MAX_BXDFS: u8 = 8_u8;
+
 /// https://seblagarde.wordpress.com/2013/04/29/memo-on-fresnel-equations/
 ///
 /// The Schlick Fresnel approximation is:
@@ -226,7 +228,7 @@ pub struct Bsdf {
     pub ng: Normal3f,
     pub ss: Vector3f,
     pub ts: Vector3f,
-    pub bxdfs: [Bxdf; 8],
+    pub bxdfs: Vec<Bxdf>,
 }
 
 impl Bsdf {
@@ -238,17 +240,12 @@ impl Bsdf {
             ng: si.common.n,
             ss,
             ts: nrm_cross_vec3(&si.shading.n, &ss),
-            bxdfs: [
-                Bxdf::Empty(NoBxdf::default()),
-                Bxdf::Empty(NoBxdf::default()),
-                Bxdf::Empty(NoBxdf::default()),
-                Bxdf::Empty(NoBxdf::default()),
-                Bxdf::Empty(NoBxdf::default()),
-                Bxdf::Empty(NoBxdf::default()),
-                Bxdf::Empty(NoBxdf::default()),
-                Bxdf::Empty(NoBxdf::default()),
-            ],
+            bxdfs: Vec::with_capacity(8),
         }
+    }
+    pub fn add(&mut self, b: Bxdf) {
+        assert!(self.bxdfs.len() < MAX_BXDFS as usize);
+        self.bxdfs.push(b);
     }
     pub fn num_components(&self, flags: u8) -> u8 {
         let mut num: u8 = 0;

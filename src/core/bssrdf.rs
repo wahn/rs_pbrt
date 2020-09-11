@@ -427,7 +427,7 @@ impl TabulatedBssrdf {
             // initialize material model at sampled surface interaction
             si.bsdf = Some(Bsdf::new(&si, 1.0));
             if let Some(bsdf) = &mut si.bsdf {
-                bsdf.bxdfs[0] = Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta));
+                bsdf.add(Bxdf::Bssrdf(SeparableBssrdfAdapter::new(sc, mode, eta)));
             }
             si.common.wo = Vector3f::from(si.shading.n);
             (sp, Some(si))

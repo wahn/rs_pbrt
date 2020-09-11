@@ -125,95 +125,89 @@ impl DisneyMaterial {
         let gloss: Float = lerp(self.clearcoat_gloss.evaluate(si), 0.1, 0.001);
         si.bsdf = Some(Bsdf::new(si, 1.0));
         if let Some(bsdf) = &mut si.bsdf {
-            let mut bxdf_idx: usize = 0;
             if diffuse_weight > 0.0 {
                 if self.thin {
                     // Blend between DisneyDiffuse and fake subsurface based on flatness. Additionally,
                     // weight using diff_trans.
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::DisDiff(DisneyDiffuse::new(
+                        bsdf.add(Bxdf::DisDiff(DisneyDiffuse::new(
                             diffuse_weight * (1.0 - flat) * (1.0 - dt) * c,
                             Some(sc),
-                        ));
-                        bxdf_idx += 1;
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::DisSS(DisneyFakeSS::new(
+                        )));
+                        bsdf.add(Bxdf::DisSS(DisneyFakeSS::new(
                             diffuse_weight * flat * (1.0 - dt) * c,
                             rough,
                             Some(sc),
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::DisDiff(DisneyDiffuse::new(
+                        bsdf.add(Bxdf::DisDiff(DisneyDiffuse::new(
                             diffuse_weight * (1.0 - flat) * (1.0 - dt) * c,
                             None,
-                        ));
-                        bxdf_idx += 1;
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::DisSS(DisneyFakeSS::new(
+                        )));
+                        bsdf.add(Bxdf::DisSS(DisneyFakeSS::new(
                             diffuse_weight * flat * (1.0 - dt) * c,
                             rough,
                             None,
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     }
                 } else if sd.is_black() {
                     // No subsurface scattering; use regular (Fresnel modified) diffuse.
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c, Some(sc)));
-                        bxdf_idx += 1;
+                        bsdf.add(Bxdf::DisDiff(DisneyDiffuse::new(
+                            diffuse_weight * c,
+                            Some(sc),
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] =
-                            Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c, None));
-                        bxdf_idx += 1;
+                        bsdf.add(Bxdf::DisDiff(DisneyDiffuse::new(diffuse_weight * c, None)));
                     }
                 } else {
                     // Use a BSSRDF instead.
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
+                        bsdf.add(Bxdf::SpecTrans(SpecularTransmission::new(
                             Spectrum::from(1.0),
                             1.0,
                             e,
                             mode,
                             Some(sc),
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::SpecTrans(SpecularTransmission::new(
+                        bsdf.add(Bxdf::SpecTrans(SpecularTransmission::new(
                             Spectrum::from(1.0),
                             1.0,
                             e,
                             mode,
                             None,
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     }
                     // TODO: BSSRDF
                 }
 
                 // Retro-reflection.
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::DisRetro(DisneyRetro::new(diffuse_weight * c, rough, Some(sc)));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::DisRetro(DisneyRetro::new(
+                        diffuse_weight * c,
+                        rough,
+                        Some(sc),
+                    )));
                 } else {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::DisRetro(DisneyRetro::new(diffuse_weight * c, rough, None));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::DisRetro(DisneyRetro::new(
+                        diffuse_weight * c,
+                        rough,
+                        None,
+                    )));
                 }
                 // Sheen (if enabled).
                 if sheen_weight > 0.0 {
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::DisSheen(DisneySheen::new(
+                        bsdf.add(Bxdf::DisSheen(DisneySheen::new(
                             diffuse_weight * sheen_weight * c_sheen,
                             Some(sc),
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::DisSheen(DisneySheen::new(
+                        bsdf.add(Bxdf::DisSheen(DisneySheen::new(
                             diffuse_weight * sheen_weight * c_sheen,
                             None,
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     }
                 }
             }
@@ -232,24 +226,27 @@ impl DisneyMaterial {
             );
             let fresnel = Fresnel::Disney(DisneyFresnel::new(cspec0, metallic_weight, e));
             if use_scale {
-                bsdf.bxdfs[bxdf_idx] =
-                    Bxdf::MicrofacetRefl(MicrofacetReflection::new(c, distrib, fresnel, Some(sc)));
-                bxdf_idx += 1;
+                bsdf.add(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                    c,
+                    distrib,
+                    fresnel,
+                    Some(sc),
+                )));
             } else {
-                bsdf.bxdfs[bxdf_idx] =
-                    Bxdf::MicrofacetRefl(MicrofacetReflection::new(c, distrib, fresnel, None));
-                bxdf_idx += 1;
+                bsdf.add(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                    c, distrib, fresnel, None,
+                )));
             }
             // Clearcoat
             if cc > 0.0 {
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::DisClearCoat(DisneyClearCoat::new(cc, gloss, Some(sc)));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::DisClearCoat(DisneyClearCoat::new(
+                        cc,
+                        gloss,
+                        Some(sc),
+                    )));
                 } else {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::DisClearCoat(DisneyClearCoat::new(cc, gloss, None));
-                    bxdf_idx += 1;
+                    bsdf.add(Bxdf::DisClearCoat(DisneyClearCoat::new(cc, gloss, None)));
                 }
             }
 
@@ -267,45 +264,41 @@ impl DisneyMaterial {
                         TrowbridgeReitzDistribution::new(ax, ay, true),
                     );
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        bsdf.add(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                             t,
                             scaled_distrib,
                             1.0,
                             e,
                             mode,
                             Some(sc),
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        bsdf.add(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                             t,
                             scaled_distrib,
                             1.0,
                             e,
                             mode,
                             None,
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     }
                 } else {
                     let distrib = MicrofacetDistribution::DisneyMicrofacet(
                         DisneyMicrofacetDistribution::new(ax, ay),
                     );
                     if use_scale {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        bsdf.add(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                             t,
                             distrib,
                             1.0,
                             e,
                             mode,
                             Some(sc),
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     } else {
-                        bsdf.bxdfs[bxdf_idx] = Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                        bsdf.add(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                             t, distrib, 1.0, e, mode, None,
-                        ));
-                        bxdf_idx += 1;
+                        )));
                     }
                 }
             }
@@ -313,12 +306,16 @@ impl DisneyMaterial {
             if self.thin {
                 // Lambertian, weighted by (1.0 - diff_trans}
                 if use_scale {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::LambertianTrans(LambertianTransmission::new(dt * c, Some(sc)));
+                    bsdf.add(Bxdf::LambertianTrans(LambertianTransmission::new(
+                        dt * c,
+                        Some(sc),
+                    )));
                 // bxdf_idx += 1;
                 } else {
-                    bsdf.bxdfs[bxdf_idx] =
-                        Bxdf::LambertianTrans(LambertianTransmission::new(dt * c, None));
+                    bsdf.add(Bxdf::LambertianTrans(LambertianTransmission::new(
+                        dt * c,
+                        None,
+                    )));
                     // bxdf_idx += 1;
                 }
             }

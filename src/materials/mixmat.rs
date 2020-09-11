@@ -67,36 +67,15 @@ impl MixMaterial {
             si.common.time,
             si.shape,
         );
-        self.m1.compute_scattering_functions(
-            si,
-            mode,
-            allow_multiple_lobes,
-            None,
-            Some(s1),
-        );
-        self.m2.compute_scattering_functions(
-            &mut si2,
-            mode,
-            allow_multiple_lobes,
-            None,
-            Some(s2),
-        );
-        let mut last_idx: usize = 0;
-        // find next empty slot
-        if let Some(bsdf) = &si.bsdf {
-            for bxdf_idx in 0..8 {
-                if let Bxdf::Empty(_bxdf) = &bsdf.bxdfs[bxdf_idx] {
-                    last_idx = bxdf_idx;
-                    break;
-                }
-            }
-        }
-        // get Bxdfs from si2 before it gets out of scope
-        if si2.bsdf.is_some() {
-            let bxdfs: [Bxdf; 8] = si2.bsdf.unwrap().bxdfs;
-            if let Some(bsdf) = &mut si.bsdf {
-                for (bxdf_idx, item) in bxdfs.iter().enumerate() {
-                    bsdf.bxdfs[bxdf_idx + last_idx] = match item {
+        self.m1
+            .compute_scattering_functions(si, mode, allow_multiple_lobes, None, Some(s1));
+        self.m2
+            .compute_scattering_functions(&mut si2, mode, allow_multiple_lobes, None, Some(s2));
+        if let Some(bsdf1) = &mut si.bsdf {
+            if let Some(bsdf2) = &si2.bsdf {
+                // get Bxdfs from si2 before it gets out of scope
+                for bxdf2 in bsdf2.bxdfs.as_slice() {
+                    match bxdf2 {
                         Bxdf::Empty(_bxdf) => break,
                         Bxdf::SpecRefl(bxdf) => {
                             let fresnel = match &bxdf.fresnel {
@@ -115,35 +94,43 @@ impl MixMaterial {
                                 }
                                 _ => Fresnel::NoOp(FresnelNoOp {}),
                             };
-                            Bxdf::SpecRefl(SpecularReflection::new(bxdf.r, fresnel, bxdf.sc_opt))
+                            bsdf1.add(Bxdf::SpecRefl(SpecularReflection::new(
+                                bxdf.r,
+                                fresnel,
+                                bxdf.sc_opt,
+                            )))
                         }
-                        Bxdf::SpecTrans(bxdf) => Bxdf::SpecTrans(SpecularTransmission::new(
-                            bxdf.t,
-                            bxdf.eta_a,
-                            bxdf.eta_b,
-                            bxdf.mode,
-                            bxdf.sc_opt,
+                        Bxdf::SpecTrans(bxdf) => {
+                            bsdf1.add(Bxdf::SpecTrans(SpecularTransmission::new(
+                                bxdf.t,
+                                bxdf.eta_a,
+                                bxdf.eta_b,
+                                bxdf.mode,
+                                bxdf.sc_opt,
+                            )))
+                        }
+                        Bxdf::FresnelSpec(bxdf) => {
+                            bsdf1.add(Bxdf::FresnelSpec(FresnelSpecular::new(
+                                bxdf.r,
+                                bxdf.t,
+                                bxdf.eta_a,
+                                bxdf.eta_b,
+                                bxdf.mode,
+                                bxdf.sc_opt,
+                            )))
+                        }
+                        Bxdf::LambertianRefl(bxdf) => bsdf1.add(Bxdf::LambertianRefl(
+                            LambertianReflection::new(bxdf.r, bxdf.sc_opt),
                         )),
-                        Bxdf::FresnelSpec(bxdf) => Bxdf::FresnelSpec(FresnelSpecular::new(
-                            bxdf.r,
-                            bxdf.t,
-                            bxdf.eta_a,
-                            bxdf.eta_b,
-                            bxdf.mode,
-                            bxdf.sc_opt,
+                        Bxdf::LambertianTrans(bxdf) => bsdf1.add(Bxdf::LambertianTrans(
+                            LambertianTransmission::new(bxdf.t, bxdf.sc_opt),
                         )),
-                        Bxdf::LambertianRefl(bxdf) => {
-                            Bxdf::LambertianRefl(LambertianReflection::new(bxdf.r, bxdf.sc_opt))
-                        }
-                        Bxdf::LambertianTrans(bxdf) => {
-                            Bxdf::LambertianTrans(LambertianTransmission::new(bxdf.t, bxdf.sc_opt))
-                        }
-                        Bxdf::OrenNayarRefl(bxdf) => Bxdf::OrenNayarRefl(OrenNayar {
+                        Bxdf::OrenNayarRefl(bxdf) => bsdf1.add(Bxdf::OrenNayarRefl(OrenNayar {
                             r: bxdf.r,
                             a: bxdf.a,
                             b: bxdf.b,
                             sc_opt: bxdf.sc_opt,
-                        }),
+                        })),
                         Bxdf::MicrofacetRefl(bxdf) => {
                             let distribution = match &bxdf.distribution {
                                 MicrofacetDistribution::Beckmann(distribution) => {
@@ -187,12 +174,12 @@ impl MixMaterial {
                                 }
                                 _ => Fresnel::NoOp(FresnelNoOp {}),
                             };
-                            Bxdf::MicrofacetRefl(MicrofacetReflection::new(
+                            bsdf1.add(Bxdf::MicrofacetRefl(MicrofacetReflection::new(
                                 bxdf.r,
                                 distribution,
                                 fresnel,
                                 bxdf.sc_opt,
-                            ))
+                            )))
                         }
                         Bxdf::MicrofacetTrans(bxdf) => {
                             let distribution = match &bxdf.distribution {
@@ -221,14 +208,14 @@ impl MixMaterial {
                                     )
                                 }
                             };
-                            Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
+                            bsdf1.add(Bxdf::MicrofacetTrans(MicrofacetTransmission::new(
                                 bxdf.t,
                                 distribution,
                                 bxdf.eta_a,
                                 bxdf.eta_b,
                                 bxdf.mode,
                                 bxdf.sc_opt,
-                            ))
+                            )))
                         }
                         Bxdf::FresnelBlnd(bxdf) => {
                             let mut distrib: Option<MicrofacetDistribution> = None;
@@ -261,41 +248,43 @@ impl MixMaterial {
                                     }
                                 }
                             }
-                            Bxdf::FresnelBlnd(FresnelBlend::new(
+                            bsdf1.add(Bxdf::FresnelBlnd(FresnelBlend::new(
                                 bxdf.rd,
                                 bxdf.rs,
                                 distrib,
                                 bxdf.sc_opt,
-                            ))
+                            )))
                         }
-                        Bxdf::Fourier(bxdf) => Bxdf::Fourier(FourierBSDF::new(
+                        Bxdf::Fourier(bxdf) => bsdf1.add(Bxdf::Fourier(FourierBSDF::new(
                             bxdf.bsdf_table.clone(),
                             bxdf.mode,
                             bxdf.sc_opt,
-                        )),
-                        Bxdf::Bssrdf(bxdf) => Bxdf::Bssrdf(SeparableBssrdfAdapter {
+                        ))),
+                        Bxdf::Bssrdf(bxdf) => bsdf1.add(Bxdf::Bssrdf(SeparableBssrdfAdapter {
                             bssrdf: bxdf.bssrdf.clone(),
                             mode: bxdf.mode,
                             eta2: bxdf.eta2,
-                        }),
+                        })),
                         Bxdf::DisDiff(bxdf) => {
-                            Bxdf::DisDiff(DisneyDiffuse::new(bxdf.r, bxdf.sc_opt))
+                            bsdf1.add(Bxdf::DisDiff(DisneyDiffuse::new(bxdf.r, bxdf.sc_opt)))
                         }
-                        Bxdf::DisSS(bxdf) => {
-                            Bxdf::DisSS(DisneyFakeSS::new(bxdf.r, bxdf.roughness, bxdf.sc_opt))
-                        }
-                        Bxdf::DisRetro(bxdf) => {
-                            Bxdf::DisRetro(DisneyRetro::new(bxdf.r, bxdf.roughness, bxdf.sc_opt))
-                        }
-                        Bxdf::DisSheen(bxdf) => {
-                            Bxdf::DisSheen(DisneySheen::new(bxdf.r, bxdf.sc_opt))
-                        }
-                        Bxdf::DisClearCoat(bxdf) => Bxdf::DisClearCoat(DisneyClearCoat::new(
-                            bxdf.weight,
-                            bxdf.gloss,
+                        Bxdf::DisSS(bxdf) => bsdf1.add(Bxdf::DisSS(DisneyFakeSS::new(
+                            bxdf.r,
+                            bxdf.roughness,
                             bxdf.sc_opt,
+                        ))),
+                        Bxdf::DisRetro(bxdf) => bsdf1.add(Bxdf::DisRetro(DisneyRetro::new(
+                            bxdf.r,
+                            bxdf.roughness,
+                            bxdf.sc_opt,
+                        ))),
+                        Bxdf::DisSheen(bxdf) => {
+                            bsdf1.add(Bxdf::DisSheen(DisneySheen::new(bxdf.r, bxdf.sc_opt)))
+                        }
+                        Bxdf::DisClearCoat(bxdf) => bsdf1.add(Bxdf::DisClearCoat(
+                            DisneyClearCoat::new(bxdf.weight, bxdf.gloss, bxdf.sc_opt),
                         )),
-                        Bxdf::Hair(bxdf) => Bxdf::Hair(HairBSDF {
+                        Bxdf::Hair(bxdf) => bsdf1.add(Bxdf::Hair(HairBSDF {
                             h: bxdf.h,
                             gamma_o: bxdf.gamma_o,
                             eta: bxdf.eta,
@@ -307,7 +296,7 @@ impl MixMaterial {
                             sin_2k_alpha: bxdf.sin_2k_alpha,
                             cos_2k_alpha: bxdf.cos_2k_alpha,
                             sc_opt: bxdf.sc_opt,
-                        }),
+                        })),
                     };
                 }
             }
