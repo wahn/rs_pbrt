@@ -98,7 +98,11 @@ impl AOIntegrator {
                     };
                     let mut ray: Ray = isect.spawn_ray(&wi);
                     if !scene.intersect_p(&mut ray) {
-                        l += Spectrum::new(vec3_dot_nrmf(&wi, &n) / (pdf * self.n_samples as Float));
+                        if pdf != 0.0 as Float {
+                            l += Spectrum::new(
+                                vec3_dot_nrmf(&wi, &n) / (pdf * self.n_samples as Float),
+                            );
+                        }
                     }
                 }
             }
