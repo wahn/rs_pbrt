@@ -212,7 +212,7 @@ pub fn shuffle<T>(samp: &mut [T], count: i32, n_dimensions: i32, rng: &mut Rng) 
 }
 
 /// Cosine-weighted hemisphere sampling using Malley's method.
-pub fn cosine_sample_hemisphere(u: Point2f) -> Vector3f {
+pub fn cosine_sample_hemisphere(u: &Point2f) -> Vector3f {
     let d: Point2f = concentric_sample_disk(u);
     let z: Float = (0.0 as Float)
         .max(1.0 as Float - d.x * d.x - d.y * d.y)
@@ -306,7 +306,7 @@ pub fn latin_hypercube(samples: &mut [Point2f], n_samples: u32, rng: &mut Rng) {
 }
 
 /// Uniformly sample rays in a hemisphere. Choose a direction.
-pub fn uniform_sample_hemisphere(u: Point2f) -> Vector3f {
+pub fn uniform_sample_hemisphere(u: &Point2f) -> Vector3f {
     let z: Float = u[XYEnum::X];
     let r: Float = (0.0 as Float).max(1.0 as Float - z * z).sqrt();
     let phi: Float = 2.0 as Float * PI * u[XYEnum::Y];
@@ -341,7 +341,7 @@ pub fn uniform_sphere_pdf() -> Float {
 }
 
 /// Uniformly distribute samples over a unit disk.
-pub fn concentric_sample_disk(u: Point2f) -> Point2f {
+pub fn concentric_sample_disk(u: &Point2f) -> Point2f {
     // map uniform random numbers to $[-1,1]^2$
     let u_offset: Point2f = u * 2.0 as Float - Vector2f { x: 1.0, y: 1.0 };
     // handle degeneracy at the origin

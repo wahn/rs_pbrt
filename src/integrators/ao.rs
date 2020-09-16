@@ -48,7 +48,7 @@ impl AOIntegrator {
     }
     pub fn li(
         &self,
-        r: &mut Ray,
+        ray: &mut Ray,
         scene: &Scene,
         sampler: &mut Sampler,
         // arena: &mut Arena,
@@ -56,16 +56,8 @@ impl AOIntegrator {
     ) -> Spectrum {
         // TODO: ProfilePhase p(Prof::SamplerIntegratorLi);
         let mut l: Spectrum = Spectrum::default();
-        let mut ray: Ray = Ray {
-            o: r.o,
-            d: r.d,
-            t_max: r.t_max,
-            time: r.time,
-            differential: r.differential,
-            medium: r.medium.clone(),
-        };
         let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-        if scene.intersect(&mut ray, &mut isect) {
+        if scene.intersect(ray, &mut isect) {
             let mode: TransportMode = TransportMode::Radiance;
             isect.compute_scattering_functions(&ray, true, mode);
             // if (!isect.bsdf) {
@@ -84,10 +76,10 @@ impl AOIntegrator {
                     // Vector3f wi;
                     let mut wi: Vector3f;
                     let pdf = if self.cos_sample {
-                        wi = cosine_sample_hemisphere(*item);
+                        wi = cosine_sample_hemisphere(item);
                         cosine_hemisphere_pdf(wi.z.abs())
                     } else {
-                        wi = uniform_sample_hemisphere(*item);
+                        wi = uniform_sample_hemisphere(item);
                         uniform_hemisphere_pdf()
                     };
                     // transform wi from local frame to world space.
@@ -96,13 +88,9 @@ impl AOIntegrator {
                         y: s.y * wi.x + t.y * wi.y + n.y * wi.z,
                         z: s.z * wi.x + t.z * wi.y + n.z * wi.z,
                     };
-                    let mut ray: Ray = isect.spawn_ray(&wi);
-                    if !scene.intersect_p(&mut ray) {
-                        if pdf != 0.0 as Float {
-                            l += Spectrum::new(
-                                vec3_dot_nrmf(&wi, &n) / (pdf * self.n_samples as Float),
-                            );
-                        }
+                    if pdf != 0.0 as Float && !scene.intersect_p(&mut isect.spawn_ray(&wi)) {
+                        l +=
+                            Spectrum::new(vec3_dot_nrmf(&wi, &n) / (pdf * self.n_samples as Float));
                     }
                 }
             }

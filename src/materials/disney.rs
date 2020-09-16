@@ -508,7 +508,7 @@ impl DisneyClearCoat {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
@@ -595,7 +595,7 @@ impl DisneyMicrofacetDistribution {
             self.d(wh) * abs_cos_theta(wh)
         }
     }
-    pub fn sample_wh(&self, wo: &Vector3f, u: Point2f) -> Vector3f {
+    pub fn sample_wh(&self, wo: &Vector3f, u: &Point2f) -> Vector3f {
         self.inner.sample_wh(wo, u)
     }
     pub fn get_sample_visible_area(&self) -> bool {

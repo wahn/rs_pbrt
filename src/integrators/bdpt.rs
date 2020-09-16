@@ -1387,7 +1387,7 @@ pub fn random_walk<'a>(
                 let f: Spectrum = bsdf.sample_f(
                     &isect_wo,
                     &mut wi,
-                    sampler.get_2d(),
+                    &sampler.get_2d(),
                     &mut pdf_fwd,
                     bsdf_flags,
                     &mut sampled_type,

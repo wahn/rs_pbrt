@@ -484,7 +484,7 @@ pub fn estimate_direct(
                     f = bsdf.sample_f(
                         &it.get_wo(),
                         &mut wi,
-                        u_scattering,
+                        &u_scattering,
                         &mut scattering_pdf,
                         bsdf_flags,
                         &mut sampled_type,

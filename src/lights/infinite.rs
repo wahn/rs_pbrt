@@ -423,7 +423,7 @@ impl InfiniteAreaLight {
         let mut v1: Vector3f = Vector3f::default();
         let mut v2: Vector3f = Vector3f::default();
         vec3_coordinate_system(&-d, &mut v1, &mut v2);
-        let cd: Point2f = concentric_sample_disk(u2);
+        let cd: Point2f = concentric_sample_disk(&u2);
         let world_center: Point3f = *self.world_center.read().unwrap();
         let world_radius: Float = *self.world_radius.read().unwrap();
         let p_disk: Point3f = world_center + (v1 * cd.x + v2 * cd.y) * world_radius;

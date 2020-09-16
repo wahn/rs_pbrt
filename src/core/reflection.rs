@@ -299,7 +299,7 @@ impl Bsdf {
         &self,
         wo_world: &Vector3f,
         wi_world: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         bsdf_flags: u8,
         sampled_type: &mut u8,
@@ -360,7 +360,7 @@ impl Bsdf {
             if *sampled_type != 0_u8 {
                 *sampled_type = bxdf.get_type();
             }
-            let mut f: Spectrum = bxdf.sample_f(&wo, &mut wi, u_remapped, pdf, sampled_type);
+            let mut f: Spectrum = bxdf.sample_f(&wo, &mut wi, &u_remapped, pdf, sampled_type);
             // let mut ratio: Spectrum = Spectrum::default();
             // if *pdf > 0.0 as Float {
             //     ratio = f / *pdf;
@@ -537,7 +537,7 @@ impl Bxdf {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         sampled_type: &mut u8,
     ) -> Spectrum {
@@ -566,11 +566,11 @@ impl Bxdf {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(u);
+        *wi = cosine_sample_hemisphere(&u);
         if wo.z < 0.0 {
             wi.z *= -1.0;
         }
@@ -726,7 +726,7 @@ impl SpecularReflection {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        _sample: Point2f,
+        _sample: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
@@ -789,7 +789,7 @@ impl SpecularTransmission {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        _sample: Point2f,
+        _sample: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
@@ -873,7 +873,7 @@ impl FresnelSpecular {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        sample: Point2f,
+        sample: &Point2f,
         pdf: &mut Float,
         sampled_type: &mut u8,
     ) -> Spectrum {
@@ -971,11 +971,11 @@ impl LambertianReflection {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(u);
+        *wi = cosine_sample_hemisphere(&u);
         if wo.z < 0.0 as Float {
             wi.z *= -1.0 as Float;
         }
@@ -1019,11 +1019,11 @@ impl LambertianTransmission {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        *wi = cosine_sample_hemisphere(u);
+        *wi = cosine_sample_hemisphere(&u);
         if wo.z > 0.0 as Float {
             wi.z *= -1.0 as Float;
         }
@@ -1098,7 +1098,7 @@ impl OrenNayar {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
@@ -1174,7 +1174,7 @@ impl MicrofacetReflection {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
@@ -1320,7 +1320,7 @@ impl MicrofacetTransmission {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        u: Point2f,
+        u: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
@@ -1430,15 +1430,15 @@ impl FresnelBlend {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        sample: Point2f,
+        u_orig: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {
-        let mut u: Point2f = sample;
+        let mut u: Point2f = *u_orig;
         if u[XYEnum::X] < 0.5 as Float {
             u[XYEnum::X] = Float::min(2.0 * u[XYEnum::X], FLOAT_ONE_MINUS_EPSILON);
             // cosine-sample the hemisphere, flipping the direction if necessary
-            *wi = cosine_sample_hemisphere(u);
+            *wi = cosine_sample_hemisphere(&u);
             if wo.z < 0.0 as Float {
                 wi.z *= -1.0 as Float;
             }
@@ -1446,7 +1446,7 @@ impl FresnelBlend {
             u[XYEnum::X] = Float::min(2.0 * (u[XYEnum::X] - 0.5 as Float), FLOAT_ONE_MINUS_EPSILON);
             // sample microfacet orientation $\wh$ and reflected direction $\wi$
             if let Some(ref distribution) = self.distribution {
-                let wh: Vector3f = distribution.sample_wh(wo, u);
+                let wh: Vector3f = distribution.sample_wh(wo, &u);
                 *wi = reflect(wo, &wh);
                 if !vec3_same_hemisphere_vec3(wo, &*wi) {
                     return Spectrum::new(0.0);
@@ -1588,7 +1588,7 @@ impl FourierBSDF {
         &self,
         wo: &Vector3f,
         wi: &mut Vector3f,
-        sample: Point2f,
+        sample: &Point2f,
         pdf: &mut Float,
         _sampled_type: &mut u8,
     ) -> Spectrum {

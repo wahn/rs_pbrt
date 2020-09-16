@@ -249,7 +249,7 @@ impl SPPMIntegrator {
                                                             let f: Spectrum = bsdf.sample_f(
                                                                 &wo,
                                                                 &mut wi,
-                                                                tile_sampler.get_2d(),
+                                                                &tile_sampler.get_2d(),
                                                                 &mut pdf,
                                                                 bsdf_flags,
                                                                 &mut sampled_type,
@@ -656,7 +656,7 @@ impl SPPMIntegrator {
                                                     let fr: Spectrum = photon_bsdf.sample_f(
                                                         &wo,
                                                         &mut wi,
-                                                        bsdf_sample,
+                                                        &bsdf_sample,
                                                         &mut pdf,
                                                         bsdf_flags,
                                                         &mut sampled_type,

@@ -126,16 +126,16 @@ impl DiffuseAreaLight {
             // the chosen side.
             if u[XYEnum::X] < 0.5 as Float {
                 u[XYEnum::X] = (u[XYEnum::X] * 2.0 as Float).min(FLOAT_ONE_MINUS_EPSILON);
-                w = cosine_sample_hemisphere(u);
+                w = cosine_sample_hemisphere(&u);
             } else {
                 u[XYEnum::X] =
                     ((u[XYEnum::X] - 0.5 as Float) * 2.0 as Float).min(FLOAT_ONE_MINUS_EPSILON);
-                w = cosine_sample_hemisphere(u);
+                w = cosine_sample_hemisphere(&u);
                 w.z *= -1.0 as Float;
             }
             *pdf_dir = 0.5 as Float * cosine_hemisphere_pdf(w.z.abs());
         } else {
-            w = cosine_sample_hemisphere(u2);
+            w = cosine_sample_hemisphere(&u2);
             *pdf_dir = cosine_hemisphere_pdf(w.z);
         }
         let n: Vector3f = Vector3f::from(ic.n);

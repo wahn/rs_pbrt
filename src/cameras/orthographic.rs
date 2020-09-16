@@ -170,7 +170,7 @@ impl OrthographicCamera {
         // modify ray for depth of field
         if self.lens_radius > 0.0 as Float {
             // sample point on lens
-            let p_lens: Point2f = concentric_sample_disk(sample.p_lens) * self.lens_radius;
+            let p_lens: Point2f = concentric_sample_disk(&sample.p_lens) * self.lens_radius;
             // compute point on plane of focus
             let ft: Float = self.focal_distance / ray.d.z;
             let p_focus: Point3f = ray.position(ft);
@@ -187,7 +187,7 @@ impl OrthographicCamera {
             // compute _OrthographicCamera_ ray differentials accounting for lens
 
             // sample point on lens
-            let p_lens: Point2f = concentric_sample_disk(sample.p_lens) * self.lens_radius;
+            let p_lens: Point2f = concentric_sample_disk(&sample.p_lens) * self.lens_radius;
             let ft: Float = self.focal_distance / ray.d.z;
             let p_focus: Point3f = p_camera
                 + self.dx_camera
