@@ -92,7 +92,7 @@ impl PathIntegrator {
             //          bounces, l, beta);
             // intersect _ray_ with scene and store intersection in _isect_
             let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-            if scene.intersect(&mut ray, &mut isect) {
+            if scene.intersect(&ray, &mut isect) {
                 // possibly add emitted light at intersection
                 if bounces == 0 || specular_bounce {
                     // add emitted light at path vertex
@@ -269,7 +269,7 @@ impl PathIntegrator {
                 if bounces == 0 || specular_bounce {
                     // for (const auto &light : scene.infiniteLights)
                     for light in &scene.infinite_lights {
-                        l += beta * light.le(&mut ray);
+                        l += beta * light.le(&ray);
                     }
                     // println!("Added infinite area lights -> L = {:?}", l);
                 }

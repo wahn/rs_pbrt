@@ -505,16 +505,7 @@ impl<'a> SurfaceInteraction<'a> {
         if let Some(primitive_raw) = self.primitive {
             let primitive = unsafe { &*primitive_raw };
             if let Some(area_light) = primitive.get_area_light() {
-                // create InteractionCommon from self
-                let interaction: InteractionCommon = InteractionCommon {
-                    p: self.common.p,
-                    time: self.common.time,
-                    p_error: self.common.p_error,
-                    wo: self.common.wo,
-                    n: self.common.n,
-                    medium_interface: None,
-                };
-                return area_light.l(&interaction, w);
+                return area_light.l(&self.common, w);
             }
         }
         Spectrum::default()
