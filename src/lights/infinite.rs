@@ -1,4 +1,5 @@
 // std
+use std::cell::Cell;
 use std::f32::consts::PI;
 use std::io::BufReader;
 use std::sync::{Arc, RwLock};
@@ -365,7 +366,7 @@ impl InfiniteAreaLight {
     /// emitted radiance due to that light along a ray that escapes
     /// the scene bounds. It's the responsibility of the integrators
     /// to call this method for these rays.
-    pub fn le(&self, ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, ray: &Ray) -> Spectrum {
         let w: Vector3f = self.world_to_light.transform_vector(&ray.d).normalize();
         let st: Point2f = Point2f {
             x: spherical_phi(&w) * INV_2_PI,
@@ -430,7 +431,7 @@ impl InfiniteAreaLight {
         *ray = Ray {
             o: p_disk + -d * world_radius,
             d,
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time,
             differential: None,
             medium: None,

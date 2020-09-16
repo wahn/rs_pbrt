@@ -211,9 +211,9 @@ impl Triangle {
         p1t.z *= sz;
         p2t.z *= sz;
         let t_scaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max * det) {
+        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max.get() * det) {
             return false;
-        } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max * det) {
+        } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max.get() * det) {
             return false;
         }
         // compute barycentric coordinates and $t$ value for triangle intersection
@@ -526,9 +526,9 @@ impl Triangle {
         p1t.z *= sz;
         p2t.z *= sz;
         let t_scaled: Float = e0 * p0t.z + e1 * p1t.z + e2 * p2t.z;
-        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max * det) {
+        if det < 0.0 && (t_scaled >= 0.0 || t_scaled < ray.t_max.get() * det) {
             return false;
-        } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max * det) {
+        } else if det > 0.0 && (t_scaled <= 0.0 || t_scaled > ray.t_max.get() * det) {
             return false;
         }
         // compute barycentric coordinates and $t$ value for triangle intersection

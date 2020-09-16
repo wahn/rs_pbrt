@@ -1,11 +1,14 @@
 // std
+use std::cell::Cell;
 use std::path::PathBuf;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::{Camera, CameraSample};
 use crate::core::film::Film;
 use crate::core::floatfile::read_float_file;
-use crate::core::geometry::{bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2f};
+use crate::core::geometry::{
+    bnd2_expand, bnd2_union_pnt2, nrm_faceforward_vec3, pnt2_inside_bnd2f,
+};
 use crate::core::geometry::{
     Bounds2f, Normal3f, Point2f, Point3f, Ray, RayDifferential, Vector3f, XYEnum,
 };
@@ -219,7 +222,7 @@ impl RealisticCamera {
         let mut r_film: Ray = Ray::default();
         r_film.o = p_film;
         r_film.d = p_rear - p_film;
-        r_film.t_max = std::f32::INFINITY;
+        r_film.t_max = Cell::new(std::f32::INFINITY);
         r_film.time = lerp(sample.time, self.shutter_open, self.shutter_close);
         if !self.trace_lenses_from_film(&r_film, Some(ray)) {
             // ++vignettedRays;
@@ -451,7 +454,7 @@ impl RealisticCamera {
                 y: 0.0 as Float,
                 z: -1.0 as Float,
             },
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time: 0.0 as Float,
             medium: None,
             differential: None,
@@ -540,7 +543,7 @@ impl RealisticCamera {
                         y: 0.0 as Float,
                         z: film_distance,
                     },
-                    t_max: std::f32::INFINITY,
+                    t_max: Cell::new(std::f32::INFINITY),
                     time: 0.0 as Float,
                     medium: None,
                     differential: None,
@@ -613,7 +616,7 @@ impl RealisticCamera {
                 &Ray {
                     o: p_film,
                     d: p_rear - p_film,
-                    t_max: std::f32::INFINITY,
+                    t_max: Cell::new(std::f32::INFINITY),
                     time: 0.0 as Float,
                     medium: None,
                     differential: None,

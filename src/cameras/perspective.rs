@@ -1,4 +1,5 @@
 // std
+use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
@@ -221,7 +222,7 @@ impl PerspectiveCamera {
         let mut in_ray: Ray = Ray {
             o: Point3f::default(),
             d: dir,
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time: lerp(sample.time, self.shutter_open, self.shutter_close),
             medium: None,
             differential: Some(diff),

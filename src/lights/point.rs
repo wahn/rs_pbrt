@@ -1,4 +1,5 @@
 // std
+use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::Arc;
 // pbrt
@@ -72,7 +73,7 @@ impl PointLight {
     pub fn preprocess(&self, _scene: &Scene) {}
     /// Default implementation returns no emitted radiance for a ray
     /// that escapes the scene bounds.
-    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, _ray: &Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
     pub fn pdf_li(&self, _iref: &dyn Interaction, _wi: &Vector3f) -> Float {
@@ -92,7 +93,7 @@ impl PointLight {
         *ray = Ray {
             o: self.p_light,
             d: uniform_sample_sphere(u1),
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time,
             differential: None,
             medium: None,

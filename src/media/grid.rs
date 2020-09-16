@@ -158,7 +158,7 @@ impl GridDensityMedium {
         let mut in_ray: Ray = Ray::default();
         in_ray.o = r_world.o;
         in_ray.d = r_world.d.normalize();
-        in_ray.t_max = r_world.t_max * r_world.d.length();
+        *in_ray.t_max.get_mut() = r_world.t_max.get() * r_world.d.length();
         let ray: Ray = self.world_to_medium.transform_ray(&in_ray);
         // compute $[\tmin, \tmax]$ interval of _ray_'s overlap with medium bounds
         let b: Bounds3f = Bounds3f::new(
@@ -213,7 +213,7 @@ impl GridDensityMedium {
         let mut in_ray: Ray = Ray::default();
         in_ray.o = r_world.o;
         in_ray.d = r_world.d.normalize();
-        in_ray.t_max = r_world.t_max * r_world.d.length();
+        *in_ray.t_max.get_mut() = r_world.t_max.get() * r_world.d.length();
         let ray: Ray = self.world_to_medium.transform_ray(&in_ray);
         // compute $[\tmin, \tmax]$ interval of _ray_'s overlap with medium bounds
         let b: Bounds3f = Bounds3f::new(

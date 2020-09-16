@@ -32,7 +32,7 @@ impl HomogeneousMedium {
     // Medium
     pub fn tr(&self, ray: &Ray, _sampler: &mut Sampler) -> Spectrum {
         // TODO: ProfilePhase _(Prof::MediumTr);
-        (-self.sigma_t * (ray.t_max * ray.d.length()).min(f32::MAX)).exp()
+        (-self.sigma_t * (ray.t_max.get() * ray.d.length()).min(f32::MAX)).exp()
     }
     pub fn sample(
         &self,
@@ -48,8 +48,8 @@ impl HomogeneousMedium {
             _ => RGBEnum::Blue,
         };
         let dist: Float = -((1.0 as Float - sampler.get_1d()).ln()) / self.sigma_t[channel_rgb];
-        let t: Float = (dist / ray.d.length()).min(ray.t_max);
-        let sampled_medium: bool = t < ray.t_max;
+        let t: Float = (dist / ray.d.length()).min(ray.t_max.get());
+        let sampled_medium: bool = t < ray.t_max.get();
         let mi_opt = if sampled_medium {
             let mi: MediumInteraction = MediumInteraction::new(
                 &ray.position(t),

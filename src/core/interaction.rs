@@ -60,7 +60,7 @@ impl InteractionCommon {
         Ray {
             o,
             d: *d,
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time: self.time,
             differential: None,
             medium: self.get_medium(d),
@@ -72,7 +72,7 @@ impl InteractionCommon {
         Ray {
             o: origin,
             d,
-            t_max: 1.0 - SHADOW_EPSILON,
+            t_max: Cell::new(1.0 - SHADOW_EPSILON),
             time: self.time,
             differential: None,
             medium: self.get_medium(&d),
@@ -86,7 +86,7 @@ impl InteractionCommon {
         Ray {
             o: origin,
             d,
-            t_max: 1.0 - SHADOW_EPSILON,
+            t_max: Cell::new(1.0 - SHADOW_EPSILON),
             time: self.time,
             differential: None,
             medium: self.get_medium(&d),
@@ -198,7 +198,7 @@ impl Interaction for MediumInteraction {
         Ray {
             o,
             d: *d,
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time: self.common.time,
             differential: None,
             medium: self.get_medium(d),
@@ -534,7 +534,7 @@ impl<'a> Interaction for SurfaceInteraction<'a> {
         Ray {
             o,
             d: *d,
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time: self.common.time,
             differential: None,
             medium: self.get_medium(d),

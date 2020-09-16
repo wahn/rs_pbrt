@@ -158,7 +158,7 @@ impl<'a> Interaction for EndpointInteraction<'a> {
         Ray {
             o,
             d: *d,
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time: self.common.time,
             differential: None,
             medium: self.get_medium(d),
@@ -549,7 +549,7 @@ impl<'a> Vertex<'a> {
                 let mut ray: Ray = Ray {
                     o: self.p(),
                     d: -w,
-                    t_max: Float::default(),
+                    t_max: Cell::new(Float::default()),
                     time: Float::default(),
                     differential: None,
                     medium: None,
@@ -664,7 +664,7 @@ impl<'a> Vertex<'a> {
                             &Ray {
                                 o: self.p(),
                                 d: w,
-                                t_max: std::f32::INFINITY,
+                                t_max: Cell::new(std::f32::INFINITY),
                                 time: self.time(),
                                 differential: None,
                                 medium: None,
@@ -688,7 +688,7 @@ impl<'a> Vertex<'a> {
                             &Ray {
                                 o: self.p(),
                                 d: w,
-                                t_max: std::f32::INFINITY,
+                                t_max: Cell::new(std::f32::INFINITY),
                                 time: self.time(),
                                 differential: None,
                                 medium: None,
@@ -748,7 +748,7 @@ impl<'a> Vertex<'a> {
                                     &Ray {
                                         o: self.p(),
                                         d: w,
-                                        t_max: std::f32::INFINITY,
+                                        t_max: Cell::new(std::f32::INFINITY),
                                         time: self.time(),
                                         differential: None,
                                         medium: None,
@@ -783,7 +783,7 @@ impl<'a> Vertex<'a> {
                                         &Ray {
                                             o: self.p(),
                                             d: w,
-                                            t_max: std::f32::INFINITY,
+                                            t_max: Cell::new(std::f32::INFINITY),
                                             time: self.time(),
                                             differential: None,
                                             medium: None,

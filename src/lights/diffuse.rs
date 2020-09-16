@@ -94,7 +94,7 @@ impl DiffuseAreaLight {
     pub fn preprocess(&self, _scene: &Scene) {
         // TODO?
     }
-    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, _ray: &Ray) -> Spectrum {
         Spectrum::default()
     }
     pub fn pdf_li(&self, iref: &dyn Interaction, wi: &Vector3f) -> Float {

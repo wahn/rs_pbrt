@@ -52,7 +52,7 @@ impl Scene {
     pub fn world_bound(&self) -> Bounds3f {
         self.world_bound
     }
-    pub fn intersect(&self, ray: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
+    pub fn intersect(&self, ray: &Ray, isect: &mut SurfaceInteraction) -> bool {
         // TODO: ++nIntersectionTests;
         assert_ne!(
             ray.d,

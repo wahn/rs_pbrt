@@ -105,7 +105,7 @@ impl Disk {
             return false;
         }
         let t_shape_hit: Float = (self.height - ray.o.z) / ray.d.z;
-        if t_shape_hit <= 0.0 || t_shape_hit >= ray.t_max {
+        if t_shape_hit <= 0.0 || t_shape_hit >= ray.t_max.get() {
             return false;
         }
         // see if hit point is inside disk radii and $\phimax$
@@ -176,7 +176,7 @@ impl Disk {
             return false;
         }
         let t_shape_hit: Float = (self.height - ray.o.z) / ray.d.z;
-        if t_shape_hit <= 0.0 || t_shape_hit >= ray.t_max {
+        if t_shape_hit <= 0.0 || t_shape_hit >= ray.t_max.get() {
             return false;
         }
         // see if hit point is inside disk radii and $\phimax$

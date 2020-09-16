@@ -1,4 +1,5 @@
 // std
+use std::cell::Cell;
 use std::sync::Arc;
 // pbrt
 use crate::core::camera::{Camera, CameraSample};
@@ -162,7 +163,7 @@ impl OrthographicCamera {
                 y: 0.0,
                 z: 1.0,
             },
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time: lerp(sample.time, self.shutter_open, self.shutter_close),
             medium: None,
             differential: None,

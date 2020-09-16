@@ -129,13 +129,13 @@ impl Sphere {
             return false;
         }
         // check quadric shape _t0_ and _t1_ for nearest intersection
-        if t0.upper_bound() > ray.t_max as f32 || t1.lower_bound() <= 0.0f32 {
+        if t0.upper_bound() > ray.t_max.get() as f32 || t1.lower_bound() <= 0.0f32 {
             return false;
         }
         let mut t_shape_hit: EFloat = t0;
         if t_shape_hit.lower_bound() <= 0.0f32 {
             t_shape_hit = t1;
-            if t_shape_hit.upper_bound() > ray.t_max as f32 {
+            if t_shape_hit.upper_bound() > ray.t_max.get() as f32 {
                 return false;
             }
         }
@@ -158,7 +158,7 @@ impl Sphere {
             if t_shape_hit == t1 {
                 return false;
             }
-            if t1.upper_bound() > ray.t_max as f32 {
+            if t1.upper_bound() > ray.t_max.get() as f32 {
                 return false;
             }
             t_shape_hit = t1;
@@ -295,13 +295,13 @@ impl Sphere {
             return false;
         }
         // check quadric shape _t0_ and _t1_ for nearest intersection
-        if t0.upper_bound() > ray.t_max as f32 || t1.lower_bound() <= 0.0f32 {
+        if t0.upper_bound() > ray.t_max.get() as f32 || t1.lower_bound() <= 0.0f32 {
             return false;
         }
         let mut t_shape_hit: EFloat = t0;
         if t_shape_hit.lower_bound() <= 0.0f32 {
             t_shape_hit = t1;
-            if t_shape_hit.upper_bound() > ray.t_max as f32 {
+            if t_shape_hit.upper_bound() > ray.t_max.get() as f32 {
                 return false;
             }
         }
@@ -324,7 +324,7 @@ impl Sphere {
             if t_shape_hit == t1 {
                 return false;
             }
-            if t1.upper_bound() > ray.t_max as f32 {
+            if t1.upper_bound() > ray.t_max.get() as f32 {
                 return false;
             }
             t_shape_hit = t1;

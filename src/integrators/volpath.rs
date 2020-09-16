@@ -1,5 +1,6 @@
 // std
 use std::borrow::Borrow;
+use std::cell::Cell;
 use std::sync::Arc;
 // pbrt
 // use crate::core::bssrdf::Bssrdf;
@@ -70,7 +71,7 @@ impl VolPathIntegrator {
         let mut ray: Ray = Ray {
             o: r.o,
             d: r.d,
-            t_max: r.t_max,
+            t_max: Cell::new(r.t_max.get()),
             time: r.time,
             differential: r.differential,
             medium: r.medium.clone(),

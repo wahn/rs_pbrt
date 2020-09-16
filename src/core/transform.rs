@@ -550,7 +550,7 @@ impl Transform {
         let d: Vector3f = self.transform_vector(&r.d);
         // offset ray origin to edge of error bounds and compute _tMax_
         let length_squared: Float = d.length_squared();
-        let mut t_max: Float = r.t_max;
+        let mut t_max: Float = r.t_max.get();
         if length_squared > 0.0 as Float {
             let dt: Float = vec3_dot_vec3f(&d.abs(), &o_error) / length_squared;
             o += d * dt;
@@ -567,7 +567,7 @@ impl Transform {
                 Ray {
                     o,
                     d,
-                    t_max,
+                    t_max: Cell::new(t_max),
                     time: r.time,
                     differential: Some(diff),
                     medium: Some(medium_arc.clone()),
@@ -576,7 +576,7 @@ impl Transform {
                 Ray {
                     o,
                     d,
-                    t_max,
+                    t_max: Cell::new(t_max),
                     time: r.time,
                     differential: Some(diff),
                     medium: None,
@@ -586,7 +586,7 @@ impl Transform {
             Ray {
                 o,
                 d,
-                t_max,
+                t_max: Cell::new(t_max),
                 time: r.time,
                 differential: None,
                 medium: Some(medium_arc.clone()),
@@ -595,7 +595,7 @@ impl Transform {
             Ray {
                 o,
                 d,
-                t_max,
+                t_max: Cell::new(t_max),
                 time: r.time,
                 differential: None,
                 medium: None,
@@ -815,7 +815,7 @@ impl Transform {
         Ray {
             o,
             d,
-            t_max: r.t_max,
+            t_max: Cell::new(r.t_max.get()),
             time: r.time,
             differential: None,
             medium: r.medium.clone(),

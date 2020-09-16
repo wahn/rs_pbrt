@@ -88,6 +88,7 @@
 //!
 //! ```rust
 //! use pbrt::core::geometry::{Ray, Point3f, Vector3f};
+//! use std::cell::Cell;
 //!
 //! fn main() {
 //!     let origin = Point3f {
@@ -103,7 +104,7 @@
 //!     let ray = Ray {
 //!         o: origin,
 //!         d: direction,
-//!         t_max: std::f32::INFINITY,
+//!         t_max: Cell::new(std::f32::INFINITY),
 //!         time: 0.0,
 //!         medium: None,
 //!         differential: None,
@@ -168,6 +169,7 @@
 //! ```
 
 // std
+use std::cell::Cell;
 use std::f32::consts::PI;
 use std::ops;
 use std::ops::{Index, IndexMut};
@@ -929,7 +931,7 @@ impl Index<XYEnum> for Point2i {
     }
 }
 
-impl IndexMut<XYEnum> for Point2f{
+impl IndexMut<XYEnum> for Point2f {
     fn index_mut(&mut self, index: XYEnum) -> &mut Float {
         match index {
             XYEnum::X => &mut self.x,
@@ -2196,7 +2198,7 @@ impl Bounds3f {
     }
     pub fn intersect_b(&self, ray: &Ray, hitt0: &mut Float, hitt1: &mut Float) -> bool {
         let mut t0: Float = 0.0;
-        let mut t1: Float = ray.t_max;
+        let mut t1: Float = ray.t_max.get();
         for i in XYZEnum::iter() {
             // update interval for _i_th bounding box slab
             let inv_ray_dir: Float = 1.0 as Float / ray.d[i];
@@ -2278,7 +2280,7 @@ impl Bounds3f {
         if tz_max < t_max {
             t_max = tz_max;
         }
-        (t_min < ray.t_max) && (t_max > 0.0)
+        (t_min < ray.t_max.get()) && (t_max > 0.0)
     }
 }
 
@@ -2395,7 +2397,7 @@ pub struct Ray {
     /// direction
     pub d: Vector3f,
     /// limits the ray to a segment along its infinite extent
-    pub t_max: Float,
+    pub t_max: Cell<Float>,
     /// used for animations
     pub time: Float,
     pub medium: Option<Arc<Medium>>,

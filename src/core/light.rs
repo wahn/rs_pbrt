@@ -81,7 +81,7 @@ impl Light {
             Light::Spot(light) => light.preprocess(scene),
         }
     }
-    pub fn le(&self, ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, ray: &Ray) -> Spectrum {
         match self {
             Light::DiffuseArea(light) => light.le(ray),
             Light::Distant(light) => light.le(ray),

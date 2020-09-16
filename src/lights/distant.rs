@@ -1,4 +1,5 @@
 // std
+use std::cell::Cell;
 use std::f32::consts::PI;
 use std::sync::RwLock;
 // pbrt
@@ -85,7 +86,7 @@ impl DistantLight {
     }
     /// Default implementation returns no emitted radiance for a ray
     /// that escapes the scene bounds.
-    pub fn le(&self, _ray: &mut Ray) -> Spectrum {
+    pub fn le(&self, _ray: &Ray) -> Spectrum {
         Spectrum::new(0.0 as Float)
     }
     pub fn pdf_li(&self, _iref: &dyn Interaction, _wi: &Vector3f) -> Float {
@@ -115,7 +116,7 @@ impl DistantLight {
         *ray = Ray {
             o: p_disk + self.w_light * world_radius,
             d: -self.w_light,
-            t_max: std::f32::INFINITY,
+            t_max: Cell::new(std::f32::INFINITY),
             time,
             differential: None,
             medium: None,

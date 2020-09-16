@@ -500,7 +500,7 @@ impl KdTreeAccel {
     pub fn world_bound(&self) -> Bounds3f {
         self.bounds
     }
-    pub fn intersect(&self, ray: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
+    pub fn intersect(&self, ray: &Ray, isect: &mut SurfaceInteraction) -> bool {
         // TODO: ProfilePhase p(Prof::AccelIntersect);
         if self.nodes.is_empty() {
             return false;
@@ -525,7 +525,7 @@ impl KdTreeAccel {
         let mut node_opt: Option<&KdAccelNode> = self.nodes.get(node_idx);
         while let Some(node) = node_opt {
             // bail out if we found a hit closer than the current node
-            if ray.t_max < t_min {
+            if ray.t_max.get() < t_min {
                 break;
             }
             if !node.is_leaf() {

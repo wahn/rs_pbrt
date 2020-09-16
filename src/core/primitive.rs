@@ -34,7 +34,7 @@ impl Primitive {
             Primitive::KdTree(primitive) => primitive.world_bound(),
         }
     }
-    pub fn intersect(&self, ray: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
+    pub fn intersect(&self, ray: &Ray, isect: &mut SurfaceInteraction) -> bool {
         match self {
             Primitive::Geometric(primitive) => {
                 let hit_surface: bool = primitive.intersect(ray, isect);
@@ -147,11 +147,13 @@ impl GeometricPrimitive {
     pub fn world_bound(&self) -> Bounds3f {
         self.shape.world_bound()
     }
-    pub fn intersect(&self, ray: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
+    pub fn intersect(&self, ray: &Ray, isect: &mut SurfaceInteraction) -> bool {
         let mut t_hit: Float = 0.0;
         if self.shape.intersect(ray, &mut t_hit, isect) {
             // TODO: isect.primitive
-            ray.t_max = t_hit;
+            {
+                ray.t_max.set(t_hit);
+            }
             // let it: &SurfaceInteraction = isect_rc.borrow();
             assert!(nrm_dot_nrmf(&isect.common.n, &isect.shading.n) >= 0.0 as Float);
             // initialize _SurfaceInteraction::mediumInterface_ after
@@ -218,14 +220,14 @@ impl TransformedPrimitive {
         self.primitive_to_world
             .motion_bounds(&self.primitive.world_bound())
     }
-    pub fn intersect(&self, r: &mut Ray, isect: &mut SurfaceInteraction) -> bool {
+    pub fn intersect(&self, r: &Ray, isect: &mut SurfaceInteraction) -> bool {
         // compute _ray_ after transformation by _self.primitive_to_world_
         let mut interpolated_prim_to_world: Transform = Transform::default();
         self.primitive_to_world
             .interpolate(r.time, &mut interpolated_prim_to_world);
         let mut ray: Ray = Transform::inverse(&interpolated_prim_to_world).transform_ray(&*r);
         if self.primitive.intersect(&mut ray, isect) {
-            r.t_max = ray.t_max;
+            r.t_max.set(ray.t_max.get());
             // transform instance's intersection data to world space
             if !interpolated_prim_to_world.is_identity() {
                 interpolated_prim_to_world.transform_surface_interaction(isect);

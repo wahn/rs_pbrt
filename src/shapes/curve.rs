@@ -184,7 +184,7 @@ impl Curve {
                     continue;
                 }
 
-                let z_max: Float = ray_length * ray.t_max;
+                let z_max: Float = ray_length * ray.t_max.get();
                 if cps[0].z.max(cps[1].z).max(cps[2].z.max(cps[3].z)) + 0.5 as Float * max_width
                     < 0.0 as Float
                     || cps[0].z.min(cps[1].z).min(cps[2].z.min(cps[3].z)) - 0.5 as Float * max_width
@@ -270,7 +270,7 @@ impl Curve {
             if pt_curve_dist2 > hit_width * hit_width * 0.25 as Float {
                 return false;
             }
-            let z_max: Float = ray_length * ray.t_max;
+            let z_max: Float = ray_length * ray.t_max.get();
             if pc.z < 0.0 as Float || pc.z > z_max {
                 return false;
             }
@@ -438,7 +438,7 @@ impl Curve {
 
         // check for non-overlap in z.
         let ray_length: Float = ray.d.length();
-        let z_max: Float = ray_length * ray.t_max;
+        let z_max: Float = ray_length * ray.t_max.get();
         if cp[0].z.max(cp[1].z).max(cp[2].z.max(cp[3].z)) + 0.5 as Float * max_width < 0.0 as Float
             || cp[0].z.min(cp[1].z).min(cp[2].z.min(cp[3].z)) - 0.5 as Float * max_width > z_max
         {
