@@ -129,7 +129,7 @@ impl SpatialLightDistribution {
         // bounding box dimension has maxVoxels voxels and the other
         // dimensions have a number of voxels so that voxels are
         // roughly cube shaped.
-        let b: Bounds3f = scene.world_bound();
+        let b: Bounds3f = *scene.world_bound();
         let diag: Vector3f = b.diagonal();
         let bmax_i: XYZEnum = match b.maximum_extent() {
             0 => XYZEnum::X,

@@ -2077,7 +2077,7 @@ impl Bounds3f {
         }
     }
     pub fn offset(&self, p: &Point3f) -> Vector3f {
-        let mut o: Vector3f = *p - self.p_min;
+        let mut o: Vector3f = p - self.p_min;
         if self.p_max.x > self.p_min.x {
             o.x /= self.p_max.x - self.p_min.x;
         }

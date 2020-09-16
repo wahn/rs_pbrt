@@ -83,7 +83,7 @@ impl Primitive {
                 isect,
                 mode,
                 allow_multiple_lobes,
-                self.get_material(),
+                Some(material.clone()),
                 None,
             );
         }

@@ -1079,7 +1079,7 @@ pub fn sobol_sample_float(a: i64, dimension: i32, scramble: u32) -> Float {
 
 /// Once we have an appropriate prime number, use it to compute the
 /// radical inverse.
-pub fn radical_inverse_specialized(base: u16, a: u64) -> Float {
+fn radical_inverse_specialized(base: u16, a: u64) -> Float {
     let inv_base: Float = 1.0 as Float / base as Float;
     let mut reversed_digits: u64 = 0_u64;
     let mut inv_base_n: Float = 1.0 as Float;
@@ -1098,7 +1098,7 @@ pub fn radical_inverse_specialized(base: u16, a: u64) -> Float {
 /// Compute the radical inverse, but put each pixel through the
 /// permutation table for the given base. Deal with a special case
 /// that can arise.
-pub fn scrambled_radical_inverse_specialized(base: u16, perm: &[u16], a: u64) -> Float {
+fn scrambled_radical_inverse_specialized(base: u16, perm: &[u16], a: u64) -> Float {
     let inv_base: Float = 1.0 as Float / base as Float;
     let mut reversed_digits: u64 = 0_u64;
     let mut inv_base_n: Float = 1.0 as Float;
