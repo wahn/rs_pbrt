@@ -6,7 +6,7 @@
 <!-- [![dependency status](https://deps.rs/repo/github/wahn/rs_pbrt/status.svg)](https://deps.rs/repo/github/wahn/rs_pbrt) -->
 <!-- [![](https://img.shields.io/github/release-date/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/releases) -->
 
-**Rust** crate to implement at least parts of the PBRT book's C++ code:
+**Rust** crate to implement a counterpart to the PBRT book's (3rd edition) C++ code:
 
 http://www.pbrt.org
 
@@ -131,6 +131,24 @@ For more info look at the [Wiki][wiki] page or the [release notes][release-notes
 Here you find another Rust implementation:
 
 https://bitbucket.org/abusch/rustracer
+
+## License
+
+Licensed under either of
+
+* Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or
+  http://www.apache.org/licenses/LICENSE-2.0)
+* MIT license ([LICENSE-MIT](LICENSE-MIT) or
+  http://opensource.org/licenses/MIT)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally
+submitted for inclusion in the work by you, as defined in the
+Apache-2.0 license, shall be dual licensed as above, without any
+additional terms or conditions.
 
 [test-scenes]:          https://gitlab.com/jdb-walter/rs-pbrt-test-scenes/wikis/home
 [wiki]:                 https://github.com/wahn/rs_pbrt/wiki
