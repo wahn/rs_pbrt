@@ -1578,14 +1578,14 @@ pub fn mis_weight<'a>(
             if let Some(ref medium_interface_arc) = lv_si.common.medium_interface {
                 medium_interface = Some(medium_interface_arc.clone());
             }
+            let mut common: InteractionCommon = InteractionCommon::default();
+            common.p = lv_si.common.p;
+            common.time = lv_si.common.time;
+            common.p_error = lv_si.common.p_error;
+            common.wo = lv_si.common.wo;
+            common.n = lv_si.common.n;
+            common.medium_interface = medium_interface;
             if let Some(primitive) = lv_si.primitive {
-                let mut common: InteractionCommon = InteractionCommon::default();
-                common.p = lv_si.common.p;
-                common.time = lv_si.common.time;
-                common.p_error = lv_si.common.p_error;
-                common.wo = lv_si.common.wo;
-                common.n = lv_si.common.n;
-                common.medium_interface = medium_interface;
                 let new_si: SurfaceInteraction = SurfaceInteraction {
                     common,
                     primitive: Some(primitive),
@@ -1594,13 +1594,6 @@ pub fn mis_weight<'a>(
                 };
                 si = Some(new_si);
             } else {
-                let mut common: InteractionCommon = InteractionCommon::default();
-                common.p = lv_si.common.p;
-                common.time = lv_si.common.time;
-                common.p_error = lv_si.common.p_error;
-                common.wo = lv_si.common.wo;
-                common.n = lv_si.common.n;
-                common.medium_interface = medium_interface;
                 let new_si: SurfaceInteraction = SurfaceInteraction {
                     common,
                     primitive: None,
