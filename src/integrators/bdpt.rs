@@ -645,12 +645,13 @@ impl<'a> Vertex<'a> {
         let mut w: Vector3f = v.p() - self.p();
         let inv_dist2: Float = 1.0 as Float / w.length_squared();
         w *= inv_dist2.sqrt();
-        let mut pdf = if self.is_infinite_light() {
+        let mut pdf: Float = 0.0;
+        if self.is_infinite_light() {
             // compute planar sampling density for infinite light sources
             let mut world_center: Point3f = Point3f::default();
             let mut world_radius: Float = 0.0;
             Bounds3f::bounding_sphere(&scene.world_bound(), &mut world_center, &mut world_radius);
-            1.0 as Float / (PI * world_radius * world_radius)
+            pdf = 1.0 as Float / (PI * world_radius * world_radius);
         } else {
             assert!(self.is_light());
             if self.vertex_type == VertexType::Light {
@@ -673,7 +674,7 @@ impl<'a> Vertex<'a> {
                             &mut pdf_pos,
                             &mut pdf_dir,
                         );
-                        return pdf_dir * inv_dist2;
+                        pdf = pdf_dir * inv_dist2;
                     }
                 }
             } else if let Some(ref si) = self.si {
@@ -697,12 +698,11 @@ impl<'a> Vertex<'a> {
                             &mut pdf_pos,
                             &mut pdf_dir,
                         );
-                        return pdf_dir * inv_dist2;
+                        pdf = pdf_dir * inv_dist2;
                     }
                 }
             }
-            0.0
-        };
+        }
         if v.is_on_surface() {
             pdf *= nrm_abs_dot_vec3f(&v.ng(), &w);
         }
