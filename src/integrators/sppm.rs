@@ -209,8 +209,7 @@ impl SPPMIntegrator {
                                                             * uniform_sample_one_light(
                                                                 it,
                                                                 scene,
-                                                                &mut tile_sampler
-                                                                    .clone_with_seed(0_u64),
+                                                                &mut tile_sampler,
                                                                 false,
                                                                 None,
                                                             );
@@ -336,18 +335,17 @@ impl SPPMIntegrator {
                     let mut max_radius: Float = 0.0 as Float;
                     // println!("Compute grid bounds for SPPM visible points ...");
                     for pixel in pixels.iter().take(n_pixels as usize) {
-                        if pixel.vp.beta.is_black() {
-                            continue;
+                        if !pixel.vp.beta.is_black() {
+                            let vp_bound: Bounds3f = bnd3_expand(
+                                &Bounds3f {
+                                    p_min: pixel.vp.p,
+                                    p_max: pixel.vp.p,
+                                },
+                                pixel.radius,
+                            );
+                            grid_bounds = bnd3_union_bnd3f(&grid_bounds, &vp_bound);
+                            max_radius = max_radius.max(pixel.radius);
                         }
-                        let vp_bound: Bounds3f = bnd3_expand(
-                            &Bounds3f {
-                                p_min: pixel.vp.p,
-                                p_max: pixel.vp.p,
-                            },
-                            pixel.radius,
-                        );
-                        grid_bounds = bnd3_union_bnd3f(&grid_bounds, &vp_bound);
-                        max_radius = max_radius.max(pixel.radius);
                     }
                     // compute resolution of SPPM grid in each dimension
                     let diag: Vector3f = grid_bounds.diagonal();
