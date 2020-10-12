@@ -21,7 +21,8 @@ use crate::core::scene::Scene;
 // see volpath.h
 
 /// Accounts for scattering and attenuation from participating media
-/// as well as scattering from surfaces
+/// as well as scattering from surfaces - uses the render loop of a
+/// [SamplerIntegrator](../../core/integrator/enum.SamplerIntegrator.html)
 pub struct VolPathIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,

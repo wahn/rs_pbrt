@@ -14,7 +14,8 @@ use crate::core::scene::Scene;
 
 // see whitted.h
 
-/// Whitted’s ray-tracing algorithm
+/// Whitted’s ray-tracing algorithm - uses the render loop of a
+/// [SamplerIntegrator](../../core/integrator/enum.SamplerIntegrator.html)
 pub struct WhittedIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,

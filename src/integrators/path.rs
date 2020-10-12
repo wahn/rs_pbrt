@@ -20,7 +20,8 @@ use crate::core::scene::Scene;
 
 // see path.h
 
-/// Path Tracing (Global Illumination)
+/// Path Tracing (Global Illumination) - uses the render loop of a
+/// [SamplerIntegrator](../../core/integrator/enum.SamplerIntegrator.html)
 pub struct PathIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,

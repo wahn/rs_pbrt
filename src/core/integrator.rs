@@ -64,6 +64,9 @@ impl SamplerIntegrator {
             SamplerIntegrator::Whitted(integrator) => integrator.preprocess(scene),
         }
     }
+    /// All [SamplerIntegrators](enum.SamplerIntegrator.html) use the
+    /// same render loop, but call an individual
+    /// [li()](enum.SamplerIntegrator.html#method.li) method.
     pub fn render(&mut self, scene: &Scene, num_threads: u8) {
         let film = self.get_camera().get_film();
         let sample_bounds: Bounds2i = film.get_sample_bounds();

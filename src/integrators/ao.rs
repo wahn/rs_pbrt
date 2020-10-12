@@ -16,7 +16,8 @@ use crate::core::scene::Scene;
 
 // see ao.h
 
-/// Ambient Occlusion
+/// Ambient Occlusion - uses the render loop of a
+/// [SamplerIntegrator](../../core/integrator/enum.SamplerIntegrator.html)
 pub struct AOIntegrator {
     // inherited from SamplerIntegrator (see integrator.h)
     pub camera: Arc<Camera>,
