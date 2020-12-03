@@ -47,7 +47,7 @@ where
             panic!("Error reading \"{}\"", filename);
         }
         let buf = img_result.unwrap();
-        let rgb = buf.to_rgb();
+        let rgb = buf.to_rgb8();
         let res = Point2i {
             x: rgb.width() as i32,
             y: rgb.height() as i32,
