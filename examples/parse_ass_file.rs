@@ -241,6 +241,9 @@ fn make_scene(primitives: &Vec<Arc<Primitive>>, lights: Vec<Arc<Light>>) -> Scen
 }
 
 fn main() -> std::io::Result<()> {
+    let num_cores = num_cpus::get();
+    let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
+    println!("parse_ass_file version {} ({}) [Detected {} cores]", VERSION, git_describe, num_cores);
     // handle command line options
     let args = Cli::from_args();
     let samples_per_pixel: u16 = args.samples;

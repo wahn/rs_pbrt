@@ -2,10 +2,6 @@ use pest_derive::*;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-pub mod built_info {
-    include!(concat!(env!("OUT_DIR"), "/built.rs"));
-}
-
 #[derive(Parser)]
 #[grammar = "../examples/pbrt.pest"]
 struct PbrtParser;
@@ -857,14 +853,8 @@ fn main() {
     let args = Cli::from_args();
     let number_of_threads: u8 = args.nthreads;
     let num_cores = num_cpus::get();
-    println!(
-        "This is version {}, built for {} by {}.\n",
-        built_info::PKG_VERSION,
-        built_info::TARGET,
-        built_info::RUSTC_VERSION
-    );
-    // println!("I was built from commit {}.", built_info::GIT_COMMIT_HASH);
-    println!("pbrt version {} [Detected {} cores]", VERSION, num_cores);
+    let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
+    println!("pbrt version {} ({}) [Detected {} cores]", VERSION, git_describe, num_cores);
     println!("Copyright (c) 2016-2020 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
     let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);

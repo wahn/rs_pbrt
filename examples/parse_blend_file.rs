@@ -1911,10 +1911,11 @@ fn make_scene(primitives: &Vec<Arc<Primitive>>, lights: Vec<Arc<Light>>) -> Scen
 
 fn main() -> std::io::Result<()> {
     let args = Cli::from_args();
+    let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
     let num_threads: u8 = num_cpus::get() as u8;
     println!(
-        "parse_blend_file version {} [Detected {} cores]",
-        VERSION, num_threads
+        "parse_blend_file version {} ({}) [Detected {} cores]",
+        VERSION, git_describe, num_threads
     );
     // PBRT
     let mut scale_length: f32 = 1.0;

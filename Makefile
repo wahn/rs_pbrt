@@ -1,4 +1,4 @@
-all: without-exr
+all: message without-exr
 
 clean:
 	-rm -f *~ examples/*~ src/*~ examples/*.rs.bk src/*.rs.bk *.exr *.png
@@ -9,6 +9,13 @@ clobber: clean
 distclean: clobber
 	-rm -f *.exr *.png master.zip
 	-rm -fr openexr-rs-master
+
+message:
+	$(info # if you want to have a git commit tag in your executables reported:")
+	$(info # bash: export GIT_DESCRIBE=something")
+	$(info # tcsh: setenv GIT_DESCRIBE something")
+	$(info # replace 'something' abobe with the output of:")
+	$(info git describe --tags)
 
 doc:
 	cargo doc --no-default-features
