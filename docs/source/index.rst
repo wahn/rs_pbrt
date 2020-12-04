@@ -10,6 +10,7 @@ Guide
 
    license
    help
+   getting_started
 
 Indices and tables
 ==================

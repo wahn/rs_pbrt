@@ -245,6 +245,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 Contact
-=======
+-------
 
 Questions? Please contact rs-pbrt@posteo.de
