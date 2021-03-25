@@ -5,7 +5,7 @@ use std::sync::Arc;
 use crate::core::efloat::quadratic_efloat;
 use crate::core::efloat::EFloat;
 use crate::core::geometry::{
-    nrm_abs_dot_vec3f, pnt3_distancef, pnt3_distance_squaredf, pnt3_offset_ray_origin,
+    nrm_abs_dot_vec3f, pnt3_distance_squaredf, pnt3_distancef, pnt3_offset_ray_origin,
     spherical_direction_vec3, vec3_coordinate_system, vec3_cross_vec3, vec3_dot_vec3f,
 };
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector3f, XYEnum};

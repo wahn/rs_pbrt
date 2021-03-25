@@ -71,12 +71,7 @@ impl<'a> BVHBuildNode<'a> {
         self.child1 = None;
         self.child2 = None;
     }
-    pub fn init_interior(
-        &mut self,
-        axis: u8,
-        c0: &'a BVHBuildNode<'a>,
-        c1: &'a BVHBuildNode<'a>,
-    ) {
+    pub fn init_interior(&mut self, axis: u8, c0: &'a BVHBuildNode<'a>, c1: &'a BVHBuildNode<'a>) {
         self.n_primitives = 0;
         self.bounds = bnd3_union_bnd3f(&c0.bounds, &c1.bounds);
         self.child1 = Some(c0);

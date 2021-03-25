@@ -405,9 +405,8 @@ impl MLTIntegrator {
         ) * (n_strategies as Float)
     }
     pub fn render(&self, scene: &Scene, num_threads: u8) {
-        let mut num_cores: usize; // TMP
-        // let num_cores = if num_threads == 0_u8 {
-        let num_cores_init = if num_threads == 0_u8 { // TMP
+        let mut num_cores: usize;
+        let num_cores_init = if num_threads == 0_u8 {
             num_cpus::get()
         } else {
             num_threads as usize

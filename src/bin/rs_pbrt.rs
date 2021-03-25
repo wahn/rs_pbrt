@@ -854,7 +854,10 @@ fn main() {
     let number_of_threads: u8 = args.nthreads;
     let num_cores = num_cpus::get();
     let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
-    println!("pbrt version {} ({}) [Detected {} cores]", VERSION, git_describe, num_cores);
+    println!(
+        "pbrt version {} ({}) [Detected {} cores]",
+        VERSION, git_describe, num_cores
+    );
     println!("Copyright (c) 2016-2020 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
     let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);

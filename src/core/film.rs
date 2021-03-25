@@ -21,7 +21,8 @@ use smallvec::SmallVec;
 // pbrt
 use crate::core::filter::Filter;
 use crate::core::geometry::{
-    bnd2_intersect_bnd2i, pnt2_ceil, pnt2_floor, pnt2_inside_exclusivei, pnt2_max_pnt2i, pnt2_min_pnt2i,
+    bnd2_intersect_bnd2i, pnt2_ceil, pnt2_floor, pnt2_inside_exclusivei, pnt2_max_pnt2i,
+    pnt2_min_pnt2i,
 };
 use crate::core::geometry::{Bounds2f, Bounds2i, Point2f, Point2i, Vector2f};
 use crate::core::paramset::ParamSet;
@@ -113,8 +114,7 @@ impl<'a> FilmTile<'a> {
         // loop over filter support and add sample to pixel arrays
 
         // precompute $x$ and $y$ filter table offsets
-        let mut ifx: SmallVec<[usize; 16]> =
-            SmallVec::with_capacity(p1.x as usize - p0.x as usize);
+        let mut ifx: SmallVec<[usize; 16]> = SmallVec::with_capacity(p1.x as usize - p0.x as usize);
         for x in p0.x..p1.x {
             let fx: Float = ((x as Float - p_film_discrete.x)
                 * self.inv_filter_radius.x
@@ -122,8 +122,7 @@ impl<'a> FilmTile<'a> {
                 .abs();
             ifx.push(fx.floor().min(self.filter_table_size as Float - 1.0) as usize);
         }
-        let mut ify: SmallVec<[usize; 16]> =
-            SmallVec::with_capacity(p1.y as usize - p0.y as usize);
+        let mut ify: SmallVec<[usize; 16]> = SmallVec::with_capacity(p1.y as usize - p0.y as usize);
         for y in p0.y..p1.y {
             let fy: Float = ((y as Float - p_film_discrete.y)
                 * self.inv_filter_radius.y

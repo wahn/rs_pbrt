@@ -21,7 +21,8 @@
 //! [render_mlt]: integrators/mlt/struct.MLTIntegrator.html#method.render
 //! [render_sppm]: integrators/sppm/struct.SPPMIntegrator.html#method.render
 
-#[macro_use] extern crate impl_ops;
+#[macro_use]
+extern crate impl_ops;
 
 pub mod accelerators;
 pub mod blockqueue;

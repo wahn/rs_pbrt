@@ -96,7 +96,7 @@ impl Scene {
                 return false;
             }
             if let Some(primitive_raw) = isect.primitive {
-		let primitive = unsafe { &*primitive_raw };
+                let primitive = unsafe { &*primitive_raw };
                 if let Some(_material) = primitive.get_material() {
                     return true;
                 }

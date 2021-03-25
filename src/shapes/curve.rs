@@ -2,8 +2,9 @@
 use std::sync::Arc;
 // pbrt
 use crate::core::geometry::{
-    bnd3_expand, bnd3_union_bnd3f, nrm_abs_dot_vec3f, nrm_cross_vec3, nrm_dot_nrmf, pnt3_distancef,
-    pnt3_distance_squaredf, pnt3_lerp, vec2_dotf, vec3_coordinate_system, vec3_cross_vec3,
+    bnd3_expand, bnd3_union_bnd3f, nrm_abs_dot_vec3f, nrm_cross_vec3, nrm_dot_nrmf,
+    pnt3_distance_squaredf, pnt3_distancef, pnt3_lerp, vec2_dotf, vec3_coordinate_system,
+    vec3_cross_vec3,
 };
 use crate::core::geometry::{Bounds3f, Normal3f, Point2f, Point3f, Ray, Vector2f, Vector3f};
 use crate::core::interaction::{Interaction, InteractionCommon, SurfaceInteraction};
