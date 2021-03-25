@@ -858,7 +858,7 @@ fn main() {
         "pbrt version {} ({}) [Detected {} cores]",
         VERSION, git_describe, num_cores
     );
-    println!("Copyright (c) 2016-2020 Jan Douglas Bert Walter.");
+    println!("Copyright (c) 2016-2021 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
     let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
     parse_file(
