@@ -616,7 +616,7 @@ dependencies = [
 
 [[package]]
 name = "pbrt"
-version = "0.8.3"
+version = "0.9.0"
 dependencies = [
  "atom",
  "atomic",
