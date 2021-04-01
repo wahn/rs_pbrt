@@ -16,9 +16,9 @@
 //! about the worst filter possible.
 //!
 //! ```rust
-//! use pbrt::core::pbrt::Float;
-//! use pbrt::filters::boxfilter::BoxFilter;
-//! use pbrt::core::geometry::Vector2f;
+//! use rs_pbrt::core::pbrt::Float;
+//! use rs_pbrt::filters::boxfilter::BoxFilter;
+//! use rs_pbrt::core::geometry::Vector2f;
 //!
 //! fn main() {
 //!     let xw: Float = 0.5;
@@ -44,9 +44,9 @@
 //! remaining aliasing in the image.
 //!
 //! ```rust
-//! use pbrt::core::pbrt::Float;
-//! use pbrt::filters::gaussian::GaussianFilter;
-//! use pbrt::core::geometry::Vector2f;
+//! use rs_pbrt::core::pbrt::Float;
+//! use rs_pbrt::filters::gaussian::GaussianFilter;
+//! use rs_pbrt::core::geometry::Vector2f;
 //!
 //! fn main() {
 //!     let xw: Float = 2.0;
@@ -72,9 +72,9 @@
 //! ## MitchellFilter
 //!
 //! ```rust
-//! use pbrt::core::geometry::Vector2f;
-//! use pbrt::core::pbrt::Float;
-//! use pbrt::filters::mitchell::MitchellNetravali;
+//! use rs_pbrt::core::geometry::Vector2f;
+//! use rs_pbrt::core::pbrt::Float;
+//! use rs_pbrt::filters::mitchell::MitchellNetravali;
 //!
 //! fn main() {
 //!     let xwidth: Float = 2.0;
@@ -90,9 +90,9 @@
 //! ## LanczosSincFilter
 //!
 //! ```rust
-//! use pbrt::core::geometry::Vector2f;
-//! use pbrt::core::pbrt::Float;
-//! use pbrt::filters::sinc::LanczosSincFilter;
+//! use rs_pbrt::core::geometry::Vector2f;
+//! use rs_pbrt::core::pbrt::Float;
+//! use rs_pbrt::filters::sinc::LanczosSincFilter;
 //!
 //! fn main() {
 //!     let xw: Float = 4.0;
@@ -108,9 +108,9 @@
 //! ## TriangleFilter
 //!
 //! ```rust
-//! use pbrt::core::geometry::Vector2f;
-//! use pbrt::core::pbrt::Float;
-//! use pbrt::filters::triangle::TriangleFilter;
+//! use rs_pbrt::core::geometry::Vector2f;
+//! use rs_pbrt::core::pbrt::Float;
+//! use rs_pbrt::filters::triangle::TriangleFilter;
 //!
 //! fn main() {
 //!     let xw: Float = 2.0;

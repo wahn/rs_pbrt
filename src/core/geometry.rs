@@ -13,7 +13,7 @@
 //! differences in how they are treated.
 //!
 //! ```rust
-//! use pbrt::core::geometry::{Point3i, Point3f};
+//! use rs_pbrt::core::geometry::{Point3i, Point3f};
 //!
 //! fn main() {
 //!     let int_origin = Point3i { x: 0, y: 0, z: 0 };
@@ -36,7 +36,7 @@
 //! floating-point types.
 //!
 //! ```rust
-//! use pbrt::core::geometry::{Vector3i, Vector3f};
+//! use rs_pbrt::core::geometry::{Vector3i, Vector3f};
 //!
 //! fn main() {
 //!     let int_null = Vector3i { x: 0, y: 0, z: 0 };
@@ -64,7 +64,7 @@
 //! applying transformations.
 //!
 //! ```rust
-//! use pbrt::core::geometry::Normal3f;
+//! use rs_pbrt::core::geometry::Normal3f;
 //!
 //! fn main() {
 //!     let float_null = Normal3f {
@@ -87,7 +87,7 @@
 //! vectors, and normals were.
 //!
 //! ```rust
-//! use pbrt::core::geometry::{Ray, Point3f, Vector3f};
+//! use rs_pbrt::core::geometry::{Ray, Point3f, Vector3f};
 //! use std::cell::Cell;
 //!
 //! fn main() {
@@ -139,7 +139,7 @@
 //!
 //!
 //! ```rust
-//! use pbrt::core::geometry::{Bounds3i, Bounds3f, Point3i, Point3f};
+//! use rs_pbrt::core::geometry::{Bounds3i, Bounds3f, Point3i, Point3f};
 //!
 //! fn main() {
 //!     let int_origin = Point3i { x: 0, y: 0, z: 0 };

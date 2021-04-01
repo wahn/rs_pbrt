@@ -23,48 +23,48 @@ use std::mem;
 use std::path::Path;
 use std::sync::Arc;
 // pbrt
-use pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
-use pbrt::core::camera::Camera;
-use pbrt::core::film::Film;
-use pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
-use pbrt::core::integrator::{Integrator, SamplerIntegrator};
-use pbrt::core::light::Light;
-use pbrt::core::material::Material;
-use pbrt::core::medium::MediumInterface;
-use pbrt::core::mipmap::ImageWrap;
-use pbrt::core::paramset::ParamSet;
-use pbrt::core::pbrt::degrees;
-use pbrt::core::pbrt::{Float, Spectrum};
-use pbrt::core::primitive::{GeometricPrimitive, Primitive};
-use pbrt::core::sampler::Sampler;
-use pbrt::core::scene::Scene;
-use pbrt::core::shape::Shape;
-use pbrt::core::texture::{Texture, TextureMapping2D, UVMapping2D};
-use pbrt::core::transform::{AnimatedTransform, Transform};
-use pbrt::integrators::ao::AOIntegrator;
-use pbrt::integrators::bdpt::BDPTIntegrator;
-use pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
-use pbrt::integrators::mlt::MLTIntegrator;
-use pbrt::integrators::path::PathIntegrator;
-use pbrt::integrators::sppm::SPPMIntegrator;
-use pbrt::integrators::volpath::VolPathIntegrator;
-use pbrt::integrators::whitted::WhittedIntegrator;
-use pbrt::lights::diffuse::DiffuseAreaLight;
-use pbrt::lights::distant::DistantLight;
-use pbrt::lights::infinite::InfiniteAreaLight;
-use pbrt::lights::point::PointLight;
-use pbrt::materials::glass::GlassMaterial;
-use pbrt::materials::matte::MatteMaterial;
-use pbrt::materials::metal::MetalMaterial;
-use pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
-use pbrt::materials::mirror::MirrorMaterial;
-use pbrt::shapes::cylinder::Cylinder;
-use pbrt::shapes::disk::Disk;
-use pbrt::shapes::sphere::Sphere;
-use pbrt::shapes::triangle::{Triangle, TriangleMesh};
-use pbrt::textures::constant::ConstantTexture;
-use pbrt::textures::imagemap::convert_to_spectrum;
-use pbrt::textures::imagemap::ImageTexture;
+use rs_pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
+use rs_pbrt::core::camera::Camera;
+use rs_pbrt::core::film::Film;
+use rs_pbrt::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
+use rs_pbrt::core::integrator::{Integrator, SamplerIntegrator};
+use rs_pbrt::core::light::Light;
+use rs_pbrt::core::material::Material;
+use rs_pbrt::core::medium::MediumInterface;
+use rs_pbrt::core::mipmap::ImageWrap;
+use rs_pbrt::core::paramset::ParamSet;
+use rs_pbrt::core::pbrt::degrees;
+use rs_pbrt::core::pbrt::{Float, Spectrum};
+use rs_pbrt::core::primitive::{GeometricPrimitive, Primitive};
+use rs_pbrt::core::sampler::Sampler;
+use rs_pbrt::core::scene::Scene;
+use rs_pbrt::core::shape::Shape;
+use rs_pbrt::core::texture::{Texture, TextureMapping2D, UVMapping2D};
+use rs_pbrt::core::transform::{AnimatedTransform, Transform};
+use rs_pbrt::integrators::ao::AOIntegrator;
+use rs_pbrt::integrators::bdpt::BDPTIntegrator;
+use rs_pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
+use rs_pbrt::integrators::mlt::MLTIntegrator;
+use rs_pbrt::integrators::path::PathIntegrator;
+use rs_pbrt::integrators::sppm::SPPMIntegrator;
+use rs_pbrt::integrators::volpath::VolPathIntegrator;
+use rs_pbrt::integrators::whitted::WhittedIntegrator;
+use rs_pbrt::lights::diffuse::DiffuseAreaLight;
+use rs_pbrt::lights::distant::DistantLight;
+use rs_pbrt::lights::infinite::InfiniteAreaLight;
+use rs_pbrt::lights::point::PointLight;
+use rs_pbrt::materials::glass::GlassMaterial;
+use rs_pbrt::materials::matte::MatteMaterial;
+use rs_pbrt::materials::metal::MetalMaterial;
+use rs_pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
+use rs_pbrt::materials::mirror::MirrorMaterial;
+use rs_pbrt::shapes::cylinder::Cylinder;
+use rs_pbrt::shapes::disk::Disk;
+use rs_pbrt::shapes::sphere::Sphere;
+use rs_pbrt::shapes::triangle::{Triangle, TriangleMesh};
+use rs_pbrt::textures::constant::ConstantTexture;
+use rs_pbrt::textures::imagemap::convert_to_spectrum;
+use rs_pbrt::textures::imagemap::ImageTexture;
 
 pub const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -1045,10 +1045,7 @@ impl RenderOptions {
             // create individual triangles
             let mut triangles: Vec<Arc<Shape>> = Vec::new();
             for id in 0..mesh.n_triangles {
-                let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                    mesh.clone(),
-                    id,
-                )));
+                let triangle = Arc::new(Shape::Trngl(Triangle::new(mesh.clone(), id)));
                 triangles.push(triangle.clone());
                 shapes.push(triangle.clone());
             }

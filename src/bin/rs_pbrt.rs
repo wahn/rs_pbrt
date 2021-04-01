@@ -3,7 +3,7 @@ use pest_derive::*;
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Parser)]
-#[grammar = "../examples/pbrt.pest"]
+#[grammar = "../examples/rs_pbrt.pest"]
 struct PbrtParser;
 
 // parser
@@ -12,7 +12,7 @@ use pest::Parser;
 // command line options
 use structopt::StructOpt;
 // pbrt
-use pbrt::core::api::{
+use rs_pbrt::core::api::{
     pbrt_accelerator, pbrt_active_transform_all, pbrt_active_transform_end_time,
     pbrt_active_transform_start_time, pbrt_area_light_source, pbrt_attribute_begin,
     pbrt_attribute_end, pbrt_camera, pbrt_cleanup, pbrt_concat_transform, pbrt_coord_sys_transform,
@@ -23,11 +23,11 @@ use pbrt::core::api::{
     pbrt_texture, pbrt_transform, pbrt_transform_begin, pbrt_transform_end, pbrt_translate,
     pbrt_world_begin,
 };
-use pbrt::core::api::{ApiState, BsdfState};
-use pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
-use pbrt::core::paramset::ParamSet;
-use pbrt::core::pbrt::{Float, Spectrum};
-use pbrt::core::transform::Transform;
+use rs_pbrt::core::api::{ApiState, BsdfState};
+use rs_pbrt::core::geometry::{Normal3f, Point2f, Point3f, Vector3f};
+use rs_pbrt::core::paramset::ParamSet;
+use rs_pbrt::core::pbrt::{Float, Spectrum};
+use rs_pbrt::core::transform::Transform;
 // std
 use std::env;
 use std::fs::File;

@@ -588,33 +588,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "pbrt"
-version = "0.9.0"
-dependencies = [
- "atom",
- "atomic",
- "byteorder",
- "crossbeam",
- "crossbeam-channel",
- "hexf",
- "image",
- "impl_ops",
- "lazy_static",
- "num",
- "num_cpus",
- "pbr",
- "pest",
- "pest_derive",
- "ply-rs",
- "rayon",
- "smallvec",
- "structopt",
- "strum",
- "strum_macros",
- "typed-arena",
-]
-
-[[package]]
 name = "peg"
 version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -875,6 +848,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4a83fa3702a688b9359eccba92d153ac33fd2e8462f9e0e3fdf155239ea7792e"
 dependencies = [
  "winapi",
+]
+
+[[package]]
+name = "rs_pbrt"
+version = "0.9.0"
+dependencies = [
+ "atom",
+ "atomic",
+ "byteorder",
+ "crossbeam",
+ "crossbeam-channel",
+ "hexf",
+ "image",
+ "impl_ops",
+ "lazy_static",
+ "num",
+ "num_cpus",
+ "pbr",
+ "pest",
+ "pest_derive",
+ "ply-rs",
+ "rayon",
+ "smallvec",
+ "structopt",
+ "strum",
+ "strum_macros",
+ "typed-arena",
 ]
 
 [[package]]

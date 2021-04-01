@@ -6,35 +6,35 @@ use pest::Parser;
 // command line options
 use structopt::StructOpt;
 // pbrt
-use pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
-use pbrt::core::camera::Camera;
-use pbrt::core::film::Film;
-use pbrt::core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Vector3f};
-use pbrt::core::integrator::{Integrator, SamplerIntegrator};
-use pbrt::core::light::Light;
-use pbrt::core::material::Material;
-use pbrt::core::medium::MediumInterface;
-use pbrt::core::paramset::ParamSet;
-use pbrt::core::pbrt::{Float, Spectrum};
-use pbrt::core::primitive::{GeometricPrimitive, Primitive};
-use pbrt::core::sampler::Sampler;
-use pbrt::core::scene::Scene;
-use pbrt::core::shape::Shape;
-use pbrt::core::texture::Texture;
-use pbrt::core::transform::{AnimatedTransform, Transform};
-use pbrt::integrators::path::PathIntegrator;
-use pbrt::lights::diffuse::DiffuseAreaLight;
-use pbrt::lights::point::PointLight;
-use pbrt::lights::spot::SpotLight;
-use pbrt::materials::matte::MatteMaterial;
-use pbrt::materials::metal::MetalMaterial;
-use pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
-use pbrt::materials::mirror::MirrorMaterial;
-use pbrt::shapes::cylinder::Cylinder;
-use pbrt::shapes::disk::Disk;
-use pbrt::shapes::sphere::Sphere;
-use pbrt::shapes::triangle::{Triangle, TriangleMesh};
-use pbrt::textures::constant::ConstantTexture;
+use rs_pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
+use rs_pbrt::core::camera::Camera;
+use rs_pbrt::core::film::Film;
+use rs_pbrt::core::geometry::{Bounds2i, Normal3f, Point2f, Point3f, Vector3f};
+use rs_pbrt::core::integrator::{Integrator, SamplerIntegrator};
+use rs_pbrt::core::light::Light;
+use rs_pbrt::core::material::Material;
+use rs_pbrt::core::medium::MediumInterface;
+use rs_pbrt::core::paramset::ParamSet;
+use rs_pbrt::core::pbrt::{Float, Spectrum};
+use rs_pbrt::core::primitive::{GeometricPrimitive, Primitive};
+use rs_pbrt::core::sampler::Sampler;
+use rs_pbrt::core::scene::Scene;
+use rs_pbrt::core::shape::Shape;
+use rs_pbrt::core::texture::Texture;
+use rs_pbrt::core::transform::{AnimatedTransform, Transform};
+use rs_pbrt::integrators::path::PathIntegrator;
+use rs_pbrt::lights::diffuse::DiffuseAreaLight;
+use rs_pbrt::lights::point::PointLight;
+use rs_pbrt::lights::spot::SpotLight;
+use rs_pbrt::materials::matte::MatteMaterial;
+use rs_pbrt::materials::metal::MetalMaterial;
+use rs_pbrt::materials::metal::{COPPER_K, COPPER_N, COPPER_SAMPLES, COPPER_WAVELENGTHS};
+use rs_pbrt::materials::mirror::MirrorMaterial;
+use rs_pbrt::shapes::cylinder::Cylinder;
+use rs_pbrt::shapes::disk::Disk;
+use rs_pbrt::shapes::sphere::Sphere;
+use rs_pbrt::shapes::triangle::{Triangle, TriangleMesh};
+use rs_pbrt::textures::constant::ConstantTexture;
 // std
 use std::collections::HashMap;
 use std::convert::TryInto;
@@ -243,7 +243,10 @@ fn make_scene(primitives: &Vec<Arc<Primitive>>, lights: Vec<Arc<Light>>) -> Scen
 fn main() -> std::io::Result<()> {
     let num_cores = num_cpus::get();
     let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
-    println!("parse_ass_file version {} ({}) [Detected {} cores]", VERSION, git_describe, num_cores);
+    println!(
+        "parse_ass_file version {} ({}) [Detected {} cores]",
+        VERSION, git_describe, num_cores
+    );
     // handle command line options
     let args = Cli::from_args();
     let samples_per_pixel: u16 = args.samples;
@@ -964,10 +967,8 @@ fn main() -> std::io::Result<()> {
                                         None,
                                     ));
                                     for id in 0..mesh.n_triangles {
-                                        let triangle = Arc::new(Shape::Trngl(Triangle::new(
-                                            mesh.clone(),
-                                            id,
-                                        )));
+                                        let triangle =
+                                            Arc::new(Shape::Trngl(Triangle::new(mesh.clone(), id)));
                                         shapes.push(triangle.clone());
                                     }
                                     let mi: MediumInterface = MediumInterface::default();
