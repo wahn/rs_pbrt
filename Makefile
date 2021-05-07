@@ -27,18 +27,10 @@ debug: # master.zip
 	cargo test --no-default-features
 	cargo run --no-default-features -- --help
 
-release: # master.zip
+release:
 	cargo test --release
 	cargo run --release -- --help
 
 without-exr:
 	cargo test --release --no-default-features
 	cargo run --release --no-default-features -- --help
-
-# master.zip:
-# 	wget https://github.com/cessen/openexr-rs/archive/master.zip
-# 	unzip master.zip
-
-examples: without-exr
-	./target/release/examples/parse_ass_file -i ./assets/ass/cornell_box.ass
-	./target/release/examples/parse_blend_file ./assets/blend/suzanne_integrator_test_2_79.blend
