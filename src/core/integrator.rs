@@ -22,7 +22,7 @@ use crate::integrators::bdpt::BDPTIntegrator;
 use crate::integrators::directlighting::DirectLightingIntegrator;
 use crate::integrators::mlt::MLTIntegrator;
 use crate::integrators::path::PathIntegrator;
-use crate::integrators::sppm::SPPMIntegrator;
+// use crate::integrators::sppm::SPPMIntegrator;
 use crate::integrators::volpath::VolPathIntegrator;
 use crate::integrators::whitted::WhittedIntegrator;
 
@@ -31,7 +31,7 @@ use crate::integrators::whitted::WhittedIntegrator;
 pub enum Integrator {
     BDPT(BDPTIntegrator),
     MLT(MLTIntegrator),
-    SPPM(SPPMIntegrator),
+    // SPPM(SPPMIntegrator),
     Sampler(SamplerIntegrator),
 }
 
@@ -40,7 +40,7 @@ impl Integrator {
         match self {
             Integrator::BDPT(integrator) => integrator.render(scene, num_threads),
             Integrator::MLT(integrator) => integrator.render(scene, num_threads),
-            Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
+            // Integrator::SPPM(integrator) => integrator.render(scene, num_threads),
             Integrator::Sampler(integrator) => integrator.render(scene, num_threads),
         }
     }

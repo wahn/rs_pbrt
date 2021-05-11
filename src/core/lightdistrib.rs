@@ -327,7 +327,7 @@ impl SpatialLightDistribution {
             if entry_packed_pos == packed_pos {
                 // Yes! Most of the time, there should already by a light
                 // sampling distribution available.
-                let option: Option<Arc<Distribution1D>> = entry.distribution.dup();
+                let option: Option<Arc<Distribution1D>> = entry.distribution.dup(Ordering::Acquire);
                 if option.is_none() {
                     // Rarely, another thread will have already done a
                     // lookup at this point, found that there isn't a
@@ -338,7 +338,8 @@ impl SpatialLightDistribution {
                     // rare case, so don't do anything more
                     // sophisticated than spinning.
                     loop {
-                        let option2: &Option<Arc<Distribution1D>> = &entry.distribution.dup();
+                        let option2: &Option<Arc<Distribution1D>> =
+                            &entry.distribution.dup(Ordering::Acquire);
                         if option2.is_some() {
                             if let Some(ref dist) = *option2 {
                                 // We have a valid sampling distribution.
@@ -375,7 +376,9 @@ impl SpatialLightDistribution {
                     // distribution and add it to the hash table.
                     let dist: Distribution1D = self.compute_distribution(&pi);
                     let arc_dist: Arc<Distribution1D> = Arc::new(dist);
-                    entry.distribution.set_if_none(arc_dist.clone());
+                    entry
+                        .distribution
+                        .set_if_none(arc_dist.clone(), Ordering::Release);
                     return arc_dist;
                 }
             }

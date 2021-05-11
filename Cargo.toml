@@ -10,7 +10,7 @@ documentation = "https://www.rs-pbrt.org/doc/crates/pbrt/index.html"
 description = "Physically based rendering (PBR) with Rust"
 homepage = "https://www.rs-pbrt.org"
 [dependencies]
-atom = "0.3.6"
+atom = "0.4.0"
 atomic = "0.5.0"
 byteorder = "1.4.3"
 crossbeam = "0.8.0"

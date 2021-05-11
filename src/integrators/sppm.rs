@@ -4,7 +4,7 @@ use std::f32::consts::PI;
 use std::sync::Arc;
 // others
 use atom::*;
-use atomic::Atomic;
+use atomic::{Atomic, Ordering};
 use strum::IntoEnumIterator;
 // pbrt
 use crate::blockqueue::BlockQueue;
@@ -408,10 +408,15 @@ impl SPPMIntegrator {
                                                         );
                                                         let node_arc =
                                                             Arc::new(SPPMPixelListNode::new(pixel));
-                                                        let old_opt =
-                                                            grid[h].swap(node_arc.clone());
+                                                        let old_opt = grid[h].swap(
+                                                            node_arc.clone(),
+                                                            Ordering::AcqRel,
+                                                        );
                                                         if let Some(old) = old_opt {
-                                                            node_arc.next.set_if_none(old);
+                                                            node_arc.next.set_if_none(
+                                                                old,
+                                                                Ordering::Release,
+                                                            );
                                                         }
                                                     }
                                                 }
@@ -440,9 +445,9 @@ impl SPPMIntegrator {
                 // trace photons and accumulate contributions
                 for h in 0..hash_size {
                     // take
-                    let opt = grid[h].take();
+                    let opt = grid[h].take(Ordering::Acquire);
                     if let Some(p) = opt {
-                        grid_once[h].set_if_none(p);
+                        grid_once[h].set_if_none(p, Ordering::Release);
                     }
                 }
                 std::mem::drop(grid);
@@ -565,8 +570,9 @@ impl SPPMIntegrator {
                                                             photon_grid_index,
                                                             hash_size
                                                         );
-                                                        if !grid_once[h].is_none() {
-                                                            let mut opt = grid_once[h].get();
+                                                        if !grid_once[h].is_none(Ordering::Relaxed) {
+                                                            let mut opt =
+                                                                grid_once[h].get(Ordering::Acquire);
                                                             while let Some(node) = opt {
                                                                 // deal with linked list
                                                                 let pixel = node.pixel;
@@ -577,7 +583,8 @@ impl SPPMIntegrator {
                                                                     ) > radius * radius
                                                                     {
                                                                         // update opt
-                                                                        opt = node.next.get();
+                                                                        opt =
+                                                                            node.next.get(Ordering::Acquire);
                                                                     } else {
                                                                         // update
                                                                         // _pixel_
@@ -621,7 +628,8 @@ impl SPPMIntegrator {
                                                                             );
                                                                         }
                                                                         // update opt
-                                                                        opt = node.next.get();
+                                                                        opt =
+                                                                            node.next.get(Ordering::Acquire);
                                                                     }
                                                         }
                                                         }
