@@ -4,7 +4,7 @@
 [![](https://img.shields.io/github/issues-raw/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/issues)
 [![](https://tokei.rs/b1/github/wahn/rs_pbrt?category=code)](https://github.com/wahn/rs_pbrt)
 [![Documentation Status](https://readthedocs.org/projects/rs-pbrt/badge/?version=latest)](https://rs-pbrt.readthedocs.io/en/latest/?badge=latest)
-<!-- [![dependency status](https://deps.rs/repo/github/wahn/rs_pbrt/status.svg)](https://deps.rs/repo/github/wahn/rs_pbrt) -->
+[![dependency status](https://deps.rs/repo/github/wahn/rs_pbrt/status.svg)](https://deps.rs/repo/github/wahn/rs_pbrt)
 <!-- [![](https://img.shields.io/github/release-date/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/releases) -->
 
 **Rust** crate to implement a counterpart to the PBRT book's (3rd edition) C++ code:
@@ -20,7 +20,7 @@ https://www.janwalter.org/doc/rust/pbrt/index.html
 ```shell
 > cargo build --release --no-default-features
 > ./target/release/rs_pbrt --help
-pbrt 0.8.3
+rs_pbrt 0.9.0
 Parse a PBRT scene file (extension .pbrt) and render it
 
 USAGE:
