@@ -46,7 +46,7 @@ use rs_pbrt::integrators::bdpt::BDPTIntegrator;
 use rs_pbrt::integrators::directlighting::{DirectLightingIntegrator, LightStrategy};
 use rs_pbrt::integrators::mlt::MLTIntegrator;
 use rs_pbrt::integrators::path::PathIntegrator;
-// use rs_pbrt::integrators::sppm::SPPMIntegrator;
+use rs_pbrt::integrators::sppm::SPPMIntegrator;
 use rs_pbrt::integrators::volpath::VolPathIntegrator;
 use rs_pbrt::integrators::whitted::WhittedIntegrator;
 use rs_pbrt::lights::diffuse::DiffuseAreaLight;
@@ -1861,29 +1861,29 @@ fn make_integrator(
                     AOIntegrator::new(cos_sample, n_samples, camera, sampler, pixel_bounds),
                 )));
                 some_integrator = Some(integrator);
-            // } else if integrator_name == "sppm" {
-            //     println!("Stochastic Progressive Photon Mapping (SPPM)]");
-            //     println!("  pixelsamples = {}", pixelsamples);
-            //     // CreateSPPMIntegrator
-            //     let mut n_iterations: i32 = integrator_params.find_one_int("numiterations", 64);
-            //     n_iterations = integrator_params.find_one_int("iterations", n_iterations);
-            //     let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
-            //     let photons_per_iter: i32 =
-            //         integrator_params.find_one_int("photonsperiteration", -1);
-            //     let write_freq: i32 =
-            //         integrator_params.find_one_int("imagewritefrequency", 1 << 31);
-            //     println!("  imagewritefrequency = {}", write_freq);
-            //     let radius: Float = integrator_params.find_one_float("radius", 1.0 as Float);
-            //     // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
-            //     let integrator = Box::new(Integrator::SPPM(SPPMIntegrator::new(
-            //         camera.clone(),
-            //         n_iterations,
-            //         photons_per_iter,
-            //         max_depth as u32,
-            //         radius,
-            //         write_freq,
-            //     )));
-            //     some_integrator = Some(integrator);
+            } else if integrator_name == "sppm" {
+                println!("Stochastic Progressive Photon Mapping (SPPM)]");
+                println!("  pixelsamples = {}", pixelsamples);
+                // CreateSPPMIntegrator
+                let mut n_iterations: i32 = integrator_params.find_one_int("numiterations", 64);
+                n_iterations = integrator_params.find_one_int("iterations", n_iterations);
+                let max_depth: i32 = integrator_params.find_one_int("maxdepth", 5);
+                let photons_per_iter: i32 =
+                    integrator_params.find_one_int("photonsperiteration", -1);
+                let write_freq: i32 =
+                    integrator_params.find_one_int("imagewritefrequency", 1 << 31);
+                println!("  imagewritefrequency = {}", write_freq);
+                let radius: Float = integrator_params.find_one_float("radius", 1.0 as Float);
+                // TODO: if (PbrtOptions.quickRender) nIterations = std::max(1, nIterations / 16);
+                let integrator = Box::new(Integrator::SPPM(SPPMIntegrator::new(
+                    camera.clone(),
+                    n_iterations,
+                    photons_per_iter,
+                    max_depth as u32,
+                    radius,
+                    write_freq,
+                )));
+                some_integrator = Some(integrator);
             } else {
                 println!("Integrator \"{}\" unknown.", integrator_name);
             }

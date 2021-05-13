@@ -322,147 +322,151 @@ impl SPPMIntegrator {
                 // allocate grid for SPPM visible points
                 let hash_size: usize = n_pixels as usize;
                 let mut grid: Vec<Atom<Arc<SPPMPixelListNode>>> = Vec::with_capacity(hash_size);
-                let mut grid_once: Vec<AtomSetOnce<Arc<SPPMPixelListNode>>> =
-                    Vec::with_capacity(hash_size);
-                for _i in 0..hash_size {
-                    grid.push(Atom::empty());
-                    grid_once.push(AtomSetOnce::empty());
-                }
                 {
-                    // TODO: ProfilePhase _(Prof::SPPMGridConstruction);
-
-                    // compute grid bounds for SPPM visible points
-                    let mut max_radius: Float = 0.0 as Float;
-                    // println!("Compute grid bounds for SPPM visible points ...");
-                    for pixel in pixels.iter().take(n_pixels as usize) {
-                        if !pixel.vp.beta.is_black() {
-                            let vp_bound: Bounds3f = bnd3_expand(
-                                &Bounds3f {
-                                    p_min: pixel.vp.p,
-                                    p_max: pixel.vp.p,
-                                },
-                                pixel.radius,
-                            );
-                            grid_bounds = bnd3_union_bnd3f(&grid_bounds, &vp_bound);
-                            max_radius = max_radius.max(pixel.radius);
-                        }
+                    let mut grid_once: Vec<AtomSetOnce<Arc<SPPMPixelListNode>>> =
+                        Vec::with_capacity(hash_size);
+                    for _i in 0..hash_size {
+                        grid.push(Atom::empty());
+                        grid_once.push(AtomSetOnce::empty());
                     }
-                    // compute resolution of SPPM grid in each dimension
-                    let diag: Vector3f = grid_bounds.diagonal();
-                    let max_diag: Float = vec3_max_componentf(&diag);
-                    let base_grid_res: i32 = (max_diag / max_radius).floor() as i32;
-                    assert!(base_grid_res > 0_i32);
-                    for i in XYZEnum::iter() {
-                        grid_res[i as usize] =
-                            ((base_grid_res as Float * diag[i] / max_diag).floor() as i32).max(1);
-                    }
-                    // add visible points to SPPM grid
-                    // println!("Add visible points to SPPM grid ...");
-                    let chunk_size: usize = (n_pixels / num_cores as i32) as usize;
                     {
-                        let bands: Vec<&mut [SPPMPixel]> = pixels.chunks_mut(chunk_size).collect();
-                        let grid = &grid;
-                        crossbeam::scope(|scope| {
-                            let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
-                            // spawn worker threads
-                            for (b, band) in bands.into_iter().enumerate() {
-                                let band_tx = band_tx.clone();
-                                scope.spawn(move |_| {
-                                    for pixel in band.iter_mut() {
-                                        // for pixel_index in 0..n_pixels as usize {
-                                        // let pixel = &pixels[pixel_index];
-                                        if !pixel.vp.beta.is_black() {
-                                            // add pixel's visible point to applicable grid cells
-                                            let radius: Float = pixel.radius;
-                                            let mut p_min: Point3i = Point3i::default();
-                                            let mut p_max: Point3i = Point3i::default();
-                                            to_grid(
-                                                &(pixel.vp.p
-                                                    - Vector3f {
-                                                        x: radius,
-                                                        y: radius,
-                                                        z: radius,
-                                                    }),
-                                                &grid_bounds,
-                                                &grid_res,
-                                                &mut p_min,
-                                            );
-                                            to_grid(
-                                                &(pixel.vp.p
-                                                    + Vector3f {
-                                                        x: radius,
-                                                        y: radius,
-                                                        z: radius,
-                                                    }),
-                                                &grid_bounds,
-                                                &grid_res,
-                                                &mut p_max,
-                                            );
-                                            for z in p_min.z..=p_max.z {
-                                                for y in p_min.y..=p_max.y {
-                                                    for x in p_min.x..=p_max.x {
-                                                        // add visible point to grid cell $(x, y, z)$
-                                                        let h: usize = hash(
-                                                            &Point3i { x, y, z },
-                                                            hash_size as i32,
-                                                        );
-                                                        let node_arc =
-                                                            Arc::new(SPPMPixelListNode::new(pixel));
-                                                        let old_opt = grid[h].swap(
-                                                            node_arc.clone(),
-                                                            Ordering::AcqRel,
-                                                        );
-                                                        if let Some(old) = old_opt {
-                                                            node_arc.next.set_if_none(
-                                                                old,
-                                                                Ordering::Release,
+                        // TODO: ProfilePhase _(Prof::SPPMGridConstruction);
+
+                        // compute grid bounds for SPPM visible points
+                        let mut max_radius: Float = 0.0 as Float;
+                        // println!("Compute grid bounds for SPPM visible points ...");
+                        for pixel in pixels.iter().take(n_pixels as usize) {
+                            if !pixel.vp.beta.is_black() {
+                                let vp_bound: Bounds3f = bnd3_expand(
+                                    &Bounds3f {
+                                        p_min: pixel.vp.p,
+                                        p_max: pixel.vp.p,
+                                    },
+                                    pixel.radius,
+                                );
+                                grid_bounds = bnd3_union_bnd3f(&grid_bounds, &vp_bound);
+                                max_radius = max_radius.max(pixel.radius);
+                            }
+                        }
+                        // compute resolution of SPPM grid in each dimension
+                        let diag: Vector3f = grid_bounds.diagonal();
+                        let max_diag: Float = vec3_max_componentf(&diag);
+                        let base_grid_res: i32 = (max_diag / max_radius).floor() as i32;
+                        assert!(base_grid_res > 0_i32);
+                        for i in XYZEnum::iter() {
+                            grid_res[i as usize] =
+                                ((base_grid_res as Float * diag[i] / max_diag).floor() as i32)
+                                    .max(1);
+                        }
+                        // add visible points to SPPM grid
+                        // println!("Add visible points to SPPM grid ...");
+                        let chunk_size: usize = (n_pixels / num_cores as i32) as usize;
+                        {
+                            let bands: Vec<&mut [SPPMPixel]> =
+                                pixels.chunks_mut(chunk_size).collect();
+                            let grid = &grid;
+                            crossbeam::scope(|scope| {
+                                let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
+                                // spawn worker threads
+                                for (b, band) in bands.into_iter().enumerate() {
+                                    let band_tx = band_tx.clone();
+                                    scope.spawn(move |_| {
+                                        for pixel in band.iter_mut() {
+                                            // for pixel_index in 0..n_pixels as usize {
+                                            // let pixel = &pixels[pixel_index];
+                                            if !pixel.vp.beta.is_black() {
+                                                // add pixel's visible point to applicable grid cells
+                                                let radius: Float = pixel.radius;
+                                                let mut p_min: Point3i = Point3i::default();
+                                                let mut p_max: Point3i = Point3i::default();
+                                                to_grid(
+                                                    &(pixel.vp.p
+                                                        - Vector3f {
+                                                            x: radius,
+                                                            y: radius,
+                                                            z: radius,
+                                                        }),
+                                                    &grid_bounds,
+                                                    &grid_res,
+                                                    &mut p_min,
+                                                );
+                                                to_grid(
+                                                    &(pixel.vp.p
+                                                        + Vector3f {
+                                                            x: radius,
+                                                            y: radius,
+                                                            z: radius,
+                                                        }),
+                                                    &grid_bounds,
+                                                    &grid_res,
+                                                    &mut p_max,
+                                                );
+                                                for z in p_min.z..=p_max.z {
+                                                    for y in p_min.y..=p_max.y {
+                                                        for x in p_min.x..=p_max.x {
+                                                            // add visible point to grid cell $(x, y, z)$
+                                                            let h: usize = hash(
+                                                                &Point3i { x, y, z },
+                                                                hash_size as i32,
                                                             );
+                                                            let node_arc = Arc::new(
+                                                                SPPMPixelListNode::new(pixel),
+                                                            );
+                                                            let old_opt = grid[h].swap(
+                                                                node_arc.clone(),
+                                                                Ordering::AcqRel,
+                                                            );
+                                                            if let Some(old) = old_opt {
+                                                                node_arc.next.set_if_none(
+                                                                    old,
+                                                                    Ordering::Release,
+                                                                );
+                                                            }
                                                         }
                                                     }
                                                 }
+                                                // ReportValue(grid_cells_per_visible_point,
+                                                //             (1 + pMax.x - pMin.x) * (1 + pMax.y - pMin.y) *
+                                                //                 (1 + pMax.z - pMin.z));
                                             }
-                                            // ReportValue(grid_cells_per_visible_point,
-                                            //             (1 + pMax.x - pMin.x) * (1 + pMax.y - pMin.y) *
-                                            //                 (1 + pMax.z - pMin.z));
                                         }
+                                    });
+                                    // send progress through the channel to main thread
+                                    band_tx
+                                        .send(b)
+                                        .unwrap_or_else(|_| panic!("Failed to send progress"));
+                                }
+                                // spawn thread to report progress
+                                scope.spawn(move |_| {
+                                    for _ in 0..num_cores {
+                                        band_rx.recv().unwrap();
                                     }
                                 });
-                                // send progress through the channel to main thread
-                                band_tx
-                                    .send(b)
-                                    .unwrap_or_else(|_| panic!("Failed to send progress"));
-                            }
-                            // spawn thread to report progress
-                            scope.spawn(move |_| {
-                                for _ in 0..num_cores {
-                                    band_rx.recv().unwrap();
-                                }
-                            });
-                        })
-                        .unwrap();
+                            })
+                            .unwrap();
+                        }
                     }
-                }
-                // trace photons and accumulate contributions
-                for h in 0..hash_size {
-                    // take
-                    let opt = grid[h].take(Ordering::Acquire);
-                    if let Some(p) = opt {
-                        grid_once[h].set_if_none(p, Ordering::Release);
+                    // trace photons and accumulate contributions
+                    for h in 0..hash_size {
+                        // take
+                        let opt = grid[h].take(Ordering::Acquire);
+                        if let Some(p) = opt {
+                            grid_once[h].set_if_none(p, Ordering::Release);
+                        }
                     }
-                }
-                std::mem::drop(grid);
-                {
-                    // TODO: ProfilePhase _(Prof::SPPMPhotonPass);
-                    // println!("Trace photons and accumulate contributions ...");
-                    let chunk_size: usize =
-                        (self.photons_per_iteration / num_cores as i32) as usize;
+                    std::mem::drop(grid);
                     {
-                        let photons_vec: Vec<i32> = (0..self.photons_per_iteration).collect();
-                        let bands: Vec<&[i32]> = photons_vec.chunks(chunk_size).collect();
-                        let grid_once = &grid_once;
-                        let integrator = &self;
-                        let light_distr = &light_distr;
-                        crossbeam::scope(|scope| {
+                        // TODO: ProfilePhase _(Prof::SPPMPhotonPass);
+                        // println!("Trace photons and accumulate contributions ...");
+                        let chunk_size: usize =
+                            (self.photons_per_iteration / num_cores as i32) as usize;
+                        {
+                            let photons_vec: Vec<i32> = (0..self.photons_per_iteration).collect();
+                            let bands: Vec<&[i32]> = photons_vec.chunks(chunk_size).collect();
+                            let grid_once = &grid_once;
+                            let integrator = &self;
+                            let light_distr = &light_distr;
+                            crossbeam::scope(|scope| {
                         let (band_tx, band_rx) = crossbeam_channel::bounded(num_cores);
                         // spawn worker threads
                         for (b, band) in bands.into_iter().enumerate() {
@@ -546,8 +550,8 @@ impl SPPMIntegrator {
                                         }
                                         // follow photon path through scene and record intersections
                                         for depth in 0..integrator.max_depth {
-					    let mut isect: SurfaceInteraction = SurfaceInteraction::default();
-					    if scene.intersect(&mut photon_ray, &mut isect) {
+					                                  let mut isect: SurfaceInteraction = SurfaceInteraction::default();
+					                                  if scene.intersect(&mut photon_ray, &mut isect) {
                                                 // TODO: ++totalPhotonSurfaceInteractions;
                                                 if depth > 0 {
                                                     // add photon contribution to nearby visible points
@@ -639,7 +643,7 @@ impl SPPMIntegrator {
 
                                                 // compute BSDF at photon intersection point
                                                 let mode: TransportMode = TransportMode::Importance;
-						isect.compute_scattering_functions(&photon_ray, true, mode);
+						                                    isect.compute_scattering_functions(&photon_ray, true, mode);
                                                 if let Some(ref photon_bsdf) = isect.bsdf {
                                                     // sample BSDF _fr_ and direction _wi_ for reflected photon
                                                     let mut wi: Vector3f = Vector3f::default();
@@ -711,6 +715,7 @@ impl SPPMIntegrator {
                         });
                     })
                     .unwrap();
+                        }
                     }
                 }
                 // update pixel values from this pass's photons
