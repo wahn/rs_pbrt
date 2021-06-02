@@ -18,7 +18,7 @@ use crate::core::camera::Camera;
 use crate::core::film::Film;
 use crate::core::filter::Filter;
 use crate::core::geometry::{vec3_coordinate_system, vec3_cross_vec3};
-use crate::core::geometry::{Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
+use crate::core::geometry::{Bounds2f, Bounds2i, Normal3f, Point2f, Point2i, Point3f, Vector3f};
 use crate::core::integrator::{Integrator, SamplerIntegrator};
 use crate::core::light::Light;
 use crate::core::material::Material;
@@ -26,7 +26,7 @@ use crate::core::medium::get_medium_scattering_properties;
 use crate::core::medium::{Medium, MediumInterface};
 use crate::core::mipmap::ImageWrap;
 use crate::core::paramset::{ParamSet, TextureParams};
-use crate::core::pbrt::lerp;
+use crate::core::pbrt::{clamp_t, lerp};
 use crate::core::pbrt::{Float, Spectrum};
 use crate::core::primitive::{GeometricPrimitive, Primitive, TransformedPrimitive};
 use crate::core::reflection::FourierBSDFTable;
@@ -203,6 +203,7 @@ pub struct RenderOptions {
     pub instances: HashMap<String, Vec<Arc<Primitive>>>,
     pub current_instance: String,
     pub have_scattering_media: bool, // false
+    pub crop_window: Bounds2f,
 }
 
 impl RenderOptions {
@@ -457,8 +458,12 @@ impl RenderOptions {
         let mut some_camera: Option<Arc<Camera>> = None;
         let some_filter = make_filter(&self.filter_name, &self.filter_params);
         if let Some(filter) = some_filter {
-            let some_film: Option<Arc<Film>> =
-                make_film(&self.film_name, &self.film_params, filter);
+            let some_film: Option<Arc<Film>> = make_film(
+                &self.film_name,
+                &self.film_params,
+                filter,
+                &self.crop_window,
+            );
             if let Some(film) = some_film {
                 let animated_cam_to_world: AnimatedTransform = AnimatedTransform::new(
                     &self.camera_to_world.t[0],
@@ -523,6 +528,10 @@ impl Default for RenderOptions {
             instances: HashMap::new(),
             current_instance: String::from(""),
             have_scattering_media: false,
+            crop_window: Bounds2f {
+                p_min: Point2f { x: 0.0, y: 0.0 },
+                p_max: Point2f { x: 1.0, y: 1.0 },
+            },
         }
     }
 }
@@ -1699,9 +1708,14 @@ pub fn make_filter(name: &str, param_set: &ParamSet) -> Option<Box<Filter>> {
     some_filter
 }
 
-pub fn make_film(name: &str, param_set: &ParamSet, filter: Box<Filter>) -> Option<Arc<Film>> {
+pub fn make_film(
+    name: &str,
+    param_set: &ParamSet,
+    filter: Box<Filter>,
+    crop_window: &Bounds2f,
+) -> Option<Arc<Film>> {
     if name == "image" {
-        Some(Film::create(param_set, filter))
+        Some(Film::create(param_set, filter, crop_window))
     } else {
         println!("Film \"{}\" unknown.", name);
         None
@@ -2244,10 +2258,26 @@ fn print_params(params: &ParamSet) {
     }
 }
 
-pub fn pbrt_init(number_of_threads: u8) -> (ApiState, BsdfState) {
+pub fn pbrt_init(
+    number_of_threads: u8,
+    cropx0: f32,
+    cropx1: f32,
+    cropy0: f32,
+    cropy1: f32,
+) -> (ApiState, BsdfState) {
     let mut api_state: ApiState = ApiState::default();
     let bsdf_state: BsdfState = BsdfState::default();
     api_state.number_of_threads = number_of_threads;
+    api_state.render_options.crop_window = Bounds2f {
+        p_min: Point2f {
+            x: clamp_t(cropx0.min(cropx1), 0.0, 1.0),
+            y: clamp_t(cropy0.min(cropy1), 0.0, 1.0),
+        },
+        p_max: Point2f {
+            x: clamp_t(cropx1.max(cropx0), 0.0, 1.0),
+            y: clamp_t(cropy1.max(cropy0), 0.0, 1.0),
+        },
+    };
     (api_state, bsdf_state)
 }
 

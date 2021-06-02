@@ -1683,7 +1683,12 @@ pub fn make_perspective_camera(
         let mut film_params: ParamSet = ParamSet::default();
         film_params.add_int(String::from("xresolution"), xres);
         film_params.add_int(String::from("yresolution"), yres);
-        let some_film: Option<Arc<Film>> = make_film(&film_name, &film_params, filter);
+        let crop_window: Bounds2f = Bounds2f {
+            p_min: Point2f { x: 0.0, y: 0.0 },
+            p_max: Point2f { x: 1.0, y: 1.0 },
+        };
+        let some_film: Option<Arc<Film>> =
+            make_film(&film_name, &film_params, filter, &crop_window);
         if let Some(film) = some_film {
             let camera_name: String = String::from("perspective");
             let mut camera_params: ParamSet = ParamSet::default();

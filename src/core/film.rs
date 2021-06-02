@@ -221,7 +221,7 @@ impl Film {
             max_sample_luminance,
         }
     }
-    pub fn create(params: &ParamSet, filter: Box<Filter>) -> Arc<Film> {
+    pub fn create(params: &ParamSet, filter: Box<Filter>, crop_window: &Bounds2f) -> Arc<Film> {
         let filename: String = params.find_one_string("filename", String::new());
         let xres: i32 = params.find_one_int("xresolution", 1280);
         let yres: i32 = params.find_one_int("yresolution", 720);
@@ -243,6 +243,8 @@ impl Film {
                 "{:?} values supplied for \"cropwindow\". Expected 4.",
                 cr.len()
             );
+        } else {
+            crop = *crop_window;
         }
         let scale: Float = params.find_one_float("scale", 1.0);
         let diagonal: Float = params.find_one_float("diagonal", 35.0);

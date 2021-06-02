@@ -42,6 +42,18 @@ struct Cli {
     /// use specified number of threads for rendering
     #[structopt(short = "t", long = "nthreads", default_value = "0")]
     nthreads: u8,
+    /// Specify an image crop window <x0 x1 y0 y1>
+    #[structopt(long, default_value = "0.0")]
+    cropx0: f32,
+    /// Specify an image crop window <x0 x1 y0 y1>
+    #[structopt(long, default_value = "1.0")]
+    cropx1: f32,
+    /// Specify an image crop window <x0 x1 y0 y1>
+    #[structopt(long, default_value = "0.0")]
+    cropy0: f32,
+    /// Specify an image crop window <x0 x1 y0 y1>
+    #[structopt(long, default_value = "1.0")]
+    cropy1: f32,
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
@@ -852,6 +864,10 @@ fn main() {
     // handle command line options
     let args = Cli::from_args();
     let number_of_threads: u8 = args.nthreads;
+    let cropx0: f32 = args.cropx0;
+    let cropx1: f32 = args.cropx1;
+    let cropy0: f32 = args.cropy0;
+    let cropy1: f32 = args.cropy1;
     let num_cores = num_cpus::get();
     let git_describe = option_env!("GIT_DESCRIBE").unwrap_or("unknown");
     println!(
@@ -860,7 +876,8 @@ fn main() {
     );
     println!("Copyright (c) 2016-2021 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
-    let (mut api_state, mut bsdf_state) = pbrt_init(number_of_threads);
+    let (mut api_state, mut bsdf_state) =
+        pbrt_init(number_of_threads, cropx0, cropx1, cropy0, cropy1);
     parse_file(
         args.path.into_os_string().into_string().unwrap(),
         &mut api_state,
