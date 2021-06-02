@@ -14,7 +14,7 @@ message:
 	$(info # if you want to have a git commit tag in your executables reported:")
 	$(info # bash: export GIT_DESCRIBE=something")
 	$(info # tcsh: setenv GIT_DESCRIBE something")
-	$(info # replace 'something' abobe with the output of:")
+	$(info # replace 'something' above with the output of:")
 	$(info git describe --tags)
 
 doc:
