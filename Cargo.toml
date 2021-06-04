@@ -6,7 +6,7 @@ version = "0.9.2"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
 repository = "https://github.com/wahn/rs_pbrt"
-documentation = "https://www.rs-pbrt.org/doc/crates/pbrt/index.html"
+documentation = "https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html"
 description = "Physically based rendering (PBR) with Rust"
 homepage = "https://www.rs-pbrt.org"
 [dependencies]
