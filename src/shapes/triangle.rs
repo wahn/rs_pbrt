@@ -335,6 +335,9 @@ impl Triangle {
         // override surface normal in _isect_ for triangle
         let mut surface_normal: Normal3f =
             Normal3f::from(vec3_cross_vec3(&dp02, &dp12).normalize());
+        if self.mesh.reverse_orientation ^ self.mesh.transform_swaps_handedness {
+            surface_normal = -surface_normal;
+        }
         let mut shading: Shading = Shading {
             n: surface_normal,
             dpdu,
