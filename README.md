@@ -13,7 +13,7 @@ http://www.pbrt.org
 
 Current **Rust** documentation:
 
-https://www.janwalter.org/doc/rust/pbrt/index.html
+https://www.janwalter.org/doc/rust/rs_pbrt/index.html
 
 ## Usage
 
