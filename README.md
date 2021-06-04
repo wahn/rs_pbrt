@@ -20,7 +20,7 @@ https://www.janwalter.org/doc/rust/pbrt/index.html
 ```shell
 > cargo build --release --no-default-features
 > ./target/release/rs_pbrt --help
-rs_pbrt 0.9.1
+rs_pbrt 0.9.2
 Parse a PBRT scene file (extension .pbrt) and render it
 
 USAGE:
@@ -31,6 +31,10 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
+        --cropx0 <cropx0>        Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+        --cropx1 <cropx1>        Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+        --cropy0 <cropy0>        Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+        --cropy1 <cropy1>        Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
     -t, --nthreads <nthreads>    use specified number of threads for rendering [default: 0]
 
 ARGS:
