@@ -3,6 +3,7 @@
 pub mod api;
 pub mod bssrdf;
 pub mod camera;
+pub mod display;
 pub mod efloat;
 pub mod film;
 pub mod filter;
