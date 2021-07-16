@@ -23,6 +23,7 @@ type Function = fn(Bounds2i, Pixels, usize, &mut Vec<Vec<Float>>);
 
 struct DisplayDirective;
 
+#[allow(unused)]
 impl DisplayDirective {
     pub const OPEN_IMAGE: u8 = 0;
     pub const RELOAD_IMAGE: u8 = 1;
@@ -48,12 +49,9 @@ impl<'a> DisplayItem<'a> {
         vec: Pixels<'a>,
         get_tile_values: Function,
     ) -> DisplayItem<'a> {
-        // let title = format!("{} {:?}", base_title, get_thread_id());
-        let title = format!("{}", base_title);
+        let title = format!("{} {:?}", base_title, get_thread_id());
 
         let mut channel_buffers = Vec::new();
-
-
         for channel_name in channel_names {
             channel_buffers.push(ImageChannelBuffer::new(
                 channel_name,
@@ -110,7 +108,6 @@ impl<'a> DisplayItem<'a> {
                 };
 
                 // empty out display old values
-
                 for values in display_values.iter_mut() { values.clear(); }
                 (self.get_tile_values)(b, self.vec.clone(), self.resolution.x as usize, &mut display_values);
                 // Send the RGB buffers if they differ from the last sent version
@@ -150,12 +147,9 @@ impl<'a> DisplayItem<'a> {
 
 struct ImageChannelBuffer {
     buffer: Vec<u8>,
-    tile_bounds_offset: usize,
     channel_values_offset: usize,
     tile_hashes: Vec<u64>,
     // Should probably be a map?
-    set_count: i32,
-    tile_index: i32,
 }
 
 impl ImageChannelBuffer {
@@ -164,7 +158,7 @@ impl ImageChannelBuffer {
             TILE_SIZE as usize * TILE_SIZE as usize * size_of::<Float>() + title.capacity() + 32;
         let mut buffer = Vec::with_capacity(buffer_size);
 
-        buffer.extend_from_slice(&0_i32.to_le_bytes()); // reserve space for message length?
+        buffer.extend_from_slice(&0_i32.to_le_bytes()); // reserve space for message length. Maybe we should check somewhere, that the message length will fit in 32 bits
         buffer.extend_from_slice(&DisplayDirective::UPDATE_IMAGE.to_le_bytes());
         buffer.push(0); // grab focus
         buffer.extend_from_slice(title.as_bytes());
@@ -172,28 +166,17 @@ impl ImageChannelBuffer {
         buffer.extend_from_slice(channel_name.as_bytes());
         buffer.push(0); // Null terminate string
 
-        let tile_bounds_offset = buffer.len();
-
         // The original implementation says we have a problem with the offset now not being float-aligned
         // As far as I can tell this should be u8 aligned
         // Also this is apparently not a problem on x86...
-        let channel_values_offset = tile_bounds_offset;
+        let channel_values_offset = buffer.len();
 
-        // buffer should already be zeroed where we didn't overwrite yet
-        // let zero_hash = murmur_hash64a(&buffer[channel_values_offset..], 0);
         let tile_hashes: Vec<u64> = Vec::new();
-
-        // for _ in 0..n_tiles {
-        //     tile_hashes.push(zero_hash);
-        // }
 
         ImageChannelBuffer {
             buffer,
-            tile_bounds_offset,
             channel_values_offset,
             tile_hashes,
-            set_count: 0,
-            tile_index: 0,
         }
     }
 
@@ -202,8 +185,6 @@ impl ImageChannelBuffer {
         self.buffer.extend_from_slice(&y.to_le_bytes());
         self.buffer.extend_from_slice(&width.to_le_bytes());
         self.buffer.extend_from_slice(&height.to_le_bytes());
-
-        self.set_count = width * height;
     }
 
     fn send_if_changed(&mut self, ipc_channel: &mut TcpStream, tile_index: usize) -> bool {
@@ -216,9 +197,6 @@ impl ImageChannelBuffer {
         let message_length_bytes = (message_length as i32).to_ne_bytes();
         self.buffer.splice(..4, message_length_bytes);
 
-        // println!("Sending Channel Buffer with index {}", tile_index);
-        // println!("{:?}", &self.buffer[..(min(100, self.buffer.len()))]);
-        // println!("buffer size: {}", self.buffer.len());
         let sent = ipc_channel.write(&self.buffer);
         if let Err(err) = sent {
             dbg!(err);
@@ -236,7 +214,7 @@ fn get_thread_id() -> ThreadId {
 
 fn create_open_packet(title: &str, resolution: &Point2i, buf: &mut Vec<u8>) {
     buf.extend_from_slice(&0_i32.to_le_bytes()); // Make space for message length
-    buf.extend_from_slice(&4_u8.to_le_bytes()); // Create Image
+    buf.push(DisplayDirective::CREATE_IMAGE); // Create Image
     buf.push(1); // Grab focus
     buf.extend_from_slice(title.as_bytes());
     buf.push(0); // Null terminate string
@@ -269,23 +247,15 @@ impl<'a> Preview<'a> {
         let dynamic_channel = TcpStream::connect(host).unwrap();
         let dynamic_items: Arc<Mutex<Vec<DisplayItem>>> = Arc::new(Mutex::new(Vec::new()));
 
-        // let update_thread = None;
-
         Preview {
             exit_thread,
-            // update_thread,
             dynamic_items,
             dynamic_channel,
         }
     }
 
     pub fn disconnect_from_display_server(&mut self) {
-        // if self.update_thread.is_none() { return; }
-        //
-        // if self.update_thread.as_ref().unwrap().thread().id() != thread::current().id() {
-            self.exit_thread.store(true, Ordering::Relaxed);
-            // self.update_thread.take().unwrap().join();
-        // }
+        self.exit_thread.store(true, Ordering::Relaxed);
     }
 
     pub fn display_dynamic(&mut self, title: &str, resolution: Point2i, channel_names: Vec<String>,
@@ -304,6 +274,7 @@ impl<'a> Preview<'a> {
         display_items.push(DisplayItem::new(title, resolution, channel_names, arc, get_tile_values))
     }
 
+    #[allow(unused)]
     fn display_static(&mut self, title: &str, resolution: Point2i, vec: Pixels, channel_names: Vec<String>,
                       get_tile_values: Function) {
         let mut item = DisplayItem::new(title, resolution, channel_names, vec, get_tile_values);
@@ -337,7 +308,7 @@ mod test {
     use std::thread;
     use std::time;
 
-    use crate::core::display::{Preview, Pixels};
+    use crate::core::display::Preview;
     use crate::core::geometry::{Bounds2i, Point2i};
     use crate::core::pbrt::Float;
     use std::sync::{Arc, RwLock, Mutex};
@@ -395,7 +366,7 @@ mod test {
             }
             thread::sleep(time::Duration::from_millis(1000));
             display.disconnect_from_display_server();
-        });
+        }).unwrap();
     }
 
     #[test]

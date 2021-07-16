@@ -242,7 +242,7 @@ impl SamplerIntegrator {
                             film.merge_film_tile(&film_tile);
                         }
                         display.disconnect_from_display_server();
-                    });
+                    }).unwrap();
                 });
             })
             .unwrap();
