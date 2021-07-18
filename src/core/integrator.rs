@@ -212,36 +212,41 @@ impl SamplerIntegrator {
                         // This should not
                         let address = "127.0.0.1:14158";
                         let mut display = Preview::connect_to_display_server(address);
+                        let connected = display.is_ok();
 
-                        let arc = Arc::new(&film.pixels);
+                        if connected {
+                            let display = display.as_mut().unwrap();
+                            let arc = Arc::new(&film.pixels);
 
-                        // If we always need this function and never need another one we can move this inside the display
-                        let get_values = move |b: Bounds2i, arc: Arc<&RwLock<Vec<Pixel>>>, width: usize, values: &mut Vec<Vec<Float>>| {
-                            for col in b.p_min.y..b.p_max.y {
-                                for row in b.p_min.x..b.p_max.x {
-                                    let v = {
-                                        let vec = arc.read().unwrap();
-                                        vec[col as usize * width + row as usize].xyz
-                                    };
+                            // If we always need this function and never need another one we can move this inside the display
+                            let get_values = move |b: Bounds2i, arc: Arc<&RwLock<Vec<Pixel>>>, width: usize, values: &mut Vec<Vec<Float>>| {
+                                for col in b.p_min.y..b.p_max.y {
+                                    for row in b.p_min.x..b.p_max.x {
+                                        let v = {
+                                            let vec = arc.read().unwrap();
+                                            vec[col as usize * width + row as usize].xyz
+                                        };
 
-                                    for (channel, value) in values.iter_mut().zip(v) {
-                                        // Todo: We probably need to scale the values here?
-                                        channel.push(value);
+                                        for (channel, value) in values.iter_mut().zip(v) {
+                                            // Todo: We probably need to scale the values here?
+                                            channel.push(value);
+                                        }
                                     }
                                 }
-                            }
-                        };
+                            };
 
-                        display.display_dynamic("Test", film.full_resolution,
-                                                vec!["R".to_string(), "G".to_string(), "B".to_string()],
-                                                sub_scope, arc, get_values);
-
+                            display.display_dynamic("Test", film.full_resolution,
+                                                    vec!["R".to_string(), "G".to_string(), "B".to_string()],
+                                                    sub_scope, arc, get_values);
+                        }
                         for _ in pbr::PbIter::new(0..bq.len()) {
                             let film_tile = pixel_rx.recv().unwrap();
                             // merge image tile into _Film_
                             film.merge_film_tile(&film_tile);
                         }
-                        display.disconnect_from_display_server();
+                        if connected {
+                            display.unwrap().disconnect_from_display_server();
+                        }
                     }).unwrap();
                 });
             })

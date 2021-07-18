@@ -6,7 +6,7 @@ use std::net::TcpStream;
 use std::sync::{Arc, Mutex, RwLock};
 use std::sync::atomic::AtomicBool;
 use std::thread::{self, ThreadId};
-use std::time;
+use std::{time, io};
 
 use atomic::Ordering;
 use murmurhash64::murmur_hash64a;
@@ -242,16 +242,16 @@ pub struct Preview<'a> {
 }
 
 impl<'a> Preview<'a> {
-    pub fn connect_to_display_server(host: &str) -> Preview {
+    pub fn connect_to_display_server(host: &str) -> io::Result<Preview> {
         let exit_thread = Arc::new(AtomicBool::new(false));
-        let dynamic_channel = TcpStream::connect(host).unwrap();
+        let dynamic_channel = TcpStream::connect(host)?;
         let dynamic_items: Arc<Mutex<Vec<DisplayItem>>> = Arc::new(Mutex::new(Vec::new()));
 
-        Preview {
+        Ok(Preview {
             exit_thread,
             dynamic_items,
             dynamic_channel,
-        }
+        })
     }
 
     pub fn disconnect_from_display_server(&mut self) {
@@ -322,7 +322,9 @@ mod test {
     fn display_remote() {
         let address = "127.0.0.1:14158";
 
-        let mut display = Preview::connect_to_display_server(address);
+        let display = Preview::connect_to_display_server(address);
+        assert!(display.is_ok());
+        let mut display = display.unwrap();
         let resolution = Point2i { x: 200, y: 200 };
 
         let mut image: Vec<Pixel> = Vec::with_capacity(resolution.x as usize);
