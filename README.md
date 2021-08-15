@@ -1,5 +1,6 @@
 # rs_pbrt
 
+[![crates.io](https://img.shields.io/crates/v/rs_pbrt.svg)](https://crates.io/crates/rs_pbrt)
 [![Build Status](https://travis-ci.com/wahn/rs_pbrt.svg?branch=master)](https://travis-ci.com/wahn/rs_pbrt)
 [![](https://img.shields.io/github/issues-raw/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/issues)
 [![](https://tokei.rs/b1/github/wahn/rs_pbrt?category=code)](https://github.com/wahn/rs_pbrt)
