@@ -8,13 +8,17 @@
 [![dependency status](https://deps.rs/repo/github/wahn/rs_pbrt/status.svg)](https://deps.rs/repo/github/wahn/rs_pbrt)
 <!-- [![](https://img.shields.io/github/release-date/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/releases) -->
 
+You can find more information about `rs_pbrt` at https://www.rs-pbrt.org/about ...
+
 **Rust** crate to implement a counterpart to the PBRT book's (3rd edition) C++ code:
 
 http://www.pbrt.org
 
-Current **Rust** documentation:
+Current **Rust** (development) documentation:
 
 https://www.janwalter.org/doc/rust/rs_pbrt/index.html
+or
+https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html
 
 ## Usage
 
