@@ -25,7 +25,7 @@ https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html
 ```shell
 > cargo build --release --no-default-features
 > ./target/release/rs_pbrt --help
-rs_pbrt 0.9.2
+rs_pbrt 0.9.3
 Parse a PBRT scene file (extension .pbrt) and render it
 
 USAGE:
@@ -41,6 +41,7 @@ OPTIONS:
         --cropy0 <cropy0>        Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
         --cropy1 <cropy1>        Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
     -t, --nthreads <nthreads>    use specified number of threads for rendering [default: 0]
+    -s, --samples <samples>      pixel samples [default: 0]
 
 ARGS:
     <path>    The path to the file to read

@@ -39,6 +39,9 @@ use std::str::FromStr;
 /// Parse a PBRT scene file (extension .pbrt) and render it.
 #[derive(StructOpt)]
 struct Cli {
+    /// pixel samples
+    #[structopt(short = "s", long = "samples", default_value = "0")]
+    samples: u32,
     /// use specified number of threads for rendering
     #[structopt(short = "t", long = "nthreads", default_value = "0")]
     nthreads: u8,
@@ -863,6 +866,7 @@ fn parse_file(
 fn main() {
     // handle command line options
     let args = Cli::from_args();
+    let pixelsamples: u32 = args.samples;
     let number_of_threads: u8 = args.nthreads;
     let cropx0: f32 = args.cropx0;
     let cropx1: f32 = args.cropx1;
@@ -876,8 +880,14 @@ fn main() {
     );
     println!("Copyright (c) 2016-2021 Jan Douglas Bert Walter.");
     println!("Rust code based on C++ code by Matt Pharr, Greg Humphreys, and Wenzel Jakob.");
-    let (mut api_state, mut bsdf_state) =
-        pbrt_init(number_of_threads, cropx0, cropx1, cropy0, cropy1);
+    let (mut api_state, mut bsdf_state) = pbrt_init(
+        pixelsamples,
+        number_of_threads,
+        cropx0,
+        cropx1,
+        cropy0,
+        cropy1,
+    );
     parse_file(
         args.path.into_os_string().into_string().unwrap(),
         &mut api_state,

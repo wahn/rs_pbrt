@@ -115,6 +115,7 @@ impl Default for BsdfState {
 }
 
 pub struct ApiState {
+    pixelsamples: u32,
     number_of_threads: u8,
     pub search_directory: Option<Box<PathBuf>>,
     cur_transform: TransformSet,
@@ -131,6 +132,7 @@ pub struct ApiState {
 impl Default for ApiState {
     fn default() -> Self {
         ApiState {
+            pixelsamples: 0_u32,
             number_of_threads: 0_u8,
             search_directory: None,
             cur_transform: TransformSet {
@@ -207,12 +209,35 @@ pub struct RenderOptions {
 }
 
 impl RenderOptions {
-    pub fn make_integrator(&self) -> Option<Box<Integrator>> {
+    pub fn make_integrator(&self, pixelsamples: u32) -> Option<Box<Integrator>> {
         let mut some_integrator: Option<Box<Integrator>> = None;
         let some_camera: Option<Arc<Camera>> = self.make_camera();
         if let Some(camera) = some_camera {
-            let some_sampler: Option<Box<Sampler>> =
-                make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
+            let some_sampler: Option<Box<Sampler>>;
+            if pixelsamples != 0_u32 {
+                // copy all bool and integer values, except pixelsamples
+                let mut new_sampler_params: ParamSet = ParamSet::default();
+                new_sampler_params.key_word = self.sampler_params.key_word.clone();
+                new_sampler_params.name = self.sampler_params.name.clone();
+                new_sampler_params.tex_type = self.sampler_params.tex_type.clone();
+                new_sampler_params.tex_name = self.sampler_params.tex_name.clone();
+                for b in &self.sampler_params.bools {
+                    new_sampler_params.add_bool(b.name.clone(), b.values[0]);
+                }
+                for i in &self.sampler_params.ints {
+                    if i.name == "pixelsamples" {
+                        new_sampler_params.add_int(i.name.clone(), pixelsamples as i32);
+                    } else {
+                        new_sampler_params.add_int(i.name.clone(), i.values[0]);
+                    }
+                }
+                print_params(&new_sampler_params);
+                some_sampler =
+                    make_sampler(&self.sampler_name, &new_sampler_params, camera.get_film());
+            } else {
+                some_sampler =
+                    make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
+            }
             if let Some(sampler) = some_sampler {
                 if self.integrator_name == "whitted" {
                     // CreateWhittedIntegrator
@@ -2259,6 +2284,7 @@ fn print_params(params: &ParamSet) {
 }
 
 pub fn pbrt_init(
+    pixelsamples: u32,
     number_of_threads: u8,
     cropx0: f32,
     cropx1: f32,
@@ -2267,6 +2293,7 @@ pub fn pbrt_init(
 ) -> (ApiState, BsdfState) {
     let mut api_state: ApiState = ApiState::default();
     let bsdf_state: BsdfState = BsdfState::default();
+    api_state.pixelsamples = pixelsamples;
     api_state.number_of_threads = number_of_threads;
     api_state.render_options.crop_window = Bounds2f {
         p_min: Point2f {
@@ -2292,7 +2319,9 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
         "Missing end to pbrtTransformBegin()"
     );
     // MakeIntegrator
-    let some_integrator: Option<Box<Integrator>> = api_state.render_options.make_integrator();
+    let some_integrator: Option<Box<Integrator>> = api_state
+        .render_options
+        .make_integrator(api_state.pixelsamples);
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;
