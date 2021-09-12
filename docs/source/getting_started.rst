@@ -82,6 +82,21 @@ The executables can be found in either the **release** or the
 Create a local copy of the documentation
 ========================================
 
+.. code:: shell
+
+          # no OpenEXR support
+          cargo doc --no-default-features
+
+Use your favourite `web browser`_ to open the local (Rust source code)
+documentation:
+
+.. code:: shell
+
+          firefox target/doc/rs_pbrt/index.html
+
+You can also find the `official documentation`_ (of the latest
+release) on the `rs_pbrt` web site.
+
 Running the renderer
 ====================
 
@@ -90,3 +105,5 @@ Running the renderer
 .. _GitHub repository: https://github.com/wahn/rs_pbrt
 .. _Codeberg repository: https://codeberg.org/wahn/rs_pbrt
 .. _its documentation: https://doc.rust-lang.org/cargo
+.. _web browser: https://en.wikipedia.org/wiki/Web_browser
+.. _official documentation: https://www.rs-pbrt.org/doc/crates/rs_pbrt/index.html
