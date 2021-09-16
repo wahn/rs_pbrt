@@ -209,7 +209,11 @@ pub struct RenderOptions {
 }
 
 impl RenderOptions {
-    pub fn make_integrator(&self, pixelsamples: u32) -> Option<Box<Integrator>> {
+    pub fn make_integrator(
+        &self,
+        pixelsamples: u32,
+        integrator_arg: &Option<String>,
+    ) -> Option<Box<Integrator>> {
         let mut some_integrator: Option<Box<Integrator>> = None;
         let some_camera: Option<Arc<Camera>> = self.make_camera();
         if let Some(camera) = some_camera {
@@ -239,7 +243,15 @@ impl RenderOptions {
                     make_sampler(&self.sampler_name, &self.sampler_params, camera.get_film());
             }
             if let Some(sampler) = some_sampler {
-                if self.integrator_name == "whitted" {
+                // if let Some(integrator_name) = integrator_arg {
+                let integrator_name: String;
+                if let Some(integrator_name_arg) = integrator_arg {
+                    integrator_name = integrator_name_arg.clone();
+                } else {
+                    integrator_name = self.integrator_name.clone();
+                }
+                println!("Integrator {:?}", integrator_name);
+                if integrator_name == "whitted" {
                     // CreateWhittedIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let pixel_bounds: Bounds2i = camera.get_film().get_sample_bounds();
@@ -247,7 +259,7 @@ impl RenderOptions {
                         WhittedIntegrator::new(max_depth as u32, camera, sampler, pixel_bounds),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "directlighting" {
+                } else if integrator_name == "directlighting" {
                     // CreateDirectLightingIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let st: String = self
@@ -278,7 +290,7 @@ impl RenderOptions {
                         )),
                     ));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "path" {
+                } else if integrator_name == "path" {
                     // CreatePathIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
@@ -315,7 +327,7 @@ impl RenderOptions {
                         ),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "volpath" {
+                } else if integrator_name == "volpath" {
                     // CreateVolPathIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
@@ -352,7 +364,7 @@ impl RenderOptions {
                         ),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "bdpt" {
+                } else if integrator_name == "bdpt" {
                     // CreateBDPTIntegrator
                     let mut max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let visualize_strategies: bool = self
@@ -378,7 +390,7 @@ impl RenderOptions {
                         light_strategy,
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "mlt" {
+                } else if integrator_name == "mlt" {
                     // CreateMLTIntegrator
                     let max_depth: i32 = self.integrator_params.find_one_int("maxdepth", 5);
                     let n_bootstrap: i32 = self
@@ -404,7 +416,7 @@ impl RenderOptions {
                         large_step_probability,
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "ambientocclusion" {
+                } else if integrator_name == "ao" || integrator_name == "ambientocclusion" {
                     // CreateAOIntegrator
                     let pb: Vec<i32> = self.integrator_params.find_int("pixelbounds");
                     let np: usize = pb.len();
@@ -429,7 +441,7 @@ impl RenderOptions {
                         AOIntegrator::new(cos_sample, n_samples, camera, sampler, pixel_bounds),
                     )));
                     some_integrator = Some(integrator);
-                } else if self.integrator_name == "sppm" {
+                } else if integrator_name == "sppm" {
                     // CreateSPPMIntegrator
                     let mut n_iterations: i32 =
                         self.integrator_params.find_one_int("numiterations", 64);
@@ -457,7 +469,7 @@ impl RenderOptions {
                     )));
                     some_integrator = Some(integrator);
                 } else {
-                    println!("Integrator \"{}\" unknown.", self.integrator_name);
+                    println!("Integrator \"{}\" unknown.", integrator_name);
                 }
             } else {
                 panic!("Unable to create sampler.");
@@ -2308,7 +2320,7 @@ pub fn pbrt_init(
     (api_state, bsdf_state)
 }
 
-pub fn pbrt_cleanup(api_state: &ApiState) {
+pub fn pbrt_cleanup(api_state: &ApiState, integrator_arg: &Option<String>) {
     // println!("WorldEnd");
     assert!(
         api_state.pushed_graphics_states.is_empty(),
@@ -2321,7 +2333,7 @@ pub fn pbrt_cleanup(api_state: &ApiState) {
     // MakeIntegrator
     let some_integrator: Option<Box<Integrator>> = api_state
         .render_options
-        .make_integrator(api_state.pixelsamples);
+        .make_integrator(api_state.pixelsamples, integrator_arg);
     if let Some(mut integrator) = some_integrator {
         let scene = api_state.render_options.make_scene();
         let num_threads: u8 = api_state.number_of_threads;
