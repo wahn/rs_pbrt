@@ -1923,7 +1923,51 @@ fn get_shapes_and_materials(
                 );
             }
         }
-        // TODO: alpha
+        // look up an alpha texture, if applicable
+        let mut alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+        let alpha_tex_name: String = api_state.param_set.find_texture("alpha");
+        if alpha_tex_name != "" {
+            alpha_tex = match api_state
+                .graphics_state
+                .float_textures
+                .get(alpha_tex_name.as_str())
+            {
+                Some(float_texture) => Some(float_texture.clone()),
+                None => {
+                    println!(
+                        "Couldn't find float texture {:?} for \"alpha\" parameter",
+                        alpha_tex_name.as_str()
+                    );
+                    None
+                }
+            }
+        } else if api_state.param_set.find_one_float("alpha", 1.0 as Float) == 0.0 as Float {
+            alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
+        }
+        let mut shadow_alpha_tex: Option<Arc<dyn Texture<Float> + Send + Sync>> = None;
+        let shadow_alpha_tex_name: String = api_state.param_set.find_texture("shadowalpha");
+        if shadow_alpha_tex_name != "" {
+            shadow_alpha_tex = match api_state
+                .graphics_state
+                .float_textures
+                .get(shadow_alpha_tex_name.as_str())
+            {
+                Some(float_texture) => Some(float_texture.clone()),
+                None => {
+                    println!(
+                        "Couldn't find float texture {:?} for \"shadowalpha\" parameter",
+                        shadow_alpha_tex_name.as_str()
+                    );
+                    None
+                }
+            }
+        } else if api_state
+            .param_set
+            .find_one_float("shadowalpha", 1.0 as Float)
+            == 0.0 as Float
+        {
+            shadow_alpha_tex = Some(Arc::new(ConstantTexture::new(0.0 as Float)));
+        }
         // CreateTriangleMesh
         // transform mesh vertices to world space
         let mut p_ws: Vec<Point3f> = Vec::new();
@@ -1947,8 +1991,8 @@ fn get_shapes_and_materials(
             s_ws, // in world space
             n_ws, // in world space
             uvs,
-            None,
-            None,
+            alpha_tex,
+            shadow_alpha_tex,
         ));
         let mtl: Option<Arc<Material>> = create_material(&api_state, bsdf_state);
         for id in 0..mesh.n_triangles {
