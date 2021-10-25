@@ -584,7 +584,7 @@ impl RenderOptions {
                             let max_aniso: Float = 8.0;
                             let wrap_mode: ImageWrap = ImageWrap::Repeat;
                             let scale: Float = 1.0;
-                            let gamma: bool = true;
+                            let gamma: bool = false;
                             kd = Arc::new(ImageTexture::new(
                                 mapping,
                                 filename,
@@ -631,7 +631,7 @@ impl RenderOptions {
                                 let max_aniso: Float = 8.0;
                                 let wrap_mode: ImageWrap = ImageWrap::Repeat;
                                 let scale: Float = 1.0;
-                                let gamma: bool = true;
+                                let gamma: bool = false;
                                 kd = Arc::new(ImageTexture::new(
                                     mapping,
                                     filename,
@@ -774,7 +774,7 @@ impl RenderOptions {
                             let max_aniso: Float = 8.0;
                             let wrap_mode: ImageWrap = ImageWrap::Repeat;
                             let scale: Float = 1.0;
-                            let gamma: bool = true;
+                            let gamma: bool = false;
                             kd = Arc::new(ImageTexture::new(
                                 mapping,
                                 filename,
@@ -821,7 +821,7 @@ impl RenderOptions {
                                 let max_aniso: Float = 8.0;
                                 let wrap_mode: ImageWrap = ImageWrap::Repeat;
                                 let scale: Float = 1.0;
-                                let gamma: bool = true;
+                                let gamma: bool = false;
                                 kd = Arc::new(ImageTexture::new(
                                     mapping,
                                     filename,
@@ -964,7 +964,7 @@ impl RenderOptions {
                             let max_aniso: Float = 8.0;
                             let wrap_mode: ImageWrap = ImageWrap::Repeat;
                             let scale: Float = 1.0;
-                            let gamma: bool = true;
+                            let gamma: bool = false;
                             kd = Arc::new(ImageTexture::new(
                                 mapping,
                                 filename,
@@ -1011,7 +1011,7 @@ impl RenderOptions {
                                 let max_aniso: Float = 8.0;
                                 let wrap_mode: ImageWrap = ImageWrap::Repeat;
                                 let scale: Float = 1.0;
-                                let gamma: bool = true;
+                                let gamma: bool = false;
                                 kd = Arc::new(ImageTexture::new(
                                     mapping,
                                     filename,
@@ -1167,7 +1167,7 @@ impl RenderOptions {
                             let max_aniso: Float = 8.0;
                             let wrap_mode: ImageWrap = ImageWrap::Repeat;
                             let scale: Float = 1.0;
-                            let gamma: bool = true;
+                            let gamma: bool = false;
                             kd = Arc::new(ImageTexture::new(
                                 mapping,
                                 filename,
@@ -1214,7 +1214,7 @@ impl RenderOptions {
                                 let max_aniso: Float = 8.0;
                                 let wrap_mode: ImageWrap = ImageWrap::Repeat;
                                 let scale: Float = 1.0;
-                                let gamma: bool = true;
+                                let gamma: bool = false;
                                 kd = Arc::new(ImageTexture::new(
                                     mapping,
                                     filename,
