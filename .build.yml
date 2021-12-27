@@ -1,0 +1,17 @@
+image: debian/stable
+packages:
+  - rustc
+  - cargo
+sources:
+  - https://git.sr.ht/~wahn/rs-pbrt
+tasks:
+  - rustc-version: |
+      rustc --version
+  - cargo-version: |
+      cargo --version
+  - test: |
+      cd rs-pbrt
+      cargo test --release --no-default-features
+  - help: |
+      cd rs-pbrt
+      cargo run --release --no-default-features -- --help
