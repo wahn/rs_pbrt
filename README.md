@@ -6,6 +6,7 @@
 [![](https://tokei.rs/b1/github/wahn/rs_pbrt?category=code)](https://github.com/wahn/rs_pbrt)
 [![Documentation Status](https://readthedocs.org/projects/rs-pbrt/badge/?version=latest)](https://rs-pbrt.readthedocs.io/en/latest/?badge=latest)
 [![dependency status](https://deps.rs/repo/github/wahn/rs_pbrt/status.svg)](https://deps.rs/repo/github/wahn/rs_pbrt)
+[![builds.sr.ht status](https://builds.sr.ht/~wahn/rs-pbrt.svg)](https://builds.sr.ht/~wahn/rs-pbrt?)
 <!-- [![](https://img.shields.io/github/release-date/wahn/rs_pbrt.svg)](https://github.com/wahn/rs_pbrt/releases) -->
 
 You can find more information about `rs_pbrt` at https://www.rs-pbrt.org/about ...
@@ -36,12 +37,13 @@ FLAGS:
     -V, --version    Prints version information
 
 OPTIONS:
-        --cropx0 <cropx0>        Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
-        --cropx1 <cropx1>        Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
-        --cropy0 <cropy0>        Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
-        --cropy1 <cropy1>        Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
-    -t, --nthreads <nthreads>    use specified number of threads for rendering [default: 0]
-    -s, --samples <samples>      pixel samples [default: 0]
+        --cropx0 <cropx0>            Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+        --cropx1 <cropx1>            Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+        --cropy0 <cropy0>            Specify an image crop window <x0 x1 y0 y1> [default: 0.0]
+        --cropy1 <cropy1>            Specify an image crop window <x0 x1 y0 y1> [default: 1.0]
+    -i, --integrator <integrator>    ao, directlighting, whitted, path, bdpt, mlt, sppm, volpath
+    -t, --nthreads <nthreads>        use specified number of threads for rendering [default: 0]
+    -s, --samples <samples>          pixel samples [default: 0]
 
 ARGS:
     <path>    The path to the file to read
