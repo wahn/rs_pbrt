@@ -1998,15 +1998,45 @@ fn main() -> std::io::Result<()> {
         "TODO: Do something with the {} bytes returned by use_dna(...).",
         bytes_read.len()
     );
-    let mut lens: f32 = 0.0;
-    let mut clipsta: f32 = 0.0;
-    let mut sensor_x: f32 = 0.0;
-    let mut sensor_y: f32 = 0.0;
     let mut byte_index: usize = 0;
     for struct_read in structs_read {
+        let mut lens: f32 = 0.0;
+        let mut clipsta: f32 = 0.0;
+        let mut sensor_x: f32 = 0.0;
+        let mut sensor_y: f32 = 0.0;
+        println!("{} ({})", struct_read, byte_index);
         if let Some(struct_found) = dna_structs_hm.get(&names[0]) {
             for member in &struct_found.members {
                 match member.mem_name.as_str() {
+                    "id" => {
+                        // println!("{:?}", member);
+                        if let Some(struct_found2) = dna_structs_hm.get(member.mem_type.as_str()) {
+                            // println!("{:?}", struct_found2);
+                            let mut byte_index2: usize = 0;
+                            for member2 in &struct_found2.members {
+                                if let Some(type_found2) = dna_types_hm.get(&member2.mem_type) {
+                                    let mem_tlen2: u16 = calc_mem_tlen(member2, *type_found2);
+                                    if member2.mem_name.contains("name") {
+                                        let mut id = String::with_capacity(mem_tlen2 as usize);
+                                        for i in 0..mem_tlen2 as usize {
+                                            if bytes_read[byte_index + byte_index2 + i] == 0 {
+                                                break;
+                                            }
+                                            if (bytes_read[byte_index + byte_index2 + i] as char)
+                                                .is_ascii_alphanumeric()
+                                            {
+                                                id.push(bytes_read[byte_index + byte_index2 + i] as char);
+                                            }
+                                        }
+                                        println!("ID.name = {:?}", id);
+                                        byte_index2 += mem_tlen2 as usize;
+                                    } else {
+                                        byte_index2 += mem_tlen2 as usize;
+                                    }
+                                }
+                            }
+                        }
+                    }
                     "lens" => {
                         if member.mem_type.as_str() == "float" {
                             let mut float_buf: [u8; 4] = [0_u8; 4];
@@ -2060,17 +2090,19 @@ fn main() -> std::io::Result<()> {
                 }
             }
         }
+        // calculate angle_x and angle_y
+        angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
+        angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
+        let cam: BlendCamera = BlendCamera {
+            lens,
+            angle_x,
+            angle_y,
+            clipsta,
+        };
+        println!("{:?}", cam);
+        camera_hm.insert(base_name.clone(), cam);
     }
-    // calculate angle_x and angle_y
-    angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
-    angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
-    let cam: BlendCamera = BlendCamera {
-        lens,
-        angle_x,
-        angle_y,
-        clipsta,
-    };
-    println!("{:?}", cam);
+    println!("byte_index = {}", byte_index);
     // WORK
     // WORK
 
