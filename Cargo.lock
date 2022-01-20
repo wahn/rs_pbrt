@@ -83,6 +83,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3d155346769a6855b86399e9bc3814ab343cd3d62c7e985113d46a0ec3c281fd"
 
 [[package]]
+name = "blend_info"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0d393f43eb1cf649203108e6b7ec4cc1aa63201d8bec3053226f338772ba0b37"
+dependencies = [
+ "structopt",
+]
+
+[[package]]
 name = "block-buffer"
 version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -817,6 +826,7 @@ version = "0.9.3"
 dependencies = [
  "atom",
  "atomic",
+ "blend_info",
  "byteorder",
  "crossbeam",
  "crossbeam-channel",
