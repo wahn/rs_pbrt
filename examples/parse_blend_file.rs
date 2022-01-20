@@ -1998,48 +1998,81 @@ fn main() -> std::io::Result<()> {
         "TODO: Do something with the {} bytes returned by use_dna(...).",
         bytes_read.len()
     );
-    // WORK
     let mut lens: f32 = 0.0;
+    let mut clipsta: f32 = 0.0;
+    let mut sensor_x: f32 = 0.0;
+    let mut sensor_y: f32 = 0.0;
     let mut byte_index: usize = 0;
     for struct_read in structs_read {
-        println!("{:?}", struct_read);
         if let Some(struct_found) = dna_structs_hm.get(&names[0]) {
-            println!("{:?}", struct_found);
             for member in &struct_found.members {
                 match member.mem_name.as_str() {
                     "lens" => {
-                        println!("{:?}", member);
                         if member.mem_type.as_str() == "float" {
                             let mut float_buf: [u8; 4] = [0_u8; 4];
                             for i in 0..4 as usize {
                                 float_buf[i] = bytes_read[byte_index + i];
                             }
                             lens = unsafe { mem::transmute(float_buf) };
-			    println!("lens = {}", lens);
                         } else {
                             println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
                         }
                     }
-                    _ => {
-                        println!("{:?}", member.mem_name);
+                    "clipsta" => {
+                        if member.mem_type.as_str() == "float" {
+                            let mut float_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                float_buf[i] = bytes_read[byte_index + i];
+                            }
+                            clipsta = unsafe { mem::transmute(float_buf) };
+                        } else {
+                            println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
+                        }
                     }
+                    "sensor_x" => {
+                        if member.mem_type.as_str() == "float" {
+                            let mut float_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                float_buf[i] = bytes_read[byte_index + i];
+                            }
+                            sensor_x = unsafe { mem::transmute(float_buf) };
+                        } else {
+                            println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
+                        }
+                    }
+                    "sensor_y" => {
+                        if member.mem_type.as_str() == "float" {
+                            let mut float_buf: [u8; 4] = [0_u8; 4];
+                            for i in 0..4 as usize {
+                                float_buf[i] = bytes_read[byte_index + i];
+                            }
+                            sensor_y = unsafe { mem::transmute(float_buf) };
+                        } else {
+                            println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
+                        }
+                    }
+                    _ => {}
                 }
                 // find mem_type in dna_types.names
                 if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
                     let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
                     byte_index += mem_tlen as usize;
                 }
-		println!("byte_index = {}", byte_index);
             }
         }
     }
+    // calculate angle_x and angle_y
+    angle_x = degrees(focallength_to_fov(lens, sensor_x) as Float);
+    angle_y = degrees(focallength_to_fov(lens, sensor_y) as Float);
+    let cam: BlendCamera = BlendCamera {
+        lens,
+        angle_x,
+        angle_y,
+        clipsta,
+    };
+    println!("{:?}", cam);
     // WORK
-    // let cam: BlendCamera = BlendCamera {
-    //     lens,
-    //     angle_x,
-    //     angle_y,
-    //     clipsta,
-    // };
+    // WORK
 
     // // first get the DNA
     // let mut names: Vec<String> = Vec::new();
