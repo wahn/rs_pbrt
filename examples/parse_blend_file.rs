@@ -23,7 +23,7 @@ use std::mem;
 use std::path::Path;
 use std::sync::Arc;
 // others
-use blend_info::{calc_mem_tlen, read_dna, use_dna, DnaStrC};
+use blend_info::{calc_mem_tlen, read_dna, use_dna, DnaStrC, DnaStrMember};
 // pbrt
 use rs_pbrt::core::api::{make_accelerator, make_camera, make_film, make_filter, make_sampler};
 use rs_pbrt::core::camera::Camera;
@@ -109,6 +109,22 @@ struct Cli {
     /// The path to the file to read
     #[structopt(parse(from_os_str))]
     path: std::path::PathBuf,
+}
+
+// blend_info
+
+fn get_float(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> f32 {
+    let mut float_value: f32 = 0.0;
+    if member.mem_type.as_str() == "float" {
+        let mut float_buf: [u8; 4] = [0_u8; 4];
+        for i in 0..4 as usize {
+            float_buf[i] = bytes_read[byte_index + i];
+        }
+        float_value = unsafe { mem::transmute(float_buf) };
+    } else {
+        println!("WARNING: \"float\" expected, {:?} found", member.mem_type);
+    }
+    float_value
 }
 
 // PBRT
@@ -2060,15 +2076,11 @@ fn main() -> std::io::Result<()> {
                                             let mem_tlen2: u16 =
                                                 calc_mem_tlen(member2, *type_found2);
                                             if member2.mem_name.contains("scale_length") {
-                                                if member2.mem_type.as_str() == "float" {
-                                                    let mut float_buf: [u8; 4] = [0_u8; 4];
-                                                    for i in 0..4 as usize {
-                                                        float_buf[i] = bytes_read
-                                                            [byte_index + byte_index2 + i];
-                                                    }
-                                                    scale_length =
-                                                        unsafe { mem::transmute(float_buf) };
-                                                }
+                                                scale_length = get_float(
+                                                    member2,
+                                                    &bytes_read,
+                                                    byte_index + byte_index2,
+                                                );
                                                 byte_index2 += mem_tlen2 as usize;
                                             } else {
                                                 byte_index2 += mem_tlen2 as usize;
@@ -2187,60 +2199,16 @@ fn main() -> std::io::Result<()> {
                                 }
                             }
                             "lens" => {
-                                if member.mem_type.as_str() == "float" {
-                                    let mut float_buf: [u8; 4] = [0_u8; 4];
-                                    for i in 0..4 as usize {
-                                        float_buf[i] = bytes_read[byte_index + i];
-                                    }
-                                    lens = unsafe { mem::transmute(float_buf) };
-                                } else {
-                                    println!(
-                                        "WARNING: \"float\" expected, {:?} found",
-                                        member.mem_type
-                                    );
-                                }
+                                lens = get_float(member, &bytes_read, byte_index);
                             }
                             "clipsta" => {
-                                if member.mem_type.as_str() == "float" {
-                                    let mut float_buf: [u8; 4] = [0_u8; 4];
-                                    for i in 0..4 as usize {
-                                        float_buf[i] = bytes_read[byte_index + i];
-                                    }
-                                    clipsta = unsafe { mem::transmute(float_buf) };
-                                } else {
-                                    println!(
-                                        "WARNING: \"float\" expected, {:?} found",
-                                        member.mem_type
-                                    );
-                                }
+                                clipsta = get_float(member, &bytes_read, byte_index);
                             }
                             "sensor_x" => {
-                                if member.mem_type.as_str() == "float" {
-                                    let mut float_buf: [u8; 4] = [0_u8; 4];
-                                    for i in 0..4 as usize {
-                                        float_buf[i] = bytes_read[byte_index + i];
-                                    }
-                                    sensor_x = unsafe { mem::transmute(float_buf) };
-                                } else {
-                                    println!(
-                                        "WARNING: \"float\" expected, {:?} found",
-                                        member.mem_type
-                                    );
-                                }
+                                sensor_x = get_float(member, &bytes_read, byte_index);
                             }
                             "sensor_y" => {
-                                if member.mem_type.as_str() == "float" {
-                                    let mut float_buf: [u8; 4] = [0_u8; 4];
-                                    for i in 0..4 as usize {
-                                        float_buf[i] = bytes_read[byte_index + i];
-                                    }
-                                    sensor_y = unsafe { mem::transmute(float_buf) };
-                                } else {
-                                    println!(
-                                        "WARNING: \"float\" expected, {:?} found",
-                                        member.mem_type
-                                    );
-                                }
+                                sensor_y = get_float(member, &bytes_read, byte_index);
                             }
                             _ => {}
                         }
