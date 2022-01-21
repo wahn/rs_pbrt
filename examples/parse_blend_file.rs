@@ -2043,6 +2043,7 @@ fn main() -> std::io::Result<()> {
         "Object".to_string(),
         "Camera".to_string(),
         // "Lamp".to_string(),
+        "Material".to_string(),
         // "Mesh".to_string(),
         // "MPoly".to_string(),
         // "MVert".to_string(),
@@ -2050,7 +2051,9 @@ fn main() -> std::io::Result<()> {
         // "MLoopUV".to_string(),
         // "MLoopCol".to_string(),
     ];
+    // WORK
     // then use the DNA
+    let mut material_hm: HashMap<String, Blend279Material> = HashMap::with_capacity(ob_count);
     let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
     // use_dna(...)
     let mut bytes_read: Vec<u8> = Vec::with_capacity(num_bytes_read);
@@ -2089,6 +2092,7 @@ fn main() -> std::io::Result<()> {
                                     &dna_types_hm,
                                 );
                                 println!("  ID.name = {:?}", id);
+				base_name = id.clone();
                             }
                             "unit" => {
                                 if let Some(struct_found2) =
@@ -2137,31 +2141,32 @@ fn main() -> std::io::Result<()> {
                                     &dna_types_hm,
                                 );
                                 println!("  ID.name = {:?}", id);
+				base_name = id.clone();
                             }
                             "obmat[4][4]" => {
                                 let obmat: [f32; 16] = get_matrix(member, &bytes_read, byte_index);
                                 println!("  obmat[4][4] = {:?}", obmat);
-				println!("  scale_length = {}", scale_length);
-				object_to_world = Transform::new(
-				    obmat[0],
-				    obmat[4],
-				    obmat[8],
-				    obmat[12] * scale_length,
-				    obmat[1],
-				    obmat[5],
-				    obmat[9],
-				    obmat[13] * scale_length,
-				    obmat[2],
-				    obmat[6],
-				    obmat[10],
-				    obmat[14] * scale_length,
-				    obmat[3],
-				    obmat[7],
-				    obmat[11],
-				    obmat[15],
-				);
+                                println!("  scale_length = {}", scale_length);
+                                object_to_world = Transform::new(
+                                    obmat[0],
+                                    obmat[4],
+                                    obmat[8],
+                                    obmat[12] * scale_length,
+                                    obmat[1],
+                                    obmat[5],
+                                    obmat[9],
+                                    obmat[13] * scale_length,
+                                    obmat[2],
+                                    obmat[6],
+                                    obmat[10],
+                                    obmat[14] * scale_length,
+                                    obmat[3],
+                                    obmat[7],
+                                    obmat[11],
+                                    obmat[15],
+                                );
                                 println!("  object_to_world = {:?}", object_to_world);
-				object_to_world_hm.insert(base_name.clone(), object_to_world);
+                                object_to_world_hm.insert(base_name.clone(), object_to_world);
                             }
                             _ => {}
                         }
@@ -2188,6 +2193,7 @@ fn main() -> std::io::Result<()> {
                                     &dna_types_hm,
                                 );
                                 println!("  ID.name = {:?}", id);
+				base_name = id.clone();
                             }
                             "lens" => {
                                 lens = get_float(member, &bytes_read, byte_index);
@@ -2221,12 +2227,105 @@ fn main() -> std::io::Result<()> {
                     println!("  {:?}", cam);
                     camera_hm.insert(base_name.clone(), cam);
                 }
+                "Material" => {
+                    let mut r: f32 = 0.0;
+                    let mut g: f32 = 0.0;
+                    let mut b: f32 = 0.0;
+                    let mut specr: f32 = 0.0;
+                    let mut specg: f32 = 0.0;
+                    let mut specb: f32 = 0.0;
+                    let mut mirr: f32 = 0.0;
+                    let mut mirg: f32 = 0.0;
+                    let mut mirb: f32 = 0.0;
+                    let mut emit: f32 = 0.0;
+                    let mut ang: f32 = 0.0;
+                    let mut ray_mirror: f32 = 0.0;
+                    let mut roughness: f32 = 0.0;
+                    for member in &struct_found.members {
+                        match member.mem_name.as_str() {
+                            "id" => {
+                                let id: String = get_id_name(
+                                    member,
+                                    &bytes_read,
+                                    byte_index,
+                                    &dna_structs_hm,
+                                    &dna_types_hm,
+                                );
+                                println!("  ID.name = {:?}", id);
+				base_name = id.clone();
+                            }
+                            "r" => {
+                                r = get_float(member, &bytes_read, byte_index);
+                            }
+                            "g" => {
+                                g = get_float(member, &bytes_read, byte_index);
+                            }
+                            "b" => {
+                                b = get_float(member, &bytes_read, byte_index);
+                            }
+                            "specr" => {
+                                specr = get_float(member, &bytes_read, byte_index);
+                            }
+                            "specg" => {
+                                specg = get_float(member, &bytes_read, byte_index);
+                            }
+                            "specb" => {
+                                specb = get_float(member, &bytes_read, byte_index);
+                            }
+                            "mirr" => {
+                                mirr = get_float(member, &bytes_read, byte_index);
+                            }
+                            "mirg" => {
+                                mirg = get_float(member, &bytes_read, byte_index);
+                            }
+                            "mirb" => {
+                                mirb = get_float(member, &bytes_read, byte_index);
+                            }
+                            "emit" => {
+                                emit = get_float(member, &bytes_read, byte_index);
+                            }
+                            "ang" => {
+                                ang = get_float(member, &bytes_read, byte_index);
+                            }
+                            "ray_mirror" => {
+                                ray_mirror = get_float(member, &bytes_read, byte_index);
+                            }
+                            "roughness" => {
+                                roughness = get_float(member, &bytes_read, byte_index);
+                            }
+                            _ => {}
+                        }
+                        // find mem_type in dna_types.names
+                        if let Some(type_found) = dna_types_hm.get(&member.mem_type) {
+                            let mem_tlen: u16 = calc_mem_tlen(member, *type_found);
+                            byte_index += mem_tlen as usize;
+                        }
+                    }
+                    // Blend279Material
+                    let mat: Blend279Material = Blend279Material {
+                        r: r,
+                        g: g,
+                        b: b,
+                        a: 1.0,
+                        specr: specr,
+                        specg: specg,
+                        specb: specb,
+                        mirr: mirr,
+                        mirg: mirg,
+                        mirb: mirb,
+                        emit: emit,
+                        ang: ang,
+                        ray_mirror: ray_mirror,
+                        roughness: roughness,
+                    };
+                    println!("  mat[{:?}] = {:?}", base_name, mat);
+                    material_hm.insert(base_name.clone(), mat);
+                }
                 _ => {}
             }
         }
     }
     println!("byte_index = {}", byte_index);
-    // WORK
     // WORK
 
     // // first get the DNA
