@@ -2050,6 +2050,9 @@ fn main() -> std::io::Result<()> {
         // "MLoopUV".to_string(),
         // "MLoopCol".to_string(),
     ];
+    // then use the DNA
+    let mut object_to_world_hm: HashMap<String, Transform> = HashMap::with_capacity(ob_count);
+    // use_dna(...)
     let mut bytes_read: Vec<u8> = Vec::with_capacity(num_bytes_read);
     let mut structs_read: Vec<String> = Vec::with_capacity(names.len());
     let mut data_read: Vec<u32> = Vec::with_capacity(names.len());
@@ -2075,7 +2078,6 @@ fn main() -> std::io::Result<()> {
         if let Some(struct_found) = dna_structs_hm.get(&struct_read) {
             match struct_read.as_str() {
                 "Scene" => {
-                    let mut scale_length: f32 = 0.0;
                     for member in &struct_found.members {
                         match member.mem_name.as_str() {
                             "id" => {
@@ -2138,7 +2140,28 @@ fn main() -> std::io::Result<()> {
                             }
                             "obmat[4][4]" => {
                                 let obmat: [f32; 16] = get_matrix(member, &bytes_read, byte_index);
-                                println!("  obmat[4][4] = {:#?}", obmat);
+                                println!("  obmat[4][4] = {:?}", obmat);
+				println!("  scale_length = {}", scale_length);
+				object_to_world = Transform::new(
+				    obmat[0],
+				    obmat[4],
+				    obmat[8],
+				    obmat[12] * scale_length,
+				    obmat[1],
+				    obmat[5],
+				    obmat[9],
+				    obmat[13] * scale_length,
+				    obmat[2],
+				    obmat[6],
+				    obmat[10],
+				    obmat[14] * scale_length,
+				    obmat[3],
+				    obmat[7],
+				    obmat[11],
+				    obmat[15],
+				);
+                                println!("  object_to_world = {:?}", object_to_world);
+				object_to_world_hm.insert(base_name.clone(), object_to_world);
                             }
                             _ => {}
                         }
