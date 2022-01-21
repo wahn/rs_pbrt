@@ -113,6 +113,43 @@ struct Cli {
 
 // blend_info
 
+fn get_id_name(
+    member: &DnaStrMember,
+    bytes_read: &[u8],
+    byte_index: usize,
+    dna_structs_hm: &HashMap<String, DnaStrC>,
+    dna_types_hm: &HashMap<String, u16>,
+) -> String {
+    let mut return_str: String = String::new();
+    if let Some(struct_found2) = dna_structs_hm.get(member.mem_type.as_str()) {
+        let mut byte_index2: usize = 0;
+        for member2 in &struct_found2.members {
+            if let Some(type_found2) = dna_types_hm.get(&member2.mem_type) {
+                let mem_tlen2: u16 = calc_mem_tlen(member2, *type_found2);
+                if member2.mem_name.contains("name") {
+                    let mut id = String::with_capacity(mem_tlen2 as usize);
+                    for i in 0..mem_tlen2 as usize {
+                        if bytes_read[byte_index + byte_index2 + i] == 0 {
+                            break;
+                        }
+                        if (bytes_read[byte_index + byte_index2 + i] as char)
+                            .is_ascii_alphanumeric()
+                        {
+                            id.push(bytes_read[byte_index + byte_index2 + i] as char);
+                        }
+                    }
+                    // this will be returned
+                    return_str = id;
+                    byte_index2 += mem_tlen2 as usize;
+                } else {
+                    byte_index2 += mem_tlen2 as usize;
+                }
+            }
+        }
+    }
+    return_str
+}
+
 fn get_float(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> f32 {
     let mut float_value: f32 = 0.0;
     if member.mem_type.as_str() == "float" {
@@ -2025,44 +2062,14 @@ fn main() -> std::io::Result<()> {
                     for member in &struct_found.members {
                         match member.mem_name.as_str() {
                             "id" => {
-                                // println!("{:?}", member);
-                                if let Some(struct_found2) =
-                                    dna_structs_hm.get(member.mem_type.as_str())
-                                {
-                                    // println!("{:?}", struct_found2);
-                                    let mut byte_index2: usize = 0;
-                                    for member2 in &struct_found2.members {
-                                        if let Some(type_found2) =
-                                            dna_types_hm.get(&member2.mem_type)
-                                        {
-                                            let mem_tlen2: u16 =
-                                                calc_mem_tlen(member2, *type_found2);
-                                            if member2.mem_name.contains("name") {
-                                                let mut id =
-                                                    String::with_capacity(mem_tlen2 as usize);
-                                                for i in 0..mem_tlen2 as usize {
-                                                    if bytes_read[byte_index + byte_index2 + i] == 0
-                                                    {
-                                                        break;
-                                                    }
-                                                    if (bytes_read[byte_index + byte_index2 + i]
-                                                        as char)
-                                                        .is_ascii_alphanumeric()
-                                                    {
-                                                        id.push(
-                                                            bytes_read[byte_index + byte_index2 + i]
-                                                                as char,
-                                                        );
-                                                    }
-                                                }
-                                                println!("  ID.name = {:?}", id);
-                                                byte_index2 += mem_tlen2 as usize;
-                                            } else {
-                                                byte_index2 += mem_tlen2 as usize;
-                                            }
-                                        }
-                                    }
-                                }
+                                let id: String = get_id_name(
+                                    member,
+                                    &bytes_read,
+                                    byte_index,
+                                    &dna_structs_hm,
+                                    &dna_types_hm,
+                                );
+                                println!("  ID.name = {:?}", id);
                             }
                             "unit" => {
                                 if let Some(struct_found2) =
@@ -2103,44 +2110,14 @@ fn main() -> std::io::Result<()> {
                     for member in &struct_found.members {
                         match member.mem_name.as_str() {
                             "id" => {
-                                // println!("{:?}", member);
-                                if let Some(struct_found2) =
-                                    dna_structs_hm.get(member.mem_type.as_str())
-                                {
-                                    // println!("{:?}", struct_found2);
-                                    let mut byte_index2: usize = 0;
-                                    for member2 in &struct_found2.members {
-                                        if let Some(type_found2) =
-                                            dna_types_hm.get(&member2.mem_type)
-                                        {
-                                            let mem_tlen2: u16 =
-                                                calc_mem_tlen(member2, *type_found2);
-                                            if member2.mem_name.contains("name") {
-                                                let mut id =
-                                                    String::with_capacity(mem_tlen2 as usize);
-                                                for i in 0..mem_tlen2 as usize {
-                                                    if bytes_read[byte_index + byte_index2 + i] == 0
-                                                    {
-                                                        break;
-                                                    }
-                                                    if (bytes_read[byte_index + byte_index2 + i]
-                                                        as char)
-                                                        .is_ascii_alphanumeric()
-                                                    {
-                                                        id.push(
-                                                            bytes_read[byte_index + byte_index2 + i]
-                                                                as char,
-                                                        );
-                                                    }
-                                                }
-                                                println!("  ID.name = {:?}", id);
-                                                byte_index2 += mem_tlen2 as usize;
-                                            } else {
-                                                byte_index2 += mem_tlen2 as usize;
-                                            }
-                                        }
-                                    }
-                                }
+                                let id: String = get_id_name(
+                                    member,
+                                    &bytes_read,
+                                    byte_index,
+                                    &dna_structs_hm,
+                                    &dna_types_hm,
+                                );
+                                println!("  ID.name = {:?}", id);
                             }
                             _ => {}
                         }
@@ -2159,44 +2136,14 @@ fn main() -> std::io::Result<()> {
                     for member in &struct_found.members {
                         match member.mem_name.as_str() {
                             "id" => {
-                                // println!("{:?}", member);
-                                if let Some(struct_found2) =
-                                    dna_structs_hm.get(member.mem_type.as_str())
-                                {
-                                    // println!("{:?}", struct_found2);
-                                    let mut byte_index2: usize = 0;
-                                    for member2 in &struct_found2.members {
-                                        if let Some(type_found2) =
-                                            dna_types_hm.get(&member2.mem_type)
-                                        {
-                                            let mem_tlen2: u16 =
-                                                calc_mem_tlen(member2, *type_found2);
-                                            if member2.mem_name.contains("name") {
-                                                let mut id =
-                                                    String::with_capacity(mem_tlen2 as usize);
-                                                for i in 0..mem_tlen2 as usize {
-                                                    if bytes_read[byte_index + byte_index2 + i] == 0
-                                                    {
-                                                        break;
-                                                    }
-                                                    if (bytes_read[byte_index + byte_index2 + i]
-                                                        as char)
-                                                        .is_ascii_alphanumeric()
-                                                    {
-                                                        id.push(
-                                                            bytes_read[byte_index + byte_index2 + i]
-                                                                as char,
-                                                        );
-                                                    }
-                                                }
-                                                println!("  ID.name = {:?}", id);
-                                                byte_index2 += mem_tlen2 as usize;
-                                            } else {
-                                                byte_index2 += mem_tlen2 as usize;
-                                            }
-                                        }
-                                    }
-                                }
+                                let id: String = get_id_name(
+                                    member,
+                                    &bytes_read,
+                                    byte_index,
+                                    &dna_structs_hm,
+                                    &dna_types_hm,
+                                );
+                                println!("  ID.name = {:?}", id);
                             }
                             "lens" => {
                                 lens = get_float(member, &bytes_read, byte_index);
