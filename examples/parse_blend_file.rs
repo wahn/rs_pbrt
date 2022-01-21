@@ -164,6 +164,23 @@ fn get_float(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> f32
     float_value
 }
 
+fn get_matrix(member: &DnaStrMember, bytes_read: &[u8], byte_index: usize) -> [f32; 16] {
+    let mut mat_values: [f32; 16] = [0.0_f32; 16];
+    let mut skip_bytes: usize = 0;
+    for i in 0..4 {
+        for j in 0..4 {
+            let mut mat_buf: [u8; 4] = [0_u8; 4];
+            for b in 0..4 as usize {
+                mat_buf[b] = bytes_read[byte_index + skip_bytes + b];
+            }
+            let mat: f32 = unsafe { mem::transmute(mat_buf) };
+            mat_values[i * 4 + j] = mat;
+            skip_bytes += 4;
+        }
+    }
+    mat_values
+}
+
 // PBRT
 
 #[derive(Debug, Default, Copy, Clone)]
@@ -2118,6 +2135,10 @@ fn main() -> std::io::Result<()> {
                                     &dna_types_hm,
                                 );
                                 println!("  ID.name = {:?}", id);
+                            }
+                            "obmat[4][4]" => {
+                                let obmat: [f32; 16] = get_matrix(member, &bytes_read, byte_index);
+                                println!("  obmat[4][4] = {:#?}", obmat);
                             }
                             _ => {}
                         }
